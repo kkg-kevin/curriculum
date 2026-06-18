@@ -1,51 +1,64 @@
+const fs = require("fs");
+const path = require("path");
 const crypto = require("crypto");
 
-const curricula = [];
+const FILE = path.join(__dirname, "../../../data/curricula.json");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+const readAll = () => {
+  if (!fs.existsSync(FILE)) return [];
+  const raw = fs.readFileSync(FILE, "utf-8").trim();
+  return raw ? JSON.parse(raw) : [];
+};
+
+const writeAll = (data) => {
+  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+};
+
 const CurriculumModel = {
   create(data) {
+    const all = readAll();
     const curriculum = {
       ...data,
       id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    curricula.push(curriculum);
+    all.push(curriculum);
+    writeAll(all);
     return curriculum;
   },
 
   findAll({ framework, academicYear } = {}) {
-    let result = [...curricula];
-    if (framework) result = result.filter((c) => c.framework === framework);
-    if (academicYear) result = result.filter((c) => c.academicYear === academicYear);
-    return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    let all = readAll();
+    if (framework) all = all.filter((c) => c.framework === framework);
+    if (academicYear) all = all.filter((c) => c.academicYear === academicYear);
+    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   findById(id) {
-    return curricula.find((c) => c.id === id) || null;
+    return readAll().find((c) => c.id === id) || null;
   },
 
   update(id, data) {
-    const index = curricula.findIndex((c) => c.id === id);
+    const all = readAll();
+    const index = all.findIndex((c) => c.id === id);
     if (index === -1) return null;
-    curricula[index] = {
-      ...curricula[index],
-      ...data,
-      id,
-      updatedAt: new Date().toISOString(),
-    };
-    return curricula[index];
+    all[index] = { ...all[index], ...data, id, updatedAt: new Date().toISOString() };
+    writeAll(all);
+    return all[index];
   },
 
   delete(id) {
-    const index = curricula.findIndex((c) => c.id === id);
+    const all = readAll();
+    const index = all.findIndex((c) => c.id === id);
     if (index === -1) return false;
-    curricula.splice(index, 1);
+    all.splice(index, 1);
+    writeAll(all);
     return true;
   },
 };

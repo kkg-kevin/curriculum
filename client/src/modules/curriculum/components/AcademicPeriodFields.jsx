@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useFormContext, useFieldArray, Controller } from "react-hook-form";
+import { useState, useEffect, useRef } from "react";
+import { useFormContext, useFieldArray } from "react-hook-form";
 
 const DEFAULT_PERIOD = {
   name: "",
@@ -24,15 +24,16 @@ const PRESET_PERIODS = {
 
 const inputStyle = (hasError) => ({
   width: "100%",
-  padding: "9px 12px",
-  borderRadius: "8px",
-  border: `1px solid ${hasError ? "#EF4444" : "#E5E7EB"}`,
-  fontSize: "13px",
+  padding: "10px 13px",
+  borderRadius: "9px",
+  border: `1.5px solid ${hasError ? "#EF4444" : "#E5E7EB"}`,
+  fontSize: "14px",
   fontFamily: "Inter, sans-serif",
   backgroundColor: hasError ? "#FFF5F5" : "#ffffff",
   outline: "none",
   boxSizing: "border-box",
   color: "#111827",
+  transition: "border-color 0.15s",
 });
 
 const labelStyle = {
@@ -40,13 +41,13 @@ const labelStyle = {
   fontSize: "12px",
   fontWeight: "500",
   color: "#6B7280",
-  marginBottom: "5px",
+  marginBottom: "6px",
 };
 
 const errorTextStyle = {
   fontSize: "11px",
   color: "#EF4444",
-  marginTop: "3px",
+  marginTop: "4px",
   marginBottom: 0,
 };
 
@@ -55,97 +56,111 @@ function FieldError({ error }) {
   return <p style={errorTextStyle}>{error.message}</p>;
 }
 
-function PeriodCard({ index, onRemove, canRemove, cycleModel }) {
+// Returns "complete" | "partial" | "empty"
+function getPeriodStatus(period) {
+  if (!period) return "empty";
+  if (period.startDate && period.endDate) return "complete";
+  if (period.startDate || period.endDate) return "partial";
+  return "empty";
+}
+
+function StatusDot({ status, isActive, onClick }) {
+  const colors = {
+    complete: { bg: "#22C55E", border: "#16A34A" },
+    partial:  { bg: "#F59E0B", border: "#D97706" },
+    empty:    { bg: "#E5E7EB", border: "#D1D5DB" },
+  };
+  const c = colors[status] || colors.empty;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={status === "complete" ? "Dates configured" : status === "partial" ? "Partially configured" : "Not configured"}
+      style={{
+        width: isActive ? "24px" : "9px",
+        height: "9px",
+        borderRadius: "20px",
+        backgroundColor: isActive ? "#0D47A1" : c.bg,
+        border: `1.5px solid ${isActive ? "#0D47A1" : c.border}`,
+        cursor: "pointer",
+        padding: 0,
+        transition: "all 0.2s ease",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+function NavArrow({ direction, onClick, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: "34px",
+        height: "34px",
+        borderRadius: "9px",
+        border: "1.5px solid",
+        borderColor: disabled ? "#E5E7EB" : "#CBD5E1",
+        backgroundColor: disabled ? "#F9FAFB" : "#ffffff",
+        color: disabled ? "#D1D5DB" : "#374151",
+        cursor: disabled ? "not-allowed" : "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "16px",
+        fontFamily: "Inter, sans-serif",
+        transition: "all 0.15s",
+        flexShrink: 0,
+      }}
+    >
+      {direction === "prev" ? "‹" : "›"}
+    </button>
+  );
+}
+
+function PeriodPane({ index, cycleModel, canRemove, onRemove }) {
   const {
     register,
     formState: { errors },
   } = useFormContext();
 
   const periodErrors = errors.periods?.[index] || {};
+  const isCustom = cycleModel === "custom";
+
+  const placeholder =
+    isCustom
+      ? `e.g. Quarter ${index + 1}, Module ${index + 1}...`
+      : cycleModel === "semesters"
+      ? `Semester ${index + 1}`
+      : `Term ${index + 1}`;
 
   return (
-    <div
-      style={{
-        border: "1px solid #E5E7EB",
-        borderRadius: "12px",
-        padding: "16px",
-        marginBottom: "12px",
-        backgroundColor: "#FAFAFA",
-        position: "relative",
-      }}
-    >
-      {/* Period header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "14px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "24px",
-              height: "24px",
-              borderRadius: "50%",
-              backgroundColor: "#0D47A1",
-              color: "#fff",
-              fontSize: "12px",
-              fontWeight: "700",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {index + 1}
-          </div>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#374151" }}>
-            {cycleModel === "semesters" ? `Semester ${index + 1}` : cycleModel === "terms" ? `Term ${index + 1}` : `Period ${index + 1}`}
-          </span>
-        </div>
-
-        {canRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "5px 10px",
-              backgroundColor: "transparent",
-              color: "#EF4444",
-              border: "1px solid #FCA5A5",
-              borderRadius: "6px",
-              fontSize: "12px",
-              fontWeight: "500",
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
-            }}
-          >
-            ✕ Remove
-          </button>
-        )}
-      </div>
-
+    <div style={{ padding: "20px" }}>
       {/* Period Name */}
-      <div style={{ marginBottom: "12px" }}>
+      <div style={{ marginBottom: "16px" }}>
         <label style={labelStyle}>
-          Period Name <span style={{ color: "#EF4444" }}>*</span>
+          {isCustom ? "Period Name" : "Period Name"}
+          <span style={{ color: "#EF4444" }}> *</span>
+          {isCustom && (
+            <span style={{ marginLeft: "6px", fontSize: "11px", color: "#9CA3AF", fontWeight: "400" }}>
+              — give it any name you like
+            </span>
+          )}
         </label>
         <input
           type="text"
           {...register(`periods.${index}.name`)}
           style={inputStyle(!!periodErrors.name)}
-          placeholder={`e.g. ${cycleModel === "semesters" ? "Semester 1" : cycleModel === "terms" ? "Term 1" : "Period 1"}`}
+          placeholder={placeholder}
         />
         <FieldError error={periodErrors.name} />
       </div>
 
-      {/* Start Date & End Date */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+      {/* Start / End Date */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
         <div>
           <label style={labelStyle}>
             Start Date <span style={{ color: "#EF4444" }}>*</span>
@@ -175,22 +190,16 @@ function PeriodCard({ index, onRemove, canRemove, cycleModel }) {
         style={{
           backgroundColor: "#F0F9FF",
           border: "1px solid #E0F2FE",
-          borderRadius: "8px",
-          padding: "12px",
+          borderRadius: "10px",
+          padding: "14px",
+          marginBottom: canRemove ? "16px" : "0",
         }}
       >
-        <p
-          style={{
-            margin: "0 0 10px 0",
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "#0369A1",
-          }}
-        >
+        <p style={{ margin: "0 0 10px 0", fontSize: "12px", fontWeight: "600", color: "#0369A1" }}>
           ☕ Mid-Term Break{" "}
           <span style={{ fontWeight: "400", color: "#6B7280" }}>(optional)</span>
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
             <label style={labelStyle}>Break Start</label>
             <input
@@ -211,6 +220,32 @@ function PeriodCard({ index, onRemove, canRemove, cycleModel }) {
           </div>
         </div>
       </div>
+
+      {/* Remove button — only for custom or when more than 1 period */}
+      {canRemove && (
+        <div style={{ paddingTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onRemove}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "6px 14px",
+              backgroundColor: "#FFF5F5",
+              color: "#EF4444",
+              border: "1px solid #FECACA",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: "500",
+              fontFamily: "Inter, sans-serif",
+              cursor: "pointer",
+            }}
+          >
+            🗑 Remove this period
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -223,147 +258,238 @@ export default function AcademicPeriodFields() {
   } = useFormContext();
 
   const cycleModel = watch("academicCycleModel");
+  const periods = watch("periods") || [];
 
-  const { fields, replace, append, remove } = useFieldArray({
-    control,
-    name: "periods",
-  });
+  const { fields, replace, append, remove } = useFieldArray({ control, name: "periods" });
 
+  const [activeIndex, setActiveIndex] = useState(0);
   const prevCycleModel = useRef(cycleModel);
 
+  // When cycle model changes, reset periods and jump to first
   useEffect(() => {
     if (prevCycleModel.current === cycleModel) return;
     prevCycleModel.current = cycleModel;
+    setActiveIndex(0);
     if (cycleModel && PRESET_PERIODS[cycleModel] !== undefined) {
       replace(PRESET_PERIODS[cycleModel]);
     }
   }, [cycleModel, replace]);
 
+  // Clamp activeIndex if periods are removed
+  useEffect(() => {
+    if (fields.length > 0 && activeIndex >= fields.length) {
+      setActiveIndex(fields.length - 1);
+    }
+  }, [fields.length, activeIndex]);
+
   const handleAddPeriod = () => {
-    append({ ...DEFAULT_PERIOD });
+    const newIndex = fields.length;
+    append({ ...DEFAULT_PERIOD, name: `Period ${newIndex + 1}` });
+    setActiveIndex(newIndex);
   };
 
+  const handleRemove = (index) => {
+    remove(index);
+    // clamp effect above will adjust if needed
+  };
+
+  const isCustom = cycleModel === "custom";
+  const canGoPrev = activeIndex > 0;
+  const canGoNext = activeIndex < fields.length - 1;
   const periodsArrayError = errors.periods?.message || errors.periods?.root?.message;
+
+  const cycleLabel =
+    cycleModel === "semesters" ? "Semester" : cycleModel === "terms" ? "Term" : "Period";
+
+  // ── Empty state for custom before any periods are added ──
+  if (fields.length === 0) {
+    return (
+      <div>
+        {periodsArrayError && (
+          <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "8px", marginBottom: "12px" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#EF4444" }}>⚠ {periodsArrayError}</p>
+          </div>
+        )}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "40px 20px",
+            backgroundColor: "#F9FAFB",
+            border: "1.5px dashed #E5E7EB",
+            borderRadius: "14px",
+          }}
+        >
+          <div style={{ fontSize: "32px", marginBottom: "10px" }}>📅</div>
+          <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "600", color: "#374151" }}>
+            No periods yet
+          </p>
+          <p style={{ margin: "0 0 18px 0", fontSize: "13px", color: "#9CA3AF" }}>
+            {isCustom
+              ? "Add your first custom period below"
+              : "Select an academic cycle model above"}
+          </p>
+          {isCustom && (
+            <button
+              type="button"
+              onClick={handleAddPeriod}
+              style={{
+                padding: "9px 20px",
+                backgroundColor: "#0D47A1",
+                color: "#fff",
+                border: "none",
+                borderRadius: "9px",
+                fontSize: "13px",
+                fontWeight: "600",
+                fontFamily: "Inter, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              + Add First Period
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* Section header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "16px",
-        }}
-      >
-        <div>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "15px",
-              fontWeight: "600",
-              color: "#111827",
-            }}
-          >
-            Academic Periods
-          </h3>
-          {cycleModel && (
-            <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#6B7280" }}>
-              {cycleModel === "terms" && "3 terms pre-configured — edit dates below"}
-              {cycleModel === "semesters" && "2 semesters pre-configured — edit dates below"}
-              {cycleModel === "custom" && "Add and configure your custom academic periods"}
-            </p>
-          )}
-        </div>
-
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "#0D47A1",
-            backgroundColor: "#EFF6FF",
-            padding: "4px 10px",
-            borderRadius: "20px",
-            border: "1px solid #BFDBFE",
-          }}
-        >
-          {fields.length} {fields.length === 1 ? "period" : "periods"}
-        </span>
-      </div>
-
       {/* Array-level error */}
       {periodsArrayError && (
-        <div
-          style={{
-            padding: "10px 14px",
-            backgroundColor: "#FFF5F5",
-            border: "1px solid #FECACA",
-            borderRadius: "8px",
-            marginBottom: "12px",
-          }}
-        >
+        <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "8px", marginBottom: "12px" }}>
           <p style={{ margin: 0, fontSize: "13px", color: "#EF4444" }}>⚠ {periodsArrayError}</p>
         </div>
       )}
 
-      {/* Period cards */}
-      {fields.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "32px 20px",
-            backgroundColor: "#F9FAFB",
-            border: "1.5px dashed #E5E7EB",
-            borderRadius: "12px",
-            marginBottom: "12px",
-          }}
-        >
-          <div style={{ fontSize: "28px", marginBottom: "8px" }}>📅</div>
-          <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500", color: "#374151" }}>
-            No periods yet
-          </p>
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-            {cycleModel === "custom"
-              ? 'Click "Add Period" below to get started'
-              : "Select an academic cycle model above to auto-populate periods"}
-          </p>
-        </div>
-      ) : (
-        fields.map((field, index) => (
-          <PeriodCard
-            key={field.id}
-            index={index}
-            cycleModel={cycleModel}
-            canRemove={fields.length > 1 || cycleModel === "custom"}
-            onRemove={() => remove(index)}
-          />
-        ))
-      )}
-
-      {/* Add Period button */}
-      <button
-        type="button"
-        onClick={handleAddPeriod}
+      {/* Paginated card */}
+      <div
         style={{
-          width: "100%",
-          padding: "11px 16px",
-          backgroundColor: "#EFF6FF",
-          color: "#0D47A1",
-          border: "1.5px dashed #93C5FD",
-          borderRadius: "10px",
-          fontSize: "14px",
-          fontWeight: "500",
-          fontFamily: "Inter, sans-serif",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
+          border: "1.5px solid #E5E7EB",
+          borderRadius: "14px",
+          backgroundColor: "#ffffff",
+          overflow: "hidden",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
         }}
       >
-        <span style={{ fontSize: "18px", lineHeight: 1 }}>+</span>
-        Add Period
-      </button>
+        {/* ── Navigation header ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "14px 16px",
+            backgroundColor: "#F8FAFF",
+            borderBottom: "1px solid #E5E7EB",
+            gap: "10px",
+          }}
+        >
+          {/* Prev arrow */}
+          <NavArrow direction="prev" onClick={() => setActiveIndex((i) => i - 1)} disabled={!canGoPrev} />
+
+          {/* Centre: title + dot indicators */}
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: "700", color: "#0D47A1" }}>
+              {fields[activeIndex]
+                ? fields[activeIndex].name || `${cycleLabel} ${activeIndex + 1}`
+                : `${cycleLabel} ${activeIndex + 1}`}
+            </p>
+
+            {/* Dot indicators */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+              {fields.map((_, i) => (
+                <StatusDot
+                  key={i}
+                  status={getPeriodStatus(periods[i])}
+                  isActive={i === activeIndex}
+                  onClick={() => setActiveIndex(i)}
+                />
+              ))}
+            </div>
+
+            <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+              {activeIndex + 1} of {fields.length}
+              {" · "}
+              {fields.filter((_, i) => getPeriodStatus(periods[i]) === "complete").length} configured
+            </p>
+          </div>
+
+          {/* Next arrow */}
+          <NavArrow direction="next" onClick={() => setActiveIndex((i) => i + 1)} disabled={!canGoNext} />
+        </div>
+
+        {/* ── Period form fields ── */}
+        <PeriodPane
+          key={fields[activeIndex]?.id}
+          index={activeIndex}
+          cycleModel={cycleModel}
+          canRemove={isCustom && fields.length > 1}
+          onRemove={() => handleRemove(activeIndex)}
+        />
+      </div>
+
+      {/* ── Progress bar (how many periods are fully configured) ── */}
+      {fields.length > 0 && (
+        <div style={{ marginTop: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+            <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Configuration progress</span>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "#374151" }}>
+              {fields.filter((_, i) => getPeriodStatus(periods[i]) === "complete").length} / {fields.length} periods
+            </span>
+          </div>
+          <div style={{ height: "5px", backgroundColor: "#F3F4F6", borderRadius: "10px", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                borderRadius: "10px",
+                backgroundColor: "#22C55E",
+                width: `${(fields.filter((_, i) => getPeriodStatus(periods[i]) === "complete").length / fields.length) * 100}%`,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+          {/* Legend */}
+          <div style={{ display: "flex", gap: "14px", marginTop: "6px" }}>
+            {[
+              { color: "#22C55E", label: "Complete" },
+              { color: "#F59E0B", label: "Partial" },
+              { color: "#E5E7EB", label: "Empty" },
+            ].map(({ color, label }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
+                <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Period button — custom only ── */}
+      {isCustom && (
+        <button
+          type="button"
+          onClick={handleAddPeriod}
+          style={{
+            width: "100%",
+            marginTop: "14px",
+            padding: "11px 16px",
+            backgroundColor: "#EFF6FF",
+            color: "#0D47A1",
+            border: "1.5px dashed #93C5FD",
+            borderRadius: "10px",
+            fontSize: "14px",
+            fontWeight: "500",
+            fontFamily: "Inter, sans-serif",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+          }}
+        >
+          <span style={{ fontSize: "18px", lineHeight: 1 }}>+</span>
+          Add Another Period
+        </button>
+      )}
     </div>
   );
 }

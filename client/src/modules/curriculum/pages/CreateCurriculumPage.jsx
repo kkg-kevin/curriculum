@@ -181,8 +181,8 @@ export default function CreateCurriculumPage() {
             {/* Right column — Live Preview */}
             <div
               style={{
-                width: "380px",
-                flexShrink: 0,
+                flex: 1,
+                minWidth: 0,
                 position: "sticky",
                 top: "24px",
                 alignSelf: "flex-start",
