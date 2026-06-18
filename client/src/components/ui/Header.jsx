@@ -8,6 +8,7 @@ function Header() {
     "/": "Dashboard",
     "/schools": "Schools",
     "/curriculum": "Curriculum",
+    "/curriculum/create": "Create Curriculum",
     "/learners": "Learners",
     "/teachers": "Teachers",
     "/classes": "Classes",
