@@ -1,0 +1,257 @@
+[
+  {
+    "name": "The Competency-Based Curriculum",
+    "code": "KE-CBC-01",
+    "academicYear": "2026",
+    "description": "The Competency-Based Curriculum (CBC) is Kenya's modern education framework, designed to replace the old, exam-heavy 8-4-4 system. Its primary mission is to shift learning from rote memorization to a learner-centered, practical approach that focuses on what a student can do rather than just what they know.",
+    "framework": "CBC",
+    "academicCycleModel": "terms",
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "midTermBreakStartDate": "2026-02-01",
+        "midTermBreakEndDate": "2026-02-07"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-31",
+        "midTermBreakStartDate": "2026-06-01",
+        "midTermBreakEndDate": "2026-06-06"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-30",
+        "midTermBreakStartDate": "2026-10-01",
+        "midTermBreakEndDate": "2026-10-07"
+      }
+    ],
+    "id": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "createdAt": "2026-06-19T05:23:13.618Z",
+    "updatedAt": "2026-06-19T06:01:53.781Z",
+    "structure": [
+      {
+        "grades": [
+          {
+            "id": "mqkhim89-rp56w6",
+            "name": "Grade 1",
+            "courses": []
+          },
+          {
+            "id": "mqkhiu17-1n7gb4",
+            "name": "Grade 2",
+            "courses": []
+          },
+          {
+            "id": "mqkhiy0f-ifxj1n",
+            "name": "Grade 3",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "grades": [
+          {
+            "id": "mqkhjcyt-jtijjl",
+            "name": "Grade 1",
+            "courses": []
+          },
+          {
+            "id": "mqkhjiop-zsfjq9",
+            "name": "Grade 2",
+            "courses": []
+          },
+          {
+            "id": "mqkhjobd-80wp5k",
+            "name": "Grade 3",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "grades": [
+          {
+            "id": "mqkhjz7l-1vasqi",
+            "name": "Grade 1",
+            "courses": [
+              {
+                "id": "mqkhkt6t-0zkdj6",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqkhl3ff-kcpdu5",
+                "name": "Machine learning"
+              },
+              {
+                "id": "mqkhlhoi-l2mho2",
+                "name": "Intro to Python"
+              }
+            ]
+          },
+          {
+            "id": "mqkhk2nj-2vabq8",
+            "name": "Grade 2",
+            "courses": [
+              {
+                "id": "mqkhlttj-o4usv7",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqkhm0wk-d3l0zu",
+                "name": "Machine Learning"
+              },
+              {
+                "id": "mqkhmiet-okpq7k",
+                "name": "Intro to Python"
+              }
+            ]
+          },
+          {
+            "id": "mqkhk5px-bkffg5",
+            "name": "Grade 3",
+            "courses": [
+              {
+                "id": "mqkhmnv1-9fjxiq",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqkhmv0j-63g1jt",
+                "name": "Machine Learning"
+              },
+              {
+                "id": "mqkhna6x-4t2vhs",
+                "name": "Intro to Pyhton"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Cambridge Curriculum ",
+    "code": "CC-KE-26",
+    "academicYear": "2026",
+    "description": "The Cambridge Assessment International Education curriculum is a globally recognized education framework designed to develop learners’ knowledge, understanding, and critical thinking skills. It offers a structured yet flexible pathway from early years through primary, lower secondary, IGCSE, and A Level stages.",
+    "framework": "Cambridge",
+    "academicCycleModel": "terms",
+    "periods": [
+      {
+        "name": "Autumn Term",
+        "startDate": "2026-08-01",
+        "endDate": "2026-09-30",
+        "midTermBreakStartDate": "2026-08-23",
+        "midTermBreakEndDate": "2026-09-03"
+      },
+      {
+        "name": "Spring Term",
+        "startDate": "2027-01-01",
+        "endDate": "2027-03-31",
+        "midTermBreakStartDate": "2027-02-02",
+        "midTermBreakEndDate": "2027-02-08"
+      },
+      {
+        "name": "Summer ",
+        "startDate": "2027-04-20",
+        "endDate": "2027-07-31",
+        "midTermBreakStartDate": "2027-05-01",
+        "midTermBreakEndDate": "2027-05-08"
+      }
+    ],
+    "id": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
+    "createdAt": "2026-06-19T06:21:57.025Z",
+    "updatedAt": "2026-06-19T06:24:49.175Z",
+    "structure": [
+      {
+        "grades": [
+          {
+            "id": "mqkjkui0-qv8w7w",
+            "name": "Year 1",
+            "courses": []
+          },
+          {
+            "id": "mqkjl152-zlp28i",
+            "name": "Year 2",
+            "courses": []
+          },
+          {
+            "id": "mqkjlean-ppb521",
+            "name": "Year 3",
+            "courses": []
+          },
+          {
+            "id": "mqkjll7c-v76hkf",
+            "name": "Year 4",
+            "courses": []
+          },
+          {
+            "id": "mqkjlq15-u91pgc",
+            "name": "Year 5",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "grades": [
+          {
+            "id": "mqkjm6ks-qlv566",
+            "name": "Year 1",
+            "courses": []
+          },
+          {
+            "id": "mqkjm9vr-8gokj2",
+            "name": "Year 2",
+            "courses": []
+          },
+          {
+            "id": "mqkjmdzf-g4zdcj",
+            "name": "Year 3",
+            "courses": []
+          },
+          {
+            "id": "mqkjmire-etkprv",
+            "name": "Year 4",
+            "courses": []
+          },
+          {
+            "id": "mqkjmm5z-g1pe5f",
+            "name": "Year 5",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "grades": [
+          {
+            "id": "mqkjn4bq-ideur0",
+            "name": "Year 1",
+            "courses": []
+          },
+          {
+            "id": "mqkjn87b-kn607m",
+            "name": "Year 2",
+            "courses": []
+          },
+          {
+            "id": "mqkjnbjg-gp7iqf",
+            "name": "Year 3",
+            "courses": []
+          },
+          {
+            "id": "mqkjnfcs-uoz2ny",
+            "name": "Year 4",
+            "courses": []
+          },
+          {
+            "id": "mqkjnjq5-6nhvmz",
+            "name": "Year 5",
+            "courses": []
+          }
+        ]
+      }
+    ]
+  }
+]
