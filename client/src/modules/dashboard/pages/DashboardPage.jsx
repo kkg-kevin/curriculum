@@ -398,7 +398,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", maxWidth: "1200px" }}>
+    <div style={{ fontFamily: "Inter, sans-serif" }}>
 
       {/* ── Welcome strip ──────────────────────────────────────────────── */}
       <div
@@ -519,7 +519,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main content: two columns ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "20px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px, 340px)", gap: "20px", alignItems: "start" }}>
 
         {/* ── LEFT: Curriculum health ──────────────────────────────────── */}
         <div
