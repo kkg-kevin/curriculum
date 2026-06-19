@@ -58,7 +58,8 @@ export const createCurriculumSchema = z.object({
   description: z.string(),
   framework: z
     .string()
-    .refine((val) => FRAMEWORKS.includes(val), { message: "Please select a curriculum framework" }),
+    .min(1, "Please select or enter a curriculum framework")
+    .refine((val) => val !== "Custom", { message: "Please type your custom framework name" }),
   academicCycleModel: z
     .string()
     .refine((val) => CYCLE_MODELS.includes(val), { message: "Please select an academic cycle model" }),
