@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
-import { createCurriculumSchema } from "../schemas/curriculum.schema";
+import { curriculumDetailsSchema } from "../schemas/curriculum.schema";
 import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
 
@@ -13,15 +13,11 @@ function EditCurriculumForm({ curriculum }) {
   const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
 
   const methods = useForm({
-    resolver: zodResolver(createCurriculumSchema),
+    resolver: zodResolver(curriculumDetailsSchema),
     defaultValues: {
       name: curriculum.name || "",
       code: curriculum.code || "",
-      academicYear: curriculum.academicYear || "",
       description: curriculum.description || "",
-      framework: curriculum.framework || "",
-      academicCycleModel: curriculum.academicCycleModel || "terms",
-      periods: curriculum.periods || [],
     },
     mode: "onTouched",
   });
@@ -110,7 +106,7 @@ function EditCurriculumForm({ curriculum }) {
             Edit Curriculum
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Update the structure and academic calendar
+            Update the curriculum name, code, year, and description
           </p>
         </div>
 

@@ -3,7 +3,7 @@
     "name": "The Competency-Based Curriculum",
     "code": "KE-CBC-01",
     "academicYear": "2026",
-    "description": "The Competency-Based Curriculum (CBC) is Kenya's modern education framework, designed to replace the old, exam-heavy 8-4-4 system. Its primary mission is to shift learning from rote memorization to a learner-centered, practical approach that focuses on what a student can do rather than just what they know.",
+    "description": "",
     "framework": "CBC",
     "academicCycleModel": "terms",
     "periods": [
@@ -31,23 +31,99 @@
     ],
     "id": "8fd2fd41-f606-4953-bb61-9d25733aa315",
     "createdAt": "2026-06-19T05:23:13.618Z",
-    "updatedAt": "2026-06-19T06:01:53.781Z",
+    "updatedAt": "2026-06-19T13:03:30.904Z",
     "structure": [
       {
         "grades": [
           {
             "id": "mqkhim89-rp56w6",
             "name": "Grade 1",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqkoz60g-b7sw08",
+                "name": "Game development"
+              },
+              {
+                "id": "mqkoztc8-t6ovxm",
+                "name": "javascript"
+              },
+              {
+                "id": "mqkp07v4-lkgrjx",
+                "name": "Scratch"
+              }
+            ]
           },
           {
             "id": "mqkhiu17-1n7gb4",
             "name": "Grade 2",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqkoyvgs-svswx6",
+                "name": "web developement"
+              },
+              {
+                "id": "mqkozl06-ekiefs",
+                "name": "html"
+              },
+              {
+                "id": "mqkozn0o-qhkisl",
+                "name": "css"
+              }
+            ]
           },
           {
             "id": "mqkhiy0f-ifxj1n",
             "name": "Grade 3",
+            "courses": [
+              {
+                "id": "mqkoyoii-7xfoha",
+                "name": "python"
+              }
+            ]
+          },
+          {
+            "id": "mqkx0bby-7y6aq5",
+            "name": "Grade 4",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-jxizak",
+            "name": "Grade 5",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-95dgs9",
+            "name": "Grade 6",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-7l2f1p",
+            "name": "Grade 7",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-071o6l",
+            "name": "Grade 8",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-jvayr3",
+            "name": "Grade 9",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-yy9rxr",
+            "name": "Grade 10",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-u0vr2r",
+            "name": "Grade 11",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-a30xet",
+            "name": "Grade 12",
             "courses": []
           }
         ]
@@ -57,7 +133,16 @@
           {
             "id": "mqkhjcyt-jtijjl",
             "name": "Grade 1",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqkoyeo5-w1wd0o",
+                "name": "math"
+              },
+              {
+                "id": "mqkoyj8i-cr9g7l",
+                "name": "english"
+              }
+            ]
           },
           {
             "id": "mqkhjiop-zsfjq9",
@@ -67,6 +152,51 @@
           {
             "id": "mqkhjobd-80wp5k",
             "name": "Grade 3",
+            "courses": []
+          },
+          {
+            "id": "mqkx0bby-hb06na",
+            "name": "Grade 4",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-0g2j01",
+            "name": "Grade 5",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-fmcta9",
+            "name": "Grade 6",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-e66b53",
+            "name": "Grade 7",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-95vj02",
+            "name": "Grade 8",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-41i1yd",
+            "name": "Grade 9",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-vn7clz",
+            "name": "Grade 10",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-np9jta",
+            "name": "Grade 11",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-rol6qa",
+            "name": "Grade 12",
             "courses": []
           }
         ]
@@ -126,10 +256,59 @@
                 "name": "Intro to Pyhton"
               }
             ]
+          },
+          {
+            "id": "mqkx0bby-loty16",
+            "name": "Grade 4",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-l6x929",
+            "name": "Grade 5",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-gat7lv",
+            "name": "Grade 6",
+            "courses": []
+          },
+          {
+            "id": "mqkx7s8f-rm3kp3",
+            "name": "Grade 7",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-end43h",
+            "name": "Grade 8",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-vo8sdn",
+            "name": "Grade 9",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-9s2xlw",
+            "name": "Grade 10",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-yd3sed",
+            "name": "Grade 11",
+            "courses": []
+          },
+          {
+            "id": "mqkx8wqv-pyml6k",
+            "name": "Grade 12",
+            "courses": []
           }
         ]
       }
-    ]
+    ],
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": ""
   },
   {
     "name": "Cambridge Curriculum ",
@@ -258,7 +437,7 @@
     "name": "American Curriculum ",
     "code": "AM-26",
     "academicYear": "2026-2027",
-    "description": "The American curriculum refers to the K–12 education system used in the United States and in many international schools worldwide. It is broad, flexible, and credit-based, focusing on continuous assessment, electives, and holistic development rather than a single final exam system.",
+    "description": "",
     "framework": "IGCSE",
     "academicCycleModel": "semesters",
     "periods": [
@@ -279,7 +458,7 @@
     ],
     "id": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
     "createdAt": "2026-06-19T06:48:35.377Z",
-    "updatedAt": "2026-06-19T07:12:34.025Z",
+    "updatedAt": "2026-06-19T12:36:49.990Z",
     "structure": [
       {
         "grades": [
@@ -336,6 +515,26 @@
                 "name": "Robotics"
               }
             ]
+          },
+          {
+            "id": "mqkwwzu3-luvhc0",
+            "name": "Grade 4",
+            "courses": []
+          },
+          {
+            "id": "mqkwwzu3-7vblmk",
+            "name": "Grade 5",
+            "courses": []
+          },
+          {
+            "id": "mqkwy17q-mkihk4",
+            "name": "Grade 6",
+            "courses": []
+          },
+          {
+            "id": "mqkwy17q-6uiqlg",
+            "name": "Grade 6",
+            "courses": []
           }
         ]
       },
@@ -390,9 +589,57 @@
                 "name": "Game design"
               }
             ]
+          },
+          {
+            "id": "mqkwwzu3-omn8t3",
+            "name": "Grade 4",
+            "courses": []
+          },
+          {
+            "id": "mqkwwzu3-c4ed82",
+            "name": "Grade 5",
+            "courses": []
+          },
+          {
+            "id": "mqkwy17q-tn7s11",
+            "name": "Grade 6",
+            "courses": []
+          },
+          {
+            "id": "mqkwy17q-mg9wvl",
+            "name": "Grade 6",
+            "courses": []
           }
         ]
       }
-    ]
+    ],
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": ""
+  },
+  {
+    "name": "Kenyan Competency Based Education",
+    "code": "KE-CBC-01",
+    "academicYear": "2026",
+    "description": "",
+    "framework": "Cambridge",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "semster one ",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-30",
+        "midTermBreakStartDate": "2026-02-01",
+        "midTermBreakEndDate": "2026-02-10"
+      }
+    ],
+    "id": "14a5a924-2a44-4981-9294-65990ea482cd",
+    "createdAt": "2026-06-19T10:24:19.831Z",
+    "updatedAt": "2026-06-19T12:16:43.030Z",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": ""
   }
 ]

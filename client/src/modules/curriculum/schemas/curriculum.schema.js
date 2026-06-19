@@ -1,15 +1,17 @@
 import { z } from "zod";
 
-export const FRAMEWORKS = ["CBC", "IGCSE", "IB", "National", "Cambridge", "Custom"];
+export const FRAMEWORKS = ["CBC", "8-4-4", "British", "IB", "American", "French", "German", "Custom"];
 export const CYCLE_MODELS = ["terms", "semesters", "custom"];
 
 export const FRAMEWORK_LABELS = {
-  CBC: "CBC – Competency Based Curriculum",
-  IGCSE: "IGCSE – International General Certificate",
-  IB: "IB – International Baccalaureate",
-  National: "National Curriculum",
-  Cambridge: "Cambridge Assessment",
-  Custom: "Custom Framework",
+  "CBC":      "Competency-Based Curriculum (CBC)",
+  "8-4-4":    "8-4-4 System",
+  "British":  "British Curriculum (Cambridge / Pearson Edexcel)",
+  "IB":       "International Baccalaureate (IB)",
+  "American": "American Curriculum",
+  "French":   "French Curriculum (AEFE)",
+  "German":   "German Curriculum (DIAP)",
+  "Custom":   "Custom Framework",
 };
 
 export const periodSchema = z
@@ -47,15 +49,19 @@ export const periodSchema = z
     }
   });
 
-export const createCurriculumSchema = z.object({
+// Used by Create / Edit curriculum pages (details only)
+export const curriculumDetailsSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
   code: z
     .string()
     .min(1, "Curriculum code is required")
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
-  academicYear: z.string().min(1, "Academic year is required"),
-  description: z.string(),
+  description: z.string().max(500, "Max 500 characters").default(""),
+});
+
+// Used by the Structure page settings panel
+export const curriculumSettingsSchema = z.object({
   framework: z
     .string()
     .min(1, "Please select or enter a curriculum framework")
@@ -65,3 +71,8 @@ export const createCurriculumSchema = z.object({
     .refine((val) => CYCLE_MODELS.includes(val), { message: "Please select an academic cycle model" }),
   periods: z.array(periodSchema).min(1, "At least one academic period is required"),
 });
+
+// Keep the combined schema for any code that still imports it
+export const createCurriculumSchema = curriculumDetailsSchema.merge(
+  curriculumSettingsSchema.partial()
+);

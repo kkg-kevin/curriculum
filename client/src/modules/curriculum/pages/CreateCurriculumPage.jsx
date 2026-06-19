@@ -2,22 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateCurriculum } from "../hooks/useCurriculum";
-import { createCurriculumSchema } from "../schemas/curriculum.schema";
+import { curriculumDetailsSchema } from "../schemas/curriculum.schema";
 import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
 
 const DEFAULT_VALUES = {
   name: "",
   code: "",
-  academicYear: "",
   description: "",
-  framework: "",
-  academicCycleModel: "terms",
-  periods: [
-    { name: "Term 1", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-    { name: "Term 2", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-    { name: "Term 3", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-  ],
 };
 
 export default function CreateCurriculumPage() {
@@ -25,7 +17,7 @@ export default function CreateCurriculumPage() {
   const { mutate: createCurriculum, isPending } = useCreateCurriculum();
 
   const methods = useForm({
-    resolver: zodResolver(createCurriculumSchema),
+    resolver: zodResolver(curriculumDetailsSchema),
     defaultValues: DEFAULT_VALUES,
     mode: "onTouched",
   });
@@ -90,7 +82,7 @@ export default function CreateCurriculumPage() {
             Create Curriculum
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Define the structure and academic calendar for a new curriculum
+            Enter the basic details — you'll configure settings and periods on the next page
           </p>
         </div>
 

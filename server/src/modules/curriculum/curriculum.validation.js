@@ -50,14 +50,14 @@ const createCurriculumSchema = z.object({
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
   academicYear: z.string().min(1, "Academic year is required"),
-  description: z.string().default(""),
-  framework: z.enum(FRAMEWORKS, {
-    errorMap: () => ({ message: "Please select a curriculum framework" }),
-  }),
-  academicCycleModel: z.enum(CYCLE_MODELS, {
-    errorMap: () => ({ message: "Please select an academic cycle model" }),
-  }),
-  periods: z.array(periodSchema).min(1, "At least one academic period is required"),
+  description: z.string().max(500).default(""),
+  status: z.enum(["draft", "active"]).default("draft"),
+  educationLevel: z.string().optional().default(""),
+  gradeFrom: z.string().optional().default(""),
+  gradeTo: z.string().optional().default(""),
+  framework: z.string().optional().default(""),
+  academicCycleModel: z.string().optional().default("terms"),
+  periods: z.array(periodSchema).optional().default([]),
 });
 
 const updateCurriculumSchema = createCurriculumSchema.partial();

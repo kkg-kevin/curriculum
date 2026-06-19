@@ -290,27 +290,15 @@ function ClassRow({ grade, isExpanded, onToggle, onAddCourse, onRemoveCourse }) 
 function TermAccordion({
   period, termIndex, termStruct, model,
   isOpen, onToggle,
-  expandedGrades, onToggleGrade, onExpandGrade,
+  expandedGrades, onToggleGrade,
   onUpdateTerm,
 }) {
-  const [addingGrade, setAddingGrade] = useState(false);
   const label = termLabel(period, termIndex, model);
   const grades = termStruct.grades || [];
   const totalCourses = grades.reduce((s, g) => s + (g.courses?.length || 0), 0);
   const startDate = formatDateShort(period.startDate);
   const endDate = formatDateShort(period.endDate);
   const isConfigured = grades.length > 0;
-
-  const handleAddGrade = (name) => {
-    const newGrade = { id: genId(), name, courses: [] };
-    onUpdateTerm(termIndex, { grades: [...grades, newGrade] });
-    onExpandGrade(newGrade.id);
-    setAddingGrade(false);
-  };
-
-  const handleRemoveGrade = (gradeId) => {
-    onUpdateTerm(termIndex, { grades: grades.filter((g) => g.id !== gradeId) });
-  };
 
   const handleAddCourse = (gradeId, course) => {
     onUpdateTerm(termIndex, {
@@ -429,63 +417,25 @@ function TermAccordion({
       {/* ── Term body ── */}
       {isOpen && (
         <div style={{ borderTop: "1px solid #E5E7EB" }}>
-          {/* Section heading row */}
+          {/* Section heading */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
               padding: "12px 18px 10px",
               backgroundColor: "#FAFBFF",
               borderBottom: grades.length > 0 ? "1px solid #F0F0F0" : "none",
             }}
           >
-            <div>
-              <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#374151" }}>
-                Courses by Class
-              </p>
-              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                Manage courses for each class in this term.
-              </p>
-            </div>
-            {!addingGrade && (
-              <button
-                type="button"
-                onClick={() => setAddingGrade(true)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "7px 13px",
-                  backgroundColor: "#0D47A1",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  fontFamily: "Inter, sans-serif",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              >
-                + Add Class
-              </button>
-            )}
+            <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#374151" }}>
+              Courses by Class
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+              Manage courses for each class in this term.
+            </p>
           </div>
 
           <div style={{ padding: "12px 18px 14px", backgroundColor: "#FAFBFF", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {/* Add class input */}
-            {addingGrade && (
-              <InlineInput
-                placeholder="Class / Grade name — e.g. Grade 7, Form 1, Year 1..."
-                onConfirm={handleAddGrade}
-                onCancel={() => setAddingGrade(false)}
-                confirmLabel="Add Class"
-              />
-            )}
-
             {/* Empty state */}
-            {grades.length === 0 && !addingGrade && (
+            {grades.length === 0 && (
               <div
                 style={{
                   display: "flex",
@@ -504,7 +454,7 @@ function TermAccordion({
                   No classes for {label} yet
                 </p>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  Click <strong>+ Add Class</strong> above to get started.
+                  Add classes in the Setup panel above — they will appear here automatically.
                 </p>
               </div>
             )}
@@ -554,10 +504,6 @@ export default function StructureContent({ curriculum, structure, onUpdateTerm }
     });
   };
 
-  const expandGrade = (id) => {
-    setExpandedGrades((prev) => new Set([...prev, id]));
-  };
-
   if (periods.length === 0) {
     return (
       <div
@@ -590,7 +536,6 @@ export default function StructureContent({ curriculum, structure, onUpdateTerm }
           onToggle={() => toggleTerm(i)}
           expandedGrades={expandedGrades}
           onToggleGrade={toggleGrade}
-          onExpandGrade={expandGrade}
           onUpdateTerm={onUpdateTerm}
         />
       ))}
