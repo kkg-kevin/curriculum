@@ -157,7 +157,7 @@ export default function CurriculumStructurePage() {
           <h1
             style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}
           >
-            Structure Builder
+            {curriculum.name}
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
             Expand each term to add classes and courses
