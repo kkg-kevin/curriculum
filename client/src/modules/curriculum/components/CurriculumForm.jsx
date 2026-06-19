@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import AcademicPeriodFields from "./AcademicPeriodFields";
 import { FRAMEWORKS, FRAMEWORK_LABELS } from "../schemas/curriculum.schema";
@@ -136,6 +137,8 @@ function CycleModelSelector({ value, onChange, error }) {
   );
 }
 
+const STANDARD_FRAMEWORKS = FRAMEWORKS.filter((f) => f !== "Custom");
+
 export default function CurriculumForm() {
   const {
     register,
@@ -144,7 +147,43 @@ export default function CurriculumForm() {
     formState: { errors },
   } = useFormContext();
 
-  const cycleModel = watch("academicCycleModel");
+  const cycleModel      = watch("academicCycleModel");
+  const frameworkValue  = watch("framework");
+
+  // Detect custom mode: either "Custom" is the stored value, or the stored value
+  // isn't in the standard list (i.e. loaded from a previously saved custom framework).
+  const isLoadedCustom =
+    frameworkValue && !STANDARD_FRAMEWORKS.includes(frameworkValue) && frameworkValue !== "";
+
+  const [isCustomMode, setIsCustomMode] = useState(!!isLoadedCustom);
+  const [customText,   setCustomText]   = useState(isLoadedCustom ? frameworkValue : "");
+
+  const selectDisplayValue = isCustomMode ? "Custom" : (frameworkValue || "");
+
+  const handleFrameworkSelect = (e) => {
+    const val = e.target.value;
+    if (val === "Custom") {
+      setIsCustomMode(true);
+      setCustomText("");
+      setValue("framework", "", { shouldValidate: false });
+    } else {
+      setIsCustomMode(false);
+      setCustomText("");
+      setValue("framework", val, { shouldValidate: true });
+    }
+  };
+
+  const handleCustomTextChange = (e) => {
+    const val = e.target.value;
+    setCustomText(val);
+    setValue("framework", val, { shouldValidate: true });
+  };
+
+  const exitCustomMode = () => {
+    setIsCustomMode(false);
+    setCustomText("");
+    setValue("framework", "", { shouldValidate: false });
+  };
 
   return (
     <div>
@@ -257,10 +296,13 @@ export default function CurriculumForm() {
           <label style={labelStyle}>
             Curriculum Framework <span style={{ color: "#EF4444" }}>*</span>
           </label>
+
+          {/* Dropdown — always visible */}
           <select
-            {...register("framework")}
+            value={selectDisplayValue}
+            onChange={handleFrameworkSelect}
             style={{
-              ...getInputStyle(!!errors.framework),
+              ...getInputStyle(!isCustomMode && !!errors.framework),
               appearance: "none",
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
               backgroundRepeat: "no-repeat",
@@ -276,6 +318,69 @@ export default function CurriculumForm() {
               </option>
             ))}
           </select>
+
+          {/* Custom name input — revealed when "Custom" is selected */}
+          {isCustomMode && (
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "14px 16px",
+                backgroundColor: "#F0F7FF",
+                border: "1.5px solid #BFDBFE",
+                borderRadius: "12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    color: "#0D47A1",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  ✏ Custom Framework Name
+                </span>
+                <button
+                  type="button"
+                  onClick={exitCustomMode}
+                  style={{
+                    marginLeft: "auto",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    color: "#6B7280",
+                    fontFamily: "Inter, sans-serif",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "3px",
+                  }}
+                >
+                  ← Use standard framework
+                </button>
+              </div>
+              <input
+                autoFocus
+                type="text"
+                value={customText}
+                onChange={handleCustomTextChange}
+                placeholder="e.g. Montessori, Waldorf, Reggio Emilia..."
+                style={{
+                  ...getInputStyle(!!errors.framework),
+                  backgroundColor: "#ffffff",
+                }}
+              />
+              {!errors.framework && (
+                <p style={hintStyle}>
+                  This name will appear as the framework label across the curriculum.
+                </p>
+              )}
+            </div>
+          )}
+
           <FieldError error={errors.framework} />
         </div>
 

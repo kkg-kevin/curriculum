@@ -253,5 +253,146 @@
         ]
       }
     ]
+  },
+  {
+    "name": "American Curriculum ",
+    "code": "AM-26",
+    "academicYear": "2026-2027",
+    "description": "The American curriculum refers to the K–12 education system used in the United States and in many international schools worldwide. It is broad, flexible, and credit-based, focusing on continuous assessment, electives, and holistic development rather than a single final exam system.",
+    "framework": "IGCSE",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Fall Semester ",
+        "startDate": "2026-08-01",
+        "endDate": "2026-12-11",
+        "midTermBreakStartDate": "2026-10-01",
+        "midTermBreakEndDate": "2026-10-10"
+      },
+      {
+        "name": "Spring Semester ",
+        "startDate": "2027-01-09",
+        "endDate": "2027-06-30",
+        "midTermBreakStartDate": "2027-02-21",
+        "midTermBreakEndDate": "2027-03-03"
+      }
+    ],
+    "id": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
+    "createdAt": "2026-06-19T06:48:35.377Z",
+    "updatedAt": "2026-06-19T07:12:34.025Z",
+    "structure": [
+      {
+        "grades": [
+          {
+            "id": "mqkkjxpt-nxdipw",
+            "name": "Grade 1",
+            "courses": [
+              {
+                "id": "mqkl840u-6v00w2",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqkl8cwu-gw2pwv",
+                "name": "Python"
+              },
+              {
+                "id": "mqkl8r2a-62487o",
+                "name": "Machine Learning"
+              }
+            ]
+          },
+          {
+            "id": "mqkkk377-0ii7v0",
+            "name": "Grade 2",
+            "courses": [
+              {
+                "id": "mqkl9adu-52unrn",
+                "name": "Story development"
+              },
+              {
+                "id": "mqkl9hlk-2ej8ib",
+                "name": "Game design"
+              },
+              {
+                "id": "mqklaoln-owli1x",
+                "name": "Robotics"
+              }
+            ]
+          },
+          {
+            "id": "mqkkk7jt-6k5hk2",
+            "name": "Grade 3",
+            "courses": [
+              {
+                "id": "mqklb5fu-qyb5gf",
+                "name": "Story development"
+              },
+              {
+                "id": "mqklbar3-7plj54",
+                "name": "Python"
+              },
+              {
+                "id": "mqklbg0d-3r69hj",
+                "name": "Robotics"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "grades": [
+          {
+            "id": "mqkkkj3a-po5q65",
+            "name": "Grade 1",
+            "courses": [
+              {
+                "id": "mqklboyy-5alpcw",
+                "name": "Python"
+              },
+              {
+                "id": "mqklbu3o-67w5wa",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqklc102-m063fz",
+                "name": "AI & machine learning"
+              }
+            ]
+          },
+          {
+            "id": "mqkkknc3-yzq3fx",
+            "name": "Grade 2",
+            "courses": [
+              {
+                "id": "mqklcbzy-i4yc11",
+                "name": "Python"
+              },
+              {
+                "id": "mqklcgvv-gp5klz",
+                "name": "Robotics"
+              }
+            ]
+          },
+          {
+            "id": "mqkkkr9b-o7gzxn",
+            "name": "Grade 3",
+            "courses": [
+              {
+                "id": "mqklcn20-unssx4",
+                "name": "Robotics"
+              },
+              {
+                "id": "mqklcskr-ogja5t",
+                "name": "Story development"
+              },
+              {
+                "id": "mqklcxrr-zep4dp",
+                "name": "Game design"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

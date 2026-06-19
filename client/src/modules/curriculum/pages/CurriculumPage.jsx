@@ -16,6 +16,12 @@ const FRAMEWORK_BADGE_COLORS = {
 
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
 
+const STATUS_COLORS = {
+  Complete:      { bg: "#EFF6FF", color: "#1D4ED8",  border: "#BFDBFE" },
+  "In Progress": { bg: "#E0F2FE", color: "#0369A1",  border: "#BAE6FD" },
+  Draft:         { bg: "#F9FAFB", color: "#6B7280",  border: "#E5E7EB" },
+};
+
 function FrameworkBadge({ framework }) {
   const colors = FRAMEWORK_BADGE_COLORS[framework] || FRAMEWORK_BADGE_COLORS.Custom;
   return (
@@ -35,9 +41,12 @@ function FrameworkBadge({ framework }) {
   );
 }
 
+/* ── Curriculum card ──────────────────────────────────────────────────── */
+
 function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -50,65 +59,66 @@ function CurriculumCard({ curriculum }) {
   }, [menuOpen]);
 
   const periodCount = curriculum.periods?.length || 0;
-  const classCount = (curriculum.structure || []).reduce(
-    (s, t) => s + (t.grades?.length || 0),
-    0
-  );
-  const courseCount = (curriculum.structure || []).reduce(
+  const structure   = curriculum.structure || [];
+
+  const classCount = structure.reduce((s, t) => s + (t.grades?.length || 0), 0);
+  const courseCount = structure.reduce(
     (s, t) => s + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
     0
   );
+  const configuredTerms = structure.filter((t) => (t.grades?.length || 0) > 0).length;
+  const completionPct   = periodCount > 0 ? Math.round((configuredTerms / periodCount) * 100) : 0;
+  const status = completionPct === 100 ? "Complete" : configuredTerms > 0 ? "In Progress" : "Draft";
+  const sc = STATUS_COLORS[status];
   const hasStructure = classCount > 0;
 
   return (
     <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         backgroundColor: "#ffffff",
-        borderRadius: "14px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
+        borderRadius: "16px",
+        boxShadow: hovered
+          ? "0 8px 24px rgba(13,71,161,0.12), 0 2px 6px rgba(0,0,0,0.05)"
+          : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        transition: "box-shadow 0.15s",
+        transition: "box-shadow 0.2s, transform 0.2s",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
       }}
     >
-      {/* Blue top accent */}
+      {/* Gradient top accent — thicker on hover */}
       <div
         style={{
-          height: "3px",
-          background: "linear-gradient(90deg, #0D47A1, #42A5F5)",
+          height: hovered ? "4px" : "3px",
+          background: "linear-gradient(90deg, #0D47A1, #1976D2, #42A5F5)",
+          transition: "height 0.2s",
         }}
       />
 
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
-        {/* Top row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "12px",
-          }}
-        >
+        {/* Top row: name + kebab */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3
-              onClick={() => navigate(`/curriculum/${curriculum.id}/edit`)}
+              onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
               style={{
                 margin: "0 0 4px 0",
                 fontSize: "15px",
                 fontWeight: "700",
-                color: "#111827",
+                color: hovered ? "#0D47A1" : "#111827",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 cursor: "pointer",
+                transition: "color 0.15s",
               }}
             >
               {curriculum.name}
             </h3>
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
               <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
                 {curriculum.code}
               </span>
@@ -118,9 +128,10 @@ function CurriculumCard({ curriculum }) {
               </span>
             </div>
           </div>
+
+          {/* Framework badge + kebab */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
             <FrameworkBadge framework={curriculum.framework} />
-            {/* Kebab menu */}
             <div ref={menuRef} style={{ position: "relative" }}>
               <button
                 type="button"
@@ -160,9 +171,9 @@ function CurriculumCard({ curriculum }) {
                   }}
                 >
                   {[
-                    { label: "✏ Edit", path: `/curriculum/${curriculum.id}/edit` },
-                    { label: "🏗 Structure", path: `/curriculum/${curriculum.id}/structure` },
-                    { label: "👁 View", path: `/curriculum/${curriculum.id}/view` },
+                    { label: "✏ Edit",       path: `/curriculum/${curriculum.id}/edit` },
+                    { label: "🏗 Structure",  path: `/curriculum/${curriculum.id}/structure` },
+                    { label: "👁 View",       path: `/curriculum/${curriculum.id}/view` },
                   ].map(({ label, path }, idx, arr) => (
                     <button
                       key={path}
@@ -213,129 +224,122 @@ function CurriculumCard({ curriculum }) {
         )}
 
         {/* Stats row */}
-        <div
-          style={{
-            display: "flex",
-            gap: "16px",
-            paddingTop: "10px",
-            borderTop: "1px solid #F3F4F6",
-          }}
-        >
+        <div style={{ display: "flex", gap: "16px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
           <div>
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "#9CA3AF",
-                textTransform: "uppercase",
-              }}
-            >
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
               Cycle
             </span>
-            <p
-              style={{
-                margin: "2px 0 0 0",
-                fontSize: "13px",
-                fontWeight: "500",
-                color: "#374151",
-              }}
-            >
+            <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
               {CYCLE_LABELS[curriculum.academicCycleModel] || curriculum.academicCycleModel}
             </p>
           </div>
           <div>
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "#9CA3AF",
-                textTransform: "uppercase",
-              }}
-            >
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
               Periods
             </span>
-            <p
-              style={{
-                margin: "2px 0 0 0",
-                fontSize: "13px",
-                fontWeight: "500",
-                color: "#374151",
-              }}
-            >
+            <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
               {periodCount}
             </p>
           </div>
           {hasStructure && (
             <>
               <div>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#9CA3AF",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
                   Classes
                 </span>
-                <p
-                  style={{
-                    margin: "2px 0 0 0",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    color: "#374151",
-                  }}
-                >
+                <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
                   {classCount}
                 </p>
               </div>
               <div>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#9CA3AF",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
                   Courses
                 </span>
-                <p
-                  style={{
-                    margin: "2px 0 0 0",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    color: "#374151",
-                  }}
-                >
+                <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
                   {courseCount}
                 </p>
               </div>
             </>
           )}
         </div>
-      </div>
 
+        {/* ── Progress bar ── */}
+        <div style={{ paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
+            <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
+              {periodCount > 0
+                ? `${configuredTerms} of ${periodCount} ${periodCount === 1 ? "period" : "periods"} configured`
+                : "No periods set up"}
+            </span>
+            <span
+              style={{
+                padding: "2px 8px",
+                backgroundColor: sc.bg,
+                color: sc.color,
+                border: `1px solid ${sc.border}`,
+                borderRadius: "20px",
+                fontSize: "10px",
+                fontWeight: "700",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {status}
+            </span>
+          </div>
+          <div style={{ height: "5px", backgroundColor: "#F0F4F8", borderRadius: "10px", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${completionPct}%`,
+                background: completionPct === 100
+                  ? "linear-gradient(90deg, #0D47A1, #42A5F5)"
+                  : "linear-gradient(90deg, #1565C0, #64B5F6)",
+                borderRadius: "10px",
+                transition: "width 0.5s ease",
+                minWidth: completionPct > 0 ? "8px" : "0",
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
+/* ── Empty state ──────────────────────────────────────────────────────── */
 
 function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
   return (
     <div
       style={{
         textAlign: "center",
-        padding: "60px 24px",
+        padding: "64px 24px",
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
       }}
     >
-      <div style={{ fontSize: "48px", marginBottom: "16px" }}>📚</div>
+      <div
+        style={{
+          width: "72px",
+          height: "72px",
+          borderRadius: "18px",
+          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+          border: "2px solid #BFDBFE",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "32px",
+          margin: "0 auto 20px",
+        }}
+      >
+        📚
+      </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
         {hasFilters ? "No results found" : "No curricula yet"}
       </h3>
-      <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280" }}>
+      <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6" }}>
         {hasFilters
           ? "Try adjusting your filters to see more results."
           : "Create your first curriculum to get started."}
@@ -372,6 +376,7 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
             fontWeight: "600",
             fontFamily: "Inter, sans-serif",
             cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(13,71,161,0.25)",
           }}
         >
           + Create Curriculum
@@ -381,68 +386,169 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
   );
 }
 
+/* ── Main page ────────────────────────────────────────────────────────── */
+
 export default function CurriculumPage() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const filters = useSelector((state) => state.curriculum.filters);
+  const navigate  = useNavigate();
+  const dispatch  = useDispatch();
+  const filters   = useSelector((state) => state.curriculum.filters);
   const { data, isLoading, isError, error } = useCurriculaQuery();
 
-  const curricula = data?.data || [];
+  const curricula  = data?.data || [];
   const hasFilters = !!filters.framework || !!filters.academicYear;
+
+  /* Aggregate stats */
+  const totalClasses = curricula.reduce(
+    (s, c) => s + (c.structure || []).reduce((ts, t) => ts + (t.grades?.length || 0), 0),
+    0
+  );
+  const totalCourses = curricula.reduce(
+    (s, c) =>
+      s +
+      (c.structure || []).reduce(
+        (ts, t) => ts + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
+        0
+      ),
+    0
+  );
+  const frameworksUsed = new Set(curricula.map((c) => c.framework).filter(Boolean)).size;
+  const completeCount  = curricula.filter((c) => {
+    const periods = c.periods?.length || 0;
+    if (periods === 0) return false;
+    const configured = (c.structure || []).filter((t) => (t.grades?.length || 0) > 0).length;
+    return configured === periods;
+  }).length;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* Page header */}
+
+      {/* ── Hero strip ──────────────────────────────────────────────── */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "24px",
+          background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)",
+          borderRadius: "20px",
+          padding: "28px 32px",
+          marginBottom: "16px",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div>
-          <h1 style={{ margin: "0 0 2px 0", fontSize: "22px", fontWeight: "700", color: "#111827" }}>
-            Curriculum
-          </h1>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
-            {isLoading ? "Loading..." : `${curricula.length} curriculum${curricula.length !== 1 ? "s" : ""}`}
-          </p>
-        </div>
+        {/* Decorative circles */}
+        <div style={{ position: "absolute", top: "-40px", right: "-40px",  width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-20px", right: "120px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: "16px", right: "240px",   width: "50px",  height: "50px",  borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
 
-        <button
-          type="button"
-          onClick={() => navigate("/curriculum/create")}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#0D47A1",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "14px",
-            fontWeight: "600",
-            fontFamily: "Inter, sans-serif",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
-          <span style={{ fontSize: "16px" }}>+</span>
-          Create Curriculum
-        </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
+          <div>
+            <h1
+              style={{
+                margin: "0 0 6px 0",
+                fontSize: "24px",
+                fontWeight: "900",
+                color: "#ffffff",
+                letterSpacing: "-0.4px",
+                lineHeight: 1.2,
+              }}
+            >
+              Curriculum
+            </h1>
+            <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "480px" }}>
+              Manage your school's academic frameworks, terms, classes, and course assignments all in one place.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/curriculum/create")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              padding: "11px 22px",
+              backgroundColor: "#ffffff",
+              color: "#0D47A1",
+              border: "none",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: "700",
+              fontFamily: "Inter, sans-serif",
+              cursor: "pointer",
+              flexShrink: 0,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+            Create Curriculum
+          </button>
+        </div>
       </div>
 
-      {/* Filter bar */}
+      {/* ── Stats bar ───────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "12px",
+          marginBottom: "16px",
+        }}
+      >
+        {[
+          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length,   icon: "📋", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+          { label: "Total Classes",    value: isLoading ? "—" : totalClasses,        icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
+          { label: "Total Courses",    value: isLoading ? "—" : totalCourses,        icon: "📚", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
+          { label: "Frameworks in Use",value: isLoading ? "—" : frameworksUsed,      icon: "🏫", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "14px",
+              border: `1.5px solid ${stat.border}`,
+              padding: "16px 18px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "11px",
+                backgroundColor: stat.bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+                flexShrink: 0,
+              }}
+            >
+              {stat.icon}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: "24px", fontWeight: "800", color: stat.color, lineHeight: 1 }}>
+                {stat.value}
+              </p>
+              <p style={{ margin: "3px 0 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {stat.label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter bar ──────────────────────────────────────────────── */}
       <div
         style={{
           backgroundColor: "#ffffff",
           borderRadius: "12px",
-          padding: "14px 18px",
+          padding: "12px 16px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
           display: "flex",
           alignItems: "center",
-          gap: "12px",
+          gap: "10px",
           marginBottom: "20px",
           flexWrap: "wrap",
         }}
@@ -510,14 +616,47 @@ export default function CurriculumPage() {
         )}
 
         <span style={{ marginLeft: "auto", fontSize: "13px", color: "#9CA3AF" }}>
-          {curricula.length} result{curricula.length !== 1 ? "s" : ""}
+          {isLoading ? "Loading..." : `${curricula.length} result${curricula.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
-      {/* Content */}
+      {/* ── Content ─────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "60px", color: "#9CA3AF", fontSize: "14px" }}>
-          Loading curricula...
+        /* Loading skeleton */
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div style={{ height: "3px", background: "linear-gradient(90deg, #E8EFF8, #EEF4FC)" }} />
+              <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: "16px", width: "60%", backgroundColor: "#EEF2F7", borderRadius: "6px", marginBottom: "8px" }} />
+                    <div style={{ height: "12px", width: "40%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />
+                  </div>
+                  <div style={{ height: "22px", width: "56px", backgroundColor: "#EEF2F7", borderRadius: "20px" }} />
+                </div>
+                <div style={{ height: "12px", width: "80%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />
+                <div style={{ height: "12px", width: "65%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />
+                <div style={{ paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
+                  <div style={{ height: "5px", backgroundColor: "#EEF2F7", borderRadius: "10px" }} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : isError ? (
         <div
@@ -547,10 +686,7 @@ export default function CurriculumPage() {
           }}
         >
           {curricula.map((curriculum) => (
-            <CurriculumCard
-              key={curriculum.id}
-              curriculum={curriculum}
-            />
+            <CurriculumCard key={curriculum.id} curriculum={curriculum} />
           ))}
         </div>
       )}
