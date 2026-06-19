@@ -52,3 +52,33 @@ export function useDeleteCurriculum() {
     },
   });
 }
+
+export function useUpdateCurriculum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => curriculumApi.update(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
+      if (data?.id) queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(data.id) });
+      toast.success("Curriculum updated successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update curriculum");
+    },
+  });
+}
+
+export function useUpdateStructure() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, structure }) => curriculumApi.updateStructure(id, structure),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
+      if (data?.id) queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(data.id) });
+      toast.success("Structure saved!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to save structure");
+    },
+  });
+}

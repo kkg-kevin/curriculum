@@ -66,8 +66,8 @@ function getPeriodStatus(period) {
 
 function StatusDot({ status, isActive, onClick }) {
   const colors = {
-    complete: { bg: "#22C55E", border: "#16A34A" },
-    partial:  { bg: "#F59E0B", border: "#D97706" },
+    complete: { bg: "#1D4ED8", border: "#1E40AF" },
+    partial:  { bg: "#93C5FD", border: "#BFDBFE" },
     empty:    { bg: "#E5E7EB", border: "#D1D5DB" },
   };
   const c = colors[status] || colors.empty;
@@ -441,7 +441,7 @@ export default function AcademicPeriodFields() {
               style={{
                 height: "100%",
                 borderRadius: "10px",
-                backgroundColor: "#22C55E",
+                backgroundColor: "#0D47A1",
                 width: `${(fields.filter((_, i) => getPeriodStatus(periods[i]) === "complete").length / fields.length) * 100}%`,
                 transition: "width 0.3s ease",
               }}
@@ -450,8 +450,8 @@ export default function AcademicPeriodFields() {
           {/* Legend */}
           <div style={{ display: "flex", gap: "14px", marginTop: "6px" }}>
             {[
-              { color: "#22C55E", label: "Complete" },
-              { color: "#F59E0B", label: "Partial" },
+              { color: "#1D4ED8", label: "Complete" },
+              { color: "#93C5FD", label: "Partial" },
               { color: "#E5E7EB", label: "Empty" },
             ].map(({ color, label }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>

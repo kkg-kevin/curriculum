@@ -2,6 +2,9 @@ import { Routes, Route } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
 import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPage";
+import CurriculumStructurePage from "../modules/curriculum/pages/CurriculumStructurePage";
+import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
+import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 
 function Dashboard() {
   return <h2>Dashboard Page</h2>;
@@ -37,6 +40,9 @@ export default function AppRoutes() {
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />
           <Route path="create" element={<CreateCurriculumPage />} />
+          <Route path=":id/edit" element={<EditCurriculumPage />} />
+          <Route path=":id/structure" element={<CurriculumStructurePage />} />
+          <Route path=":id/view" element={<CurriculumViewPage />} />
         </Route>
         <Route path="learners" element={<Learners />} />
         <Route path="teachers" element={<Teachers />} />

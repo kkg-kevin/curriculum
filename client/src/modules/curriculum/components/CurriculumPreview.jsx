@@ -39,9 +39,9 @@ function CalendarIcon() {
 function BreakIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M4 2h8v8a4 4 0 01-8 0V2z" stroke="#FCD34D" strokeWidth="1.5" fill="none" />
-      <path d="M12 5h2a2 2 0 010 4h-2" stroke="#FCD34D" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M6 14h4" stroke="#FCD34D" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M4 2h8v8a4 4 0 01-8 0V2z" stroke="#93C5FD" strokeWidth="1.5" fill="none" />
+      <path d="M12 5h2a2 2 0 010 4h-2" stroke="#93C5FD" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M6 14h4" stroke="#93C5FD" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -165,8 +165,8 @@ function PeriodCard({ period, index, cycleModel }) {
               display: "flex",
               alignItems: "flex-start",
               gap: "5px",
-              backgroundColor: "#FFFBEB",
-              border: "1px solid #FDE68A",
+              backgroundColor: "#F0F6FF",
+              border: "1px solid #BFDBFE",
               borderRadius: "6px",
               padding: "4px 6px",
               marginTop: "2px",
@@ -175,7 +175,7 @@ function PeriodCard({ period, index, cycleModel }) {
             <div style={{ marginTop: "1px", flexShrink: 0 }}>
               <BreakIcon />
             </div>
-            <span style={{ fontSize: "10px", color: "#92400E", fontWeight: "500", lineHeight: "1.4" }}>
+            <span style={{ fontSize: "10px", color: "#1E40AF", fontWeight: "500", lineHeight: "1.4" }}>
               Break<br />{breakStart} – {breakEnd}
             </span>
           </div>
@@ -201,8 +201,8 @@ export default function CurriculumPreview() {
             width: "7px",
             height: "7px",
             borderRadius: "50%",
-            backgroundColor: "#22C55E",
-            boxShadow: "0 0 0 3px rgba(34,197,94,0.18)",
+            backgroundColor: "#0D47A1",
+            boxShadow: "0 0 0 3px rgba(13,71,161,0.15)",
           }}
         />
         <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em" }}>
@@ -282,19 +282,19 @@ export default function CurriculumPreview() {
               label="Academic Year"
               value={academicYear || null}
               placeholder="—"
-              accent="#F0FDF4"
+              accent="#E0F2FE"
             />
             <MetaBox
               label="Cycle"
               value={academicCycleModel ? cycleModelLabel(academicCycleModel) : null}
               placeholder="—"
-              accent="#FFF7ED"
+              accent="#DBEAFE"
             />
             <MetaBox
               label={academicCycleModel === "semesters" ? "Semesters" : academicCycleModel === "terms" ? "Terms" : "Periods"}
               value={filledPeriods.length > 0 ? String(filledPeriods.length) : null}
               placeholder="0"
-              accent="#F5F3FF"
+              accent="#EFF6FF"
             />
           </div>
 

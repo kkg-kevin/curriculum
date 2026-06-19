@@ -1,44 +1,41 @@
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateCurriculum } from "../hooks/useCurriculum";
+import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
 import { createCurriculumSchema } from "../schemas/curriculum.schema";
 import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
 
-const DEFAULT_VALUES = {
-  name: "",
-  code: "",
-  academicYear: "",
-  description: "",
-  framework: "",
-  academicCycleModel: "terms",
-  periods: [
-    { name: "Term 1", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-    { name: "Term 2", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-    { name: "Term 3", startDate: "", endDate: "", midTermBreakStartDate: "", midTermBreakEndDate: "" },
-  ],
-};
+/* ── Inner form (only renders once curriculum is loaded) ─────────────── */
 
-export default function CreateCurriculumPage() {
+function EditCurriculumForm({ curriculum }) {
   const navigate = useNavigate();
-  const { mutate: createCurriculum, isPending } = useCreateCurriculum();
+  const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
 
   const methods = useForm({
     resolver: zodResolver(createCurriculumSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: {
+      name: curriculum.name || "",
+      code: curriculum.code || "",
+      academicYear: curriculum.academicYear || "",
+      description: curriculum.description || "",
+      framework: curriculum.framework || "",
+      academicCycleModel: curriculum.academicCycleModel || "terms",
+      periods: curriculum.periods || [],
+    },
     mode: "onTouched",
   });
 
   const {
     handleSubmit,
-    formState: { isDirty, isValid, errors },
+    formState: { isDirty },
   } = methods;
 
   const onSubmit = (data) => {
-    createCurriculum(data, {
-      onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/structure`),
-    });
+    updateCurriculum(
+      { id: curriculum.id, data },
+      { onSuccess: () => navigate("/curriculum") }
+    );
   };
 
   const handleCancel = () => {
@@ -63,7 +60,14 @@ export default function CreateCurriculumPage() {
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "2px",
+            }}
+          >
             <button
               type="button"
               onClick={handleCancel}
@@ -78,19 +82,35 @@ export default function CreateCurriculumPage() {
                 fontSize: "13px",
                 fontFamily: "Inter, sans-serif",
                 cursor: "pointer",
-                textDecoration: "none",
               }}
             >
               ← Curriculum
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
+            <span
+              style={{
+                fontSize: "13px",
+                color: "#6B7280",
+                maxWidth: "200px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {curriculum.name}
+            </span>
+            <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
+            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>
+              Edit
+            </span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>
-            Create Curriculum
+          <h1
+            style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}
+          >
+            Edit Curriculum
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Define the structure and academic calendar for a new curriculum
+            Update the structure and academic calendar
           </p>
         </div>
 
@@ -116,7 +136,7 @@ export default function CreateCurriculumPage() {
 
           <button
             type="submit"
-            form="create-curriculum-form"
+            form="edit-curriculum-form"
             disabled={isPending}
             style={{
               padding: "10px 24px",
@@ -147,38 +167,27 @@ export default function CreateCurriculumPage() {
                     animation: "spin 0.7s linear infinite",
                   }}
                 />
-                Creating...
+                Saving...
               </>
             ) : (
-              "Next: Structure →"
+              "Save Changes"
             )}
           </button>
         </div>
       </div>
 
-      {/* Spinner keyframes injected once */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* 2-column layout */}
       <FormProvider {...methods}>
-        <form
-          id="create-curriculum-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          <div
-            style={{
-              display: "flex",
-              gap: "24px",
-              alignItems: "flex-start",
-            }}
-          >
-            {/* Left column — Form */}
+        <form id="edit-curriculum-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
+            {/* Left — Form */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <CurriculumForm />
             </div>
 
-            {/* Right column — Live Preview */}
+            {/* Right — Live Preview */}
             <div
               style={{
                 flex: 1,
@@ -198,4 +207,77 @@ export default function CreateCurriculumPage() {
       </FormProvider>
     </div>
   );
+}
+
+/* ── Page shell (handles loading / error) ────────────────────────────── */
+
+export default function EditCurriculumPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "400px",
+          fontFamily: "Inter, sans-serif",
+          gap: "14px",
+          color: "#6B7280",
+          fontSize: "14px",
+        }}
+      >
+        <span
+          style={{
+            width: "28px",
+            height: "28px",
+            border: "3px solid #E5E7EB",
+            borderTopColor: "#0D47A1",
+            borderRadius: "50%",
+            display: "inline-block",
+            animation: "spin 0.7s linear infinite",
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        Loading curriculum...
+      </div>
+    );
+  }
+
+  if (isError || !curriculum) {
+    return (
+      <div
+        style={{
+          fontFamily: "Inter, sans-serif",
+          textAlign: "center",
+          padding: "60px 20px",
+        }}
+      >
+        <p style={{ fontSize: "16px", color: "#EF4444", marginBottom: "16px" }}>
+          Could not load curriculum.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate("/curriculum")}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: "#0D47A1",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            fontSize: "14px",
+            fontFamily: "Inter, sans-serif",
+            cursor: "pointer",
+          }}
+        >
+          ← Back to Curriculum
+        </button>
+      </div>
+    );
+  }
+
+  return <EditCurriculumForm curriculum={curriculum} />;
 }

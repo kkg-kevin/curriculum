@@ -17,7 +17,18 @@ function Header() {
     "/settings": "Settings",
   };
 
-  const pageTitle = pageTitles[location.pathname] || "Dashboard";
+  const getPageTitle = (pathname) => {
+    if (pageTitles[pathname]) return pageTitles[pathname];
+    if (pathname.startsWith("/curriculum/") && pathname.endsWith("/structure"))
+      return "Structure Builder";
+    if (pathname.startsWith("/curriculum/") && pathname.endsWith("/edit"))
+      return "Edit Curriculum";
+    if (pathname.startsWith("/curriculum/") && pathname.endsWith("/view"))
+      return "Curriculum View";
+    return "Dashboard";
+  };
+
+  const pageTitle = getPageTitle(location.pathname);
 
   return (
     <header

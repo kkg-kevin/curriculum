@@ -1,16 +1,17 @@
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCurriculaQuery, useDeleteCurriculum } from "../hooks/useCurriculum";
+import { useCurriculaQuery } from "../hooks/useCurriculum";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilter, clearFilters } from "../../../store/curriculumSlice";
 import { FRAMEWORKS } from "../schemas/curriculum.schema";
 
 const FRAMEWORK_BADGE_COLORS = {
   CBC:       { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  IGCSE:     { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
-  IB:        { bg: "#FDF4FF", color: "#7E22CE", border: "#E9D5FF" },
-  National:  { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
-  Cambridge: { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
-  Custom:    { bg: "#F9FAFB", color: "#374151", border: "#E5E7EB" },
+  IGCSE:     { bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
+  IB:        { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
+  National:  { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
+  Cambridge: { bg: "#DBEAFE", color: "#1E3A8A", border: "#93C5FD" },
+  Custom:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
@@ -34,107 +35,287 @@ function FrameworkBadge({ framework }) {
   );
 }
 
-function CurriculumCard({ curriculum, onDelete }) {
+function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [menuOpen]);
+
   const periodCount = curriculum.periods?.length || 0;
+  const classCount = (curriculum.structure || []).reduce(
+    (s, t) => s + (t.grades?.length || 0),
+    0
+  );
+  const courseCount = (curriculum.structure || []).reduce(
+    (s, t) => s + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
+    0
+  );
+  const hasStructure = classCount > 0;
 
   return (
     <div
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "14px",
-        padding: "20px 22px",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        overflow: "hidden",
         transition: "box-shadow 0.15s",
       }}
     >
-      {/* Top row */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3
-            style={{
-              margin: "0 0 4px 0",
-              fontSize: "15px",
-              fontWeight: "700",
-              color: "#111827",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {curriculum.name}
-          </h3>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>{curriculum.code}</span>
-            <span style={{ color: "#D1D5DB" }}>·</span>
-            <span style={{ fontSize: "12px", color: "#6B7280" }}>{curriculum.academicYear}</span>
-          </div>
-        </div>
-        <FrameworkBadge framework={curriculum.framework} />
-      </div>
-
-      {/* Description */}
-      {curriculum.description && (
-        <p
-          style={{
-            margin: 0,
-            fontSize: "13px",
-            color: "#6B7280",
-            lineHeight: "1.5",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {curriculum.description}
-        </p>
-      )}
-
-      {/* Stats row */}
+      {/* Blue top accent */}
       <div
         style={{
-          display: "flex",
-          gap: "16px",
-          paddingTop: "10px",
-          borderTop: "1px solid #F3F4F6",
+          height: "3px",
+          background: "linear-gradient(90deg, #0D47A1, #42A5F5)",
         }}
-      >
-        <div>
-          <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>Cycle</span>
-          <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
-            {CYCLE_LABELS[curriculum.academicCycleModel] || curriculum.academicCycleModel}
-          </p>
+      />
+
+      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
+        {/* Top row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "12px",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3
+              onClick={() => navigate(`/curriculum/${curriculum.id}/edit`)}
+              style={{
+                margin: "0 0 4px 0",
+                fontSize: "15px",
+                fontWeight: "700",
+                color: "#111827",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                cursor: "pointer",
+              }}
+            >
+              {curriculum.name}
+            </h3>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}
+            >
+              <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
+                {curriculum.code}
+              </span>
+              <span style={{ color: "#D1D5DB" }}>·</span>
+              <span style={{ fontSize: "12px", color: "#6B7280" }}>
+                {curriculum.academicYear}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <FrameworkBadge framework={curriculum.framework} />
+            {/* Kebab menu */}
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: menuOpen ? "#EFF6FF" : "transparent",
+                  border: `1px solid ${menuOpen ? "#BFDBFE" : "transparent"}`,
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  color: "#6B7280",
+                  lineHeight: 1,
+                  fontFamily: "Inter, sans-serif",
+                  transition: "all 0.15s",
+                }}
+              >
+                ⋮
+              </button>
+              {menuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    right: 0,
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "10px",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+                    zIndex: 100,
+                    minWidth: "140px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {[
+                    { label: "✏ Edit", path: `/curriculum/${curriculum.id}/edit` },
+                    { label: "🏗 Structure", path: `/curriculum/${curriculum.id}/structure` },
+                    { label: "👁 View", path: `/curriculum/${curriculum.id}/view` },
+                  ].map(({ label, path }, idx, arr) => (
+                    <button
+                      key={path}
+                      type="button"
+                      onClick={() => { setMenuOpen(false); navigate(path); }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "10px 14px",
+                        textAlign: "left",
+                        backgroundColor: "transparent",
+                        border: "none",
+                        fontSize: "13px",
+                        fontWeight: "500",
+                        fontFamily: "Inter, sans-serif",
+                        color: "#374151",
+                        cursor: "pointer",
+                        borderBottom: idx < arr.length - 1 ? "1px solid #F3F4F6" : "none",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#EFF6FF"; e.currentTarget.style.color = "#0D47A1"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#374151"; }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div>
-          <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>Periods</span>
-          <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
-            {periodCount} {periodCount === 1 ? "period" : "periods"}
-          </p>
-        </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "flex-end" }}>
-          <button
-            type="button"
-            onClick={() => onDelete(curriculum.id)}
+
+        {/* Description */}
+        {curriculum.description && (
+          <p
             style={{
-              padding: "5px 12px",
-              backgroundColor: "transparent",
-              color: "#EF4444",
-              border: "1px solid #FCA5A5",
-              borderRadius: "7px",
-              fontSize: "12px",
-              fontWeight: "500",
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
+              margin: 0,
+              fontSize: "13px",
+              color: "#6B7280",
+              lineHeight: "1.5",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
-            Delete
-          </button>
+            {curriculum.description}
+          </p>
+        )}
+
+        {/* Stats row */}
+        <div
+          style={{
+            display: "flex",
+            gap: "16px",
+            paddingTop: "10px",
+            borderTop: "1px solid #F3F4F6",
+          }}
+        >
+          <div>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#9CA3AF",
+                textTransform: "uppercase",
+              }}
+            >
+              Cycle
+            </span>
+            <p
+              style={{
+                margin: "2px 0 0 0",
+                fontSize: "13px",
+                fontWeight: "500",
+                color: "#374151",
+              }}
+            >
+              {CYCLE_LABELS[curriculum.academicCycleModel] || curriculum.academicCycleModel}
+            </p>
+          </div>
+          <div>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#9CA3AF",
+                textTransform: "uppercase",
+              }}
+            >
+              Periods
+            </span>
+            <p
+              style={{
+                margin: "2px 0 0 0",
+                fontSize: "13px",
+                fontWeight: "500",
+                color: "#374151",
+              }}
+            >
+              {periodCount}
+            </p>
+          </div>
+          {hasStructure && (
+            <>
+              <div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: "#9CA3AF",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Classes
+                </span>
+                <p
+                  style={{
+                    margin: "2px 0 0 0",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  {classCount}
+                </p>
+              </div>
+              <div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: "#9CA3AF",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Courses
+                </span>
+                <p
+                  style={{
+                    margin: "2px 0 0 0",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  {courseCount}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
     </div>
   );
 }
@@ -205,16 +386,9 @@ export default function CurriculumPage() {
   const dispatch = useDispatch();
   const filters = useSelector((state) => state.curriculum.filters);
   const { data, isLoading, isError, error } = useCurriculaQuery();
-  const { mutate: deleteCurriculum } = useDeleteCurriculum();
 
   const curricula = data?.data || [];
   const hasFilters = !!filters.framework || !!filters.academicYear;
-
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this curriculum? This action cannot be undone.")) {
-      deleteCurriculum(id);
-    }
-  };
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -376,7 +550,6 @@ export default function CurriculumPage() {
             <CurriculumCard
               key={curriculum.id}
               curriculum={curriculum}
-              onDelete={handleDelete}
             />
           ))}
         </div>
