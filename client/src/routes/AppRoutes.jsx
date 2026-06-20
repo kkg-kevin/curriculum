@@ -6,6 +6,14 @@ import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPa
 import CurriculumStructurePage from "../modules/curriculum/pages/CurriculumStructurePage";
 import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
 import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
+import SchoolsPage from "../modules/schools/pages/SchoolsPage";
+import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
+import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
+import SchoolViewPage from "../modules/schools/pages/SchoolViewPage";
+import TeachersPage from "../modules/teachers/pages/TeachersPage";
+import CreateTeacherPage from "../modules/teachers/pages/CreateTeacherPage";
+import EditTeacherPage from "../modules/teachers/pages/EditTeacherPage";
+import TeacherViewPage from "../modules/teachers/pages/TeacherViewPage";
 
 function ComingSoon({ name }) {
   return (
@@ -22,7 +30,12 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="schools" element={<ComingSoon name="Schools" />} />
+        <Route path="schools">
+          <Route index element={<SchoolsPage />} />
+          <Route path="create" element={<CreateSchoolPage />} />
+          <Route path=":id/edit" element={<EditSchoolPage />} />
+          <Route path=":id/view" element={<SchoolViewPage />} />
+        </Route>
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />
           <Route path="create" element={<CreateCurriculumPage />} />
@@ -31,7 +44,12 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<CurriculumViewPage />} />
         </Route>
         <Route path="learners" element={<ComingSoon name="Learners" />} />
-        <Route path="teachers" element={<ComingSoon name="Teachers" />} />
+        <Route path="teachers">
+          <Route index element={<TeachersPage />} />
+          <Route path="create" element={<CreateTeacherPage />} />
+          <Route path=":id/edit" element={<EditTeacherPage />} />
+          <Route path=":id/view" element={<TeacherViewPage />} />
+        </Route>
         <Route path="classes" element={<ComingSoon name="Classes" />} />
         <Route path="assessments" element={<ComingSoon name="Assessments" />} />
         <Route path="reports" element={<ComingSoon name="Reports" />} />
