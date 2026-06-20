@@ -483,7 +483,7 @@ export default function StructureContent({ curriculum, structure, onUpdateTerm }
   const periods = curriculum?.periods || [];
   const model = curriculum?.academicCycleModel || "terms";
 
-  const [expandedTerms, setExpandedTerms] = useState(() => new Set([0]));
+  const [expandedTerms, setExpandedTerms] = useState(() => new Set());
   const [expandedGrades, setExpandedGrades] = useState(() => new Set());
 
   const toggleTerm = (i) => {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,6 +6,7 @@ import { useCreateCurriculum } from "../hooks/useCurriculum";
 import { curriculumDetailsSchema } from "../schemas/curriculum.schema";
 import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const DEFAULT_VALUES = {
   name: "",
@@ -15,6 +17,7 @@ const DEFAULT_VALUES = {
 export default function CreateCurriculumPage() {
   const navigate = useNavigate();
   const { mutate: createCurriculum, isPending } = useCreateCurriculum();
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const methods = useForm({
     resolver: zodResolver(curriculumDetailsSchema),
@@ -35,9 +38,7 @@ export default function CreateCurriculumPage() {
 
   const handleCancel = () => {
     if (isDirty) {
-      if (window.confirm("You have unsaved changes. Leave anyway?")) {
-        navigate("/curriculum");
-      }
+      setConfirmLeave(true);
     } else {
       navigate("/curriculum");
     }
@@ -188,6 +189,16 @@ export default function CreateCurriculumPage() {
           </div>
         </form>
       </FormProvider>
+
+      <ConfirmDialog
+        isOpen={confirmLeave}
+        title="Discard changes?"
+        message="You have unsaved changes that will be lost if you leave this page."
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        onConfirm={() => navigate("/curriculum")}
+        onCancel={() => setConfirmLeave(false)}
+      />
     </div>
   );
 }

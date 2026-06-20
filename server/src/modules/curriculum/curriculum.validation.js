@@ -49,7 +49,7 @@ const createCurriculumSchema = z.object({
     .min(1, "Curriculum code is required")
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
-  academicYear: z.string().min(1, "Academic year is required"),
+  academicYear: z.string().optional().default(""),
   description: z.string().max(500).default(""),
   status: z.enum(["draft", "active"]).default("draft"),
   educationLevel: z.string().optional().default(""),
@@ -60,6 +60,23 @@ const createCurriculumSchema = z.object({
   periods: z.array(periodSchema).optional().default([]),
 });
 
-const updateCurriculumSchema = createCurriculumSchema.partial();
+const updateCurriculumSchema = z.object({
+  name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters").optional(),
+  code: z
+    .string()
+    .min(1, "Curriculum code is required")
+    .max(20, "Max 20 characters")
+    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens")
+    .optional(),
+  academicYear: z.string().optional(),
+  description: z.string().max(500).optional(),
+  status: z.enum(["draft", "active"]).optional(),
+  educationLevel: z.string().optional(),
+  gradeFrom: z.string().optional(),
+  gradeTo: z.string().optional(),
+  framework: z.string().optional(),
+  academicCycleModel: z.string().optional(),
+  periods: z.array(periodSchema).optional(),
+});
 
 module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema };
