@@ -24,15 +24,13 @@ export default function EditTeacherPage() {
   useEffect(() => {
     if (teacher) {
       reset({
-        firstName:     teacher.firstName     || "",
-        lastName:      teacher.lastName      || "",
-        employeeId:    teacher.employeeId    || "",
-        email:         teacher.email         || "",
-        phone:         teacher.phone         || "",
-        schoolId:      teacher.schoolId      || "",
-        subjects:      teacher.subjects      || [],
-        qualification: teacher.qualification || "",
-        status:        teacher.status        || "active",
+        firstName:  teacher.firstName  || "",
+        lastName:   teacher.lastName   || "",
+        employeeId: teacher.employeeId || "",
+        email:      teacher.email      || "",
+        phone:      teacher.phone      || "",
+        schoolId:   teacher.schoolId   || "",
+        status:     teacher.status     || "active",
       });
     }
   }, [teacher, reset]);
@@ -77,7 +75,7 @@ export default function EditTeacherPage() {
           </div>
           <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Edit Teacher</h1>
           <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Update teacher details, school assignment, or subject list.
+            Update teacher details or school assignment.
           </p>
         </div>
 

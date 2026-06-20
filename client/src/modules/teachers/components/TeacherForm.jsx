@@ -1,5 +1,5 @@
-import { useFormContext, Controller } from "react-hook-form";
-import { QUALIFICATIONS, TEACHER_STATUSES, SUBJECTS } from "../schemas/teacher.schema";
+import { useFormContext } from "react-hook-form";
+import { TEACHER_STATUSES } from "../schemas/teacher.schema";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 
 const inputStyle = (hasError) => ({
@@ -57,81 +57,6 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
   );
 }
 
-/* ── Subjects checkbox grid ───────────────────────────────────────────── */
-
-function SubjectsField() {
-  const { control, formState: { errors } } = useFormContext();
-  return (
-    <Field label="Subjects Taught" error={errors?.subjects?.message}
-      hint="Select all subjects this teacher is qualified to teach.">
-      <Controller
-        name="subjects"
-        control={control}
-        render={({ field }) => {
-          const toggle = (subject) => {
-            const current = field.value || [];
-            field.onChange(
-              current.includes(subject)
-                ? current.filter((s) => s !== subject)
-                : [...current, subject]
-            );
-          };
-          return (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px", marginTop: "2px" }}>
-              {SUBJECTS.map((subject) => {
-                const checked = (field.value || []).includes(subject);
-                return (
-                  <label
-                    key={subject}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "7px 10px",
-                      borderRadius: "8px",
-                      border: `1.5px solid ${checked ? "#C4B5FD" : "#E5E7EB"}`,
-                      backgroundColor: checked ? "#F5F3FF" : "#F9FAFB",
-                      cursor: "pointer",
-                      transition: "all 0.12s",
-                      fontSize: "13px",
-                      color: checked ? "#5B21B6" : "#374151",
-                      fontWeight: checked ? "600" : "400",
-                      userSelect: "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        borderRadius: "4px",
-                        border: `2px solid ${checked ? "#7C3AED" : "#D1D5DB"}`,
-                        backgroundColor: checked ? "#7C3AED" : "transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        transition: "all 0.12s",
-                      }}
-                    >
-                      {checked && (
-                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-                          <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                    <input type="checkbox" checked={checked} onChange={() => toggle(subject)} style={{ display: "none" }} />
-                    {subject}
-                  </label>
-                );
-              })}
-            </div>
-          );
-        }}
-      />
-    </Field>
-  );
-}
-
 /* ── Main form ────────────────────────────────────────────────────────── */
 
 export default function TeacherForm() {
@@ -169,9 +94,9 @@ export default function TeacherForm() {
         </div>
       </div>
 
-      {/* School & professional */}
-      <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>School & Qualifications</h3>
+      {/* School & status */}
+      <div style={{ padding: "20px 24px" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>School</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <Field label="School" required error={errors?.schoolId?.message}>
             <select {...register("schoolId")} style={selectStyle(!!errors?.schoolId)}>
@@ -187,14 +112,7 @@ export default function TeacherForm() {
             )}
           </Field>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <Field label="Highest Qualification" error={errors?.qualification?.message}>
-              <select {...register("qualification")} style={selectStyle(!!errors?.qualification)}>
-                <option value="">Select qualification…</option>
-                {QUALIFICATIONS.map((q) => <option key={q} value={q}>{q}</option>)}
-              </select>
-            </Field>
-
+          <div style={{ maxWidth: "220px" }}>
             <Field label="Status" required error={errors?.status?.message}>
               <select {...register("status")} style={selectStyle(!!errors?.status)}>
                 {TEACHER_STATUSES.map((s) => (
@@ -204,12 +122,6 @@ export default function TeacherForm() {
             </Field>
           </div>
         </div>
-      </div>
-
-      {/* Subjects */}
-      <div style={{ padding: "20px 24px" }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Subjects</h3>
-        <SubjectsField />
       </div>
     </div>
   );

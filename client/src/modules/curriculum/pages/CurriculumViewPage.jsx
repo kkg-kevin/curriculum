@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
+import { schoolApi } from "../../schools/services/schoolApi";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -415,6 +417,13 @@ export default function CurriculumViewPage() {
     );
   }
 
+  const { data: schoolsData } = useQuery({
+    queryKey: ["schools", "byCurriculum", id],
+    queryFn:  () => schoolApi.getAll({ curriculumId: id }),
+    enabled:  !!id,
+  });
+  const assignedSchools = schoolsData?.data || [];
+
   const structure = curriculum.structure || [];
   const periods = curriculum.periods || [];
   const model = curriculum.academicCycleModel || "terms";
@@ -687,6 +696,43 @@ export default function CurriculumViewPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── Schools using this curriculum ────────────────────────────── */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "24px" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Schools Using This Curriculum</h2>
+          <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{assignedSchools.length}</span>
+        </div>
+        <div style={{ padding: "16px 20px" }}>
+          {assignedSchools.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF" }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🏫</div>
+              <p style={{ margin: 0, fontSize: "13px" }}>No schools have been assigned this curriculum yet.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {assignedSchools.map((s) => (
+                <div key={s.id} onClick={() => navigate(`/schools/${s.id}/view`)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>🏫</span>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{s.name}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>{s.code}{s.address?.county ? ` · ${s.address.county}` : ""}</p>
+                    </div>
+                  </div>
+                  <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.status === "active" ? "#ECFDF5" : "#F9FAFB", color: s.status === "active" ? "#065F46" : "#6B7280", border: `1px solid ${s.status === "active" ? "#A7F3D0" : "#E5E7EB"}` }}>
+                    {s.status === "active" ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Academic structure section ────────────────────────────────── */}

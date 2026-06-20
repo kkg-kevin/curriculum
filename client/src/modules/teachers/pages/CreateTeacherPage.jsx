@@ -10,7 +10,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 const DEFAULT_VALUES = {
   firstName: "", lastName: "", employeeId: "",
   email: "", phone: "",
-  schoolId: "", subjects: [], qualification: "", status: "active",
+  schoolId: "", status: "active",
 };
 
 export default function CreateTeacherPage() {

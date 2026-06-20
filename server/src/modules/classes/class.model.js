@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const FILE = path.join(__dirname, "../../../data/schools.json");
+const FILE = path.join(__dirname, "../../../data/classes.json");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -15,54 +15,52 @@ const readAll = () => {
   return raw ? JSON.parse(raw) : [];
 };
 
-const writeAll = (data) => {
+const writeAll = (data) =>
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
 
-const SchoolModel = {
+const ClassModel = {
   create(data) {
     const all = readAll();
-    const school = {
+    const record = {
       ...data,
       id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    all.push(school);
+    all.push(record);
     writeAll(all);
-    return school;
+    return record;
   },
 
-  findAll({ status, county, curriculumId } = {}) {
+  findAll({ schoolId, status } = {}) {
     let all = readAll();
-    if (status)       all = all.filter((s) => s.status === status);
-    if (county)       all = all.filter((s) => s.address?.county === county);
-    if (curriculumId) all = all.filter((s) => s.curriculumId === curriculumId);
+    if (schoolId) all = all.filter((c) => c.schoolId === schoolId);
+    if (status)   all = all.filter((c) => c.status === status);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   findById(id) {
-    return readAll().find((s) => s.id === id) || null;
+    return readAll().find((c) => c.id === id) || null;
   },
 
   update(id, data) {
     const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return null;
+    const idx = all.findIndex((c) => c.id === id);
+    if (idx === -1) return null;
     const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
+    all[idx] = { ...all[idx], ...patch, id, updatedAt: new Date().toISOString() };
     writeAll(all);
-    return all[index];
+    return all[idx];
   },
 
   delete(id) {
     const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return false;
-    all.splice(index, 1);
+    const idx = all.findIndex((c) => c.id === id);
+    if (idx === -1) return false;
+    all.splice(idx, 1);
     writeAll(all);
     return true;
   },
 };
 
-module.exports = SchoolModel;
+module.exports = ClassModel;

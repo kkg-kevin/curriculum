@@ -14,6 +14,14 @@ import TeachersPage from "../modules/teachers/pages/TeachersPage";
 import CreateTeacherPage from "../modules/teachers/pages/CreateTeacherPage";
 import EditTeacherPage from "../modules/teachers/pages/EditTeacherPage";
 import TeacherViewPage from "../modules/teachers/pages/TeacherViewPage";
+import ClassesPage from "../modules/classes/pages/ClassesPage";
+import CreateClassPage from "../modules/classes/pages/CreateClassPage";
+import EditClassPage from "../modules/classes/pages/EditClassPage";
+import ClassViewPage from "../modules/classes/pages/ClassViewPage";
+import LearnersPage from "../modules/learners/pages/LearnersPage";
+import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
+import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
+import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
 
 function ComingSoon({ name }) {
   return (
@@ -43,14 +51,24 @@ export default function AppRoutes() {
           <Route path=":id/structure" element={<CurriculumStructurePage />} />
           <Route path=":id/view" element={<CurriculumViewPage />} />
         </Route>
-        <Route path="learners" element={<ComingSoon name="Learners" />} />
+        <Route path="learners">
+          <Route index element={<LearnersPage />} />
+          <Route path="create" element={<CreateLearnerPage />} />
+          <Route path=":id/edit" element={<EditLearnerPage />} />
+          <Route path=":id/view" element={<LearnerViewPage />} />
+        </Route>
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
           <Route path=":id/edit" element={<EditTeacherPage />} />
           <Route path=":id/view" element={<TeacherViewPage />} />
         </Route>
-        <Route path="classes" element={<ComingSoon name="Classes" />} />
+        <Route path="classes">
+          <Route index element={<ClassesPage />} />
+          <Route path="create" element={<CreateClassPage />} />
+          <Route path=":id/edit" element={<EditClassPage />} />
+          <Route path=":id/view" element={<ClassViewPage />} />
+        </Route>
         <Route path="assessments" element={<ComingSoon name="Assessments" />} />
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<ComingSoon name="Settings" />} />

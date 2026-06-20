@@ -89,9 +89,7 @@ function TeacherCard({ teacher, schoolsMap }) {
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
 
-  const school   = teacher.schoolId ? schoolsMap[teacher.schoolId] : null;
-  const subjects = teacher.subjects || [];
-  const VISIBLE  = 3;
+  const school = teacher.schoolId ? schoolsMap[teacher.schoolId] : null;
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -179,33 +177,6 @@ function TeacherCard({ teacher, schoolsMap }) {
           </span>
         </div>
 
-        {/* Qualification */}
-        {teacher.qualification && (
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "16px" }}>🎓</span>
-            <span style={{ fontSize: "13px", color: "#6B7280" }}>{teacher.qualification}</span>
-          </div>
-        )}
-
-        {/* Subjects */}
-        {subjects.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", paddingTop: "6px", borderTop: "1px solid #F3F4F6" }}>
-            {subjects.slice(0, VISIBLE).map((s) => (
-              <span key={s} style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "600", backgroundColor: "#F5F3FF", color: "#5B21B6", border: "1px solid #DDD6FE" }}>
-                {s}
-              </span>
-            ))}
-            {subjects.length > VISIBLE && (
-              <span style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "600", backgroundColor: "#F3F4F6", color: "#6B7280", border: "1px solid #E5E7EB" }}>
-                +{subjects.length - VISIBLE} more
-              </span>
-            )}
-          </div>
-        ) : (
-          <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", paddingTop: "6px", borderTop: "1px solid #F3F4F6", fontStyle: "italic" }}>
-            No subjects assigned
-          </p>
-        )}
       </div>
 
       {/* Dropdown portal */}
