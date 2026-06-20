@@ -48,7 +48,8 @@ const CurriculumModel = {
     const all = readAll();
     const index = all.findIndex((c) => c.id === id);
     if (index === -1) return null;
-    all[index] = { ...all[index], ...data, id, updatedAt: new Date().toISOString() };
+    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
     writeAll(all);
     return all[index];
   },

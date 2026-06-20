@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCurriculaQuery } from "../hooks/useCurriculum";
+import { useCurriculaQuery, useDeleteCurriculum } from "../hooks/useCurriculum";
 import { useDispatch, useSelector } from "react-redux";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { setFilter, clearFilters } from "../../../store/curriculumSlice";
 import { FRAMEWORKS } from "../schemas/curriculum.schema";
 
@@ -45,9 +46,16 @@ function FrameworkBadge({ framework }) {
 
 function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
+  const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
   const [menuOpen, setMenuOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const handleDelete = () => {
+    setMenuOpen(false);
+    setConfirmOpen(true);
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -85,8 +93,10 @@ function CurriculumCard({ curriculum }) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        transition: "box-shadow 0.2s, transform 0.2s",
+        transition: "box-shadow 0.2s, transform 0.2s, opacity 0.2s",
         transform: hovered ? "translateY(-2px)" : "translateY(0)",
+        opacity: isDeleting ? 0.5 : 1,
+        pointerEvents: isDeleting ? "none" : "auto",
       }}
     >
       {/* Gradient top accent — thicker on hover */}
@@ -174,7 +184,7 @@ function CurriculumCard({ curriculum }) {
                     { label: "✏ Edit",       path: `/curriculum/${curriculum.id}/edit` },
                     { label: "🏗 Structure",  path: `/curriculum/${curriculum.id}/structure` },
                     { label: "👁 View",       path: `/curriculum/${curriculum.id}/view` },
-                  ].map(({ label, path }, idx, arr) => (
+                  ].map(({ label, path }) => (
                     <button
                       key={path}
                       type="button"
@@ -186,12 +196,12 @@ function CurriculumCard({ curriculum }) {
                         textAlign: "left",
                         backgroundColor: "transparent",
                         border: "none",
+                        borderBottom: "1px solid #F3F4F6",
                         fontSize: "13px",
                         fontWeight: "500",
                         fontFamily: "Inter, sans-serif",
                         color: "#374151",
                         cursor: "pointer",
-                        borderBottom: idx < arr.length - 1 ? "1px solid #F3F4F6" : "none",
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#EFF6FF"; e.currentTarget.style.color = "#0D47A1"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#374151"; }}
@@ -199,6 +209,27 @@ function CurriculumCard({ curriculum }) {
                       {label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "10px 14px",
+                      textAlign: "left",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      fontSize: "13px",
+                      fontWeight: "500",
+                      fontFamily: "Inter, sans-serif",
+                      color: "#EF4444",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FFF5F5"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                  >
+                    🗑 Delete
+                  </button>
                 </div>
               )}
             </div>
@@ -303,6 +334,17 @@ function CurriculumCard({ curriculum }) {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Delete Curriculum"
+        message={`"${curriculum.name}" will be permanently deleted. This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => { setConfirmOpen(false); deleteCurriculum(curriculum.id); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
