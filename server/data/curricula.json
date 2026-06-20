@@ -31,7 +31,7 @@
     ],
     "id": "8fd2fd41-f606-4953-bb61-9d25733aa315",
     "createdAt": "2026-06-19T05:23:13.618Z",
-    "updatedAt": "2026-06-19T13:03:30.904Z",
+    "updatedAt": "2026-06-20T10:43:48.774Z",
     "structure": [
       {
         "grades": [
@@ -125,6 +125,11 @@
             "id": "mqkx8wqv-a30xet",
             "name": "Grade 12",
             "courses": []
+          },
+          {
+            "id": "mqm8ay1i-bl8gan",
+            "name": "Version 1",
+            "courses": []
           }
         ]
       },
@@ -197,6 +202,11 @@
           {
             "id": "mqkx8wqv-rol6qa",
             "name": "Grade 12",
+            "courses": []
+          },
+          {
+            "id": "mqm8ay1i-zogy8o",
+            "name": "Version 1",
             "courses": []
           }
         ]
@@ -301,6 +311,11 @@
             "id": "mqkx8wqv-pyml6k",
             "name": "Grade 12",
             "courses": []
+          },
+          {
+            "id": "mqm8ay1i-tclwub",
+            "name": "Version 1",
+            "courses": []
           }
         ]
       }
@@ -342,7 +357,7 @@
     ],
     "id": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
     "createdAt": "2026-06-19T06:21:57.025Z",
-    "updatedAt": "2026-06-19T13:55:42.814Z",
+    "updatedAt": "2026-06-20T08:36:07.131Z",
     "structure": [
       {
         "grades": [
@@ -369,6 +384,46 @@
           {
             "id": "mqkjlq15-u91pgc",
             "name": "Year 5",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-k8b7rb",
+            "name": "Year 6",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-75wrzd",
+            "name": "Year 7",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-e8wrom",
+            "name": "Year 8",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-cz3ncx",
+            "name": "Year 9",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-jt3oos",
+            "name": "Year 10",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-275l4f",
+            "name": "Year 11",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-rkt7yi",
+            "name": "Year 12",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-azt0j0",
+            "name": "Year 13",
             "courses": []
           }
         ]
@@ -399,6 +454,46 @@
             "id": "mqkjmm5z-g1pe5f",
             "name": "Year 5",
             "courses": []
+          },
+          {
+            "id": "mqm3sbpg-aevl0o",
+            "name": "Year 6",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-xvtiu6",
+            "name": "Year 7",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-rq7xp8",
+            "name": "Year 8",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-jadvjl",
+            "name": "Year 9",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-nila43",
+            "name": "Year 10",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-reg4jt",
+            "name": "Year 11",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-eyp7o4",
+            "name": "Year 12",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-04z18i",
+            "name": "Year 13",
+            "courses": []
           }
         ]
       },
@@ -428,6 +523,46 @@
             "id": "mqkjnjq5-6nhvmz",
             "name": "Year 5",
             "courses": []
+          },
+          {
+            "id": "mqm3sbpg-gik6ws",
+            "name": "Year 6",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-pwg5jf",
+            "name": "Year 7",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-29onqo",
+            "name": "Year 8",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-kzgo8f",
+            "name": "Year 9",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-dzo1hy",
+            "name": "Year 10",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-2xr17e",
+            "name": "Year 11",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-phncwe",
+            "name": "Year 12",
+            "courses": []
+          },
+          {
+            "id": "mqm3sbpg-1nzu6j",
+            "name": "Year 13",
+            "courses": []
           }
         ]
       }
@@ -442,162 +577,273 @@
     "code": "AM-26",
     "academicYear": "",
     "description": "",
-    "framework": "",
-    "academicCycleModel": "terms",
-    "periods": [],
+    "framework": "American",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Fall Semester ",
+        "startDate": "2026-08-01",
+        "endDate": "2026-12-31",
+        "midTermBreakStartDate": "2026-11-01",
+        "midTermBreakEndDate": "2026-11-07"
+      },
+      {
+        "name": "Spring Semester ",
+        "startDate": "2027-01-01",
+        "endDate": "2027-03-31",
+        "midTermBreakStartDate": "2027-02-01",
+        "midTermBreakEndDate": "2027-02-10"
+      }
+    ],
     "id": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
     "createdAt": "2026-06-19T06:48:35.377Z",
-    "updatedAt": "2026-06-20T08:20:29.253Z",
+    "updatedAt": "2026-06-20T10:40:34.043Z",
     "structure": [
       {
         "grades": [
           {
-            "id": "mqkkjxpt-nxdipw",
+            "id": "mqm3oj2x-aicu2x",
             "name": "Grade 1",
             "courses": [
               {
-                "id": "mqkl840u-6v00w2",
-                "name": "Robotics"
-              },
-              {
-                "id": "mqkl8cwu-gw2pwv",
+                "id": "mqm6h18v-12suzm",
                 "name": "Python"
-              },
-              {
-                "id": "mqkl8r2a-62487o",
-                "name": "Machine Learning"
               }
             ]
           },
           {
-            "id": "mqkkk377-0ii7v0",
+            "id": "mqm3oj2x-urrpc8",
             "name": "Grade 2",
             "courses": [
               {
-                "id": "mqkl9adu-52unrn",
-                "name": "Story development"
-              },
-              {
-                "id": "mqkl9hlk-2ej8ib",
-                "name": "Game design"
-              },
-              {
-                "id": "mqklaoln-owli1x",
-                "name": "Robotics"
+                "id": "mqm6h4v9-rlo0vp",
+                "name": "html"
               }
             ]
           },
           {
-            "id": "mqkkk7jt-6k5hk2",
+            "id": "mqm3oj2x-t9ujla",
             "name": "Grade 3",
             "courses": [
               {
-                "id": "mqklb5fu-qyb5gf",
-                "name": "Story development"
-              },
-              {
-                "id": "mqklbar3-7plj54",
-                "name": "Python"
-              },
-              {
-                "id": "mqklbg0d-3r69hj",
-                "name": "Robotics"
+                "id": "mqm6h8gk-pmz5k4",
+                "name": "css"
               }
             ]
           },
           {
-            "id": "mqkwwzu3-luvhc0",
+            "id": "mqm3oj2x-xca8hu",
             "name": "Grade 4",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6hl31-ci348i",
+                "name": "machine learning"
+              }
+            ]
           },
           {
-            "id": "mqkwwzu3-7vblmk",
+            "id": "mqm3oj2x-wgfvww",
             "name": "Grade 5",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6ht49-exs6ck",
+                "name": "Game development"
+              }
+            ]
           },
           {
-            "id": "mqkwy17q-mkihk4",
+            "id": "mqm3oj2x-b5uvvl",
             "name": "Grade 6",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6i19z-xsqeph",
+                "name": "story development"
+              }
+            ]
           },
           {
-            "id": "mqkwy17q-mkihk4",
-            "name": "Grade 6",
-            "courses": []
+            "id": "mqm3oj2x-aryh8e",
+            "name": "Grade 7",
+            "courses": [
+              {
+                "id": "mqm6i588-dh4jvp",
+                "name": "game design"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-n9zm07",
+            "name": "Grade 8",
+            "courses": [
+              {
+                "id": "mqm6i93n-kxur91",
+                "name": "AI"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-r54vl5",
+            "name": "Grade 9",
+            "courses": [
+              {
+                "id": "mqm6iigp-xssys9",
+                "name": "coding"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-t4tjy7",
+            "name": "Grade 10",
+            "courses": [
+              {
+                "id": "mqm6im8c-y0mrxs",
+                "name": "web dev"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-zgarww",
+            "name": "Grade 11",
+            "courses": [
+              {
+                "id": "mqm6iqt4-4bbasx",
+                "name": "robotics"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-nmlt1n",
+            "name": "Grade 12",
+            "courses": [
+              {
+                "id": "mqm6j5w3-d23zfp",
+                "name": "models"
+              }
+            ]
           }
         ]
       },
       {
         "grades": [
           {
-            "id": "mqkkkj3a-po5q65",
+            "id": "mqm3oj2x-s1amb0",
             "name": "Grade 1",
             "courses": [
               {
-                "id": "mqklboyy-5alpcw",
-                "name": "Python"
-              },
-              {
-                "id": "mqklbu3o-67w5wa",
-                "name": "Robotics"
-              },
-              {
-                "id": "mqklc102-m063fz",
-                "name": "AI & machine learning"
+                "id": "mqm6jjas-mzztxq",
+                "name": "python"
               }
             ]
           },
           {
-            "id": "mqkkknc3-yzq3fx",
+            "id": "mqm3oj2x-7dfbkk",
             "name": "Grade 2",
             "courses": [
               {
-                "id": "mqklcbzy-i4yc11",
-                "name": "Python"
-              },
-              {
-                "id": "mqklcgvv-gp5klz",
-                "name": "Robotics"
+                "id": "mqm6jozm-99avz0",
+                "name": "web dev"
               }
             ]
           },
           {
-            "id": "mqkkkr9b-o7gzxn",
+            "id": "mqm3oj2x-36sjbq",
             "name": "Grade 3",
             "courses": [
               {
-                "id": "mqklcn20-unssx4",
-                "name": "Robotics"
-              },
-              {
-                "id": "mqklcskr-ogja5t",
-                "name": "Story development"
-              },
-              {
-                "id": "mqklcxrr-zep4dp",
-                "name": "Game design"
+                "id": "mqm6jslj-kkt4gy",
+                "name": "game dev"
               }
             ]
           },
           {
-            "id": "mqkwwzu3-omn8t3",
+            "id": "mqm3oj2x-3clf2o",
             "name": "Grade 4",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6k2hc-1gytnn",
+                "name": "robotics"
+              }
+            ]
           },
           {
-            "id": "mqkwwzu3-c4ed82",
+            "id": "mqm3oj2x-ekh6kq",
             "name": "Grade 5",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6k5ni-2tr5eg",
+                "name": "AI"
+              }
+            ]
           },
           {
-            "id": "mqkwy17q-tn7s11",
+            "id": "mqm3oj2x-mx4x24",
             "name": "Grade 6",
-            "courses": []
+            "courses": [
+              {
+                "id": "mqm6kbwx-p6xj5k",
+                "name": "MACHINE learning"
+              }
+            ]
           },
           {
-            "id": "mqkwy17q-tn7s11",
-            "name": "Grade 6",
-            "courses": []
+            "id": "mqm3oj2x-wvufkj",
+            "name": "Grade 7",
+            "courses": [
+              {
+                "id": "mqm6kkfb-m5wn3s",
+                "name": "html"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-72o21c",
+            "name": "Grade 8",
+            "courses": [
+              {
+                "id": "mqm6kpam-pa3i66",
+                "name": "css"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-pmpamj",
+            "name": "Grade 9",
+            "courses": [
+              {
+                "id": "mqm6kuwd-zdgktu",
+                "name": "javacsript"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-nzch0a",
+            "name": "Grade 10",
+            "courses": [
+              {
+                "id": "mqm6l0yo-yzvmuz",
+                "name": "Pyhton 2"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-djib2r",
+            "name": "Grade 11",
+            "courses": [
+              {
+                "id": "mqm6l9s5-2ab1w6",
+                "name": "robotics 2"
+              }
+            ]
+          },
+          {
+            "id": "mqm3oj2x-7601fg",
+            "name": "Grade 12",
+            "courses": [
+              {
+                "id": "mqm6maoi-2ultzi",
+                "name": "js & css"
+              }
+            ]
           }
         ]
       }
@@ -606,5 +852,22 @@
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": ""
+  },
+  {
+    "name": "Digifunzi curriculum plus",
+    "code": "DCP",
+    "academicYear": "",
+    "description": "This a digifunzi centered currculum tailored to self paced learning",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "academicCycleModel": "terms",
+    "periods": [],
+    "id": "f522185b-627e-4eef-89c4-549b4e0af9ad",
+    "createdAt": "2026-06-20T11:12:06.323Z",
+    "updatedAt": "2026-06-20T11:12:16.512Z",
+    "structure": []
   }
 ]

@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
+const schoolRoutes = require("./modules/schools/school.routes");
+const teacherRoutes = require("./modules/teachers/teacher.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 
 const app = express();
@@ -15,6 +17,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/curricula", curriculumRoutes);
+app.use("/api/schools", schoolRoutes);
+app.use("/api/teachers", teacherRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

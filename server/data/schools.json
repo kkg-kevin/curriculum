@@ -1,0 +1,18 @@
+[
+  {
+    "name": "USIU-Africa",
+    "code": "usiu-a",
+    "email": "usiu@usiu.ac.ke",
+    "phone": "+254727496461",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
+    "status": "active",
+    "id": "93dcef9a-d765-4093-8400-78df6e45bfe4",
+    "createdAt": "2026-06-20T11:32:52.279Z",
+    "updatedAt": "2026-06-20T11:32:52.279Z"
+  }
+]
