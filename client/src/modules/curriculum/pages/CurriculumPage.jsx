@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery, useDeleteCurriculum } from "../hooks/useCurriculum";
 import { useDispatch, useSelector } from "react-redux";
@@ -42,28 +43,91 @@ function FrameworkBadge({ framework }) {
   );
 }
 
+/* ── MenuButton ───────────────────────────────────────────────────────── */
+
+function MenuButton({ icon, label, onClick, danger = false }) {
+  const [hovered, setHovered] = useState(false);
+  const base = danger ? "#EF4444" : "#374151";
+  const hoverBg = danger ? "#FFF5F5" : "#F3F4F6";
+  const hoverColor = danger ? "#EF4444" : "#0D47A1";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "9px",
+        width: "100%",
+        padding: "8px 10px",
+        backgroundColor: hovered ? hoverBg : "transparent",
+        border: "none",
+        borderRadius: "8px",
+        fontSize: "13px",
+        fontWeight: "500",
+        fontFamily: "Inter, sans-serif",
+        color: hovered ? hoverColor : base,
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "background-color 0.12s, color 0.12s",
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: 0.8 }}>
+        {icon}
+      </span>
+      {label}
+    </button>
+  );
+}
+
 /* ── Curriculum card ──────────────────────────────────────────────────── */
 
 function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
   const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [hovered, setHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const handleDelete = () => {
     setMenuOpen(false);
     setConfirmOpen(true);
   };
 
+  const openMenu = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    setMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    setMenuOpen(true);
+  };
+
+  // Close on outside click — must check both trigger and portal dropdown
   useEffect(() => {
     if (!menuOpen) return;
-    function handleOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+    const onMouseDown = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !dropdownRef.current?.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [menuOpen]);
+
+  // Close on scroll or resize so the position never drifts
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, [menuOpen]);
 
   const periodCount = curriculum.periods?.length || 0;
@@ -142,96 +206,167 @@ function CurriculumCard({ curriculum }) {
           {/* Framework badge + kebab */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
             <FrameworkBadge framework={curriculum.framework} />
-            <div ref={menuRef} style={{ position: "relative" }}>
+            <div style={{ position: "relative" }}>
+              {/* Trigger */}
               <button
+                ref={triggerRef}
                 type="button"
-                onClick={() => setMenuOpen((o) => !o)}
+                onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
+                title="More options"
                 style={{
-                  width: "30px",
-                  height: "30px",
+                  width: "32px",
+                  height: "32px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: menuOpen ? "#EFF6FF" : "transparent",
-                  border: `1px solid ${menuOpen ? "#BFDBFE" : "transparent"}`,
-                  borderRadius: "8px",
+                  border: `1.5px solid ${menuOpen ? "#BFDBFE" : "transparent"}`,
+                  borderRadius: "9px",
                   cursor: "pointer",
-                  fontSize: "18px",
-                  color: "#6B7280",
-                  lineHeight: 1,
-                  fontFamily: "Inter, sans-serif",
+                  color: menuOpen ? "#0D47A1" : "#9CA3AF",
                   transition: "all 0.15s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  if (!menuOpen) {
+                    e.currentTarget.style.backgroundColor = "#F3F4F6";
+                    e.currentTarget.style.color = "#374151";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!menuOpen) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = "#9CA3AF";
+                  }
                 }}
               >
-                ⋮
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
               </button>
-              {menuOpen && (
+
+              {/* Dropdown — portaled to body so card overflow/transform can't clip it */}
+              {menuOpen && createPortal(
                 <div
+                  ref={dropdownRef}
                   style={{
-                    position: "absolute",
-                    top: "calc(100% + 4px)",
-                    right: 0,
+                    position: "fixed",
+                    top: menuPos.top,
+                    right: menuPos.right,
                     backgroundColor: "#ffffff",
                     border: "1px solid #E5E7EB",
-                    borderRadius: "10px",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-                    zIndex: 100,
-                    minWidth: "140px",
+                    borderRadius: "14px",
+                    boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                    zIndex: 9999,
+                    minWidth: "196px",
                     overflow: "hidden",
+                    padding: "6px",
                   }}
                 >
-                  {[
-                    { label: "✏ Edit",       path: `/curriculum/${curriculum.id}/edit` },
-                    { label: "🏗 Structure",  path: `/curriculum/${curriculum.id}/structure` },
-                    { label: "👁 View",       path: `/curriculum/${curriculum.id}/view` },
-                  ].map(({ label, path }) => (
-                    <button
-                      key={path}
-                      type="button"
-                      onClick={() => { setMenuOpen(false); navigate(path); }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        padding: "10px 14px",
-                        textAlign: "left",
-                        backgroundColor: "transparent",
-                        border: "none",
-                        borderBottom: "1px solid #F3F4F6",
-                        fontSize: "13px",
-                        fontWeight: "500",
-                        fontFamily: "Inter, sans-serif",
-                        color: "#374151",
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#EFF6FF"; e.currentTarget.style.color = "#0D47A1"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#374151"; }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleDelete}
+                  {/* Context header */}
+                  <div
                     style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      backgroundColor: "transparent",
-                      border: "none",
-                      fontSize: "13px",
-                      fontWeight: "500",
-                      fontFamily: "Inter, sans-serif",
-                      color: "#EF4444",
-                      cursor: "pointer",
+                      padding: "8px 10px 10px",
+                      borderBottom: "1px solid #F3F4F6",
+                      marginBottom: "4px",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FFF5F5"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                   >
-                    🗑 Delete
-                  </button>
-                </div>
-              )}
+                    <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {curriculum.name}
+                    </p>
+                    <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                      {curriculum.code}
+                    </p>
+                  </div>
+
+                  {/* Group 1 — navigate */}
+                  {[
+                    {
+                      label: "View",
+                      path: `/curriculum/${curriculum.id}/view`,
+                      icon: (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      ),
+                    },
+                    {
+                      label: "Edit Details",
+                      path: `/curriculum/${curriculum.id}/edit`,
+                      icon: (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ),
+                    },
+                  ].map(({ label, path, icon }) => (
+                    <MenuButton
+                      key={path}
+                      icon={icon}
+                      label={label}
+                      onClick={() => { setMenuOpen(false); navigate(path); }}
+                    />
+                  ))}
+
+                  {/* Divider */}
+                  <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
+
+                  {/* Group 2 — tools */}
+                  {[
+                    {
+                      label: "Structure",
+                      path: `/curriculum/${curriculum.id}/structure`,
+                      icon: (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      ),
+                    },
+                    {
+                      label: "Version History",
+                      path: `/curriculum/${curriculum.id}/versions`,
+                      icon: (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ),
+                    },
+                  ].map(({ label, path, icon }) => (
+                    <MenuButton
+                      key={path}
+                      icon={icon}
+                      label={label}
+                      onClick={() => { setMenuOpen(false); navigate(path); }}
+                    />
+                  ))}
+
+                  {/* Divider */}
+                  <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
+
+                  {/* Group 3 — destructive */}
+                  <MenuButton
+                    icon={
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                        <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    }
+                    label="Delete"
+                    onClick={handleDelete}
+                    danger
+                  />
+                </div>,
+              document.body)}
             </div>
           </div>
         </div>
