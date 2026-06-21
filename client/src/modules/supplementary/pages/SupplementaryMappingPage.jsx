@@ -4,6 +4,7 @@ import { useSupplementaryQuery, useUpdateSupplementaryMapping } from "../hooks/u
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { SUPPLEMENTARY_TYPE_META } from "../schemas/supplementary.schema";
+import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -285,18 +286,14 @@ export default function SupplementaryMappingPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <button type="button" onClick={() => navigate("/supplementary")} style={{ background: "none", border: "none", padding: 0, color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>← Supplementary</button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <button type="button" onClick={() => navigate(`/supplementary/${id}/view`)} style={{ background: "none", border: "none", padding: 0, color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>{sup?.name}</button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>Map to Base</span>
-          </div>
+          <Breadcrumbs items={[
+            { label: "← Supplementary", to: "/supplementary" },
+            { label: sup?.name, to: `/supplementary/${id}/view` },
+            { label: "Map to Base" },
+          ]} />
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Map to Base Curriculum</h1>
             {typeMeta && (

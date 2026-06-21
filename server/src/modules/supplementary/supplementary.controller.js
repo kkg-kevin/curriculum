@@ -4,6 +4,8 @@ const {
   createSupplementarySchema,
   updateSupplementarySchema,
   updateGradesSchema,
+  updateMappingSchema,
+  updateAssignmentsSchema,
 } = require("./supplementary.validation");
 
 const createSupplementary = asyncHandler(async (req, res) => {
@@ -40,6 +42,18 @@ const updateGrades = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+const updateMapping = asyncHandler(async (req, res) => {
+  const { mapping } = updateMappingSchema.parse(req.body);
+  const record = await SupplementaryService.updateMapping(req.params.id, mapping);
+  res.json({ success: true, data: record });
+});
+
+const updateAssignments = asyncHandler(async (req, res) => {
+  const { assignments } = updateAssignmentsSchema.parse(req.body);
+  const record = await SupplementaryService.updateAssignments(req.params.id, assignments);
+  res.json({ success: true, data: record });
+});
+
 module.exports = {
   createSupplementary,
   getAllSupplementary,
@@ -47,4 +61,6 @@ module.exports = {
   updateSupplementary,
   deleteSupplementary,
   updateGrades,
+  updateMapping,
+  updateAssignments,
 };

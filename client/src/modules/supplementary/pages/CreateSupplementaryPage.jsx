@@ -7,6 +7,7 @@ import { useCreateSupplementary } from "../hooks/useSupplementary";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { SUPPLEMENTARY_TYPE_META } from "../schemas/supplementary.schema";
+import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
 const detailsSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -147,18 +148,13 @@ export default function CreateSupplementaryPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <button type="button" onClick={() => navigate("/supplementary")} style={{ background: "none", border: "none", padding: 0, color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Supplementary
-            </button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
-          </div>
+          <Breadcrumbs items={[
+            { label: "← Supplementary", to: "/supplementary" },
+            { label: "New" },
+          ]} />
           <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Create Supplementary Curriculum</h1>
         </div>
         <button type="button" onClick={() => navigate("/supplementary")} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>

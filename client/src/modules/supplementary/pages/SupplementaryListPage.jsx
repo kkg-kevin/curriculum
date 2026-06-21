@@ -145,7 +145,7 @@ function SupplementaryCard({ sup }) {
 export default function SupplementaryListPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useSupplementaryListQuery();
-  const list = data?.data || [];
+  const list = data || [];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>

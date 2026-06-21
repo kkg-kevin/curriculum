@@ -11,6 +11,8 @@ import SupplementaryViewPage from "../modules/supplementary/pages/SupplementaryV
 import CreateSupplementaryPage from "../modules/supplementary/pages/CreateSupplementaryPage";
 import EditSupplementaryPage from "../modules/supplementary/pages/EditSupplementaryPage";
 import SupplementaryEditorPage from "../modules/supplementary/pages/SupplementaryEditorPage";
+import SupplementaryMappingPage from "../modules/supplementary/pages/SupplementaryMappingPage";
+import SupplementaryAssignPage from "../modules/supplementary/pages/SupplementaryAssignPage";
 import SchoolsPage from "../modules/schools/pages/SchoolsPage";
 import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
 import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
@@ -62,6 +64,8 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<SupplementaryViewPage />} />
           <Route path=":id/edit" element={<EditSupplementaryPage />} />
           <Route path=":id/editor" element={<SupplementaryEditorPage />} />
+          <Route path=":id/map"    element={<SupplementaryMappingPage />} />
+          <Route path=":id/assign" element={<SupplementaryAssignPage />} />
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />

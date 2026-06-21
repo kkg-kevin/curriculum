@@ -34,6 +34,17 @@ const SupplementaryService = {
     return record;
   },
 
+  async updateMapping(id, mapping) {
+    const record = SupplementaryModel.update(id, { mapping });
+    if (!record) throw notFound();
+    return record;
+  },
+
+  async updateAssignments(id, assignments) {
+    const record = SupplementaryModel.update(id, { assignments });
+    if (!record) throw notFound();
+    return record;
+  },
 };
 
 module.exports = SupplementaryService;

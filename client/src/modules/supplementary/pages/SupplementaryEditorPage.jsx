@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSupplementaryQuery, useUpdateSupplementaryGrades } from "../hooks/useSupplementary";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { SUPPLEMENTARY_TYPE_META } from "../schemas/supplementary.schema";
+import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
 /* ── helpers ─────────────────────────────────────────────── */
 
@@ -192,18 +193,14 @@ export default function SupplementaryEditorPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", gap: "16px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <button type="button" onClick={() => navigate("/supplementary")} style={{ background: "none", border: "none", padding: 0, color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>← Supplementary</button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <button type="button" onClick={() => navigate(`/supplementary/${id}/view`)} style={{ background: "none", border: "none", padding: 0, color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>{sup?.name}</button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>Edit Courses</span>
-          </div>
+          <Breadcrumbs items={[
+            { label: "← Supplementary", to: "/supplementary" },
+            { label: sup?.name, to: `/supplementary/${id}/view` },
+            { label: "Edit Courses" },
+          ]} />
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>{sup?.name}</h1>
             <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: typeMeta.bg, color: typeMeta.color, border: `1px solid ${typeMeta.border}`, textTransform: "uppercase" }}>
