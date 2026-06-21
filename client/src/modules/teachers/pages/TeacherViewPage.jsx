@@ -1,7 +1,8 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery } from "../hooks/useTeacher";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
-import { TEACHER_STATUSES } from "../schemas/teacher.schema";
+import { classApi } from "../../classes/services/classApi";
 
 const STATUS_STYLES = {
   active:   { bg: "#F5F3FF", color: "#5B21B6", border: "#C4B5FD" },
@@ -72,6 +73,12 @@ export default function TeacherViewPage() {
   const navigate = useNavigate();
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
   const { data: school } = useSchoolQuery(teacher?.schoolId);
+  const { data: schoolClassesData } = useQuery({
+    queryKey: ["classes", "bySchool", teacher?.schoolId],
+    queryFn:  () => classApi.getAll({ schoolId: teacher.schoolId }),
+    enabled:  !!teacher?.schoolId,
+  });
+  const myClasses = (schoolClassesData?.data || []).filter((c) => c.classTeacherId === id);
 
   if (isLoading) {
     return (
@@ -90,7 +97,6 @@ export default function TeacherViewPage() {
   }
 
   const statusStyle = STATUS_STYLES[teacher.status] || STATUS_STYLES.inactive;
-  const subjects    = teacher.subjects || [];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -124,7 +130,6 @@ export default function TeacherViewPage() {
                 </div>
                 <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
                   {teacher.employeeId}
-                  {teacher.qualification ? ` · ${teacher.qualification}` : ""}
                 </p>
               </div>
             </div>
@@ -149,33 +154,32 @@ export default function TeacherViewPage() {
 
         {/* Left */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-          {/* Subjects */}
-          <Section title="Subjects Taught">
-            {subjects.length > 0 ? (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
-                {subjects.map((s) => (
-                  <span key={s} style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", backgroundColor: "#F5F3FF", color: "#5B21B6", border: "1.5px solid #C4B5FD" }}>
-                    {s}
-                  </span>
-                ))}
+          <Section title="Classes">
+            {myClasses.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned as class teacher to any class yet.</p>
+                <button type="button" onClick={() => navigate("/classes/create")} style={{ background: "none", border: "none", color: "#5B21B6", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
               </div>
             ) : (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>No subjects assigned yet.</p>
-                <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#5B21B6", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
-                  Assign subjects →
-                </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {myClasses.map((c) => (
+                  <div key={c.id} onClick={() => navigate(`/classes/${c.id}/view`)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.gradeName}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>Academic Year {c.academicYear}</p>
+                    </div>
+                    <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: c.status === "active" ? "#FFF7ED" : "#F9FAFB", color: c.status === "active" ? "#9A3412" : "#6B7280", border: `1px solid ${c.status === "active" ? "#FED7AA" : "#E5E7EB"}` }}>
+                      {c.status === "active" ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </Section>
-
-          {/* Coming soon: Classes */}
-          <ComingSoonSection
-            title="Classes"
-            icon="🏛️"
-            description="Classes this teacher is assigned to will appear here once the Classes module is set up."
-          />
         </div>
 
         {/* Right */}

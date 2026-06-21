@@ -852,22 +852,5 @@
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": ""
-  },
-  {
-    "name": "Digifunzi curriculum plus",
-    "code": "DCP",
-    "academicYear": "",
-    "description": "This a digifunzi centered currculum tailored to self paced learning",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "academicCycleModel": "terms",
-    "periods": [],
-    "id": "f522185b-627e-4eef-89c4-549b4e0af9ad",
-    "createdAt": "2026-06-20T11:12:06.323Z",
-    "updatedAt": "2026-06-20T11:12:16.512Z",
-    "structure": []
   }
 ]
