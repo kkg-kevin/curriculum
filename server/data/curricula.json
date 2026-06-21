@@ -852,5 +852,21 @@
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": ""
+  },
+  {
+    "name": "KEVIN KIHARA",
+    "code": "KK",
+    "academicYear": "",
+    "description": "KKG-kevin",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "academicCycleModel": "terms",
+    "periods": [],
+    "id": "50477a50-013f-4b30-bf2e-4a2a852c0ca1",
+    "createdAt": "2026-06-21T10:11:46.912Z",
+    "updatedAt": "2026-06-21T10:11:46.912Z"
   }
 ]

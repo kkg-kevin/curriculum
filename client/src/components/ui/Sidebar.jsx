@@ -5,6 +5,7 @@ function Sidebar() {
     { name: "Dashboard", path: "/" },
     { name: "Schools", path: "/schools" },
     { name: "Curriculum", path: "/curriculum" },
+    { name: "Supplementary", path: "/supplementary" },
     { name: "Learners", path: "/learners" },
     { name: "Teachers", path: "/teachers" },
     { name: "Classes", path: "/classes" },

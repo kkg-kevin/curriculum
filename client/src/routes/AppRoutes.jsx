@@ -6,6 +6,11 @@ import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPa
 import CurriculumStructurePage from "../modules/curriculum/pages/CurriculumStructurePage";
 import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
 import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
+import SupplementaryListPage from "../modules/supplementary/pages/SupplementaryListPage";
+import SupplementaryViewPage from "../modules/supplementary/pages/SupplementaryViewPage";
+import CreateSupplementaryPage from "../modules/supplementary/pages/CreateSupplementaryPage";
+import EditSupplementaryPage from "../modules/supplementary/pages/EditSupplementaryPage";
+import SupplementaryEditorPage from "../modules/supplementary/pages/SupplementaryEditorPage";
 import SchoolsPage from "../modules/schools/pages/SchoolsPage";
 import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
 import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
@@ -50,6 +55,13 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditCurriculumPage />} />
           <Route path=":id/structure" element={<CurriculumStructurePage />} />
           <Route path=":id/view" element={<CurriculumViewPage />} />
+        </Route>
+        <Route path="supplementary">
+          <Route index element={<SupplementaryListPage />} />
+          <Route path="create" element={<CreateSupplementaryPage />} />
+          <Route path=":id/view" element={<SupplementaryViewPage />} />
+          <Route path=":id/edit" element={<EditSupplementaryPage />} />
+          <Route path=":id/editor" element={<SupplementaryEditorPage />} />
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />

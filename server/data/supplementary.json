@@ -1,0 +1,185 @@
+[
+  {
+    "name": "Thrive ",
+    "code": "THRI",
+    "description": "Thrive complementary",
+    "type": "complementary",
+    "schoolId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
+    "schoolName": "Digifunzi School",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 0,
+    "termName": "Term 1",
+    "id": "f968885b-6e12-4313-8e99-9571cd798085",
+    "grades": [
+      {
+        "gradeId": "mqkhim89-rp56w6",
+        "gradeName": "Grade 1",
+        "courses": [
+          {
+            "id": "c-1782040446152-cflhj",
+            "name": "Maths"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkhiu17-1n7gb4",
+        "gradeName": "Grade 2",
+        "courses": [
+          {
+            "id": "c-1782040455293-qo3b7",
+            "name": "English"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkhiy0f-ifxj1n",
+        "gradeName": "Grade 3",
+        "courses": [
+          {
+            "id": "c-1782040468617-6w34o",
+            "name": "Swahili"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx0bby-7y6aq5",
+        "gradeName": "Grade 4",
+        "courses": [
+          {
+            "id": "c-1782040474776-ex6pt",
+            "name": "SST"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx7s8f-jxizak",
+        "gradeName": "Grade 5",
+        "courses": [
+          {
+            "id": "c-1782040481102-v891m",
+            "name": "CRE"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx7s8f-95dgs9",
+        "gradeName": "Grade 6",
+        "courses": [
+          {
+            "id": "c-1782040486588-xo7jm",
+            "name": "Science"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx7s8f-7l2f1p",
+        "gradeName": "Grade 7",
+        "courses": [
+          {
+            "id": "c-1782040504170-3pite",
+            "name": "maths"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx8wqv-071o6l",
+        "gradeName": "Grade 8",
+        "courses": [
+          {
+            "id": "c-1782040511696-fdkcw",
+            "name": "maths"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx8wqv-jvayr3",
+        "gradeName": "Grade 9",
+        "courses": [
+          {
+            "id": "c-1782040516791-rdqvt",
+            "name": "english"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx8wqv-yy9rxr",
+        "gradeName": "Grade 10",
+        "courses": [
+          {
+            "id": "c-1782040527247-yw92r",
+            "name": "social studies"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx8wqv-u0vr2r",
+        "gradeName": "Grade 11",
+        "courses": [
+          {
+            "id": "c-1782040541960-vzult",
+            "name": "games"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqkx8wqv-a30xet",
+        "gradeName": "Grade 12",
+        "courses": [
+          {
+            "id": "c-1782040545591-7h6ni",
+            "name": "PE"
+          }
+        ]
+      },
+      {
+        "gradeId": "mqm8ay1i-bl8gan",
+        "gradeName": "Version 1",
+        "courses": [
+          {
+            "id": "c-1782040549421-a22we",
+            "name": "NWSUVU"
+          }
+        ]
+      }
+    ],
+    "assignments": [
+      {
+        "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+        "schoolName": "Westlands Primary School"
+      },
+      {
+        "schoolId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
+        "schoolName": "Digifunzi School"
+      }
+    ],
+    "createdAt": "2026-06-21T11:13:51.404Z",
+    "updatedAt": "2026-06-21T11:16:23.350Z"
+  },
+  {
+    "name": "Thrive sub",
+    "code": "THRI-SUB",
+    "description": "thriive sub ",
+    "type": "substitutional",
+    "schoolId": "1e8b4c97-6a23-4f50-bd17-9e0c3d5a82f6",
+    "schoolName": "Riara Springs School",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 0,
+    "termName": "Term 1",
+    "id": "649ba91f-b6d8-408a-9639-4efad9713db2",
+    "grades": [
+      {
+        "gradeId": "mqkhim89-rp56w6",
+        "gradeName": "Grade 1",
+        "courses": [
+          {
+            "id": "c-1782040995754-mi36f",
+            "name": "maths"
+          }
+        ]
+      }
+    ],
+    "assignments": [],
+    "createdAt": "2026-06-21T11:19:55.335Z",
+    "updatedAt": "2026-06-21T11:23:17.979Z"
+  }
+]

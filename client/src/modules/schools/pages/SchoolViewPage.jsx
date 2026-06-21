@@ -2,6 +2,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../hooks/useSchool";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { useSupplementaryBySchoolQuery } from "../../supplementary/hooks/useSupplementary";
+import { SUPPLEMENTARY_TYPE_META } from "../../supplementary/schemas/supplementary.schema";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -80,6 +82,7 @@ export default function SchoolViewPage() {
   const navigate = useNavigate();
   const { data: school, isLoading, isError } = useSchoolQuery(id);
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
+  const { data: suppData }   = useSupplementaryBySchoolQuery(id);
 
   const { data: teachersData } = useQuery({
     queryKey: ["teachers", "bySchool", id],
@@ -195,6 +198,89 @@ export default function SchoolViewPage() {
               </div>
             )}
           </Section>
+
+          {/* Supplementary curricula */}
+          {(() => {
+            const supList = suppData?.data || [];
+            if (supList.length === 0) return null;
+            const baseStructure = curriculum?.structure || [];
+
+            return (
+              <Section title="Supplementary Curricula" count={supList.length}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {supList.map((sup) => {
+                    const meta        = SUPPLEMENTARY_TYPE_META[sup.type] || {};
+                    const isComp      = sup.type === "complementary";
+                    const termGrades  = baseStructure[sup.termIndex]?.grades || [];
+                    const supGrades   = sup.grades || [];
+                    const hasAnyCourses = supGrades.some((g) => g.courses?.length > 0);
+
+                    return (
+                      <div key={sup.id} style={{ border: `1.5px solid ${meta.border || "#E5E7EB"}`, borderRadius: "12px", overflow: "hidden" }}>
+                        {/* Header */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: meta.bg || "#F9FAFB", borderBottom: `1px solid ${meta.border || "#E5E7EB"}` }}>
+                          <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#ffffff", color: meta.color, border: `1px solid ${meta.border}`, textTransform: "uppercase", whiteSpace: "nowrap" }}>{meta.label}</span>
+                          <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sup.name}</p>
+                          <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", flexShrink: 0 }}>{sup.termName}</span>
+                          <button type="button" onClick={() => navigate(`/supplementary/${sup.id}/view`)}
+                            style={{ background: "none", border: "none", color: meta.color, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            View →
+                          </button>
+                        </div>
+
+                        {/* Per-grade breakdown */}
+                        <div style={{ padding: "10px 14px" }}>
+                          {!hasAnyCourses ? (
+                            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
+                              No courses added yet.{" "}
+                              <button type="button" onClick={() => navigate(`/supplementary/${sup.id}/editor`)}
+                                style={{ background: "none", border: "none", color: meta.color, fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "12px", padding: 0 }}>
+                                Edit courses →
+                              </button>
+                            </p>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {termGrades.map((grade) => {
+                                const supGrade  = supGrades.find((g) => g.gradeId === grade.id);
+                                const baseCourses = grade.courses || [];
+                                const supCourses  = supGrade?.courses || [];
+                                if (baseCourses.length === 0 && supCourses.length === 0) return null;
+                                return (
+                                  <div key={grade.id}>
+                                    <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: "700", color: "#374151" }}>{grade.name}</p>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                                      {/* Base courses */}
+                                      {baseCourses.map((c) => (
+                                        <span key={c.id} style={{ padding: "2px 7px", backgroundColor: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: "5px", fontSize: "10px", color: "#6B7280", textDecoration: !isComp && supCourses.length > 0 ? "line-through" : "none" }}>
+                                          {c.name}
+                                        </span>
+                                      ))}
+                                      {/* Divider */}
+                                      {supCourses.length > 0 && (
+                                        <span style={{ fontSize: "10px", color: "#9CA3AF", alignSelf: "center", padding: "0 2px" }}>
+                                          {isComp ? "+" : "→"}
+                                        </span>
+                                      )}
+                                      {/* Supplementary courses */}
+                                      {supCourses.map((c) => (
+                                        <span key={c.id} style={{ padding: "2px 7px", backgroundColor: meta.bg, border: `1px solid ${meta.border}`, borderRadius: "5px", fontSize: "10px", color: meta.color, fontWeight: "600" }}>
+                                          {c.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            );
+          })()}
 
           {/* Teachers */}
           <Section title="Teachers" count={teachers.length}>
