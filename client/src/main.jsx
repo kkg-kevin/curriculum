@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import App from "./App.jsx";
 import { store } from "./store/index.js";
 
+import "./styles/global.css";
 import "@fontsource/inter";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";

@@ -26,6 +26,8 @@ const SupplementaryModel = {
       ...data,
       id: generateId(),
       grades: data.grades || [],
+      mapping: {},
+      assignments: [{ schoolId: data.schoolId, schoolName: data.schoolName }],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -36,7 +38,13 @@ const SupplementaryModel = {
 
   findAll({ schoolId, type } = {}) {
     let all = readAll();
-    if (schoolId) all = all.filter((s) => s.schoolId === schoolId);
+    if (schoolId) {
+      // include records where this school is the origin OR appears in assignments
+      all = all.filter((s) =>
+        s.schoolId === schoolId ||
+        (s.assignments || []).some((a) => a.schoolId === schoolId)
+      );
+    }
     if (type) all = all.filter((s) => s.type === type);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },

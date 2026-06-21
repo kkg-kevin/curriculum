@@ -3,34 +3,30 @@ import Sidebar from "../components/ui/Sidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 
+const SIDEBAR_WIDTH = 260;
+
 function MainLayout() {
   return (
-    <div>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar />
 
       <div
         style={{
-          marginLeft: "260px",
+          marginLeft: SIDEBAR_WIDTH,
+          width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#F5F7FA",
+          overflow: "hidden",
         }}
       >
-        {/* Header */}
         <Header />
 
-        {/* Main Content */}
-        <main
-          style={{
-            flex: 1,
-            padding: "24px",
-          }}
-        >
+        <main style={{ flex: 1, padding: "28px 32px", minWidth: 0 }}>
           <Outlet />
         </main>
 
-        {/* Footer */}
         <Footer />
       </div>
     </div>

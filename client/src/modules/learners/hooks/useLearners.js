@@ -17,6 +17,21 @@ export function useLearnersQuery() {
   });
 }
 
+export function useAllLearnersQuery() {
+  return useQuery({
+    queryKey: ["learners", "all"],
+    queryFn:  () => learnerApi.getAll({}),
+  });
+}
+
+export function useSchoolLearnersQuery(schoolId) {
+  return useQuery({
+    queryKey: ["learners", "bySchool", schoolId],
+    queryFn:  () => learnerApi.getAll({ schoolId }),
+    enabled:  !!schoolId,
+  });
+}
+
 export function useLearnerQuery(id) {
   return useQuery({
     queryKey: LEARNER_KEYS.detail(id),

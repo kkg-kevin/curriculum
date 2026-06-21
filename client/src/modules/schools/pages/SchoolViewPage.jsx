@@ -180,15 +180,26 @@ export default function SchoolViewPage() {
           {/* Curriculum */}
           <Section title="Assigned Curriculum">
             {curriculum ? (
-              <div onClick={() => navigate(`/curriculum/${curriculum.id}/view`)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0", cursor: "pointer" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>📋</div>
-                  <div>
-                    <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#065F46" }}>{curriculum.name}</p>
-                    <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>{curriculum.framework} · {curriculum.academicCycleModel} · {curriculum.academicYear}</p>
+              <div onClick={() => navigate(`/curriculum/${curriculum.id}/view`)} style={{ borderRadius: "12px", backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0", cursor: "pointer", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>📋</div>
+                    <div>
+                      <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#065F46" }}>{curriculum.name}</p>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>{curriculum.framework} · {curriculum.academicCycleModel} · {curriculum.academicYear}</p>
+                    </div>
                   </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#6EE7B7", flexShrink: 0 }}><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#6EE7B7", flexShrink: 0 }}><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {(curriculum.structure || []).length > 0 && (
+                  <div style={{ padding: "8px 16px 12px", display: "flex", gap: "6px", flexWrap: "wrap", borderTop: "1px solid #BBF7D0" }}>
+                    {(curriculum.structure || []).map((term, i) => (
+                      <span key={i} style={{ fontSize: "11px", fontWeight: "600", color: "#065F46", backgroundColor: "#D1FAE5", border: "1px solid #6EE7B7", borderRadius: "6px", padding: "2px 9px" }}>
+                        {term.termName || term.name || `Period ${i + 1}`}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "24px 16px", textAlign: "center" }}>
@@ -201,7 +212,7 @@ export default function SchoolViewPage() {
 
           {/* Supplementary curricula */}
           {(() => {
-            const supList = suppData?.data || [];
+            const supList = suppData || [];
             if (supList.length === 0) return null;
             const baseStructure = curriculum?.structure || [];
 

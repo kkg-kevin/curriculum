@@ -9,6 +9,8 @@ function Header() {
     "/schools": "Schools",
     "/curriculum": "Curriculum",
     "/curriculum/create": "Create Curriculum",
+    "/supplementary": "Supplementary",
+    "/supplementary/create": "Create Supplementary",
     "/learners": "Learners",
     "/teachers": "Teachers",
     "/classes": "Classes",
@@ -25,6 +27,16 @@ function Header() {
       return "Edit Curriculum";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/view"))
       return "Curriculum View";
+    if (pathname.startsWith("/supplementary/") && pathname.endsWith("/view"))
+      return "Supplementary View";
+    if (pathname.startsWith("/supplementary/") && pathname.endsWith("/edit"))
+      return "Edit Supplementary";
+    if (pathname.startsWith("/supplementary/") && pathname.endsWith("/editor"))
+      return "Edit Courses";
+    if (pathname.startsWith("/supplementary/") && pathname.endsWith("/map"))
+      return "Map to Base";
+    if (pathname.startsWith("/supplementary/") && pathname.endsWith("/assign"))
+      return "Assign Schools";
     return "Dashboard";
   };
 

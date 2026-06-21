@@ -1,1 +1,132 @@
-[]
+[
+  {
+    "id": "sup-comp-cbc-001",
+    "name": "CBC Digital Innovation Programme",
+    "code": "CBC-DIP",
+    "description": "Adds cutting-edge digital skills courses alongside the standard CBC Term 3 curriculum. Learners continue with their base Robotics and Machine Learning content while also gaining exposure to cloud, blockchain and data science concepts.",
+    "type": "complementary",
+    "schoolId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
+    "schoolName": "Digifunzi School",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 2,
+    "termName": "Term 3",
+    "grades": [
+      {
+        "gradeId": "mqkhjz7l-1vasqi",
+        "gradeName": "Grade 1",
+        "courses": [
+          { "id": "dip-g1-c1", "name": "Blockchain Basics" },
+          { "id": "dip-g1-c2", "name": "Digital Art & Design" },
+          { "id": "dip-g1-c3", "name": "Scratch Advanced" }
+        ]
+      },
+      {
+        "gradeId": "mqkhk2nj-2vabq8",
+        "gradeName": "Grade 2",
+        "courses": [
+          { "id": "dip-g2-c1", "name": "TypeScript Fundamentals" },
+          { "id": "dip-g2-c2", "name": "Cloud Computing Intro" },
+          { "id": "dip-g2-c3", "name": "UI/UX Design Basics" }
+        ]
+      },
+      {
+        "gradeId": "mqkhk5px-bkffg5",
+        "gradeName": "Grade 3",
+        "courses": [
+          { "id": "dip-g3-c1", "name": "Data Science Intro" },
+          { "id": "dip-g3-c2", "name": "API Development" }
+        ]
+      }
+    ],
+    "mapping": {
+      "affectedPeriods": [
+        { "basePeriodIndex": 2, "basePeriodName": "Term 3" }
+      ]
+    },
+    "assignments": [
+      { "schoolId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0", "schoolName": "Digifunzi School" },
+      { "schoolId": "1e8b4c97-6a23-4f50-bd17-9e0c3d5a82f6", "schoolName": "Riara Springs School" },
+      { "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07", "schoolName": "Westlands Primary School" }
+    ],
+    "createdAt": "2026-06-20T08:00:00.000Z",
+    "updatedAt": "2026-06-20T08:00:00.000Z"
+  },
+  {
+    "id": "sup-sub-american-001",
+    "name": "American Advanced STEM Track",
+    "code": "AM-STEM",
+    "description": "Replaces the standard Fall Semester courses with an intensive advanced STEM track. Designed for high-performing learners who have already mastered foundational topics and are ready for industry-level content across AI, full-stack development and immersive technology.",
+    "type": "substitutional",
+    "schoolId": "93dcef9a-d765-4093-8400-78df6e45bfe4",
+    "schoolName": "USIU-Africa",
+    "baseCurriculumId": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
+    "termIndex": 0,
+    "termName": "Fall Semester",
+    "grades": [
+      {
+        "gradeId": "mqm3oj2x-aicu2x",
+        "gradeName": "Grade 1",
+        "courses": [
+          { "id": "stem-g1-c1", "name": "Advanced Python" },
+          { "id": "stem-g1-c2", "name": "Flask Framework" },
+          { "id": "stem-g1-c3", "name": "REST API Design" }
+        ]
+      },
+      {
+        "gradeId": "mqm3oj2x-urrpc8",
+        "gradeName": "Grade 2",
+        "courses": [
+          { "id": "stem-g2-c1", "name": "React.js" },
+          { "id": "stem-g2-c2", "name": "Node.js & Express" }
+        ]
+      },
+      {
+        "gradeId": "mqm3oj2x-t9ujla",
+        "gradeName": "Grade 3",
+        "courses": [
+          { "id": "stem-g3-c1", "name": "TypeScript" },
+          { "id": "stem-g3-c2", "name": "Next.js" },
+          { "id": "stem-g3-c3", "name": "Tailwind CSS" }
+        ]
+      },
+      {
+        "gradeId": "mqm3oj2x-xca8hu",
+        "gradeName": "Grade 4",
+        "courses": [
+          { "id": "stem-g4-c1", "name": "Deep Learning" },
+          { "id": "stem-g4-c2", "name": "Neural Networks" },
+          { "id": "stem-g4-c3", "name": "TensorFlow Basics" }
+        ]
+      },
+      {
+        "gradeId": "mqm3oj2x-wgfvww",
+        "gradeName": "Grade 5",
+        "courses": [
+          { "id": "stem-g5-c1", "name": "Unreal Engine Fundamentals" },
+          { "id": "stem-g5-c2", "name": "3D Modelling with Blender" }
+        ]
+      },
+      {
+        "gradeId": "mqm3oj2x-b5uvvl",
+        "gradeName": "Grade 6",
+        "courses": [
+          { "id": "stem-g6-c1", "name": "Cybersecurity Essentials" },
+          { "id": "stem-g6-c2", "name": "Ethical Hacking Intro" }
+        ]
+      }
+    ],
+    "mapping": {
+      "replacements": [
+        { "level": "period", "basePeriodIndex": 0, "basePeriodName": "Fall Semester" }
+      ]
+    },
+    "assignments": [
+      { "schoolId": "93dcef9a-d765-4093-8400-78df6e45bfe4", "schoolName": "USIU-Africa" },
+      { "schoolId": "e3a14b52-8c76-4d19-b285-f9c032a6d71e", "schoolName": "Braeburn International School" },
+      { "schoolId": "7f2d9a41-3e85-4c67-b193-4d8a0f52c6b0", "schoolName": "Brookhouse School Karen" },
+      { "schoolId": "2c6e8b03-f174-4a95-8d27-1e93a7b4d520", "schoolName": "Hillcrest School" }
+    ],
+    "createdAt": "2026-06-20T09:00:00.000Z",
+    "updatedAt": "2026-06-20T09:00:00.000Z"
+  }
+]

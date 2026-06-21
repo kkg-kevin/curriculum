@@ -28,8 +28,35 @@ const updateGradesSchema = z.object({
   ),
 });
 
+const updateMappingSchema = z.object({
+  mapping: z.object({
+    affectedPeriods: z.array(z.object({
+      basePeriodIndex: z.number().int().min(0),
+      basePeriodName:  z.string(),
+    })).optional(),
+    replacements: z.array(z.object({
+      level:           z.enum(["period", "grade", "course"]),
+      basePeriodIndex: z.number().int().min(0),
+      basePeriodName:  z.string(),
+      baseGradeId:     z.string().optional(),
+      baseGradeName:   z.string().optional(),
+      baseCourseId:    z.string().optional(),
+      baseCourseName:  z.string().optional(),
+    })).optional(),
+  }),
+});
+
+const updateAssignmentsSchema = z.object({
+  assignments: z.array(z.object({
+    schoolId:   z.string().min(1),
+    schoolName: z.string().min(1),
+  })),
+});
+
 module.exports = {
   createSupplementarySchema,
   updateSupplementarySchema,
   updateGradesSchema,
+  updateMappingSchema,
+  updateAssignmentsSchema,
 };

@@ -3,10 +3,10 @@ import toast from "react-hot-toast";
 import { supplementaryApi } from "../services/supplementaryApi";
 
 const KEYS = {
-  all:       ["supplementary"],
-  list:      () => ["supplementary", "list"],
-  detail:    (id) => ["supplementary", "detail", id],
-  bySchool:  (schoolId) => ["supplementary", "bySchool", schoolId],
+  all:      ["supplementary"],
+  list:     () => ["supplementary", "list"],
+  detail:   (id) => ["supplementary", "detail", id],
+  bySchool: (schoolId) => ["supplementary", "bySchool", schoolId],
 };
 
 export function useSupplementaryListQuery() {
@@ -82,3 +82,28 @@ export function useUpdateSupplementaryGrades(id) {
   });
 }
 
+export function useUpdateSupplementaryMapping(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (mapping) => supplementaryApi.updateMapping(id, mapping),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.detail(id) });
+      queryClient.invalidateQueries({ queryKey: KEYS.all });
+      toast.success("Mapping saved!");
+    },
+    onError: (err) => toast.error(err.message || "Failed to save mapping"),
+  });
+}
+
+export function useUpdateSupplementaryAssignments(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (assignments) => supplementaryApi.updateAssignments(id, assignments),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.detail(id) });
+      queryClient.invalidateQueries({ queryKey: KEYS.all });
+      toast.success("Schools assigned!");
+    },
+    onError: (err) => toast.error(err.message || "Failed to save assignments"),
+  });
+}
