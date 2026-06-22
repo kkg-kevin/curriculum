@@ -2817,5 +2817,53 @@
     "id": "8e6bae45-1f7e-4919-ba3b-a837ddde2be9",
     "createdAt": "2026-06-22T09:00:36.254Z",
     "updatedAt": "2026-06-22T09:00:36.254Z"
+  },
+  {
+    "curriculumId": "eed05292-8b26-4543-bc9a-22b2c97cbb75",
+    "versionNumber": 1,
+    "versionLabel": "Initial Version",
+    "status": "active",
+    "changeNotes": "Initial curriculum setup",
+    "snapshot": {
+      "name": "kenya national primary curriculum",
+      "code": "KNPC",
+      "academicYear": "2025-2026",
+      "description": "kenya national primary curriculum ",
+      "framework": "",
+      "academicCycleModel": "terms",
+      "periods": [],
+      "structure": [],
+      "status": "draft",
+      "educationLevel": "",
+      "gradeFrom": "",
+      "gradeTo": ""
+    },
+    "id": "0b361309-34fd-479b-82e7-c2ea1bcd29da",
+    "createdAt": "2026-06-22T10:07:51.426Z",
+    "updatedAt": "2026-06-22T10:07:51.426Z"
+  },
+  {
+    "curriculumId": "6975c855-5084-4d86-b6f3-60c2e611f95e",
+    "versionNumber": 1,
+    "versionLabel": "Initial Version",
+    "status": "active",
+    "changeNotes": "Initial curriculum setup",
+    "snapshot": {
+      "name": "Digifunzi Plus",
+      "code": "DP",
+      "academicYear": "2026",
+      "description": "Test",
+      "framework": "",
+      "academicCycleModel": "terms",
+      "periods": [],
+      "structure": [],
+      "status": "draft",
+      "educationLevel": "",
+      "gradeFrom": "",
+      "gradeTo": ""
+    },
+    "id": "8dfd6b1c-39a3-4e7e-b75f-2881e1138070",
+    "createdAt": "2026-06-22T11:00:38.701Z",
+    "updatedAt": "2026-06-22T11:00:38.701Z"
   }
 ]
