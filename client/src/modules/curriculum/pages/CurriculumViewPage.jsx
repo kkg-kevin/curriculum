@@ -375,12 +375,19 @@ export default function CurriculumViewPage() {
   const location = useLocation();
   const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
 
+  const { data: schoolsData } = useQuery({
+    queryKey: ["schools", "byCurriculum", id],
+    queryFn:  () => schoolApi.getAll({ curriculumId: id }),
+    enabled:  !!id,
+  });
+
   useEffect(() => {
     if (location.state?.scrollTo === "versions") {
       const el = document.getElementById("version-history");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [location.state]);
+
   const [expandedTerms, setExpandedTerms] = useState(() => new Set([0]));
   const [expandedGrades, setExpandedGrades] = useState(() => new Set());
 
@@ -426,11 +433,6 @@ export default function CurriculumViewPage() {
     );
   }
 
-  const { data: schoolsData } = useQuery({
-    queryKey: ["schools", "byCurriculum", id],
-    queryFn:  () => schoolApi.getAll({ curriculumId: id }),
-    enabled:  !!id,
-  });
   const assignedSchools = schoolsData?.data || [];
 
   const structure = curriculum.structure || [];

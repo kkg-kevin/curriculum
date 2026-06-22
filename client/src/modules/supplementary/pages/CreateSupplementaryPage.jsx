@@ -162,7 +162,7 @@ export default function CreateSupplementaryPage() {
         </button>
       </div>
 
-      <div style={{ maxWidth: "680px", paddingTop: "24px" }}>
+      <div style={{ width: "100%", paddingTop: "24px" }}>
         <StepBar current={step} />
 
         {/* STEP 0 — School */}
@@ -192,7 +192,7 @@ export default function CreateSupplementaryPage() {
                 No schools match "{schoolSearch}"
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "8px" }}>
                 {filteredSchools.map((school) => {
                   const isSelected = selectedSchool?.id === school.id;
                   return (
@@ -278,7 +278,7 @@ export default function CreateSupplementaryPage() {
                 <p style={{ margin: 0, fontSize: "13px", color: "#B45309" }}>The base curriculum for {selectedSchool?.name} has no terms set up yet. Add terms to the base curriculum first.</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "8px" }}>
                 {periods.map((period, idx) => (
                   <TermCard key={idx} period={period} index={idx} selected={selectedTermIndex === idx} onSelect={setSelectedTermIndex} />
                 ))}
@@ -319,31 +319,33 @@ export default function CreateSupplementaryPage() {
             </div>
 
             <form id="details-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-              <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>Name <span style={{ color: "#EF4444" }}>*</span></label>
-                  <input type="text" value={watchedName} onChange={handleNameChange} placeholder="e.g. CBC Enrichment Programme"
-                    style={inputStyle(!!errors.name)}
-                    onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; }}
-                    onBlur={(e) => { e.target.style.borderColor = errors.name ? "#FCA5A5" : "#E5E7EB"; }} />
-                  {errors.name && <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#EF4444" }}>{errors.name.message}</p>}
-                </div>
+              <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "28px 32px", display: "flex", flexDirection: "column", gap: "22px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: "20px", alignItems: "start" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>Name <span style={{ color: "#EF4444" }}>*</span></label>
+                    <input type="text" value={watchedName} onChange={handleNameChange} placeholder="e.g. CBC Enrichment Programme"
+                      style={inputStyle(!!errors.name)}
+                      onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; }}
+                      onBlur={(e) => { e.target.style.borderColor = errors.name ? "#FCA5A5" : "#E5E7EB"; }} />
+                    {errors.name && <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#EF4444" }}>{errors.name.message}</p>}
+                  </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>Code <span style={{ color: "#EF4444" }}>*</span></label>
-                  <input {...register("code", { onChange: () => setCodeManual(true) })} type="text" placeholder="e.g. CBC-ENR"
-                    style={{ ...inputStyle(!!errors.code), textTransform: "uppercase" }}
-                    onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; }}
-                    onBlur={(e) => { e.target.style.borderColor = errors.code ? "#FCA5A5" : "#E5E7EB"; }} />
-                  {errors.code
-                    ? <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#EF4444" }}>{errors.code.message}</p>
-                    : <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>Auto-generated from name — edit if needed.</p>}
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>Code <span style={{ color: "#EF4444" }}>*</span></label>
+                    <input {...register("code", { onChange: () => setCodeManual(true) })} type="text" placeholder="e.g. CBC-ENR"
+                      style={{ ...inputStyle(!!errors.code), textTransform: "uppercase" }}
+                      onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; }}
+                      onBlur={(e) => { e.target.style.borderColor = errors.code ? "#FCA5A5" : "#E5E7EB"; }} />
+                    {errors.code
+                      ? <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#EF4444" }}>{errors.code.message}</p>
+                      : <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>Auto-generated from name.</p>}
+                  </div>
                 </div>
 
                 <div>
                   <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>Description</label>
-                  <textarea {...register("description")} rows={3} placeholder="Briefly describe this supplementary curriculum."
-                    style={{ ...inputStyle(false), resize: "vertical", lineHeight: "1.5" }}
+                  <textarea {...register("description")} rows={4} placeholder="Briefly describe this supplementary curriculum."
+                    style={{ ...inputStyle(false), resize: "vertical", lineHeight: "1.6" }}
                     onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; }}
                     onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; }} />
                 </div>

@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "name": "Thrive ",
+    "code": "THRI",
+    "description": "wjibuigcwe",
+    "type": "substitutional",
+    "schoolId": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+    "schoolName": "Digifunzi school",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 0,
+    "termName": "Term 1",
+    "id": "99c2a3b5-8a7d-4ea4-9b38-255ec1f67a76",
+    "grades": [],
+    "mapping": {},
+    "assignments": [
+      {
+        "schoolId": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+        "schoolName": "Digifunzi school"
+      }
+    ],
+    "createdAt": "2026-06-22T10:22:29.194Z",
+    "updatedAt": "2026-06-22T10:22:29.194Z"
+  }
+]

@@ -63,6 +63,14 @@ export default function ClassViewPage() {
           ← Classes
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
+        {school && (
+          <>
+            <button type="button" onClick={() => navigate(`/classes/school/${cls.schoolId}`)} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              {school.name}
+            </button>
+            <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
+          </>
+        )}
         <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{cls.gradeName}</span>
       </div>
 

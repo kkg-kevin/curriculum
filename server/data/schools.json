@@ -158,5 +158,21 @@
     "id": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
     "createdAt": "2026-06-20T14:23:30.000Z",
     "updatedAt": "2026-06-22T08:08:38.240Z"
+  },
+  {
+    "name": "Digifunzi school",
+    "code": "DS-001",
+    "email": "df@digifunzi.com",
+    "phone": "+254727496461",
+    "address": {
+      "street": "thika",
+      "city": "thika creavers ",
+      "county": "Kiambu"
+    },
+    "curriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "status": "active",
+    "id": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+    "createdAt": "2026-06-22T09:05:40.447Z",
+    "updatedAt": "2026-06-22T10:21:57.198Z"
   }
 ]

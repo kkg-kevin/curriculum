@@ -1163,5 +1163,21 @@
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": ""
+  },
+  {
+    "name": "Digifunzi Plus",
+    "code": "DP",
+    "academicYear": "2026",
+    "description": "Test",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "academicCycleModel": "terms",
+    "periods": [],
+    "id": "6975c855-5084-4d86-b6f3-60c2e611f95e",
+    "createdAt": "2026-06-22T11:00:38.693Z",
+    "updatedAt": "2026-06-22T11:01:19.494Z"
   }
 ]
