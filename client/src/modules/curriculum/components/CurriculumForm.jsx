@@ -124,6 +124,21 @@ export default function CurriculumForm() {
         <FieldError error={errors.name} />
       </div>
 
+      {/* Academic Year */}
+      <div style={fieldGroupStyle}>
+        <label style={labelStyle}>Academic Year</label>
+        <input
+          type="text"
+          {...register("academicYear")}
+          style={getInputStyle(!!errors.academicYear)}
+          placeholder="e.g. 2025 or 2024-2025"
+        />
+        {!errors.academicYear && (
+          <p style={hintStyle}>The year or span this curriculum covers.</p>
+        )}
+        <FieldError error={errors.academicYear} />
+      </div>
+
       {/* Code */}
       <div style={fieldGroupStyle}>
         <label style={labelStyle}>

@@ -2,9 +2,9 @@ import { useFormContext } from "react-hook-form";
 
 export default function CurriculumPreview() {
   const { watch } = useFormContext();
-  const { name, code, description } = watch();
+  const { name, academicYear, code, description } = watch();
 
-  const isEmpty = !name && !code && !description;
+  const isEmpty = !name && !academicYear && !code && !description;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -58,8 +58,8 @@ export default function CurriculumPreview() {
             {name || "Curriculum Name"}
           </h3>
 
-          {/* Code pill */}
-          <div style={{ marginBottom: "16px" }}>
+          {/* Code + year pills */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
             {code ? (
               <span
                 style={{
@@ -80,6 +80,23 @@ export default function CurriculumPreview() {
             ) : (
               <span style={{ fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>
                 No code assigned
+              </span>
+            )}
+            {academicYear && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  backgroundColor: "#F0FDF4",
+                  color: "#065F46",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  border: "1px solid #BBF7D0",
+                }}
+              >
+                {academicYear}
               </span>
             )}
           </div>
