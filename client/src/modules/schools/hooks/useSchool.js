@@ -17,6 +17,13 @@ export function useSchoolsQuery() {
   });
 }
 
+export function useAllSchoolsQuery() {
+  return useQuery({
+    queryKey: ["schools", "all"],
+    queryFn: () => schoolApi.getAll({}),
+  });
+}
+
 export function useSchoolQuery(id) {
   return useQuery({
     queryKey: SCHOOL_KEYS.detail(id),

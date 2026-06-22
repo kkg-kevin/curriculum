@@ -17,6 +17,13 @@ export function useTeachersQuery() {
   });
 }
 
+export function useAllTeachersQuery() {
+  return useQuery({
+    queryKey: ["teachers", "all"],
+    queryFn:  () => teacherApi.getAll({}),
+  });
+}
+
 export function useTeacherQuery(id) {
   return useQuery({
     queryKey: TEACHER_KEYS.detail(id),
