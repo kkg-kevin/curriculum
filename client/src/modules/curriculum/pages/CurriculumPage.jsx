@@ -320,6 +320,7 @@ function CurriculumCard({ curriculum }) {
                     {
                       label: "Structure",
                       path: `/curriculum/${curriculum.id}/structure`,
+                      navState: undefined,
                       icon: (
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                           <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
@@ -330,8 +331,9 @@ function CurriculumCard({ curriculum }) {
                       ),
                     },
                     {
-                      label: "Version History",
+                      label: "Version Control",
                       path: `/curriculum/${curriculum.id}/versions`,
+                      navState: undefined,
                       icon: (
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
@@ -339,12 +341,12 @@ function CurriculumCard({ curriculum }) {
                         </svg>
                       ),
                     },
-                  ].map(({ label, path, icon }) => (
+                  ].map(({ label, path, navState, icon }) => (
                     <MenuButton
-                      key={path}
+                      key={label}
                       icon={icon}
                       label={label}
-                      onClick={() => { setMenuOpen(false); navigate(path); }}
+                      onClick={() => { setMenuOpen(false); navigate(path, navState ? { state: navState } : undefined); }}
                     />
                   ))}
 

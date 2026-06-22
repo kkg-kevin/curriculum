@@ -1,8 +1,12 @@
 const CurriculumModel = require("./curriculum.model");
+const CurriculumVersionService = require("./curriculum-versions.service");
 
 const CurriculumService = {
   async createCurriculum(data) {
-    return CurriculumModel.create(data);
+    const curriculum = CurriculumModel.create(data);
+    // Auto-create Version 1 (active) for every new curriculum
+    await CurriculumVersionService.createInitialVersion(curriculum);
+    return curriculum;
   },
 
   async getAllCurricula(filters) {
