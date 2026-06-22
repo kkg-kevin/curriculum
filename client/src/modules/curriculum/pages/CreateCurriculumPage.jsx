@@ -10,6 +10,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 
 const DEFAULT_VALUES = {
   name: "",
+  academicYear: "",
   code: "",
   description: "",
 };

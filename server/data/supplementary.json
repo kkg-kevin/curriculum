@@ -247,5 +247,27 @@
     ],
     "createdAt": "2026-06-22T05:59:27.537Z",
     "updatedAt": "2026-06-22T05:59:27.537Z"
+  },
+  {
+    "name": "WPS comp",
+    "code": "WPS-COMP",
+    "description": "wwestlands complementary curriculum",
+    "type": "complementary",
+    "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+    "schoolName": "Westlands Primary School",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 0,
+    "termName": "Term 1",
+    "id": "52815d0a-e7f2-476e-b40c-8a2c4fa65f2b",
+    "grades": [],
+    "mapping": {},
+    "assignments": [
+      {
+        "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+        "schoolName": "Westlands Primary School"
+      }
+    ],
+    "createdAt": "2026-06-22T06:14:58.243Z",
+    "updatedAt": "2026-06-22T06:14:58.243Z"
   }
 ]

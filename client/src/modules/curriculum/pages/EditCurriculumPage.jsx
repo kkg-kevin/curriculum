@@ -19,6 +19,7 @@ function EditCurriculumForm({ curriculum }) {
     resolver: zodResolver(curriculumDetailsSchema),
     defaultValues: {
       name: curriculum.name || "",
+      academicYear: curriculum.academicYear || "",
       code: curriculum.code || "",
       description: curriculum.description || "",
     },
