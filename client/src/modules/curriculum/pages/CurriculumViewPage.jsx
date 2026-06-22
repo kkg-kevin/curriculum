@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { schoolApi } from "../../schools/services/schoolApi";
+import VersionHistory from "../components/VersionHistory";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -371,7 +372,15 @@ function LoadingState() {
 export default function CurriculumViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
+
+  useEffect(() => {
+    if (location.state?.scrollTo === "versions") {
+      const el = document.getElementById("version-history");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.state]);
   const [expandedTerms, setExpandedTerms] = useState(() => new Set([0]));
   const [expandedGrades, setExpandedGrades] = useState(() => new Set());
 
@@ -733,6 +742,11 @@ export default function CurriculumViewPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Version history ──────────────────────────────────────────── */}
+      <div id="version-history">
+        <VersionHistory curriculumId={id} />
       </div>
 
       {/* ── Academic structure section ────────────────────────────────── */}

@@ -9,11 +9,11 @@
       "city": "Nairobi",
       "county": "Nairobi"
     },
-    "curriculumId": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
+    "curriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
     "status": "active",
     "id": "93dcef9a-d765-4093-8400-78df6e45bfe4",
     "createdAt": "2026-06-20T11:32:52.279Z",
-    "updatedAt": "2026-06-20T13:48:04.681Z"
+    "updatedAt": "2026-06-22T08:13:29.683Z"
   },
   {
     "name": "Digifunzi School",
@@ -25,11 +25,11 @@
       "city": "Kiambu",
       "county": "Kiambu"
     },
-    "curriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "curriculumId": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
     "status": "active",
     "id": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
     "createdAt": "2026-06-20T13:55:39.968Z",
-    "updatedAt": "2026-06-20T13:55:39.968Z"
+    "updatedAt": "2026-06-22T08:09:47.291Z"
   },
   {
     "name": "Braeburn International School",
@@ -137,11 +137,11 @@
       "city": "Kikuyu",
       "county": "Kiambu"
     },
-    "curriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "curriculumId": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
     "status": "active",
     "id": "1e8b4c97-6a23-4f50-bd17-9e0c3d5a82f6",
     "createdAt": "2026-06-20T14:23:00.000Z",
-    "updatedAt": "2026-06-20T14:23:00.000Z"
+    "updatedAt": "2026-06-22T08:08:53.341Z"
   },
   {
     "name": "Westlands Primary School",
@@ -157,6 +157,6 @@
     "status": "active",
     "id": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
     "createdAt": "2026-06-20T14:23:30.000Z",
-    "updatedAt": "2026-06-20T14:23:30.000Z"
+    "updatedAt": "2026-06-22T08:08:38.240Z"
   }
 ]
