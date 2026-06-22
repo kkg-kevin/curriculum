@@ -1,5 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
+import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
+import { useAllTeachersQuery } from "../../teachers/hooks/useTeacher";
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -379,6 +382,22 @@ export default function DashboardPage() {
   const { data, isLoading } = useCurriculaQuery();
   const curricula = data?.data || [];
 
+  const { data: schoolsData, isLoading: schoolsLoading } = useAllSchoolsQuery();
+  const { data: learnersData, isLoading: learnersLoading } = useAllLearnersQuery();
+  const { data: teachersData, isLoading: teachersLoading } = useAllTeachersQuery();
+
+  const schools  = schoolsData?.data  || [];
+  const learners = learnersData?.data  || [];
+  const teachers = teachersData?.data  || [];
+
+  const totalSchools   = schools.length;
+  const totalLearners  = learners.length;
+  const totalTeachers  = teachers.length;
+
+  const activeSchools  = schools.filter((s) => s.status === "active").length;
+  const activeLearners = learners.filter((l) => l.status === "active").length;
+  const activeTeachers = teachers.filter((t) => t.status === "active").length;
+
   /* ── Derived curriculum stats ── */
   const totalCurricula = curricula.length;
   const totalClasses = curricula.reduce(
@@ -492,29 +511,44 @@ export default function DashboardPage() {
         <StatCard
           icon="🏫"
           label="Schools"
-          value="0"
-          sub="No schools added yet"
+          value={schoolsLoading ? "—" : totalSchools}
+          sub={
+            schoolsLoading ? null
+            : totalSchools === 0 ? "No schools added yet"
+            : `${activeSchools} active`
+          }
           accent="#0369A1"
-          actionLabel="Get started"
+          actionLabel={totalSchools === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/schools")}
+          loading={schoolsLoading}
         />
         <StatCard
           icon="🎓"
           label="Learners"
-          value="0"
-          sub="Enrol learners to begin"
+          value={learnersLoading ? "—" : totalLearners}
+          sub={
+            learnersLoading ? null
+            : totalLearners === 0 ? "Enrol learners to begin"
+            : `${activeLearners} active`
+          }
           accent="#1E40AF"
-          actionLabel="Get started"
+          actionLabel={totalLearners === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/learners")}
+          loading={learnersLoading}
         />
         <StatCard
           icon="👩‍🏫"
           label="Teachers"
-          value="0"
-          sub="Add teachers to classes"
+          value={teachersLoading ? "—" : totalTeachers}
+          sub={
+            teachersLoading ? null
+            : totalTeachers === 0 ? "Add teachers to classes"
+            : `${activeTeachers} active`
+          }
           accent="#0F766E"
-          actionLabel="Get started"
+          actionLabel={totalTeachers === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/teachers")}
+          loading={teachersLoading}
         />
       </div>
 
@@ -748,31 +782,31 @@ export default function DashboardPage() {
                 icon="🏫"
                 label="Schools"
                 description="Register and manage schools"
-                count={0}
+                count={totalSchools}
                 accentColor="#0369A1"
                 path="/schools"
                 navigate={navigate}
-                isLive={false}
+                isLive={totalSchools > 0}
               />
               <ModuleTile
                 icon="🎓"
                 label="Learners"
                 description="Student profiles and enrolment"
-                count={0}
+                count={totalLearners}
                 accentColor="#1E40AF"
                 path="/learners"
                 navigate={navigate}
-                isLive={false}
+                isLive={totalLearners > 0}
               />
               <ModuleTile
                 icon="👩‍🏫"
                 label="Teachers"
                 description="Staff profiles and assignments"
-                count={0}
+                count={totalTeachers}
                 accentColor="#0F766E"
                 path="/teachers"
                 navigate={navigate}
-                isLive={false}
+                isLive={totalTeachers > 0}
               />
             </div>
           </div>
