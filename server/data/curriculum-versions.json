@@ -38,23 +38,99 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Term 1", "startDate": "2026-01-01", "endDate": "2026-03-31", "midTermBreakStartDate": "2026-02-01", "midTermBreakEndDate": "2026-02-07" },
-        { "name": "Term 2", "startDate": "2026-05-01", "endDate": "2026-07-31", "midTermBreakStartDate": "2026-06-01", "midTermBreakEndDate": "2026-06-06" },
-        { "name": "Term 3", "startDate": "2026-09-01", "endDate": "2026-11-30", "midTermBreakStartDate": "2026-10-01", "midTermBreakEndDate": "2026-10-07" }
+        {
+          "name": "Term 1",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "midTermBreakStartDate": "2026-02-01",
+          "midTermBreakEndDate": "2026-02-07"
+        },
+        {
+          "name": "Term 2",
+          "startDate": "2026-05-01",
+          "endDate": "2026-07-31",
+          "midTermBreakStartDate": "2026-06-01",
+          "midTermBreakEndDate": "2026-06-06"
+        },
+        {
+          "name": "Term 3",
+          "startDate": "2026-09-01",
+          "endDate": "2026-11-30",
+          "midTermBreakStartDate": "2026-10-01",
+          "midTermBreakEndDate": "2026-10-07"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkhim89-rp56w6", "name": "Grade 1", "courses": [{ "id": "mqkp07v4-lkgrjx", "name": "Scratch" }] },
-            { "id": "mqkhiu17-1n7gb4", "name": "Grade 2", "courses": [{ "id": "mqkoyvgs-svswx6", "name": "web developement" }] },
-            { "id": "mqkhiy0f-ifxj1n", "name": "Grade 3", "courses": [{ "id": "mqkoyoii-7xfoha", "name": "python" }] },
-            { "id": "mqkx0bby-7y6aq5", "name": "Grade 4", "courses": [{ "id": "mqosc76p-hf5t4h", "name": "css" }] },
-            { "id": "mqkx7s8f-jxizak", "name": "Grade 5", "courses": [{ "id": "mqoscb9b-lpsidt", "name": "java" }] },
-            { "id": "mqkx7s8f-95dgs9", "name": "Grade 6", "courses": [{ "id": "mqoschmu-3zkj24", "name": "web dev" }] }
+            {
+              "id": "mqkhim89-rp56w6",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkp07v4-lkgrjx",
+                  "name": "Scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiu17-1n7gb4",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqkoyvgs-svswx6",
+                  "name": "web developement"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiy0f-ifxj1n",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqkoyoii-7xfoha",
+                  "name": "python"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-7y6aq5",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosc76p-hf5t4h",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-jxizak",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqoscb9b-lpsidt",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-95dgs9",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqoschmu-3zkj24",
+                  "name": "web dev"
+                }
+              ]
+            }
           ]
         },
-        { "grades": [] },
-        { "grades": [] }
+        {
+          "grades": []
+        },
+        {
+          "grades": []
+        }
       ],
       "status": "draft",
       "educationLevel": "",
@@ -79,60 +155,429 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Term 1", "startDate": "2026-01-01", "endDate": "2026-03-31", "midTermBreakStartDate": "2026-02-01", "midTermBreakEndDate": "2026-02-07" },
-        { "name": "Term 2", "startDate": "2026-05-01", "endDate": "2026-07-31", "midTermBreakStartDate": "2026-06-01", "midTermBreakEndDate": "2026-06-06" },
-        { "name": "Term 3", "startDate": "2026-09-01", "endDate": "2026-11-30", "midTermBreakStartDate": "2026-10-01", "midTermBreakEndDate": "2026-10-07" }
+        {
+          "name": "Term 1",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "midTermBreakStartDate": "2026-02-01",
+          "midTermBreakEndDate": "2026-02-07"
+        },
+        {
+          "name": "Term 2",
+          "startDate": "2026-05-01",
+          "endDate": "2026-07-31",
+          "midTermBreakStartDate": "2026-06-01",
+          "midTermBreakEndDate": "2026-06-06"
+        },
+        {
+          "name": "Term 3",
+          "startDate": "2026-09-01",
+          "endDate": "2026-11-30",
+          "midTermBreakStartDate": "2026-10-01",
+          "midTermBreakEndDate": "2026-10-07"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkhim89-rp56w6", "name": "Grade 1", "courses": [{ "id": "mqkp07v4-lkgrjx", "name": "Scratch" }] },
-            { "id": "mqkhiu17-1n7gb4", "name": "Grade 2", "courses": [{ "id": "mqkoyvgs-svswx6", "name": "web developement" }] },
-            { "id": "mqkhiy0f-ifxj1n", "name": "Grade 3", "courses": [{ "id": "mqkoyoii-7xfoha", "name": "python" }] },
-            { "id": "mqkx0bby-7y6aq5", "name": "Grade 4", "courses": [{ "id": "mqosc76p-hf5t4h", "name": "css" }] },
-            { "id": "mqkx7s8f-jxizak", "name": "Grade 5", "courses": [{ "id": "mqoscb9b-lpsidt", "name": "java" }] },
-            { "id": "mqkx7s8f-95dgs9", "name": "Grade 6", "courses": [{ "id": "mqoschmu-3zkj24", "name": "web dev" }] },
-            { "id": "mqkx7s8f-7l2f1p", "name": "Grade 7", "courses": [{ "id": "mqoscqse-ntf2u8", "name": "game design" }] },
-            { "id": "mqkx8wqv-071o6l", "name": "Grade 8", "courses": [{ "id": "mqosd1dg-ektwbr", "name": "robotics with pyhton" }] },
-            { "id": "mqkx8wqv-jvayr3", "name": "Grade 9", "courses": [{ "id": "mqosd6f8-cj6d7v", "name": "intro to python" }] },
-            { "id": "mqkx8wqv-yy9rxr", "name": "Grade 10", "courses": [{ "id": "mqosddk9-94y9qn", "name": "html &css" }] },
-            { "id": "mqkx8wqv-u0vr2r", "name": "Grade 11", "courses": [{ "id": "mqosdhg9-ndf4og", "name": "c++" }] },
-            { "id": "mqkx8wqv-a30xet", "name": "Grade 12", "courses": [{ "id": "mqosdzl2-v9w37a", "name": "maths" }] },
-            { "id": "mqm8ay1i-bl8gan", "name": "Version 1", "courses": [{ "id": "mqosz9s8-49odnc", "name": "js" }] }
+            {
+              "id": "mqkhim89-rp56w6",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkp07v4-lkgrjx",
+                  "name": "Scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiu17-1n7gb4",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqkoyvgs-svswx6",
+                  "name": "web developement"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiy0f-ifxj1n",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqkoyoii-7xfoha",
+                  "name": "python"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-7y6aq5",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosc76p-hf5t4h",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-jxizak",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqoscb9b-lpsidt",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-95dgs9",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqoschmu-3zkj24",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-7l2f1p",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqoscqse-ntf2u8",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-071o6l",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosd1dg-ektwbr",
+                  "name": "robotics with pyhton"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-jvayr3",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqosd6f8-cj6d7v",
+                  "name": "intro to python"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-yy9rxr",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqosddk9-94y9qn",
+                  "name": "html &css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-u0vr2r",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqosdhg9-ndf4og",
+                  "name": "c++"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-a30xet",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqosdzl2-v9w37a",
+                  "name": "maths"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-bl8gan",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqosz9s8-49odnc",
+                  "name": "js"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkhjcyt-jtijjl", "name": "Grade 1", "courses": [{ "id": "mqkoyeo5-w1wd0o", "name": "math" }] },
-            { "id": "mqkhjiop-zsfjq9", "name": "Grade 2", "courses": [{ "id": "mqosecme-r6hj8k", "name": "science" }] },
-            { "id": "mqkhjobd-80wp5k", "name": "Grade 3", "courses": [{ "id": "mqoszqv4-99pkp7", "name": "css" }] },
-            { "id": "mqkx0bby-hb06na", "name": "Grade 4", "courses": [{ "id": "mqosg0xu-xdny8a", "name": "react" }] },
-            { "id": "mqkx7s8f-0g2j01", "name": "Grade 5", "courses": [{ "id": "mqosftpq-vpmd4j", "name": "english" }] },
-            { "id": "mqkx7s8f-fmcta9", "name": "Grade 6", "courses": [{ "id": "mqosfnkd-le0e19", "name": "intro to web" }] },
-            { "id": "mqkx7s8f-e66b53", "name": "Grade 7", "courses": [{ "id": "mqosfg2q-nogf8o", "name": "game design" }] },
-            { "id": "mqkx8wqv-95vj02", "name": "Grade 8", "courses": [{ "id": "mqosf8m3-mcoj7s", "name": "Model design" }] },
-            { "id": "mqkx8wqv-41i1yd", "name": "Grade 9", "courses": [{ "id": "mqosf0f0-22l9l4", "name": "AI&ML" }] },
-            { "id": "mqkx8wqv-vn7clz", "name": "Grade 10", "courses": [{ "id": "mqosevbf-cyygw8", "name": "scratch" }] },
-            { "id": "mqkx8wqv-np9jta", "name": "Grade 11", "courses": [{ "id": "mqosepas-k545mg", "name": "robobtics" }] },
-            { "id": "mqkx8wqv-rol6qa", "name": "Grade 12", "courses": [{ "id": "mqosekz7-szhkpl", "name": "game design" }] },
-            { "id": "mqm8ay1i-zogy8o", "name": "Version 1", "courses": [{ "id": "mqoszyxa-oqkiut", "name": "version control" }] }
+            {
+              "id": "mqkhjcyt-jtijjl",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkoyeo5-w1wd0o",
+                  "name": "math"
+                }
+              ]
+            },
+            {
+              "id": "mqkhjiop-zsfjq9",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqosecme-r6hj8k",
+                  "name": "science"
+                }
+              ]
+            },
+            {
+              "id": "mqkhjobd-80wp5k",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqoszqv4-99pkp7",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-hb06na",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosg0xu-xdny8a",
+                  "name": "react"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-0g2j01",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqosftpq-vpmd4j",
+                  "name": "english"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-fmcta9",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqosfnkd-le0e19",
+                  "name": "intro to web"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-e66b53",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqosfg2q-nogf8o",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-95vj02",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosf8m3-mcoj7s",
+                  "name": "Model design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-41i1yd",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqosf0f0-22l9l4",
+                  "name": "AI&ML"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-vn7clz",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqosevbf-cyygw8",
+                  "name": "scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-np9jta",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqosepas-k545mg",
+                  "name": "robobtics"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-rol6qa",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqosekz7-szhkpl",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-zogy8o",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqoszyxa-oqkiut",
+                  "name": "version control"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkhjz7l-1vasqi", "name": "Grade 1", "courses": [{ "id": "mqkhlhoi-l2mho2", "name": "Intro to Python" }] },
-            { "id": "mqkhk2nj-2vabq8", "name": "Grade 2", "courses": [{ "id": "mqkhm0wk-d3l0zu", "name": "Machine Learning" }] },
-            { "id": "mqkhk5px-bkffg5", "name": "Grade 3", "courses": [{ "id": "mqkhmv0j-63g1jt", "name": "Machine Learning" }] },
-            { "id": "mqkx0bby-loty16", "name": "Grade 4", "courses": [{ "id": "mqosgnag-d87z9v", "name": "intro to pyhton" }] },
-            { "id": "mqkx7s8f-l6x929", "name": "Grade 5", "courses": [{ "id": "mqosgr90-fv9j17", "name": "css" }] },
-            { "id": "mqkx7s8f-gat7lv", "name": "Grade 6", "courses": [{ "id": "mqosgum9-dsc6dg", "name": "html" }] },
-            { "id": "mqkx7s8f-rm3kp3", "name": "Grade 7", "courses": [{ "id": "mqosgzdk-b6frbs", "name": "java" }] },
-            { "id": "mqkx8wqv-end43h", "name": "Grade 8", "courses": [{ "id": "mqosh3ch-37q373", "name": "javascript" }] },
-            { "id": "mqkx8wqv-vo8sdn", "name": "Grade 9", "courses": [{ "id": "mqoshbae-it078v", "name": "angular" }] },
-            { "id": "mqkx8wqv-9s2xlw", "name": "Grade 10", "courses": [{ "id": "mqoshhgw-ckzrxh", "name": "model" }] },
-            { "id": "mqkx8wqv-yd3sed", "name": "Grade 11", "courses": [{ "id": "mqoshldn-fyaedl", "name": "design" }] },
-            { "id": "mqkx8wqv-pyml6k", "name": "Grade 12", "courses": [{ "id": "mqoshtpr-a4x9en", "name": "ccs & js" }] },
-            { "id": "mqm8ay1i-tclwub", "name": "Version 1", "courses": [{ "id": "mqot0u8n-1dq645", "name": "version control 2" }] }
+            {
+              "id": "mqkhjz7l-1vasqi",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkhlhoi-l2mho2",
+                  "name": "Intro to Python"
+                }
+              ]
+            },
+            {
+              "id": "mqkhk2nj-2vabq8",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqkhm0wk-d3l0zu",
+                  "name": "Machine Learning"
+                }
+              ]
+            },
+            {
+              "id": "mqkhk5px-bkffg5",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqkhmv0j-63g1jt",
+                  "name": "Machine Learning"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-loty16",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosgnag-d87z9v",
+                  "name": "intro to pyhton"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-l6x929",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqosgr90-fv9j17",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-gat7lv",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqosgum9-dsc6dg",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-rm3kp3",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqosgzdk-b6frbs",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-end43h",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosh3ch-37q373",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-vo8sdn",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqoshbae-it078v",
+                  "name": "angular"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-9s2xlw",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqoshhgw-ckzrxh",
+                  "name": "model"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-yd3sed",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqoshldn-fyaedl",
+                  "name": "design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-pyml6k",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqoshtpr-a4x9en",
+                  "name": "ccs & js"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-tclwub",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqot0u8n-1dq645",
+                  "name": "version control 2"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -159,60 +604,429 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Term 1", "startDate": "2026-01-01", "endDate": "2026-03-31", "midTermBreakStartDate": "2026-02-01", "midTermBreakEndDate": "2026-02-07" },
-        { "name": "Term 2", "startDate": "2026-05-01", "endDate": "2026-07-31", "midTermBreakStartDate": "2026-06-01", "midTermBreakEndDate": "2026-06-06" },
-        { "name": "Term 3", "startDate": "2026-09-01", "endDate": "2026-11-30", "midTermBreakStartDate": "2026-10-01", "midTermBreakEndDate": "2026-10-07" }
+        {
+          "name": "Term 1",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "midTermBreakStartDate": "2026-02-01",
+          "midTermBreakEndDate": "2026-02-07"
+        },
+        {
+          "name": "Term 2",
+          "startDate": "2026-05-01",
+          "endDate": "2026-07-31",
+          "midTermBreakStartDate": "2026-06-01",
+          "midTermBreakEndDate": "2026-06-06"
+        },
+        {
+          "name": "Term 3",
+          "startDate": "2026-09-01",
+          "endDate": "2026-11-30",
+          "midTermBreakStartDate": "2026-10-01",
+          "midTermBreakEndDate": "2026-10-07"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkhim89-rp56w6", "name": "Grade 1", "courses": [{ "id": "mqkp07v4-lkgrjx", "name": "Scratch" }] },
-            { "id": "mqkhiu17-1n7gb4", "name": "Grade 2", "courses": [{ "id": "mqkoyvgs-svswx6", "name": "web developement" }] },
-            { "id": "mqkhiy0f-ifxj1n", "name": "Grade 3", "courses": [{ "id": "mqkoyoii-7xfoha", "name": "python" }] },
-            { "id": "mqkx0bby-7y6aq5", "name": "Grade 4", "courses": [{ "id": "mqosc76p-hf5t4h", "name": "css" }] },
-            { "id": "mqkx7s8f-jxizak", "name": "Grade 5", "courses": [{ "id": "mqoscb9b-lpsidt", "name": "java" }] },
-            { "id": "mqkx7s8f-95dgs9", "name": "Grade 6", "courses": [{ "id": "mqoschmu-3zkj24", "name": "web dev" }] },
-            { "id": "mqkx7s8f-7l2f1p", "name": "Grade 7", "courses": [{ "id": "mqoscqse-ntf2u8", "name": "game design" }] },
-            { "id": "mqkx8wqv-071o6l", "name": "Grade 8", "courses": [{ "id": "mqosd1dg-ektwbr", "name": "robotics with pyhton" }] },
-            { "id": "mqkx8wqv-jvayr3", "name": "Grade 9", "courses": [{ "id": "mqosd6f8-cj6d7v", "name": "intro to python" }] },
-            { "id": "mqkx8wqv-yy9rxr", "name": "Grade 10", "courses": [{ "id": "mqosddk9-94y9qn", "name": "html &css" }] },
-            { "id": "mqkx8wqv-u0vr2r", "name": "Grade 11", "courses": [{ "id": "mqosdhg9-ndf4og", "name": "c++" }] },
-            { "id": "mqkx8wqv-a30xet", "name": "Grade 12", "courses": [{ "id": "mqosdzl2-v9w37a", "name": "maths" }] },
-            { "id": "mqm8ay1i-bl8gan", "name": "Version 1", "courses": [{ "id": "mqosz9s8-49odnc", "name": "js" }] }
+            {
+              "id": "mqkhim89-rp56w6",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkp07v4-lkgrjx",
+                  "name": "Scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiu17-1n7gb4",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqkoyvgs-svswx6",
+                  "name": "web developement"
+                }
+              ]
+            },
+            {
+              "id": "mqkhiy0f-ifxj1n",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqkoyoii-7xfoha",
+                  "name": "python"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-7y6aq5",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosc76p-hf5t4h",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-jxizak",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqoscb9b-lpsidt",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-95dgs9",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqoschmu-3zkj24",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-7l2f1p",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqoscqse-ntf2u8",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-071o6l",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosd1dg-ektwbr",
+                  "name": "robotics with pyhton"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-jvayr3",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqosd6f8-cj6d7v",
+                  "name": "intro to python"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-yy9rxr",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqosddk9-94y9qn",
+                  "name": "html &css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-u0vr2r",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqosdhg9-ndf4og",
+                  "name": "c++"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-a30xet",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqosdzl2-v9w37a",
+                  "name": "maths"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-bl8gan",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqosz9s8-49odnc",
+                  "name": "js"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkhjcyt-jtijjl", "name": "Grade 1", "courses": [{ "id": "mqkoyeo5-w1wd0o", "name": "math" }] },
-            { "id": "mqkhjiop-zsfjq9", "name": "Grade 2", "courses": [{ "id": "mqosecme-r6hj8k", "name": "science" }] },
-            { "id": "mqkhjobd-80wp5k", "name": "Grade 3", "courses": [{ "id": "mqoszqv4-99pkp7", "name": "css" }] },
-            { "id": "mqkx0bby-hb06na", "name": "Grade 4", "courses": [{ "id": "mqosg0xu-xdny8a", "name": "react" }] },
-            { "id": "mqkx7s8f-0g2j01", "name": "Grade 5", "courses": [{ "id": "mqosftpq-vpmd4j", "name": "english" }] },
-            { "id": "mqkx7s8f-fmcta9", "name": "Grade 6", "courses": [{ "id": "mqosfnkd-le0e19", "name": "intro to web" }] },
-            { "id": "mqkx7s8f-e66b53", "name": "Grade 7", "courses": [{ "id": "mqosfg2q-nogf8o", "name": "game design" }] },
-            { "id": "mqkx8wqv-95vj02", "name": "Grade 8", "courses": [{ "id": "mqosf8m3-mcoj7s", "name": "Model design" }] },
-            { "id": "mqkx8wqv-41i1yd", "name": "Grade 9", "courses": [{ "id": "mqosf0f0-22l9l4", "name": "AI&ML" }] },
-            { "id": "mqkx8wqv-vn7clz", "name": "Grade 10", "courses": [{ "id": "mqosevbf-cyygw8", "name": "scratch" }] },
-            { "id": "mqkx8wqv-np9jta", "name": "Grade 11", "courses": [{ "id": "mqosepas-k545mg", "name": "robobtics" }] },
-            { "id": "mqkx8wqv-rol6qa", "name": "Grade 12", "courses": [{ "id": "mqosekz7-szhkpl", "name": "game design" }] },
-            { "id": "mqm8ay1i-zogy8o", "name": "Version 1", "courses": [{ "id": "mqoszyxa-oqkiut", "name": "version control" }] }
+            {
+              "id": "mqkhjcyt-jtijjl",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkoyeo5-w1wd0o",
+                  "name": "math"
+                }
+              ]
+            },
+            {
+              "id": "mqkhjiop-zsfjq9",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqosecme-r6hj8k",
+                  "name": "science"
+                }
+              ]
+            },
+            {
+              "id": "mqkhjobd-80wp5k",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqoszqv4-99pkp7",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-hb06na",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosg0xu-xdny8a",
+                  "name": "react"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-0g2j01",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqosftpq-vpmd4j",
+                  "name": "english"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-fmcta9",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqosfnkd-le0e19",
+                  "name": "intro to web"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-e66b53",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqosfg2q-nogf8o",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-95vj02",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosf8m3-mcoj7s",
+                  "name": "Model design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-41i1yd",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqosf0f0-22l9l4",
+                  "name": "AI&ML"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-vn7clz",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqosevbf-cyygw8",
+                  "name": "scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-np9jta",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqosepas-k545mg",
+                  "name": "robobtics"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-rol6qa",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqosekz7-szhkpl",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-zogy8o",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqoszyxa-oqkiut",
+                  "name": "version control"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkhjz7l-1vasqi", "name": "Grade 1", "courses": [{ "id": "mqkhlhoi-l2mho2", "name": "Intro to Python" }] },
-            { "id": "mqkhk2nj-2vabq8", "name": "Grade 2", "courses": [{ "id": "mqkhm0wk-d3l0zu", "name": "Machine Learning" }] },
-            { "id": "mqkhk5px-bkffg5", "name": "Grade 3", "courses": [{ "id": "mqkhmv0j-63g1jt", "name": "Machine Learning" }] },
-            { "id": "mqkx0bby-loty16", "name": "Grade 4", "courses": [{ "id": "mqosgnag-d87z9v", "name": "intro to pyhton" }] },
-            { "id": "mqkx7s8f-l6x929", "name": "Grade 5", "courses": [{ "id": "mqosgr90-fv9j17", "name": "css" }] },
-            { "id": "mqkx7s8f-gat7lv", "name": "Grade 6", "courses": [{ "id": "mqosgum9-dsc6dg", "name": "html" }] },
-            { "id": "mqkx7s8f-rm3kp3", "name": "Grade 7", "courses": [{ "id": "mqosgzdk-b6frbs", "name": "java" }] },
-            { "id": "mqkx8wqv-end43h", "name": "Grade 8", "courses": [{ "id": "mqosh3ch-37q373", "name": "javascript" }] },
-            { "id": "mqkx8wqv-vo8sdn", "name": "Grade 9", "courses": [{ "id": "mqoshbae-it078v", "name": "angular" }] },
-            { "id": "mqkx8wqv-9s2xlw", "name": "Grade 10", "courses": [{ "id": "mqoshhgw-ckzrxh", "name": "model" }] },
-            { "id": "mqkx8wqv-yd3sed", "name": "Grade 11", "courses": [{ "id": "mqoshldn-fyaedl", "name": "design" }] },
-            { "id": "mqkx8wqv-pyml6k", "name": "Grade 12", "courses": [{ "id": "mqoshtpr-a4x9en", "name": "ccs & js" }] },
-            { "id": "mqm8ay1i-tclwub", "name": "Version 1", "courses": [{ "id": "mqot0u8n-1dq645", "name": "version control 2" }] }
+            {
+              "id": "mqkhjz7l-1vasqi",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqkhlhoi-l2mho2",
+                  "name": "Intro to Python"
+                }
+              ]
+            },
+            {
+              "id": "mqkhk2nj-2vabq8",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqkhm0wk-d3l0zu",
+                  "name": "Machine Learning"
+                }
+              ]
+            },
+            {
+              "id": "mqkhk5px-bkffg5",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqkhmv0j-63g1jt",
+                  "name": "Machine Learning"
+                }
+              ]
+            },
+            {
+              "id": "mqkx0bby-loty16",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqosgnag-d87z9v",
+                  "name": "intro to pyhton"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-l6x929",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqosgr90-fv9j17",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-gat7lv",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqosgum9-dsc6dg",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkx7s8f-rm3kp3",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqosgzdk-b6frbs",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-end43h",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqosh3ch-37q373",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-vo8sdn",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqoshbae-it078v",
+                  "name": "angular"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-9s2xlw",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqoshhgw-ckzrxh",
+                  "name": "model"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-yd3sed",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqoshldn-fyaedl",
+                  "name": "design"
+                }
+              ]
+            },
+            {
+              "id": "mqkx8wqv-pyml6k",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqoshtpr-a4x9en",
+                  "name": "ccs & js"
+                }
+              ]
+            },
+            {
+              "id": "mqm8ay1i-tclwub",
+              "name": "Version 1",
+              "courses": [
+                {
+                  "id": "mqot0u8n-1dq645",
+                  "name": "version control 2"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -224,7 +1038,6 @@
     "createdAt": "2026-06-15T11:00:00.000Z",
     "updatedAt": "2026-06-15T11:00:00.000Z"
   },
-
   {
     "id": "cam-0001-bbbb-0000-000000000001",
     "curriculumId": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
@@ -264,24 +1077,109 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Autumn Term", "startDate": "2026-08-01", "endDate": "2026-09-30", "midTermBreakStartDate": "2026-08-23", "midTermBreakEndDate": "2026-09-03" },
-        { "name": "Spring Term", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-02", "midTermBreakEndDate": "2027-02-08" },
-        { "name": "Summer ", "startDate": "2027-04-20", "endDate": "2027-07-31", "midTermBreakStartDate": "2027-05-01", "midTermBreakEndDate": "2027-05-08" }
+        {
+          "name": "Autumn Term",
+          "startDate": "2026-08-01",
+          "endDate": "2026-09-30",
+          "midTermBreakStartDate": "2026-08-23",
+          "midTermBreakEndDate": "2026-09-03"
+        },
+        {
+          "name": "Spring Term",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-02",
+          "midTermBreakEndDate": "2027-02-08"
+        },
+        {
+          "name": "Summer ",
+          "startDate": "2027-04-20",
+          "endDate": "2027-07-31",
+          "midTermBreakStartDate": "2027-05-01",
+          "midTermBreakEndDate": "2027-05-08"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkjkui0-qv8w7w", "name": "Year 1", "courses": [{ "id": "mqossoi2-hoiim0", "name": "robotics" }] },
-            { "id": "mqkjl152-zlp28i", "name": "Year 2", "courses": [{ "id": "mqossu26-ijkpty", "name": "Python" }] },
-            { "id": "mqkjlean-ppb521", "name": "Year 3", "courses": [{ "id": "mqost0jv-0ytlaj", "name": "html" }] },
-            { "id": "mqkjll7c-v76hkf", "name": "Year 4", "courses": [{ "id": "mqost3dj-8isios", "name": "css" }] },
-            { "id": "mqkjlq15-u91pgc", "name": "Year 5", "courses": [{ "id": "mqost8js-enhrpk", "name": "js" }] },
-            { "id": "mqm3sbpg-k8b7rb", "name": "Year 6", "courses": [{ "id": "mqostbem-56k1ou", "name": "java" }] },
-            { "id": "mqm3sbpg-75wrzd", "name": "Year 7", "courses": [{ "id": "mqosthcg-ue07zb", "name": "javascript" }] }
+            {
+              "id": "mqkjkui0-qv8w7w",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqossoi2-hoiim0",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqkjl152-zlp28i",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqossu26-ijkpty",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlean-ppb521",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqost0jv-0ytlaj",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkjll7c-v76hkf",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqost3dj-8isios",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlq15-u91pgc",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqost8js-enhrpk",
+                  "name": "js"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-k8b7rb",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqostbem-56k1ou",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-75wrzd",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosthcg-ue07zb",
+                  "name": "javascript"
+                }
+              ]
+            }
           ]
         },
-        { "grades": [] },
-        { "grades": [] }
+        {
+          "grades": []
+        },
+        {
+          "grades": []
+        }
       ],
       "status": "draft",
       "educationLevel": "",
@@ -306,60 +1204,429 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Autumn Term", "startDate": "2026-08-01", "endDate": "2026-09-30", "midTermBreakStartDate": "2026-08-23", "midTermBreakEndDate": "2026-09-03" },
-        { "name": "Spring Term", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-02", "midTermBreakEndDate": "2027-02-08" },
-        { "name": "Summer ", "startDate": "2027-04-20", "endDate": "2027-07-31", "midTermBreakStartDate": "2027-05-01", "midTermBreakEndDate": "2027-05-08" }
+        {
+          "name": "Autumn Term",
+          "startDate": "2026-08-01",
+          "endDate": "2026-09-30",
+          "midTermBreakStartDate": "2026-08-23",
+          "midTermBreakEndDate": "2026-09-03"
+        },
+        {
+          "name": "Spring Term",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-02",
+          "midTermBreakEndDate": "2027-02-08"
+        },
+        {
+          "name": "Summer ",
+          "startDate": "2027-04-20",
+          "endDate": "2027-07-31",
+          "midTermBreakStartDate": "2027-05-01",
+          "midTermBreakEndDate": "2027-05-08"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkjkui0-qv8w7w", "name": "Year 1", "courses": [{ "id": "mqossoi2-hoiim0", "name": "robotics" }] },
-            { "id": "mqkjl152-zlp28i", "name": "Year 2", "courses": [{ "id": "mqossu26-ijkpty", "name": "Python" }] },
-            { "id": "mqkjlean-ppb521", "name": "Year 3", "courses": [{ "id": "mqost0jv-0ytlaj", "name": "html" }] },
-            { "id": "mqkjll7c-v76hkf", "name": "Year 4", "courses": [{ "id": "mqost3dj-8isios", "name": "css" }] },
-            { "id": "mqkjlq15-u91pgc", "name": "Year 5", "courses": [{ "id": "mqost8js-enhrpk", "name": "js" }] },
-            { "id": "mqm3sbpg-k8b7rb", "name": "Year 6", "courses": [{ "id": "mqostbem-56k1ou", "name": "java" }] },
-            { "id": "mqm3sbpg-75wrzd", "name": "Year 7", "courses": [{ "id": "mqosthcg-ue07zb", "name": "javascript" }] },
-            { "id": "mqm3sbpg-e8wrom", "name": "Year 8", "courses": [{ "id": "mqostn5n-f66h7j", "name": "web dev" }] },
-            { "id": "mqm3sbpg-cz3ncx", "name": "Year 9", "courses": [{ "id": "mqosts8o-81p2w2", "name": "game design" }] },
-            { "id": "mqm3sbpg-jt3oos", "name": "Year 10", "courses": [{ "id": "mqostx1q-p7ve1i", "name": "intro to AI" }] },
-            { "id": "mqm3sbpg-275l4f", "name": "Year 11", "courses": [{ "id": "mqosu7au-q2r922", "name": "Coding in scratch" }] },
-            { "id": "mqm3sbpg-rkt7yi", "name": "Year 12", "courses": [{ "id": "mqosub9z-iotulc", "name": "c++" }] },
-            { "id": "mqm3sbpg-azt0j0", "name": "Year 13", "courses": [{ "id": "mqosufi8-n6oau5", "name": "react" }] }
+            {
+              "id": "mqkjkui0-qv8w7w",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqossoi2-hoiim0",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqkjl152-zlp28i",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqossu26-ijkpty",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlean-ppb521",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqost0jv-0ytlaj",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkjll7c-v76hkf",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqost3dj-8isios",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlq15-u91pgc",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqost8js-enhrpk",
+                  "name": "js"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-k8b7rb",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqostbem-56k1ou",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-75wrzd",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosthcg-ue07zb",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-e8wrom",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqostn5n-f66h7j",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-cz3ncx",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosts8o-81p2w2",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-jt3oos",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqostx1q-p7ve1i",
+                  "name": "intro to AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-275l4f",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosu7au-q2r922",
+                  "name": "Coding in scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-rkt7yi",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqosub9z-iotulc",
+                  "name": "c++"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-azt0j0",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqosufi8-n6oau5",
+                  "name": "react"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkjm6ks-qlv566", "name": "Year 1", "courses": [{ "id": "mqosunyk-ebv99i", "name": "game dev" }] },
-            { "id": "mqkjm9vr-8gokj2", "name": "Year 2", "courses": [{ "id": "mqosut5d-yuc88x", "name": "game design" }] },
-            { "id": "mqkjmdzf-g4zdcj", "name": "Year 3", "courses": [{ "id": "mqosuy7o-wqaxa1", "name": "java" }] },
-            { "id": "mqkjmire-etkprv", "name": "Year 4", "courses": [{ "id": "mqosv4yi-adal0u", "name": "c++" }] },
-            { "id": "mqkjmm5z-g1pe5f", "name": "Year 5", "courses": [{ "id": "mqosv95s-7ob2ax", "name": "c#" }] },
-            { "id": "mqm3sbpg-aevl0o", "name": "Year 6", "courses": [{ "id": "mqosvd8b-irozg1", "name": "robotics" }] },
-            { "id": "mqm3sbpg-xvtiu6", "name": "Year 7", "courses": [{ "id": "mqosviwa-gtbbfq", "name": "robotics 2" }] },
-            { "id": "mqm3sbpg-rq7xp8", "name": "Year 8", "courses": [{ "id": "mqosvoa0-id4lvk", "name": "robotics 2" }] },
-            { "id": "mqm3sbpg-jadvjl", "name": "Year 9", "courses": [{ "id": "mqosvvzy-8ayfcs", "name": "robotics  3" }] },
-            { "id": "mqm3sbpg-nila43", "name": "Year 10", "courses": [{ "id": "mqosw0n4-xdl38m", "name": "robotics 4" }] },
-            { "id": "mqm3sbpg-reg4jt", "name": "Year 11", "courses": [{ "id": "mqosw73c-lk4lbc", "name": "robotics 4.1" }] },
-            { "id": "mqm3sbpg-eyp7o4", "name": "Year 12", "courses": [{ "id": "mqoswcsx-7nkqbl", "name": "web dev 1" }] },
-            { "id": "mqm3sbpg-04z18i", "name": "Year 13", "courses": [{ "id": "mqoswhsn-8f83ct", "name": "web dev 2" }] }
+            {
+              "id": "mqkjm6ks-qlv566",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqosunyk-ebv99i",
+                  "name": "game dev"
+                }
+              ]
+            },
+            {
+              "id": "mqkjm9vr-8gokj2",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqosut5d-yuc88x",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmdzf-g4zdcj",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqosuy7o-wqaxa1",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmire-etkprv",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqosv4yi-adal0u",
+                  "name": "c++"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmm5z-g1pe5f",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqosv95s-7ob2ax",
+                  "name": "c#"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-aevl0o",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqosvd8b-irozg1",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-xvtiu6",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosviwa-gtbbfq",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-rq7xp8",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqosvoa0-id4lvk",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-jadvjl",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosvvzy-8ayfcs",
+                  "name": "robotics  3"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-nila43",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqosw0n4-xdl38m",
+                  "name": "robotics 4"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-reg4jt",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosw73c-lk4lbc",
+                  "name": "robotics 4.1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-eyp7o4",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqoswcsx-7nkqbl",
+                  "name": "web dev 1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-04z18i",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqoswhsn-8f83ct",
+                  "name": "web dev 2"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkjn4bq-ideur0", "name": "Year 1", "courses": [{ "id": "mqoswodi-zhe6lc", "name": "html" }] },
-            { "id": "mqkjn87b-kn607m", "name": "Year 2", "courses": [{ "id": "mqoswred-9wtkvl", "name": "css" }] },
-            { "id": "mqkjnbjg-gp7iqf", "name": "Year 3", "courses": [{ "id": "mqoswv49-tj4jal", "name": "js" }] },
-            { "id": "mqkjnfcs-uoz2ny", "name": "Year 4", "courses": [{ "id": "mqoswyva-97mtp0", "name": "java" }] },
-            { "id": "mqkjnjq5-6nhvmz", "name": "Year 5", "courses": [{ "id": "mqosx3re-7kylcd", "name": "javascript" }] },
-            { "id": "mqm3sbpg-gik6ws", "name": "Year 6", "courses": [{ "id": "mqosx83p-e230uf", "name": "java 1.1" }] },
-            { "id": "mqm3sbpg-pwg5jf", "name": "Year 7", "courses": [{ "id": "mqosxhnz-qmcn4x", "name": "css" }] },
-            { "id": "mqm3sbpg-29onqo", "name": "Year 8", "courses": [{ "id": "mqosxodw-agyy8q", "name": "robotics" }] },
-            { "id": "mqm3sbpg-kzgo8f", "name": "Year 9", "courses": [{ "id": "mqosxsia-volv69", "name": "robotics" }] },
-            { "id": "mqm3sbpg-dzo1hy", "name": "Year 10", "courses": [{ "id": "mqosy046-y164n5", "name": "intro to AI" }] },
-            { "id": "mqm3sbpg-2xr17e", "name": "Year 11", "courses": [{ "id": "mqosy7o5-lub8hk", "name": "tailwind" }] },
-            { "id": "mqm3sbpg-phncwe", "name": "Year 12", "courses": [{ "id": "mqosyapt-6238aa", "name": "vite" }] },
-            { "id": "mqm3sbpg-1nzu6j", "name": "Year 13", "courses": [{ "id": "mqosyeuv-euy182", "name": "next.js" }] }
+            {
+              "id": "mqkjn4bq-ideur0",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqoswodi-zhe6lc",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkjn87b-kn607m",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqoswred-9wtkvl",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnbjg-gp7iqf",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqoswv49-tj4jal",
+                  "name": "js"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnfcs-uoz2ny",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqoswyva-97mtp0",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnjq5-6nhvmz",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqosx3re-7kylcd",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-gik6ws",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqosx83p-e230uf",
+                  "name": "java 1.1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-pwg5jf",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosxhnz-qmcn4x",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-29onqo",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqosxodw-agyy8q",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-kzgo8f",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosxsia-volv69",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-dzo1hy",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqosy046-y164n5",
+                  "name": "intro to AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-2xr17e",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosy7o5-lub8hk",
+                  "name": "tailwind"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-phncwe",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqosyapt-6238aa",
+                  "name": "vite"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-1nzu6j",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqosyeuv-euy182",
+                  "name": "next.js"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -386,60 +1653,429 @@
       "framework": "CBC",
       "academicCycleModel": "terms",
       "periods": [
-        { "name": "Autumn Term", "startDate": "2026-08-01", "endDate": "2026-09-30", "midTermBreakStartDate": "2026-08-23", "midTermBreakEndDate": "2026-09-03" },
-        { "name": "Spring Term", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-02", "midTermBreakEndDate": "2027-02-08" },
-        { "name": "Summer ", "startDate": "2027-04-20", "endDate": "2027-07-31", "midTermBreakStartDate": "2027-05-01", "midTermBreakEndDate": "2027-05-08" }
+        {
+          "name": "Autumn Term",
+          "startDate": "2026-08-01",
+          "endDate": "2026-09-30",
+          "midTermBreakStartDate": "2026-08-23",
+          "midTermBreakEndDate": "2026-09-03"
+        },
+        {
+          "name": "Spring Term",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-02",
+          "midTermBreakEndDate": "2027-02-08"
+        },
+        {
+          "name": "Summer ",
+          "startDate": "2027-04-20",
+          "endDate": "2027-07-31",
+          "midTermBreakStartDate": "2027-05-01",
+          "midTermBreakEndDate": "2027-05-08"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqkjkui0-qv8w7w", "name": "Year 1", "courses": [{ "id": "mqossoi2-hoiim0", "name": "robotics" }] },
-            { "id": "mqkjl152-zlp28i", "name": "Year 2", "courses": [{ "id": "mqossu26-ijkpty", "name": "Python" }] },
-            { "id": "mqkjlean-ppb521", "name": "Year 3", "courses": [{ "id": "mqost0jv-0ytlaj", "name": "html" }] },
-            { "id": "mqkjll7c-v76hkf", "name": "Year 4", "courses": [{ "id": "mqost3dj-8isios", "name": "css" }] },
-            { "id": "mqkjlq15-u91pgc", "name": "Year 5", "courses": [{ "id": "mqost8js-enhrpk", "name": "js" }] },
-            { "id": "mqm3sbpg-k8b7rb", "name": "Year 6", "courses": [{ "id": "mqostbem-56k1ou", "name": "java" }] },
-            { "id": "mqm3sbpg-75wrzd", "name": "Year 7", "courses": [{ "id": "mqosthcg-ue07zb", "name": "javascript" }] },
-            { "id": "mqm3sbpg-e8wrom", "name": "Year 8", "courses": [{ "id": "mqostn5n-f66h7j", "name": "web dev" }] },
-            { "id": "mqm3sbpg-cz3ncx", "name": "Year 9", "courses": [{ "id": "mqosts8o-81p2w2", "name": "game design" }] },
-            { "id": "mqm3sbpg-jt3oos", "name": "Year 10", "courses": [{ "id": "mqostx1q-p7ve1i", "name": "intro to AI" }] },
-            { "id": "mqm3sbpg-275l4f", "name": "Year 11", "courses": [{ "id": "mqosu7au-q2r922", "name": "Coding in scratch" }] },
-            { "id": "mqm3sbpg-rkt7yi", "name": "Year 12", "courses": [{ "id": "mqosub9z-iotulc", "name": "c++ (A-Level)" }] },
-            { "id": "mqm3sbpg-azt0j0", "name": "Year 13", "courses": [{ "id": "mqosufi8-n6oau5", "name": "react (A-Level)" }] }
+            {
+              "id": "mqkjkui0-qv8w7w",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqossoi2-hoiim0",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqkjl152-zlp28i",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqossu26-ijkpty",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlean-ppb521",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqost0jv-0ytlaj",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkjll7c-v76hkf",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqost3dj-8isios",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkjlq15-u91pgc",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqost8js-enhrpk",
+                  "name": "js"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-k8b7rb",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqostbem-56k1ou",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-75wrzd",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosthcg-ue07zb",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-e8wrom",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqostn5n-f66h7j",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-cz3ncx",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosts8o-81p2w2",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-jt3oos",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqostx1q-p7ve1i",
+                  "name": "intro to AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-275l4f",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosu7au-q2r922",
+                  "name": "Coding in scratch"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-rkt7yi",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqosub9z-iotulc",
+                  "name": "c++ (A-Level)"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-azt0j0",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqosufi8-n6oau5",
+                  "name": "react (A-Level)"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkjm6ks-qlv566", "name": "Year 1", "courses": [{ "id": "mqosunyk-ebv99i", "name": "game dev" }] },
-            { "id": "mqkjm9vr-8gokj2", "name": "Year 2", "courses": [{ "id": "mqosut5d-yuc88x", "name": "game design" }] },
-            { "id": "mqkjmdzf-g4zdcj", "name": "Year 3", "courses": [{ "id": "mqosuy7o-wqaxa1", "name": "java" }] },
-            { "id": "mqkjmire-etkprv", "name": "Year 4", "courses": [{ "id": "mqosv4yi-adal0u", "name": "c++" }] },
-            { "id": "mqkjmm5z-g1pe5f", "name": "Year 5", "courses": [{ "id": "mqosv95s-7ob2ax", "name": "c#" }] },
-            { "id": "mqm3sbpg-aevl0o", "name": "Year 6", "courses": [{ "id": "mqosvd8b-irozg1", "name": "robotics" }] },
-            { "id": "mqm3sbpg-xvtiu6", "name": "Year 7", "courses": [{ "id": "mqosviwa-gtbbfq", "name": "robotics 2" }] },
-            { "id": "mqm3sbpg-rq7xp8", "name": "Year 8", "courses": [{ "id": "mqosvoa0-id4lvk", "name": "robotics 2" }] },
-            { "id": "mqm3sbpg-jadvjl", "name": "Year 9", "courses": [{ "id": "mqosvvzy-8ayfcs", "name": "robotics  3" }] },
-            { "id": "mqm3sbpg-nila43", "name": "Year 10", "courses": [{ "id": "mqosw0n4-xdl38m", "name": "robotics 4" }] },
-            { "id": "mqm3sbpg-reg4jt", "name": "Year 11", "courses": [{ "id": "mqosw73c-lk4lbc", "name": "robotics 4.1" }] },
-            { "id": "mqm3sbpg-eyp7o4", "name": "Year 12", "courses": [{ "id": "mqoswcsx-7nkqbl", "name": "web dev 1" }] },
-            { "id": "mqm3sbpg-04z18i", "name": "Year 13", "courses": [{ "id": "mqoswhsn-8f83ct", "name": "web dev 2" }] }
+            {
+              "id": "mqkjm6ks-qlv566",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqosunyk-ebv99i",
+                  "name": "game dev"
+                }
+              ]
+            },
+            {
+              "id": "mqkjm9vr-8gokj2",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqosut5d-yuc88x",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmdzf-g4zdcj",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqosuy7o-wqaxa1",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmire-etkprv",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqosv4yi-adal0u",
+                  "name": "c++"
+                }
+              ]
+            },
+            {
+              "id": "mqkjmm5z-g1pe5f",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqosv95s-7ob2ax",
+                  "name": "c#"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-aevl0o",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqosvd8b-irozg1",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-xvtiu6",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosviwa-gtbbfq",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-rq7xp8",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqosvoa0-id4lvk",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-jadvjl",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosvvzy-8ayfcs",
+                  "name": "robotics  3"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-nila43",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqosw0n4-xdl38m",
+                  "name": "robotics 4"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-reg4jt",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosw73c-lk4lbc",
+                  "name": "robotics 4.1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-eyp7o4",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqoswcsx-7nkqbl",
+                  "name": "web dev 1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-04z18i",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqoswhsn-8f83ct",
+                  "name": "web dev 2"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqkjn4bq-ideur0", "name": "Year 1", "courses": [{ "id": "mqoswodi-zhe6lc", "name": "html" }] },
-            { "id": "mqkjn87b-kn607m", "name": "Year 2", "courses": [{ "id": "mqoswred-9wtkvl", "name": "css" }] },
-            { "id": "mqkjnbjg-gp7iqf", "name": "Year 3", "courses": [{ "id": "mqoswv49-tj4jal", "name": "js" }] },
-            { "id": "mqkjnfcs-uoz2ny", "name": "Year 4", "courses": [{ "id": "mqoswyva-97mtp0", "name": "java" }] },
-            { "id": "mqkjnjq5-6nhvmz", "name": "Year 5", "courses": [{ "id": "mqosx3re-7kylcd", "name": "javascript" }] },
-            { "id": "mqm3sbpg-gik6ws", "name": "Year 6", "courses": [{ "id": "mqosx83p-e230uf", "name": "java 1.1" }] },
-            { "id": "mqm3sbpg-pwg5jf", "name": "Year 7", "courses": [{ "id": "mqosxhnz-qmcn4x", "name": "css" }] },
-            { "id": "mqm3sbpg-29onqo", "name": "Year 8", "courses": [{ "id": "mqosxodw-agyy8q", "name": "robotics" }] },
-            { "id": "mqm3sbpg-kzgo8f", "name": "Year 9", "courses": [{ "id": "mqosxsia-volv69", "name": "robotics" }] },
-            { "id": "mqm3sbpg-dzo1hy", "name": "Year 10", "courses": [{ "id": "mqosy046-y164n5", "name": "intro to AI" }] },
-            { "id": "mqm3sbpg-2xr17e", "name": "Year 11", "courses": [{ "id": "mqosy7o5-lub8hk", "name": "tailwind" }] },
-            { "id": "mqm3sbpg-phncwe", "name": "Year 12", "courses": [{ "id": "mqosyapt-6238aa", "name": "vite" }] },
-            { "id": "mqm3sbpg-1nzu6j", "name": "Year 13", "courses": [{ "id": "mqosyeuv-euy182", "name": "next.js" }] }
+            {
+              "id": "mqkjn4bq-ideur0",
+              "name": "Year 1",
+              "courses": [
+                {
+                  "id": "mqoswodi-zhe6lc",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqkjn87b-kn607m",
+              "name": "Year 2",
+              "courses": [
+                {
+                  "id": "mqoswred-9wtkvl",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnbjg-gp7iqf",
+              "name": "Year 3",
+              "courses": [
+                {
+                  "id": "mqoswv49-tj4jal",
+                  "name": "js"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnfcs-uoz2ny",
+              "name": "Year 4",
+              "courses": [
+                {
+                  "id": "mqoswyva-97mtp0",
+                  "name": "java"
+                }
+              ]
+            },
+            {
+              "id": "mqkjnjq5-6nhvmz",
+              "name": "Year 5",
+              "courses": [
+                {
+                  "id": "mqosx3re-7kylcd",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-gik6ws",
+              "name": "Year 6",
+              "courses": [
+                {
+                  "id": "mqosx83p-e230uf",
+                  "name": "java 1.1"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-pwg5jf",
+              "name": "Year 7",
+              "courses": [
+                {
+                  "id": "mqosxhnz-qmcn4x",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-29onqo",
+              "name": "Year 8",
+              "courses": [
+                {
+                  "id": "mqosxodw-agyy8q",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-kzgo8f",
+              "name": "Year 9",
+              "courses": [
+                {
+                  "id": "mqosxsia-volv69",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-dzo1hy",
+              "name": "Year 10",
+              "courses": [
+                {
+                  "id": "mqosy046-y164n5",
+                  "name": "intro to AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-2xr17e",
+              "name": "Year 11",
+              "courses": [
+                {
+                  "id": "mqosy7o5-lub8hk",
+                  "name": "tailwind"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-phncwe",
+              "name": "Year 12",
+              "courses": [
+                {
+                  "id": "mqosyapt-6238aa",
+                  "name": "vite"
+                }
+              ]
+            },
+            {
+              "id": "mqm3sbpg-1nzu6j",
+              "name": "Year 13",
+              "courses": [
+                {
+                  "id": "mqosyeuv-euy182",
+                  "name": "next.js"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -451,7 +2087,6 @@
     "createdAt": "2026-06-18T09:30:00.000Z",
     "updatedAt": "2026-06-18T09:30:00.000Z"
   },
-
   {
     "id": "ame-0001-cccc-0000-000000000001",
     "curriculumId": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
@@ -491,21 +2126,89 @@
       "framework": "American",
       "academicCycleModel": "semesters",
       "periods": [
-        { "name": "Fall Semester ", "startDate": "2026-08-01", "endDate": "2026-12-31", "midTermBreakStartDate": "2026-11-01", "midTermBreakEndDate": "2026-11-07" },
-        { "name": "Spring Semester ", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-01", "midTermBreakEndDate": "2027-02-10" }
+        {
+          "name": "Fall Semester ",
+          "startDate": "2026-08-01",
+          "endDate": "2026-12-31",
+          "midTermBreakStartDate": "2026-11-01",
+          "midTermBreakEndDate": "2026-11-07"
+        },
+        {
+          "name": "Spring Semester ",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-01",
+          "midTermBreakEndDate": "2027-02-10"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqm3oj2x-aicu2x", "name": "Grade 1", "courses": [{ "id": "mqm6h18v-12suzm", "name": "Python" }] },
-            { "id": "mqm3oj2x-urrpc8", "name": "Grade 2", "courses": [{ "id": "mqm6h4v9-rlo0vp", "name": "html" }] },
-            { "id": "mqm3oj2x-t9ujla", "name": "Grade 3", "courses": [{ "id": "mqm6h8gk-pmz5k4", "name": "css" }] },
-            { "id": "mqm3oj2x-xca8hu", "name": "Grade 4", "courses": [{ "id": "mqm6hl31-ci348i", "name": "machine learning" }] },
-            { "id": "mqm3oj2x-wgfvww", "name": "Grade 5", "courses": [{ "id": "mqm6ht49-exs6ck", "name": "Game development" }] },
-            { "id": "mqm3oj2x-b5uvvl", "name": "Grade 6", "courses": [{ "id": "mqm6i19z-xsqeph", "name": "story development" }] }
+            {
+              "id": "mqm3oj2x-aicu2x",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqm6h18v-12suzm",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-urrpc8",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqm6h4v9-rlo0vp",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-t9ujla",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqm6h8gk-pmz5k4",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-xca8hu",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqm6hl31-ci348i",
+                  "name": "machine learning"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-wgfvww",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqm6ht49-exs6ck",
+                  "name": "Game development"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-b5uvvl",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqm6i19z-xsqeph",
+                  "name": "story development"
+                }
+              ]
+            }
           ]
         },
-        { "grades": [] }
+        {
+          "grades": []
+        }
       ],
       "status": "draft",
       "educationLevel": "",
@@ -530,40 +2233,268 @@
       "framework": "American",
       "academicCycleModel": "semesters",
       "periods": [
-        { "name": "Fall Semester ", "startDate": "2026-08-01", "endDate": "2026-12-31", "midTermBreakStartDate": "2026-11-01", "midTermBreakEndDate": "2026-11-07" },
-        { "name": "Spring Semester ", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-01", "midTermBreakEndDate": "2027-02-10" }
+        {
+          "name": "Fall Semester ",
+          "startDate": "2026-08-01",
+          "endDate": "2026-12-31",
+          "midTermBreakStartDate": "2026-11-01",
+          "midTermBreakEndDate": "2026-11-07"
+        },
+        {
+          "name": "Spring Semester ",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-01",
+          "midTermBreakEndDate": "2027-02-10"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqm3oj2x-aicu2x", "name": "Grade 1", "courses": [{ "id": "mqm6h18v-12suzm", "name": "Python" }] },
-            { "id": "mqm3oj2x-urrpc8", "name": "Grade 2", "courses": [{ "id": "mqm6h4v9-rlo0vp", "name": "html" }] },
-            { "id": "mqm3oj2x-t9ujla", "name": "Grade 3", "courses": [{ "id": "mqm6h8gk-pmz5k4", "name": "css" }] },
-            { "id": "mqm3oj2x-xca8hu", "name": "Grade 4", "courses": [{ "id": "mqm6hl31-ci348i", "name": "machine learning" }] },
-            { "id": "mqm3oj2x-wgfvww", "name": "Grade 5", "courses": [{ "id": "mqm6ht49-exs6ck", "name": "Game development" }] },
-            { "id": "mqm3oj2x-b5uvvl", "name": "Grade 6", "courses": [{ "id": "mqm6i19z-xsqeph", "name": "story development" }] },
-            { "id": "mqm3oj2x-aryh8e", "name": "Grade 7", "courses": [{ "id": "mqm6i588-dh4jvp", "name": "game design" }] },
-            { "id": "mqm3oj2x-n9zm07", "name": "Grade 8", "courses": [{ "id": "mqm6i93n-kxur91", "name": "AI" }] },
-            { "id": "mqm3oj2x-r54vl5", "name": "Grade 9", "courses": [{ "id": "mqm6iigp-xssys9", "name": "coding" }] },
-            { "id": "mqm3oj2x-t4tjy7", "name": "Grade 10", "courses": [{ "id": "mqm6im8c-y0mrxs", "name": "web dev" }] },
-            { "id": "mqm3oj2x-zgarww", "name": "Grade 11", "courses": [{ "id": "mqm6iqt4-4bbasx", "name": "robotics" }] },
-            { "id": "mqm3oj2x-nmlt1n", "name": "Grade 12", "courses": [{ "id": "mqm6j5w3-d23zfp", "name": "models" }] }
+            {
+              "id": "mqm3oj2x-aicu2x",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqm6h18v-12suzm",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-urrpc8",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqm6h4v9-rlo0vp",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-t9ujla",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqm6h8gk-pmz5k4",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-xca8hu",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqm6hl31-ci348i",
+                  "name": "machine learning"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-wgfvww",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqm6ht49-exs6ck",
+                  "name": "Game development"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-b5uvvl",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqm6i19z-xsqeph",
+                  "name": "story development"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-aryh8e",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqm6i588-dh4jvp",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-n9zm07",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqm6i93n-kxur91",
+                  "name": "AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-r54vl5",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqm6iigp-xssys9",
+                  "name": "coding"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-t4tjy7",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqm6im8c-y0mrxs",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-zgarww",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqm6iqt4-4bbasx",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-nmlt1n",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqm6j5w3-d23zfp",
+                  "name": "models"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqm3oj2x-s1amb0", "name": "Grade 1", "courses": [{ "id": "mqm6jjas-mzztxq", "name": "python" }] },
-            { "id": "mqm3oj2x-7dfbkk", "name": "Grade 2", "courses": [{ "id": "mqm6jozm-99avz0", "name": "web dev" }] },
-            { "id": "mqm3oj2x-36sjbq", "name": "Grade 3", "courses": [{ "id": "mqm6jslj-kkt4gy", "name": "game dev" }] },
-            { "id": "mqm3oj2x-3clf2o", "name": "Grade 4", "courses": [{ "id": "mqm6k2hc-1gytnn", "name": "robotics" }] },
-            { "id": "mqm3oj2x-ekh6kq", "name": "Grade 5", "courses": [{ "id": "mqm6k5ni-2tr5eg", "name": "AI" }] },
-            { "id": "mqm3oj2x-mx4x24", "name": "Grade 6", "courses": [{ "id": "mqm6kbwx-p6xj5k", "name": "MACHINE learning" }] },
-            { "id": "mqm3oj2x-wvufkj", "name": "Grade 7", "courses": [{ "id": "mqm6kkfb-m5wn3s", "name": "html" }] },
-            { "id": "mqm3oj2x-72o21c", "name": "Grade 8", "courses": [{ "id": "mqm6kpam-pa3i66", "name": "css" }] },
-            { "id": "mqm3oj2x-pmpamj", "name": "Grade 9", "courses": [{ "id": "mqm6kuwd-zdgktu", "name": "javacsript" }] },
-            { "id": "mqm3oj2x-nzch0a", "name": "Grade 10", "courses": [{ "id": "mqm6l0yo-yzvmuz", "name": "Pyhton 2" }] },
-            { "id": "mqm3oj2x-djib2r", "name": "Grade 11", "courses": [{ "id": "mqm6l9s5-2ab1w6", "name": "robotics 2" }] },
-            { "id": "mqm3oj2x-7601fg", "name": "Grade 12", "courses": [{ "id": "mqm6maoi-2ultzi", "name": "js & css" }] }
+            {
+              "id": "mqm3oj2x-s1amb0",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqm6jjas-mzztxq",
+                  "name": "python"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-7dfbkk",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqm6jozm-99avz0",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-36sjbq",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqm6jslj-kkt4gy",
+                  "name": "game dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-3clf2o",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqm6k2hc-1gytnn",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-ekh6kq",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqm6k5ni-2tr5eg",
+                  "name": "AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-mx4x24",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqm6kbwx-p6xj5k",
+                  "name": "MACHINE learning"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-wvufkj",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqm6kkfb-m5wn3s",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-72o21c",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqm6kpam-pa3i66",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-pmpamj",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqm6kuwd-zdgktu",
+                  "name": "javacsript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-nzch0a",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqm6l0yo-yzvmuz",
+                  "name": "Pyhton 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-djib2r",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqm6l9s5-2ab1w6",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-7601fg",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqm6maoi-2ultzi",
+                  "name": "js & css"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -590,40 +2521,268 @@
       "framework": "American",
       "academicCycleModel": "semesters",
       "periods": [
-        { "name": "Fall Semester ", "startDate": "2026-08-01", "endDate": "2026-12-31", "midTermBreakStartDate": "2026-11-01", "midTermBreakEndDate": "2026-11-07" },
-        { "name": "Spring Semester ", "startDate": "2027-01-01", "endDate": "2027-03-31", "midTermBreakStartDate": "2027-02-01", "midTermBreakEndDate": "2027-02-10" }
+        {
+          "name": "Fall Semester ",
+          "startDate": "2026-08-01",
+          "endDate": "2026-12-31",
+          "midTermBreakStartDate": "2026-11-01",
+          "midTermBreakEndDate": "2026-11-07"
+        },
+        {
+          "name": "Spring Semester ",
+          "startDate": "2027-01-01",
+          "endDate": "2027-03-31",
+          "midTermBreakStartDate": "2027-02-01",
+          "midTermBreakEndDate": "2027-02-10"
+        }
       ],
       "structure": [
         {
           "grades": [
-            { "id": "mqm3oj2x-aicu2x", "name": "Grade 1", "courses": [{ "id": "mqm6h18v-12suzm", "name": "Python" }] },
-            { "id": "mqm3oj2x-urrpc8", "name": "Grade 2", "courses": [{ "id": "mqm6h4v9-rlo0vp", "name": "html" }] },
-            { "id": "mqm3oj2x-t9ujla", "name": "Grade 3", "courses": [{ "id": "mqm6h8gk-pmz5k4", "name": "css" }] },
-            { "id": "mqm3oj2x-xca8hu", "name": "Grade 4", "courses": [{ "id": "mqm6hl31-ci348i", "name": "machine learning" }] },
-            { "id": "mqm3oj2x-wgfvww", "name": "Grade 5", "courses": [{ "id": "mqm6ht49-exs6ck", "name": "Game development" }] },
-            { "id": "mqm3oj2x-b5uvvl", "name": "Grade 6", "courses": [{ "id": "mqm6i19z-xsqeph", "name": "story development" }] },
-            { "id": "mqm3oj2x-aryh8e", "name": "Grade 7", "courses": [{ "id": "mqm6i588-dh4jvp", "name": "game design" }] },
-            { "id": "mqm3oj2x-n9zm07", "name": "Grade 8", "courses": [{ "id": "mqm6i93n-kxur91", "name": "AI" }] },
-            { "id": "mqm3oj2x-r54vl5", "name": "Grade 9", "courses": [{ "id": "mqm6iigp-xssys9", "name": "Advanced Coding" }] },
-            { "id": "mqm3oj2x-t4tjy7", "name": "Grade 10", "courses": [{ "id": "mqm6im8c-y0mrxs", "name": "Full-Stack Web Dev" }] },
-            { "id": "mqm3oj2x-zgarww", "name": "Grade 11", "courses": [{ "id": "mqm6iqt4-4bbasx", "name": "Robotics & AI" }] },
-            { "id": "mqm3oj2x-nmlt1n", "name": "Grade 12", "courses": [{ "id": "mqm6j5w3-d23zfp", "name": "Capstone Project" }] }
+            {
+              "id": "mqm3oj2x-aicu2x",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqm6h18v-12suzm",
+                  "name": "Python"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-urrpc8",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqm6h4v9-rlo0vp",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-t9ujla",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqm6h8gk-pmz5k4",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-xca8hu",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqm6hl31-ci348i",
+                  "name": "machine learning"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-wgfvww",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqm6ht49-exs6ck",
+                  "name": "Game development"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-b5uvvl",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqm6i19z-xsqeph",
+                  "name": "story development"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-aryh8e",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqm6i588-dh4jvp",
+                  "name": "game design"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-n9zm07",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqm6i93n-kxur91",
+                  "name": "AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-r54vl5",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqm6iigp-xssys9",
+                  "name": "Advanced Coding"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-t4tjy7",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqm6im8c-y0mrxs",
+                  "name": "Full-Stack Web Dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-zgarww",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqm6iqt4-4bbasx",
+                  "name": "Robotics & AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-nmlt1n",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqm6j5w3-d23zfp",
+                  "name": "Capstone Project"
+                }
+              ]
+            }
           ]
         },
         {
           "grades": [
-            { "id": "mqm3oj2x-s1amb0", "name": "Grade 1", "courses": [{ "id": "mqm6jjas-mzztxq", "name": "python" }] },
-            { "id": "mqm3oj2x-7dfbkk", "name": "Grade 2", "courses": [{ "id": "mqm6jozm-99avz0", "name": "web dev" }] },
-            { "id": "mqm3oj2x-36sjbq", "name": "Grade 3", "courses": [{ "id": "mqm6jslj-kkt4gy", "name": "game dev" }] },
-            { "id": "mqm3oj2x-3clf2o", "name": "Grade 4", "courses": [{ "id": "mqm6k2hc-1gytnn", "name": "robotics" }] },
-            { "id": "mqm3oj2x-ekh6kq", "name": "Grade 5", "courses": [{ "id": "mqm6k5ni-2tr5eg", "name": "AI" }] },
-            { "id": "mqm3oj2x-mx4x24", "name": "Grade 6", "courses": [{ "id": "mqm6kbwx-p6xj5k", "name": "MACHINE learning" }] },
-            { "id": "mqm3oj2x-wvufkj", "name": "Grade 7", "courses": [{ "id": "mqm6kkfb-m5wn3s", "name": "html" }] },
-            { "id": "mqm3oj2x-72o21c", "name": "Grade 8", "courses": [{ "id": "mqm6kpam-pa3i66", "name": "css" }] },
-            { "id": "mqm3oj2x-pmpamj", "name": "Grade 9", "courses": [{ "id": "mqm6kuwd-zdgktu", "name": "javascript" }] },
-            { "id": "mqm3oj2x-nzch0a", "name": "Grade 10", "courses": [{ "id": "mqm6l0yo-yzvmuz", "name": "Python 2" }] },
-            { "id": "mqm3oj2x-djib2r", "name": "Grade 11", "courses": [{ "id": "mqm6l9s5-2ab1w6", "name": "robotics 2" }] },
-            { "id": "mqm3oj2x-7601fg", "name": "Grade 12", "courses": [{ "id": "mqm6maoi-2ultzi", "name": "js & css" }] }
+            {
+              "id": "mqm3oj2x-s1amb0",
+              "name": "Grade 1",
+              "courses": [
+                {
+                  "id": "mqm6jjas-mzztxq",
+                  "name": "python"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-7dfbkk",
+              "name": "Grade 2",
+              "courses": [
+                {
+                  "id": "mqm6jozm-99avz0",
+                  "name": "web dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-36sjbq",
+              "name": "Grade 3",
+              "courses": [
+                {
+                  "id": "mqm6jslj-kkt4gy",
+                  "name": "game dev"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-3clf2o",
+              "name": "Grade 4",
+              "courses": [
+                {
+                  "id": "mqm6k2hc-1gytnn",
+                  "name": "robotics"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-ekh6kq",
+              "name": "Grade 5",
+              "courses": [
+                {
+                  "id": "mqm6k5ni-2tr5eg",
+                  "name": "AI"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-mx4x24",
+              "name": "Grade 6",
+              "courses": [
+                {
+                  "id": "mqm6kbwx-p6xj5k",
+                  "name": "MACHINE learning"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-wvufkj",
+              "name": "Grade 7",
+              "courses": [
+                {
+                  "id": "mqm6kkfb-m5wn3s",
+                  "name": "html"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-72o21c",
+              "name": "Grade 8",
+              "courses": [
+                {
+                  "id": "mqm6kpam-pa3i66",
+                  "name": "css"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-pmpamj",
+              "name": "Grade 9",
+              "courses": [
+                {
+                  "id": "mqm6kuwd-zdgktu",
+                  "name": "javascript"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-nzch0a",
+              "name": "Grade 10",
+              "courses": [
+                {
+                  "id": "mqm6l0yo-yzvmuz",
+                  "name": "Python 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-djib2r",
+              "name": "Grade 11",
+              "courses": [
+                {
+                  "id": "mqm6l9s5-2ab1w6",
+                  "name": "robotics 2"
+                }
+              ]
+            },
+            {
+              "id": "mqm3oj2x-7601fg",
+              "name": "Grade 12",
+              "courses": [
+                {
+                  "id": "mqm6maoi-2ultzi",
+                  "name": "js & css"
+                }
+              ]
+            }
           ]
         }
       ],
@@ -634,5 +2793,29 @@
     },
     "createdAt": "2026-06-20T14:00:00.000Z",
     "updatedAt": "2026-06-20T14:00:00.000Z"
+  },
+  {
+    "curriculumId": "0e515eab-5d8f-478b-b9c8-c2ce592b3b43",
+    "versionNumber": 1,
+    "versionLabel": "Initial Version",
+    "status": "active",
+    "changeNotes": "Initial curriculum setup",
+    "snapshot": {
+      "name": "Digifunzi",
+      "code": "Df",
+      "academicYear": "2025-2026",
+      "description": "Self paced curriculum",
+      "framework": "",
+      "academicCycleModel": "terms",
+      "periods": [],
+      "structure": [],
+      "status": "draft",
+      "educationLevel": "",
+      "gradeFrom": "",
+      "gradeTo": ""
+    },
+    "id": "8e6bae45-1f7e-4919-ba3b-a837ddde2be9",
+    "createdAt": "2026-06-22T09:00:36.254Z",
+    "updatedAt": "2026-06-22T09:00:36.254Z"
   }
 ]

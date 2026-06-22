@@ -193,5 +193,20 @@
     "id": "3f8c1d97-e450-4b23-a086-7e2f4d5c8b16",
     "createdAt": "2026-06-20T14:42:30.000Z",
     "updatedAt": "2026-06-20T14:42:30.000Z"
+  },
+  {
+    "firstName": "Kevin",
+    "lastName": "Githinji",
+    "gender": "male",
+    "schoolId": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+    "classId": "ef4d2e31-2546-4ed9-bf0e-8d1e6fe07906",
+    "guardianName": "faith wanjiru",
+    "guardianPhone": "+254727496461",
+    "guardianEmail": "faith@faith.com",
+    "status": "active",
+    "admissionNumber": "DS-001-2026-001",
+    "id": "c65260fb-4a2d-4455-969f-9e912473b2dc",
+    "createdAt": "2026-06-22T09:08:16.129Z",
+    "updatedAt": "2026-06-22T09:08:16.129Z"
   }
 ]

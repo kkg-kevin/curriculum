@@ -1163,5 +1163,65 @@
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": ""
+  },
+  {
+    "name": "Digifunzi",
+    "code": "Df",
+    "academicYear": "2025-2026",
+    "description": "Self paced curriculum nt 3n ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "CBC",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-06-01",
+        "endDate": "2026-08-31",
+        "midTermBreakStartDate": "2026-07-01",
+        "midTermBreakEndDate": "2026-07-10"
+      }
+    ],
+    "id": "0e515eab-5d8f-478b-b9c8-c2ce592b3b43",
+    "createdAt": "2026-06-22T09:00:36.250Z",
+    "updatedAt": "2026-06-22T09:03:27.455Z",
+    "structure": [
+      {
+        "grades": [
+          {
+            "id": "mqozmr1b-t6ucqs",
+            "name": "Grade 1",
+            "courses": [
+              {
+                "id": "mqozmwyy-hh9wfb",
+                "name": "maths"
+              }
+            ]
+          },
+          {
+            "id": "mqozmr1b-0xb9no",
+            "name": "Grade 2",
+            "courses": [
+              {
+                "id": "mqozn0kd-539nge",
+                "name": "maths 2"
+              }
+            ]
+          },
+          {
+            "id": "mqozmr1b-je0lve",
+            "name": "Grade 3",
+            "courses": [
+              {
+                "id": "mqozn4qf-1qbndm",
+                "name": "maths 3"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

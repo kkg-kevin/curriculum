@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "name": "cbc ",
+    "code": "CBC",
+    "description": "westlands primary school base 101",
+    "type": "complementary",
+    "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+    "schoolName": "Westlands Primary School",
+    "baseCurriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "termIndex": 0,
+    "termName": "Term 1",
+    "id": "6e54670b-16e1-4db0-ae21-a52a55aa107d",
+    "grades": [],
+    "mapping": {},
+    "assignments": [
+      {
+        "schoolId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+        "schoolName": "Westlands Primary School"
+      }
+    ],
+    "createdAt": "2026-06-22T08:58:11.220Z",
+    "updatedAt": "2026-06-22T08:58:11.220Z"
+  }
+]

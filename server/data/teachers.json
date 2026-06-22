@@ -154,5 +154,17 @@
     "id": "8e1c5d94-a372-4b60-9f28-7c3e0a4d1b86",
     "createdAt": "2026-06-20T14:30:30.000Z",
     "updatedAt": "2026-06-20T14:30:30.000Z"
+  },
+  {
+    "firstName": "ken",
+    "lastName": "maina",
+    "employeeId": "tch00111",
+    "email": "maina@digifunzi.com",
+    "phone": "+2547894563210",
+    "schoolId": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+    "status": "active",
+    "id": "b53f6cb3-3e96-4990-bf89-514d654a631f",
+    "createdAt": "2026-06-22T09:06:31.815Z",
+    "updatedAt": "2026-06-22T09:06:31.815Z"
   }
 ]
