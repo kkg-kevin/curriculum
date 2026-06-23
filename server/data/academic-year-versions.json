@@ -1,0 +1,54 @@
+[
+  {
+    "id": "69bad882-7c84-4efd-8eae-df97ffff064d",
+    "yearGroupId": "4b57f318-6973-4a47-8e69-08ebaa3c3824",
+    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": false,
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-30",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-30",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      }
+    ],
+    "createdAt": "2026-06-23T11:17:25.384Z",
+    "updatedAt": "2026-06-23T11:18:17.472Z"
+  },
+  {
+    "id": "4e92cf47-997e-49e5-b6e8-28c7e6bffa5b",
+    "yearGroupId": "4b57f318-6973-4a47-8e69-08ebaa3c3824",
+    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-01-02",
+        "endDate": "2026-03-25",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-05-05",
+        "endDate": "2026-07-31",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      }
+    ],
+    "createdAt": "2026-06-23T11:18:17.477Z",
+    "updatedAt": "2026-06-23T11:18:17.477Z"
+  }
+]

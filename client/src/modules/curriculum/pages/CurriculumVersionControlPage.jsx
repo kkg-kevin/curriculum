@@ -688,7 +688,8 @@ export default function CurriculumVersionControlPage() {
 
   const published = versionData?.current || null;   // isCurrent version
   const history   = versionData?.history || [];     // everything else
-  const ayPeriods = yearData?.current?.periods || [];
+  // Derive periods from the published academic year version (two-level group→version structure)
+  const ayPeriods = yearData?.publishedVersion?.periods || [];
   const periods   = curriculum?.periods || [];
 
   const allVersions   = [...(published ? [published] : []), ...history];
@@ -708,7 +709,7 @@ export default function CurriculumVersionControlPage() {
   /* Handlers */
   const handleSaveEditor = (data) => {
     createVersion(
-      { ...data, status: "draft", academicYearId: yearData?.current?.id || null },
+      { ...data, status: "draft", academicYearId: yearData?.publishedVersion?.id || null },
       {
         onSuccess: (newVer) => {
           setFocused(newVer);
@@ -729,7 +730,7 @@ export default function CurriculumVersionControlPage() {
   const handleRestore = () => {
     if (!displayVersion) return;
     createVersion(
-      { content: displayVersion.content, status: "draft", academicYearId: yearData?.current?.id || null },
+      { content: displayVersion.content, status: "draft", academicYearId: yearData?.publishedVersion?.id || null },
       {
         onSuccess: (newVer) => {
           setFocused(newVer);

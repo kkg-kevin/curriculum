@@ -12,39 +12,40 @@ export function useAcademicYears(curriculumId) {
   });
 }
 
-export function useCreateAcademicYear(curriculumId) {
+export function useCreateAcademicYearGroup(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data) => academicYearApi.create(curriculumId, data),
+    mutationFn: (data) => academicYearApi.createGroup(curriculumId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
       toast.success("Academic year created!");
     },
-    onError: (err) => toast.error(err.message || "Failed to create academic year"),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to create academic year"),
   });
 }
 
-export function useEditAcademicYear(curriculumId) {
+export function useCreateAcademicYearVersion(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ yearId, data }) => academicYearApi.edit(curriculumId, yearId, data),
+    mutationFn: ({ groupId, data }) => academicYearApi.createVersion(curriculumId, groupId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
-      toast.success("New version saved!");
+      toast.success("New draft version created!");
     },
-    onError: (err) => toast.error(err.message || "Failed to save version"),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to create version"),
   });
 }
 
 export function useChangeAcademicYearStatus(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ yearId, status }) => academicYearApi.changeStatus(curriculumId, yearId, status),
+    mutationFn: ({ groupId, versionId, status }) =>
+      academicYearApi.changeStatus(curriculumId, groupId, versionId, status),
     onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
       const label = status.charAt(0).toUpperCase() + status.slice(1);
       toast.success(`Status set to ${label}`);
     },
-    onError: (err) => toast.error(err.message || "Failed to update status"),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update status"),
   });
 }

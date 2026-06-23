@@ -14,24 +14,25 @@ const {
 } = require("./curriculum-versions.controller");
 const {
   getAcademicYears,
-  createAcademicYear,
-  editAcademicYear,
+  createGroup,
+  createVersion: createAYVersion,
   changeStatus,
 } = require("./academic-years.controller");
 
 const router = express.Router();
 
+// Curriculum CRUD
 router.route("/").get(getAllCurricula).post(createCurriculum);
 router.route("/:id").get(getCurriculumById).put(updateCurriculum).delete(deleteCurriculum);
 
-// Version Control routes
+// Curriculum version control
 router.route("/:id/versions").get(getVersions).post(createVersion);
 router.route("/:id/versions/:vId").put(editVersion);
 router.route("/:id/versions/:vId/status").patch(changeVersionStatus);
 
-// Academic year routes
-router.route("/:id/academic-years").get(getAcademicYears).post(createAcademicYear);
-router.route("/:id/academic-years/:yearId").put(editAcademicYear);
-router.route("/:id/academic-years/:yearId/status").patch(changeStatus);
+// Academic years — two-level hierarchy (groups → versions)
+router.route("/:id/academic-years").get(getAcademicYears).post(createGroup);
+router.route("/:id/academic-years/:groupId/versions").post(createAYVersion);
+router.route("/:id/academic-years/:groupId/versions/:versionId/status").patch(changeStatus);
 
 module.exports = router;
