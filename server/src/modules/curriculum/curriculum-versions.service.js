@@ -51,21 +51,11 @@ const CurriculumVersionService = {
       throw Object.assign(new Error("Version not found"), { statusCode: 404 });
     }
 
-    CurriculumVersionModel.update(versionId, { isCurrent: false });
-
     if (data.status === "active") CurriculumVersionModel.deactivateAllActive(curriculumId);
 
-    const all         = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
-    const nextVersion = Math.max(...all.map((v) => v.versionNumber)) + 1;
-
-    return CurriculumVersionModel.create({
-      curriculumId,
-      academicYearId: data.academicYearId || current.academicYearId || null,
-      versionNumber:  nextVersion,
-      status:         data.status || current.status,
-      isCurrent:      true,
-      versionOf:      versionId,
-      content:        data.content || current.content || [],
+    return CurriculumVersionModel.update(versionId, {
+      status:  data.status  || current.status,
+      content: data.content || current.content || [],
     });
   },
 

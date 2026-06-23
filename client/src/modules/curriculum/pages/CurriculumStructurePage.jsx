@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
-import { FRAMEWORKS, FRAMEWORK_LABELS } from "../schemas/curriculum.schema";
+import { CURRICULUM_TYPES } from "../schemas/curriculum.schema";
 
 /* ── Constants ───────────────────────────────────────────────────────────── */
-
-const STANDARD_FRAMEWORKS = FRAMEWORKS.filter((f) => f !== "Custom");
 
 const PREDEFINED_PERIODS = {
   terms: ["Term 1", "Term 2", "Term 3"],
@@ -241,11 +239,6 @@ function Spinner() {
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-function getClassesFromStructure(structure) {
-  if (!structure?.length || !structure[0]?.grades?.length) return [];
-  return structure[0].grades.map((g) => g.name);
-}
-
 function derivePeriodNames(cycleModel, customNames) {
   if (cycleModel === "custom") return customNames.filter((n) => n.trim());
   return PREDEFINED_PERIODS[cycleModel] ?? PREDEFINED_PERIODS.terms;
@@ -260,9 +253,7 @@ export default function CurriculumStructurePage() {
   const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
 
   /* Settings */
-  const [framework,    setFramework]    = useState("");
-  const [isCustomFw,   setIsCustomFw]   = useState(false);
-  const [customFwText, setCustomFwText] = useState("");
+  const [curriculumType, setCurriculumType] = useState("");
   const [cycleModel,   setCycleModel]   = useState("terms");
 
   /* Custom cycle */
@@ -280,11 +271,7 @@ export default function CurriculumStructurePage() {
   useEffect(() => {
     if (!curriculum) return;
 
-    const fw = curriculum.framework || "";
-    const isCustom = !!fw && !STANDARD_FRAMEWORKS.includes(fw);
-    setIsCustomFw(isCustom);
-    setCustomFwText(isCustom ? fw : "");
-    setFramework(isCustom ? "" : fw);
+    setCurriculumType(curriculum.curriculumType || "");
 
     const model = curriculum.academicCycleModel || "terms";
     setCycleModel(model);
@@ -295,10 +282,7 @@ export default function CurriculumStructurePage() {
       setCustomPeriodNames(names);
     }
 
-    const existingClasses = curriculum.classes?.length
-      ? curriculum.classes
-      : getClassesFromStructure(curriculum.structure);
-    setClasses(existingClasses);
+    setClasses(curriculum.classes || []);
   }, [curriculum?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Custom period count sync */
@@ -311,23 +295,6 @@ export default function CurriculumStructurePage() {
       return next.slice(0, count);
     });
   };
-
-  /* Framework */
-  const handleFrameworkSelect = (e) => {
-    const val = e.target.value;
-    if (val === "Custom") {
-      setIsCustomFw(true);
-      setCustomFwText("");
-      setFramework("");
-    } else {
-      setIsCustomFw(false);
-      setCustomFwText("");
-      setFramework(val);
-    }
-    setErrors((p) => ({ ...p, framework: "" }));
-  };
-
-  const effectiveFramework = isCustomFw ? customFwText : framework;
 
   /* Classes */
   const addClasses = () => {
@@ -351,7 +318,6 @@ export default function CurriculumStructurePage() {
   /* Save + navigate */
   const handleSave = (destination) => {
     const errs = {};
-    if (!effectiveFramework.trim()) errs.framework = "Please select or enter a framework";
     if (cycleModel === "custom") {
       if (customPeriodNames.some((n) => !n.trim())) errs.periods = "Please fill in all period names";
       if (!customPeriodNames.some((n) => n.trim())) errs.periods = "Enter at least one period name";
@@ -363,7 +329,7 @@ export default function CurriculumStructurePage() {
     const periods     = periodNames.map((name) => ({ name }));
 
     updateCurriculum(
-      { id: curriculum.id, data: { framework: effectiveFramework.trim(), academicCycleModel: cycleModel, periods, classes } },
+      { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType } },
       { onSuccess: () => navigate(destination) }
     );
   };
@@ -442,40 +408,19 @@ export default function CurriculumStructurePage() {
             </h4>
 
             <label style={fieldLabel}>
-              Select a framework <span style={{ color: "#EF4444" }}>*</span>
+              Curriculum Type
             </label>
             <select
-              value={isCustomFw ? "Custom" : framework}
-              onChange={handleFrameworkSelect}
-              className={`csp-select${errors.framework ? " err" : ""}`}
+              value={curriculumType}
+              onChange={(e) => setCurriculumType(e.target.value)}
+              className="csp-select"
             >
-              <option value="">Select a framework…</option>
-              {FRAMEWORKS.map((fw) => (
-                <option key={fw} value={fw}>{FRAMEWORK_LABELS[fw]}</option>
+              <option value="">Select type…</option>
+              {CURRICULUM_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
-
-            {isCustomFw && (
-              <div style={{ marginTop: "12px", padding: "14px", backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE", borderRadius: "10px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Custom Framework</span>
-                  <button type="button" onClick={() => { setIsCustomFw(false); setCustomFwText(""); setFramework(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#6B7280", fontFamily: "Inter, sans-serif", padding: 0 }}>
-                    ← Use standard
-                  </button>
-                </div>
-                <input
-                  autoFocus
-                  type="text"
-                  value={customFwText}
-                  onChange={(e) => { setCustomFwText(e.target.value); setErrors((p) => ({ ...p, framework: "" })); }}
-                  placeholder="e.g. Montessori, Waldorf…"
-                  className={`csp-input${errors.framework ? " err" : ""}`}
-                />
-                <p style={hintMsg}>This name will appear as the framework label.</p>
-              </div>
-            )}
-
-            {errors.framework && <p style={errMsg}>{errors.framework}</p>}
+            <p style={hintMsg}>How this curriculum is categorised in the learning framework.</p>
           </div>
 
           {/* Cycle */}

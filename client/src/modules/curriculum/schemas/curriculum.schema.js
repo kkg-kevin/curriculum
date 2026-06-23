@@ -2,54 +2,8 @@ import { z } from "zod";
 
 export const FRAMEWORKS = ["CBC", "8-4-4", "British", "IB", "American", "French", "German", "Custom"];
 export const CYCLE_MODELS = ["terms", "semesters", "custom"];
+export const CURRICULUM_TYPES = ["Core", "Complementary", "Substitutional"];
 
-export const FRAMEWORK_LABELS = {
-  "CBC":      "Competency-Based Curriculum (CBC)",
-  "8-4-4":    "8-4-4 System",
-  "British":  "British Curriculum (Cambridge / Pearson Edexcel)",
-  "IB":       "International Baccalaureate (IB)",
-  "American": "American Curriculum",
-  "French":   "French Curriculum (AEFE)",
-  "German":   "German Curriculum (DIAP)",
-  "Custom":   "Custom Framework",
-};
-
-export const periodSchema = z
-  .object({
-    name: z.string().min(1, "Period name is required"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().min(1, "End date is required"),
-    midTermBreakStartDate: z.string(),
-    midTermBreakEndDate: z.string(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.startDate && data.endDate && data.endDate <= data.startDate) {
-      ctx.addIssue({ code: "custom", message: "End date must be after start date", path: ["endDate"] });
-    }
-
-    const hasBreakStart = !!data.midTermBreakStartDate;
-    const hasBreakEnd = !!data.midTermBreakEndDate;
-
-    if (hasBreakStart && !hasBreakEnd) {
-      ctx.addIssue({ code: "custom", message: "Break end date is required", path: ["midTermBreakEndDate"] });
-    }
-    if (!hasBreakStart && hasBreakEnd) {
-      ctx.addIssue({ code: "custom", message: "Break start date is required", path: ["midTermBreakStartDate"] });
-    }
-    if (hasBreakStart && hasBreakEnd) {
-      if (data.midTermBreakEndDate <= data.midTermBreakStartDate) {
-        ctx.addIssue({ code: "custom", message: "Break end must be after break start", path: ["midTermBreakEndDate"] });
-      }
-      if (data.startDate && data.midTermBreakStartDate < data.startDate) {
-        ctx.addIssue({ code: "custom", message: "Break must start within the period", path: ["midTermBreakStartDate"] });
-      }
-      if (data.endDate && data.midTermBreakEndDate > data.endDate) {
-        ctx.addIssue({ code: "custom", message: "Break must end before period ends", path: ["midTermBreakEndDate"] });
-      }
-    }
-  });
-
-// Used by Create / Edit curriculum pages (details only)
 export const curriculumDetailsSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
   code: z
@@ -59,20 +13,3 @@ export const curriculumDetailsSchema = z.object({
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
   description: z.string().max(500, "Max 500 characters").default(""),
 });
-
-// Used by the Structure page settings panel
-export const curriculumSettingsSchema = z.object({
-  framework: z
-    .string()
-    .min(1, "Please select or enter a curriculum framework")
-    .refine((val) => val !== "Custom", { message: "Please type your custom framework name" }),
-  academicCycleModel: z
-    .string()
-    .refine((val) => CYCLE_MODELS.includes(val), { message: "Please select an academic cycle model" }),
-  periods: z.array(periodSchema).min(1, "At least one academic period is required"),
-});
-
-// Keep the combined schema for any code that still imports it
-export const createCurriculumSchema = curriculumDetailsSchema.merge(
-  curriculumSettingsSchema.partial()
-);

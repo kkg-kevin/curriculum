@@ -960,5 +960,2112 @@
     ],
     "createdAt": "2026-06-22T14:43:50.183Z",
     "updatedAt": "2026-06-22T14:43:50.183Z"
+  },
+  {
+    "id": "79f3f870-7c36-4dbb-b19a-49a9456fa657",
+    "curriculumId": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782194475403-sxinvjns9",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782194478224-nxrde2tvp",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782194480268-g7lhb8u4k",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782194482570-021kxj0e7",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782194485418-kpnb4kd4g",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782194487628-fhl5g1jps",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782194489877-0pz8dqglq",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782194492005-ksl0u0kq0",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782194494188-5zqper1wi",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782194496488-pk5lxuygx",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782194499546-v7ssjywg6",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782194502295-2tsl2bacx",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 13",
+            "courses": [
+              {
+                "id": "1782194504660-9ezw2w5h9",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782194514059-vzwqc0d1r",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782194515866-wpa2eyhac",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782194517940-2dl92qxc7",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782194520628-490moeev2",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782194522615-2qvcx5pj0",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782194525064-l51ki94e0",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782194527747-2uw3pklrb",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782194529872-dk3gon6hg",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782194532018-met25s54h",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782194534793-40jeybqzo",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782194536844-97degxyzn",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782194539159-h201kfjxp",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 13",
+            "courses": [
+              {
+                "id": "1782194541606-rfhhinksx",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782194549500-huynvoca7",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782194551492-sukhozpqq",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782194554004-g3y3win2p",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782194557320-k7478gsj1",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782194559321-94e0l6ms0",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782194561888-q0szy62vb",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782194564381-50nw2584u",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782194566830-2krux906u",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782194569366-vxit2n932",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782194571515-90i3lh4u0",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782194574548-6ng3xy37i",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782194576979-qnramt4oa",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 13",
+            "courses": [
+              {
+                "id": "1782194579408-nyo219vx8",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T06:03:05.756Z",
+    "updatedAt": "2026-06-23T06:03:05.757Z"
+  },
+  {
+    "id": "8783ee8e-6bfe-4a27-845e-6805c36517bf",
+    "curriculumId": "8730f0e6-1314-4998-8695-01641a7eaeae",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "PP1",
+            "courses": [
+              {
+                "id": "1782196129873-eqftr0omv",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "PP2",
+            "courses": [
+              {
+                "id": "1782196132184-a3aitj8w6",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782196135464-5zladzomz",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782196138014-hss39ne20",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782196140201-k5ppjrqkr",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782196142196-8hzhfll3a",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782196144315-xphq5dydu",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782196146404-2ajxjqoki",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782196156783-fy7bgu4k2",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782196158950-omfd91rfu",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196160859-bzm2byxu6",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196160859-bzm2byxu6",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782196165956-4bmhsovn4",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782196168958-glqq6d33i",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 12",
+            "courses": [
+              {
+                "id": "1782196171128-e9vjnp2j2",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "PP1",
+            "courses": [
+              {
+                "id": "1782196180405-3v9oam6o9",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "PP2",
+            "courses": [
+              {
+                "id": "1782196182198-i1gbhdlry",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782196184349-rj7dsr60s",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782196191182-f9ncpu1xm",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782196193446-liz8anqml",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782196195490-fepa6aty5",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782196197527-n58ahsa54",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782196200198-q1fszhzyu",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782196202836-ubfixf8af",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782196204818-km6itr5un",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196212744-5j3qbqiiv",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196212744-5j3qbqiiv",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782196217734-gcd5r9d46",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782196219941-d97nu5wf1",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 12",
+            "courses": [
+              {
+                "id": "1782196222644-w6zqya4hg",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "PP1",
+            "courses": [
+              {
+                "id": "1782196231452-jfbmn3p70",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "PP2",
+            "courses": [
+              {
+                "id": "1782196233502-rx4v8id1e",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782196235463-juv1kmkrq",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782196237445-oc6gpqtll",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782196239491-55tdtc9cc",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782196241523-txgatqw1b",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782196244361-vcu7whs9i",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782196246349-2mq1v6awx",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782196248504-htpgkk8zp",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782196250581-n69s8hbxx",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196255005-28krk8ub6",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782196255005-28krk8ub6",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782196259194-8798w9f5z",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782196261202-6c3ym8pge",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 12",
+            "courses": [
+              {
+                "id": "1782196263546-49hxt2oxi",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T06:31:10.734Z",
+    "updatedAt": "2026-06-23T06:31:10.734Z"
+  },
+  {
+    "id": "28054ce7-4460-4cbe-85f1-de8aee0326c3",
+    "curriculumId": "80e091c3-f980-489a-8650-30e8d3ad644c",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782196844102-3vu5rk14w",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782196847784-xlrg8fhkr",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T06:40:49.978Z",
+    "updatedAt": "2026-06-23T06:40:49.978Z"
+  },
+  {
+    "id": "42f5a992-5773-4e52-99f4-92fecbacdf76",
+    "curriculumId": "58a60dcf-4e74-4482-97fc-2094d7ea40d1",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782197427919-6y9dkamu2",
+                "name": "python",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782197431252-br8i5ax3f",
+                "name": "python",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T06:50:34.915Z",
+    "updatedAt": "2026-06-23T06:50:34.915Z"
+  },
+  {
+    "id": "d2d9c0aa-08f4-4db6-b0cf-5c1012f60f12",
+    "curriculumId": "49261559-aa07-4636-a743-fdd64cf77c11",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782198155687-eukuokkxm",
+                "name": "Python",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782198159950-gxe1lpexx",
+                "name": "Pyhton",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T07:02:43.068Z",
+    "updatedAt": "2026-06-23T07:02:43.068Z"
+  },
+  {
+    "id": "b82db67b-1735-47d2-907c-84fd977f9378",
+    "curriculumId": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782198726534-nfvful3mc",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782198729672-sva3lk48m",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782198731831-cxsqwryq2",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782198734256-alzgwkzlg",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782198736307-yg12sffyr",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782198738240-2gmoy3mel",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782198740349-s8rkxcjzu",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782198742603-1z11ojvaa",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782198745210-gt8ou54vx",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782198747555-ds0jmt0va",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782198749728-5a3o83q1e",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade12",
+            "courses": [
+              {
+                "id": "1782198756073-xxl1nsq8e",
+                "name": "Python 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782198762136-h8cytzre2",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782198763966-fwdygg391",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782198765930-jjccygz0u",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782198767981-wil0fpudx",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782198769944-78pdwdwl7",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782198771930-bl8g32db3",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782198774155-nhprrsbsh",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782198776839-akz5hap51",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782198781956-t9iy3bq8n",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782198784551-fdocbfhsr",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782198786910-c9o9v5wcx",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade12",
+            "courses": [
+              {
+                "id": "1782198789518-tw3y5qdj1",
+                "name": "Python 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782198795711-h3ual818m",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782198797528-ereh0fr9z",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782198799486-ui8nidw9i",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782198804473-bevyky4kf",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "1782198807020-u31qecjmo",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782198809113-5u1nnwrfp",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 7",
+            "courses": [
+              {
+                "id": "1782198811090-rvu4fc12z",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782198813454-42cofdhql",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782198815364-la9f0lwxd",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782198817568-r8eh0vwwn",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 11",
+            "courses": [
+              {
+                "id": "1782198819935-7ov7w8f65",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade12",
+            "courses": [
+              {
+                "id": "1782198826087-979oku1vm",
+                "name": "Python 3",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T07:13:50.142Z",
+    "updatedAt": "2026-06-23T07:13:50.142Z"
+  },
+  {
+    "id": "c1f90367-b3cf-4aa2-af7f-72c548668744",
+    "curriculumId": "c2520f31-7263-44e4-a414-474e5628eb98",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782199828166-brznflblb",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782199830958-1xacdt0et",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782199833048-jqnyg9j6c",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782199835080-1eusn9w24",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782199837174-4dnwc7e6n",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782199839141-isvshbzst",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782199841112-wd9a6ukd3",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782199843112-y05vxmvgf",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782199845508-ij80lrj6r",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782199847492-19908c1xo",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782199849549-lb5adprn8",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782199851438-glfxi6yi4",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 113",
+            "courses": [
+              {
+                "id": "1782199854350-lvqboss44",
+                "name": "Robotics 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782199861584-5g03og7b7",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782199863999-fgd887p2m",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782199865769-62zsok60v",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782199867673-y8gmkju39",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782199869898-xhbn84qlf",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782199871810-r8r0mtihp",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782199873836-8f5qfx4o0",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782199875702-cf23wjohd",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782199877971-3tobn5wm1",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782199879823-1q58pw3ls",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782199881740-esspp6fyd",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782199884302-36k2p3ttf",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 113",
+            "courses": [
+              {
+                "id": "1782199886799-x34011yr7",
+                "name": "Robotics 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "Year 1",
+            "courses": [
+              {
+                "id": "1782199894042-ulmcoi8io",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 2",
+            "courses": [
+              {
+                "id": "1782199896397-xhtodylwv",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 3",
+            "courses": [
+              {
+                "id": "1782199898058-kdz76fnt0",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 4",
+            "courses": [
+              {
+                "id": "1782199899767-fngmzk112",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 5",
+            "courses": [
+              {
+                "id": "1782199901717-n0qpu9nmh",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 6",
+            "courses": [
+              {
+                "id": "1782199903480-apxbu4vf8",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 7",
+            "courses": [
+              {
+                "id": "1782199905524-tma4dp51o",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 8",
+            "courses": [
+              {
+                "id": "1782199907400-r4851245c",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 9",
+            "courses": [
+              {
+                "id": "1782199909305-9hg7n1a8m",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 10",
+            "courses": [
+              {
+                "id": "1782199912146-dfj49es9l",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 11",
+            "courses": [
+              {
+                "id": "1782199913879-t6lrra11h",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 12",
+            "courses": [
+              {
+                "id": "1782199915930-uqokr5ml4",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Year 113",
+            "courses": [
+              {
+                "id": "1782199919468-og9c6gqai",
+                "name": "Robotics 3",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T07:32:02.965Z",
+    "updatedAt": "2026-06-23T07:32:02.965Z"
+  },
+  {
+    "id": "c41d2fd6-2780-4f2d-a28a-c4d89595713d",
+    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782200406029-m1uccv6h7",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782200407774-79gfg536o",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782200409674-ctz5j4nf9",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782200411556-k6cydeckh",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade5",
+            "courses": [
+              {
+                "id": "1782200413424-7w7atoak8",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782200415312-qonsm7kzt",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade7",
+            "courses": [
+              {
+                "id": "1782200417353-c4nrt8sr4",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782200419350-0lb72dzwq",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782200421276-e2f83j0kq",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782200423261-1n2ndtf05",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade  11",
+            "courses": [
+              {
+                "id": "1782200425407-xjqcu835t",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 12",
+            "courses": [
+              {
+                "id": "1782200428111-tmossoncj",
+                "name": "Coding 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782200443517-ek980liup",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782200446041-pmtt5agbn",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782200447923-qn3hx004l",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782200449968-di1hfj4uq",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade5",
+            "courses": [
+              {
+                "id": "1782200451870-1hih391nb",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "1782200453844-zzxp9u8j8",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade7",
+            "courses": [
+              {
+                "id": "1782200455922-qfehc482u",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 8",
+            "courses": [
+              {
+                "id": "1782200457989-14wptxwxt",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 9",
+            "courses": [
+              {
+                "id": "1782200459926-3n1oltju8",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 10",
+            "courses": [
+              {
+                "id": "1782200462033-0et2203u6",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade  11",
+            "courses": [
+              {
+                "id": "1782200464036-f5agrh19x",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 12",
+            "courses": [
+              {
+                "id": "1782200466243-kwtd7it6n",
+                "name": "Coding 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T07:41:09.904Z",
+    "updatedAt": "2026-06-23T07:41:09.904Z"
+  },
+  {
+    "id": "7e0ca792-45cf-4bae-82b5-b5c82bb73730",
+    "curriculumId": "6f88ecff-ca3d-458a-88bb-903477a1a7b2",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782201292726-m4azwkoff",
+                "name": "courses 101",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T07:54:55.955Z",
+    "updatedAt": "2026-06-23T07:54:55.955Z"
   }
 ]

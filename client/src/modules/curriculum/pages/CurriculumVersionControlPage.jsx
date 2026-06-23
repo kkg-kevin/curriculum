@@ -5,8 +5,6 @@ import { useAcademicYears } from "../hooks/useAcademicYear";
 import {
   useCurriculumVersions,
   useCreateCurriculumVersion,
-  useEditCurriculumVersion,
-  useChangeCurriculumVersionStatus,
 } from "../hooks/useCurriculumVersion";
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -108,11 +106,6 @@ const CSS = `
   .vc-btn-primary:disabled { background:#93C5FD; cursor:not-allowed; }
   .vc-btn-secondary { padding:10px 18px; background:transparent; color:#374151; border:1.5px solid #E5E7EB; border-radius:10px; font-size:14px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s; }
   .vc-btn-secondary:hover { background:#F9FAFB; }
-  .vc-btn-ghost     { padding:9px 16px; background:#EFF6FF; color:#0D47A1; border:1.5px solid #BFDBFE; border-radius:10px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s; }
-  .vc-btn-ghost:hover { background:#DBEAFE; }
-
-  .version-hist-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1px solid #F3F4F6; background:#FAFAFA; font-family:Inter,sans-serif; }
-  .version-hist-row.cur { border-color:#BFDBFE; background:#EFF6FF; }
 `;
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -135,9 +128,8 @@ function deepClone(obj) {
 
 /* ── Sub-components ────────────────────────────────────────────────────── */
 
-function Spinner({ small }) {
-  const sz = small ? "12px" : "14px";
-  return <span style={{ width: sz, height: sz, border: `2px solid rgba(255,255,255,0.4)`, borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />;
+function Spinner() {
+  return <span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />;
 }
 
 function SpinnerPage() {
@@ -307,101 +299,40 @@ function CourseMatrixEdit({ periodContent, periodIdx, onUpdate }) {
 
 /* ── View mode ─────────────────────────────────────────────────────────── */
 
-function VersionView({ current, history, curriculumId, ayPeriods, curriculumPeriods, onEdit }) {
-  const [activeTab, setActiveTab]   = useState(0);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const { mutate: changeStatus, isPending: changing } = useChangeCurriculumVersionStatus(curriculumId);
-
+function VersionView({ current, ayPeriods, curriculumPeriods }) {
+  const [activeTab, setActiveTab] = useState(0);
   const content = current.content || [];
   const periodContent = content[activeTab] || null;
-
   const card = { backgroundColor: "#fff", borderRadius: "16px", padding: "22px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)", marginBottom: "20px" };
 
   return (
     <div>
-      {/* Version header */}
       <div style={card}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: "#0F2645" }}>Version {current.versionNumber}</h2>
-            <StatusDot status={current.status} />
-          </div>
-          <button type="button" onClick={onEdit} className="vc-btn-ghost">Edit → New Version</button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: "#0F2645" }}>Version {current.versionNumber}</h2>
+          <StatusDot status={current.status} />
         </div>
-
-        {/* Status change */}
-        <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid #F3F4F6" }}>
-          <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "500", color: "#6B7280" }}>Change status</p>
-          <div style={{ display: "flex", gap: "8px", opacity: changing ? 0.6 : 1 }}>
-            {STATUSES.map((s) => (
-              <button key={s.value} type="button" disabled={changing} onClick={() => { if (s.value !== current.status) changeStatus({ vId: current.id, status: s.value }); }} className={`vc-status-btn${current.status === s.value ? ` sel-${s.value}` : ""}`}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: current.status === s.value ? s.dot : "#D1D5DB", flexShrink: 0 }} />
-                  {s.label}
-                </span>
-              </button>
-            ))}
-          </div>
-          {current.status !== "active" && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9CA3AF" }}>Setting to Active auto-moves the current active version to Inactive.</p>}
-        </div>
+        <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280" }}>
+          Saved {new Date(current.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+        </p>
       </div>
 
-      {/* Course content */}
       <div style={card}>
         <PeriodTabs periods={curriculumPeriods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
         <CourseMatrixView periodContent={periodContent} />
       </div>
-
-      {/* Version history */}
-      {history.length > 0 && (
-        <div style={card}>
-          <button type="button" onClick={() => setHistoryOpen((o) => !o)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "Inter,sans-serif", padding: 0 }}>
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
-              Version History
-              <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280", backgroundColor: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: "20px", padding: "2px 8px" }}>{history.length}</span>
-            </h4>
-            <span style={{ fontSize: "16px", color: "#9CA3AF" }}>{historyOpen ? "▲" : "▼"}</span>
-          </button>
-
-          {historyOpen && (
-            <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div className="version-hist-row cur">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontSize: "12px", fontWeight: "700", color: "#1D4ED8", backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "20px", padding: "2px 10px" }}>v{current.versionNumber} · Current</span>
-                  <span style={{ fontSize: "12px", color: "#6B7280" }}>{fmtDate(current.createdAt)}</span>
-                </div>
-                <StatusDot status={current.status} />
-              </div>
-              {history.map((v) => (
-                <div key={v.id} className="version-hist-row">
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "12px", fontWeight: "600", color: "#6B7280", backgroundColor: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: "20px", padding: "2px 10px" }}>v{v.versionNumber}</span>
-                    <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{fmtDate(v.createdAt)}</span>
-                  </div>
-                  <StatusDot status={v.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-/* ── Edit / Create mode ────────────────────────────────────────────────── */
+/* ── Create mode ───────────────────────────────────────────────────────── */
 
-function VersionEdit({ curriculum, ayPeriods, isCreate, currentVersion, onSave, onCancel, isPending }) {
+function VersionEdit({ curriculum, ayPeriods, onSave, onCancel, isPending }) {
   const [activeTab,  setActiveTab]  = useState(0);
-  const [editStatus, setEditStatus] = useState(currentVersion?.status || "draft");
-  const [content, setContent] = useState(() =>
-    isCreate
-      ? scaffoldContent(curriculum)
-      : deepClone(currentVersion?.content || scaffoldContent(curriculum))
-  );
+  const [editStatus, setEditStatus] = useState("draft");
+  const [content, setContent] = useState(() => scaffoldContent(curriculum));
 
   const curriculumPeriods = curriculum.periods || [];
-  const nextV = isCreate ? 1 : (currentVersion?.versionNumber || 0) + 1;
 
   const handleUpdate = (periodIdx, updatedPeriod) => {
     setContent((prev) => prev.map((p, i) => (i === periodIdx ? updatedPeriod : p)));
@@ -411,14 +342,6 @@ function VersionEdit({ curriculum, ayPeriods, isCreate, currentVersion, onSave, 
 
   return (
     <div>
-      {/* Banner */}
-      {!isCreate && (
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", backgroundColor: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: "10px", marginBottom: "20px" }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0D47A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span style={{ fontSize: "13px", color: "#1E3A8A" }}>Saving will create <strong>Version {nextV}</strong> and archive Version {currentVersion?.versionNumber}.</span>
-        </div>
-      )}
-
       {/* Status */}
       <div style={card}>
         <p style={{ margin: "0 0 10px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>Status</p>
@@ -432,7 +355,6 @@ function VersionEdit({ curriculum, ayPeriods, isCreate, currentVersion, onSave, 
             </button>
           ))}
         </div>
-        {editStatus === "active" && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9CA3AF" }}>Setting to Active will auto-move the previous active version to Inactive.</p>}
       </div>
 
       {/* Course editor */}
@@ -455,7 +377,7 @@ function VersionEdit({ curriculum, ayPeriods, isCreate, currentVersion, onSave, 
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
         <button type="button" onClick={onCancel} className="vc-btn-secondary">Cancel</button>
         <button type="button" disabled={isPending} onClick={() => onSave({ content, status: editStatus })} className="vc-btn-primary">
-          {isPending ? <><Spinner /> Saving…</> : isCreate ? "Create Version 1" : `Save as Version ${nextV}`}
+          {isPending ? <><Spinner /> Saving…</> : "Create Version 1"}
         </button>
       </div>
     </div>
@@ -473,12 +395,10 @@ export default function CurriculumVersionControlPage() {
   const { data: versionData,  isLoading: loadingVer  } = useCurriculumVersions(id);
 
   const { mutate: createVersion, isPending: creating } = useCreateCurriculumVersion(id);
-  const { mutate: editVersion,   isPending: editing   } = useEditCurriculumVersion(id);
 
   const [mode, setMode] = useState("view");
 
-  const current  = versionData?.current  || null;
-  const history  = versionData?.history  || [];
+  const current = versionData?.current || null;
   const ayPeriods = yearData?.current?.periods || [];
   const curriculumPeriods = curriculum?.periods || [];
 
@@ -486,15 +406,10 @@ export default function CurriculumVersionControlPage() {
     if (!loadingVer && !current) setMode("create");
   }, [loadingVer, current]);
 
-  const isPending = creating || editing;
   const isLoading = loadingCurr || loadingYear || loadingVer;
 
   const handleSaveCreate = (data) => {
     createVersion(data, { onSuccess: () => setMode("view") });
-  };
-
-  const handleSaveEdit = (data) => {
-    editVersion({ vId: current.id, data }, { onSuccess: () => setMode("view") });
   };
 
   if (isLoading) return (
@@ -520,7 +435,7 @@ export default function CurriculumVersionControlPage() {
           </div>
           <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Version Control</h1>
           <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>
-            {mode === "create" ? "Add courses to each class by period to create Version 1." : mode === "edit" ? "Edit courses — saving creates a new version." : "Manage courses and version history."}
+            {mode === "create" ? "Add courses to each class by period to create Version 1." : "Course assignments for this curriculum."}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
@@ -545,34 +460,17 @@ export default function CurriculumVersionControlPage() {
         <VersionEdit
           curriculum={curriculum || { periods: [], classes: [] }}
           ayPeriods={ayPeriods}
-          isCreate={true}
-          currentVersion={null}
           onSave={handleSaveCreate}
           onCancel={() => navigate("/curriculum")}
-          isPending={isPending}
-        />
-      )}
-
-      {mode === "edit" && current && (
-        <VersionEdit
-          curriculum={curriculum || { periods: [], classes: [] }}
-          ayPeriods={ayPeriods}
-          isCreate={false}
-          currentVersion={current}
-          onSave={handleSaveEdit}
-          onCancel={() => setMode("view")}
-          isPending={isPending}
+          isPending={creating}
         />
       )}
 
       {mode === "view" && current && (
         <VersionView
           current={current}
-          history={history}
-          curriculumId={id}
           ayPeriods={ayPeriods}
           curriculumPeriods={curriculumPeriods}
-          onEdit={() => setMode("edit")}
         />
       )}
     </div>

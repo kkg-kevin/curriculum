@@ -186,5 +186,150 @@
     "isCurrent": true,
     "createdAt": "2026-06-22T14:41:22.236Z",
     "updatedAt": "2026-06-22T14:41:22.236Z"
+  },
+  {
+    "id": "4c09712d-81b8-4a6a-ba6b-c223edb98f91",
+    "curriculumId": "49261559-aa07-4636-a743-fdd64cf77c11",
+    "label": "2025 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-02-03",
+        "endDate": "2026-11-25",
+        "breakStartDate": "2026-03-25",
+        "breakEndDate": "2026-10-23"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T07:02:26.440Z",
+    "updatedAt": "2026-06-23T07:02:26.440Z"
+  },
+  {
+    "id": "1f617491-70b2-49a9-bf0e-bc9eece4c6f7",
+    "curriculumId": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-03",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-31",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-10-01",
+        "breakEndDate": "2026-10-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T07:11:46.179Z",
+    "updatedAt": "2026-06-23T07:11:46.179Z"
+  },
+  {
+    "id": "825acc45-6ac6-43ca-81d4-6c8ac720db27",
+    "curriculumId": "c2520f31-7263-44e4-a414-474e5628eb98",
+    "label": "2025 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-02",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-31",
+        "breakStartDate": "2026-06-02",
+        "breakEndDate": "2026-06-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-10-01",
+        "breakEndDate": "2026-10-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T07:30:14.633Z",
+    "updatedAt": "2026-06-23T07:30:14.633Z"
+  },
+  {
+    "id": "6b2d3f88-4ccb-470a-b572-34239f7cdb48",
+    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-01-03",
+        "endDate": "2026-04-30",
+        "breakStartDate": "2026-02-03",
+        "breakEndDate": "2026-02-12"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-07-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-10-01",
+        "breakEndDate": "2026-10-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T07:39:46.829Z",
+    "updatedAt": "2026-06-23T07:39:46.829Z"
+  },
+  {
+    "id": "41dafb71-57b7-4558-95cd-d7ac2be87911",
+    "curriculumId": "6f88ecff-ca3d-458a-88bb-903477a1a7b2",
+    "label": "2025",
+    "startDate": "2026-06-01",
+    "endDate": "2026-08-31",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-06-02",
+        "endDate": "2026-08-20",
+        "breakStartDate": "2026-06-25",
+        "breakEndDate": "2026-07-08"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T07:54:43.413Z",
+    "updatedAt": "2026-06-23T07:54:43.413Z"
   }
 ]
