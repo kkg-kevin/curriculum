@@ -482,7 +482,7 @@ export default function DashboardPage() {
               {formatDay()}
             </p>
             <h1 style={{ margin: "0 0 6px", fontSize: "26px", fontWeight: "900", color: "#fff", letterSpacing: "-0.4px" }}>
-              {getGreeting()}, Admin 👋
+              {getGreeting()}, Admin
             </h1>
             <p style={{ margin: 0, fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.5" }}>
               {totalCurricula > 0
