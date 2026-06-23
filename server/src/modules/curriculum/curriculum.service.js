@@ -28,23 +28,47 @@ const CurriculumService = {
       }
     }
 
-    // Effective status lookup: prefer "published" > "active" over curriculum.status
-    const effectiveStatusByCurriculumId = {};
+    // Effective status: "published" only when BOTH curriculum-version AND academic-year-version are published
+    const cvPublishedIds = new Set();
+    const cvActiveIds    = new Set();
+    // Courses count from the current (isCurrent) version's content
+    const coursesCountById = {};
     for (const v of cvVersions) {
       if (!v.curriculumId) continue;
-      const current = effectiveStatusByCurriculumId[v.curriculumId];
-      if (v.status === "published") {
-        effectiveStatusByCurriculumId[v.curriculumId] = "published";
-      } else if (v.status === "active" && current !== "published") {
-        effectiveStatusByCurriculumId[v.curriculumId] = "active";
+      if (v.status === "published") cvPublishedIds.add(v.curriculumId);
+      if (v.status === "active")    cvActiveIds.add(v.curriculumId);
+      if (v.isCurrent) {
+        let count = 0;
+        for (const period of (v.content || [])) {
+          for (const cls of (period.classes || [])) {
+            count += (cls.courses || []).length;
+          }
+        }
+        coursesCountById[v.curriculumId] = count;
       }
     }
 
-    return curricula.map((c) => ({
-      ...c,
-      publishedAcademicYear: ayLabelByCurriculumId[c.id] || null,
-      effectiveStatus: effectiveStatusByCurriculumId[c.id] || c.status || "draft",
-    }));
+    const ayPublishedIds = new Set();
+    for (const v of ayVersions) {
+      if (v.curriculumId && v.status === "published") ayPublishedIds.add(v.curriculumId);
+    }
+
+    return curricula.map((c) => {
+      let effectiveStatus;
+      if (cvPublishedIds.has(c.id) && ayPublishedIds.has(c.id)) {
+        effectiveStatus = "published";
+      } else if (cvActiveIds.has(c.id)) {
+        effectiveStatus = "active";
+      } else {
+        effectiveStatus = c.status || "draft";
+      }
+      return {
+        ...c,
+        publishedAcademicYear: ayLabelByCurriculumId[c.id] || null,
+        effectiveStatus,
+        coursesCount: coursesCountById[c.id] || 0,
+      };
+    });
   },
 
   async getCurriculumById(id) {
