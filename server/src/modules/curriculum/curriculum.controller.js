@@ -30,20 +30,10 @@ const deleteCurriculum = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-const updateCurriculumStructure = asyncHandler(async (req, res) => {
-  const { structure } = req.body;
-  if (!Array.isArray(structure)) {
-    return res.status(400).json({ success: false, message: "structure must be an array" });
-  }
-  const curriculum = await CurriculumService.updateCurriculum(req.params.id, { structure });
-  res.json({ success: true, data: curriculum });
-});
-
 module.exports = {
   createCurriculum,
   getAllCurricula,
   getCurriculumById,
   updateCurriculum,
   deleteCurriculum,
-  updateCurriculumStructure,
 };

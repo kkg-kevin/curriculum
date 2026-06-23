@@ -8,6 +8,4 @@ export const curriculumApi = {
   getById: (id) => api.get(`${ENDPOINT}/${id}`).then((r) => r.data.data),
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
-  updateStructure: (id, structure) =>
-    api.put(`${ENDPOINT}/${id}/structure`, { structure }).then((r) => r.data.data),
 };

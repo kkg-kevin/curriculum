@@ -5,26 +5,33 @@ const {
   getCurriculumById,
   updateCurriculum,
   deleteCurriculum,
-  updateCurriculumStructure,
 } = require("./curriculum.controller");
 const {
-  getAllVersions,
-  getVersionById,
+  getVersions,
   createVersion,
-  publishVersion,
-  revertVersion,
+  editVersion,
+  changeVersionStatus,
 } = require("./curriculum-versions.controller");
+const {
+  getAcademicYears,
+  createAcademicYear,
+  editAcademicYear,
+  changeStatus,
+} = require("./academic-years.controller");
 
 const router = express.Router();
 
 router.route("/").get(getAllCurricula).post(createCurriculum);
 router.route("/:id").get(getCurriculumById).put(updateCurriculum).delete(deleteCurriculum);
-router.route("/:id/structure").put(updateCurriculumStructure);
 
-// Version routes
-router.route("/:id/versions").get(getAllVersions).post(createVersion);
-router.route("/:id/versions/:vId").get(getVersionById);
-router.route("/:id/versions/:vId/publish").post(publishVersion);
-router.route("/:id/versions/:vId/revert").post(revertVersion);
+// Version Control routes
+router.route("/:id/versions").get(getVersions).post(createVersion);
+router.route("/:id/versions/:vId").put(editVersion);
+router.route("/:id/versions/:vId/status").patch(changeVersionStatus);
+
+// Academic year routes
+router.route("/:id/academic-years").get(getAcademicYears).post(createAcademicYear);
+router.route("/:id/academic-years/:yearId").put(editAcademicYear);
+router.route("/:id/academic-years/:yearId/status").patch(changeStatus);
 
 module.exports = router;

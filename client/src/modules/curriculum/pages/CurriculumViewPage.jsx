@@ -1,368 +1,188 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
+import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { schoolApi } from "../../schools/services/schoolApi";
-import VersionHistory from "../components/VersionHistory";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return null;
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
-const termLabel = (period, i, model) => {
-  if (period?.name) return period.name;
-  if (model === "semesters") return `Semester ${i + 1}`;
-  if (model === "terms") return `Term ${i + 1}`;
-  return `Period ${i + 1}`;
-};
-
-const cycleLabel = (model) => {
-  if (model === "semesters") return "Semesters";
-  if (model === "terms") return "Terms";
-  return "Periods";
-};
+const cycleLabel = (model) =>
+  model === "semesters" ? "Semesters" : model === "terms" ? "Terms" : "Periods";
 
 const FRAMEWORK_COLORS = {
-  CBC:       { bg: "#1D4ED8", light: "#EFF6FF", border: "#BFDBFE" },
-  IGCSE:     { bg: "#1565C0", light: "#DBEAFE", border: "#93C5FD" },
-  IB:        { bg: "#1E40AF", light: "#EFF6FF", border: "#BFDBFE" },
-  National:  { bg: "#0369A1", light: "#E0F2FE", border: "#BAE6FD" },
-  Cambridge: { bg: "#1E3A8A", light: "#DBEAFE", border: "#93C5FD" },
-  Custom:    { bg: "#374151", light: "#F9FAFB", border: "#E5E7EB" },
+  CBC:       { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  IGCSE:     { bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
+  IB:        { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
+  National:  { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
+  Cambridge: { bg: "#DBEAFE", color: "#1E3A8A", border: "#93C5FD" },
+  American:  { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
+  Custom:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
-/* ── Course chip ──────────────────────────────────────────────────────── */
+const STATUS_CONFIG = {
+  active:   { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", dot: "#16A34A", label: "Active"   },
+  draft:    { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"    },
+  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive" },
+};
 
-const BLUE_SHADES = [
+const COURSE_SHADES = [
   { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
   { bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
   { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
   { bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
 ];
 
-function CourseChip({ name, index }) {
-  const shade = BLUE_SHADES[index % BLUE_SHADES.length];
+/* ── CSS ─────────────────────────────────────────────────────────────── */
+
+const CSS = `
+  @keyframes cvp-spin { to { transform: rotate(360deg); } }
+  @keyframes cvp-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .cvp-period-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 16px 20px;
+    border-bottom: 1px solid #F3F4F6;
+    background: #FAFBFF;
+  }
+
+  .cvp-tab {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid #E5E7EB;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: Inter, sans-serif;
+    color: #6B7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .cvp-tab:hover { border-color: #93C5FD; color: #1D4ED8; background: #F0F7FF; }
+  .cvp-tab.active {
+    border-color: #0D47A1;
+    background: #0D47A1;
+    color: #fff;
+  }
+
+  .cvp-class-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .cvp-class-row:last-child { border-bottom: none; }
+
+  .cvp-class-name {
+    min-width: 120px;
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    padding-top: 3px;
+  }
+
+  .cvp-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .cvp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .cvp-chip-code {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.7;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.08);
+  }
+
+  .cvp-no-courses {
+    font-size: 12px;
+    color: #9CA3AF;
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  .cvp-period-content {
+    animation: cvp-fade 0.2s ease;
+  }
+
+  @media (max-width: 640px) {
+    .cvp-class-row { flex-direction: column; gap: 8px; }
+    .cvp-class-name { min-width: unset; }
+  }
+`;
+
+/* ── Small atoms ─────────────────────────────────────────────────────── */
+
+function Chip({ course, index }) {
+  const shade = COURSE_SHADES[index % COURSE_SHADES.length];
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 11px",
-        backgroundColor: shade.bg,
-        color: shade.color,
-        border: `1px solid ${shade.border}`,
-        borderRadius: "20px",
-        fontSize: "12px",
-        fontWeight: "500",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {name}
+    <span className="cvp-chip" style={{ backgroundColor: shade.bg, color: shade.color, border: `1px solid ${shade.border}` }}>
+      {course.name}
+      {course.code && <span className="cvp-chip-code">{course.code}</span>}
     </span>
   );
 }
 
-/* ── View class row (accordion, read-only) ────────────────────────────── */
-
-function ViewClassRow({ grade, isExpanded, onToggle }) {
-  const courseCount = grade.courses?.length || 0;
-  const hasCourses = courseCount > 0;
-
+function VersionBadge({ version }) {
+  if (!version) return null;
+  const sc = STATUS_CONFIG[version.status] || STATUS_CONFIG.inactive;
   return (
-    <div
-      style={{
-        border: `1px solid ${isExpanded ? "#BFDBFE" : "#E5E7EB"}`,
-        borderRadius: "10px",
-        overflow: "hidden",
-        backgroundColor: "#fff",
-        transition: "border-color 0.15s",
-      }}
-    >
-      {/* Header — click to toggle */}
-      <div
-        onClick={onToggle}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "11px 14px",
-          backgroundColor: isExpanded ? "#EFF6FF" : "#fff",
-          cursor: "pointer",
-          transition: "background-color 0.15s",
-        }}
-      >
-        <span
-          style={{
-            width: "8px",
-            height: "8px",
-            borderRadius: "50%",
-            backgroundColor: hasCourses ? "#16A34A" : "#D1D5DB",
-            flexShrink: 0,
-          }}
-        />
-        <span style={{ flex: 1, fontSize: "13px", fontWeight: "600", color: isExpanded ? "#0D47A1" : "#111827", transition: "color 0.15s" }}>
-          {grade.name}
-        </span>
-        <span
-          style={{
-            padding: "2px 9px",
-            backgroundColor: hasCourses ? "#DBEAFE" : "#F3F4F6",
-            color: hasCourses ? "#1D4ED8" : "#9CA3AF",
-            borderRadius: "20px",
-            fontSize: "11px",
-            fontWeight: "600",
-            border: `1px solid ${hasCourses ? "#BFDBFE" : "#E5E7EB"}`,
-            flexShrink: 0,
-          }}
-        >
-          {courseCount} {courseCount === 1 ? "course" : "courses"}
-        </span>
-        <svg
-          width="13" height="13" viewBox="0 0 24 24" fill="none"
-          style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s", color: isExpanded ? "#0D47A1" : "#9CA3AF", flexShrink: 0 }}
-        >
-          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-
-      {/* Courses — only shown when expanded */}
-      {isExpanded && (
-        <div style={{ borderTop: "1px solid #DBEAFE", padding: "12px 14px", backgroundColor: "#F8FBFF" }}>
-          {hasCourses ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {grade.courses.map((course, ci) => (
-                <CourseChip key={course.id} name={course.name} index={ci} />
-              ))}
-            </div>
-          ) : (
-            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-              No courses assigned yet.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── View term accordion ──────────────────────────────────────────────── */
-
-function ViewTermAccordion({ period, termIndex, termData, model, isOpen, onToggle, expandedGrades, onToggleGrade }) {
-  const grades = termData.grades || [];
-  const totalCourses = grades.reduce((s, g) => s + (g.courses?.length || 0), 0);
-  const isConfigured = grades.length > 0;
-  const label = termLabel(period, termIndex, model);
-  const startDate = formatDate(period.startDate);
-  const endDate = formatDate(period.endDate);
-
-  return (
-    <div
-      style={{
-        borderRadius: "14px",
-        border: `1.5px solid ${isOpen ? "#BFDBFE" : "#E5E7EB"}`,
-        overflow: "hidden",
-        backgroundColor: "#fff",
-        boxShadow: isOpen ? "0 2px 12px rgba(13,71,161,0.07)" : "0 1px 3px rgba(0,0,0,0.04)",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-      }}
-    >
-      {/* Term header */}
-      <button
-        type="button"
-        onClick={onToggle}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          padding: "14px 18px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          fontFamily: "Inter, sans-serif",
-          backgroundColor: isOpen ? "#EFF6FF" : "#fff",
-          borderLeft: `4px solid ${isOpen ? "#0D47A1" : "transparent"}`,
-          transition: "background-color 0.15s, border-left-color 0.2s",
-        }}
-      >
-        {/* Chevron */}
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none"
-          style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s ease", color: isOpen ? "#0D47A1" : "#9CA3AF", flexShrink: 0 }}
-        >
-          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-
-        {/* Number badge */}
-        <span
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "10px",
-            backgroundColor: isOpen ? "#0D47A1" : (isConfigured ? "#DBEAFE" : "#F3F4F6"),
-            color: isOpen ? "#fff" : (isConfigured ? "#1D4ED8" : "#9CA3AF"),
-            fontSize: "13px",
-            fontWeight: "800",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            transition: "all 0.2s",
-          }}
-        >
-          {termIndex + 1}
-        </span>
-
-        {/* Label + dates */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "700", color: isOpen ? "#0D47A1" : "#111827" }}>
-            {label}
-          </p>
-          <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>
-            {startDate && endDate ? `${startDate} – ${endDate}` : "No dates set"}
-          </p>
-        </div>
-
-        {/* Stats badges */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          {isConfigured ? (
-            <>
-              <span style={{ padding: "3px 9px", backgroundColor: "#EFF6FF", color: "#1D4ED8", borderRadius: "20px", fontSize: "11px", fontWeight: "600", border: "1px solid #BFDBFE" }}>
-                {grades.length} {grades.length === 1 ? "class" : "classes"}
-              </span>
-              <span style={{ padding: "3px 9px", backgroundColor: "#F0FDF4", color: "#15803D", borderRadius: "20px", fontSize: "11px", fontWeight: "600", border: "1px solid #BBF7D0" }}>
-                {totalCourses} {totalCourses === 1 ? "course" : "courses"}
-              </span>
-            </>
-          ) : (
-            <span style={{ padding: "3px 9px", backgroundColor: "#F9FAFB", color: "#9CA3AF", borderRadius: "20px", fontSize: "11px", fontWeight: "500", border: "1px solid #E5E7EB" }}>
-              Not configured
-            </span>
-          )}
-        </div>
-      </button>
-
-      {/* Term body */}
-      {isOpen && (
-        <div style={{ borderTop: "1px solid #E5E7EB", padding: "12px 18px 14px", backgroundColor: "#FAFBFF", display: "flex", flexDirection: "column", gap: "8px" }}>
-          {grades.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-                padding: "18px 20px",
-                backgroundColor: "#fff",
-                borderRadius: "10px",
-                border: "1.5px dashed #E5E7EB",
-              }}
-            >
-              <span style={{ fontSize: "22px" }}>🏫</span>
-              <div>
-                <p style={{ margin: "0 0 2px 0", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
-                  No classes for {label}
-                </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  Open the Structure Builder to add classes and courses.
-                </p>
-              </div>
-            </div>
-          ) : (
-            grades.map((grade) => (
-              <ViewClassRow
-                key={grade.id}
-                grade={grade}
-                isExpanded={expandedGrades.has(grade.id)}
-                onToggle={() => onToggleGrade(grade.id)}
-              />
-            ))
-          )}
-        </div>
-      )}
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: "6px",
+        padding: "4px 12px", borderRadius: "20px",
+        backgroundColor: "#0D47A1", color: "#fff",
+        fontSize: "12px", fontWeight: "700",
+      }}>
+        Version {version.versionNumber}
+      </span>
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: "5px",
+        padding: "4px 11px", borderRadius: "20px",
+        backgroundColor: sc.bg, color: sc.color,
+        border: `1px solid ${sc.border}`,
+        fontSize: "11px", fontWeight: "700",
+      }}>
+        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: sc.dot }} />
+        {sc.label}
+      </span>
     </div>
   );
 }
 
 /* ── Loading skeleton ─────────────────────────────────────────────────── */
 
-function Skeleton({ w, h, radius = "8px", mb = "0" }) {
-  return (
-    <div
-      style={{
-        width: w,
-        height: h,
-        borderRadius: radius,
-        backgroundColor: "#EEF2F7",
-        marginBottom: mb,
-        flexShrink: 0,
-      }}
-    />
-  );
+function Skel({ w, h, radius = "8px" }) {
+  return <div style={{ width: w, height: h, borderRadius: radius, backgroundColor: "#EEF2F7", flexShrink: 0 }} />;
 }
 
 function LoadingState() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* Back button skeleton */}
-      <Skeleton w="90px" h="32px" radius="8px" mb="20px" />
-
-      {/* Header card skeleton */}
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "20px",
-          overflow: "hidden",
-          marginBottom: "24px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        }}
-      >
-        <div style={{ height: "80px", background: "linear-gradient(135deg, #E8EFF8 0%, #EEF4FC 100%)" }} />
-        <div style={{ padding: "20px 28px 24px" }}>
-          <Skeleton w="60%" h="22px" radius="6px" mb="10px" />
-          <Skeleton w="40%" h="14px" radius="6px" mb="20px" />
-          <div style={{ display: "flex", gap: "12px" }}>
-            {[1, 2, 3, 4].map((n) => (
-              <Skeleton key={n} w="90px" h="56px" radius="12px" />
-            ))}
-          </div>
-        </div>
+      <style>{`@keyframes cvp-spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "400px", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
+        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "cvp-spin 0.7s linear infinite" }} />
+        Loading curriculum…
       </div>
-
-      {/* Term skeletons */}
-      {[1, 2].map((n) => (
-        <div
-          key={n}
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: "18px",
-            borderLeft: "4px solid #E5E7EB",
-            overflow: "hidden",
-            marginBottom: "16px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-          }}
-        >
-          <div style={{ padding: "20px 24px", backgroundColor: "#FAFAFA", borderBottom: "1px solid #F0F4F8", display: "flex", gap: "14px", alignItems: "center" }}>
-            <Skeleton w="42px" h="42px" radius="12px" />
-            <div style={{ flex: 1 }}>
-              <Skeleton w="120px" h="16px" radius="5px" mb="8px" />
-              <Skeleton w="180px" h="12px" radius="5px" />
-            </div>
-          </div>
-          <div style={{ padding: "20px 24px", display: "flex", gap: "12px" }}>
-            {[1, 2, 3].map((m) => (
-              <Skeleton key={m} w="200px" h="120px" radius="14px" />
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -372,8 +192,9 @@ function LoadingState() {
 export default function CurriculumViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
+
+  const { data: curriculum, isLoading: currLoading, isError } = useCurriculumQuery(id);
+  const { data: vData, isLoading: vLoading } = useCurriculumVersions(id);
 
   const { data: schoolsData } = useQuery({
     queryKey: ["schools", "byCurriculum", id],
@@ -381,52 +202,18 @@ export default function CurriculumViewPage() {
     enabled:  !!id,
   });
 
-  useEffect(() => {
-    if (location.state?.scrollTo === "versions") {
-      const el = document.getElementById("version-history");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [location.state]);
+  const [activePeriod, setActivePeriod] = useState(0);
 
-  const [expandedTerms, setExpandedTerms] = useState(() => new Set([0]));
-  const [expandedGrades, setExpandedGrades] = useState(() => new Set());
-
-  const toggleTerm = (i) => setExpandedTerms((prev) => {
-    const next = new Set(prev);
-    if (next.has(i)) next.delete(i); else next.add(i);
-    return next;
-  });
-
-  const toggleGrade = (id) => setExpandedGrades((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
-
-  if (isLoading) return <LoadingState />;
+  if (currLoading || vLoading) return <LoadingState />;
 
   if (isError || !curriculum) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", padding: "24px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
-            padding: "20px 24px",
-            backgroundColor: "#FFF5F5",
-            border: "1px solid #FECACA",
-            borderRadius: "14px",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "14px" }}>
           <span style={{ fontSize: "24px" }}>⚠️</span>
           <div>
-            <p style={{ margin: "0 0 4px 0", fontWeight: "700", color: "#DC2626", fontSize: "14px" }}>
-              Could not load curriculum
-            </p>
-            <p style={{ margin: 0, fontSize: "13px", color: "#EF4444" }}>
-              The curriculum may not exist or there was a network error.
-            </p>
+            <p style={{ margin: "0 0 4px 0", fontWeight: "700", color: "#DC2626", fontSize: "14px" }}>Could not load curriculum</p>
+            <p style={{ margin: 0, fontSize: "13px", color: "#EF4444" }}>The curriculum may not exist or there was a network error.</p>
           </div>
         </div>
       </div>
@@ -434,41 +221,38 @@ export default function CurriculumViewPage() {
   }
 
   const assignedSchools = schoolsData?.data || [];
+  const current         = vData?.current;
+  const history         = vData?.history || [];
+  const content         = current?.content || [];
+  const periods         = curriculum.periods || [];
+  const classes         = curriculum.classes || [];
+  const model           = curriculum.academicCycleModel || "terms";
+  const fwColors        = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
 
-  const structure = curriculum.structure || [];
-  const periods = curriculum.periods || [];
-  const model = curriculum.academicCycleModel || "terms";
-  const fwColors = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
-
-  const totalClasses = structure.reduce((s, t) => s + (t.grades?.length || 0), 0);
-  const totalCourses = structure.reduce(
-    (s, t) => s + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
-    0
+  /* Stats derived from version content */
+  const totalCourses = content.reduce(
+    (s, p) => s + (p.classes || []).reduce((cs, cls) => cs + (cls.courses?.length || 0), 0),
+    0,
   );
-  const configuredTerms = structure.filter((t) => (t.grades?.length || 0) > 0).length;
-  const hasStructure = structure.some((t) => (t.grades?.length || 0) > 0);
+
+  /* Active period content */
+  const safeIdx          = Math.min(activePeriod, Math.max(content.length - 1, 0));
+  const activePeriodData = content[safeIdx];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{CSS}</style>
 
-      {/* ── Breadcrumb / back ──────────────────────────────────────────── */}
+      {/* ── Breadcrumb / back ─────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
         <button
           type="button"
           onClick={() => navigate("/curriculum")}
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "7px 14px",
-            backgroundColor: "#ffffff",
-            color: "#374151",
-            border: "1.5px solid #E5E7EB",
-            borderRadius: "9px",
-            fontSize: "13px",
-            fontWeight: "500",
-            fontFamily: "Inter, sans-serif",
-            cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: "6px",
+            padding: "7px 14px", backgroundColor: "#ffffff", color: "#374151",
+            border: "1.5px solid #E5E7EB", borderRadius: "9px",
+            fontSize: "13px", fontWeight: "500", fontFamily: "Inter, sans-serif", cursor: "pointer",
             boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
           }}
         >
@@ -478,242 +262,174 @@ export default function CurriculumViewPage() {
           All Curricula
         </button>
         <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
-        <span
-          style={{
-            fontSize: "13px",
-            color: "#6B7280",
-            maxWidth: "220px",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
+        <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "220px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {curriculum.name}
         </span>
       </div>
 
       {/* ── Hero header card ──────────────────────────────────────────── */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          borderRadius: "20px",
-          boxShadow: "0 4px 20px rgba(13,71,161,0.10), 0 1px 4px rgba(0,0,0,0.05)",
-          overflow: "hidden",
-          marginBottom: "24px",
-        }}
-      >
-        {/* Gradient hero section */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 40%, #1565C0 70%, #1976D2 100%)",
-            padding: "28px 32px 32px",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Decorative circles */}
-          <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "160px", height: "160px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: "-10px", right: "100px", width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", top: "10px", right: "200px", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+      <div style={{
+        backgroundColor: "#ffffff", borderRadius: "20px",
+        boxShadow: "0 4px 20px rgba(13,71,161,0.10), 0 1px 4px rgba(0,0,0,0.05)",
+        overflow: "hidden", marginBottom: "20px",
+      }}>
+        {/* Gradient banner */}
+        <div style={{
+          background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 40%, #1565C0 70%, #1976D2 100%)",
+          padding: "24px 28px 28px", position: "relative", overflow: "hidden",
+        }}>
+          <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "160px", height: "160px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)" }} />
+          <div style={{ position: "absolute", bottom: "-10px", right: "100px", width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)" }} />
 
-          {/* Top row: framework badge + action buttons */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "16px", position: "relative" }}>
-            <span
-              style={{
-                padding: "5px 14px",
-                backgroundColor: "rgba(255,255,255,0.18)",
-                color: "#ffffff",
-                border: "1px solid rgba(255,255,255,0.25)",
-                borderRadius: "20px",
-                fontSize: "12px",
-                fontWeight: "700",
-                letterSpacing: "0.04em",
-                backdropFilter: "blur(4px)",
-              }}
-            >
-              {curriculum.framework}
+          {/* Top row: framework + action buttons */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "14px", position: "relative" }}>
+            <span style={{
+              padding: "4px 13px", borderRadius: "20px",
+              backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff",
+              border: "1px solid rgba(255,255,255,0.25)",
+              fontSize: "11px", fontWeight: "700", letterSpacing: "0.04em",
+            }}>
+              {curriculum.framework || "No Framework"}
             </span>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => navigate(`/curriculum/${id}/edit`)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "6px 14px",
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                  color: "#ffffff",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  fontFamily: "Inter, sans-serif",
-                  cursor: "pointer",
-                }}
-              >
-                ✏ Edit
+
+            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+              <button type="button" onClick={() => navigate(`/curriculum/${id}/edit`)}
+                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                ✏ Edit Details
               </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/curriculum/${id}/structure`)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "6px 14px",
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  color: "#0D47A1",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  fontFamily: "Inter, sans-serif",
-                  cursor: "pointer",
-                }}
-              >
-                🏗 Structure Builder
+              <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)}
+                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                🏗 Structure
+              </button>
+              <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
+                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#0D47A1", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                🗂 Version Control
               </button>
             </div>
           </div>
 
           {/* Name */}
-          <h1
-            style={{
-              margin: "0 0 6px 0",
-              fontSize: "26px",
-              fontWeight: "900",
-              color: "#ffffff",
-              letterSpacing: "-0.5px",
-              lineHeight: 1.2,
-              position: "relative",
-            }}
-          >
+          <h1 style={{ margin: "0 0 4px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2, position: "relative" }}>
             {curriculum.name}
           </h1>
-
-          {/* Code · Year */}
-          <p
-            style={{
-              margin: "0 0 10px 0",
-              fontSize: "13px",
-              color: "rgba(255,255,255,0.72)",
-              fontWeight: "500",
-              position: "relative",
-            }}
-          >
+          <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "rgba(255,255,255,0.72)", fontWeight: "500", position: "relative" }}>
             {[curriculum.code, curriculum.academicYear, cycleLabel(model)].filter(Boolean).join("  ·  ")}
           </p>
-
-          {/* Description */}
           {curriculum.description && (
-            <p
-              style={{
-                margin: 0,
-                fontSize: "13px",
-                color: "rgba(255,255,255,0.75)",
-                lineHeight: "1.65",
-                maxWidth: "600px",
-                position: "relative",
-              }}
-            >
+            <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.6", maxWidth: "560px", position: "relative", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
               {curriculum.description}
             </p>
           )}
         </div>
 
         {/* Stats bar */}
-        <div
-          style={{
-            padding: "20px 32px",
-            display: "flex",
-            gap: "12px",
-            flexWrap: "wrap",
-            borderBottom: "1px solid #F0F4F8",
-          }}
-        >
+        <div style={{ padding: "18px 28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {[
             { label: cycleLabel(model), value: periods.length, icon: "📆", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-            { label: "Classes", value: totalClasses, icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-            { label: "Courses", value: totalCourses, icon: "📚", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-            { label: "Configured", value: `${configuredTerms}/${periods.length}`, icon: "✅", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+            { label: "Classes",         value: classes.length,  icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
+            { label: "Total Courses",   value: totalCourses,    icon: "📚", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
+            { label: "Versions",        value: history.length + (current ? 1 : 0), icon: "🗂", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "12px 18px",
-                backgroundColor: stat.bg,
-                border: `1px solid ${stat.border}`,
-                borderRadius: "12px",
-                flex: "1 0 120px",
-                minWidth: "100px",
-              }}
-            >
-              <span style={{ fontSize: "20px", flexShrink: 0 }}>{stat.icon}</span>
+            <div key={stat.label} style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "11px 16px", backgroundColor: stat.bg, border: `1px solid ${stat.border}`,
+              borderRadius: "12px", flex: "1 0 100px", minWidth: "90px",
+            }}>
+              <span style={{ fontSize: "18px", flexShrink: 0 }}>{stat.icon}</span>
               <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "22px",
-                    fontWeight: "800",
-                    color: stat.color,
-                    lineHeight: 1,
-                  }}
-                >
-                  {stat.value}
-                </p>
-                <p
-                  style={{
-                    margin: "2px 0 0 0",
-                    fontSize: "10px",
-                    fontWeight: "700",
-                    color: stat.color,
-                    opacity: 0.65,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {stat.label}
-                </p>
+                <p style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: stat.color, lineHeight: 1 }}>{stat.value}</p>
+                <p style={{ margin: "2px 0 0 0", fontSize: "10px", fontWeight: "700", color: stat.color, opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</p>
               </div>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Completion progress bar */}
-        {periods.length > 0 && (
-          <div style={{ padding: "14px 32px 18px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>
-                Setup progress
-              </span>
-              <span style={{ fontSize: "11px", fontWeight: "700", color: "#0D47A1" }}>
-                {configuredTerms} of {periods.length} {cycleLabel(model).toLowerCase()} configured
-              </span>
-            </div>
-            <div style={{ height: "6px", backgroundColor: "#EEF2F7", borderRadius: "10px", overflow: "hidden" }}>
-              <div
-                style={{
-                  height: "100%",
-                  width: `${periods.length > 0 ? (configuredTerms / periods.length) * 100 : 0}%`,
-                  background: "linear-gradient(90deg, #0D47A1, #42A5F5)",
-                  borderRadius: "10px",
-                  transition: "width 0.5s ease",
-                }}
-              />
-            </div>
+      {/* ── Version Content Section ───────────────────────────────────── */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+
+        {/* Section header */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Course Assignments</h2>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+              {current ? "Courses assigned per class for each period" : "No version created yet"}
+            </p>
           </div>
+          {current && <VersionBadge version={current} />}
+        </div>
+
+        {!current ? (
+          /* ── No version state ─── */
+          <div style={{ padding: "48px 24px", textAlign: "center" }}>
+            <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>
+              🗂
+            </div>
+            <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
+            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginLeft: "auto", marginRight: "auto" }}>
+              Go to Version Control to assign courses to each class per period, then save as a version.
+            </p>
+            <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
+              style={{ padding: "10px 22px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              Open Version Control →
+            </button>
+          </div>
+        ) : content.length === 0 ? (
+          <div style={{ padding: "32px 24px", textAlign: "center" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>This version has no period content yet.</p>
+          </div>
+        ) : (
+          <>
+            {/* Period tabs */}
+            <div className="cvp-period-tabs">
+              {content.map((p, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`cvp-tab${safeIdx === i ? " active" : ""}`}
+                  onClick={() => setActivePeriod(i)}
+                >
+                  {p.periodName}
+                </button>
+              ))}
+            </div>
+
+            {/* Class / course content */}
+            {activePeriodData && (
+              <div className="cvp-period-content" style={{ padding: "4px 20px 20px" }}>
+                {(activePeriodData.classes || []).length === 0 ? (
+                  <div style={{ padding: "32px", textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No classes for this period.</p>
+                  </div>
+                ) : (
+                  (activePeriodData.classes || []).map((cls) => (
+                    <div key={cls.className} className="cvp-class-row">
+                      <span className="cvp-class-name">{cls.className}</span>
+                      <div className="cvp-chips">
+                        {(cls.courses || []).length === 0 ? (
+                          <span className="cvp-no-courses">No courses assigned</span>
+                        ) : (
+                          (cls.courses || []).map((course, ci) => (
+                            <Chip key={course.id} course={course} index={ci} />
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* ── Schools using this curriculum ────────────────────────────── */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "24px" }}>
+      {/* ── Schools Using This Curriculum ─────────────────────────────── */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Schools Using This Curriculum</h2>
-          <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{assignedSchools.length}</span>
+          <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+            {assignedSchools.length}
+          </span>
         </div>
         <div style={{ padding: "16px 20px" }}>
           {assignedSchools.length === 0 ? (
@@ -722,21 +438,30 @@ export default function CurriculumViewPage() {
               <p style={{ margin: 0, fontSize: "13px" }}>No schools have been assigned this curriculum yet.</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {assignedSchools.map((s) => (
-                <div key={s.id} onClick={() => navigate(`/schools/${s.id}/view`)}
+                <div
+                  key={s.id}
+                  onClick={() => navigate(`/schools/${s.id}/view`)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F9FAFB"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>🏫</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "20px" }}>🏫</span>
                     <div>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{s.name}</p>
-                      <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>{s.code}{s.address?.county ? ` · ${s.address.county}` : ""}</p>
+                      <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>{s.name}</p>
+                      <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>
+                        {s.code}{s.address?.county ? ` · ${s.address.county}` : ""}
+                      </p>
                     </div>
                   </div>
-                  <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.status === "active" ? "#ECFDF5" : "#F9FAFB", color: s.status === "active" ? "#065F46" : "#6B7280", border: `1px solid ${s.status === "active" ? "#A7F3D0" : "#E5E7EB"}` }}>
+                  <span style={{
+                    padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700",
+                    backgroundColor: s.status === "active" ? "#ECFDF5" : "#F9FAFB",
+                    color: s.status === "active" ? "#065F46" : "#6B7280",
+                    border: `1px solid ${s.status === "active" ? "#A7F3D0" : "#E5E7EB"}`,
+                  }}>
                     {s.status === "active" ? "Active" : "Inactive"}
                   </span>
                 </div>
@@ -746,122 +471,71 @@ export default function CurriculumViewPage() {
         </div>
       </div>
 
-      {/* ── Version history ──────────────────────────────────────────── */}
-      <div id="version-history">
-        <VersionHistory curriculumId={id} />
-      </div>
-
-      {/* ── Academic structure section ────────────────────────────────── */}
-
-      {/* Section heading */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "14px",
-            fontWeight: "800",
-            color: "#6B7280",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Academic Structure
-        </h2>
-        <div style={{ flex: 1, height: "1px", backgroundColor: "#E5E7EB" }} />
-        {periods.length > 0 && (
-          <span
-            style={{
-              padding: "3px 10px",
-              backgroundColor: "#EFF6FF",
-              color: "#1D4ED8",
-              border: "1px solid #BFDBFE",
-              borderRadius: "20px",
-              fontSize: "11px",
-              fontWeight: "600",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {periods.length} {cycleLabel(model).toLowerCase()}
-          </span>
-        )}
-      </div>
-
-      {periods.length === 0 ? (
-        /* ── No periods at all ──────────────────────────────────────── */
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "20px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-            padding: "56px 32px",
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "20px",
-              background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-              border: "2px solid #BFDBFE",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "36px",
-              margin: "0 auto 20px",
-            }}
-          >
-            🏗
+      {/* ── Version History link ──────────────────────────────────────── */}
+      {(history.length > 0 || current) && (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Version History</h2>
+              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                {history.length + (current ? 1 : 0)} version{(history.length + (current ? 1 : 0)) !== 1 ? "s" : ""} recorded
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/curriculum/${id}/versions`)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "8px 16px", backgroundColor: "#EFF6FF", color: "#0D47A1",
+                border: "1.5px solid #BFDBFE", borderRadius: "9px",
+                fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer",
+              }}
+            >
+              View All Versions →
+            </button>
           </div>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "800", color: "#0F2645" }}>
-            Structure not set up yet
-          </h3>
-          <p style={{ margin: "0 0 28px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6", maxWidth: "400px", marginLeft: "auto", marginRight: "auto" }}>
-            No academic periods have been configured. Edit the curriculum to add periods, then use the Structure Builder to assign classes and courses.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate(`/curriculum/${id}/structure`)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px 24px",
-              backgroundColor: "#0D47A1",
-              color: "#fff",
-              border: "none",
-              borderRadius: "12px",
-              fontSize: "14px",
-              fontWeight: "700",
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(13,71,161,0.25)",
-            }}
-          >
-            🏗 Open Structure Builder
-          </button>
-        </div>
-      ) : (
-        /* ── Accordion list ─────────────────────────────────────────── */
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {periods.map((period, i) => (
-            <ViewTermAccordion
-              key={i}
-              period={period}
-              termIndex={i}
-              termData={structure[i] || { grades: [] }}
-              model={model}
-              isOpen={expandedTerms.has(i)}
-              onToggle={() => toggleTerm(i)}
-              expandedGrades={expandedGrades}
-              onToggleGrade={toggleGrade}
-            />
-          ))}
+
+          {/* Quick list of versions */}
+          <div style={{ padding: "0 20px 16px" }}>
+            {[current, ...history].filter(Boolean).map((v) => {
+              const sc = STATUS_CONFIG[v.status] || STATUS_CONFIG.inactive;
+              return (
+                <div key={v.id} style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  padding: "10px 0", borderTop: "1px solid #F3F4F6",
+                }}>
+                  <span style={{
+                    width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0,
+                    backgroundColor: v.isCurrent ? "#0D47A1" : "#F3F4F6",
+                    color: v.isCurrent ? "#fff" : "#6B7280",
+                    fontSize: "11px", fontWeight: "800",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    v{v.versionNumber}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>
+                      Version {v.versionNumber}
+                      {v.isCurrent && <span style={{ marginLeft: "6px", fontSize: "10px", color: "#0D47A1", fontWeight: "700" }}>· CURRENT</span>}
+                    </p>
+                    <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>
+                      {new Date(v.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <span style={{
+                    padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
+                    backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
+                    textTransform: "uppercase", letterSpacing: "0.04em",
+                  }}>
+                    {sc.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Bottom spacing */}
       <div style={{ height: "32px" }} />
     </div>
   );

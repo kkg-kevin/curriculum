@@ -19,9 +19,8 @@ const FRAMEWORK_BADGE_COLORS = {
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
 
 const STATUS_COLORS = {
-  Complete:      { bg: "#EFF6FF", color: "#1D4ED8",  border: "#BFDBFE" },
-  "In Progress": { bg: "#E0F2FE", color: "#0369A1",  border: "#BAE6FD" },
-  Draft:         { bg: "#F9FAFB", color: "#6B7280",  border: "#E5E7EB" },
+  active: { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  draft:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
 function FrameworkBadge({ framework }) {
@@ -130,19 +129,13 @@ function CurriculumCard({ curriculum }) {
     };
   }, [menuOpen]);
 
-  const periodCount = curriculum.periods?.length || 0;
-  const structure   = curriculum.structure || [];
-
-  const classCount = structure.reduce((s, t) => s + (t.grades?.length || 0), 0);
-  const courseCount = structure.reduce(
-    (s, t) => s + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
-    0
-  );
-  const configuredTerms = structure.filter((t) => (t.grades?.length || 0) > 0).length;
-  const completionPct   = periodCount > 0 ? Math.round((configuredTerms / periodCount) * 100) : 0;
-  const status = completionPct === 100 ? "Complete" : configuredTerms > 0 ? "In Progress" : "Draft";
-  const sc = STATUS_COLORS[status];
-  const hasStructure = classCount > 0;
+  const periodCount   = curriculum.periods?.length || 0;
+  const classCount    = curriculum.classes?.length || 0;
+  const rawStatus     = curriculum.status || "draft";
+  const statusLabel   = rawStatus === "active" ? "Active" : "Draft";
+  const sc            = STATUS_COLORS[rawStatus] || STATUS_COLORS.draft;
+  const completionPct = (periodCount > 0 ? 50 : 0) + (classCount > 0 ? 50 : 0);
+  const hasClasses    = classCount > 0;
 
   return (
     <div
@@ -409,25 +402,15 @@ function CurriculumCard({ curriculum }) {
               {periodCount}
             </p>
           </div>
-          {hasStructure && (
-            <>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
-                  Classes
-                </span>
-                <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
-                  {classCount}
-                </p>
-              </div>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
-                  Courses
-                </span>
-                <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
-                  {courseCount}
-                </p>
-              </div>
-            </>
+          {hasClasses && (
+            <div>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase" }}>
+                Classes
+              </span>
+              <p style={{ margin: "2px 0 0 0", fontSize: "13px", fontWeight: "500", color: "#374151" }}>
+                {classCount}
+              </p>
+            </div>
           )}
         </div>
 
@@ -435,9 +418,9 @@ function CurriculumCard({ curriculum }) {
         <div style={{ paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
             <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
-              {periodCount > 0
-                ? `${configuredTerms} of ${periodCount} ${periodCount === 1 ? "period" : "periods"} configured`
-                : "No periods set up"}
+              {hasClasses
+                ? `${classCount} ${classCount === 1 ? "class" : "classes"} · ${periodCount} ${periodCount === 1 ? "period" : "periods"}`
+                : periodCount > 0 ? "No classes configured yet" : "No setup yet"}
             </span>
             <span
               style={{
@@ -452,7 +435,7 @@ function CurriculumCard({ curriculum }) {
                 textTransform: "uppercase",
               }}
             >
-              {status}
+              {statusLabel}
             </span>
           </div>
           <div style={{ height: "5px", backgroundColor: "#F0F4F8", borderRadius: "10px", overflow: "hidden" }}>
@@ -577,26 +560,9 @@ export default function CurriculumPage() {
   const hasFilters = !!filters.framework || !!filters.academicYear;
 
   /* Aggregate stats */
-  const totalClasses = curricula.reduce(
-    (s, c) => s + (c.structure || []).reduce((ts, t) => ts + (t.grades?.length || 0), 0),
-    0
-  );
-  const totalCourses = curricula.reduce(
-    (s, c) =>
-      s +
-      (c.structure || []).reduce(
-        (ts, t) => ts + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
-        0
-      ),
-    0
-  );
+  const totalClasses   = curricula.reduce((s, c) => s + (c.classes?.length || 0), 0);
+  const totalPeriods   = curricula.reduce((s, c) => s + (c.periods?.length || 0), 0);
   const frameworksUsed = new Set(curricula.map((c) => c.framework).filter(Boolean)).size;
-  const completeCount  = curricula.filter((c) => {
-    const periods = c.periods?.length || 0;
-    if (periods === 0) return false;
-    const configured = (c.structure || []).filter((t) => (t.grades?.length || 0) > 0).length;
-    return configured === periods;
-  }).length;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -673,10 +639,10 @@ export default function CurriculumPage() {
         }}
       >
         {[
-          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length,   icon: "📋", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-          { label: "Total Classes",    value: isLoading ? "—" : totalClasses,        icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-          { label: "Total Courses",    value: isLoading ? "—" : totalCourses,        icon: "📚", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-          { label: "Frameworks in Use",value: isLoading ? "—" : frameworksUsed,      icon: "🏫", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length, icon: "📋", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+          { label: "Total Classes",   value: isLoading ? "—" : totalClasses,     icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
+          { label: "Total Periods",   value: isLoading ? "—" : totalPeriods,     icon: "📅", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
+          { label: "Frameworks in Use",value: isLoading ? "—" : frameworksUsed,  icon: "🏫", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
         ].map((stat) => (
           <div
             key={stat.label}

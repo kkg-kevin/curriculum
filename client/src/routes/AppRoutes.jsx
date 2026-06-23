@@ -7,8 +7,7 @@ import CurriculumStructurePage from "../modules/curriculum/pages/CurriculumStruc
 import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
 import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 import CurriculumVersionControlPage from "../modules/curriculum/pages/CurriculumVersionControlPage";
-import CurriculumVersionPage from "../modules/curriculum/pages/CurriculumVersionPage";
-import CurriculumVersionComparePage from "../modules/curriculum/pages/CurriculumVersionComparePage";
+import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
 import SupplementaryListPage from "../modules/supplementary/pages/SupplementaryListPage";
 import SupplementaryViewPage from "../modules/supplementary/pages/SupplementaryViewPage";
 import CreateSupplementaryPage from "../modules/supplementary/pages/CreateSupplementaryPage";
@@ -62,8 +61,7 @@ export default function AppRoutes() {
           <Route path=":id/structure" element={<CurriculumStructurePage />} />
           <Route path=":id/view" element={<CurriculumViewPage />} />
           <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
-          <Route path=":id/versions/:vId" element={<CurriculumVersionPage />} />
-          <Route path=":id/versions/:vIdA/diff/:vIdB" element={<CurriculumVersionComparePage />} />
+          <Route path=":id/academic-year" element={<AcademicYearPage />} />
         </Route>
         <Route path="supplementary">
           <Route index element={<SupplementaryListPage />} />

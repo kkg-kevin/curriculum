@@ -1,880 +1,661 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm, FormProvider } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useCurriculumQuery, useUpdateCurriculum, useUpdateStructure } from "../hooks/useCurriculum";
-import {
-  curriculumSettingsSchema,
-  FRAMEWORKS,
-  FRAMEWORK_LABELS,
-} from "../schemas/curriculum.schema";
-import StructureContent from "../components/structure/StructureContent";
-import StructureOverview from "../components/structure/StructureOverview";
-import AcademicPeriodFields from "../components/AcademicPeriodFields";
+import toast from "react-hot-toast";
+import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
+import { FRAMEWORKS, FRAMEWORK_LABELS } from "../schemas/curriculum.schema";
 
-const genId = () =>
-  `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 6)}`;
-
-/* ── Shared style helpers ──────────────────────────────────────────────── */
-
-const labelStyle = {
-  display: "block",
-  fontSize: "13px",
-  fontWeight: "500",
-  color: "#374151",
-  marginBottom: "6px",
-};
-
-const getInputStyle = (hasError) => ({
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: "10px",
-  border: `1px solid ${hasError ? "#EF4444" : "#E5E7EB"}`,
-  fontSize: "14px",
-  fontFamily: "Inter, sans-serif",
-  backgroundColor: hasError ? "#FFF5F5" : "#F9FAFB",
-  outline: "none",
-  boxSizing: "border-box",
-  color: "#111827",
-  transition: "border-color 0.15s",
-});
-
-const errorTextStyle = { fontSize: "12px", color: "#EF4444", marginTop: "4px", marginBottom: 0 };
-const hintStyle     = { fontSize: "12px", color: "#9CA3AF", marginTop: "4px", marginBottom: 0 };
-
-function FieldError({ error }) {
-  if (!error) return null;
-  return <p style={errorTextStyle}>{error.message}</p>;
-}
-
-/* ── CycleModelSelector ────────────────────────────────────────────────── */
-
-const CYCLE_OPTIONS = [
-  { value: "terms",     label: "Terms",     description: "3 academic terms",    icon: "📚" },
-  { value: "semesters", label: "Semesters", description: "2 academic semesters", icon: "🎓" },
-  { value: "custom",    label: "Custom",    description: "Flexible structure",   icon: "⚙️" },
-];
-
-function CycleModelSelector({ value, onChange, error }) {
-  return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-        {CYCLE_OPTIONS.map((option) => {
-          const isSelected = value === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onChange(option.value)}
-              style={{
-                padding: "12px 10px",
-                borderRadius: "10px",
-                border: isSelected ? "2px solid #0D47A1" : "1.5px solid #E5E7EB",
-                backgroundColor: isSelected ? "#EFF6FF" : "#ffffff",
-                cursor: "pointer",
-                textAlign: "center",
-                fontFamily: "Inter, sans-serif",
-                transition: "all 0.15s",
-              }}
-            >
-              <div style={{ fontSize: "20px", marginBottom: "4px" }}>{option.icon}</div>
-              <div style={{ fontSize: "13px", fontWeight: isSelected ? "700" : "600", color: isSelected ? "#0D47A1" : "#374151", marginBottom: "2px" }}>
-                {option.label}
-              </div>
-              <div style={{ fontSize: "11px", color: isSelected ? "#1565C0" : "#9CA3AF" }}>
-                {option.description}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      {error && <p style={errorTextStyle}>{error.message}</p>}
-    </div>
-  );
-}
-
-/* ── ClassInlineInput ──────────────────────────────────────────────────── */
-
-function ClassInlineInput({ onConfirm, onCancel }) {
-  const [val, setVal] = useState("");
-  return (
-    <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
-      <input
-        autoFocus
-        type="text"
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); if (val.trim()) onConfirm(val.trim()); }
-          if (e.key === "Escape") onCancel();
-        }}
-        placeholder="e.g. Grade 7, Form 1, Year 1..."
-        style={{
-          flex: 1,
-          padding: "9px 12px",
-          borderRadius: "9px",
-          border: "1.5px solid #BFDBFE",
-          fontSize: "13px",
-          fontFamily: "Inter, sans-serif",
-          outline: "none",
-          backgroundColor: "#F0F7FF",
-          color: "#111827",
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => { if (val.trim()) onConfirm(val.trim()); }}
-        style={{
-          padding: "9px 16px",
-          backgroundColor: "#0D47A1",
-          color: "#fff",
-          border: "none",
-          borderRadius: "9px",
-          fontSize: "13px",
-          fontWeight: "600",
-          fontFamily: "Inter, sans-serif",
-          cursor: "pointer",
-        }}
-      >
-        Add
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        style={{
-          padding: "9px 12px",
-          backgroundColor: "transparent",
-          color: "#6B7280",
-          border: "1px solid #E5E7EB",
-          borderRadius: "9px",
-          fontSize: "14px",
-          fontFamily: "Inter, sans-serif",
-          cursor: "pointer",
-          lineHeight: 1,
-        }}
-      >
-        ×
-      </button>
-    </div>
-  );
-}
-
-/* ── SetupPanel ────────────────────────────────────────────────────────── */
+/* ── Constants ───────────────────────────────────────────────────────────── */
 
 const STANDARD_FRAMEWORKS = FRAMEWORKS.filter((f) => f !== "Custom");
 
-function getClassListFromStructure(structure) {
-  for (const term of structure) {
-    if (term.grades && term.grades.length > 0) {
-      return term.grades.map((g) => ({ id: g.id, name: g.name }));
-    }
+const PREDEFINED_PERIODS = {
+  terms: ["Term 1", "Term 2", "Term 3"],
+  semesters: ["Semester 1", "Semester 2"],
+};
+
+const CYCLE_OPTIONS = [
+  { value: "terms",     label: "3 Terms",     sub: "Three academic terms" },
+  { value: "semesters", label: "2 Semesters", sub: "Two academic semesters" },
+  { value: "custom",    label: "Custom",       sub: "Define your own" },
+];
+
+const STEPS = [
+  { n: 1, label: "Basic Info" },
+  { n: 2, label: "Structure" },
+  { n: 3, label: "Academic Year" },
+  { n: 4, label: "Version Control" },
+];
+
+/* ── CSS ─────────────────────────────────────────────────────────────────── */
+
+const CSS = `
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .csp-input, .csp-select {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #E5E7EB;
+    font-size: 14px;
+    font-family: Inter, sans-serif;
+    background-color: #F9FAFB;
+    color: #111827;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
   }
-  return [];
-}
+  .csp-input:focus, .csp-select:focus {
+    border-color: #0D47A1;
+    background-color: #F0F7FF;
+    box-shadow: 0 0 0 3px rgba(13,71,161,0.1);
+  }
+  .csp-input.err { border-color: #EF4444; background-color: #FFF5F5; }
+  .csp-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
 
-function SetupPanel({ curriculum, structure, onClassSync }) {
-  const { mutate: updateCurriculum, isPending: isSavingSettings } = useUpdateCurriculum();
+  .csp-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .csp-col-left  { flex: 0 0 340px; display: flex; flex-direction: column; gap: 20px; }
+  .csp-col-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 
-  const isConfigured = !!(curriculum.framework) && (curriculum.periods?.length || 0) > 0;
-  const [panelOpen, setPanelOpen] = useState(!isConfigured);
+  @media (max-width: 900px) {
+    .csp-layout { flex-direction: column; }
+    .csp-col-left  { flex: none; width: 100%; }
+  }
 
-  // Framework custom mode
-  const savedIsCustom = !!(curriculum.framework) && !STANDARD_FRAMEWORKS.includes(curriculum.framework);
-  const [isCustomMode, setIsCustomMode] = useState(savedIsCustom);
-  const [customText,   setCustomText]   = useState(savedIsCustom ? curriculum.framework : "");
+  .csp-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .csp-connector { width: 60px; }
+  @media (max-width: 520px) {
+    .csp-connector { width: 36px; }
+    .csp-steps { justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
+  }
 
-  // Class list
-  const [classList,   setClassList]   = useState(() => getClassListFromStructure(structure));
-  const [addingClass, setAddingClass] = useState(false);
-  const panelWasOpen = useRef(panelOpen);
+  .cycle-btn {
+    flex: 1;
+    padding: 13px 8px;
+    border-radius: 10px;
+    border: 1.5px solid #E5E7EB;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    font-family: Inter, sans-serif;
+    transition: all 0.15s;
+  }
+  .cycle-btn:hover { border-color: #93C5FD; background: #F8FBFF; }
+  .cycle-btn.active { border: 2px solid #0D47A1; background: #EFF6FF; }
 
-  // Refresh class list when panel opens
-  useEffect(() => {
-    if (panelOpen && !panelWasOpen.current) {
-      setClassList(getClassListFromStructure(structure));
-    }
-    panelWasOpen.current = panelOpen;
-  }, [panelOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  .period-preview-grid {
+    display: grid;
+    gap: 12px;
+  }
 
-  // Sync form when curriculum is updated externally
-  const methods = useForm({
-    resolver: zodResolver(curriculumSettingsSchema),
-    defaultValues: {
-      framework: curriculum.framework || "",
-      academicCycleModel: curriculum.academicCycleModel || "terms",
-      periods: curriculum.periods || [],
-    },
-    mode: "onTouched",
-  });
+  .period-card {
+    background: #fff;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .period-card-head {
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: Inter, sans-serif;
+    letter-spacing: 0.01em;
+  }
+  .period-card-body {
+    padding: 10px 14px;
+    min-height: 72px;
+  }
 
-  const { handleSubmit, setValue, watch, reset, formState: { errors } } = methods;
-  const cycleModel      = watch("academicCycleModel");
-  const frameworkValue  = watch("framework");
-  const selectDisplayValue = isCustomMode ? "Custom" : (frameworkValue || "");
+  .class-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 6px 5px 12px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1D4ED8;
+  }
+  .class-chip-x {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #93C5FD;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 3px;
+    display: flex;
+    align-items: center;
+    font-family: Inter, sans-serif;
+    transition: color 0.1s;
+  }
+  .class-chip-x:hover { color: #EF4444; }
+`;
 
-  useEffect(() => {
-    const fw = curriculum.framework || "";
-    const nowCustom = !!(fw) && !STANDARD_FRAMEWORKS.includes(fw);
-    setIsCustomMode(nowCustom);
-    setCustomText(nowCustom ? fw : "");
-    reset({
-      framework: fw,
-      academicCycleModel: curriculum.academicCycleModel || "terms",
-      periods: curriculum.periods || [],
-    });
-  }, [curriculum.updatedAt, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+/* ── Shared style objects ────────────────────────────────────────────────── */
 
-  const handleFrameworkSelect = (e) => {
-    const val = e.target.value;
-    if (val === "Custom") {
-      setIsCustomMode(true);
-      setCustomText("");
-      setValue("framework", "", { shouldValidate: false });
-    } else {
-      setIsCustomMode(false);
-      setCustomText("");
-      setValue("framework", val, { shouldValidate: true });
-    }
-  };
+const card = {
+  backgroundColor: "#ffffff",
+  borderRadius: "16px",
+  padding: "22px 24px",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
+};
 
-  const handleCustomTextChange = (e) => {
-    const val = e.target.value;
-    setCustomText(val);
-    setValue("framework", val, { shouldValidate: true });
-  };
+const sectionTitle = (extra = {}) => ({
+  margin: "0 0 18px 0",
+  paddingBottom: "14px",
+  borderBottom: "1px solid #F3F4F6",
+  fontSize: "14px", fontWeight: "700", color: "#111827",
+  display: "flex", alignItems: "center", gap: "8px",
+  ...extra,
+});
 
-  const exitCustomMode = () => {
-    setIsCustomMode(false);
-    setCustomText("");
-    setValue("framework", "", { shouldValidate: false });
-  };
+const stepBadge = {
+  width: "26px", height: "26px", borderRadius: "8px",
+  backgroundColor: "#0D47A1", color: "#fff",
+  fontSize: "12px", fontWeight: "700",
+  display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+};
 
-  const handleAddClass = (name) => {
-    setClassList((prev) => [...prev, { id: genId(), name }]);
-    setAddingClass(false);
-  };
+const fieldLabel = {
+  display: "block", fontSize: "13px", fontWeight: "500",
+  color: "#374151", marginBottom: "7px",
+};
 
-  const handleRemoveClass = (id) => {
-    setClassList((prev) => prev.filter((c) => c.id !== id));
-  };
+const errMsg  = { fontSize: "12px", color: "#EF4444", marginTop: "5px", marginBottom: 0 };
+const hintMsg = { fontSize: "12px", color: "#9CA3AF", marginTop: "5px", marginBottom: 0 };
 
-  const onSubmit = (data) => {
-    updateCurriculum(
-      { id: curriculum.id, data },
-      {
-        onSuccess: () => {
-          onClassSync(classList, data.periods);
-          setPanelOpen(false);
-        },
-      }
-    );
-  };
+/* ── StepIndicator (same pattern as Phase 1) ─────────────────────────────── */
 
-  const cycleLabel =
-    curriculum.academicCycleModel === "semesters" ? "Semesters"
-    : curriculum.academicCycleModel === "terms"   ? "Terms"
-    : "Periods";
-
+function StepIndicator({ current }) {
   return (
-    <div
-      style={{
-        marginBottom: "20px",
-        borderRadius: "14px",
-        border: isConfigured ? "1.5px solid #BFDBFE" : "1.5px solid #FCD34D",
-        backgroundColor: "#ffffff",
-        overflow: "hidden",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-      }}
-    >
-      {/* ── Panel header ── */}
-      <button
-        type="button"
-        onClick={() => setPanelOpen((o) => !o)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          padding: "14px 18px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "Inter, sans-serif",
-          backgroundColor: panelOpen ? "#EFF6FF" : isConfigured ? "#F8FAFF" : "#FFFBEB",
-          textAlign: "left",
-          borderBottom: panelOpen ? "1px solid #E5E7EB" : "none",
-          transition: "background-color 0.15s",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              backgroundColor: isConfigured ? "#0D47A1" : "#D97706",
-              color: "#fff",
-              fontSize: "16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {isConfigured ? "⚙" : "!"}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: isConfigured ? "#1E3A5F" : "#92400E" }}>
-              {isConfigured ? "Curriculum Settings" : "Setup Required"}
-            </p>
-            <p style={{ margin: "1px 0 0", fontSize: "12px", color: isConfigured ? "#6B7280" : "#B45309" }}>
-              {isConfigured
-                ? `${curriculum.framework} · ${curriculum.periods.length} ${cycleLabel}${classList.length > 0 ? ` · ${classList.length} classes` : ""}`
-                : "Configure framework and academic periods to enable the structure"}
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          {isConfigured && (
-            <span
-              style={{
+    <div className="csp-steps">
+      {STEPS.map((step, i) => {
+        const done   = step.n < current;
+        const active = step.n === current;
+        return (
+          <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+              <div style={{
+                width: "34px", height: "34px", borderRadius: "50%",
+                backgroundColor: done || active ? "#0D47A1" : "#F3F4F6",
+                border: `2px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: done || active ? "#fff" : "#9CA3AF",
+                fontSize: done ? "15px" : "13px", fontWeight: "700",
+                transition: "all 0.2s", flexShrink: 0,
+              }}>
+                {done ? "✓" : step.n}
+              </div>
+              <span style={{
                 fontSize: "11px",
-                fontWeight: "700",
-                color: "#1D4ED8",
-                backgroundColor: "#EFF6FF",
-                border: "1px solid #BFDBFE",
-                borderRadius: "20px",
-                padding: "2px 10px",
-              }}
-            >
-              Configured
-            </span>
-          )}
-          <span style={{ fontSize: "18px", color: "#9CA3AF", lineHeight: 1 }}>
-            {panelOpen ? "▲" : "▼"}
-          </span>
-        </div>
-      </button>
-
-      {/* ── Panel body ── */}
-      {panelOpen && (
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ padding: "20px 22px 22px" }}>
-
-            {/* Framework + Cycle model */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
-              {/* Framework */}
-              <div>
-                <label style={{ ...labelStyle, marginBottom: "8px" }}>
-                  Curriculum Framework <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <select
-                  value={selectDisplayValue}
-                  onChange={handleFrameworkSelect}
-                  style={{
-                    ...getInputStyle(!isCustomMode && !!errors.framework),
-                    appearance: "none",
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 14px center",
-                    paddingRight: "36px",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="">Select a framework...</option>
-                  {FRAMEWORKS.map((fw) => (
-                    <option key={fw} value={fw}>{FRAMEWORK_LABELS[fw]}</option>
-                  ))}
-                </select>
-
-                {isCustomMode && (
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      padding: "12px 14px",
-                      backgroundColor: "#F0F7FF",
-                      border: "1.5px solid #BFDBFE",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                        ✏ Custom Framework
-                      </span>
-                      <button
-                        type="button"
-                        onClick={exitCustomMode}
-                        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#6B7280", fontFamily: "Inter, sans-serif", padding: 0 }}
-                      >
-                        ← Use standard
-                      </button>
-                    </div>
-                    <input
-                      autoFocus
-                      type="text"
-                      value={customText}
-                      onChange={handleCustomTextChange}
-                      placeholder="e.g. Montessori, Waldorf..."
-                      style={{ ...getInputStyle(!!errors.framework), backgroundColor: "#ffffff" }}
-                    />
-                    {!errors.framework && <p style={hintStyle}>This name will appear as the framework label.</p>}
-                  </div>
-                )}
-                <FieldError error={errors.framework} />
-              </div>
-
-              {/* Cycle model */}
-              <div>
-                <label style={{ ...labelStyle, marginBottom: "10px" }}>
-                  Academic Cycle Model <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <CycleModelSelector
-                  value={cycleModel}
-                  onChange={(val) => setValue("academicCycleModel", val, { shouldValidate: true })}
-                  error={errors.academicCycleModel}
-                />
-              </div>
+                fontWeight: active ? "600" : "400",
+                color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF",
+                whiteSpace: "nowrap",
+              }}>{step.label}</span>
             </div>
-
-            {/* Academic periods */}
-            <div style={{ marginBottom: "24px" }}>
-              <label style={{ ...labelStyle, marginBottom: "12px" }}>
-                Academic Periods <span style={{ color: "#EF4444" }}>*</span>
-              </label>
-              <AcademicPeriodFields />
-            </div>
-
-            {/* ── Classes ── */}
-            <div
-              style={{
-                borderTop: "1px solid #F3F4F6",
-                paddingTop: "20px",
-                marginBottom: "20px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
-                <div>
-                  <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-                    Classes
-                  </p>
-                  <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#6B7280" }}>
-                    Defined once — automatically applied to every term.
-                  </p>
-                </div>
-                {!addingClass && (
-                  <button
-                    type="button"
-                    onClick={() => setAddingClass(true)}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "7px 13px",
-                      backgroundColor: "#EFF6FF",
-                      color: "#0D47A1",
-                      border: "1.5px solid #BFDBFE",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      fontFamily: "Inter, sans-serif",
-                      cursor: "pointer",
-                      flexShrink: 0,
-                    }}
-                  >
-                    + Add Class
-                  </button>
-                )}
-              </div>
-
-              {/* Class chips */}
-              {classList.length > 0 ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: addingClass ? "0" : "0" }}>
-                  {classList.map((cls) => (
-                    <span
-                      key={cls.id}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        padding: "5px 6px 5px 12px",
-                        backgroundColor: "#EFF6FF",
-                        border: "1px solid #BFDBFE",
-                        borderRadius: "20px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        color: "#1D4ED8",
-                      }}
-                    >
-                      {cls.name}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveClass(cls.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#93C5FD",
-                          fontSize: "15px",
-                          lineHeight: 1,
-                          padding: "0 4px",
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                        title="Remove class"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                !addingClass && (
-                  <div
-                    style={{
-                      padding: "20px",
-                      backgroundColor: "#F9FAFB",
-                      border: "1.5px dashed #E5E7EB",
-                      borderRadius: "10px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-                      No classes defined yet. Click <strong>+ Add Class</strong> to get started.
-                    </p>
-                  </div>
-                )
-              )}
-
-              {/* Inline add input */}
-              {addingClass && (
-                <ClassInlineInput
-                  onConfirm={handleAddClass}
-                  onCancel={() => setAddingClass(false)}
-                />
-              )}
-            </div>
-
-            {/* Save / Cancel */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              {isConfigured && (
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen(false)}
-                  style={{
-                    padding: "10px 20px",
-                    backgroundColor: "transparent",
-                    color: "#374151",
-                    border: "1.5px solid #E5E7EB",
-                    borderRadius: "10px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    fontFamily: "Inter, sans-serif",
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={isSavingSettings}
-                style={{
-                  padding: "10px 24px",
-                  backgroundColor: isSavingSettings ? "#93C5FD" : "#0D47A1",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  fontFamily: "Inter, sans-serif",
-                  cursor: isSavingSettings ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  transition: "background-color 0.15s",
-                }}
-              >
-                {isSavingSettings ? (
-                  <>
-                    <span
-                      style={{
-                        width: "14px",
-                        height: "14px",
-                        border: "2px solid rgba(255,255,255,0.4)",
-                        borderTopColor: "#fff",
-                        borderRadius: "50%",
-                        display: "inline-block",
-                        animation: "spin 0.7s linear infinite",
-                      }}
-                    />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Settings"
-                )}
-              </button>
-            </div>
-          </form>
-        </FormProvider>
-      )}
+            {i < STEPS.length - 1 && (
+              <div className="csp-connector" style={{
+                height: "2px",
+                backgroundColor: done ? "#0D47A1" : "#E5E7EB",
+                margin: "0 6px", marginBottom: "20px", flexShrink: 0,
+                transition: "background-color 0.2s",
+              }} />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-/* ── Page ──────────────────────────────────────────────────────────────── */
+function Spinner() {
+  return (
+    <span style={{
+      width: "14px", height: "14px",
+      border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff",
+      borderRadius: "50%", display: "inline-block",
+      animation: "spin 0.7s linear infinite",
+    }} />
+  );
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+
+function getClassesFromStructure(structure) {
+  if (!structure?.length || !structure[0]?.grades?.length) return [];
+  return structure[0].grades.map((g) => g.name);
+}
+
+function derivePeriodNames(cycleModel, customNames) {
+  if (cycleModel === "custom") return customNames.filter((n) => n.trim());
+  return PREDEFINED_PERIODS[cycleModel] ?? PREDEFINED_PERIODS.terms;
+}
+
+/* ── Main page ───────────────────────────────────────────────────────────── */
 
 export default function CurriculumStructurePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
-  const { mutate: saveStructure, isPending: isSaving } = useUpdateStructure();
+  const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
 
-  const [structure, setStructure]           = useState([]);
-  const [pendingClassSync, setPendingClassSync] = useState(null);
+  /* Settings */
+  const [framework,    setFramework]    = useState("");
+  const [isCustomFw,   setIsCustomFw]   = useState(false);
+  const [customFwText, setCustomFwText] = useState("");
+  const [cycleModel,   setCycleModel]   = useState("terms");
 
-  // Initialise / re-initialise structure whenever curriculum changes.
-  // If a class sync is pending (queued after settings save), apply it now.
+  /* Custom cycle */
+  const [customPeriodCount, setCustomPeriodCount] = useState(3);
+  const [customPeriodNames, setCustomPeriodNames] = useState(["Period 1", "Period 2", "Period 3"]);
+
+  /* Classes */
+  const [classes,    setClasses]    = useState([]);
+  const [classInput, setClassInput] = useState("");
+
+  /* Validation */
+  const [errors, setErrors] = useState({});
+
+  /* Seed state from loaded curriculum */
   useEffect(() => {
     if (!curriculum) return;
 
-    const existing = curriculum.structure || [];
-    const initialized = (curriculum.periods || []).map(
-      (_, i) => existing[i] || { grades: [] }
-    );
+    const fw = curriculum.framework || "";
+    const isCustom = !!fw && !STANDARD_FRAMEWORKS.includes(fw);
+    setIsCustomFw(isCustom);
+    setCustomFwText(isCustom ? fw : "");
+    setFramework(isCustom ? "" : fw);
 
-    if (pendingClassSync) {
-      const { classList, periodCount } = pendingClassSync;
-      const synced = Array.from({ length: periodCount }, (_, i) => {
-        const term = initialized[i] || { grades: [] };
-        return {
-          ...term,
-          grades: classList.map((cls) => {
-            const existing = term.grades.find((g) => g.name === cls.name);
-            return existing || { id: genId(), name: cls.name, courses: [] };
-          }),
-        };
-      });
-      setPendingClassSync(null);
-      setStructure(synced);
-      saveStructure({ id: curriculum.id, structure: synced });
-    } else {
-      setStructure(initialized);
+    const model = curriculum.academicCycleModel || "terms";
+    setCycleModel(model);
+
+    if (model === "custom" && curriculum.periods?.length) {
+      const names = curriculum.periods.map((p) => p.name || "");
+      setCustomPeriodCount(names.length);
+      setCustomPeriodNames(names);
     }
-  }, [curriculum]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Called by SetupPanel when Save Settings succeeds.
-  // Queues a class sync that runs after the curriculum refetch re-initialises structure.
-  const handleClassSync = (classList, periods) => {
-    setPendingClassSync({ classList, periodCount: periods.length });
+    const existingClasses = curriculum.classes?.length
+      ? curriculum.classes
+      : getClassesFromStructure(curriculum.structure);
+    setClasses(existingClasses);
+  }, [curriculum?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Custom period count sync */
+  const handleCustomCount = (n) => {
+    const count = Math.max(1, Math.min(12, n));
+    setCustomPeriodCount(count);
+    setCustomPeriodNames((prev) => {
+      const next = [...prev];
+      while (next.length < count) next.push(`Period ${next.length + 1}`);
+      return next.slice(0, count);
+    });
   };
 
-  const handleUpdateTerm = (termIndex, termData) => {
-    setStructure((prev) =>
-      prev.map((t, i) => (i === termIndex ? { ...t, ...termData } : t))
+  /* Framework */
+  const handleFrameworkSelect = (e) => {
+    const val = e.target.value;
+    if (val === "Custom") {
+      setIsCustomFw(true);
+      setCustomFwText("");
+      setFramework("");
+    } else {
+      setIsCustomFw(false);
+      setCustomFwText("");
+      setFramework(val);
+    }
+    setErrors((p) => ({ ...p, framework: "" }));
+  };
+
+  const effectiveFramework = isCustomFw ? customFwText : framework;
+
+  /* Classes */
+  const addClasses = () => {
+    if (!classInput.trim()) return;
+    const typed    = classInput.split(",").map((c) => c.trim()).filter(Boolean);
+    const incoming = typed.filter((c) => !classes.includes(c));
+    if (incoming.length) {
+      setClasses((p) => [...p, ...incoming]);
+    } else {
+      toast.error(typed.length === 1 ? `"${typed[0]}" is already in the list` : "All typed classes are already in the list");
+    }
+    setClassInput("");
+  };
+
+  const handleClassKey = (e) => {
+    if (e.key === "Enter") { e.preventDefault(); addClasses(); }
+  };
+
+  const removeClass = (name) => setClasses((p) => p.filter((c) => c !== name));
+
+  /* Save + navigate */
+  const handleSave = (destination) => {
+    const errs = {};
+    if (!effectiveFramework.trim()) errs.framework = "Please select or enter a framework";
+    if (cycleModel === "custom") {
+      if (customPeriodNames.some((n) => !n.trim())) errs.periods = "Please fill in all period names";
+      if (!customPeriodNames.some((n) => n.trim())) errs.periods = "Enter at least one period name";
+    }
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    const periodNames = derivePeriodNames(cycleModel, customPeriodNames);
+    const periods     = periodNames.map((name) => ({ name }));
+
+    updateCurriculum(
+      { id: curriculum.id, data: { framework: effectiveFramework.trim(), academicCycleModel: cycleModel, periods, classes } },
+      { onSuccess: () => navigate(destination) }
     );
   };
 
-  const handleSave = () => {
-    saveStructure({ id, structure });
-  };
-
-  /* ── Loading ──────────────────────────────────────────────────────── */
+  /* ── Loading ─────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "400px",
-          fontFamily: "Inter, sans-serif",
-          gap: "14px",
-          color: "#6B7280",
-          fontSize: "14px",
-        }}
-      >
-        <span
-          style={{
-            width: "28px",
-            height: "28px",
-            border: "3px solid #E5E7EB",
-            borderTopColor: "#0D47A1",
-            borderRadius: "50%",
-            display: "inline-block",
-            animation: "spin 0.7s linear infinite",
-          }}
-        />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "400px", fontFamily: "Inter, sans-serif", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
+        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        Loading curriculum...
+        Loading curriculum…
       </div>
     );
   }
 
-  /* ── Error ────────────────────────────────────────────────────────── */
   if (isError || !curriculum) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 20px" }}>
-        <p style={{ fontSize: "16px", color: "#EF4444", marginBottom: "16px" }}>
-          Could not load curriculum.
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/curriculum")}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#0D47A1",
-            color: "#fff",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "14px",
-            fontFamily: "Inter, sans-serif",
-            cursor: "pointer",
-          }}
-        >
+        <p style={{ fontSize: "16px", color: "#EF4444", marginBottom: "16px" }}>Could not load curriculum.</p>
+        <button type="button" onClick={() => navigate("/curriculum")} style={{ padding: "10px 20px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           ← Back to Curriculum
         </button>
       </div>
     );
   }
 
-  /* ── Page ─────────────────────────────────────────────────────────── */
+  const periodNames = derivePeriodNames(cycleModel, customPeriodNames);
+  const gridCols    = Math.min(periodNames.length, 3);
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{CSS}</style>
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "24px",
-        }}
-      >
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <button
-              type="button"
-              onClick={() => navigate("/curriculum")}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#6B7280",
-                fontSize: "13px",
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                padding: 0,
-              }}
-            >
+            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", padding: 0 }}>
               ← Curriculum
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "200px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {curriculum.name}
-            </span>
+            <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "160px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curriculum.name}</span>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>Structure</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>
-            {curriculum.name}
-          </h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Curriculum Structure</h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Expand each term to add classes and courses
+            Set the framework, academic cycle, and grade classes.
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <button
-            type="button"
-            onClick={() => navigate("/curriculum")}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "transparent",
-              color: "#374151",
-              border: "1.5px solid #E5E7EB",
-              borderRadius: "10px",
-              fontSize: "14px",
-              fontWeight: "600",
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+          <button type="button" onClick={() => handleSave("/curriculum")} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
             Done
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              padding: "10px 24px",
-              backgroundColor: isSaving ? "#93C5FD" : "#0D47A1",
-              color: "#fff",
-              border: "none",
-              borderRadius: "10px",
-              fontSize: "14px",
-              fontWeight: "600",
-              fontFamily: "Inter, sans-serif",
-              cursor: isSaving ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              transition: "background-color 0.15s",
-            }}
-          >
-            {isSaving ? (
-              <>
-                <span
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    border: "2px solid rgba(255,255,255,0.4)",
-                    borderTopColor: "#fff",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    animation: "spin 0.7s linear infinite",
-                  }}
-                />
-                Saving...
-              </>
-            ) : (
-              "💾  Save Structure"
-            )}
+          <button type="button" onClick={() => handleSave(`/curriculum/${id}/academic-year`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#93C5FD" : "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
+            {isPending ? <><Spinner /> Saving…</> : "Next: Academic Year →"}
           </button>
         </div>
       </div>
 
-      {/* Body */}
-      <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <SetupPanel
-            curriculum={curriculum}
-            structure={structure}
-            onClassSync={handleClassSync}
-          />
-          <StructureContent
-            curriculum={curriculum}
-            structure={structure}
-            onUpdateTerm={handleUpdateTerm}
-          />
+      {/* ── Step indicator ─────────────────────────────────────────────── */}
+      <StepIndicator current={2} />
+
+      {/* ── Body ───────────────────────────────────────────────────────── */}
+      <div className="csp-layout">
+
+        {/* LEFT: settings */}
+        <div className="csp-col-left">
+
+          {/* Framework */}
+          <div style={card}>
+            <h4 style={sectionTitle()}>
+              <span style={stepBadge}>1</span>
+              Curriculum Framework
+            </h4>
+
+            <label style={fieldLabel}>
+              Select a framework <span style={{ color: "#EF4444" }}>*</span>
+            </label>
+            <select
+              value={isCustomFw ? "Custom" : framework}
+              onChange={handleFrameworkSelect}
+              className={`csp-select${errors.framework ? " err" : ""}`}
+            >
+              <option value="">Select a framework…</option>
+              {FRAMEWORKS.map((fw) => (
+                <option key={fw} value={fw}>{FRAMEWORK_LABELS[fw]}</option>
+              ))}
+            </select>
+
+            {isCustomFw && (
+              <div style={{ marginTop: "12px", padding: "14px", backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE", borderRadius: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Custom Framework</span>
+                  <button type="button" onClick={() => { setIsCustomFw(false); setCustomFwText(""); setFramework(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#6B7280", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                    ← Use standard
+                  </button>
+                </div>
+                <input
+                  autoFocus
+                  type="text"
+                  value={customFwText}
+                  onChange={(e) => { setCustomFwText(e.target.value); setErrors((p) => ({ ...p, framework: "" })); }}
+                  placeholder="e.g. Montessori, Waldorf…"
+                  className={`csp-input${errors.framework ? " err" : ""}`}
+                />
+                <p style={hintMsg}>This name will appear as the framework label.</p>
+              </div>
+            )}
+
+            {errors.framework && <p style={errMsg}>{errors.framework}</p>}
+          </div>
+
+          {/* Cycle */}
+          <div style={card}>
+            <h4 style={sectionTitle()}>
+              <span style={stepBadge}>2</span>
+              Academic Cycle
+            </h4>
+
+            <div style={{ display: "flex", gap: "10px", marginBottom: cycleModel === "custom" ? "20px" : 0 }}>
+              {CYCLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCycleModel(opt.value)}
+                  className={`cycle-btn${cycleModel === opt.value ? " active" : ""}`}
+                >
+                  <div style={{ fontSize: "13px", fontWeight: cycleModel === opt.value ? "700" : "600", color: cycleModel === opt.value ? "#0D47A1" : "#374151", marginBottom: "3px" }}>
+                    {opt.label}
+                  </div>
+                  <div style={{ fontSize: "11px", color: cycleModel === opt.value ? "#1565C0" : "#9CA3AF" }}>
+                    {opt.sub}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {cycleModel === "custom" && (
+              <div>
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={fieldLabel}>Number of periods</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={customPeriodCount}
+                    onChange={(e) => handleCustomCount(Number(e.target.value))}
+                    className="csp-input"
+                    style={{ maxWidth: "110px" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {customPeriodNames.map((name, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: "500", color: "#9CA3AF", width: "62px", flexShrink: 0 }}>
+                        Period {i + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          const next = [...customPeriodNames];
+                          next[i] = e.target.value;
+                          setCustomPeriodNames(next);
+                          setErrors((p) => ({ ...p, periods: "" }));
+                        }}
+                        placeholder={`e.g. Quarter ${i + 1}`}
+                        className={`csp-input${errors.periods ? " err" : ""}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {errors.periods && <p style={{ ...errMsg, marginTop: "8px" }}>{errors.periods}</p>}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div
-          style={{
-            width: "270px",
-            flexShrink: 0,
-            position: "sticky",
-            top: "24px",
-            alignSelf: "flex-start",
-          }}
-        >
-          <StructureOverview
-            curriculum={curriculum}
-            structure={structure}
-            onSave={handleSave}
-            isSaving={isSaving}
-          />
+        {/* RIGHT: classes + structure preview */}
+        <div className="csp-col-right">
+
+          {/* Classes */}
+          <div style={card}>
+            <h4 style={sectionTitle()}>
+              <span style={stepBadge}>3</span>
+              Grade Classes
+              <span style={{ fontSize: "12px", fontWeight: "400", color: "#9CA3AF" }}>
+                — applied to all {cycleModel === "semesters" ? "semesters" : "periods"}
+              </span>
+            </h4>
+
+            {/* Input */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+              <input
+                type="text"
+                value={classInput}
+                onChange={(e) => setClassInput(e.target.value)}
+                onKeyDown={handleClassKey}
+                placeholder="e.g. Grade 1, Grade 2, PP1, PP2"
+                className="csp-input"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={addClasses}
+                style={{
+                  flexShrink: 0, padding: "0 20px", height: "44px",
+                  backgroundColor: "#0D47A1", color: "#fff",
+                  border: "none", borderRadius: "10px",
+                  fontSize: "13px", fontWeight: "600",
+                  fontFamily: "Inter, sans-serif", cursor: "pointer",
+                  transition: "background-color 0.15s",
+                }}
+              >
+                Add
+              </button>
+            </div>
+            <p style={{ ...hintMsg, marginBottom: "14px" }}>
+              Separate multiple classes with commas. Press Enter or click Add.
+            </p>
+
+            {/* Chips */}
+            {classes.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {classes.map((cls) => (
+                  <span key={cls} className="class-chip">
+                    {cls}
+                    <button type="button" className="class-chip-x" onClick={() => removeClass(cls)} title="Remove">×</button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: "22px", backgroundColor: "#F9FAFB", border: "1.5px dashed #E5E7EB", borderRadius: "10px", textAlign: "center" }}>
+                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
+                  No classes added yet. Type class names above separated by commas.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Structure preview */}
+          <div style={card}>
+            <h4 style={sectionTitle({ marginBottom: "16px" })}>
+              Structure Preview
+              {periodNames.length > 0 && classes.length > 0 && (
+                <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: "600", color: "#10B981", backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "20px", padding: "2px 10px" }}>
+                  {periodNames.length} {cycleModel === "semesters" ? "semester" : "period"}{periodNames.length !== 1 ? "s" : ""} · {classes.length} class{classes.length !== 1 ? "es" : ""}
+                </span>
+              )}
+            </h4>
+
+            {periodNames.length === 0 ? (
+              <div style={{ padding: "32px", textAlign: "center" }}>
+                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
+                  {cycleModel === "custom"
+                    ? "Fill in the period names above to see the structure preview."
+                    : "Select an academic cycle to see the structure preview."}
+                </p>
+              </div>
+            ) : (
+              <div
+                className="period-preview-grid"
+                style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
+              >
+                {periodNames.map((pName) => (
+                  <div key={pName} className="period-card">
+                    <div className="period-card-head">{pName}</div>
+                    <div className="period-card-body">
+                      {classes.length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                          {classes.map((cls) => (
+                            <div key={cls} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "3px 0" }}>
+                              <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#0D47A1", flexShrink: 0 }} />
+                              <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{cls}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>
+                          No classes yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

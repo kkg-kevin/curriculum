@@ -52,10 +52,6 @@ export const periodSchema = z
 // Used by Create / Edit curriculum pages (details only)
 export const curriculumDetailsSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
-  academicYear: z
-    .string()
-    .regex(/^(\d{4}([\/\-]\d{4})?)?$/, "Use format 2025 or 2024-2025")
-    .default(""),
   code: z
     .string()
     .min(1, "Curriculum code is required")
