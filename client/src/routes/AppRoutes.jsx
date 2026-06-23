@@ -8,13 +8,6 @@ import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
 import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 import CurriculumVersionControlPage from "../modules/curriculum/pages/CurriculumVersionControlPage";
 import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
-import SupplementaryListPage from "../modules/supplementary/pages/SupplementaryListPage";
-import SupplementaryViewPage from "../modules/supplementary/pages/SupplementaryViewPage";
-import CreateSupplementaryPage from "../modules/supplementary/pages/CreateSupplementaryPage";
-import EditSupplementaryPage from "../modules/supplementary/pages/EditSupplementaryPage";
-import SupplementaryEditorPage from "../modules/supplementary/pages/SupplementaryEditorPage";
-import SupplementaryMappingPage from "../modules/supplementary/pages/SupplementaryMappingPage";
-import SupplementaryAssignPage from "../modules/supplementary/pages/SupplementaryAssignPage";
 import SchoolsPage from "../modules/schools/pages/SchoolsPage";
 import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
 import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
@@ -62,15 +55,6 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<CurriculumViewPage />} />
           <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
           <Route path=":id/academic-year" element={<AcademicYearPage />} />
-        </Route>
-        <Route path="supplementary">
-          <Route index element={<SupplementaryListPage />} />
-          <Route path="create" element={<CreateSupplementaryPage />} />
-          <Route path=":id/view" element={<SupplementaryViewPage />} />
-          <Route path=":id/edit" element={<EditSupplementaryPage />} />
-          <Route path=":id/editor" element={<SupplementaryEditorPage />} />
-          <Route path=":id/map"    element={<SupplementaryMappingPage />} />
-          <Route path=":id/assign" element={<SupplementaryAssignPage />} />
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />

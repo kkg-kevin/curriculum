@@ -189,16 +189,21 @@ function CurriculumCard({ curriculum }) {
               <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
                 {curriculum.code}
               </span>
-              <span style={{ color: "#D1D5DB" }}>·</span>
-              <span style={{ fontSize: "12px", color: "#6B7280" }}>
-                {curriculum.academicYear}
-              </span>
             </div>
           </div>
 
-          {/* Framework badge + kebab */}
+          {/* Framework badge + type badge + kebab */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-            <FrameworkBadge framework={curriculum.framework} />
+            {curriculum.framework && <FrameworkBadge framework={curriculum.framework} />}
+            <span style={{
+              padding: "2px 9px", borderRadius: "20px",
+              fontSize: "11px", fontWeight: "600",
+              backgroundColor: curriculum.curriculumType ? "#F0FDF4" : "#F9FAFB",
+              color: curriculum.curriculumType ? "#166534" : "#9CA3AF",
+              border: `1px solid ${curriculum.curriculumType ? "#BBF7D0" : "#E5E7EB"}`,
+            }}>
+              {curriculum.curriculumType || "—"}
+            </span>
             <div style={{ position: "relative" }}>
               {/* Trigger */}
               <button
@@ -313,7 +318,6 @@ function CurriculumCard({ curriculum }) {
                     {
                       label: "Structure",
                       path: `/curriculum/${curriculum.id}/structure`,
-                      navState: undefined,
                       icon: (
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                           <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
@@ -326,7 +330,6 @@ function CurriculumCard({ curriculum }) {
                     {
                       label: "Version Control",
                       path: `/curriculum/${curriculum.id}/versions`,
-                      navState: undefined,
                       icon: (
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
@@ -334,12 +337,12 @@ function CurriculumCard({ curriculum }) {
                         </svg>
                       ),
                     },
-                  ].map(({ label, path, navState, icon }) => (
+                  ].map(({ label, path, icon }) => (
                     <MenuButton
                       key={label}
                       icon={icon}
                       label={label}
-                      onClick={() => { setMenuOpen(false); navigate(path, navState ? { state: navState } : undefined); }}
+                      onClick={() => { setMenuOpen(false); navigate(path); }}
                     />
                   ))}
 

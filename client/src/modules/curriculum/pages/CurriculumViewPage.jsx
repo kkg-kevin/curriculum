@@ -3,12 +3,30 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
+import { useAcademicYears } from "../hooks/useAcademicYear";
 import { schoolApi } from "../../schools/services/schoolApi";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
 const cycleLabel = (model) =>
   model === "semesters" ? "Semesters" : model === "terms" ? "Terms" : "Periods";
+
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+function resolvePeriodDates(periodName, activeYear, curriculumPeriods) {
+  if (activeYear?.periods) {
+    const p = activeYear.periods.find((ap) => ap.name.trim() === periodName?.trim());
+    if (p) return p;
+  }
+  const p = (curriculumPeriods || []).find((cp) => cp.name?.trim() === periodName?.trim());
+  if (!p) return null;
+  return {
+    ...p,
+    breakStartDate: p.breakStartDate || p.midTermBreakStartDate || "",
+    breakEndDate:   p.breakEndDate   || p.midTermBreakEndDate   || "",
+  };
+}
 
 const FRAMEWORK_COLORS = {
   CBC:       { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
@@ -169,11 +187,7 @@ function VersionBadge({ version }) {
   );
 }
 
-/* ── Loading skeleton ─────────────────────────────────────────────────── */
-
-function Skel({ w, h, radius = "8px" }) {
-  return <div style={{ width: w, height: h, borderRadius: radius, backgroundColor: "#EEF2F7", flexShrink: 0 }} />;
-}
+/* ── Loading state ────────────────────────────────────────────────────── */
 
 function LoadingState() {
   return (
@@ -195,6 +209,7 @@ export default function CurriculumViewPage() {
 
   const { data: curriculum, isLoading: currLoading, isError } = useCurriculumQuery(id);
   const { data: vData, isLoading: vLoading } = useCurriculumVersions(id);
+  const { data: yearData } = useAcademicYears(id);
 
   const { data: schoolsData } = useQuery({
     queryKey: ["schools", "byCurriculum", id],
@@ -220,14 +235,16 @@ export default function CurriculumViewPage() {
     );
   }
 
-  const assignedSchools = schoolsData?.data || [];
-  const current         = vData?.current;
-  const history         = vData?.history || [];
-  const content         = current?.content || [];
-  const periods         = curriculum.periods || [];
-  const classes         = curriculum.classes || [];
-  const model           = curriculum.academicCycleModel || "terms";
-  const fwColors        = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
+  const assignedSchools  = schoolsData?.data || [];
+  const current          = vData?.current;
+  const history          = vData?.history || [];
+  const content          = current?.content || [];
+  const periods          = curriculum.periods || [];
+  const classes          = curriculum.classes || [];
+  const model            = curriculum.academicCycleModel || "terms";
+  const fwColors         = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
+  const activeYear       = yearData?.current || null;
+  const curriculumType   = curriculum.curriculumType || null;
 
   /* Stats derived from version content */
   const totalCourses = content.reduce(
@@ -238,6 +255,10 @@ export default function CurriculumViewPage() {
   /* Active period content */
   const safeIdx          = Math.min(activePeriod, Math.max(content.length - 1, 0));
   const activePeriodData = content[safeIdx];
+
+  /* Academic-year period tabs (used when no version exists yet) */
+  const yearPeriods  = activeYear?.periods || [];
+  const yearSafeIdx  = Math.min(activePeriod, Math.max(yearPeriods.length - 1, 0));
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -281,16 +302,28 @@ export default function CurriculumViewPage() {
           <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "160px", height: "160px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)" }} />
           <div style={{ position: "absolute", bottom: "-10px", right: "100px", width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)" }} />
 
-          {/* Top row: framework + action buttons */}
+          {/* Top row: framework + type badges + action buttons */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "14px", position: "relative" }}>
-            <span style={{
-              padding: "4px 13px", borderRadius: "20px",
-              backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.25)",
-              fontSize: "11px", fontWeight: "700", letterSpacing: "0.04em",
-            }}>
-              {curriculum.framework || "No Framework"}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span style={{
+                padding: "4px 13px", borderRadius: "20px",
+                backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff",
+                border: "1px solid rgba(255,255,255,0.25)",
+                fontSize: "11px", fontWeight: "700", letterSpacing: "0.04em",
+              }}>
+                {curriculum.framework || "No Framework"}
+              </span>
+              {curriculumType && (
+                <span style={{
+                  padding: "4px 13px", borderRadius: "20px",
+                  backgroundColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.95)",
+                  border: "1px solid rgba(255,255,255,0.20)",
+                  fontSize: "11px", fontWeight: "600", letterSpacing: "0.03em",
+                }}>
+                  {curriculumType}
+                </span>
+              )}
+            </div>
 
             <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/edit`)}
@@ -349,31 +382,119 @@ export default function CurriculumViewPage() {
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
 
         {/* Section header */}
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Course Assignments</h2>
-            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-              {current ? "Courses assigned per class for each period" : "No version created yet"}
-            </p>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+          {/* Year info strip — shows for full academic-year records AND for curricula
+              that only have an academicYear string (legacy / no record yet) */}
+          {(activeYear || curriculum.academicYear) && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", padding: "8px 12px", backgroundColor: "#F8FAFF", border: "1px solid #E8F0FE", borderRadius: "10px", flexWrap: "wrap" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0D47A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span style={{ fontSize: "12px", fontWeight: "700", color: "#0D47A1" }}>
+                {activeYear?.label || curriculum.academicYear}
+              </span>
+              {activeYear && (activeYear.startDate || activeYear.endDate) && (
+                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                  {fmtDate(activeYear.startDate)} – {fmtDate(activeYear.endDate)}
+                </span>
+              )}
+              {activeYear && (() => {
+                const sc = STATUS_CONFIG[activeYear.status] || STATUS_CONFIG.inactive;
+                return (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 8px", borderRadius: "20px", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: "10px", fontWeight: "700" }}>
+                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: sc.dot }} />
+                    {sc.label}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Course Assignments</h2>
+              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                {current ? "Courses assigned per class for each period" : "No version created yet"}
+              </p>
+            </div>
+            {current && <VersionBadge version={current} />}
           </div>
-          {current && <VersionBadge version={current} />}
         </div>
 
         {!current ? (
-          /* ── No version state ─── */
-          <div style={{ padding: "48px 24px", textAlign: "center" }}>
-            <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>
-              🗂
+          /* ── No version state ──────────────────────────────────────────
+             If academic year is configured, show its period tabs so the
+             user can click a term and see the dates right away. */
+          yearPeriods.length > 0 ? (
+            <>
+              <div className="cvp-period-tabs">
+                {yearPeriods.map((p, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`cvp-tab${yearSafeIdx === i ? " active" : ""}`}
+                    onClick={() => setActivePeriod(i)}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="cvp-period-content" style={{ padding: "4px 20px 20px" }}>
+                {/* Term date strip for the selected academic-year period */}
+                {(() => {
+                  const sel = yearPeriods[yearSafeIdx];
+                  if (!sel || (!sel.startDate && !sel.endDate)) return null;
+                  return (
+                    <div style={{ margin: "12px 0 16px", padding: "10px 14px", backgroundColor: "#F0F7FF", border: "1.5px solid #DBEAFE", borderRadius: "10px", display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Dates</span>
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1D4ED8" }}>
+                          {fmtDate(sel.startDate)} → {fmtDate(sel.endDate)}
+                        </span>
+                      </div>
+                      {(sel.breakStartDate || sel.breakEndDate) && (
+                        <>
+                          <div style={{ width: "1px", height: "14px", backgroundColor: "#BFDBFE", flexShrink: 0 }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "10px", fontWeight: "700", color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Mid-term Break</span>
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#92400E" }}>
+                              {fmtDate(sel.breakStartDate)} → {fmtDate(sel.breakEndDate)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* No-courses prompt */}
+                <div style={{ padding: "24px", textAlign: "center", backgroundColor: "#FAFAFA", borderRadius: "12px", border: "1.5px dashed #E5E7EB" }}>
+                  <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#6B7280", lineHeight: "1.5" }}>
+                    No course assignments yet. Go to Version Control to assign courses to each class per term.
+                  </p>
+                  <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
+                    style={{ padding: "9px 20px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    Open Version Control →
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* No academic year configured yet */
+            <div style={{ padding: "48px 24px", textAlign: "center" }}>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>
+                🗂
+              </div>
+              <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
+              <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginLeft: "auto", marginRight: "auto" }}>
+                Go to Version Control to assign courses to each class per period, then save as a version.
+              </p>
+              <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
+                style={{ padding: "10px 22px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                Open Version Control →
+              </button>
             </div>
-            <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
-            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginLeft: "auto", marginRight: "auto" }}>
-              Go to Version Control to assign courses to each class per period, then save as a version.
-            </p>
-            <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
-              style={{ padding: "10px 22px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              Open Version Control →
-            </button>
-          </div>
+          )
         ) : content.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>This version has no period content yet.</p>
@@ -397,6 +518,34 @@ export default function CurriculumViewPage() {
             {/* Class / course content */}
             {activePeriodData && (
               <div className="cvp-period-content" style={{ padding: "4px 20px 20px" }}>
+                {/* Term date strip — shown when this period has dates configured.
+                    Falls back to curriculum.periods for curricula without an academic-year record. */}
+                {(() => {
+                  const pDates = resolvePeriodDates(activePeriodData?.periodName, activeYear, periods);
+                  if (!pDates || (!pDates.startDate && !pDates.endDate)) return null;
+                  return (
+                    <div style={{ margin: "12px 0 16px", padding: "10px 14px", backgroundColor: "#F0F7FF", border: "1.5px solid #DBEAFE", borderRadius: "10px", display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Dates</span>
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1D4ED8" }}>
+                          {fmtDate(pDates.startDate)} → {fmtDate(pDates.endDate)}
+                        </span>
+                      </div>
+                      {(pDates.breakStartDate || pDates.breakEndDate) && (
+                        <>
+                          <div style={{ width: "1px", height: "14px", backgroundColor: "#BFDBFE", flexShrink: 0 }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "10px", fontWeight: "700", color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Mid-term Break</span>
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#92400E" }}>
+                              {fmtDate(pDates.breakStartDate)} → {fmtDate(pDates.breakEndDate)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {(activePeriodData.classes || []).length === 0 ? (
                   <div style={{ padding: "32px", textAlign: "center" }}>
                     <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No classes for this period.</p>
