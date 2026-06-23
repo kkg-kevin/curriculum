@@ -441,5 +441,34 @@
     "isCurrent": true,
     "createdAt": "2026-06-23T08:56:55.712Z",
     "updatedAt": "2026-06-23T08:56:55.712Z"
+  },
+  {
+    "id": "48a48eae-8fdb-4266-8574-8dc23dd3d82c",
+    "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-30",
+    "status": "published",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-30",
+        "breakStartDate": "2026-02-02",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-30",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T10:13:05.331Z",
+    "updatedAt": "2026-06-23T10:13:15.523Z"
   }
 ]

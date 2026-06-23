@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useAcademicYears } from "../hooks/useAcademicYear";
-import { useCurriculumVersions, useCreateCurriculumVersion } from "../hooks/useCurriculumVersion";
+import {
+  useCurriculumVersions,
+  useCreateCurriculumVersion,
+  useChangeCurriculumVersionStatus,
+} from "../hooks/useCurriculumVersion";
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -14,150 +18,190 @@ const STEPS = [
 ];
 
 const STATUSES = [
-  { value: "draft",    label: "Draft",    bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
-  { value: "inactive", label: "Inactive", bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
+  { value: "draft",     label: "Draft",     bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
+  { value: "published", label: "Published", bg: "#ECFDF5", border: "#6EE7B7", color: "#065F46", dot: "#10B981" },
+  { value: "inactive",  label: "Inactive",  bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
 ];
 
 /* ── CSS ───────────────────────────────────────────────────────────────── */
 
 const CSS = `
-  @keyframes spin   { to { transform: rotate(360deg); } }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes vc-spin   { to { transform: rotate(360deg); } }
+  @keyframes vc-fadein { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 
-  .vc-steps { display:flex; align-items:center; justify-content:center; margin-bottom:28px; }
-  .vc-connector { width:60px; }
-  @media (max-width:600px) { .vc-connector { width:28px; } .vc-steps { justify-content:flex-start; overflow-x:auto; padding-bottom:4px; } }
+  .vc-steps { display:flex; align-items:center; justify-content:center; margin-bottom:32px; }
+  .vc-connector { width:64px; height:2px; flex-shrink:0; margin:0 6px; margin-bottom:20px; }
+  @media(max-width:580px){ .vc-connector{width:24px;} .vc-steps{justify-content:flex-start;overflow-x:auto;padding-bottom:4px;} }
 
-  .vc-layout { display:grid; grid-template-columns:1fr 272px; gap:20px; align-items:start; }
-  @media (max-width:900px) { .vc-layout { grid-template-columns:1fr; } }
-
-  .vc-period-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:18px; }
-  .vc-tab {
-    padding:7px 14px; border-radius:8px; border:1.5px solid #E5E7EB;
-    background:#fff; font-size:12px; font-weight:600; font-family:Inter,sans-serif;
-    cursor:pointer; white-space:nowrap; transition:all 0.15s; color:#6B7280;
+  .vc-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 20px;
+    align-items: start;
   }
-  .vc-tab:hover { border-color:#93C5FD; color:#1D4ED8; }
-  .vc-tab.active { border-color:#0D47A1; background:#EFF6FF; color:#0D47A1; }
+  @media(max-width:960px){ .vc-layout{ grid-template-columns:1fr; } }
+
+  .vc-period-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:20px; }
+  .vc-period-tabs::-webkit-scrollbar { height:3px; }
+  .vc-period-tabs::-webkit-scrollbar-thumb { background:#E5E7EB; border-radius:4px; }
+
+  .vc-tab {
+    padding:7px 16px; border-radius:8px; border:1.5px solid #E5E7EB;
+    background:#fff; font-size:12px; font-weight:600; font-family:Inter,sans-serif;
+    cursor:pointer; white-space:nowrap; transition:all 0.15s; color:#6B7280; flex-shrink:0;
+  }
+  .vc-tab:hover  { border-color:#93C5FD; color:#1D4ED8; background:#F8FBFF; }
+  .vc-tab.active { border-color:#0D47A1; background:#EFF6FF; color:#0D47A1; box-shadow:0 1px 4px rgba(13,71,161,0.12); }
 
   .vc-class-row {
-    display:flex; align-items:flex-start; gap:12px; padding:11px 0;
+    display:flex; align-items:flex-start; gap:14px; padding:12px 0;
     border-bottom:1px solid #F3F4F6;
   }
   .vc-class-row:last-child { border-bottom:none; }
-  .vc-class-name {
-    width:110px; flex-shrink:0; font-size:12px; font-weight:600;
-    color:#374151; padding-top:3px; line-height:1.4;
+  .vc-class-label {
+    width:120px; flex-shrink:0; font-size:12px; font-weight:700;
+    color:#374151; padding-top:4px; line-height:1.4;
   }
-  .vc-chips { display:flex; flex-wrap:wrap; gap:5px; flex:1; align-items:center; }
+  .vc-chips { display:flex; flex-wrap:wrap; gap:5px; flex:1; min-width:0; align-items:center; }
 
   .vc-chip {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:4px 9px; border-radius:20px; font-size:11px; font-weight:600;
-    background:#EFF6FF; border:1.5px solid #BFDBFE; color:#1E3A8A;
-    font-family:Inter,sans-serif;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+    background:#EFF6FF; border:1.5px solid #BFDBFE; color:#1E3A8A; font-family:Inter,sans-serif;
   }
-  .vc-chip-remove {
-    width:13px; height:13px; border-radius:50%; border:none;
+  .vc-chip-x {
+    width:14px; height:14px; border-radius:50%; border:none;
     background:rgba(29,58,138,0.1); color:#1E3A8A; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-    font-size:10px; font-weight:700; padding:0; line-height:1; transition:background 0.1s;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:900; padding:0; transition:background 0.1s, color 0.1s; flex-shrink:0;
   }
-  .vc-chip-remove:hover { background:rgba(239,68,68,0.15); color:#EF4444; }
+  .vc-chip-x:hover { background:rgba(239,68,68,0.2); color:#DC2626; }
 
-  .vc-add-btn {
-    display:inline-flex; align-items:center; gap:3px;
-    padding:4px 9px; border-radius:20px; font-size:11px; font-weight:600;
+  .vc-add-pill {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
     background:transparent; border:1.5px dashed #D1D5DB; color:#9CA3AF;
-    font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s;
+    font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s; flex-shrink:0;
   }
-  .vc-add-btn:hover { border-color:#0D47A1; color:#0D47A1; background:#EFF6FF; }
+  .vc-add-pill:hover { border-color:#0D47A1; color:#0D47A1; background:#EFF6FF; }
 
   .vc-inline-form {
     display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-    padding:9px 12px; background:#F8FAFF; border-radius:10px;
-    border:1.5px solid #E8F0FE; margin-top:6px; animation:fadeIn 0.15s ease;
+    padding:10px 14px; background:#F0F7FF; border-radius:10px;
+    border:1.5px solid #C7D9F8; margin-top:6px; animation:vc-fadein 0.15s ease;
   }
   .vc-inline-input {
-    padding:6px 10px; border-radius:7px; border:1.5px solid #E5E7EB;
+    padding:6px 10px; border-radius:7px; border:1.5px solid #D1D5DB;
     font-size:12px; font-family:Inter,sans-serif; background:#fff; outline:none;
     transition:border-color 0.15s, box-shadow 0.15s;
   }
-  .vc-inline-input:focus { border-color:#0D47A1; box-shadow:0 0 0 3px rgba(13,71,161,0.1); }
-  .vc-inline-input.name { width:150px; }
-  .vc-inline-input.code { width:80px; }
+  .vc-inline-input:focus { border-color:#0D47A1; box-shadow:0 0 0 3px rgba(13,71,161,0.08); }
+  .vc-inline-input.iname { width:160px; }
+  .vc-inline-input.icode { width:88px; }
 
-  .vc-empty {
-    text-align:center; padding:60px 24px; background:#FAFAFA;
-    border:2px dashed #E5E7EB; border-radius:16px;
+  .vc-empty-state {
+    text-align:center; padding:72px 32px; background:#FAFAFA;
+    border:2px dashed #E5E7EB; border-radius:20px; animation:vc-fadein 0.2s ease;
   }
 
-  .vc-status-btn {
-    flex:1; padding:7px 8px; border-radius:8px; border:1.5px solid #E5E7EB;
-    background:#fff; font-size:12px; font-weight:600; font-family:Inter,sans-serif;
-    cursor:pointer; text-align:center; transition:all 0.15s; min-width:72px;
-  }
-  .vc-status-btn:hover:not(:disabled) { border-color:#93C5FD; }
-  .vc-status-btn.sel-draft    { border-color:#FCD34D; background:#FFFBEB; color:#92400E; }
-  .vc-status-btn.sel-inactive { border-color:#D1D5DB; background:#F3F4F6; color:#6B7280; }
-
+  /* Buttons */
   .vc-btn-primary {
-    padding:7px 16px; background:#0D47A1; color:#fff; border:none; border-radius:8px;
+    padding:8px 18px; background:#0D47A1; color:#fff; border:none; border-radius:9px;
     font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer;
-    display:inline-flex; align-items:center; gap:6px; transition:background 0.15s;
+    display:inline-flex; align-items:center; gap:7px; transition:background 0.15s;
+    white-space:nowrap;
   }
+  .vc-btn-primary:hover:not(:disabled) { background:#0A3880; }
   .vc-btn-primary:disabled { background:#93C5FD; cursor:not-allowed; }
-  .vc-btn-primary:not(:disabled):hover { background:#0A3880; }
 
   .vc-btn-secondary {
-    padding:7px 14px; background:transparent; color:#374151;
-    border:1.5px solid #E5E7EB; border-radius:8px; font-size:13px; font-weight:600;
-    font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s;
+    padding:8px 16px; background:#fff; color:#374151;
+    border:1.5px solid #E5E7EB; border-radius:9px; font-size:13px; font-weight:600;
+    font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center;
+    gap:6px; transition:all 0.15s; white-space:nowrap;
   }
-  .vc-btn-secondary:hover { background:#F9FAFB; }
+  .vc-btn-secondary:hover { background:#F3F4F6; }
 
   .vc-btn-ghost {
-    padding:7px 14px; background:#EFF6FF; color:#1D4ED8;
-    border:1.5px solid #BFDBFE; border-radius:8px; font-size:13px; font-weight:600;
-    font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;
+    padding:8px 16px; background:#EFF6FF; color:#1D4ED8;
+    border:1.5px solid #BFDBFE; border-radius:9px; font-size:13px; font-weight:600;
+    font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center;
+    gap:7px; transition:all 0.15s; white-space:nowrap;
   }
   .vc-btn-ghost:hover { background:#DBEAFE; }
 
-  .vc-btn-restore {
-    padding:7px 14px; background:#F0FDF4; color:#15803D;
-    border:1.5px solid #BBF7D0; border-radius:8px; font-size:13px; font-weight:600;
-    font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;
+  .vc-btn-publish {
+    padding:8px 18px; background:#059669; color:#fff; border:none; border-radius:9px;
+    font-size:13px; font-weight:700; font-family:Inter,sans-serif; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px; transition:background 0.15s;
+    white-space:nowrap;
   }
-  .vc-btn-restore:hover { background:#DCFCE7; }
+  .vc-btn-publish:hover:not(:disabled) { background:#047857; }
+  .vc-btn-publish:disabled { background:#6EE7B7; cursor:not-allowed; }
+
+  .vc-btn-restore {
+    padding:8px 16px; background:#F0FDF4; color:#15803D;
+    border:1.5px solid #BBF7D0; border-radius:9px; font-size:13px; font-weight:600;
+    font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center;
+    gap:7px; transition:all 0.15s; white-space:nowrap;
+  }
+  .vc-btn-restore:hover:not(:disabled) { background:#DCFCE7; }
   .vc-btn-restore:disabled { opacity:0.5; cursor:not-allowed; }
 
-  /* History sidebar */
+  /* Status selector in editor */
+  .vc-status-pill {
+    padding:6px 14px; border-radius:8px; border:1.5px solid #E5E7EB;
+    background:#fff; font-size:12px; font-weight:600; font-family:Inter,sans-serif;
+    cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:5px;
+  }
+  .vc-status-pill:hover:not(.sp-active) { border-color:#CBD5E1; background:#F8FAFC; }
+  .vc-status-pill.sp-draft    { border-color:#FCD34D; background:#FFFBEB; color:#92400E; }
+  .vc-status-pill.sp-inactive { border-color:#D1D5DB; background:#F3F4F6; color:#6B7280; }
+
+  /* Sidebar */
   .vc-sidebar {
     background:#fff; border-radius:16px; border:1.5px solid #E5E7EB;
-    box-shadow:0 1px 4px rgba(0,0,0,0.04); overflow:hidden;
-    position:sticky; top:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04); overflow:hidden; position:sticky; top:20px;
   }
-  .vc-sidebar-header { padding:14px 16px; border-bottom:1px solid #F3F4F6; }
+  .vc-sidebar-head {
+    padding:14px 16px 12px; border-bottom:1px solid #F0F0F0;
+    background:linear-gradient(135deg,#0A3880,#1565C0);
+  }
 
-  .vc-history-entry {
-    width:100%; padding:12px 16px; border-bottom:1px solid #F3F4F6;
-    cursor:pointer; transition:background 0.12s; display:block; text-align:left;
-    background:none; border-left:3px solid transparent;
-    font-family:Inter,sans-serif; border-right:none; border-top:none;
+  /* Timeline */
+  .vc-tl-list { position:relative; }
+  .vc-tl-line { position:absolute; left:22px; top:0; bottom:0; width:2px; background:#F0F0F0; pointer-events:none; }
+  .vc-tl-entry {
+    display:flex; align-items:flex-start; gap:0;
+    padding:10px 14px 10px 0; cursor:pointer; transition:background 0.12s;
+    position:relative; border-bottom:1px solid #F5F5F5;
+    background:none; border-left:none; border-right:none; border-top:none;
+    width:100%; text-align:left; font-family:Inter,sans-serif;
   }
-  .vc-history-entry:last-child { border-bottom:none; }
-  .vc-history-entry:hover { background:#F9FAFB; }
-  .vc-history-entry.is-current { border-left-color:#0D47A1; background:#F8FAFF; }
-  .vc-history-entry.is-viewing { background:#FFFBEB; border-left-color:#F59E0B; }
+  .vc-tl-entry:last-child { border-bottom:none; }
+  .vc-tl-entry:hover { background:#F9FAFB; }
+  .vc-tl-entry.tl-published { background:#F0FDF4; }
+  .vc-tl-entry.tl-focused   { background:#FFFBEB; }
+
+  .vc-tl-dot-wrap { width:44px; display:flex; flex-direction:column; align-items:center; flex-shrink:0; padding-top:3px; }
+  .vc-tl-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; border:2px solid #E5E7EB; background:#fff; transition:all 0.15s; }
+  .tl-published .vc-tl-dot { background:#10B981; border-color:#10B981; box-shadow:0 0 0 3px rgba(16,185,129,0.15); }
+  .tl-focused   .vc-tl-dot { background:#F59E0B; border-color:#F59E0B; box-shadow:0 0 0 3px rgba(245,158,11,0.15); }
+
+  .vc-tl-body { flex:1; min-width:0; padding-right:4px; }
+  .vc-tl-top  { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:3px; }
+  .vc-tl-vnum { font-size:13px; font-weight:700; color:#111827; white-space:nowrap; }
+  .vc-tl-date { font-size:10px; color:#9CA3AF; margin-top:1px; }
+  .vc-tl-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
 `;
 
-/* ── Shared style object ───────────────────────────────────────────────── */
+/* ── Shared styles ─────────────────────────────────────────────────────── */
 
 const card = {
   backgroundColor: "#fff",
   borderRadius: "16px",
-  padding: "20px 22px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
+  padding: "22px 24px",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04)",
 };
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -168,74 +212,76 @@ const fmtDate = (d) =>
 const genId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 function scaffoldBlank(curriculum) {
-  const gradesMap = new Map();
-  (curriculum.structure || []).forEach((term) => {
-    (term.grades || []).forEach((g) => {
-      const key = g.id || g.name;
-      if (key && !gradesMap.has(key)) gradesMap.set(key, g.name || g);
+  const map = new Map();
+  (curriculum.structure || []).forEach((t) => {
+    (t.grades || []).forEach((g) => {
+      const k = g.id || g.name;
+      if (k && !map.has(k)) map.set(k, g.name || g);
     });
   });
-  let gradeNames = [...gradesMap.values()];
-  if (gradeNames.length === 0) gradeNames = curriculum.classes || [];
-
+  let names = [...map.values()];
+  if (!names.length) names = curriculum.classes || [];
   return (curriculum.periods || []).map((p) => ({
     periodName: p.name,
-    classes: gradeNames.map((name) => ({ className: name, courses: [] })),
+    classes: names.map((n) => ({ className: n, courses: [] })),
   }));
 }
 
 function scaffoldFromExisting(curriculum, existingContent) {
-  const gradesMap = new Map();
-  (curriculum.structure || []).forEach((term) => {
-    (term.grades || []).forEach((g) => {
-      const key = g.id || g.name;
-      if (key && !gradesMap.has(key)) gradesMap.set(key, g.name || g);
+  const map = new Map();
+  (curriculum.structure || []).forEach((t) => {
+    (t.grades || []).forEach((g) => {
+      const k = g.id || g.name;
+      if (k && !map.has(k)) map.set(k, g.name || g);
     });
   });
-  let gradeNames = [...gradesMap.values()];
-  if (gradeNames.length === 0) gradeNames = curriculum.classes || [];
-
+  let names = [...map.values()];
+  if (!names.length) names = curriculum.classes || [];
   return (curriculum.periods || []).map((p) => {
-    const existingPeriod = (existingContent || []).find((ep) => ep.periodName === p.name);
+    const ep = (existingContent || []).find((x) => x.periodName === p.name);
     return {
       periodName: p.name,
-      classes: gradeNames.map((name) => {
-        const existingClass = existingPeriod?.classes?.find((c) => c.className === name);
-        return { className: name, courses: existingClass?.courses || [] };
+      classes: names.map((n) => {
+        const ec = ep?.classes?.find((c) => c.className === n);
+        return { className: n, courses: ec?.courses || [] };
       }),
     };
   });
 }
 
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
+const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
-/* ── Spinner ───────────────────────────────────────────────────────────── */
+/* ── Atoms ─────────────────────────────────────────────────────────────── */
 
-function Spinner() {
+function Spinner({ size = 13, light = true }) {
   return (
-    <span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+    <span style={{ width: `${size}px`, height: `${size}px`, border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "#E5E7EB"}`, borderTopColor: light ? "#fff" : "#059669", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite", flexShrink: 0 }} />
   );
 }
 
 function SpinnerPage() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "360px", fontFamily: "Inter,sans-serif", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
-      <span style={{ width: "26px", height: "26px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "380px", fontFamily: "Inter,sans-serif", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
+      <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite" }} />
       Loading…
     </div>
   );
 }
 
-/* ── StatusDot ─────────────────────────────────────────────────────────── */
-
-function StatusDot({ status }) {
+function StatusBadge({ status }) {
   const s = STATUSES.find((x) => x.value === status) || STATUSES[0];
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 10px", borderRadius: "20px", backgroundColor: s.bg, border: `1.5px solid ${s.border}`, color: s.color, fontSize: "11px", fontWeight: "700" }}>
-      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: s.dot, flexShrink: 0 }} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 9px", borderRadius: "20px", backgroundColor: s.bg, border: `1.5px solid ${s.border}`, color: s.color, fontSize: "11px", fontWeight: "700", whiteSpace: "nowrap" }}>
+      <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: s.dot, flexShrink: 0 }} />
       {s.label}
+    </span>
+  );
+}
+
+function MiniTag({ children, color, bg, border }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 7px", borderRadius: "20px", backgroundColor: bg, border: `1px solid ${border}`, color, fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+      {children}
     </span>
   );
 }
@@ -250,14 +296,12 @@ function StepIndicator({ current }) {
         return (
           <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#0D47A1" : "#F3F4F6", border: `2px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0 }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#0D47A1" : "#F3F4F6", border: `2.5px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(13,71,161,0.1)" : "none" }}>
                 {done ? "✓" : step.n}
               </div>
-              <span style={{ fontSize: "11px", fontWeight: active ? "600" : "400", color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
+              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
             </div>
-            {i < STEPS.length - 1 && (
-              <div className="vc-connector" style={{ height: "2px", backgroundColor: done ? "#0D47A1" : "#E5E7EB", margin: "0 6px", marginBottom: "20px", flexShrink: 0 }} />
-            )}
+            {i < STEPS.length - 1 && <div className="vc-connector" style={{ backgroundColor: done ? "#0D47A1" : "#E5E7EB" }} />}
           </div>
         );
       })}
@@ -271,17 +315,13 @@ function PeriodTabs({ periods, ayPeriods, activeIdx, onChange }) {
   return (
     <div className="vc-period-tabs">
       {periods.map((p, i) => {
-        const ayp = ayPeriods.find((ap) => ap.name === p.name);
-        const dates =
-          ayp?.startDate || ayp?.endDate
-            ? `${fmtDate(ayp.startDate)} – ${fmtDate(ayp.endDate)}`
-            : null;
+        const ayp = ayPeriods.find((a) => a.name === p.name);
+        const dates = ayp?.startDate || ayp?.endDate
+          ? `${fmtDate(ayp.startDate)} – ${fmtDate(ayp.endDate)}` : null;
         return (
           <button key={p.name} type="button" onClick={() => onChange(i)} className={`vc-tab${activeIdx === i ? " active" : ""}`}>
             {p.name}
-            {dates && (
-              <span style={{ fontSize: "10px", fontWeight: "400", marginLeft: "5px", opacity: 0.7 }}>{dates}</span>
-            )}
+            {dates && <span style={{ fontSize: "10px", fontWeight: "400", marginLeft: "6px", opacity: 0.65 }}>{dates}</span>}
           </button>
         );
       })}
@@ -294,55 +334,46 @@ function PeriodTabs({ periods, ayPeriods, activeIdx, onChange }) {
 function InlineAddForm({ onAdd, onCancel }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const nameRef = useRef(null);
-  useEffect(() => { nameRef.current?.focus(); }, []);
+  const ref = useRef(null);
+  useEffect(() => { ref.current?.focus(); }, []);
 
   const submit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
     onAdd({ id: genId(), name: name.trim(), code: code.trim() });
-    setName("");
-    setCode("");
+    setName(""); setCode("");
   };
 
   return (
     <form className="vc-inline-form" onSubmit={submit}>
-      <input ref={nameRef} className="vc-inline-input name" placeholder="Course name *" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className="vc-inline-input code" placeholder="Code (optional)" value={code} onChange={(e) => setCode(e.target.value)} />
-      <button type="submit" disabled={!name.trim()} style={{ padding: "5px 11px", background: "#0D47A1", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5 }}>
-        Add
-      </button>
-      <button type="button" onClick={onCancel} style={{ padding: "5px 9px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>
-        Cancel
-      </button>
+      <input ref={ref} className="vc-inline-input iname" placeholder="Course name *" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} />
+      <button type="submit" disabled={!name.trim()} style={{ padding: "6px 12px", background: "#0D47A1", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5 }}>Add</button>
+      <button type="button" onClick={onCancel} style={{ padding: "6px 10px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>Cancel</button>
     </form>
   );
 }
 
-/* ── CourseMatrixView (read-only) ──────────────────────────────────────── */
+/* ── CourseMatrixView ──────────────────────────────────────────────────── */
 
 function CourseMatrixView({ content, activeTab }) {
-  const periodContent = content[activeTab] || null;
-  if (!periodContent) return <p style={{ color: "#9CA3AF", fontSize: "13px", margin: 0 }}>No data for this period.</p>;
-  if (!periodContent.classes?.length)
-    return <p style={{ color: "#D1D5DB", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No grades configured in structure.</p>;
-
+  const pc = content[activeTab];
+  if (!pc) return <p style={{ color: "#9CA3AF", fontSize: "13px", margin: 0, padding: "16px 0" }}>No data for this period.</p>;
+  if (!pc.classes?.length) return <p style={{ color: "#D1D5DB", fontSize: "13px", fontStyle: "italic", margin: 0, padding: "16px 0" }}>No grades configured.</p>;
   return (
     <div>
-      {periodContent.classes.map((cls) => (
+      {pc.classes.map((cls) => (
         <div key={cls.className} className="vc-class-row">
-          <div className="vc-class-name">{cls.className}</div>
+          <div className="vc-class-label">{cls.className}</div>
           <div className="vc-chips">
-            {cls.courses.length === 0 ? (
-              <span style={{ fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>No courses</span>
-            ) : (
-              cls.courses.map((c) => (
-                <span key={c.id} className="vc-chip">
-                  {c.name}
-                  {c.code ? <span style={{ opacity: 0.6, fontWeight: "400" }}> · {c.code}</span> : null}
-                </span>
-              ))
-            )}
+            {cls.courses.length === 0
+              ? <span style={{ fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>No courses added</span>
+              : cls.courses.map((c) => (
+                  <span key={c.id} className="vc-chip">
+                    {c.name}
+                    {c.code ? <span style={{ opacity: 0.55, fontWeight: "400" }}>&thinsp;{c.code}</span> : null}
+                  </span>
+                ))}
           </div>
         </div>
       ))}
@@ -354,51 +385,48 @@ function CourseMatrixView({ content, activeTab }) {
 
 function CourseMatrixEdit({ content, activeTab, onUpdate }) {
   const [addingFor, setAddingFor] = useState(null);
-
   useEffect(() => { setAddingFor(null); }, [activeTab]);
 
-  const periodContent = content[activeTab] || null;
-  if (!periodContent) return null;
-  if (!periodContent.classes?.length)
-    return <p style={{ color: "#D1D5DB", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No grades configured. Go to Structure to add grade levels first.</p>;
+  const pc = content[activeTab];
+  if (!pc) return null;
+  if (!pc.classes?.length) return <p style={{ color: "#D1D5DB", fontSize: "13px", fontStyle: "italic", margin: 0, padding: "16px 0" }}>No grades configured. Add grades in Structure first.</p>;
 
-  const removeCourse = (classIdx, courseId) => {
+  const removeCourse = (ci, courseId) => {
     const next = deepClone(content);
-    next[activeTab].classes[classIdx].courses = next[activeTab].classes[classIdx].courses.filter((c) => c.id !== courseId);
+    next[activeTab].classes[ci].courses = next[activeTab].classes[ci].courses.filter((c) => c.id !== courseId);
     onUpdate(next);
   };
-
-  const addCourse = (classIdx, course) => {
+  const addCourse = (ci, course) => {
     const next = deepClone(content);
-    next[activeTab].classes[classIdx].courses.push(course);
+    next[activeTab].classes[ci].courses.push(course);
     onUpdate(next);
     setAddingFor(null);
   };
 
   return (
     <div>
-      {periodContent.classes.map((cls, classIdx) => (
-        <div key={cls.className} style={{ paddingBottom: "2px" }}>
+      {pc.classes.map((cls, ci) => (
+        <div key={cls.className}>
           <div className="vc-class-row">
-            <div className="vc-class-name">{cls.className}</div>
+            <div className="vc-class-label">{cls.className}</div>
             <div className="vc-chips">
               {cls.courses.map((c) => (
                 <span key={c.id} className="vc-chip">
                   {c.name}
-                  {c.code ? <span style={{ opacity: 0.6, fontWeight: "400" }}> · {c.code}</span> : null}
-                  <button type="button" className="vc-chip-remove" onClick={() => removeCourse(classIdx, c.id)} title="Remove">×</button>
+                  {c.code ? <span style={{ opacity: 0.55, fontWeight: "400" }}>&thinsp;{c.code}</span> : null}
+                  <button type="button" className="vc-chip-x" onClick={() => removeCourse(ci, c.id)}>×</button>
                 </span>
               ))}
-              {addingFor !== classIdx && (
-                <button type="button" className="vc-add-btn" onClick={() => setAddingFor(classIdx)}>
-                  <span style={{ fontSize: "13px", lineHeight: 1 }}>+</span> Add course
+              {addingFor !== ci && (
+                <button type="button" className="vc-add-pill" onClick={() => setAddingFor(ci)}>
+                  <span style={{ fontSize: "14px", fontWeight: "700" }}>+</span> Add
                 </button>
               )}
             </div>
           </div>
-          {addingFor === classIdx && (
-            <div style={{ paddingLeft: "122px" }}>
-              <InlineAddForm onAdd={(c) => addCourse(classIdx, c)} onCancel={() => setAddingFor(null)} />
+          {addingFor === ci && (
+            <div style={{ paddingLeft: "134px", paddingBottom: "8px" }}>
+              <InlineAddForm onAdd={(c) => addCourse(ci, c)} onCancel={() => setAddingFor(null)} />
             </div>
           )}
         </div>
@@ -409,56 +437,48 @@ function CourseMatrixEdit({ content, activeTab, onUpdate }) {
 
 /* ── VersionHistorySidebar ─────────────────────────────────────────────── */
 
-function VersionHistorySidebar({ current, history, mode, viewingId, onSelectHistory, onViewCurrent }) {
+function VersionHistorySidebar({ published, history, focusedId, onSelect }) {
   const allVersions = [
-    ...(current ? [{ ...current, _isCurrent: true }] : []),
+    ...(published ? [{ ...published, _published: true }] : []),
     ...history,
   ];
 
   return (
     <div className="vc-sidebar">
-      <div className="vc-sidebar-header">
-        <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827" }}>Version History</p>
-        <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+      <div className="vc-sidebar-head">
+        <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>Version History</p>
+        <p style={{ margin: "3px 0 0", fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>
           {allVersions.length} {allVersions.length === 1 ? "version" : "versions"}
         </p>
       </div>
 
       {allVersions.length === 0 ? (
-        <div style={{ padding: "24px 16px", textAlign: "center" }}>
-          <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>No versions yet.</p>
+        <div style={{ padding: "28px 16px", textAlign: "center" }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", lineHeight: 1.5 }}>No versions yet.</p>
         </div>
       ) : (
-        <div style={{ maxHeight: "480px", overflowY: "auto" }}>
+        <div className="vc-tl-list" style={{ maxHeight: "520px", overflowY: "auto" }}>
+          <div className="vc-tl-line" />
           {allVersions.map((v) => {
-            const isCurrent = !!v._isCurrent;
-            const isViewing = mode === "history" && v.id === viewingId;
-            const cls = `vc-history-entry${isCurrent ? " is-current" : ""}${isViewing ? " is-viewing" : ""}`;
+            const isPub    = !!v._published;
+            const isFocused = v.id === focusedId && !isPub;
+            let cls = "vc-tl-entry";
+            if (isPub)     cls += " tl-published";
+            if (isFocused) cls += " tl-focused";
+
             return (
-              <button
-                key={v.id}
-                type="button"
-                className={cls}
-                onClick={() => (isCurrent ? onViewCurrent() : onSelectHistory(v))}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>
-                    Version {v.versionNumber}
-                  </span>
-                  <StatusDot status={v.status} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{fmtDate(v.createdAt)}</span>
-                  {isCurrent && (
-                    <span style={{ fontSize: "10px", fontWeight: "700", color: "#0D47A1", backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "20px", padding: "1px 7px" }}>
-                      CURRENT
-                    </span>
-                  )}
-                  {isViewing && (
-                    <span style={{ fontSize: "10px", fontWeight: "700", color: "#92400E", backgroundColor: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: "20px", padding: "1px 7px" }}>
-                      VIEWING
-                    </span>
-                  )}
+              <button key={v.id} type="button" className={cls} style={{ paddingLeft: 0 }} onClick={() => onSelect(v)}>
+                <div className="vc-tl-dot-wrap"><div className="vc-tl-dot" /></div>
+                <div className="vc-tl-body">
+                  <div className="vc-tl-top">
+                    <span className="vc-tl-vnum">v{v.versionNumber}</span>
+                    <StatusBadge status={v.status} />
+                  </div>
+                  <div className="vc-tl-date">{fmtDate(v.createdAt)}</div>
+                  <div className="vc-tl-badges">
+                    {isPub    && <MiniTag color="#065F46" bg="#ECFDF5" border="#6EE7B7">LIVE</MiniTag>}
+                    {isFocused && <MiniTag color="#92400E" bg="#FFFBEB" border="#FCD34D">VIEWING</MiniTag>}
+                  </div>
                 </div>
               </button>
             );
@@ -469,32 +489,102 @@ function VersionHistorySidebar({ current, history, mode, viewingId, onSelectHist
   );
 }
 
-/* ── CurrentVersionPanel ───────────────────────────────────────────────── */
+/* ── BrowsePanel — shows any version with contextual actions ───────────── */
 
-function CurrentVersionPanel({ version, curriculumPeriods, ayPeriods, nextVersionNumber, onNew, onEdit }) {
+function BrowsePanel({
+  version, curriculumPeriods, ayPeriods, nextVersionNumber,
+  publishedId, onPublish, onEdit, onNew, onRestore,
+  isPublishing, isRestoring,
+}) {
   const [activeTab, setActiveTab] = useState(0);
+  const { status } = version;
+  const isPublished = status === "published";
+  const isDraft     = status === "draft";
+  const isInactive  = status === "inactive";
+  const totalCourses = (version.content || []).reduce((s, p) => s + p.classes.reduce((s2, c) => s2 + c.courses.length, 0), 0);
+
+  /* Header accent by status */
+  const accent = isPublished
+    ? { bg: "#ECFDF5", border: "#6EE7B7", titleColor: "#064E3B" }
+    : isDraft
+    ? { bg: "#F0F7FF", border: "#BFDBFE", titleColor: "#1E3A8A" }
+    : { bg: "#FAFAFA", border: "#E5E7EB", titleColor: "#374151" };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {/* Header */}
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "vc-fadein 0.2s ease" }}>
+      {/* Banner for published */}
+      {isPublished && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#ECFDF5", border: "1.5px solid #6EE7B7", borderRadius: "12px" }}>
+          <span style={{ fontSize: "16px" }}>✅</span>
+          <p style={{ margin: 0, fontSize: "12px", color: "#065F46", fontWeight: "500" }}>
+            This is the <strong>live version</strong> currently in use.
+          </p>
+        </div>
+      )}
+      {isDraft && !publishedId && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#FFFBEB", border: "1.5px solid #FCD34D", borderRadius: "12px" }}>
+          <span style={{ fontSize: "16px" }}>📋</span>
+          <p style={{ margin: 0, fontSize: "12px", color: "#92400E", fontWeight: "500" }}>
+            No version is live yet. Publish this draft to make it active.
+          </p>
+        </div>
+      )}
+      {isInactive && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#F9FAFB", border: "1.5px solid #E5E7EB", borderRadius: "12px" }}>
+          <span style={{ fontSize: "16px" }}>🕐</span>
+          <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
+            Historical version — restore to create a new draft based on this content.
+          </p>
+        </div>
+      )}
+
+      {/* Header card */}
+      <div style={{ ...card, backgroundColor: accent.bg, border: `1.5px solid ${accent.border}` }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0F2645" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexWrap: "wrap" }}>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: accent.titleColor }}>
                 Version {version.versionNumber}
               </h2>
-              <StatusDot status={version.status} />
+              <StatusBadge status={status} />
             </div>
-            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Saved {fmtDate(version.createdAt)}</p>
+            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "12px", color: "#9CA3AF" }}>Saved {fmtDate(version.createdAt)}</span>
+              <span style={{ fontSize: "12px", color: "#9CA3AF" }}>·</span>
+              <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "600" }}>
+                {totalCourses} course{totalCourses !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-            <button type="button" className="vc-btn-ghost" onClick={onEdit}>
-              Edit → v{nextVersionNumber}
-            </button>
-            <button type="button" className="vc-btn-primary" onClick={onNew}>
-              + New Version
-            </button>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
+            {/* Inactive → Restore */}
+            {isInactive && (
+              <button type="button" className="vc-btn-restore" onClick={onRestore} disabled={isRestoring}>
+                {isRestoring ? <><Spinner light={false} /> Restoring…</> : `↩ Restore as v${nextVersionNumber}`}
+              </button>
+            )}
+            {/* Draft → Publish + Edit + New */}
+            {isDraft && (
+              <>
+                <button type="button" className="vc-btn-publish" onClick={onPublish} disabled={isPublishing}>
+                  {isPublishing ? <><Spinner /> Publishing…</> : "🚀 Publish"}
+                </button>
+                <button type="button" className="vc-btn-ghost" onClick={onEdit}>
+                  ✏ Edit
+                </button>
+                <button type="button" className="vc-btn-primary" onClick={onNew}>+ New Version</button>
+              </>
+            )}
+            {/* Published → Edit + New */}
+            {isPublished && (
+              <>
+                <button type="button" className="vc-btn-ghost" onClick={onEdit}>
+                  ✏ Edit → v{nextVersionNumber}
+                </button>
+                <button type="button" className="vc-btn-primary" onClick={onNew}>+ New Version</button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -502,9 +592,9 @@ function CurrentVersionPanel({ version, curriculumPeriods, ayPeriods, nextVersio
       {/* Course matrix */}
       <div style={card}>
         {curriculumPeriods.length === 0 ? (
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center", padding: "20px 0" }}>
-            No periods configured in structure.
-          </p>
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No periods configured in structure.</p>
+          </div>
         ) : (
           <>
             <PeriodTabs periods={curriculumPeriods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
@@ -516,140 +606,63 @@ function CurrentVersionPanel({ version, curriculumPeriods, ayPeriods, nextVersio
   );
 }
 
-/* ── HistoricalVersionPanel ────────────────────────────────────────────── */
+/* ── EditorPanel ───────────────────────────────────────────────────────── */
 
-function HistoricalVersionPanel({ version, curriculumPeriods, ayPeriods, nextVersionNumber, onRestore, isPending, onBack }) {
+function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionNumber, onSave, onCancel, isPending }) {
   const [activeTab, setActiveTab] = useState(0);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {/* Header */}
-      <div style={{ ...card, backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#92400E" }}>
-                Version {version.versionNumber}
-              </h2>
-              <StatusDot status={version.status} />
-              <span style={{ fontSize: "11px", fontWeight: "600", color: "#92400E", backgroundColor: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: "20px", padding: "2px 8px" }}>
-                Historical
-              </span>
-            </div>
-            <p style={{ margin: 0, fontSize: "12px", color: "#B45309" }}>Saved {fmtDate(version.createdAt)}</p>
-          </div>
-          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-            <button type="button" className="vc-btn-secondary" onClick={onBack}>
-              ← Current
-            </button>
-            <button type="button" className="vc-btn-restore" onClick={onRestore} disabled={isPending}>
-              {isPending ? <><Spinner /> Restoring…</> : `Restore as v${nextVersionNumber}`}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Course matrix (read-only) */}
-      <div style={card}>
-        {curriculumPeriods.length === 0 ? (
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center", padding: "20px 0" }}>
-            No periods configured.
-          </p>
-        ) : (
-          <>
-            <PeriodTabs periods={curriculumPeriods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
-            <CourseMatrixView content={version.content || []} activeTab={activeTab} />
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── VersionEditorPanel (new or edit) ──────────────────────────────────── */
-
-function VersionEditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionNumber, onSave, onCancel, isPending }) {
-  const [activeTab, setActiveTab] = useState(0);
-  const [status, setStatus]       = useState("draft");
   const [content, setContent]     = useState(() =>
-    type === "edit"
-      ? scaffoldFromExisting(curriculum, initialContent)
-      : scaffoldBlank(curriculum)
+    type === "edit" ? scaffoldFromExisting(curriculum, initialContent) : scaffoldBlank(curriculum)
   );
 
-  const curriculumPeriods = curriculum.periods || [];
+  const periods   = curriculum.periods || [];
   const hasGrades = (content[0]?.classes?.length || 0) > 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "vc-fadein 0.2s ease" }}>
+      {/* Info banner */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 16px", backgroundColor: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: "12px" }}>
+        <span style={{ fontSize: "14px", flexShrink: 0 }}>{type === "edit" ? "✏️" : "📋"}</span>
+        <p style={{ margin: 0, fontSize: "12px", color: "#1E40AF", fontWeight: "500" }}>
+          {type === "edit"
+            ? "Courses pre-filled from the selected version. Add or remove as needed."
+            : "All courses start blank. Fill in each grade for every period."}
+          {" "}<strong>Saving creates a new draft</strong> — publish it when ready.
+        </p>
+      </div>
+
       {/* Header */}
       <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: "0 0 2px", fontSize: "16px", fontWeight: "700", color: "#1E3A8A" }}>
-              {type === "edit"
-                ? `Editing → New Version ${nextVersionNumber}`
-                : `Creating Version ${nextVersionNumber}`}
+            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#1E3A8A" }}>
+              {type === "edit" ? `Editing → Version ${nextVersionNumber}` : `New Version ${nextVersionNumber}`}
             </h2>
-            <p style={{ margin: 0, fontSize: "12px", color: "#3B82F6" }}>
-              {type === "edit"
-                ? "Courses pre-filled from current version. Add or remove as needed."
-                : "All courses start blank. Fill in for each grade and period."}
-            </p>
+            <p style={{ margin: 0, fontSize: "12px", color: "#3B82F6" }}>Saves as a draft — you can publish it from the version panel.</p>
           </div>
-          {/* Status selector */}
-          <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-            {STATUSES.map((s) => (
-              <button
-                key={s.value}
-                type="button"
-                onClick={() => setStatus(s.value)}
-                className={`vc-status-btn${status === s.value ? ` sel-${s.value}` : ""}`}
-              >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: status === s.value ? s.dot : "#D1D5DB", flexShrink: 0 }} />
-                  {s.label}
-                </span>
-              </button>
-            ))}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button type="button" className="vc-btn-secondary" onClick={onCancel}>Cancel</button>
+            <button type="button" className="vc-btn-primary" disabled={isPending} onClick={() => onSave({ content })}>
+              {isPending ? <><Spinner /> Saving…</> : `Save Draft v${nextVersionNumber}`}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Course editor */}
-      {curriculumPeriods.length === 0 ? (
-        <div style={{ ...card, textAlign: "center", padding: "40px 24px" }}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-            No periods configured. Go to <strong>Structure</strong> to set an academic cycle first.
-          </p>
+      {/* Editor */}
+      {periods.length === 0 ? (
+        <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
+          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No periods configured. Go to <strong>Structure</strong> first.</p>
         </div>
       ) : !hasGrades ? (
-        <div style={{ ...card, textAlign: "center", padding: "40px 24px" }}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-            No grades found. Go to <strong>Structure</strong> to add grade levels first.
-          </p>
+        <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
+          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No grades found. Go to <strong>Structure</strong> to add grade levels first.</p>
         </div>
       ) : (
         <div style={card}>
-          <PeriodTabs periods={curriculumPeriods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
+          <PeriodTabs periods={periods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
           <CourseMatrixEdit content={content} activeTab={activeTab} onUpdate={setContent} />
         </div>
       )}
-
-      {/* Actions */}
-      <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-        <button type="button" className="vc-btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="vc-btn-primary"
-          disabled={isPending}
-          onClick={() => onSave({ content, status })}
-        >
-          {isPending ? <><Spinner /> Saving…</> : `Save as Version ${nextVersionNumber}`}
-        </button>
-      </div>
     </div>
   );
 }
@@ -657,61 +670,98 @@ function VersionEditorPanel({ type, curriculum, ayPeriods, initialContent, nextV
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function CurriculumVersionControlPage() {
-  const { id } = useParams();
+  const { id }   = useParams();
   const navigate = useNavigate();
 
-  const { data: curriculum,  isLoading: loadingCurr } = useCurriculumQuery(id);
-  const { data: yearData,    isLoading: loadingYear } = useAcademicYears(id);
-  const { data: versionData, isLoading: loadingVer  } = useCurriculumVersions(id);
-  const { mutate: createVersion, isPending: creating } = useCreateCurriculumVersion(id);
+  const { data: curriculum,  isLoading: lCurr } = useCurriculumQuery(id);
+  const { data: yearData,    isLoading: lYear  } = useAcademicYears(id);
+  const { data: versionData, isLoading: lVer   } = useCurriculumVersions(id);
+  const { mutate: createVersion,  isPending: creating    } = useCreateCurriculumVersion(id);
+  const { mutate: changeStatus,   isPending: changingSt  } = useChangeCurriculumVersionStatus(id);
 
-  // mode: "view" | "new" | "edit" | "history" | "empty"
-  const [mode, setMode]                   = useState("view");
-  const [viewingVersion, setViewingVersion] = useState(null);
+  // mode: "browse" | "new" | "edit" | "empty"
+  const [mode, setMode]             = useState("browse");
+  // focusedVersion: null means "show the published version"; otherwise show this specific version
+  const [focusedVersion, setFocused] = useState(null);
+  // editSourceVersion: which version we're editing (null = published/current)
+  const [editSource, setEditSource]  = useState(null);
 
-  const current           = versionData?.current || null;
-  const history           = versionData?.history || [];
-  const ayPeriods         = yearData?.current?.periods || [];
-  const curriculumPeriods = curriculum?.periods || [];
+  const published = versionData?.current || null;   // isCurrent version
+  const history   = versionData?.history || [];     // everything else
+  // Derive periods from the published academic year version (two-level group→version structure)
+  const ayPeriods = yearData?.publishedVersion?.periods || [];
+  const periods   = curriculum?.periods || [];
 
-  const allVersionNums = [
-    ...(current ? [current.versionNumber] : []),
-    ...history.map((v) => v.versionNumber),
-  ];
-  const nextVersionNumber = allVersionNums.length > 0 ? Math.max(...allVersionNums) + 1 : 1;
+  const allVersions   = [...(published ? [published] : []), ...history];
+  const allNums       = allVersions.map((v) => v.versionNumber);
+  const nextVersionNum = allNums.length ? Math.max(...allNums) + 1 : 1;
+
+  // Derive the version shown in browse mode
+  const displayVersion = focusedVersion
+    ? allVersions.find((v) => v.id === focusedVersion.id) || focusedVersion
+    : published || history[0] || null;
 
   useEffect(() => {
-    if (!loadingVer && !current) setMode("empty");
-  }, [loadingVer, current]);
+    if (!lVer && allVersions.length === 0) setMode("empty");
+    else if (!lVer && allVersions.length > 0 && mode === "empty") setMode("browse");
+  }, [lVer, allVersions.length]);
 
-  const isLoading = loadingCurr || loadingYear || loadingVer;
-
-  const handleSave = (data) => {
+  /* Handlers */
+  const handleSaveEditor = (data) => {
     createVersion(
-      { ...data, academicYearId: yearData?.current?.id || null },
-      { onSuccess: () => { setMode("view"); setViewingVersion(null); } }
+      { ...data, status: "draft", academicYearId: yearData?.publishedVersion?.id || null },
+      {
+        onSuccess: (newVer) => {
+          setFocused(newVer);
+          setMode("browse");
+        },
+      }
     );
   };
 
-  const handleSelectHistory = (version) => {
-    setViewingVersion(version);
-    setMode("history");
-  };
-
-  const handleViewCurrent = () => {
-    setViewingVersion(null);
-    setMode(current ? "view" : "empty");
+  const handlePublish = () => {
+    if (!displayVersion) return;
+    changeStatus(
+      { vId: displayVersion.id, status: "published" },
+      { onSuccess: () => setFocused(null) }
+    );
   };
 
   const handleRestore = () => {
-    if (!viewingVersion) return;
+    if (!displayVersion) return;
     createVersion(
-      { content: viewingVersion.content, status: "draft", academicYearId: yearData?.current?.id || null },
-      { onSuccess: () => { setMode("view"); setViewingVersion(null); } }
+      { content: displayVersion.content, status: "draft", academicYearId: yearData?.publishedVersion?.id || null },
+      {
+        onSuccess: (newVer) => {
+          setFocused(newVer);
+          setMode("browse");
+        },
+      }
     );
   };
 
-  if (isLoading) return (
+  const handleSelectVersion = (v) => {
+    const isPub = v.id === published?.id;
+    setFocused(isPub ? null : v);
+    setMode("browse");
+  };
+
+  const handleEdit = () => {
+    setEditSource(displayVersion);
+    setMode("edit");
+  };
+
+  const handleNew = () => {
+    setEditSource(null);
+    setMode("new");
+  };
+
+  const handleCancelEditor = () => {
+    setEditSource(null);
+    setMode(allVersions.length ? "browse" : "empty");
+  };
+
+  if (lCurr || lYear || lVer) return (
     <div style={{ fontFamily: "Inter,sans-serif" }}>
       <style>{CSS}</style>
       <SpinnerPage />
@@ -719,11 +769,12 @@ export default function CurriculumVersionControlPage() {
   );
 
   const subtitleMap = {
-    new:     `Creating Version ${nextVersionNumber} — blank slate.`,
-    edit:    `Editing current version → will save as Version ${nextVersionNumber}.`,
-    history: `Viewing Version ${viewingVersion?.versionNumber} (historical).`,
-    empty:   "No versions yet. Create Version 1 to get started.",
-    view:    "Course assignments by grade and period.",
+    new:    `Creating Version ${nextVersionNum} — saves as draft.`,
+    edit:   `Editing → Version ${nextVersionNum} (saves as draft).`,
+    browse: displayVersion
+      ? `Viewing Version ${displayVersion.versionNumber} · ${STATUSES.find(s => s.value === displayVersion.status)?.label || "Unknown"}`
+      : "No versions yet.",
+    empty:  "No versions yet. Create the first one to get started.",
   };
 
   return (
@@ -731,27 +782,23 @@ export default function CurriculumVersionControlPage() {
       <style>{CSS}</style>
 
       {/* Page header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
-              ← Curriculum
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: "12px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
+              Curriculum
             </button>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{curriculum?.name}</span>
-            <span style={{ color: "#D1D5DB" }}>/</span>
-            <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>Version Control</span>
+            <span style={{ color: "#E5E7EB" }}>/</span>
+            <span style={{ fontSize: "12px", color: "#9CA3AF", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{curriculum?.name}</span>
+            <span style={{ color: "#E5E7EB" }}>/</span>
+            <span style={{ fontSize: "12px", color: "#374151", fontWeight: "600" }}>Version Control</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Version Control</h1>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>{subtitleMap[mode]}</p>
+          <h1 style={{ margin: "0 0 3px", fontSize: "22px", fontWeight: "800", color: "#0F2645" }}>Version Control</h1>
+          <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>{subtitleMap[mode]}</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)} className="vc-btn-secondary">
-            ← Academic Year
-          </button>
-          <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-secondary">
-            Done
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)} className="vc-btn-secondary">← Academic Year</button>
+          <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-primary" style={{ background: "#0F2645" }}>Done</button>
         </div>
       </div>
 
@@ -759,68 +806,57 @@ export default function CurriculumVersionControlPage() {
 
       {/* Empty state */}
       {mode === "empty" && (
-        <div className="vc-empty">
-          <p style={{ fontSize: "28px", margin: "0 0 10px" }}>📋</p>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No versions yet</p>
-          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF" }}>
-            Assign courses to each grade and period to create Version 1.
+        <div className="vc-empty-state">
+          <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
+          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No versions yet</p>
+          <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto" }}>
+            Assign courses to each grade and period to create Version 1. You can publish it once it's ready.
           </p>
-          <button type="button" className="vc-btn-primary" onClick={() => setMode("new")}>
-            Start Version 1
-          </button>
+          <button type="button" className="vc-btn-primary" onClick={() => setMode("new")}>+ Create Version 1</button>
         </div>
       )}
 
       {/* Two-column layout */}
       {mode !== "empty" && (
         <div className="vc-layout">
-          {/* LEFT: main content area */}
-          <div>
-            {mode === "view" && current && (
-              <CurrentVersionPanel
-                version={current}
-                curriculumPeriods={curriculumPeriods}
+          {/* LEFT: main content */}
+          <div style={{ minWidth: 0 }}>
+            {(mode === "browse") && displayVersion && (
+              <BrowsePanel
+                version={displayVersion}
+                curriculumPeriods={periods}
                 ayPeriods={ayPeriods}
-                nextVersionNumber={nextVersionNumber}
-                onNew={() => setMode("new")}
-                onEdit={() => setMode("edit")}
-              />
-            )}
-
-            {mode === "history" && viewingVersion && (
-              <HistoricalVersionPanel
-                version={viewingVersion}
-                curriculumPeriods={curriculumPeriods}
-                ayPeriods={ayPeriods}
-                nextVersionNumber={nextVersionNumber}
+                nextVersionNumber={nextVersionNum}
+                publishedId={published?.id}
+                onPublish={handlePublish}
+                onEdit={handleEdit}
+                onNew={handleNew}
                 onRestore={handleRestore}
-                isPending={creating}
-                onBack={handleViewCurrent}
+                isPublishing={changingSt}
+                isRestoring={creating}
               />
             )}
 
             {(mode === "new" || mode === "edit") && (
-              <VersionEditorPanel
+              <EditorPanel
                 type={mode}
                 curriculum={curriculum || { periods: [], structure: [] }}
                 ayPeriods={ayPeriods}
-                initialContent={mode === "edit" ? current?.content : null}
-                nextVersionNumber={nextVersionNumber}
-                onSave={handleSave}
-                onCancel={() => setMode(current ? "view" : "empty")}
+                initialContent={editSource?.content || null}
+                nextVersionNumber={nextVersionNum}
+                onSave={handleSaveEditor}
+                onCancel={handleCancelEditor}
                 isPending={creating}
               />
             )}
           </div>
 
-          {/* RIGHT: version history sidebar */}
+          {/* RIGHT: sidebar */}
           <VersionHistorySidebar
-            current={current}
+            published={published}
             history={history}
-            mode={mode}
-            viewingId={viewingVersion?.id}
-            onSelectHistory={handleSelectHistory}
-            onViewCurrent={handleViewCurrent}
+            focusedId={focusedVersion?.id}
+            onSelect={handleSelectVersion}
           />
         </div>
       )}

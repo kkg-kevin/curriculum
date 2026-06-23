@@ -1,32 +1,33 @@
 const asyncHandler = require("express-async-handler");
 const AcademicYearService = require("./academic-years.service");
 
+// GET /api/curricula/:id/academic-years
 const getAcademicYears = asyncHandler(async (req, res) => {
   const { id: curriculumId } = req.params;
-  const all = AcademicYearService.getAllForCurriculum(curriculumId);
-  const current = all.find((y) => y.isCurrent) || null;
-  const history = all.filter((y) => !y.isCurrent);
-  res.json({ success: true, data: { current, history } });
+  const data = AcademicYearService.getAll(curriculumId);
+  res.json({ success: true, data });
 });
 
-const createAcademicYear = asyncHandler(async (req, res) => {
+// POST /api/curricula/:id/academic-years
+const createGroup = asyncHandler(async (req, res) => {
   const { id: curriculumId } = req.params;
-  const { isFresh, ...data } = req.body;
-  const year = AcademicYearService.create(curriculumId, data, !!isFresh);
-  res.status(201).json({ success: true, data: year });
+  const result = AcademicYearService.createGroup(curriculumId, req.body);
+  res.status(201).json({ success: true, data: result });
 });
 
-const editAcademicYear = asyncHandler(async (req, res) => {
-  const { id: curriculumId, yearId } = req.params;
-  const year = AcademicYearService.edit(curriculumId, yearId, req.body);
-  res.json({ success: true, data: year });
+// POST /api/curricula/:id/academic-years/:groupId/versions
+const createVersion = asyncHandler(async (req, res) => {
+  const { id: curriculumId, groupId } = req.params;
+  const version = AcademicYearService.createVersion(curriculumId, groupId, req.body);
+  res.status(201).json({ success: true, data: version });
 });
 
+// PATCH /api/curricula/:id/academic-years/:groupId/versions/:versionId/status
 const changeStatus = asyncHandler(async (req, res) => {
-  const { id: curriculumId, yearId } = req.params;
+  const { id: curriculumId, groupId, versionId } = req.params;
   const { status } = req.body;
-  const year = AcademicYearService.changeStatus(curriculumId, yearId, status);
-  res.json({ success: true, data: year });
+  const version = AcademicYearService.changeStatus(curriculumId, groupId, versionId, status);
+  res.json({ success: true, data: version });
 });
 
-module.exports = { getAcademicYears, createAcademicYear, editAcademicYear, changeStatus };
+module.exports = { getAcademicYears, createGroup, createVersion, changeStatus };

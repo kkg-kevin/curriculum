@@ -147,22 +147,29 @@
     ],
     "id": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
     "createdAt": "2026-06-23T07:33:48.870Z",
-    "updatedAt": "2026-06-23T07:50:25.738Z"
+    "updatedAt": "2026-06-23T11:15:05.518Z"
   },
   {
     "name": "SAMPLE CURRICULUM ",
-    "code": "SC",
+    "code": "Sample-001",
     "academicYear": "",
-    "description": "description",
+    "description": "sample test",
     "status": "draft",
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": "",
     "framework": "",
-    "academicCycleModel": "custom",
+    "academicCycleModel": "semesters",
     "periods": [
       {
-        "name": "Period 1",
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Semester 2",
         "startDate": "",
         "endDate": "",
         "breakStartDate": "",
@@ -170,10 +177,12 @@
       }
     ],
     "classes": [
-      "class one"
+      "class 1",
+      "class 2",
+      "class 3"
     ],
-    "id": "05aa4781-9030-415a-829f-f54d61c5e2ca",
-    "createdAt": "2026-06-23T08:52:54.193Z",
-    "updatedAt": "2026-06-23T08:53:08.195Z"
+    "id": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
+    "createdAt": "2026-06-23T10:10:29.481Z",
+    "updatedAt": "2026-06-23T10:24:59.257Z"
   }
 ]

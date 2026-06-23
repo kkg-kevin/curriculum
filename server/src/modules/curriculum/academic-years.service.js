@@ -1,69 +1,132 @@
-const AcademicYearModel = require("./academic-years.model");
+const AcademicYearGroupModel   = require("./academic-year-groups.model");
+const AcademicYearVersionModel = require("./academic-year-versions.model");
 
 const AcademicYearService = {
-  getAllForCurriculum(curriculumId) {
-    const all = AcademicYearModel.findByCurriculumId(curriculumId);
-    return all.sort((a, b) => b.versionNumber - a.versionNumber);
+  /* ── Read ──────────────────────────────────────────────────────────── */
+
+  getAll(curriculumId) {
+    const groups   = AcademicYearGroupModel.findByCurriculumId(curriculumId);
+    const versions = AcademicYearVersionModel.findByCurriculumId(curriculumId);
+
+    // Attach versions to their group, newest version first
+    const enriched = groups
+      .map((g) => {
+        const gVersions = versions
+          .filter((v) => v.yearGroupId === g.id)
+          .sort((a, b) => b.versionNumber - a.versionNumber);
+        return { ...g, versions: gVersions };
+      })
+      // Sort groups newest start date first
+      .sort((a, b) => {
+        if (!a.startDate && !b.startDate) return 0;
+        if (!a.startDate) return 1;
+        if (!b.startDate) return -1;
+        return new Date(b.startDate) - new Date(a.startDate);
+      });
+
+    const publishedVersion = versions.find((v) => v.status === "published") || null;
+
+    return { groups: enriched, publishedVersion };
   },
 
-  // Create first year, or start fresh (wipes current pointer)
-  create(curriculumId, data, isFresh = false) {
-    if (isFresh) AcademicYearModel.setAllNotCurrent(curriculumId);
+  /* ── Create year group ─────────────────────────────────────────────── */
 
-    if (data.status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
+  createGroup(curriculumId, data) {
+    const { label, startDate, endDate, periods } = data;
+    if (!label || !label.trim()) {
+      throw Object.assign(new Error("Year label is required"), { statusCode: 400 });
+    }
 
-    const existing = AcademicYearModel.findByCurriculumId(curriculumId);
-    const nextVersion = isFresh
-      ? 1
-      : existing.length
-      ? Math.max(...existing.map((y) => y.versionNumber)) + 1
+    // Date validation: new year cannot start before the current published year ends
+    const published = AcademicYearVersionModel.findPublished(curriculumId);
+    if (published && startDate) {
+      const pubGroup = AcademicYearGroupModel.findById(published.yearGroupId);
+      if (pubGroup && pubGroup.endDate && startDate < pubGroup.endDate) {
+        throw Object.assign(
+          new Error(
+            `New year must start after the current published year ends (${pubGroup.endDate})`
+          ),
+          { statusCode: 400 }
+        );
+      }
+    }
+
+    const group = AcademicYearGroupModel.create({
+      curriculumId,
+      label: label.trim(),
+      startDate: startDate || "",
+      endDate:   endDate   || "",
+    });
+
+    const version = AcademicYearVersionModel.create({
+      yearGroupId:   group.id,
+      curriculumId,
+      versionNumber: 1,
+      status:        "draft",
+      isCurrent:     true,
+      periods:       periods || [],
+    });
+
+    return { group, version };
+  },
+
+  /* ── Create new version (edit = new draft) ─────────────────────────── */
+
+  createVersion(curriculumId, groupId, data) {
+    const group = AcademicYearGroupModel.findById(groupId);
+    if (!group || group.curriculumId !== curriculumId) {
+      throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
+    }
+
+    const existing    = AcademicYearVersionModel.findByGroupId(groupId);
+    const nextVersion = existing.length
+      ? Math.max(...existing.map((v) => v.versionNumber)) + 1
       : 1;
 
-    return AcademicYearModel.create({
+    // Demote all versions in this group from isCurrent
+    AcademicYearVersionModel.setGroupNotCurrent(groupId);
+
+    const version = AcademicYearVersionModel.create({
+      yearGroupId:   groupId,
       curriculumId,
-      label: data.label,
-      startDate: data.startDate || "",
-      endDate: data.endDate || "",
-      status: data.status || "draft",
-      periods: data.periods || [],
       versionNumber: nextVersion,
-      versionOf: isFresh ? null : (data.versionOf || null),
-      isCurrent: true,
+      status:        "draft",
+      isCurrent:     true,
+      periods:       data.periods || [],
     });
+
+    return version;
   },
 
-  // Edit creates a new version from an existing year
-  edit(curriculumId, yearId, data) {
-    const current = AcademicYearModel.findById(yearId);
-    if (!current) throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
+  /* ── Change version status ─────────────────────────────────────────── */
 
-    // Archive the current version
-    AcademicYearModel.update(yearId, { isCurrent: false });
-
-    if (data.status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
-
-    const all = AcademicYearModel.findByCurriculumId(curriculumId);
-    const nextVersion = Math.max(...all.map((y) => y.versionNumber)) + 1;
-
-    return AcademicYearModel.create({
-      curriculumId,
-      label: data.label,
-      startDate: data.startDate || "",
-      endDate: data.endDate || "",
-      status: data.status || current.status,
-      periods: data.periods || [],
-      versionNumber: nextVersion,
-      versionOf: yearId,
-      isCurrent: true,
-    });
-  },
-
-  changeStatus(curriculumId, yearId, status) {
-    if (!["active", "draft", "inactive"].includes(status)) {
+  changeStatus(curriculumId, groupId, versionId, status) {
+    if (!["draft", "published", "inactive"].includes(status)) {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
-    if (status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
-    return AcademicYearModel.update(yearId, { status });
+
+    const version = AcademicYearVersionModel.findById(versionId);
+    if (!version || version.curriculumId !== curriculumId || version.yearGroupId !== groupId) {
+      throw Object.assign(new Error("Version not found"), { statusCode: 404 });
+    }
+
+    if (status === "published") {
+      // Retire any currently published version across ALL groups in this curriculum
+      const allVersions = AcademicYearVersionModel.findByCurriculumId(curriculumId);
+      allVersions.forEach((v) => {
+        if (v.id !== versionId && v.status === "published") {
+          AcademicYearVersionModel.update(v.id, { status: "inactive" });
+        }
+      });
+
+      // Make this version isCurrent within its group (demote siblings)
+      AcademicYearVersionModel.setGroupNotCurrent(groupId);
+
+      return AcademicYearVersionModel.update(versionId, { status: "published", isCurrent: true });
+    }
+
+    // draft / inactive — just update status, isCurrent stays as-is
+    return AcademicYearVersionModel.update(versionId, { status });
   },
 };
 
