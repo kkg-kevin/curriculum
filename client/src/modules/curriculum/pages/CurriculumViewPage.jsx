@@ -39,9 +39,10 @@ const FRAMEWORK_COLORS = {
 };
 
 const STATUS_CONFIG = {
-  active:   { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", dot: "#16A34A", label: "Active"   },
-  draft:    { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"    },
-  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive" },
+  published: { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7", dot: "#10B981", label: "Published" },
+  active:    { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", dot: "#16A34A", label: "Active"    },
+  draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"     },
+  inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
 };
 
 const COURSE_SHADES = [
@@ -57,94 +58,126 @@ const CSS = `
   @keyframes cvp-spin { to { transform: rotate(360deg); } }
   @keyframes cvp-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+  /* Period tabs strip */
   .cvp-period-tabs {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-bottom: 1px solid #F3F4F6;
     background: #FAFBFF;
   }
 
   .cvp-tab {
-    padding: 7px 16px;
-    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 16px;
+    border-radius: 12px;
     border: 1.5px solid #E5E7EB;
     background: #fff;
-    font-size: 13px;
-    font-weight: 600;
     font-family: Inter, sans-serif;
-    color: #6B7280;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
+    min-width: 80px;
   }
-  .cvp-tab:hover { border-color: #93C5FD; color: #1D4ED8; background: #F0F7FF; }
+  .cvp-tab-name  { font-size: 13px; font-weight: 700; color: #374151; line-height: 1.2; }
+  .cvp-tab-dates { font-size: 10px; font-weight: 500; color: #9CA3AF; line-height: 1.2; }
+  .cvp-tab:hover { border-color: #93C5FD; background: #F0F7FF; }
+  .cvp-tab:hover .cvp-tab-name  { color: #1D4ED8; }
+  .cvp-tab:hover .cvp-tab-dates { color: #93C5FD; }
   .cvp-tab.active {
     border-color: #0D47A1;
-    background: #0D47A1;
-    color: #fff;
+    background: linear-gradient(135deg, #0D47A1, #1565C0);
+    box-shadow: 0 2px 10px rgba(13,71,161,0.25);
   }
+  .cvp-tab.active .cvp-tab-name  { color: #fff; }
+  .cvp-tab.active .cvp-tab-dates { color: rgba(255,255,255,0.65); }
 
-  .cvp-class-row {
+  /* Date pills row shown below tabs */
+  .cvp-date-pills {
     display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid #F3F4F6;
-  }
-  .cvp-class-row:last-child { border-bottom: none; }
-
-  .cvp-class-name {
-    min-width: 120px;
-    flex-shrink: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: #374151;
-    padding-top: 3px;
-  }
-
-  .cvp-chips {
-    display: flex;
+    align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
-    gap: 6px;
-    flex: 1;
+    padding: 10px 20px;
+    border-bottom: 1px solid #F3F4F6;
+    animation: cvp-fade 0.15s ease;
   }
-
-  .cvp-chip {
+  .cvp-date-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 11px;
+    gap: 5px;
+    padding: 4px 12px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
+    font-family: Inter, sans-serif;
   }
-
-  .cvp-chip-code {
-    font-size: 10px;
-    font-weight: 700;
-    opacity: 0.7;
-    padding: 1px 6px;
-    border-radius: 10px;
-    background: rgba(0,0,0,0.08);
+  .cvp-date-pill-term {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1.5px solid #BFDBFE;
   }
-
-  .cvp-no-courses {
-    font-size: 12px;
+  .cvp-date-pill-break {
+    background: #FFF7ED;
+    color: #C2410C;
+    border: 1.5px solid #FED7AA;
+  }
+  .cvp-date-pill-none {
+    background: #F9FAFB;
     color: #9CA3AF;
+    border: 1.5px dashed #E5E7EB;
+    font-weight: 500;
     font-style: italic;
-    padding: 4px 0;
   }
 
-  .cvp-period-content {
-    animation: cvp-fade 0.2s ease;
+  /* Class/course rows */
+  .cvp-class-list {
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #DBEAFE transparent;
   }
+  .cvp-class-list::-webkit-scrollbar { width: 4px; }
+  .cvp-class-list::-webkit-scrollbar-thumb { background: #BFDBFE; border-radius: 4px; }
+  .cvp-class-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px;
+    border-bottom: 1px solid #F9FAFB;
+  }
+  .cvp-class-row:last-child { border-bottom: none; }
+  .cvp-class-row:hover { background: #FAFBFF; }
+  .cvp-class-name {
+    min-width: 100px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+  }
+  .cvp-chips { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .cvp-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+  }
+  .cvp-chip-code {
+    font-size: 9px; font-weight: 700; opacity: 0.7;
+    padding: 1px 5px; border-radius: 10px; background: rgba(0,0,0,0.08);
+  }
+  .cvp-no-courses { font-size: 11px; color: #9CA3AF; font-style: italic; }
+  .cvp-period-content { animation: cvp-fade 0.2s ease; }
 
   @media (max-width: 640px) {
     .cvp-class-row { flex-direction: column; gap: 8px; }
     .cvp-class-name { min-width: unset; }
+    .cvp-date-card-body { flex-direction: column; }
+    .cvp-date-box { min-width: unset; width: 100%; }
   }
 `;
 
@@ -160,32 +193,6 @@ function Chip({ course, index }) {
   );
 }
 
-function VersionBadge({ version }) {
-  if (!version) return null;
-  const sc = STATUS_CONFIG[version.status] || STATUS_CONFIG.inactive;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-      <span style={{
-        display: "inline-flex", alignItems: "center", gap: "6px",
-        padding: "4px 12px", borderRadius: "20px",
-        backgroundColor: "#0D47A1", color: "#fff",
-        fontSize: "12px", fontWeight: "700",
-      }}>
-        Version {version.versionNumber}
-      </span>
-      <span style={{
-        display: "inline-flex", alignItems: "center", gap: "5px",
-        padding: "4px 11px", borderRadius: "20px",
-        backgroundColor: sc.bg, color: sc.color,
-        border: `1px solid ${sc.border}`,
-        fontSize: "11px", fontWeight: "700",
-      }}>
-        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: sc.dot }} />
-        {sc.label}
-      </span>
-    </div>
-  );
-}
 
 /* ── Loading state ────────────────────────────────────────────────────── */
 
@@ -243,8 +250,15 @@ export default function CurriculumViewPage() {
   const classes          = curriculum.classes || [];
   const model            = curriculum.academicCycleModel || "terms";
   const fwColors         = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
-  const activeYear       = yearData?.current || null;
   const curriculumType   = curriculum.curriculumType || null;
+
+  // Resolve published academic year from new two-level API (groups → versions)
+  const publishedAYVersion = yearData?.publishedVersion || null;
+  const publishedAYGroup   = publishedAYVersion
+    ? (yearData?.groups || []).find((g) => g.versions?.some((v) => v.id === publishedAYVersion.id)) || null
+    : null;
+  const activeYearLabel    = publishedAYGroup?.label || curriculum.academicYear || null;
+  const activeYearPeriods  = publishedAYVersion?.periods || [];
 
   /* Stats derived from version content */
   const totalCourses = content.reduce(
@@ -257,7 +271,7 @@ export default function CurriculumViewPage() {
   const activePeriodData = content[safeIdx];
 
   /* Academic-year period tabs (used when no version exists yet) */
-  const yearPeriods  = activeYear?.periods || [];
+  const yearPeriods  = activeYearPeriods;
   const yearSafeIdx  = Math.min(activePeriod, Math.max(yearPeriods.length - 1, 0));
 
   return (
@@ -378,97 +392,96 @@ export default function CurriculumViewPage() {
         </div>
       </div>
 
-      {/* ── Version Content Section ───────────────────────────────────── */}
+      {/* ── Course Assignments Section ───────────────────────────────────── */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
 
         {/* Section header */}
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
-          {/* Year info strip — shows for full academic-year records AND for curricula
-              that only have an academicYear string (legacy / no record yet) */}
-          {(activeYear || curriculum.academicYear) && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", padding: "8px 12px", backgroundColor: "#F8FAFF", border: "1px solid #E8F0FE", borderRadius: "10px", flexWrap: "wrap" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0D47A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span style={{ fontSize: "12px", fontWeight: "700", color: "#0D47A1" }}>
-                {activeYear?.label || curriculum.academicYear}
-              </span>
-              {activeYear && (activeYear.startDate || activeYear.endDate) && (
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
-                  {fmtDate(activeYear.startDate)} – {fmtDate(activeYear.endDate)}
-                </span>
-              )}
-              {activeYear && (() => {
-                const sc = STATUS_CONFIG[activeYear.status] || STATUS_CONFIG.inactive;
-                return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 8px", borderRadius: "20px", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: "10px", fontWeight: "700" }}>
-                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: sc.dot }} />
-                    {sc.label}
-                  </span>
-                );
-              })()}
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Course Assignments</h2>
-              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                {current ? "Courses assigned per class for each period" : "No version created yet"}
-              </p>
-            </div>
-            {current && <VersionBadge version={current} />}
-          </div>
+        <div style={{ padding: "16px 20px 0", borderBottom: "1px solid #F3F4F6" }}>
+          <h2 style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Course Assignments</h2>
+          <p style={{ margin: "0 0 14px", fontSize: "11px", color: "#9CA3AF" }}>
+            {current ? "Courses assigned per class — select a period to see dates" : "No version created yet"}
+          </p>
+          {/* Metadata row — labeled stat columns */}
+          {(activeYearLabel || current) && (() => {
+            const sc = current ? (STATUS_CONFIG[current.status] || STATUS_CONFIG.inactive) : null;
+            return (
+              <div style={{ display: "flex", gap: "0", borderTop: "1px solid #F3F4F6", marginInline: "-20px" }}>
+                {activeYearLabel && (
+                  <div style={{ flex: "1 1 auto", padding: "10px 20px", borderRight: "1px solid #F3F4F6" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>Academic Year</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>{activeYearLabel}</span>
+                    </div>
+                  </div>
+                )}
+                {current && (
+                  <div style={{ padding: "10px 20px", borderRight: "1px solid #F3F4F6", flexShrink: 0 }}>
+                    <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>Version</div>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#0D47A1" }}>v{current.versionNumber}</span>
+                  </div>
+                )}
+                {current && sc && (
+                  <div style={{ padding: "10px 20px", flexShrink: 0 }}>
+                    <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>Status</div>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 10px", borderRadius: "20px", backgroundColor: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`, fontSize: "12px", fontWeight: "700" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: sc.dot, flexShrink: 0 }} />
+                      {sc.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {!current ? (
-          /* ── No version state ──────────────────────────────────────────
-             If academic year is configured, show its period tabs so the
-             user can click a term and see the dates right away. */
           yearPeriods.length > 0 ? (
+            /* ── Academic year periods visible but no course version yet ── */
             <>
               <div className="cvp-period-tabs">
-                {yearPeriods.map((p, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`cvp-tab${yearSafeIdx === i ? " active" : ""}`}
-                    onClick={() => setActivePeriod(i)}
-                  >
-                    {p.name}
-                  </button>
-                ))}
+                {yearPeriods.map((p, i) => {
+                  const hasDate = p.startDate || p.endDate;
+                  const shortDate = hasDate
+                    ? `${new Date(p.startDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${new Date(p.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`
+                    : null;
+                  return (
+                    <button key={i} type="button" className={`cvp-tab${yearSafeIdx === i ? " active" : ""}`} onClick={() => setActivePeriod(i)}>
+                      <span className="cvp-tab-name">{p.name}</span>
+                      {shortDate && <span className="cvp-tab-dates">{shortDate}</span>}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="cvp-period-content" style={{ padding: "4px 20px 20px" }}>
-                {/* Term date strip for the selected academic-year period */}
-                {(() => {
-                  const sel = yearPeriods[yearSafeIdx];
-                  if (!sel || (!sel.startDate && !sel.endDate)) return null;
-                  return (
-                    <div style={{ margin: "12px 0 16px", padding: "10px 14px", backgroundColor: "#F0F7FF", border: "1.5px solid #DBEAFE", borderRadius: "10px", display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "10px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Dates</span>
-                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1D4ED8" }}>
-                          {fmtDate(sel.startDate)} → {fmtDate(sel.endDate)}
-                        </span>
-                      </div>
-                      {(sel.breakStartDate || sel.breakEndDate) && (
-                        <>
-                          <div style={{ width: "1px", height: "14px", backgroundColor: "#BFDBFE", flexShrink: 0 }} />
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <span style={{ fontSize: "10px", fontWeight: "700", color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Mid-term Break</span>
-                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#92400E" }}>
-                              {fmtDate(sel.breakStartDate)} → {fmtDate(sel.breakEndDate)}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
+              {/* Date pills for selected period */}
+              {(() => {
+                const sel = yearPeriods[yearSafeIdx];
+                if (!sel) return null;
+                const hasDates = sel.startDate || sel.endDate;
+                const hasBreak = sel.breakStartDate || sel.breakEndDate;
+                return (
+                  <div className="cvp-date-pills">
+                    {hasDates ? (
+                      <span className="cvp-date-pill cvp-date-pill-term">
+                        📅 {fmtDate(sel.startDate)} → {fmtDate(sel.endDate)}
+                      </span>
+                    ) : (
+                      <span className="cvp-date-pill cvp-date-pill-none">No dates set — configure in Academic Year</span>
+                    )}
+                    {hasBreak && (
+                      <span className="cvp-date-pill cvp-date-pill-break">
+                        ☕ Break: {fmtDate(sel.breakStartDate)} → {fmtDate(sel.breakEndDate)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
 
-                {/* No-courses prompt */}
-                <div style={{ padding: "24px", textAlign: "center", backgroundColor: "#FAFAFA", borderRadius: "12px", border: "1.5px dashed #E5E7EB" }}>
+              <div style={{ padding: "16px 20px" }}>
+                <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#FAFAFA", borderRadius: "12px", border: "1.5px dashed #E5E7EB" }}>
                   <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#6B7280", lineHeight: "1.5" }}>
                     No course assignments yet. Go to Version Control to assign courses to each class per term.
                   </p>
@@ -480,13 +493,11 @@ export default function CurriculumViewPage() {
               </div>
             </>
           ) : (
-            /* No academic year configured yet */
+            /* No academic year configured */
             <div style={{ padding: "48px 24px", textAlign: "center" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>
-                🗂
-              </div>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>🗂</div>
               <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
-              <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginLeft: "auto", marginRight: "auto" }}>
+              <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginInline: "auto" }}>
                 Go to Version Control to assign courses to each class per period, then save as a version.
               </p>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
@@ -501,70 +512,84 @@ export default function CurriculumViewPage() {
           </div>
         ) : (
           <>
-            {/* Period tabs */}
+            {/* Period tabs — show date hint under each tab name */}
             <div className="cvp-period-tabs">
-              {content.map((p, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`cvp-tab${safeIdx === i ? " active" : ""}`}
-                  onClick={() => setActivePeriod(i)}
-                >
-                  {p.periodName}
-                </button>
-              ))}
+              {content.map((p, i) => {
+                const pDates  = resolvePeriodDates(p.periodName, { periods: activeYearPeriods }, periods);
+                const hasDate = pDates?.startDate || pDates?.endDate;
+                const shortDate = hasDate
+                  ? `${new Date(pDates.startDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${new Date(pDates.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`
+                  : null;
+                return (
+                  <button key={i} type="button" className={`cvp-tab${safeIdx === i ? " active" : ""}`} onClick={() => setActivePeriod(i)}>
+                    <span className="cvp-tab-name">{p.periodName}</span>
+                    {shortDate && <span className="cvp-tab-dates">{shortDate}</span>}
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Date pills for the active period */}
+            {activePeriodData && (() => {
+              const pDates  = resolvePeriodDates(activePeriodData.periodName, { periods: activeYearPeriods }, periods);
+              const hasDates = pDates?.startDate || pDates?.endDate;
+              const hasBreak = pDates?.breakStartDate || pDates?.breakEndDate;
+              return (
+                <div className="cvp-date-pills">
+                  {hasDates ? (
+                    <span className="cvp-date-pill cvp-date-pill-term">
+                      📅 {fmtDate(pDates.startDate)} → {fmtDate(pDates.endDate)}
+                    </span>
+                  ) : (
+                    <span className="cvp-date-pill cvp-date-pill-none">No dates — set in Academic Year → Period Dates</span>
+                  )}
+                  {hasBreak && (
+                    <span className="cvp-date-pill cvp-date-pill-break">
+                      ☕ Break: {fmtDate(pDates.breakStartDate)} → {fmtDate(pDates.breakEndDate)}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Class / course content */}
             {activePeriodData && (
-              <div className="cvp-period-content" style={{ padding: "4px 20px 20px" }}>
-                {/* Term date strip — shown when this period has dates configured.
-                    Falls back to curriculum.periods for curricula without an academic-year record. */}
-                {(() => {
-                  const pDates = resolvePeriodDates(activePeriodData?.periodName, activeYear, periods);
-                  if (!pDates || (!pDates.startDate && !pDates.endDate)) return null;
-                  return (
-                    <div style={{ margin: "12px 0 16px", padding: "10px 14px", backgroundColor: "#F0F7FF", border: "1.5px solid #DBEAFE", borderRadius: "10px", display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "10px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Dates</span>
-                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#1D4ED8" }}>
-                          {fmtDate(pDates.startDate)} → {fmtDate(pDates.endDate)}
-                        </span>
-                      </div>
-                      {(pDates.breakStartDate || pDates.breakEndDate) && (
-                        <>
-                          <div style={{ width: "1px", height: "14px", backgroundColor: "#BFDBFE", flexShrink: 0 }} />
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <span style={{ fontSize: "10px", fontWeight: "700", color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Mid-term Break</span>
-                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#92400E" }}>
-                              {fmtDate(pDates.breakStartDate)} → {fmtDate(pDates.breakEndDate)}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-
+              <div className="cvp-period-content">
                 {(activePeriodData.classes || []).length === 0 ? (
-                  <div style={{ padding: "32px", textAlign: "center" }}>
+                  <div style={{ padding: "24px", textAlign: "center" }}>
                     <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No classes for this period.</p>
                   </div>
                 ) : (
-                  (activePeriodData.classes || []).map((cls) => (
-                    <div key={cls.className} className="cvp-class-row">
-                      <span className="cvp-class-name">{cls.className}</span>
-                      <div className="cvp-chips">
-                        {(cls.courses || []).length === 0 ? (
-                          <span className="cvp-no-courses">No courses assigned</span>
-                        ) : (
-                          (cls.courses || []).map((course, ci) => (
-                            <Chip key={course.id} course={course} index={ci} />
-                          ))
-                        )}
-                      </div>
+                  <>
+                    {/* column headers */}
+                    <div style={{ display: "flex", gap: "10px", padding: "6px 20px", backgroundColor: "#F9FAFB", borderBottom: "1px solid #F3F4F6" }}>
+                      <span style={{ minWidth: "100px", flexShrink: 0, fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Class</span>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Courses</span>
                     </div>
-                  ))
+                    <div className="cvp-class-list">
+                      {(activePeriodData.classes || []).map((cls) => (
+                        <div key={cls.className} className="cvp-class-row">
+                          <span className="cvp-class-name">{cls.className}</span>
+                          <div className="cvp-chips">
+                            {(cls.courses || []).length === 0 ? (
+                              <span className="cvp-no-courses">No courses assigned</span>
+                            ) : (
+                              (cls.courses || []).map((course, ci) => (
+                                <Chip key={course.id} course={course} index={ci} />
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {(activePeriodData.classes || []).length > 4 && (
+                      <div style={{ padding: "6px 20px", borderTop: "1px solid #F3F4F6", textAlign: "right" }}>
+                        <span style={{ fontSize: "10px", color: "#9CA3AF" }}>
+                          {activePeriodData.classes.length} classes · scroll to see all
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

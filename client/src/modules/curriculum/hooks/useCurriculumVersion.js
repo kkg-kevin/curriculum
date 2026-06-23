@@ -9,6 +9,7 @@ export function useCurriculumVersions(curriculumId) {
     queryKey: KEYS.all(curriculumId),
     queryFn:  () => curriculumVersionApi.getAll(curriculumId),
     enabled:  !!curriculumId,
+    staleTime: 0,
   });
 }
 
