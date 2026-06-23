@@ -892,23 +892,23 @@
     "academicCycleModel": "semesters",
     "periods": [
       {
-        "name": "Fall Semester ",
-        "startDate": "2026-08-01",
-        "endDate": "2026-12-31",
-        "midTermBreakStartDate": "2026-11-01",
-        "midTermBreakEndDate": "2026-11-07"
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
       },
       {
-        "name": "Spring Semester ",
-        "startDate": "2027-01-01",
-        "endDate": "2027-03-31",
-        "midTermBreakStartDate": "2027-02-01",
-        "midTermBreakEndDate": "2027-02-10"
+        "name": "Semester 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
       }
     ],
     "id": "f28b472f-6224-4c4b-bb03-e08e7de27bd9",
     "createdAt": "2026-06-19T06:48:35.377Z",
-    "updatedAt": "2026-06-20T10:40:34.043Z",
+    "updatedAt": "2026-06-22T14:22:27.646Z",
     "structure": [
       {
         "grades": [
@@ -1162,22 +1162,134 @@
     "status": "draft",
     "educationLevel": "",
     "gradeFrom": "",
-    "gradeTo": ""
+    "gradeTo": "",
+    "classes": [
+      "Grade 1",
+      "Grade 2",
+      "Grade 3",
+      "Grade 4",
+      "Grade 5",
+      "Grade 6",
+      "Grade 7",
+      "Grade 8",
+      "Grade 9",
+      "Grade 10",
+      "Grade 11",
+      "Grade 12"
+    ]
   },
   {
-    "name": "Digifunzi Plus",
-    "code": "DP",
-    "academicYear": "2026",
-    "description": "Test",
+    "name": "The Competency-Based Curriculum",
+    "code": "CBC",
+    "academicYear": "",
+    "description": "A Complete Blood Count (CBC) is a common blood test that measures the types and numbers of cells in your blood, including red blood cells, white blood cells, and platelets. It is used to diagnose infections, detect conditions like anemia, monitor overall health, and evaluate how your body responds to treatments",
     "status": "draft",
     "educationLevel": "",
     "gradeFrom": "",
     "gradeTo": "",
-    "framework": "",
+    "framework": "CBC",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Year 1",
+      "Year 2"
+    ],
+    "id": "a9670db7-43d9-40ba-b338-ca8a3b6d3910",
+    "createdAt": "2026-06-22T14:10:09.576Z",
+    "updatedAt": "2026-06-22T14:13:40.978Z"
+  },
+  {
+    "name": "American Curriculum ",
+    "code": "AC",
+    "academicYear": "",
+    "description": "American curriculum for year 2025",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "American",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Grade 1",
+      "Grade 2"
+    ],
+    "id": "d48b1ddb-e70d-4e10-b5c3-060a0ac992cf",
+    "createdAt": "2026-06-22T14:23:31.437Z",
+    "updatedAt": "2026-06-22T14:23:52.458Z"
+  },
+  {
+    "name": "Digifunzi 2",
+    "code": "D2",
+    "academicYear": "",
+    "description": "tfyghkjkm",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "CBC",
     "academicCycleModel": "terms",
-    "periods": [],
-    "id": "6975c855-5084-4d86-b6f3-60c2e611f95e",
-    "createdAt": "2026-06-22T11:00:38.693Z",
-    "updatedAt": "2026-06-22T11:01:19.494Z"
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 3",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "PP2",
+      "Grade 1",
+      "Grade 2",
+      "Grade 3"
+    ],
+    "id": "18828253-3e22-41cc-92ee-13be76b326d8",
+    "createdAt": "2026-06-22T14:30:11.389Z",
+    "updatedAt": "2026-06-22T14:36:32.325Z"
   }
 ]

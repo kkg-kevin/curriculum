@@ -3,44 +3,37 @@ const { z } = require("zod");
 const periodSchema = z
   .object({
     name: z.string().min(1, "Period name is required"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().min(1, "End date is required"),
-    midTermBreakStartDate: z.string().default(""),
-    midTermBreakEndDate: z.string().default(""),
+    startDate: z.string().default(""),
+    endDate: z.string().default(""),
+    breakStartDate: z.string().default(""),
+    breakEndDate: z.string().default(""),
   })
   .superRefine((data, ctx) => {
     if (data.startDate && data.endDate && data.endDate <= data.startDate) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End date must be after start date",
-        path: ["endDate"],
-      });
+      ctx.addIssue({ code: "custom", message: "End date must be after start date", path: ["endDate"] });
     }
 
-    const hasBreakStart = !!data.midTermBreakStartDate;
-    const hasBreakEnd = !!data.midTermBreakEndDate;
+    const hasBreakStart = !!data.breakStartDate;
+    const hasBreakEnd   = !!data.breakEndDate;
 
     if (hasBreakStart && !hasBreakEnd) {
-      ctx.addIssue({ code: "custom", message: "Break end date is required", path: ["midTermBreakEndDate"] });
+      ctx.addIssue({ code: "custom", message: "Break end date is required", path: ["breakEndDate"] });
     }
     if (!hasBreakStart && hasBreakEnd) {
-      ctx.addIssue({ code: "custom", message: "Break start date is required", path: ["midTermBreakStartDate"] });
+      ctx.addIssue({ code: "custom", message: "Break start date is required", path: ["breakStartDate"] });
     }
     if (hasBreakStart && hasBreakEnd) {
-      if (data.midTermBreakEndDate <= data.midTermBreakStartDate) {
-        ctx.addIssue({ code: "custom", message: "Break end must be after break start", path: ["midTermBreakEndDate"] });
+      if (data.breakEndDate <= data.breakStartDate) {
+        ctx.addIssue({ code: "custom", message: "Break end must be after break start", path: ["breakEndDate"] });
       }
-      if (data.startDate && data.midTermBreakStartDate < data.startDate) {
-        ctx.addIssue({ code: "custom", message: "Break must start within the period", path: ["midTermBreakStartDate"] });
+      if (data.startDate && data.breakStartDate < data.startDate) {
+        ctx.addIssue({ code: "custom", message: "Break must start within the period", path: ["breakStartDate"] });
       }
-      if (data.endDate && data.midTermBreakEndDate > data.endDate) {
-        ctx.addIssue({ code: "custom", message: "Break must end before period ends", path: ["midTermBreakEndDate"] });
+      if (data.endDate && data.breakEndDate > data.endDate) {
+        ctx.addIssue({ code: "custom", message: "Break must end before period ends", path: ["breakEndDate"] });
       }
     }
   });
-
-const FRAMEWORKS = ["CBC", "IGCSE", "IB", "National", "Cambridge", "Custom"];
-const CYCLE_MODELS = ["terms", "semesters", "custom"];
 
 const createCurriculumSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
@@ -58,6 +51,7 @@ const createCurriculumSchema = z.object({
   framework: z.string().optional().default(""),
   academicCycleModel: z.string().optional().default("terms"),
   periods: z.array(periodSchema).optional().default([]),
+  classes: z.array(z.string()).optional().default([]),
 });
 
 const updateCurriculumSchema = z.object({
@@ -77,6 +71,7 @@ const updateCurriculumSchema = z.object({
   framework: z.string().optional(),
   academicCycleModel: z.string().optional(),
   periods: z.array(periodSchema).optional(),
+  classes: z.array(z.string()).optional(),
 });
 
 module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema };

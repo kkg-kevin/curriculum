@@ -1,42 +1,28 @@
 const asyncHandler = require("express-async-handler");
 const CurriculumVersionService = require("./curriculum-versions.service");
+const CurriculumModel = require("./curriculum.model");
 
-const getAllVersions = asyncHandler(async (req, res) => {
-  const versions = await CurriculumVersionService.getAllVersions(req.params.id);
-  res.json({ success: true, data: versions, count: versions.length });
-});
-
-const getVersionById = asyncHandler(async (req, res) => {
-  const version = await CurriculumVersionService.getVersionById(
-    req.params.id,
-    req.params.vId
-  );
-  res.json({ success: true, data: version });
-});
-
-const createVersion = asyncHandler(async (req, res) => {
-  const { versionLabel, changeNotes } = req.body;
-  const version = await CurriculumVersionService.createVersion(req.params.id, {
-    versionLabel,
-    changeNotes,
-  });
-  res.status(201).json({ success: true, data: version });
-});
-
-const publishVersion = asyncHandler(async (req, res) => {
-  const version = await CurriculumVersionService.publishVersion(
-    req.params.id,
-    req.params.vId
-  );
-  res.json({ success: true, data: version });
-});
-
-const revertVersion = asyncHandler(async (req, res) => {
-  const result = await CurriculumVersionService.revertVersion(
-    req.params.id,
-    req.params.vId
-  );
+const getVersions = asyncHandler(async (req, res) => {
+  const result = CurriculumVersionService.getAllForCurriculum(req.params.id);
   res.json({ success: true, data: result });
 });
 
-module.exports = { getAllVersions, getVersionById, createVersion, publishVersion, revertVersion };
+const createVersion = asyncHandler(async (req, res) => {
+  const curriculum = CurriculumModel.findById(req.params.id);
+  if (!curriculum) return res.status(404).json({ success: false, message: "Curriculum not found" });
+  const version = CurriculumVersionService.create(req.params.id, curriculum, req.body);
+  res.status(201).json({ success: true, data: version });
+});
+
+const editVersion = asyncHandler(async (req, res) => {
+  const version = CurriculumVersionService.edit(req.params.id, req.params.vId, req.body);
+  res.json({ success: true, data: version });
+});
+
+const changeVersionStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  const version = CurriculumVersionService.changeStatus(req.params.id, req.params.vId, status);
+  res.json({ success: true, data: version });
+});
+
+module.exports = { getVersions, createVersion, editVersion, changeVersionStatus };

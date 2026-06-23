@@ -19,7 +19,6 @@ function EditCurriculumForm({ curriculum }) {
     resolver: zodResolver(curriculumDetailsSchema),
     defaultValues: {
       name: curriculum.name || "",
-      academicYear: curriculum.academicYear || "",
       code: curriculum.code || "",
       description: curriculum.description || "",
     },
@@ -108,7 +107,7 @@ function EditCurriculumForm({ curriculum }) {
             Edit Curriculum
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Update the curriculum name, code, year, and description
+            Update the curriculum name, code, and description
           </p>
         </div>
 

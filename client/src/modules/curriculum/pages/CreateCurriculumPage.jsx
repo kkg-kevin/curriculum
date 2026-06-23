@@ -8,12 +8,81 @@ import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
 import ConfirmDialog from "../components/ConfirmDialog";
 
-const DEFAULT_VALUES = {
-  name: "",
-  academicYear: "",
-  code: "",
-  description: "",
-};
+/* ── Step indicator ─────────────────────────────────────────────────────── */
+
+const STEPS = [
+  { n: 1, label: "Basic Info" },
+  { n: 2, label: "Structure" },
+  { n: 3, label: "Academic Year" },
+  { n: 4, label: "Version Control" },
+];
+
+function StepIndicator({ current }) {
+  return (
+    <div className="ccp-steps">
+      {STEPS.map((step, i) => {
+        const done = step.n < current;
+        const active = step.n === current;
+        return (
+          <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+              <div style={{
+                width: "34px", height: "34px", borderRadius: "50%",
+                backgroundColor: done || active ? "#0D47A1" : "#F3F4F6",
+                border: `2px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: done || active ? "#fff" : "#9CA3AF",
+                fontSize: done ? "15px" : "13px",
+                fontWeight: "700",
+                transition: "all 0.2s",
+                flexShrink: 0,
+              }}>
+                {done ? "✓" : step.n}
+              </div>
+              <span style={{
+                fontSize: "11px",
+                fontWeight: active ? "600" : "400",
+                color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF",
+                whiteSpace: "nowrap",
+              }}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className="ccp-connector" style={{
+                height: "2px",
+                backgroundColor: done ? "#0D47A1" : "#E5E7EB",
+                margin: "0 6px",
+                marginBottom: "20px",
+                flexShrink: 0,
+                transition: "background-color 0.2s",
+              }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+
+function Spinner() {
+  return (
+    <span style={{
+      width: "14px", height: "14px",
+      border: "2px solid rgba(255,255,255,0.4)",
+      borderTopColor: "#ffffff",
+      borderRadius: "50%",
+      display: "inline-block",
+      animation: "spin 0.7s linear infinite",
+    }} />
+  );
+}
+
+/* ── Page ───────────────────────────────────────────────────────────────── */
+
+const DEFAULT_VALUES = { name: "", code: "", description: "" };
 
 export default function CreateCurriculumPage() {
   const navigate = useNavigate();
@@ -26,10 +95,7 @@ export default function CreateCurriculumPage() {
     mode: "onTouched",
   });
 
-  const {
-    handleSubmit,
-    formState: { isDirty, isValid, errors },
-  } = methods;
+  const { handleSubmit, formState: { isDirty } } = methods;
 
   const onSubmit = (data) => {
     createCurriculum(data, {
@@ -38,41 +104,66 @@ export default function CreateCurriculumPage() {
   };
 
   const handleCancel = () => {
-    if (isDirty) {
-      setConfirmLeave(true);
-    } else {
-      navigate("/curriculum");
-    }
+    if (isDirty) setConfirmLeave(true);
+    else navigate("/curriculum");
   };
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .ccp-steps {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 32px;
+          flex-wrap: nowrap;
+        }
+        .ccp-connector { width: 60px; }
+
+        .ccp-layout {
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+        .ccp-form-col { flex: 1; min-width: 0; }
+        .ccp-preview-col {
+          flex: 1;
+          min-width: 0;
+          position: sticky;
+          top: 24px;
+          align-self: flex-start;
+          max-height: calc(100vh - 140px);
+          overflow-y: auto;
+          padding-right: 2px;
+        }
+
+        @media (max-width: 768px) {
+          .ccp-steps { justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
+          .ccp-connector { width: 40px; }
+          .ccp-layout { flex-direction: column; }
+          .ccp-form-col { order: 1; }
+          .ccp-preview-col {
+            order: 2;
+            position: static;
+            max-height: none;
+            width: 100%;
+          }
+        }
+      `}</style>
+
       {/* Page header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "24px",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
             <button
               type="button"
               onClick={handleCancel}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "0",
-                background: "none",
-                border: "none",
-                color: "#6B7280",
-                fontSize: "13px",
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                textDecoration: "none",
+                display: "flex", alignItems: "center", gap: "4px",
+                padding: "0", background: "none", border: "none",
+                color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer",
               }}
             >
               ← Curriculum
@@ -80,34 +171,25 @@ export default function CreateCurriculumPage() {
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>
-            Create Curriculum
-          </h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Create Curriculum</h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Enter the basic details — you'll configure settings and periods on the next page
+            Enter basic details — you'll configure structure and academic periods in the next steps.
           </p>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
           <button
             type="button"
             onClick={handleCancel}
             style={{
               padding: "10px 20px",
-              backgroundColor: "transparent",
-              color: "#374151",
-              border: "1.5px solid #E5E7EB",
-              borderRadius: "10px",
-              fontSize: "14px",
-              fontWeight: "600",
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
+              backgroundColor: "transparent", color: "#374151",
+              border: "1.5px solid #E5E7EB", borderRadius: "10px",
+              fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer",
             }}
           >
             Cancel
           </button>
-
           <button
             type="submit"
             form="create-curriculum-form"
@@ -115,76 +197,29 @@ export default function CreateCurriculumPage() {
             style={{
               padding: "10px 24px",
               backgroundColor: isPending ? "#93C5FD" : "#0D47A1",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "10px",
-              fontSize: "14px",
-              fontWeight: "600",
-              fontFamily: "Inter, sans-serif",
+              color: "#ffffff", border: "none", borderRadius: "10px",
+              fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif",
               cursor: isPending ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
+              display: "flex", alignItems: "center", gap: "8px",
               transition: "background-color 0.15s",
             }}
           >
-            {isPending ? (
-              <>
-                <span
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    border: "2px solid rgba(255,255,255,0.4)",
-                    borderTopColor: "#ffffff",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    animation: "spin 0.7s linear infinite",
-                  }}
-                />
-                Creating...
-              </>
-            ) : (
-              "Next: Structure →"
-            )}
+            {isPending ? <><Spinner /> Creating…</> : "Next: Structure →"}
           </button>
         </div>
       </div>
 
-      {/* Spinner keyframes injected once */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {/* Step indicator */}
+      <StepIndicator current={1} />
 
-      {/* 2-column layout */}
+      {/* Two-column layout */}
       <FormProvider {...methods}>
-        <form
-          id="create-curriculum-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          <div
-            style={{
-              display: "flex",
-              gap: "24px",
-              alignItems: "flex-start",
-            }}
-          >
-            {/* Left column — Form */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+        <form id="create-curriculum-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="ccp-layout">
+            <div className="ccp-form-col">
               <CurriculumForm />
             </div>
-
-            {/* Right column — Live Preview */}
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-                position: "sticky",
-                top: "24px",
-                alignSelf: "flex-start",
-                maxHeight: "calc(100vh - 140px)",
-                overflowY: "auto",
-                paddingRight: "2px",
-              }}
-            >
+            <div className="ccp-preview-col">
               <CurriculumPreview />
             </div>
           </div>

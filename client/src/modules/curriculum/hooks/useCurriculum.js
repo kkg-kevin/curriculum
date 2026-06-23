@@ -67,18 +67,3 @@ export function useUpdateCurriculum() {
     },
   });
 }
-
-export function useUpdateStructure() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, structure }) => curriculumApi.updateStructure(id, structure),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
-      if (data?.id) queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(data.id) });
-      toast.success("Structure saved!");
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to save structure");
-    },
-  });
-}
