@@ -17,6 +17,13 @@ export function useClassesQuery() {
   });
 }
 
+export function useAllClassesQuery() {
+  return useQuery({
+    queryKey: ["classes", "all"],
+    queryFn:  () => classApi.getAll({}),
+  });
+}
+
 export function useClassQuery(id) {
   return useQuery({
     queryKey: CLASS_KEYS.detail(id),

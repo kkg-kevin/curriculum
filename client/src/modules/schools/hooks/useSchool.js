@@ -53,9 +53,6 @@ export function useUpdateSchool() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: SCHOOL_KEYS.all });
       if (data?.id) queryClient.invalidateQueries({ queryKey: SCHOOL_KEYS.detail(data.id) });
-      // Curriculum may have changed — flush supplementary cache for this school
-      queryClient.invalidateQueries({ queryKey: ["supplementary", "bySchool", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["supplementary"] });
       toast.success("School updated successfully!");
     },
     onError: (err) => {

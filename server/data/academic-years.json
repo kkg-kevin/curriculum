@@ -331,5 +331,115 @@
     "isCurrent": true,
     "createdAt": "2026-06-23T07:54:43.413Z",
     "updatedAt": "2026-06-23T07:54:43.413Z"
+  },
+  {
+    "id": "47796c6f-6d5c-4189-912c-4bd4117bf0d9",
+    "curriculumId": "8d772904-221f-464b-910b-2bf025176f9b",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "status": "active",
+    "periods": [
+      {
+        "name": "Term one ",
+        "startDate": "2026-02-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-03-01",
+        "breakEndDate": "2026-03-31"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T08:18:08.834Z",
+    "updatedAt": "2026-06-23T08:21:37.539Z"
+  },
+  {
+    "id": "0cb4b292-912f-4aef-b1cd-daab73f4accc",
+    "curriculumId": "7afd10e3-308c-4355-90a9-f5cb4fb4335b",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-30",
+    "status": "inactive",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-01-02",
+        "endDate": "2026-03-30",
+        "breakStartDate": "2026-02-02",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T08:32:26.978Z",
+    "updatedAt": "2026-06-23T08:34:22.498Z"
+  },
+  {
+    "id": "a448f4ab-8479-4bf3-9ab1-3a712cd94c38",
+    "curriculumId": "f79afba7-0c62-489b-b424-38161295d9ba",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-30",
+    "status": "active",
+    "periods": [
+      {
+        "name": "term one",
+        "startDate": "2026-01-02",
+        "endDate": "2026-03-30",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T08:38:17.995Z",
+    "updatedAt": "2026-06-23T08:38:30.043Z"
+  },
+  {
+    "id": "f56896ae-5f0f-4e8b-80ff-d4221b052d17",
+    "curriculumId": "05aa4781-9030-415a-829f-f54d61c5e2ca",
+    "label": "2025 Academic year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-30",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-01-02",
+        "endDate": "2026-03-30",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": false,
+    "createdAt": "2026-06-23T08:54:11.200Z",
+    "updatedAt": "2026-06-23T08:54:11.200Z"
+  },
+  {
+    "id": "cbdbbff5-0d0b-40e2-8d39-60cf3d8b38f4",
+    "curriculumId": "05aa4781-9030-415a-829f-f54d61c5e2ca",
+    "label": "",
+    "startDate": "",
+    "endDate": "",
+    "status": "draft",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "versionNumber": 1,
+    "versionOf": null,
+    "isCurrent": true,
+    "createdAt": "2026-06-23T08:56:55.712Z",
+    "updatedAt": "2026-06-23T08:56:55.712Z"
   }
 ]

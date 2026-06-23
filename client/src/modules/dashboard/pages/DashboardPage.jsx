@@ -3,6 +3,7 @@ import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
 import { useAllTeachersQuery } from "../../teachers/hooks/useTeacher";
+import { useAllClassesQuery } from "../../classes/hooks/useClasses";
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -149,7 +150,6 @@ function CurriculumRow({ curriculum, navigate }) {
         e.currentTarget.style.boxShadow = "none";
       }}
     >
-      {/* Framework badge */}
       <span
         style={{
           padding: "4px 10px",
@@ -166,7 +166,6 @@ function CurriculumRow({ curriculum, navigate }) {
         {curriculum.framework}
       </span>
 
-      {/* Name + year */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
@@ -182,11 +181,10 @@ function CurriculumRow({ curriculum, navigate }) {
           {curriculum.name}
         </p>
         <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-          {curriculum.academicYear} · {totalClasses} classes · {totalCourses} courses
+          {curriculum.academicYear} · {totalClasses} grades · {totalCourses} courses
         </p>
       </div>
 
-      {/* Progress bar + label */}
       <div style={{ width: "110px", flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
           <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "500" }}>Structure</span>
@@ -212,7 +210,6 @@ function CurriculumRow({ curriculum, navigate }) {
         </p>
       </div>
 
-      {/* View button */}
       <button
         type="button"
         onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
@@ -236,19 +233,70 @@ function CurriculumRow({ curriculum, navigate }) {
   );
 }
 
+/* ── Recent item row (schools / learners / teachers / classes) ────────── */
+
+function RecentRow({ avatar, primary, secondary, badge, badgeColor, badgeBg, badgeBorder, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "9px 12px",
+        borderRadius: "10px",
+        border: "1px solid #F3F4F6",
+        cursor: "pointer",
+        transition: "background-color 0.12s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          background: avatar.gradient,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: avatar.emoji ? 16 : 12,
+          fontWeight: 700,
+          color: "#fff",
+          flexShrink: 0,
+        }}
+      >
+        {avatar.emoji || avatar.initials}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {primary}
+        </p>
+        <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{secondary}</p>
+      </div>
+      {badge && (
+        <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: badgeBg, color: badgeColor, border: `1px solid ${badgeBorder}`, whiteSpace: "nowrap", flexShrink: 0 }}>
+          {badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /* ── Module setup tile ───────────────────────────────────────────────── */
 
 function ModuleTile({ icon, label, description, count, accentColor, path, navigate, isLive }) {
   return (
     <div
       style={{
-        padding: "16px",
+        padding: "14px",
         borderRadius: "12px",
         border: `1.5px solid ${isLive ? accentColor + "30" : "#E5E7EB"}`,
         backgroundColor: isLive ? accentColor + "06" : "#FAFAFA",
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
+        gap: "8px",
         cursor: "pointer",
         transition: "all 0.15s",
       }}
@@ -265,49 +313,31 @@ function ModuleTile({ icon, label, description, count, accentColor, path, naviga
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div
           style={{
-            width: "36px",
-            height: "36px",
+            width: "34px",
+            height: "34px",
             borderRadius: "10px",
             backgroundColor: accentColor + "18",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "18px",
+            fontSize: "16px",
           }}
         >
           {icon}
         </div>
         {isLive ? (
-          <span
-            style={{
-              padding: "2px 8px",
-              backgroundColor: accentColor + "18",
-              color: accentColor,
-              borderRadius: "20px",
-              fontSize: "11px",
-              fontWeight: "700",
-            }}
-          >
+          <span style={{ padding: "2px 8px", backgroundColor: accentColor + "18", color: accentColor, borderRadius: "20px", fontSize: "11px", fontWeight: "700" }}>
             {count}
           </span>
         ) : (
-          <span
-            style={{
-              padding: "2px 8px",
-              backgroundColor: "#F3F4F6",
-              color: "#9CA3AF",
-              borderRadius: "20px",
-              fontSize: "10px",
-              fontWeight: "600",
-            }}
-          >
-            Not set up
+          <span style={{ padding: "2px 8px", backgroundColor: "#F3F4F6", color: "#9CA3AF", borderRadius: "20px", fontSize: "10px", fontWeight: "600" }}>
+            Empty
           </span>
         )}
       </div>
       <div>
-        <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827" }}>{label}</p>
-        <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF", lineHeight: "1.4" }}>
+        <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#111827" }}>{label}</p>
+        <p style={{ margin: "2px 0 0", fontSize: "10px", color: "#9CA3AF", lineHeight: "1.4" }}>
           {description}
         </p>
       </div>
@@ -338,11 +368,11 @@ function QuickAction({ icon, label, description, onClick, primary }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = primary ? "#0A3880" : "#F8FAFF";
-        e.currentTarget.style.borderColor = primary ? "none" : "#BFDBFE";
+        if (!primary) e.currentTarget.style.borderColor = "#BFDBFE";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = primary ? "#0D47A1" : "#fff";
-        e.currentTarget.style.borderColor = primary ? "none" : "#E5E7EB";
+        if (!primary) e.currentTarget.style.borderColor = "#E5E7EB";
       }}
     >
       <span
@@ -377,30 +407,43 @@ function QuickAction({ icon, label, description, onClick, primary }) {
 
 /* ── Main page ───────────────────────────────────────────────────────── */
 
+const STATUS_COLORS = {
+  active:      { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7" },
+  inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+  on_leave:    { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
+  transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
+  graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
+};
+
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { data, isLoading } = useCurriculaQuery();
-  const curricula = data?.data || [];
 
-  const { data: schoolsData, isLoading: schoolsLoading } = useAllSchoolsQuery();
-  const { data: learnersData, isLoading: learnersLoading } = useAllLearnersQuery();
-  const { data: teachersData, isLoading: teachersLoading } = useAllTeachersQuery();
+  const { data: curriculaData, isLoading: curriculaLoading } = useCurriculaQuery();
+  const { data: schoolsData,   isLoading: schoolsLoading }   = useAllSchoolsQuery();
+  const { data: learnersData,  isLoading: learnersLoading }  = useAllLearnersQuery();
+  const { data: teachersData,  isLoading: teachersLoading }  = useAllTeachersQuery();
+  const { data: classesData,   isLoading: classesLoading }   = useAllClassesQuery();
 
-  const schools  = schoolsData?.data  || [];
-  const learners = learnersData?.data  || [];
-  const teachers = teachersData?.data  || [];
+  const curricula = curriculaData?.data || [];
+  const schools   = schoolsData?.data   || [];
+  const learners  = learnersData?.data  || [];
+  const teachers  = teachersData?.data  || [];
+  const classes   = classesData?.data   || [];
 
+  /* ── Counts ── */
+  const totalCurricula = curricula.length;
   const totalSchools   = schools.length;
   const totalLearners  = learners.length;
   const totalTeachers  = teachers.length;
+  const totalClasses   = classes.length;
 
   const activeSchools  = schools.filter((s) => s.status === "active").length;
   const activeLearners = learners.filter((l) => l.status === "active").length;
   const activeTeachers = teachers.filter((t) => t.status === "active").length;
+  const activeClasses  = classes.filter((c) => c.status === "active").length;
 
-  /* ── Derived curriculum stats ── */
-  const totalCurricula = curricula.length;
-  const totalClasses = curricula.reduce(
+  /* ── Curriculum-derived stats ── */
+  const totalGrades = curricula.reduce(
     (s, c) => s + (c.structure?.reduce((ts, t) => ts + (t.grades?.length || 0), 0) || 0),
     0
   );
@@ -411,10 +454,12 @@ export default function DashboardPage() {
   );
   const frameworks = [...new Set(curricula.map((c) => c.framework).filter(Boolean))];
 
-  /* ── Recent curricula (up to 5, most recently updated) ── */
-  const recentCurricula = [...curricula]
-    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
-    .slice(0, 5);
+  /* ── Recent items (last 4, sorted by creation date) ── */
+  const recentSchools  = [...schools].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4);
+  const recentLearners = [...learners].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4);
+  const recentCurricula = [...curricula].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)).slice(0, 5);
+
+  const isLoading = curriculaLoading;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -430,7 +475,6 @@ export default function DashboardPage() {
           overflow: "hidden",
         }}
       >
-        {/* Decorative circles */}
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: "-20px", right: "140px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: "20px", right: "260px", width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
@@ -445,7 +489,7 @@ export default function DashboardPage() {
             </h1>
             <p style={{ margin: 0, fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.5" }}>
               {totalCurricula > 0
-                ? `You have ${totalCurricula} ${totalCurricula === 1 ? "curriculum" : "curricula"} across ${frameworks.length} ${frameworks.length === 1 ? "framework" : "frameworks"}.`
+                ? `${totalCurricula} ${totalCurricula === 1 ? "curriculum" : "curricula"} · ${totalSchools} ${totalSchools === 1 ? "school" : "schools"} · ${totalLearners} ${totalLearners === 1 ? "learner" : "learners"} enrolled`
                 : "Welcome to Digifunzi. Start by creating your first curriculum."}
             </p>
           </div>
@@ -474,7 +518,7 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/schools")}
+              onClick={() => navigate("/schools/create")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -497,40 +541,42 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: "14px", marginBottom: "24px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
         <StatCard
           icon="📋"
           label="Curricula"
-          value={isLoading ? "—" : totalCurricula}
-          sub={frameworks.length > 0 ? `${frameworks.join(", ")}` : "No frameworks yet"}
+          value={curriculaLoading ? "—" : totalCurricula}
+          sub={frameworks.length > 0 ? frameworks.join(", ") : "No frameworks yet"}
           accent="#0D47A1"
           actionLabel="View all"
           onAction={() => navigate("/curriculum")}
-          loading={isLoading}
+          loading={curriculaLoading}
         />
         <StatCard
           icon="🏫"
           label="Schools"
           value={schoolsLoading ? "—" : totalSchools}
-          sub={
-            schoolsLoading ? null
-            : totalSchools === 0 ? "No schools added yet"
-            : `${activeSchools} active`
-          }
+          sub={schoolsLoading ? null : totalSchools === 0 ? "None added yet" : `${activeSchools} active`}
           accent="#0369A1"
           actionLabel={totalSchools === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/schools")}
           loading={schoolsLoading}
         />
         <StatCard
+          icon="🏛️"
+          label="Classes"
+          value={classesLoading ? "—" : totalClasses}
+          sub={classesLoading ? null : totalClasses === 0 ? "No classes yet" : `${activeClasses} active`}
+          accent="#7C3AED"
+          actionLabel={totalClasses === 0 ? "Get started" : "View all"}
+          onAction={() => navigate("/classes")}
+          loading={classesLoading}
+        />
+        <StatCard
           icon="🎓"
           label="Learners"
           value={learnersLoading ? "—" : totalLearners}
-          sub={
-            learnersLoading ? null
-            : totalLearners === 0 ? "Enrol learners to begin"
-            : `${activeLearners} active`
-          }
+          sub={learnersLoading ? null : totalLearners === 0 ? "Enrol learners to begin" : `${activeLearners} active`}
           accent="#1E40AF"
           actionLabel={totalLearners === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/learners")}
@@ -540,11 +586,7 @@ export default function DashboardPage() {
           icon="👩‍🏫"
           label="Teachers"
           value={teachersLoading ? "—" : totalTeachers}
-          sub={
-            teachersLoading ? null
-            : totalTeachers === 0 ? "Add teachers to classes"
-            : `${activeTeachers} active`
-          }
+          sub={teachersLoading ? null : totalTeachers === 0 ? "Add teachers to classes" : `${activeTeachers} active`}
           accent="#0F766E"
           actionLabel={totalTeachers === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/teachers")}
@@ -553,151 +595,181 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main content: two columns ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px, 340px)", gap: "20px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px, 320px)", gap: "20px", alignItems: "start" }}>
 
-        {/* ── LEFT: Curriculum health ──────────────────────────────────── */}
-        <div
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: "16px",
-            border: "1.5px solid #E5E7EB",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header */}
+        {/* ── LEFT column ──────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+          {/* Curriculum overview */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "18px 20px 14px",
-              borderBottom: "1px solid #F3F4F6",
+              backgroundColor: "#fff",
+              borderRadius: "16px",
+              border: "1.5px solid #E5E7EB",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              overflow: "hidden",
             }}
           >
-            <div>
-              <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#111827" }}>
-                Curriculum Overview
-              </h2>
-              <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-                Structure completion across your curricula
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/curriculum")}
+            <div
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                gap: "4px",
-                padding: "6px 12px",
-                backgroundColor: "#EFF6FF",
-                color: "#1D4ED8",
-                border: "1px solid #BFDBFE",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                flexShrink: 0,
+                justifyContent: "space-between",
+                padding: "18px 20px 14px",
+                borderBottom: "1px solid #F3F4F6",
               }}
             >
-              View all
-            </button>
-          </div>
-
-          {/* Curriculum rows */}
-          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {isLoading ? (
-              [1, 2, 3].map((n) => (
-                <div key={n} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "12px", border: "1px solid #F0F4F8" }}>
-                  <Sk w="52px" h="24px" r="6px" />
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <Sk w="55%" h="13px" r="4px" />
-                    <Sk w="35%" h="10px" r="4px" />
-                  </div>
-                  <Sk w="110px" h="36px" r="8px" />
-                  <Sk w="52px" h="28px" r="8px" />
-                </div>
-              ))
-            ) : recentCurricula.length === 0 ? (
-              <div
+              <div>
+                <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#111827" }}>
+                  Curriculum Overview
+                </h2>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+                  Structure completion across your curricula
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/curriculum")}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "40px 20px",
-                  textAlign: "center",
+                  padding: "6px 12px",
+                  backgroundColor: "#EFF6FF",
+                  color: "#1D4ED8",
+                  border: "1px solid #BFDBFE",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  fontFamily: "Inter, sans-serif",
+                  cursor: "pointer",
                 }}
               >
-                <div
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "16px",
-                    background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "26px",
-                  }}
-                >
-                  📋
+                View all
+              </button>
+            </div>
+
+            <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              {isLoading ? (
+                [1, 2, 3].map((n) => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "12px", border: "1px solid #F0F4F8" }}>
+                    <Sk w="52px" h="24px" r="6px" />
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <Sk w="55%" h="13px" r="4px" />
+                      <Sk w="35%" h="10px" r="4px" />
+                    </div>
+                    <Sk w="110px" h="36px" r="8px" />
+                    <Sk w="52px" h="28px" r="8px" />
+                  </div>
+                ))
+              ) : recentCurricula.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "40px 20px", textAlign: "center" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>
+                    📋
+                  </div>
+                  <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#374151" }}>No curricula yet</p>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Create your first curriculum to see it here.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/curriculum/create")}
+                    style={{ marginTop: "4px", padding: "8px 18px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                  >
+                    + Create Curriculum
+                  </button>
                 </div>
-                <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#374151" }}>
-                  No curricula yet
-                </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  Create your first curriculum to see it here.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate("/curriculum/create")}
-                  style={{
-                    marginTop: "4px",
-                    padding: "8px 18px",
-                    backgroundColor: "#0D47A1",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    fontFamily: "Inter, sans-serif",
-                    cursor: "pointer",
-                  }}
-                >
-                  + Create Curriculum
-                </button>
+              ) : (
+                recentCurricula.map((c) => (
+                  <CurriculumRow key={c.id} curriculum={c} navigate={navigate} />
+                ))
+              )}
+            </div>
+
+            {!isLoading && totalCurricula > 0 && (
+              <div style={{ padding: "12px 20px", borderTop: "1px solid #F3F4F6", display: "flex", gap: "20px", backgroundColor: "#FAFBFF" }}>
+                {[
+                  { label: "Total Grades", value: totalGrades, color: "#1D4ED8" },
+                  { label: "Total Courses", value: totalCourses, color: "#0369A1" },
+                  { label: "Frameworks", value: frameworks.length, color: "#1E40AF" },
+                ].map((s) => (
+                  <div key={s.label} style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
+                    <span style={{ fontSize: "15px", fontWeight: "800", color: s.color }}>{s.value}</span>
+                    <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "500" }}>{s.label}</span>
+                  </div>
+                ))}
               </div>
-            ) : (
-              recentCurricula.map((c) => (
-                <CurriculumRow key={c.id} curriculum={c} navigate={navigate} />
-              ))
             )}
           </div>
 
-          {/* Summary footer */}
-          {!isLoading && totalCurricula > 0 && (
+          {/* Recent Schools */}
+          {recentSchools.length > 0 && (
             <div
               style={{
-                padding: "12px 20px",
-                borderTop: "1px solid #F3F4F6",
-                display: "flex",
-                gap: "20px",
-                backgroundColor: "#FAFBFF",
+                backgroundColor: "#fff",
+                borderRadius: "16px",
+                border: "1.5px solid #E5E7EB",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                overflow: "hidden",
               }}
             >
-              {[
-                { label: "Total Classes", value: totalClasses, color: "#1D4ED8" },
-                { label: "Total Courses", value: totalCourses, color: "#0369A1" },
-                { label: "Frameworks", value: frameworks.length, color: "#1E40AF" },
-              ].map((s) => (
-                <div key={s.label} style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
-                  <span style={{ fontSize: "15px", fontWeight: "800", color: s.color }}>{s.value}</span>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "500" }}>{s.label}</span>
-                </div>
-              ))}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Recent Schools</h2>
+                <button type="button" onClick={() => navigate("/schools")} style={{ background: "none", border: "none", fontSize: "12px", color: "#0369A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                  View all →
+                </button>
+              </div>
+              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                {recentSchools.map((s) => {
+                  const sc = STATUS_COLORS[s.status] || STATUS_COLORS.inactive;
+                  return (
+                    <RecentRow
+                      key={s.id}
+                      avatar={{ emoji: "🏫", gradient: "linear-gradient(135deg, #0369A1, #0D47A1)" }}
+                      primary={s.name}
+                      secondary={s.code + (s.address?.county ? ` · ${s.address.county}` : "")}
+                      badge={s.status}
+                      badgeColor={sc.color}
+                      badgeBg={sc.bg}
+                      badgeBorder={sc.border}
+                      onClick={() => navigate(`/schools/${s.id}/view`)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Learners */}
+          {recentLearners.length > 0 && (
+            <div
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: "16px",
+                border: "1.5px solid #E5E7EB",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Recent Learners</h2>
+                <button type="button" onClick={() => navigate("/learners")} style={{ background: "none", border: "none", fontSize: "12px", color: "#1E40AF", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                  View all →
+                </button>
+              </div>
+              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                {recentLearners.map((l) => {
+                  const sc = STATUS_COLORS[l.status] || STATUS_COLORS.inactive;
+                  return (
+                    <RecentRow
+                      key={l.id}
+                      avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), gradient: "linear-gradient(135deg, #831843, #BE185D)" }}
+                      primary={`${l.firstName} ${l.lastName}`}
+                      secondary={l.admissionNumber || l.id}
+                      badge={l.status}
+                      badgeColor={sc.color}
+                      badgeBg={sc.bg}
+                      badgeBorder={sc.border}
+                      onClick={() => navigate(`/learners/${l.id}/view`)}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -716,9 +788,7 @@ export default function DashboardPage() {
             }}
           >
             <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid #F3F4F6" }}>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-                Quick Actions
-              </h2>
+              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Quick Actions</h2>
             </div>
             <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
               <QuickAction
@@ -732,24 +802,30 @@ export default function DashboardPage() {
                 icon="🏫"
                 label="Add School"
                 description="Register a school to the system"
-                onClick={() => navigate("/schools")}
+                onClick={() => navigate("/schools/create")}
+              />
+              <QuickAction
+                icon="🏛️"
+                label="Create Class"
+                description="Open a new class for a school"
+                onClick={() => navigate("/classes/create")}
               />
               <QuickAction
                 icon="🎓"
                 label="Enrol Learner"
                 description="Add a new learner to a class"
-                onClick={() => navigate("/learners")}
+                onClick={() => navigate("/learners/create")}
               />
               <QuickAction
                 icon="👩‍🏫"
                 label="Add Teacher"
                 description="Register a teacher profile"
-                onClick={() => navigate("/teachers")}
+                onClick={() => navigate("/teachers/create")}
               />
             </div>
           </div>
 
-          {/* Module setup progress */}
+          {/* System setup */}
           <div
             style={{
               backgroundColor: "#fff",
@@ -760,9 +836,7 @@ export default function DashboardPage() {
             }}
           >
             <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid #F3F4F6" }}>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-                System Setup
-              </h2>
+              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>System Setup</h2>
               <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
                 Complete your setup to unlock all features
               </p>
@@ -771,7 +845,7 @@ export default function DashboardPage() {
               <ModuleTile
                 icon="📋"
                 label="Curriculum"
-                description="Academic framework and structure"
+                description="Framework & structure"
                 count={totalCurricula}
                 accentColor="#1D4ED8"
                 path="/curriculum"
@@ -781,7 +855,7 @@ export default function DashboardPage() {
               <ModuleTile
                 icon="🏫"
                 label="Schools"
-                description="Register and manage schools"
+                description="Manage schools"
                 count={totalSchools}
                 accentColor="#0369A1"
                 path="/schools"
@@ -789,9 +863,19 @@ export default function DashboardPage() {
                 isLive={totalSchools > 0}
               />
               <ModuleTile
+                icon="🏛️"
+                label="Classes"
+                description="School classes"
+                count={totalClasses}
+                accentColor="#7C3AED"
+                path="/classes"
+                navigate={navigate}
+                isLive={totalClasses > 0}
+              />
+              <ModuleTile
                 icon="🎓"
                 label="Learners"
-                description="Student profiles and enrolment"
+                description="Student enrolment"
                 count={totalLearners}
                 accentColor="#1E40AF"
                 path="/learners"
@@ -801,12 +885,22 @@ export default function DashboardPage() {
               <ModuleTile
                 icon="👩‍🏫"
                 label="Teachers"
-                description="Staff profiles and assignments"
+                description="Staff profiles"
                 count={totalTeachers}
                 accentColor="#0F766E"
                 path="/teachers"
                 navigate={navigate}
                 isLive={totalTeachers > 0}
+              />
+              <ModuleTile
+                icon="📊"
+                label="Assessments"
+                description="Coming soon"
+                count={0}
+                accentColor="#D97706"
+                path="/assessments"
+                navigate={navigate}
+                isLive={false}
               />
             </div>
           </div>

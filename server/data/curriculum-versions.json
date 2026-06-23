@@ -3067,5 +3067,181 @@
     ],
     "createdAt": "2026-06-23T07:54:55.955Z",
     "updatedAt": "2026-06-23T07:54:55.955Z"
+  },
+  {
+    "id": "48ae22d7-57a3-4971-815e-016a6551d407",
+    "curriculumId": "8d772904-221f-464b-910b-2bf025176f9b",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term one ",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782202733190-cxkv7riok",
+                "name": "Course 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782202738159-cdyhxmg6k",
+                "name": "Course 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782202741951-e2q0klhld",
+                "name": "Course 3",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T08:19:04.130Z",
+    "updatedAt": "2026-06-23T08:19:04.130Z"
+  },
+  {
+    "id": "d82033e6-e24b-43c5-abe7-029d4aec02ea",
+    "curriculumId": "7afd10e3-308c-4355-90a9-f5cb4fb4335b",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class 1",
+            "courses": [
+              {
+                "id": "1782203583914-y62m692qb",
+                "name": "course 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T08:33:07.588Z",
+    "updatedAt": "2026-06-23T08:33:07.588Z"
+  },
+  {
+    "id": "5ed5c5d2-5ab1-4977-9c23-20402e7a2057",
+    "curriculumId": "f79afba7-0c62-489b-b424-38161295d9ba",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "term one",
+        "classes": [
+          {
+            "className": "class one",
+            "courses": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T08:40:55.295Z",
+    "updatedAt": "2026-06-23T08:40:55.295Z"
+  },
+  {
+    "id": "14b37957-4051-4ab2-8e89-01610f8c86a7",
+    "curriculumId": "a1699174-3243-437f-8c04-a1ddc449375e",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class  one",
+            "courses": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T08:51:47.189Z",
+    "updatedAt": "2026-06-23T08:51:47.189Z"
+  },
+  {
+    "id": "fa5f7130-3235-4b0e-8236-999253a205be",
+    "curriculumId": "05aa4781-9030-415a-829f-f54d61c5e2ca",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "inactive",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class one",
+            "courses": [
+              {
+                "id": "1782204866963-72j29cuqv",
+                "name": "python",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T08:54:29.166Z",
+    "updatedAt": "2026-06-23T09:27:20.623Z"
+  },
+  {
+    "id": "e031df98-e734-4981-805a-7a952c685311",
+    "curriculumId": "05aa4781-9030-415a-829f-f54d61c5e2ca",
+    "academicYearId": "cbdbbff5-0d0b-40e2-8d39-60cf3d8b38f4",
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class one",
+            "courses": [
+              {
+                "id": "1782206838044-0g2ffta57",
+                "name": "course version new",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-23T09:27:20.639Z",
+    "updatedAt": "2026-06-23T09:27:20.639Z"
   }
 ]

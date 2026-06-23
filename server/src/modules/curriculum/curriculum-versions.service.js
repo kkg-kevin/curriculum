@@ -2,10 +2,22 @@ const CurriculumVersionModel = require("./curriculum-versions.model");
 
 function buildContentScaffold(curriculum) {
   const periods = curriculum.periods || [];
-  const classes = curriculum.classes || [];
+
+  // Collect unique grade names from curriculum.structure
+  const gradesMap = new Map();
+  (curriculum.structure || []).forEach((term) => {
+    (term.grades || []).forEach((g) => {
+      const key = g.id || g.name;
+      if (key && !gradesMap.has(key)) gradesMap.set(key, g.name || g);
+    });
+  });
+  let gradeNames = [...gradesMap.values()];
+  // Fall back to legacy curriculum.classes if structure has no grades
+  if (gradeNames.length === 0) gradeNames = curriculum.classes || [];
+
   return periods.map((p) => ({
     periodName: p.name,
-    classes: classes.map((cls) => ({ className: cls, courses: [] })),
+    classes: gradeNames.map((name) => ({ className: name, courses: [] })),
   }));
 }
 
@@ -21,7 +33,11 @@ const CurriculumVersionService = {
     const existing    = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
     const nextVersion = existing.length ? Math.max(...existing.map((v) => v.versionNumber)) + 1 : 1;
 
-    if (data.status === "active") CurriculumVersionModel.deactivateAllActive(curriculumId);
+    // Set the previous current version to inactive before archiving it
+    const previousCurrent = CurriculumVersionModel.findCurrent(curriculumId);
+    if (previousCurrent) {
+      CurriculumVersionModel.update(previousCurrent.id, { status: "inactive" });
+    }
     CurriculumVersionModel.setAllNotCurrent(curriculumId);
 
     const scaffold = buildContentScaffold(curriculum);
@@ -60,10 +76,9 @@ const CurriculumVersionService = {
   },
 
   changeStatus(curriculumId, versionId, status) {
-    if (!["active", "draft", "inactive"].includes(status)) {
+    if (!["draft", "inactive"].includes(status)) {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
-    if (status === "active") CurriculumVersionModel.deactivateAllActive(curriculumId);
     return CurriculumVersionModel.update(versionId, { status });
   },
 };

@@ -19,7 +19,6 @@ const STEPS = [
 
 const STATUSES = [
   { value: "draft",    label: "Draft",    bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
-  { value: "active",   label: "Active",   bg: "#ECFDF5", border: "#6EE7B7", color: "#065F46", dot: "#10B981" },
   { value: "inactive", label: "Inactive", bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
 ];
 
@@ -74,14 +73,13 @@ const CSS = `
 
   /* Status */
   .status-btn {
-    flex: 1; padding: 10px 8px; border-radius: 10px;
+    flex: 1; padding: 7px 8px; border-radius: 8px;
     border: 1.5px solid #E5E7EB; background: #fff;
-    font-size: 13px; font-weight: 600; font-family: Inter, sans-serif;
+    font-size: 12px; font-weight: 600; font-family: Inter, sans-serif;
     cursor: pointer; text-align: center; transition: all 0.15s;
   }
   .status-btn:hover { border-color: #93C5FD; }
   .status-btn.sel-draft    { border-color: #FCD34D; background: #FFFBEB; color: #92400E; }
-  .status-btn.sel-active   { border-color: #6EE7B7; background: #ECFDF5; color: #065F46; }
   .status-btn.sel-inactive { border-color: #D1D5DB; background: #F3F4F6; color: #6B7280; }
 
   /* Version history */
@@ -89,11 +87,11 @@ const CSS = `
   .version-row.cur { border-color: #BFDBFE; background: #EFF6FF; }
 
   /* Buttons */
-  .ayp-btn-primary   { padding: 11px 24px; background: #0D47A1; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.15s; }
+  .ayp-btn-primary   { padding: 7px 16px; background: #0D47A1; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background-color 0.15s; }
   .ayp-btn-primary:disabled { background: #93C5FD; cursor: not-allowed; }
-  .ayp-btn-secondary { padding: 11px 20px; background: transparent; color: #374151; border: 1.5px solid #E5E7EB; border-radius: 10px; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; transition: all 0.15s; }
+  .ayp-btn-secondary { padding: 7px 14px; background: transparent; color: #374151; border: 1.5px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; transition: all 0.15s; }
   .ayp-btn-secondary:hover { background: #F9FAFB; }
-  .ayp-btn-ghost     { padding: 9px 16px; background: #EFF6FF; color: #0D47A1; border: 1.5px solid #BFDBFE; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; transition: all 0.15s; }
+  .ayp-btn-ghost     { padding: 6px 12px; background: #EFF6FF; color: #0D47A1; border: 1.5px solid #BFDBFE; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; transition: all 0.15s; }
   .ayp-btn-ghost:hover { background: #DBEAFE; }
 `;
 
@@ -442,7 +440,6 @@ function AcademicYearForm({ curriculum, initialData, isEdit, versionNumber, onSa
         <div>
           <label style={{ ...fieldLabel, marginBottom: "10px" }}>Status</label>
           <StatusSelector value={status} onChange={setStatus} />
-          {status === "active" && <p style={{ ...hintMsg, marginTop: "8px" }}>Setting to Active will automatically move the current active year to Inactive.</p>}
         </div>
       </div>
 
@@ -512,7 +509,6 @@ function AcademicYearView({ current, history, curriculumId, onEdit, onNewFresh }
               </button>
             ))}
           </div>
-          {current.status !== "active" && <p style={hintMsg}>Setting to Active will automatically move the previous active year to Inactive.</p>}
         </div>
       </div>
 

@@ -3,8 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../hooks/useSchool";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { useSupplementaryBySchoolQuery } from "../../supplementary/hooks/useSupplementary";
-import { SUPPLEMENTARY_TYPE_META } from "../../supplementary/schemas/supplementary.schema";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -101,205 +99,6 @@ function AccordionSection({ title, count, children, defaultOpen = true }) {
         }}
       >
         <div style={{ padding: "16px 20px" }}>{children}</div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Collapsible row for each supplementary item ─────────────────────── */
-
-function AccordionItem({ sup, meta, navigate, baseStructure }) {
-  const [open, setOpen] = useState(false);
-  const isComp        = sup.type === "complementary";
-  const termGrades    = baseStructure[sup.termIndex]?.grades || [];
-  const supGrades     = sup.grades || [];
-  const hasAnyCourses = supGrades.some((g) => g.courses?.length > 0);
-
-  return (
-    <div
-      style={{
-        border: `1.5px solid ${meta.border || "#E5E7EB"}`,
-        borderRadius: "12px",
-        overflow: "hidden",
-      }}
-    >
-      {/* Clickable header row */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "10px 14px",
-          backgroundColor: meta.bg || "#F9FAFB",
-          border: "none",
-          borderBottom: open ? `1px solid ${meta.border || "#E5E7EB"}` : "1px solid transparent",
-          cursor: "pointer",
-          fontFamily: "Inter, sans-serif",
-          textAlign: "left",
-          transition: "border-color 0.25s",
-        }}
-      >
-        <span
-          style={{
-            padding: "2px 8px",
-            borderRadius: "20px",
-            fontSize: "10px",
-            fontWeight: "700",
-            backgroundColor: "#ffffff",
-            color: meta.color,
-            border: `1px solid ${meta.border}`,
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          {meta.label}
-        </span>
-
-        <p
-          style={{
-            margin: 0,
-            fontSize: "13px",
-            fontWeight: "700",
-            color: "#111827",
-            flex: 1,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {sup.name}
-        </p>
-
-        <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF", flexShrink: 0 }}>
-          {sup.termName}
-        </span>
-
-        {/* View button — stop propagation so it doesn't toggle the accordion */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/supplementary/${sup.id}/view`);
-          }}
-          style={{
-            background: "none",
-            border: "none",
-            color: meta.color,
-            fontSize: "12px",
-            fontWeight: "600",
-            cursor: "pointer",
-            fontFamily: "Inter, sans-serif",
-            padding: 0,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          View →
-        </button>
-
-        <span style={{ color: "#9CA3AF", flexShrink: 0 }}>
-          <Chevron open={open} />
-        </span>
-      </button>
-
-      {/* Collapsible body — per-grade course breakdown */}
-      <div
-        style={{
-          maxHeight: open ? "2000px" : "0px",
-          overflow: "hidden",
-          transition: "max-height 0.3s ease",
-        }}
-      >
-        <div style={{ padding: "10px 14px" }}>
-          {!hasAnyCourses ? (
-            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-              No courses added yet.{" "}
-              <button
-                type="button"
-                onClick={() => navigate(`/supplementary/${sup.id}/editor`)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: meta.color,
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "12px",
-                  padding: 0,
-                }}
-              >
-                Edit courses →
-              </button>
-            </p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {termGrades.map((grade) => {
-                const supGrade    = supGrades.find((g) => g.gradeId === grade.id);
-                const baseCourses = grade.courses || [];
-                const supCourses  = supGrade?.courses || [];
-                if (baseCourses.length === 0 && supCourses.length === 0) return null;
-                return (
-                  <div key={grade.id}>
-                    <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: "700", color: "#374151" }}>
-                      {grade.name}
-                    </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                      {baseCourses.map((c) => (
-                        <span
-                          key={c.id}
-                          style={{
-                            padding: "2px 7px",
-                            backgroundColor: "#F3F4F6",
-                            border: "1px solid #E5E7EB",
-                            borderRadius: "5px",
-                            fontSize: "10px",
-                            color: "#6B7280",
-                            textDecoration:
-                              !isComp && supCourses.length > 0 ? "line-through" : "none",
-                          }}
-                        >
-                          {c.name}
-                        </span>
-                      ))}
-                      {supCourses.length > 0 && (
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            color: "#9CA3AF",
-                            alignSelf: "center",
-                            padding: "0 2px",
-                          }}
-                        >
-                          {isComp ? "+" : "→"}
-                        </span>
-                      )}
-                      {supCourses.map((c) => (
-                        <span
-                          key={c.id}
-                          style={{
-                            padding: "2px 7px",
-                            backgroundColor: meta.bg,
-                            border: `1px solid ${meta.border}`,
-                            borderRadius: "5px",
-                            fontSize: "10px",
-                            color: meta.color,
-                            fontWeight: "600",
-                          }}
-                        >
-                          {c.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -438,8 +237,6 @@ export default function SchoolViewPage() {
 
   const { data: school, isLoading, isError } = useSchoolQuery(id);
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
-  const { data: suppData }   = useSupplementaryBySchoolQuery(id);
-
   const { data: teachersData } = useQuery({
     queryKey: ["teachers", "bySchool", id],
     queryFn:  () => teacherApi.getAll({ schoolId: id }),
@@ -508,9 +305,6 @@ export default function SchoolViewPage() {
   ]
     .filter(Boolean)
     .join(", ");
-
-  const supList      = suppData || [];
-  const baseStructure = curriculum?.structure || [];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -867,26 +661,6 @@ export default function SchoolViewPage() {
               </div>
             )}
           </AccordionSection>
-
-          {/* Supplementary Curricula — accordion section, items collapsed by default */}
-          {supList.length > 0 && (
-            <AccordionSection title="Supplementary Curricula" count={supList.length} defaultOpen>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {supList.map((sup) => {
-                  const meta = SUPPLEMENTARY_TYPE_META[sup.type] || {};
-                  return (
-                    <AccordionItem
-                      key={sup.id}
-                      sup={sup}
-                      meta={meta}
-                      navigate={navigate}
-                      baseStructure={baseStructure}
-                    />
-                  );
-                })}
-              </div>
-            </AccordionSection>
-          )}
 
           {/* Teachers */}
           <Section title="Teachers" count={teachers.length}>
