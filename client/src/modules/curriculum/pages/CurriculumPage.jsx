@@ -19,36 +19,39 @@ const STATUS_COLORS = {
 /* ── MenuButton ───────────────────────────────────────────────────────── */
 
 function MenuButton({ icon, label, onClick, danger = false }) {
-  const [hovered, setHovered] = useState(false);
-  const base = danger ? "#EF4444" : "#374151";
-  const hoverBg = danger ? "#FFF5F5" : "#F3F4F6";
-  const hoverColor = danger ? "#EF4444" : "#0D47A1";
+  const [pressed, setPressed] = useState(false);
+  const normalColor  = danger ? "#DC2626" : "#374151";
+  const hoverBg      = danger ? "#FEF2F2" : "#EFF6FF";
+  const hoverColor   = danger ? "#DC2626" : "#0D47A1";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "9px",
+        gap: "10px",
         width: "100%",
-        padding: "8px 10px",
-        backgroundColor: hovered ? hoverBg : "transparent",
+        padding: "10px 12px",
+        backgroundColor: pressed ? (danger ? "#FEE2E2" : "#DBEAFE") : "transparent",
         border: "none",
         borderRadius: "8px",
-        fontSize: "13px",
+        fontSize: "13.5px",
         fontWeight: "500",
         fontFamily: "Inter, sans-serif",
-        color: hovered ? hoverColor : base,
+        color: normalColor,
         cursor: "pointer",
         textAlign: "left",
-        transition: "background-color 0.12s, color 0.12s",
+        transition: "background-color 0.1s",
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = hoverBg; e.currentTarget.style.color = hoverColor; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = normalColor; setPressed(false); }}
     >
-      <span style={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: 0.8 }}>
+      <span style={{ display: "flex", alignItems: "center", flexShrink: 0, color: danger ? "#DC2626" : "#6B7280" }}>
         {icon}
       </span>
       {label}
@@ -59,14 +62,15 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 /* ── Curriculum card ──────────────────────────────────────────────────── */
 
 function KebabMenu({ curriculum, navigate, onDelete }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos]   = useState({ top: 0, right: 0 });
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [triggerHovered, setTriggerHovered] = useState(false);
+  const [menuPos, setMenuPos]     = useState({ top: 0, right: 0 });
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
     setMenuOpen(true);
   };
 
@@ -90,49 +94,76 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
 
   const go = (path) => { setMenuOpen(false); navigate(path); };
 
+  const triggerBg    = menuOpen ? "#DBEAFE" : triggerHovered ? "#F3F4F6" : "transparent";
+  const triggerColor = menuOpen ? "#1D4ED8" : triggerHovered ? "#374151" : "#9CA3AF";
+  const triggerBorder = menuOpen ? "1.5px solid #BFDBFE" : "1.5px solid transparent";
+
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
       <button
         ref={triggerRef}
         type="button"
         onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
+        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseLeave={() => setTriggerHovered(false)}
         title="More options"
         style={{
-          width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: menuOpen ? "#EFF6FF" : "transparent",
-          border: `1.5px solid ${menuOpen ? "#BFDBFE" : "transparent"}`,
-          borderRadius: "8px", cursor: "pointer",
-          color: menuOpen ? "#0D47A1" : "#9CA3AF", transition: "all 0.15s",
+          width: "34px", height: "34px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          backgroundColor: triggerBg,
+          border: triggerBorder,
+          borderRadius: "10px", cursor: "pointer",
+          color: triggerColor,
+          transition: "background-color 0.15s, color 0.15s, border-color 0.15s",
         }}
-        onMouseEnter={(e) => { if (!menuOpen) { e.currentTarget.style.backgroundColor = "#F3F4F6"; e.currentTarget.style.color = "#374151"; } }}
-        onMouseLeave={(e) => { if (!menuOpen) { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#9CA3AF"; } }}
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
         </svg>
       </button>
 
       {menuOpen && createPortal(
-        <div ref={dropdownRef} style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: "14px", boxShadow: "0 8px 28px rgba(0,0,0,0.12)", zIndex: 9999, minWidth: "196px", padding: "6px" }}>
-          <div style={{ padding: "8px 10px 10px", borderBottom: "1px solid #F3F4F6", marginBottom: "4px" }}>
-            <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curriculum.name}</p>
-            <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>{curriculum.code}</p>
+        <>
+          <style>{`
+            @keyframes kebab-in {
+              from { opacity: 0; transform: scale(0.96) translateY(-6px); }
+              to   { opacity: 1; transform: scale(1)    translateY(0);    }
+            }
+            .kebab-dropdown { animation: kebab-in 0.15s cubic-bezier(0.16,1,0.3,1) both; }
+          `}</style>
+          <div
+            ref={dropdownRef}
+            className="kebab-dropdown"
+            style={{
+              position: "fixed", top: menuPos.top, right: menuPos.right,
+              backgroundColor: "#fff",
+              border: "1px solid #E5E7EB",
+              borderRadius: "14px",
+              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.07), 0 12px 32px -4px rgba(0,0,0,0.12)",
+              zIndex: 9999, minWidth: "210px", padding: "6px",
+              transformOrigin: "top right",
+            }}
+          >
+            <div style={{ padding: "10px 12px 10px", borderBottom: "1px solid #F3F4F6", marginBottom: "4px" }}>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curriculum.name}</p>
+              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF", fontWeight: "500" }}>{curriculum.code}</p>
+            </div>
+            {[
+              { label: "View",            path: `/curriculum/${curriculum.id}/view`,           icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
+              { label: "Edit Details",    path: `/curriculum/${curriculum.id}/edit`,            icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+              { label: "Structure",       path: `/curriculum/${curriculum.id}/structure`,       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/></svg> },
+              { label: "Academic Year",   path: `/curriculum/${curriculum.id}/academic-year`,   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
+              { label: "Version Control", path: `/curriculum/${curriculum.id}/versions`,        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            ].map(({ label, path, icon }) => (
+              <MenuButton key={label} icon={icon} label={label} onClick={() => go(path)} />
+            ))}
+            <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "6px 0" }} />
+            <MenuButton
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              label="Delete" onClick={onDelete} danger
+            />
           </div>
-          {[
-            { label: "View",            path: `/curriculum/${curriculum.id}/view`,           icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit Details",    path: `/curriculum/${curriculum.id}/edit`,            icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-            { label: "Structure",       path: `/curriculum/${curriculum.id}/structure`,       icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Academic Year",   path: `/curriculum/${curriculum.id}/academic-year`,   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
-            { label: "Version Control", path: `/curriculum/${curriculum.id}/versions`,        icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-          ].map(({ label, path, icon }) => (
-            <MenuButton key={label} icon={icon} label={label} onClick={() => go(path)} />
-          ))}
-          <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
-          <MenuButton
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            label="Delete" onClick={onDelete} danger
-          />
-        </div>,
+        </>,
         document.body
       )}
     </div>
@@ -181,9 +212,6 @@ function CurriculumCard({ curriculum }) {
         pointerEvents: isDeleting ? "none" : "auto",
       }}
     >
-      {/* Gradient top accent */}
-      <div style={{ height: hovered ? "4px" : "3px", background: "linear-gradient(90deg, #0D47A1, #1976D2, #42A5F5)", transition: "height 0.2s" }} />
-
       <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
 
         {/* ── Row 1: name | type badge + kebab ── */}
@@ -248,8 +276,7 @@ function CurriculumCard({ curriculum }) {
                   ? `Missing: ${missingItems.join(", ")}`
                   : "Setup in progress"}
             </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", letterSpacing: "0.04em", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
-              <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: sc.dot, flexShrink: 0 }} />
+            <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", letterSpacing: "0.04em", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
               {sc.label}
             </span>
           </div>

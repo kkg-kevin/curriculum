@@ -49,7 +49,8 @@
     ],
     "id": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
     "createdAt": "2026-06-23T07:07:40.085Z",
-    "updatedAt": "2026-06-23T07:19:35.731Z"
+    "updatedAt": "2026-06-23T12:29:49.056Z",
+    "curriculumType": "Core"
   },
   {
     "name": "The Cambridge (British) Curriculum",
@@ -102,7 +103,8 @@
     ],
     "id": "c2520f31-7263-44e4-a414-474e5628eb98",
     "createdAt": "2026-06-23T07:24:27.600Z",
-    "updatedAt": "2026-06-23T07:32:16.807Z"
+    "updatedAt": "2026-06-23T12:29:27.413Z",
+    "curriculumType": "Core"
   },
   {
     "name": "American Curriculum",
@@ -184,6 +186,7 @@
     ],
     "id": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "createdAt": "2026-06-23T10:10:29.481Z",
-    "updatedAt": "2026-06-23T12:06:30.966Z"
+    "updatedAt": "2026-06-23T12:41:58.366Z",
+    "curriculumType": "Complementary"
   }
 ]

@@ -22,12 +22,10 @@ const formatDay = () =>
     year: "numeric",
   });
 
-const FRAMEWORK_COLORS = {
-  CBC:       "#1D4ED8",
-  IGCSE:     "#0369A1",
-  IB:        "#1E40AF",
-  National:  "#0F766E",
-  Cambridge: "#1E3A8A",
+const TYPE_COLORS = {
+  Core:           "#1D4ED8",
+  Complementary:  "#0369A1",
+  Substitutional: "#0F766E",
 };
 
 /* ── Skeleton ────────────────────────────────────────────────────────── */
@@ -117,17 +115,18 @@ function StatCard({ icon, label, value, sub, accent, actionLabel, onAction, load
 /* ── Curriculum health row ───────────────────────────────────────────── */
 
 function CurriculumRow({ curriculum, navigate }) {
-  const periods = curriculum.periods || [];
-  const structure = curriculum.structure || [];
-  const configuredTerms = structure.filter((t) => (t.grades?.length || 0) > 0).length;
-  const totalClasses = structure.reduce((s, t) => s + (t.grades?.length || 0), 0);
-  const totalCourses = structure.reduce(
-    (s, t) => s + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0),
-    0
-  );
-  const pct = periods.length > 0 ? Math.round((configuredTerms / periods.length) * 100) : 0;
-  const isComplete = pct === 100 && periods.length > 0;
-  const fwColor = FRAMEWORK_COLORS[curriculum.framework] || "#374151";
+  const periodCount  = curriculum.periods?.length  || 0;
+  const classCount   = curriculum.classes?.length   || 0;
+  const coursesCount = curriculum.coursesCount      || 0;
+  const academicYear = curriculum.publishedAcademicYear || null;
+  const typeColor    = TYPE_COLORS[curriculum.curriculumType] || "#374151";
+
+  /* Same setup completion logic as the curriculum cards */
+  const pct = (curriculum.curriculumType ? 25 : 0)
+            + (periodCount  > 0 ? 25 : 0)
+            + (classCount   > 0 ? 25 : 0)
+            + (academicYear      ? 25 : 0);
+  const isComplete = pct === 100;
 
   return (
     <div
@@ -150,21 +149,40 @@ function CurriculumRow({ curriculum, navigate }) {
         e.currentTarget.style.boxShadow = "none";
       }}
     >
-      <span
-        style={{
-          padding: "4px 10px",
-          backgroundColor: fwColor + "12",
-          color: fwColor,
-          borderRadius: "8px",
-          fontSize: "11px",
-          fontWeight: "700",
-          letterSpacing: "0.03em",
-          flexShrink: 0,
-          border: `1px solid ${fwColor}22`,
-        }}
-      >
-        {curriculum.framework}
-      </span>
+      {curriculum.curriculumType ? (
+        <span
+          style={{
+            padding: "4px 10px",
+            backgroundColor: typeColor + "12",
+            color: typeColor,
+            borderRadius: "8px",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "0.03em",
+            flexShrink: 0,
+            border: `1px solid ${typeColor}22`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {curriculum.curriculumType}
+        </span>
+      ) : (
+        <span
+          style={{
+            padding: "4px 10px",
+            backgroundColor: "#F3F4F6",
+            color: "#9CA3AF",
+            borderRadius: "8px",
+            fontSize: "11px",
+            fontWeight: "600",
+            flexShrink: 0,
+            border: "1px solid #E5E7EB",
+            whiteSpace: "nowrap",
+          }}
+        >
+          No type
+        </span>
+      )}
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
@@ -181,13 +199,13 @@ function CurriculumRow({ curriculum, navigate }) {
           {curriculum.name}
         </p>
         <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-          {curriculum.academicYear} · {totalClasses} grades · {totalCourses} courses
+          {academicYear ? academicYear + " · " : ""}{classCount} {classCount === 1 ? "class" : "classes"} · {coursesCount} {coursesCount === 1 ? "course" : "courses"}
         </p>
       </div>
 
       <div style={{ width: "110px", flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "500" }}>Structure</span>
+          <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "500" }}>Setup</span>
           <span style={{ fontSize: "10px", fontWeight: "700", color: isComplete ? "#15803D" : "#1D4ED8" }}>
             {pct}%
           </span>
@@ -206,7 +224,7 @@ function CurriculumRow({ curriculum, navigate }) {
           />
         </div>
         <p style={{ margin: "3px 0 0", fontSize: "10px", color: "#9CA3AF" }}>
-          {configuredTerms}/{periods.length} terms configured
+          {isComplete ? "Ready to publish" : `${pct / 25}/4 steps done`}
         </p>
       </div>
 
@@ -443,16 +461,11 @@ export default function DashboardPage() {
   const activeClasses  = classes.filter((c) => c.status === "active").length;
 
   /* ── Curriculum-derived stats ── */
-  const totalGrades = curricula.reduce(
-    (s, c) => s + (c.structure?.reduce((ts, t) => ts + (t.grades?.length || 0), 0) || 0),
-    0
-  );
-  const totalCourses = curricula.reduce(
-    (s, c) =>
-      s + (c.structure?.reduce((ts, t) => ts + (t.grades?.reduce((gs, g) => gs + (g.courses?.length || 0), 0) || 0), 0) || 0),
-    0
-  );
-  const frameworks = [...new Set(curricula.map((c) => c.framework).filter(Boolean))];
+  const totalCurriculumClasses = curricula.reduce((s, c) => s + (c.classes?.length   || 0), 0);
+  const totalCurriculumPeriods = curricula.reduce((s, c) => s + (c.periods?.length   || 0), 0);
+  const totalCourses           = curricula.reduce((s, c) => s + (c.coursesCount      || 0), 0);
+  const publishedCount         = curricula.filter((c) => c.effectiveStatus === "published").length;
+  const typesInUse             = [...new Set(curricula.map((c) => c.curriculumType).filter(Boolean))];
 
   /* ── Recent items (last 4, sorted by creation date) ── */
   const recentSchools  = [...schools].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4);
@@ -489,7 +502,7 @@ export default function DashboardPage() {
             </h1>
             <p style={{ margin: 0, fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.5" }}>
               {totalCurricula > 0
-                ? `${totalCurricula} ${totalCurricula === 1 ? "curriculum" : "curricula"} · ${totalSchools} ${totalSchools === 1 ? "school" : "schools"} · ${totalLearners} ${totalLearners === 1 ? "learner" : "learners"} enrolled`
+                ? `${totalCurricula} ${totalCurricula === 1 ? "curriculum" : "curricula"} · ${totalCourses} ${totalCourses === 1 ? "course" : "courses"} · ${totalLearners} ${totalLearners === 1 ? "learner" : "learners"} enrolled`
                 : "Welcome to Digifunzi. Start by creating your first curriculum."}
             </p>
           </div>
@@ -546,7 +559,7 @@ export default function DashboardPage() {
           icon="📋"
           label="Curricula"
           value={curriculaLoading ? "—" : totalCurricula}
-          sub={frameworks.length > 0 ? frameworks.join(", ") : "No frameworks yet"}
+          sub={curriculaLoading ? null : publishedCount > 0 ? `${publishedCount} published` : typesInUse.length > 0 ? typesInUse.join(", ") : "None published yet"}
           accent="#0D47A1"
           actionLabel="View all"
           onAction={() => navigate("/curriculum")}
@@ -684,9 +697,10 @@ export default function DashboardPage() {
             {!isLoading && totalCurricula > 0 && (
               <div style={{ padding: "12px 20px", borderTop: "1px solid #F3F4F6", display: "flex", gap: "20px", backgroundColor: "#FAFBFF" }}>
                 {[
-                  { label: "Total Grades", value: totalGrades, color: "#1D4ED8" },
-                  { label: "Total Courses", value: totalCourses, color: "#0369A1" },
-                  { label: "Frameworks", value: frameworks.length, color: "#1E40AF" },
+                  { label: "Total Classes",  value: totalCurriculumClasses, color: "#1D4ED8" },
+                  { label: "Total Courses",  value: totalCourses,           color: "#0369A1" },
+                  { label: "Total Periods",  value: totalCurriculumPeriods, color: "#0F766E" },
+                  { label: "Published",      value: publishedCount,         color: "#059669" },
                 ].map((s) => (
                   <div key={s.label} style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
                     <span style={{ fontSize: "15px", fontWeight: "800", color: s.color }}>{s.value}</span>

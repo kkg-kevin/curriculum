@@ -7,5 +7,32 @@
     "endDate": "2026-12-30",
     "createdAt": "2026-06-23T11:17:25.381Z",
     "updatedAt": "2026-06-23T11:17:25.381Z"
+  },
+  {
+    "id": "a6fb386e-1d7c-4fc9-a187-67c40d36985f",
+    "curriculumId": "c2520f31-7263-44e4-a414-474e5628eb98",
+    "label": "2026 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-30",
+    "createdAt": "2026-06-23T12:29:02.886Z",
+    "updatedAt": "2026-06-23T12:29:02.886Z"
+  },
+  {
+    "id": "8eaaa6ff-2473-47dd-a1b2-88fb4e763d40",
+    "curriculumId": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
+    "label": "2025 Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-06-23T12:31:59.306Z",
+    "updatedAt": "2026-06-23T12:31:59.306Z"
+  },
+  {
+    "id": "76c294d5-9759-4a38-8b2a-d6caa7d23951",
+    "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
+    "label": "2026 Sample Academic Year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-06-23T12:41:39.774Z",
+    "updatedAt": "2026-06-23T12:41:39.774Z"
   }
 ]

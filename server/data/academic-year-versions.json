@@ -50,5 +50,97 @@
     ],
     "createdAt": "2026-06-23T11:18:17.477Z",
     "updatedAt": "2026-06-23T11:18:17.477Z"
+  },
+  {
+    "id": "09e0f18b-1595-42b0-8511-a6c6cfa5f08a",
+    "yearGroupId": "a6fb386e-1d7c-4fc9-a187-67c40d36985f",
+    "curriculumId": "c2520f31-7263-44e4-a414-474e5628eb98",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-02-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-07-31",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-10-01",
+        "breakEndDate": "2026-10-10"
+      }
+    ],
+    "createdAt": "2026-06-23T12:29:02.889Z",
+    "updatedAt": "2026-06-23T12:29:08.585Z"
+  },
+  {
+    "id": "b19b2e4f-4f12-4d09-b06d-36edce43f4d2",
+    "yearGroupId": "8eaaa6ff-2473-47dd-a1b2-88fb4e763d40",
+    "curriculumId": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-02",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-03-07",
+        "breakStartDate": "2026-06-01",
+        "breakEndDate": "2026-06-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-01",
+        "breakStartDate": "2026-10-01",
+        "breakEndDate": "2026-10-10"
+      }
+    ],
+    "createdAt": "2026-06-23T12:31:59.312Z",
+    "updatedAt": "2026-06-23T12:32:04.099Z"
+  },
+  {
+    "id": "b6ec860f-90e2-4759-840a-4b2c5132bacf",
+    "yearGroupId": "76c294d5-9759-4a38-8b2a-d6caa7d23951",
+    "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-01-02",
+        "endDate": "2026-06-30",
+        "breakStartDate": "2026-04-01",
+        "breakEndDate": "2026-04-15"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-07-01",
+        "endDate": "2026-12-30",
+        "breakStartDate": "2026-09-01",
+        "breakEndDate": "2026-09-15"
+      }
+    ],
+    "createdAt": "2026-06-23T12:41:39.776Z",
+    "updatedAt": "2026-06-23T12:41:39.776Z"
   }
 ]
