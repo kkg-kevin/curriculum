@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllClassesQuery } from "../hooks/useClasses";
 
-const ACCENT = "#EA580C";
+const ACCENT = "#0D47A1";
 
 const STATUS_STYLES = {
-  active:   { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA", label: "Active"   },
+  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE", label: "Active"   },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive" },
 };
 
@@ -22,7 +22,7 @@ function StatusBadge({ status }) {
 function GradeAvatar({ gradeName, size = 34 }) {
   const text = gradeName ? gradeName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() : "CL";
   return (
-    <div style={{ width: size, height: size, borderRadius: 10, background: "linear-gradient(135deg, #C2410C, #EA580C)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 10, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
       {text}
     </div>
   );
@@ -30,7 +30,7 @@ function GradeAvatar({ gradeName, size = 34 }) {
 
 function SchoolAvatar({ name, size = 42 }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #C2410C, #EA580C)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
       {name?.[0]?.toUpperCase() || "S"}
     </div>
   );
@@ -42,7 +42,7 @@ function ClassRow({ cls, navigate }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#FFF7ED" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#EFF6FF" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
     >
       <GradeAvatar gradeName={cls.gradeName} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -57,7 +57,7 @@ function ClassRow({ cls, navigate }) {
       <button
         type="button"
         onClick={() => navigate(`/classes/${cls.id}/view`)}
-        style={{ padding: "5px 12px", backgroundColor: "#FFF7ED", color: ACCENT, border: "1px solid #FED7AA", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+        style={{ padding: "5px 12px", backgroundColor: "#EFF6FF", color: ACCENT, border: "1px solid #BFDBFE", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
       >
         View →
       </button>
@@ -70,12 +70,12 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
   const activeCount = classes.filter((c) => c.status === "active").length;
 
   return (
-    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#FED7AA" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(234,88,12,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
+    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#BFDBFE" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(13,71,161,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
 
       {/* Accordion header */}
       <div
         onClick={onToggle}
-        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#FFFBF7" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
+        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#EFF6FF" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
       >
         <SchoolAvatar name={school.name} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -88,7 +88,7 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#FFF7ED" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#FED7AA" : "#E5E7EB"}` }}>
+          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#EFF6FF" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#BFDBFE" : "#E5E7EB"}` }}>
             {count} {count === 1 ? "class" : "classes"}
           </span>
           {count > 0 && (
@@ -112,7 +112,7 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
         <div style={{ borderTop: "1px solid #F3F4F6" }}>
           {classes.length === 0 ? (
             <div style={{ padding: "36px 24px", textAlign: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #FFF7ED, #FED7AA)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>🏫</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #EFF6FF, #BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>🏫</div>
               <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No classes added yet</p>
               <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>Add the first class for {school.name}</p>
               <button
@@ -194,7 +194,7 @@ export default function ClassesPage() {
         <button
           type="button"
           onClick={() => navigate("/classes/create")}
-          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(234,88,12,0.25)" }}
+          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(13,71,161,0.25)" }}
         >
           + Add Class
         </button>

@@ -4,13 +4,13 @@ import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllLearnersQuery } from "../hooks/useLearners";
 import { useAllClassesQuery } from "../../classes/hooks/useClasses";
 
-const ACCENT = "#BE185D";
+const ACCENT = "#0D47A1";
 
 const STATUS_STYLES = {
-  active:      { bg: "#FDF2F8", color: "#831843", border: "#FBCFE8", label: "Active"      },
+  active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE", label: "Active"      },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive"    },
-  transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE", label: "Transferred" },
-  graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0", label: "Graduated"   },
+  transferred: { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0", label: "Transferred" },
+  graduated:   { bg: "#F5F3FF", color: "#5B21B6", border: "#C4B5FD", label: "Graduated"   },
 };
 
 function StatusBadge({ status }) {
@@ -25,7 +25,7 @@ function StatusBadge({ status }) {
 function LearnerInitials({ firstName, lastName, size = 34 }) {
   const text = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #831843, #BE185D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
       {text || "?"}
     </div>
   );
@@ -33,7 +33,7 @@ function LearnerInitials({ firstName, lastName, size = 34 }) {
 
 function SchoolAvatar({ name, size = 42 }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #831843, #BE185D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
       {name?.[0]?.toUpperCase() || "S"}
     </div>
   );
@@ -46,7 +46,7 @@ function LearnerRow({ learner, classMap, navigate }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#FFF8FB" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#EFF6FF" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
     >
       <LearnerInitials firstName={learner.firstName} lastName={learner.lastName} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -61,7 +61,7 @@ function LearnerRow({ learner, classMap, navigate }) {
       <button
         type="button"
         onClick={() => navigate(`/learners/${learner.id}/view`)}
-        style={{ padding: "5px 12px", backgroundColor: "#FDF2F8", color: ACCENT, border: "1px solid #FBCFE8", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+        style={{ padding: "5px 12px", backgroundColor: "#EFF6FF", color: ACCENT, border: "1px solid #BFDBFE", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
       >
         View →
       </button>
@@ -74,12 +74,12 @@ function SchoolAccordion({ school, learners, classMap, navigate, isOpen, onToggl
   const activeCount = learners.filter((l) => l.status === "active").length;
 
   return (
-    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#FBCFE8" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(190,24,93,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
+    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#BFDBFE" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(13,71,161,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
 
       {/* Accordion header */}
       <div
         onClick={onToggle}
-        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#FFF8FB" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
+        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#EFF6FF" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
       >
         <SchoolAvatar name={school.name} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -92,7 +92,7 @@ function SchoolAccordion({ school, learners, classMap, navigate, isOpen, onToggl
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#FDF2F8" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#FBCFE8" : "#E5E7EB"}` }}>
+          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#EFF6FF" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#BFDBFE" : "#E5E7EB"}` }}>
             {count} {count === 1 ? "learner" : "learners"}
           </span>
           {count > 0 && (
@@ -116,7 +116,7 @@ function SchoolAccordion({ school, learners, classMap, navigate, isOpen, onToggl
         <div style={{ borderTop: "1px solid #F3F4F6" }}>
           {learners.length === 0 ? (
             <div style={{ padding: "36px 24px", textAlign: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #FDF2F8, #FBCFE8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>🎓</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #EFF6FF, #BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>🎓</div>
               <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No learners enrolled yet</p>
               <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>Enrol the first learner for {school.name}</p>
               <button
@@ -205,7 +205,7 @@ export default function LearnersPage() {
         <button
           type="button"
           onClick={() => navigate("/learners/create")}
-          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(190,24,93,0.25)" }}
+          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(13,71,161,0.25)" }}
         >
           + Enrol Learner
         </button>
