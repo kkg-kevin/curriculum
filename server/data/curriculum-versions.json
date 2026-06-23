@@ -1976,7 +1976,7 @@
     "curriculumId": "56f333d7-6c70-463f-9ad6-e9b5bab080bc",
     "academicYearId": null,
     "versionNumber": 1,
-    "status": "draft",
+    "status": "published",
     "isCurrent": true,
     "versionOf": null,
     "content": [
@@ -2357,7 +2357,7 @@
       }
     ],
     "createdAt": "2026-06-23T07:13:50.142Z",
-    "updatedAt": "2026-06-23T07:13:50.142Z"
+    "updatedAt": "2026-06-23T12:20:03.288Z"
   },
   {
     "id": "c1f90367-b3cf-4aa2-af7f-72c548668744",
