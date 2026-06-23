@@ -170,10 +170,11 @@
       }
     ],
     "classes": [
-      "class one"
+      "class one",
+      "class 2"
     ],
     "id": "05aa4781-9030-415a-829f-f54d61c5e2ca",
     "createdAt": "2026-06-23T08:52:54.193Z",
-    "updatedAt": "2026-06-23T08:53:08.195Z"
+    "updatedAt": "2026-06-23T10:04:57.108Z"
   }
 ]

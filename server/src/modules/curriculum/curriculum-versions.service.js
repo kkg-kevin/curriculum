@@ -24,6 +24,7 @@ function buildContentScaffold(curriculum) {
 const CurriculumVersionService = {
   getAllForCurriculum(curriculumId) {
     const all     = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+    // published (isCurrent) version is the "current"; everything else is history
     const current = all.find((v) => v.isCurrent) || null;
     const history = all.filter((v) => !v.isCurrent);
     return { current, history };
@@ -33,13 +34,7 @@ const CurriculumVersionService = {
     const existing    = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
     const nextVersion = existing.length ? Math.max(...existing.map((v) => v.versionNumber)) + 1 : 1;
 
-    // Set the previous current version to inactive before archiving it
-    const previousCurrent = CurriculumVersionModel.findCurrent(curriculumId);
-    if (previousCurrent) {
-      CurriculumVersionModel.update(previousCurrent.id, { status: "inactive" });
-    }
-    CurriculumVersionModel.setAllNotCurrent(curriculumId);
-
+    // New versions are always created as drafts — user explicitly publishes
     const scaffold = buildContentScaffold(curriculum);
     const content  = (data.content && data.content.length)
       ? scaffold.map((sp) => {
@@ -54,32 +49,40 @@ const CurriculumVersionService = {
       curriculumId,
       academicYearId: data.academicYearId || null,
       versionNumber:  nextVersion,
-      status:         data.status || "draft",
-      isCurrent:      true,
+      status:         "draft",
+      isCurrent:      false,
       versionOf:      null,
       content,
     });
   },
 
   edit(curriculumId, versionId, data) {
-    const current = CurriculumVersionModel.findById(versionId);
-    if (!current || current.curriculumId !== curriculumId) {
+    const version = CurriculumVersionModel.findById(versionId);
+    if (!version || version.curriculumId !== curriculumId) {
       throw Object.assign(new Error("Version not found"), { statusCode: 404 });
     }
-
-    if (data.status === "active") CurriculumVersionModel.deactivateAllActive(curriculumId);
-
     return CurriculumVersionModel.update(versionId, {
-      status:  data.status  || current.status,
-      content: data.content || current.content || [],
+      status:  data.status  || version.status,
+      content: data.content || version.content || [],
     });
   },
 
   changeStatus(curriculumId, versionId, status) {
-    if (!["draft", "inactive"].includes(status)) {
+    if (!["draft", "published", "inactive"].includes(status)) {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
-    return CurriculumVersionModel.update(versionId, { status });
+    if (status === "published") {
+      // Retire any currently published version
+      const all = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+      all.forEach((v) => {
+        if (v.id !== versionId && v.isCurrent) {
+          CurriculumVersionModel.update(v.id, { status: "inactive", isCurrent: false });
+        }
+      });
+      return CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
+    }
+    // draft / inactive — remove the isCurrent flag if it was on this version
+    return CurriculumVersionModel.update(versionId, { status, isCurrent: false });
   },
 };
 

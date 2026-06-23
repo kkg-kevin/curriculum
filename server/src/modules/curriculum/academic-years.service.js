@@ -8,9 +8,7 @@ const AcademicYearService = {
 
   // Create first year, or start fresh (wipes current pointer)
   create(curriculumId, data, isFresh = false) {
-    if (isFresh) AcademicYearModel.setAllNotCurrent(curriculumId);
-
-    if (data.status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
+    AcademicYearModel.setAllNotCurrent(curriculumId);
 
     const existing = AcademicYearModel.findByCurriculumId(curriculumId);
     const nextVersion = isFresh
@@ -24,7 +22,7 @@ const AcademicYearService = {
       label: data.label,
       startDate: data.startDate || "",
       endDate: data.endDate || "",
-      status: data.status || "draft",
+      status: "draft",
       periods: data.periods || [],
       versionNumber: nextVersion,
       versionOf: isFresh ? null : (data.versionOf || null),
@@ -32,15 +30,13 @@ const AcademicYearService = {
     });
   },
 
-  // Edit creates a new version from an existing year
+  // Edit creates a new draft version and makes it current (the previous stays in history)
   edit(curriculumId, yearId, data) {
-    const current = AcademicYearModel.findById(yearId);
-    if (!current) throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
+    const existing = AcademicYearModel.findById(yearId);
+    if (!existing) throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
 
-    // Archive the current version
-    AcademicYearModel.update(yearId, { isCurrent: false });
-
-    if (data.status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
+    // Demote all to history
+    AcademicYearModel.setAllNotCurrent(curriculumId);
 
     const all = AcademicYearModel.findByCurriculumId(curriculumId);
     const nextVersion = Math.max(...all.map((y) => y.versionNumber)) + 1;
@@ -50,7 +46,7 @@ const AcademicYearService = {
       label: data.label,
       startDate: data.startDate || "",
       endDate: data.endDate || "",
-      status: data.status || current.status,
+      status: "draft",
       periods: data.periods || [],
       versionNumber: nextVersion,
       versionOf: yearId,
@@ -59,10 +55,22 @@ const AcademicYearService = {
   },
 
   changeStatus(curriculumId, yearId, status) {
-    if (!["active", "draft", "inactive"].includes(status)) {
+    if (!["draft", "published", "inactive"].includes(status)) {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
-    if (status === "active") AcademicYearModel.deactivateAllActive(curriculumId);
+    if (status === "published") {
+      // Retire previously published years; also make the target year "current" in the view
+      const all = AcademicYearModel.findByCurriculumId(curriculumId);
+      all.forEach((y) => {
+        if (y.id !== yearId) {
+          const updates = { isCurrent: false };
+          if (y.status === "published") updates.status = "inactive";
+          AcademicYearModel.update(y.id, updates);
+        }
+      });
+      return AcademicYearModel.update(yearId, { status: "published", isCurrent: true });
+    }
+    // For draft/inactive: update status only, keep isCurrent as-is
     return AcademicYearModel.update(yearId, { status });
   },
 };

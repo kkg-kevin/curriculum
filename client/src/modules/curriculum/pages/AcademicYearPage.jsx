@@ -18,8 +18,9 @@ const STEPS = [
 ];
 
 const STATUSES = [
-  { value: "draft",    label: "Draft",    bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
-  { value: "inactive", label: "Inactive", bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
+  { value: "draft",     label: "Draft",     bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
+  { value: "published", label: "Published", bg: "#ECFDF5", border: "#6EE7B7", color: "#065F46", dot: "#10B981" },
+  { value: "inactive",  label: "Inactive",  bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
 ];
 
 /* ── CSS ─────────────────────────────────────────────────────────────────── */
@@ -79,8 +80,9 @@ const CSS = `
     cursor: pointer; text-align: center; transition: all 0.15s;
   }
   .status-btn:hover { border-color: #93C5FD; }
-  .status-btn.sel-draft    { border-color: #FCD34D; background: #FFFBEB; color: #92400E; }
-  .status-btn.sel-inactive { border-color: #D1D5DB; background: #F3F4F6; color: #6B7280; }
+  .status-btn.sel-draft      { border-color: #FCD34D; background: #FFFBEB; color: #92400E; }
+  .status-btn.sel-published  { border-color: #6EE7B7; background: #ECFDF5; color: #065F46; }
+  .status-btn.sel-inactive   { border-color: #D1D5DB; background: #F3F4F6; color: #6B7280; }
 
   /* Version history */
   .version-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; border: 1px solid #F3F4F6; background: #FAFAFA; font-family: Inter, sans-serif; }
@@ -93,6 +95,9 @@ const CSS = `
   .ayp-btn-secondary:hover { background: #F9FAFB; }
   .ayp-btn-ghost     { padding: 6px 12px; background: #EFF6FF; color: #0D47A1; border: 1.5px solid #BFDBFE; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; transition: all 0.15s; }
   .ayp-btn-ghost:hover { background: #DBEAFE; }
+  .ayp-btn-publish   { padding: 8px 18px; background: #059669; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; white-space: nowrap; }
+  .ayp-btn-publish:hover:not(:disabled) { background: #047857; }
+  .ayp-btn-publish:disabled { background: #6EE7B7; cursor: not-allowed; }
 `;
 
 /* ── Style objects ───────────────────────────────────────────────────────── */
@@ -179,9 +184,10 @@ function StatusDot({ status }) {
 }
 
 function StatusSelector({ value, onChange }) {
+  const formStatuses = STATUSES.filter((s) => s.value !== "published");
   return (
     <div style={{ display: "flex", gap: "8px" }}>
-      {STATUSES.map((s) => (
+      {formStatuses.map((s) => (
         <button key={s.value} type="button" onClick={() => onChange(s.value)} className={`status-btn${value === s.value ? ` sel-${s.value}` : ""}`}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: value === s.value ? s.dot : "#D1D5DB", flexShrink: 0 }} />
@@ -189,6 +195,7 @@ function StatusSelector({ value, onChange }) {
           </span>
         </button>
       ))}
+      <span style={{ fontSize: "11px", color: "#9CA3AF", alignSelf: "center", fontStyle: "italic" }}>Publish via the Publish button</span>
     </div>
   );
 }
@@ -473,10 +480,22 @@ function AcademicYearView({ current, history, curriculumId, onEdit, onNewFresh }
   const [historyOpen, setHistoryOpen] = useState(false);
   const { mutate: changeStatus, isPending: changingStatus } = useChangeAcademicYearStatus(curriculumId);
 
+  const isPublished = current.status === "published";
+
   return (
     <div className="ayp-main">
+      {/* Published live banner */}
+      {isPublished && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#ECFDF5", border: "1.5px solid #6EE7B7", borderRadius: "12px" }}>
+          <span style={{ fontSize: "16px" }}>✅</span>
+          <p style={{ margin: 0, fontSize: "12px", color: "#065F46", fontWeight: "500" }}>
+            This is the <strong>active academic year</strong> — it is currently in use.
+          </p>
+        </div>
+      )}
+
       {/* Overview */}
-      <div style={card}>
+      <div style={{ ...card, ...(isPublished ? { border: "1.5px solid #6EE7B7" } : {}) }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -490,15 +509,22 @@ function AcademicYearView({ current, history, curriculumId, onEdit, onNewFresh }
               <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>{fmtDate(current.startDate)} → {fmtDate(current.endDate)}</p>
             )}
           </div>
-          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
+            {!isPublished && (
+              <button type="button" className="ayp-btn-publish" disabled={changingStatus} onClick={() => changeStatus({ yearId: current.id, status: "published" })}>
+                {changingStatus ? "Publishing…" : "🚀 Publish"}
+              </button>
+            )}
             <button type="button" onClick={onNewFresh} className="ayp-btn-secondary" style={{ fontSize: "13px", padding: "9px 16px" }}>New from Scratch</button>
             <button type="button" onClick={onEdit} className="ayp-btn-ghost">Edit → New Version</button>
           </div>
         </div>
 
-        {/* Status change */}
+        {/* Status change — draft / inactive only; publish is via the Publish button */}
         <div style={{ marginTop: "18px", paddingTop: "16px", borderTop: "1px solid #F3F4F6" }}>
-          <p style={{ ...fieldLabel, marginBottom: "10px" }}>Change status</p>
+          <p style={{ ...fieldLabel, marginBottom: "10px" }}>
+            {isPublished ? "Published — change status:" : "Status"}
+          </p>
           <div style={{ display: "flex", gap: "8px", opacity: changingStatus ? 0.6 : 1 }}>
             {STATUSES.map((s) => (
               <button key={s.value} type="button" disabled={changingStatus} onClick={() => { if (s.value !== current.status) changeStatus({ yearId: current.id, status: s.value }); }} className={`status-btn${current.status === s.value ? ` sel-${s.value}` : ""}`}>
@@ -538,17 +564,25 @@ function AcademicYearView({ current, history, curriculumId, onEdit, onNewFresh }
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span style={{ fontSize: "12px", fontWeight: "700", color: "#1D4ED8", backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "20px", padding: "2px 10px" }}>v{current.versionNumber} · Current</span>
                   <span style={{ fontSize: "12px", color: "#6B7280" }}>{fmtDate(current.updatedAt)}</span>
+                  {current.label && <span style={{ fontSize: "12px", color: "#374151" }}>{current.label}</span>}
                 </div>
                 <StatusDot status={current.status} />
               </div>
               {history.map((v) => (
                 <div key={v.id} className="version-row">
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
                     <span style={{ fontSize: "12px", fontWeight: "600", color: "#6B7280", backgroundColor: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: "20px", padding: "2px 10px" }}>v{v.versionNumber}</span>
                     <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{fmtDate(v.updatedAt)}</span>
                     {v.label && <span style={{ fontSize: "12px", color: "#374151" }}>{v.label}</span>}
                   </div>
-                  <StatusDot status={v.status} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {v.status !== "published" && (
+                      <button type="button" disabled={changingStatus} onClick={() => changeStatus({ yearId: v.id, status: "published" })} style={{ padding: "3px 10px", background: "#059669", color: "#fff", border: "none", borderRadius: "6px", fontSize: "11px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: "pointer", opacity: changingStatus ? 0.5 : 1 }}>
+                        Publish
+                      </button>
+                    )}
+                    <StatusDot status={v.status} />
+                  </div>
                 </div>
               ))}
             </div>
