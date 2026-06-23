@@ -18,8 +18,8 @@ function EditCurriculumForm({ curriculum }) {
   const methods = useForm({
     resolver: zodResolver(curriculumDetailsSchema),
     defaultValues: {
-      name: curriculum.name || "",
-      code: curriculum.code || "",
+      name:        curriculum.name        || "",
+      code:        curriculum.code        || "",
       description: curriculum.description || "",
     },
     mode: "onTouched",

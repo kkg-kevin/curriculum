@@ -147,7 +147,8 @@
     ],
     "id": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
     "createdAt": "2026-06-23T07:33:48.870Z",
-    "updatedAt": "2026-06-23T11:15:05.518Z"
+    "updatedAt": "2026-06-23T12:17:25.766Z",
+    "curriculumType": "Core"
   },
   {
     "name": "SAMPLE CURRICULUM ",
@@ -183,6 +184,6 @@
     ],
     "id": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "createdAt": "2026-06-23T10:10:29.481Z",
-    "updatedAt": "2026-06-23T10:24:59.257Z"
+    "updatedAt": "2026-06-23T12:06:30.966Z"
   }
 ]

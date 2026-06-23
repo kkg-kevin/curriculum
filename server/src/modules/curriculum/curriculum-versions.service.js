@@ -72,16 +72,16 @@ const CurriculumVersionService = {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
     if (status === "published") {
-      // Retire any currently published version
+      // Retire every other published/current version for this curriculum
       const all = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
       all.forEach((v) => {
-        if (v.id !== versionId && v.isCurrent) {
+        if (v.id !== versionId && (v.isCurrent || v.status === "published")) {
           CurriculumVersionModel.update(v.id, { status: "inactive", isCurrent: false });
         }
       });
       return CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
     }
-    // draft / inactive — remove the isCurrent flag if it was on this version
+    // draft / inactive — clear isCurrent; if this was the live version a new publish is needed
     return CurriculumVersionModel.update(versionId, { status, isCurrent: false });
   },
 };
