@@ -1,4 +1,4 @@
-import { FiSearch, FiBell } from "react-icons/fi";
+import { FiBell } from "react-icons/fi";
 import { useLocation } from "react-router-dom";
 
 function Header() {
@@ -55,40 +55,6 @@ function Header() {
         >
           {pageTitle}
         </h2>
-      </div>
-
-      {/* Search */}
-      <div
-        style={{
-          width: "200px",
-          position: "relative",
-        }}
-      >
-        <FiSearch
-          size={18}
-          style={{
-            position: "absolute",
-            left: "14px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: "#6B7280",
-          }}
-        />
-
-        <input
-          type="text"
-          placeholder="Search..."
-          style={{
-            width: "100%",
-            padding: "12px 16px 12px 42px",
-            borderRadius: "12px",
-            border: "1px solid #E5E7EB",
-            outline: "none",
-            fontSize: "14px",
-            fontFamily: "Inter, sans-serif",
-            backgroundColor: "#F9FAFB",
-          }}
-        />
       </div>
 
       {/* Right Section */}

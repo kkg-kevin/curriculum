@@ -149,41 +149,6 @@ function CurriculumRow({ curriculum, navigate }) {
         e.currentTarget.style.boxShadow = "none";
       }}
     >
-      {curriculum.curriculumType ? (
-        <span
-          style={{
-            padding: "4px 10px",
-            backgroundColor: typeColor + "12",
-            color: typeColor,
-            borderRadius: "8px",
-            fontSize: "11px",
-            fontWeight: "700",
-            letterSpacing: "0.03em",
-            flexShrink: 0,
-            border: `1px solid ${typeColor}22`,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {curriculum.curriculumType}
-        </span>
-      ) : (
-        <span
-          style={{
-            padding: "4px 10px",
-            backgroundColor: "#F3F4F6",
-            color: "#9CA3AF",
-            borderRadius: "8px",
-            fontSize: "11px",
-            fontWeight: "600",
-            flexShrink: 0,
-            border: "1px solid #E5E7EB",
-            whiteSpace: "nowrap",
-          }}
-        >
-          No type
-        </span>
-      )}
-
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
@@ -198,12 +163,30 @@ function CurriculumRow({ curriculum, navigate }) {
         >
           {curriculum.name}
         </p>
-        <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+        <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
           {academicYear ? academicYear + " · " : ""}{classCount} {classCount === 1 ? "class" : "classes"} · {coursesCount} {coursesCount === 1 ? "course" : "courses"}
         </p>
       </div>
 
-      <div style={{ width: "110px", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+        {curriculum.curriculumType && (
+          <span
+            style={{
+              padding: "3px 9px",
+              backgroundColor: typeColor + "12",
+              color: typeColor,
+              borderRadius: "6px",
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "0.03em",
+              border: `1px solid ${typeColor}22`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {curriculum.curriculumType}
+          </span>
+        )}
+        <div style={{ width: "110px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
           <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "500" }}>Setup</span>
           <span style={{ fontSize: "10px", fontWeight: "700", color: isComplete ? "#15803D" : "#1D4ED8" }}>
@@ -226,6 +209,7 @@ function CurriculumRow({ curriculum, navigate }) {
         <p style={{ margin: "3px 0 0", fontSize: "10px", color: "#9CA3AF" }}>
           {isComplete ? "Ready to publish" : `${pct / 25}/4 steps done`}
         </p>
+        </div>
       </div>
 
       <button
