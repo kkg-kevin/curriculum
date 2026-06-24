@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
+import logo from "../../assets/Logo-image.png";
 
 function Sidebar() {
   const menuItems = [
@@ -18,7 +19,7 @@ function Sidebar() {
       style={{
         width: "260px",
         height: "100vh",
-        backgroundColor: "#0D47A1",
+        backgroundColor: "#25476a",
         color: "#fff",
         position: "fixed",
         left: 0,
@@ -31,14 +32,22 @@ function Sidebar() {
       {/* Logo */}
       <div
         style={{
-          padding: "28px 24px",
-          fontSize: "22px",
-          fontWeight: "700",
-          letterSpacing: "-0.5px",
+          padding: "20px 24px",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        Digifunzi
+        <img
+          src={logo}
+          alt="Digifunzi"
+          style={{
+            height: "40px",
+            width: "auto",
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+          }}
+        />
       </div>
 
       {/* Menu */}
@@ -58,11 +67,11 @@ function Sidebar() {
               marginBottom: "8px",
               borderRadius: "12px",
               textDecoration: "none",
-              color: "#fff",
+              color: isActive ? "#25476a" : "#fff",
               fontSize: "15px",
-              fontWeight: isActive ? "600" : "500",
+              fontWeight: isActive ? "700" : "500",
               backgroundColor: isActive
-                ? "rgba(255,255,255,0.15)"
+                ? "#feb139"
                 : "transparent",
               transition: "all 0.2s ease",
             })}
@@ -77,7 +86,7 @@ function Sidebar() {
         style={{
           margin: "16px",
           padding: "18px",
-          backgroundColor: "#1565C0",
+          backgroundColor: "#2e7db5",
           borderRadius: "14px",
         }}
       >

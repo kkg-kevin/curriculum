@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
@@ -43,9 +43,9 @@ const CSS = `
     transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
   }
   .csp-input:focus, .csp-select:focus {
-    border-color: #0D47A1;
+    border-color: #25476a;
     background-color: #F0F7FF;
-    box-shadow: 0 0 0 3px rgba(13,71,161,0.1);
+    box-shadow: 0 0 0 3px rgba(37,71,106,0.1);
   }
   .csp-input.err { border-color: #EF4444; background-color: #FFF5F5; }
   .csp-select {
@@ -93,8 +93,8 @@ const CSS = `
     font-family: Inter, sans-serif;
     transition: all 0.15s;
   }
-  .cycle-btn:hover { border-color: #93C5FD; background: #F8FBFF; }
-  .cycle-btn.active { border: 2px solid #0D47A1; background: #EFF6FF; }
+  .cycle-btn:hover { border-color: #b8d9ee; background: #F8FBFF; }
+  .cycle-btn.active { border: 2px solid #25476a; background: #e8f5fb; }
 
   .period-preview-grid {
     display: grid;
@@ -109,7 +109,7 @@ const CSS = `
   }
   .period-card-head {
     padding: 10px 14px;
-    background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);
+    background: linear-gradient(135deg, #25476a 0%, #2e7db5 100%);
     color: #fff;
     font-size: 13px;
     font-weight: 700;
@@ -126,18 +126,18 @@ const CSS = `
     align-items: center;
     gap: 4px;
     padding: 5px 6px 5px 12px;
-    background: #EFF6FF;
-    border: 1px solid #BFDBFE;
+    background: #e8f5fb;
+    border: 1px solid #a8d5ee;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
-    color: #1D4ED8;
+    color: #25476a;
   }
   .class-chip-x {
     background: none;
     border: none;
     cursor: pointer;
-    color: #93C5FD;
+    color: #b8d9ee;
     font-size: 15px;
     line-height: 1;
     padding: 0 3px;
@@ -169,7 +169,7 @@ const sectionTitle = (extra = {}) => ({
 
 const stepBadge = {
   width: "26px", height: "26px", borderRadius: "8px",
-  backgroundColor: "#0D47A1", color: "#fff",
+  backgroundColor: "#25476a", color: "#fff",
   fontSize: "12px", fontWeight: "700",
   display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
 };
@@ -195,8 +195,8 @@ function StepIndicator({ current }) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
               <div style={{
                 width: "34px", height: "34px", borderRadius: "50%",
-                backgroundColor: done || active ? "#0D47A1" : "#F3F4F6",
-                border: `2px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`,
+                backgroundColor: done || active ? "#25476a" : "#F3F4F6",
+                border: `2px solid ${done || active ? "#25476a" : "#E5E7EB"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: done || active ? "#fff" : "#9CA3AF",
                 fontSize: done ? "15px" : "13px", fontWeight: "700",
@@ -207,14 +207,14 @@ function StepIndicator({ current }) {
               <span style={{
                 fontSize: "11px",
                 fontWeight: active ? "600" : "400",
-                color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF",
+                color: active ? "#25476a" : done ? "#374151" : "#9CA3AF",
                 whiteSpace: "nowrap",
               }}>{step.label}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className="csp-connector" style={{
                 height: "2px",
-                backgroundColor: done ? "#0D47A1" : "#E5E7EB",
+                backgroundColor: done ? "#25476a" : "#E5E7EB",
                 margin: "0 6px", marginBottom: "20px", flexShrink: 0,
                 transition: "background-color 0.2s",
               }} />
@@ -338,7 +338,7 @@ export default function CurriculumStructurePage() {
   if (isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "400px", fontFamily: "Inter, sans-serif", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
-        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         Loading curriculum…
       </div>
@@ -349,7 +349,7 @@ export default function CurriculumStructurePage() {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 20px" }}>
         <p style={{ fontSize: "16px", color: "#EF4444", marginBottom: "16px" }}>Could not load curriculum.</p>
-        <button type="button" onClick={() => navigate("/curriculum")} style={{ padding: "10px 20px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+        <button type="button" onClick={() => navigate("/curriculum")} style={{ padding: "10px 20px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           ← Back to Curriculum
         </button>
       </div>
@@ -385,7 +385,7 @@ export default function CurriculumStructurePage() {
           <button type="button" onClick={() => handleSave("/curriculum")} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
             Done
           </button>
-          <button type="button" onClick={() => handleSave(`/curriculum/${id}/academic-year`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#93C5FD" : "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
+          <button type="button" onClick={() => handleSave(`/curriculum/${id}/academic-year`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
             {isPending ? <><Spinner /> Saving…</> : "Next: Academic Year →"}
           </button>
         </div>
@@ -438,10 +438,10 @@ export default function CurriculumStructurePage() {
                   onClick={() => setCycleModel(opt.value)}
                   className={`cycle-btn${cycleModel === opt.value ? " active" : ""}`}
                 >
-                  <div style={{ fontSize: "13px", fontWeight: cycleModel === opt.value ? "700" : "600", color: cycleModel === opt.value ? "#0D47A1" : "#374151", marginBottom: "3px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: cycleModel === opt.value ? "700" : "600", color: cycleModel === opt.value ? "#25476a" : "#374151", marginBottom: "3px" }}>
                     {opt.label}
                   </div>
-                  <div style={{ fontSize: "11px", color: cycleModel === opt.value ? "#1565C0" : "#9CA3AF" }}>
+                  <div style={{ fontSize: "11px", color: cycleModel === opt.value ? "#2e7db5" : "#9CA3AF" }}>
                     {opt.sub}
                   </div>
                 </button>
@@ -519,7 +519,7 @@ export default function CurriculumStructurePage() {
                 onClick={addClasses}
                 style={{
                   flexShrink: 0, padding: "0 20px", height: "44px",
-                  backgroundColor: "#0D47A1", color: "#fff",
+                  backgroundColor: "#25476a", color: "#fff",
                   border: "none", borderRadius: "10px",
                   fontSize: "13px", fontWeight: "600",
                   fontFamily: "Inter, sans-serif", cursor: "pointer",
@@ -557,7 +557,7 @@ export default function CurriculumStructurePage() {
             <h4 style={sectionTitle({ marginBottom: "16px" })}>
               Structure Preview
               {periodNames.length > 0 && classes.length > 0 && (
-                <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: "600", color: "#10B981", backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "20px", padding: "2px 10px" }}>
+                <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: "600", color: "#38aae1", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "2px 10px" }}>
                   {periodNames.length} {cycleModel === "semesters" ? "semester" : "period"}{periodNames.length !== 1 ? "s" : ""} · {classes.length} class{classes.length !== 1 ? "es" : ""}
                 </span>
               )}
@@ -584,7 +584,7 @@ export default function CurriculumStructurePage() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                           {classes.map((cls) => (
                             <div key={cls} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "3px 0" }}>
-                              <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#0D47A1", flexShrink: 0 }} />
+                              <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#25476a", flexShrink: 0 }} />
                               <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{cls}</span>
                             </div>
                           ))}

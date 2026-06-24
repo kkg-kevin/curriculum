@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
@@ -8,9 +8,9 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { ClassCard } from "../components/ClassCard";
 import SetUpYearPanel from "../components/SetUpYearPanel";
 
-const ACCENT    = "#0D47A1";
-const GRAD_FROM = "#0D2E6E";
-const GRAD_TO   = "#1976D2";
+const ACCENT    = "#25476a";
+const GRAD_FROM = "#1a3550";
+const GRAD_TO   = "#38aae1";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 
@@ -63,7 +63,7 @@ export default function SchoolClassesPage() {
       </div>
 
       {/* Hero */}
-      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #0D47A1 40%, #1565C0 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #25476a 40%, #2e7db5 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -80,7 +80,7 @@ export default function SchoolClassesPage() {
           <button
             type="button"
             onClick={() => setSetupOpen((v) => !v)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#ffffff", color: setupOpen ? "#ffffff" : ACCENT, border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap", transition: "all 0.15s" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#feb139", color: setupOpen ? "#ffffff" : "#25476a", border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap", transition: "all 0.15s" }}
           >
             {setupOpen ? "✕ Close" : "Set Up Year"}
           </button>
@@ -89,7 +89,7 @@ export default function SchoolClassesPage() {
 
       {/* Set Up Year panel */}
       {setupOpen && school && (
-        <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #BFDBFE", marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #a8d5ee", marginBottom: 16, overflow: "hidden" }}>
           <SetUpYearPanel
             school={school}
             curriculum={curriculum}
@@ -102,8 +102,8 @@ export default function SchoolClassesPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: "📚", bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
-          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: "✅", bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
+          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: "📚", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: "✅", bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
           { label: "Inactive",      value: classesLoading ? "—" : classes.length - activeCount, icon: "⏸️", bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
         ].map((stat) => (
           <div key={stat.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${stat.border}`, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -139,7 +139,7 @@ export default function SchoolClassesPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {[1, 2, 3].map((n) => (
             <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ height: 3, background: "linear-gradient(90deg, #DBEAFE, #EFF6FF)" }} />
+              <div style={{ height: 3, background: "linear-gradient(90deg, #d6edf8, #e8f5fb)" }} />
               <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#FFEDD5" }} />

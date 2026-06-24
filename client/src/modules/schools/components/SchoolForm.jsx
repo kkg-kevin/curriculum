@@ -1,4 +1,4 @@
-import { useFormContext, Controller } from "react-hook-form";
+﻿import { useFormContext, Controller } from "react-hook-form";
 import { KENYA_COUNTIES } from "../schemas/school.schema";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 
@@ -70,7 +70,7 @@ function Input({ name, placeholder, type = "text", ...rest }) {
           boxSizing: "border-box",
           transition: "border-color 0.15s",
         }}
-        onFocus={(e) => { e.target.style.borderColor = "#93C5FD"; e.target.style.backgroundColor = "#fff"; }}
+        onFocus={(e) => { e.target.style.borderColor = "#b8d9ee"; e.target.style.backgroundColor = "#fff"; }}
         onBlur={(e) => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
       />
     </Field>

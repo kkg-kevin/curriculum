@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,8 +28,8 @@ function StepIndicator({ current }) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
               <div style={{
                 width: "34px", height: "34px", borderRadius: "50%",
-                backgroundColor: done || active ? "#0D47A1" : "#F3F4F6",
-                border: `2px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`,
+                backgroundColor: done || active ? "#25476a" : "#F3F4F6",
+                border: `2px solid ${done || active ? "#25476a" : "#E5E7EB"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: done || active ? "#fff" : "#9CA3AF",
                 fontSize: done ? "15px" : "13px",
@@ -42,7 +42,7 @@ function StepIndicator({ current }) {
               <span style={{
                 fontSize: "11px",
                 fontWeight: active ? "600" : "400",
-                color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF",
+                color: active ? "#25476a" : done ? "#374151" : "#9CA3AF",
                 whiteSpace: "nowrap",
               }}>
                 {step.label}
@@ -51,7 +51,7 @@ function StepIndicator({ current }) {
             {i < STEPS.length - 1 && (
               <div className="ccp-connector" style={{
                 height: "2px",
-                backgroundColor: done ? "#0D47A1" : "#E5E7EB",
+                backgroundColor: done ? "#25476a" : "#E5E7EB",
                 margin: "0 6px",
                 marginBottom: "20px",
                 flexShrink: 0,
@@ -196,7 +196,7 @@ export default function CreateCurriculumPage() {
             disabled={isPending}
             style={{
               padding: "10px 24px",
-              backgroundColor: isPending ? "#93C5FD" : "#0D47A1",
+              backgroundColor: isPending ? "#b8d9ee" : "#25476a",
               color: "#ffffff", border: "none", borderRadius: "10px",
               fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif",
               cursor: isPending ? "not-allowed" : "pointer",

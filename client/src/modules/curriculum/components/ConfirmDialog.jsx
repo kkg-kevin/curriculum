@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 
 export default function ConfirmDialog({
   isOpen,
@@ -13,7 +13,7 @@ export default function ConfirmDialog({
   if (!isOpen) return null;
 
   const isDanger = variant === "danger";
-  const confirmBg = isDanger ? "#EF4444" : "#0D47A1";
+  const confirmBg = isDanger ? "#EF4444" : "#25476a";
   const confirmHoverBg = isDanger ? "#DC2626" : "#0A3880";
 
   return createPortal(

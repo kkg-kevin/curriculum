@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,13 +11,13 @@ import { teacherApi } from "../services/teacherApi";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#0D47A1";
+const ACCENT = "#25476a";
 
 function ClassCheckbox({ cls, teachersMap, selected, onToggle }) {
   const currentTeacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
   return (
     <label
-      style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${selected ? ACCENT : "#E5E7EB"}`, backgroundColor: selected ? "#EFF6FF" : "#FAFAFA", cursor: "pointer", transition: "all 0.15s" }}
+      style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${selected ? ACCENT : "#E5E7EB"}`, backgroundColor: selected ? "#e8f5fb" : "#FAFAFA", cursor: "pointer", transition: "all 0.15s" }}
     >
       <input
         type="checkbox"
@@ -131,7 +131,7 @@ export default function CreateTeacherPage() {
             type="submit"
             form="create-teacher-form"
             disabled={isPending}
-            style={{ padding: "10px 24px", backgroundColor: isPending ? "#93C5FD" : ACCENT, color: "#ffffff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}
+            style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}
           >
             {isPending ? (
               <><span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>

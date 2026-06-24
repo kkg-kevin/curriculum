@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -137,7 +137,7 @@ function EditCurriculumForm({ curriculum }) {
             disabled={isPending}
             style={{
               padding: "10px 24px",
-              backgroundColor: isPending ? "#93C5FD" : "#0D47A1",
+              backgroundColor: isPending ? "#b8d9ee" : "#25476a",
               color: "#ffffff",
               border: "none",
               borderRadius: "10px",
@@ -242,7 +242,7 @@ export default function EditCurriculumPage() {
             width: "28px",
             height: "28px",
             border: "3px solid #E5E7EB",
-            borderTopColor: "#0D47A1",
+            borderTopColor: "#25476a",
             borderRadius: "50%",
             display: "inline-block",
             animation: "spin 0.7s linear infinite",
@@ -271,7 +271,7 @@ export default function EditCurriculumPage() {
           onClick={() => navigate("/curriculum")}
           style={{
             padding: "10px 20px",
-            backgroundColor: "#0D47A1",
+            backgroundColor: "#25476a",
             color: "#fff",
             border: "none",
             borderRadius: "10px",

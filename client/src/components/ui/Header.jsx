@@ -1,4 +1,4 @@
-import { FiBell } from "react-icons/fi";
+﻿import { FiBell } from "react-icons/fi";
 import { useLocation } from "react-router-dom";
 
 function Header() {
@@ -87,7 +87,7 @@ function Header() {
               width: "40px",
               height: "40px",
               borderRadius: "50%",
-              backgroundColor: "#0D47A1",
+              backgroundColor: "#25476a",
               color: "#fff",
               display: "flex",
               alignItems: "center",

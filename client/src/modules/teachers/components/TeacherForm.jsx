@@ -1,4 +1,4 @@
-import { useFormContext } from "react-hook-form";
+﻿import { useFormContext } from "react-hook-form";
 import { TEACHER_STATUSES } from "../schemas/teacher.schema";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 
@@ -50,7 +50,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
         placeholder={placeholder}
         {...register(name)}
         style={inputStyle(!!error)}
-        onFocus={(e)  => { e.target.style.borderColor = "#93C5FD"; e.target.style.backgroundColor = "#fff"; }}
+        onFocus={(e)  => { e.target.style.borderColor = "#b8d9ee"; e.target.style.backgroundColor = "#fff"; }}
         onBlur={(e)   => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
       />
     </Field>
@@ -105,8 +105,8 @@ export default function TeacherForm({ lockedSchoolId = "" }) {
               <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "5px" }}>
                 School
               </label>
-              <div style={{ padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #BFDBFE", backgroundColor: "#F8FAFF", display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+              <div style={{ padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #a8d5ee", backgroundColor: "#F8FAFF", display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                   {lockedSchool?.name?.[0]?.toUpperCase() || "S"}
                 </div>
                 <div>

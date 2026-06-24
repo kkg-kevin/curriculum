@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import { updateLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#0D47A1";
+const ACCENT = "#25476a";
 
 export default function EditLearnerPage() {
   const { id } = useParams();
@@ -85,7 +85,7 @@ export default function EditLearnerPage() {
             type="submit"
             form="edit-learner-form"
             disabled={isPending || !isDirty}
-            style={{ padding: "10px 24px", backgroundColor: isPending || !isDirty ? "#93C5FD" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending || !isDirty ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !isDirty ? 0.6 : 1 }}
+            style={{ padding: "10px 24px", backgroundColor: isPending || !isDirty ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending || !isDirty ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !isDirty ? 0.6 : 1 }}
           >
             {isPending ? (
               <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>

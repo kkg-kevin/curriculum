@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,7 @@ import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#0D47A1";
+const ACCENT = "#25476a";
 
 const editSchema = z.object({
   classTeacherId: z.string().nullable().optional(),
@@ -20,7 +20,7 @@ const editSchema = z.object({
 const S = {
   section: { display: "flex", flexDirection: "column", gap: 16 },
   heading: { fontSize: 12, fontWeight: 700, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" },
-  divider: { border: "none", borderTop: "1px solid #BFDBFE", margin: "0 0 8px" },
+  divider: { border: "none", borderTop: "1px solid #a8d5ee", margin: "0 0 8px" },
   row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
   field:   { display: "flex", flexDirection: "column", gap: 6 },
   label:   { fontSize: 13, fontWeight: 500, color: "#374151" },
@@ -105,7 +105,7 @@ export default function EditClassPage() {
             type="submit"
             form="edit-class-form"
             disabled={isPending || !isDirty}
-            style={{ padding: "10px 24px", backgroundColor: isPending || !isDirty ? "#93C5FD" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending || !isDirty ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !isDirty ? 0.6 : 1 }}
+            style={{ padding: "10px 24px", backgroundColor: isPending || !isDirty ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending || !isDirty ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !isDirty ? 0.6 : 1 }}
           >
             {isPending ? (
               <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>
@@ -116,7 +116,7 @@ export default function EditClassPage() {
 
       <div style={{ maxWidth: 580 }}>
         {/* Read-only context */}
-        <div style={{ backgroundColor: "#F8FAFF", border: "1.5px solid #BFDBFE", borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
+        <div style={{ backgroundColor: "#F8FAFF", border: "1.5px solid #a8d5ee", borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
           <p style={{ margin: "0 0 14px", fontSize: 12, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Class — read only</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             {[

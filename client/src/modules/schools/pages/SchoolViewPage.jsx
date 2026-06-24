@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../hooks/useSchool";
@@ -7,7 +7,7 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 
-const TEAL = "#047857";
+const TEAL = "#38aae1";
 
 /* ── Chevron icon ────────────────────────────────────────────────────── */
 
@@ -67,7 +67,7 @@ function AccordionSection({ title, count, children, defaultOpen = true }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+          <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>
             {title}
           </h2>
           {count !== undefined && (
@@ -77,9 +77,9 @@ function AccordionSection({ title, count, children, defaultOpen = true }) {
                 borderRadius: "20px",
                 fontSize: "11px",
                 fontWeight: "700",
-                backgroundColor: "#F0FDF4",
-                color: TEAL,
-                border: "1px solid #BBF7D0",
+                backgroundColor: "#e8f5fb",
+                color: "#38aae1",
+                border: "1px solid #a8d5ee",
               }}
             >
               {count}
@@ -125,7 +125,7 @@ function Section({ title, count, children }) {
           justifyContent: "space-between",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+        <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           {title}
         </h2>
         {count !== undefined && (
@@ -135,9 +135,9 @@ function Section({ title, count, children }) {
               borderRadius: "20px",
               fontSize: "11px",
               fontWeight: "700",
-              backgroundColor: "#F0FDF4",
-              color: TEAL,
-              border: "1px solid #BBF7D0",
+              backgroundColor: "#e8f5fb",
+              color: "#38aae1",
+              border: "1px solid #a8d5ee",
             }}
           >
             {count}
@@ -176,22 +176,22 @@ function DetailRow({ icon, label, value }) {
 }
 
 const STATUS_TEACHER = {
-  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
 };
 const STATUS_TEACHER_LABEL = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
 
 const STATUS_CLASS = {
-  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
 const STATUS_LEARNER = {
-  active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-  transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
-  graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
+  transferred: { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  graduated:   { bg: "#fff8e6", color: "#b07800", border: "#fcd97a" },
 };
 const STATUS_LEARNER_LABEL = {
   active: "Active",
@@ -294,7 +294,7 @@ export default function SchoolViewPage() {
 
   const statusStyle =
     school.status === "active"
-      ? { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" }
+      ? { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" }
       : { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
 
   const address = [
@@ -312,7 +312,7 @@ export default function SchoolViewPage() {
       {/* ── Header banner ──────────────────────────────────────────────── */}
       <div
         style={{
-          background: "linear-gradient(135deg, #064E3B 0%, #047857 50%, #059669 100%)",
+          background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)",
           borderRadius: "20px",
           padding: "28px 32px",
           marginBottom: "20px",
@@ -431,8 +431,8 @@ export default function SchoolViewPage() {
                 alignItems: "center",
                 gap: "7px",
                 padding: "10px 20px",
-                backgroundColor: "#ffffff",
-                color: TEAL,
+                backgroundColor: "#feb139",
+                color: "#25476a",
                 border: "none",
                 borderRadius: "10px",
                 fontSize: "13px",
@@ -468,9 +468,9 @@ export default function SchoolViewPage() {
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Teachers", value: teachers.length, icon: "👩‍🏫", bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
-          { label: "Classes",  value: classes.length,  icon: "🏫",   bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
-          { label: "Learners", value: learners.length, icon: "🎒",   bg: "#DBEAFE", color: "#1E40AF", border: "#93C5FD" },
+          { label: "Teachers", value: teachers.length, icon: "👩‍🏫", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Classes",  value: classes.length,  icon: "🏫",   bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Learners", value: learners.length, icon: "🎒",   bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
         ].map((s) => (
           <div
             key={s.label}
@@ -540,8 +540,8 @@ export default function SchoolViewPage() {
                 onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
                 style={{
                   borderRadius: "12px",
-                  backgroundColor: "#F0FDF4",
-                  border: "1px solid #BBF7D0",
+                  backgroundColor: "#e8f5fb",
+                  border: "1px solid #a8d5ee",
                   cursor: "pointer",
                   overflow: "hidden",
                 }}
@@ -560,7 +560,7 @@ export default function SchoolViewPage() {
                         width: "40px",
                         height: "40px",
                         borderRadius: "10px",
-                        backgroundColor: "#D1FAE5",
+                        backgroundColor: "#e8f5fb",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -572,7 +572,7 @@ export default function SchoolViewPage() {
                     </div>
                     <div>
                       <p
-                        style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#065F46" }}
+                        style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a" }}
                       >
                         {curriculum.name}
                       </p>
@@ -586,7 +586,7 @@ export default function SchoolViewPage() {
                     height="14"
                     viewBox="0 0 24 24"
                     fill="none"
-                    style={{ color: "#6EE7B7", flexShrink: 0 }}
+                    style={{ color: "#a8d5ee", flexShrink: 0 }}
                   >
                     <path
                       d="M9 18l6-6-6-6"
@@ -604,7 +604,7 @@ export default function SchoolViewPage() {
                       display: "flex",
                       gap: "6px",
                       flexWrap: "wrap",
-                      borderTop: "1px solid #BBF7D0",
+                      borderTop: "1px solid #a8d5ee",
                     }}
                   >
                     {(curriculum.structure || []).map((term, i) => (
@@ -613,9 +613,9 @@ export default function SchoolViewPage() {
                         style={{
                           fontSize: "11px",
                           fontWeight: "600",
-                          color: "#065F46",
-                          backgroundColor: "#D1FAE5",
-                          border: "1px solid #6EE7B7",
+                          color: "#25476a",
+                          backgroundColor: "#e8f5fb",
+                          border: "1px solid #a8d5ee",
                           borderRadius: "6px",
                           padding: "2px 9px",
                         }}
@@ -646,8 +646,8 @@ export default function SchoolViewPage() {
                   onClick={() => navigate(`/schools/${id}/edit`)}
                   style={{
                     padding: "8px 18px",
-                    backgroundColor: TEAL,
-                    color: "#fff",
+                    backgroundColor: "#feb139",
+                    color: "#25476a",
                     border: "none",
                     borderRadius: "8px",
                     fontSize: "13px",
@@ -691,7 +691,7 @@ export default function SchoolViewPage() {
                           width: 34,
                           height: 34,
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, #0D47A1, #1565C0)",
+                          background: "linear-gradient(135deg, #25476a, #2e7db5)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -804,7 +804,7 @@ export default function SchoolViewPage() {
                           width: 34,
                           height: 34,
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, #0D2E6E, #0D47A1)",
+                          background: "linear-gradient(135deg, #1a3550, #25476a)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",

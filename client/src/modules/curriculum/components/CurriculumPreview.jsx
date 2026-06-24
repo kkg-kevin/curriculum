@@ -1,4 +1,4 @@
-import { useFormContext } from "react-hook-form";
+﻿import { useFormContext } from "react-hook-form";
 
 const StructureIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,7 +24,7 @@ export default function CurriculumPreview() {
       <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "12px" }}>
         <div style={{
           width: "7px", height: "7px", borderRadius: "50%",
-          backgroundColor: "#0D47A1", boxShadow: "0 0 0 3px rgba(13,71,161,0.15)",
+          backgroundColor: "#25476a", boxShadow: "0 0 0 3px rgba(37,71,106,0.15)",
         }} />
         <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Live Preview
@@ -35,12 +35,12 @@ export default function CurriculumPreview() {
       <div style={{
         backgroundColor: "#ffffff",
         borderRadius: "18px",
-        boxShadow: "0 4px 24px rgba(13,71,161,0.09), 0 1px 4px rgba(0,0,0,0.05)",
+        boxShadow: "0 4px 24px rgba(37,71,106,0.09), 0 1px 4px rgba(0,0,0,0.05)",
         overflow: "hidden",
         border: "1px solid #E8F0FE",
       }}>
         {/* Top gradient bar */}
-        <div style={{ height: "5px", background: "linear-gradient(90deg, #0D47A1 0%, #1565C0 40%, #42A5F5 100%)" }} />
+        <div style={{ height: "5px", background: "linear-gradient(90deg, #25476a 0%, #2e7db5 40%, #42A5F5 100%)" }} />
 
         <div style={{ padding: "22px" }}>
 
@@ -63,9 +63,9 @@ export default function CurriculumPreview() {
               <span style={{
                 display: "inline-flex", alignItems: "center",
                 padding: "3px 10px", borderRadius: "20px",
-                backgroundColor: "#EFF6FF", color: "#1D4ED8",
+                backgroundColor: "#e8f5fb", color: "#25476a",
                 fontSize: "11px", fontWeight: "700",
-                border: "1px solid #BFDBFE", letterSpacing: "0.04em",
+                border: "1px solid #a8d5ee", letterSpacing: "0.04em",
               }}>
                 {code}
               </span>
@@ -75,12 +75,12 @@ export default function CurriculumPreview() {
           </div>
 
           {/* Divider */}
-          <div style={{ height: "1px", background: "linear-gradient(90deg, #DBEAFE, #E0F2FE, transparent)", marginBottom: "16px" }} />
+          <div style={{ height: "1px", background: "linear-gradient(90deg, #d6edf8, #E0F2FE, transparent)", marginBottom: "16px" }} />
 
           {/* Description */}
           {description ? (
             <div style={{
-              backgroundColor: "#F8FAFF", borderLeft: "3px solid #BFDBFE",
+              backgroundColor: "#F8FAFF", borderLeft: "3px solid #a8d5ee",
               borderRadius: "0 8px 8px 0", padding: "10px 13px", marginBottom: "20px",
             }}>
               <p style={{ margin: 0, fontSize: "13px", color: "#4B5563", lineHeight: "1.65" }}>
