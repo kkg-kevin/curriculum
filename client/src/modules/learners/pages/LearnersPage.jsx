@@ -9,8 +9,8 @@ const ACCENT = "#0D47A1";
 const STATUS_STYLES = {
   active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE", label: "Active"      },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive"    },
-  transferred: { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0", label: "Transferred" },
-  graduated:   { bg: "#F5F3FF", color: "#5B21B6", border: "#C4B5FD", label: "Graduated"   },
+  transferred: { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD", label: "Transferred" },
+  graduated:   { bg: "#EEF2FF", color: "#3730A3", border: "#C7D2FE", label: "Graduated"   },
 };
 
 function StatusBadge({ status }) {

@@ -8,7 +8,7 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#EA580C";
+const ACCENT = "#0D47A1";
 
 function DetailRow({ label, value, empty = "—" }) {
   return (
@@ -75,7 +75,7 @@ export default function ClassViewPage() {
       </div>
 
       {/* Header card */}
-      <div style={{ background: `linear-gradient(135deg, #7C2D12 0%, #9A3412 40%, #C2410C 75%, ${ACCENT} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -123,13 +123,13 @@ export default function ClassViewPage() {
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>Learners</h3>
-            <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#FFF7ED", color: "#9A3412", border: "1px solid #FED7AA" }}>{classLearners.length}</span>
+            <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#EFF6FF", color: "#1E3A8A", border: "1px solid #BFDBFE" }}>{classLearners.length}</span>
           </div>
           {classLearners.length === 0 ? (
             <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>🎒</div>
               <p style={{ margin: "0 0 12px", fontSize: 13 }}>No learners enrolled in this class yet.</p>
-              <button type="button" onClick={() => navigate("/learners/create")} style={{ padding: "8px 16px", backgroundColor: "#BE185D", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Enroll Learner</button>
+              <button type="button" onClick={() => navigate("/learners/create")} style={{ padding: "8px 16px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Enroll Learner</button>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -140,7 +140,7 @@ export default function ClassViewPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg, #831843, #BE185D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg, #0D2E6E, #0D47A1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                       {(l.firstName?.[0] || "") + (l.lastName?.[0] || "")}
                     </div>
                     <div>

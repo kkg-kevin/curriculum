@@ -3409,5 +3409,108 @@
     ],
     "createdAt": "2026-06-23T10:14:43.185Z",
     "updatedAt": "2026-06-23T10:14:43.185Z"
+  },
+  {
+    "id": "d0a55458-7b11-4cc8-b132-6c818b9c55d9",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "academicYearId": "17e8a1ae-ef37-462c-b152-ac68029d967c",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289964774-1r0s386hk",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289966994-ega4glz0f",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289969565-1gbu106mf",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289971594-7m1bhbtln",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289978498-qzcjdhsqp",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289980199-zjb4b8o1m",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289982232-qj6px8utr",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289984263-o5ieljlp3",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T08:33:06.486Z",
+    "updatedAt": "2026-06-24T08:33:09.105Z"
   }
 ]

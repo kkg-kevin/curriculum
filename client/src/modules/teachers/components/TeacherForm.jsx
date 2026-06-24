@@ -50,7 +50,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
         placeholder={placeholder}
         {...register(name)}
         style={inputStyle(!!error)}
-        onFocus={(e)  => { e.target.style.borderColor = "#A78BFA"; e.target.style.backgroundColor = "#fff"; }}
+        onFocus={(e)  => { e.target.style.borderColor = "#93C5FD"; e.target.style.backgroundColor = "#fff"; }}
         onBlur={(e)   => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
       />
     </Field>
@@ -59,10 +59,11 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
 
 /* ── Main form ────────────────────────────────────────────────────────── */
 
-export default function TeacherForm() {
+export default function TeacherForm({ lockedSchoolId = "" }) {
   const { register, formState: { errors } } = useFormContext();
   const { data: schoolsData } = useSchoolsQuery();
   const schools = schoolsData?.data || [];
+  const lockedSchool = lockedSchoolId ? schools.find((s) => s.id === lockedSchoolId) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0", backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
@@ -98,19 +99,42 @@ export default function TeacherForm() {
       <div style={{ padding: "20px 24px" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>School</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <Field label="School" required error={errors?.schoolId?.message}>
-            <select {...register("schoolId")} style={selectStyle(!!errors?.schoolId)}>
-              <option value="">Select school…</option>
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-              ))}
-            </select>
-            {schools.length === 0 && (
-              <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#F59E0B" }}>
-                No schools found. Add a school first.
-              </p>
-            )}
-          </Field>
+
+          {lockedSchoolId ? (
+            <div>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "5px" }}>
+                School
+              </label>
+              <div style={{ padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #BFDBFE", backgroundColor: "#F8FAFF", display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                  {lockedSchool?.name?.[0]?.toUpperCase() || "S"}
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#111827" }}>
+                    {lockedSchool?.name || "Loading…"}
+                  </p>
+                  {lockedSchool?.code && (
+                    <p style={{ margin: 0, fontSize: "11px", color: "#6B7280" }}>{lockedSchool.code}</p>
+                  )}
+                </div>
+              </div>
+              <input type="hidden" {...register("schoolId")} />
+            </div>
+          ) : (
+            <Field label="School" required error={errors?.schoolId?.message}>
+              <select {...register("schoolId")} style={selectStyle(!!errors?.schoolId)}>
+                <option value="">Select school…</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                ))}
+              </select>
+              {schools.length === 0 && (
+                <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#F59E0B" }}>
+                  No schools found. Add a school first.
+                </p>
+              )}
+            </Field>
+          )}
 
           <div style={{ maxWidth: "220px" }}>
             <Field label="Status" required error={errors?.status?.message}>

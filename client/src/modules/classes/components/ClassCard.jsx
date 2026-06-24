@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useDeleteClass } from "../hooks/useClasses";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT    = "#EA580C";
-const GRAD_FROM = "#7C2D12";
-const GRAD_TO   = "#EA580C";
+const ACCENT    = "#0D47A1";
+const GRAD_FROM = "#0D2E6E";
+const GRAD_TO   = "#1976D2";
 
 const STATUS_STYLES = {
-  active:   { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" },
+  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
@@ -75,7 +75,7 @@ export function ClassCard({ cls, teachersMap }) {
       onMouseLeave={() => setHovered(false)}
       style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(234,88,12,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto" }}
     >
-      <div style={{ height: hovered ? 4 : 3, background: `linear-gradient(90deg, ${GRAD_FROM}, ${GRAD_TO}, #FB923C)`, transition: "height 0.2s" }} />
+      <div style={{ height: hovered ? 4 : 3, background: `linear-gradient(90deg, ${GRAD_FROM}, ${GRAD_TO}, #60A5FA)`, transition: "height 0.2s" }} />
 
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         {/* Header */}
@@ -110,11 +110,17 @@ export function ClassCard({ cls, teachersMap }) {
               ? `${teacher.firstName} ${teacher.lastName}`
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class teacher</span>}
           </div>
-          {cls.capacity && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-              <span>👥</span> Capacity: {cls.capacity}
-            </div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+            <span>👥</span>
+            <span>
+              {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}
+              {cls.capacity ? (
+                <span style={{ color: (cls.learnerCount ?? 0) >= cls.capacity ? "#EF4444" : "#9CA3AF" }}>
+                  {" "}· {cls.capacity} capacity
+                </span>
+              ) : null}
+            </span>
+          </div>
         </div>
 
         <div style={{ marginTop: "auto" }}>

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
-import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { curriculumApi } from "../../curriculum/services/curriculumApi";
 import { classApi } from "../services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { ClassCard } from "../components/ClassCard";
 import SetUpYearPanel from "../components/SetUpYearPanel";
 
-const ACCENT    = "#EA580C";
-const GRAD_FROM = "#7C2D12";
-const GRAD_TO   = "#EA580C";
+const ACCENT    = "#0D47A1";
+const GRAD_FROM = "#0D2E6E";
+const GRAD_TO   = "#1976D2";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 
@@ -39,7 +39,12 @@ export default function SchoolClassesPage() {
   const teachersMap = (teachersData?.data || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
   const activeCount = classes.filter((c) => c.status === "active").length;
 
-  const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
+  const { data: allCurriculaData } = useQuery({
+    queryKey: ["curricula", "all"],
+    queryFn:  () => curriculumApi.getAll({}),
+    enabled:  !!school?.curriculumId,
+  });
+  const curriculum = (allCurriculaData?.data || []).find((c) => c.id === school?.curriculumId);
 
   if (schoolLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -58,7 +63,7 @@ export default function SchoolClassesPage() {
       </div>
 
       {/* Hero */}
-      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #9A3412 40%, #C2410C 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #0D47A1 40%, #1565C0 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -97,8 +102,8 @@ export default function SchoolClassesPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: "📚", bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" },
-          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: "✅", bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
+          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: "📚", bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: "✅", bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
           { label: "Inactive",      value: classesLoading ? "—" : classes.length - activeCount, icon: "⏸️", bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
         ].map((stat) => (
           <div key={stat.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${stat.border}`, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -134,7 +139,7 @@ export default function SchoolClassesPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {[1, 2, 3].map((n) => (
             <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ height: 3, background: "linear-gradient(90deg, #FFEDD5, #FFF7ED)" }} />
+              <div style={{ height: 3, background: "linear-gradient(90deg, #DBEAFE, #EFF6FF)" }} />
               <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#FFEDD5" }} />

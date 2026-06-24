@@ -34,5 +34,14 @@
     "endDate": "2026-12-31",
     "createdAt": "2026-06-23T12:41:39.774Z",
     "updatedAt": "2026-06-23T12:41:39.774Z"
+  },
+  {
+    "id": "9f5cdfab-644b-49ad-90d8-2f4da08a3d51",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "KGC 2026 Curriculum",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-06-24T08:32:06.982Z",
+    "updatedAt": "2026-06-24T08:32:06.982Z"
   }
 ]
