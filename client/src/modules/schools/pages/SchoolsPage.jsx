@@ -17,8 +17,8 @@ function SchoolIcon({ size = 40 }) {
         width: size,
         height: size,
         borderRadius: size * 0.28,
-        background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)",
-        border: "1.5px solid #A7F3D0",
+        background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+        border: "1.5px solid #BFDBFE",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -34,7 +34,7 @@ function SchoolIcon({ size = 40 }) {
 /* ── Status badge ─────────────────────────────────────────────────────── */
 
 const STATUS_STYLES = {
-  active:   { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
+  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
@@ -141,7 +141,7 @@ function SchoolCard({ school, curriculaMap }) {
         backgroundColor: "#ffffff",
         borderRadius: "16px",
         boxShadow: hovered
-          ? "0 8px 24px rgba(5,150,105,0.10), 0 2px 6px rgba(0,0,0,0.05)"
+          ? "0 8px 24px rgba(13,71,161,0.10), 0 2px 6px rgba(0,0,0,0.05)"
           : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
         display: "flex",
         flexDirection: "column",
@@ -156,7 +156,7 @@ function SchoolCard({ school, curriculaMap }) {
       <div
         style={{
           height: hovered ? "4px" : "3px",
-          background: "linear-gradient(90deg, #047857, #059669, #34D399)",
+          background: "linear-gradient(90deg, #0D47A1, #1565C0, #60A5FA)",
           transition: "height 0.2s",
         }}
       />
@@ -173,7 +173,7 @@ function SchoolCard({ school, curriculaMap }) {
                   margin: "0 0 3px 0",
                   fontSize: "15px",
                   fontWeight: "700",
-                  color: hovered ? "#047857" : "#111827",
+                  color: hovered ? "#0D47A1" : "#111827",
                   cursor: "pointer",
                   transition: "color 0.15s",
                   whiteSpace: "nowrap",
@@ -195,11 +195,11 @@ function SchoolCard({ school, curriculaMap }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: menuOpen ? "#ECFDF5" : "transparent",
-                  border: `1.5px solid ${menuOpen ? "#6EE7B7" : "transparent"}`,
+                  backgroundColor: menuOpen ? "#EFF6FF" : "transparent",
+                  border: `1.5px solid ${menuOpen ? "#93C5FD" : "transparent"}`,
                   borderRadius: "8px",
                   cursor: "pointer",
-                  color: menuOpen ? "#047857" : "#9CA3AF",
+                  color: menuOpen ? "#0D47A1" : "#9CA3AF",
                   transition: "all 0.15s",
                   flexShrink: 0,
                 }}
@@ -235,8 +235,8 @@ function SchoolCard({ school, curriculaMap }) {
           style={{
             padding: "10px 12px",
             borderRadius: "10px",
-            backgroundColor: curriculum ? "#F0FDF4" : "#F9FAFB",
-            border: `1px solid ${curriculum ? "#BBF7D0" : "#E5E7EB"}`,
+            backgroundColor: curriculum ? "#EFF6FF" : "#F9FAFB",
+            border: `1px solid ${curriculum ? "#BFDBFE" : "#E5E7EB"}`,
           }}
         >
           {curriculum ? (
@@ -244,7 +244,7 @@ function SchoolCard({ school, curriculaMap }) {
               <p style={{ margin: "0 0 1px 0", fontSize: "11px", fontWeight: "600", color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Curriculum
               </p>
-              <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#065F46" }}>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#1E3A8A" }}>
                 {curriculum.name}
               </p>
               <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#6B7280" }}>
@@ -257,7 +257,7 @@ function SchoolCard({ school, curriculaMap }) {
               <button
                 type="button"
                 onClick={() => navigate(`/schools/${school.id}/edit`)}
-                style={{ background: "none", border: "none", fontSize: "11px", color: "#059669", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}
+                style={{ background: "none", border: "none", fontSize: "11px", color: "#0D47A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}
               >
                 Assign →
               </button>
@@ -324,7 +324,7 @@ function SchoolCard({ school, curriculaMap }) {
 function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
   return (
     <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)", border: "2px solid #A7F3D0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", margin: "0 auto 20px" }}>
+      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", margin: "0 auto 20px" }}>
         🏫
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
@@ -334,11 +334,11 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
         {hasFilters ? "Try adjusting your filters." : "Add your first school to get started."}
       </p>
       {hasFilters ? (
-        <button type="button" onClick={onClearFilters} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "#047857", border: "1.5px solid #047857", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+        <button type="button" onClick={onClearFilters} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "#0D47A1", border: "1.5px solid #0D47A1", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           Clear Filters
         </button>
       ) : (
-        <button type="button" onClick={onCreateNew} style={{ padding: "10px 24px", backgroundColor: "#047857", color: "#ffffff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 4px 12px rgba(4,120,87,0.25)" }}>
+        <button type="button" onClick={onCreateNew} style={{ padding: "10px 24px", backgroundColor: "#0D47A1", color: "#ffffff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 4px 12px rgba(13,71,161,0.25)" }}>
           + Add School
         </button>
       )}
@@ -383,7 +383,7 @@ export default function SchoolsPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
 
       {/* Hero strip */}
-      <div style={{ background: "linear-gradient(135deg, #064E3B 0%, #047857 40%, #059669 75%, #10B981 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: "-20px", right: "120px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
@@ -398,7 +398,7 @@ export default function SchoolsPage() {
           <button
             type="button"
             onClick={() => navigate("/schools/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#ffffff", color: "#047857", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#ffffff", color: "#0D47A1", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}
           >
             <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
             Add School
@@ -409,8 +409,8 @@ export default function SchoolsPage() {
       {/* Stats bar */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
         {[
-          { label: "Total Schools",      value: isLoading ? "—" : schools.length,     icon: "🏫", bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
-          { label: "Active",             value: isLoading ? "—" : activeCount,         icon: "✅", bg: "#F0FDF4", color: "#047857", border: "#BBF7D0" },
+          { label: "Total Schools",      value: isLoading ? "—" : schools.length,     icon: "🏫", bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+          { label: "Active",             value: isLoading ? "—" : activeCount,         icon: "✅", bg: "#EFF6FF", color: "#0D47A1", border: "#BFDBFE" },
           { label: "Inactive",           value: isLoading ? "—" : schools.length - activeCount, icon: "⏸️", bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
           { label: "With Curriculum",    value: isLoading ? "—" : withCurriculum,      icon: "📋", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
         ].map((stat) => (
@@ -452,10 +452,10 @@ export default function SchoolsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
           {[1, 2, 3].map((n) => (
             <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ height: "3px", background: "linear-gradient(90deg, #D1FAE5, #ECFDF5)" }} />
+              <div style={{ height: "3px", background: "linear-gradient(90deg, #DBEAFE, #EFF6FF)" }} />
               <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 <div style={{ display: "flex", gap: "12px" }}>
-                  <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#ECFDF5" }} />
+                  <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#EFF6FF" }} />
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <div style={{ height: "15px", width: "55%", backgroundColor: "#EEF2F7", borderRadius: "5px" }} />
                     <div style={{ height: "11px", width: "35%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />

@@ -122,7 +122,7 @@
     "yearGroupId": "76c294d5-9759-4a38-8b2a-d6caa7d23951",
     "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "versionNumber": 1,
-    "status": "draft",
+    "status": "published",
     "isCurrent": true,
     "periods": [
       {
@@ -141,6 +141,6 @@
       }
     ],
     "createdAt": "2026-06-23T12:41:39.776Z",
-    "updatedAt": "2026-06-23T12:41:39.776Z"
+    "updatedAt": "2026-06-24T07:10:01.047Z"
   }
 ]

@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
+import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { ClassCard } from "../components/ClassCard";
+import SetUpYearPanel from "../components/SetUpYearPanel";
 
 const ACCENT    = "#EA580C";
 const GRAD_FROM = "#7C2D12";
@@ -16,6 +18,8 @@ export default function SchoolClassesPage() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
+
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
 
@@ -34,6 +38,8 @@ export default function SchoolClassesPage() {
   const classes     = classesData?.data || [];
   const teachersMap = (teachersData?.data || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
   const activeCount = classes.filter((c) => c.status === "active").length;
+
+  const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
 
   if (schoolLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -68,13 +74,25 @@ export default function SchoolClassesPage() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/classes/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: "#ffffff", color: ACCENT, border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}
+            onClick={() => setSetupOpen((v) => !v)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#ffffff", color: setupOpen ? "#ffffff" : ACCENT, border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap", transition: "all 0.15s" }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create Class
+            {setupOpen ? "✕ Close" : "Set Up Year"}
           </button>
         </div>
       </div>
+
+      {/* Set Up Year panel */}
+      {setupOpen && school && (
+        <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #BFDBFE", marginBottom: 16, overflow: "hidden" }}>
+          <SetUpYearPanel
+            school={school}
+            curriculum={curriculum}
+            existingClasses={classes}
+            onClose={() => setSetupOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
@@ -136,11 +154,11 @@ export default function SchoolClassesPage() {
             {statusFilter ? "No classes match the filter" : `No classes for ${school?.name || "this school"} yet`}
           </h3>
           <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6B7280", lineHeight: 1.6 }}>
-            {statusFilter ? "Try clearing the filter to see all classes." : "Create the first class for this school to get started."}
+            {statusFilter ? "Try clearing the filter to see all classes." : "Use Set Up Year to generate all grade classes from the curriculum."}
           </p>
           {statusFilter
             ? <button type="button" onClick={() => setStatusFilter("")} style={{ padding: "10px 24px", backgroundColor: "transparent", color: ACCENT, border: `1.5px solid ${ACCENT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Clear Filter</button>
-            : <button type="button" onClick={() => navigate("/classes/create")} style={{ padding: "10px 24px", backgroundColor: ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>+ Create Class</button>
+            : <button type="button" onClick={() => setSetupOpen(true)} style={{ padding: "10px 24px", backgroundColor: ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Set Up Year</button>
           }
         </div>
       ) : (

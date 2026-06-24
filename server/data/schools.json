@@ -153,11 +153,11 @@
       "city": "Nairobi",
       "county": "Nairobi"
     },
-    "curriculumId": "8fd2fd41-f606-4953-bb61-9d25733aa315",
+    "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "status": "active",
     "id": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
     "createdAt": "2026-06-20T14:23:30.000Z",
-    "updatedAt": "2026-06-22T08:08:38.240Z"
+    "updatedAt": "2026-06-24T07:08:37.950Z"
   },
   {
     "name": "Digifunzi school",
@@ -174,5 +174,21 @@
     "id": "29a5eee9-a150-43f9-a38d-404b148ac87f",
     "createdAt": "2026-06-22T09:05:40.447Z",
     "updatedAt": "2026-06-23T13:15:47.558Z"
+  },
+  {
+    "name": "Nairobi school",
+    "code": "NS",
+    "email": "nairobi@nairobi.com",
+    "phone": "+254700000000",
+    "address": {
+      "street": "CBD ",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "status": "active",
+    "id": "f2564e14-5ee4-4c91-abd6-9c01e154fef0",
+    "createdAt": "2026-06-24T07:14:31.640Z",
+    "updatedAt": "2026-06-24T07:14:31.640Z"
   }
 ]

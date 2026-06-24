@@ -29,6 +29,10 @@ const ClassService = {
     return record;
   },
 
+  async bulkCreateClasses(items) {
+    return Promise.all(items.map((item) => ClassModel.create(item)));
+  },
+
   async deleteClass(id) {
     const deleted = ClassModel.delete(id);
     if (!deleted) {
