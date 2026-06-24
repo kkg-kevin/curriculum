@@ -3608,5 +3608,210 @@
     ],
     "createdAt": "2026-06-24T10:03:13.132Z",
     "updatedAt": "2026-06-24T10:03:17.369Z"
+  },
+  {
+    "id": "c612a1e8-8bab-423e-9c7d-41a31c342fa5",
+    "curriculumId": "592f9e45-bae0-470b-a96d-d0fd9ec87bee",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782300071611-p1qhh216v",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782300080291-5sjv8jiy4",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782300083636-v836e4by9",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782300088387-o69mgd93c",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": []
+          },
+          {
+            "className": "Grade 2",
+            "courses": []
+          },
+          {
+            "className": "Grade 3",
+            "courses": []
+          },
+          {
+            "className": "Grade 4",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": []
+          },
+          {
+            "className": "Grade 2",
+            "courses": []
+          },
+          {
+            "className": "Grade 3",
+            "courses": []
+          },
+          {
+            "className": "Grade 4",
+            "courses": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T11:21:35.181Z",
+    "updatedAt": "2026-06-24T11:22:03.887Z"
+  },
+  {
+    "id": "01055e67-f946-4ef6-96c5-d63a02cf919c",
+    "curriculumId": "592f9e45-bae0-470b-a96d-d0fd9ec87bee",
+    "academicYearId": null,
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782300071611-p1qhh216v",
+                "name": "Maths",
+                "code": ""
+              },
+              {
+                "id": "1782300112403-7vp4y7t1u",
+                "name": "Maths 1.1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782300080291-5sjv8jiy4",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782300083636-v836e4by9",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "1782300088387-o69mgd93c",
+                "name": "Maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": []
+          },
+          {
+            "className": "Grade 2",
+            "courses": []
+          },
+          {
+            "className": "Grade 3",
+            "courses": []
+          },
+          {
+            "className": "Grade 4",
+            "courses": []
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": []
+          },
+          {
+            "className": "Grade 2",
+            "courses": []
+          },
+          {
+            "className": "Grade 3",
+            "courses": []
+          },
+          {
+            "className": "Grade 4",
+            "courses": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T11:21:54.730Z",
+    "updatedAt": "2026-06-24T11:21:54.730Z"
   }
 ]
