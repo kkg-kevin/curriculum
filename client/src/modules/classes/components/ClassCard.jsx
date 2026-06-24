@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteClass } from "../hooks/useClasses";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT    = "#0D47A1";
-const GRAD_FROM = "#0D2E6E";
-const GRAD_TO   = "#1976D2";
+const ACCENT    = "#25476a";
+const GRAD_FROM = "#feb139";
+const GRAD_TO   = "#f59e0b";
 
 const STATUS_STYLES = {
-  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
@@ -75,7 +75,7 @@ export function ClassCard({ cls, teachersMap }) {
       onMouseLeave={() => setHovered(false)}
       style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(234,88,12,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto" }}
     >
-      <div style={{ height: hovered ? 4 : 3, background: `linear-gradient(90deg, ${GRAD_FROM}, ${GRAD_TO}, #60A5FA)`, transition: "height 0.2s" }} />
+      <div style={{ height: hovered ? 4 : 3, background: `linear-gradient(90deg, ${GRAD_FROM}, ${GRAD_TO}, #38aae1)`, transition: "height 0.2s" }} />
 
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         {/* Header */}

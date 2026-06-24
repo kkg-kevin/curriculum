@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useAcademicYears } from "../hooks/useAcademicYear";
@@ -19,7 +19,7 @@ const STEPS = [
 
 const STATUSES = [
   { value: "draft",     label: "Draft",     bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
-  { value: "published", label: "Published", bg: "#ECFDF5", border: "#6EE7B7", color: "#065F46", dot: "#10B981" },
+  { value: "published", label: "Published", bg: "#fff8e6", border: "#fcd97a", color: "#b07800", dot: "#feb139" },
   { value: "inactive",  label: "Inactive",  bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
 ];
 
@@ -50,8 +50,8 @@ const CSS = `
     background:#fff; font-size:12px; font-weight:600; font-family:Inter,sans-serif;
     cursor:pointer; white-space:nowrap; transition:all 0.15s; color:#6B7280; flex-shrink:0;
   }
-  .vc-tab:hover  { border-color:#93C5FD; color:#1D4ED8; background:#F8FBFF; }
-  .vc-tab.active { border-color:#0D47A1; background:#EFF6FF; color:#0D47A1; box-shadow:0 1px 4px rgba(13,71,161,0.12); }
+  .vc-tab:hover  { border-color:#b8d9ee; color:#38aae1; background:#F8FBFF; }
+  .vc-tab.active { border-color:#25476a; background:#e8f5fb; color:#25476a; box-shadow:0 1px 4px rgba(37,71,106,0.12); }
 
   .vc-class-row {
     display:flex; align-items:flex-start; gap:14px; padding:12px 0;
@@ -67,11 +67,11 @@ const CSS = `
   .vc-chip {
     display:inline-flex; align-items:center; gap:5px;
     padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
-    background:#EFF6FF; border:1.5px solid #BFDBFE; color:#1E3A8A; font-family:Inter,sans-serif;
+    background:#e8f5fb; border:1.5px solid #a8d5ee; color:#25476a; font-family:Inter,sans-serif;
   }
   .vc-chip-x {
     width:14px; height:14px; border-radius:50%; border:none;
-    background:rgba(29,58,138,0.1); color:#1E3A8A; cursor:pointer;
+    background:rgba(29,58,138,0.1); color:#25476a; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center;
     font-size:11px; font-weight:900; padding:0; transition:background 0.1s, color 0.1s; flex-shrink:0;
   }
@@ -83,7 +83,7 @@ const CSS = `
     background:transparent; border:1.5px dashed #D1D5DB; color:#9CA3AF;
     font-family:Inter,sans-serif; cursor:pointer; transition:all 0.15s; flex-shrink:0;
   }
-  .vc-add-pill:hover { border-color:#0D47A1; color:#0D47A1; background:#EFF6FF; }
+  .vc-add-pill:hover { border-color:#25476a; color:#25476a; background:#e8f5fb; }
 
   .vc-inline-form {
     display:flex; gap:8px; align-items:center; flex-wrap:wrap;
@@ -95,7 +95,7 @@ const CSS = `
     font-size:12px; font-family:Inter,sans-serif; background:#fff; outline:none;
     transition:border-color 0.15s, box-shadow 0.15s;
   }
-  .vc-inline-input:focus { border-color:#0D47A1; box-shadow:0 0 0 3px rgba(13,71,161,0.08); }
+  .vc-inline-input:focus { border-color:#25476a; box-shadow:0 0 0 3px rgba(37,71,106,0.08); }
   .vc-inline-input.iname { width:160px; }
   .vc-inline-input.icode { width:88px; }
 
@@ -106,13 +106,13 @@ const CSS = `
 
   /* Buttons */
   .vc-btn-primary {
-    padding:8px 18px; background:#0D47A1; color:#fff; border:none; border-radius:9px;
+    padding:8px 18px; background:#25476a; color:#fff; border:none; border-radius:9px;
     font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer;
     display:inline-flex; align-items:center; gap:7px; transition:background 0.15s;
     white-space:nowrap;
   }
   .vc-btn-primary:hover:not(:disabled) { background:#0A3880; }
-  .vc-btn-primary:disabled { background:#93C5FD; cursor:not-allowed; }
+  .vc-btn-primary:disabled { background:#b8d9ee; cursor:not-allowed; }
 
   .vc-btn-secondary {
     padding:8px 16px; background:#fff; color:#374151;
@@ -123,29 +123,29 @@ const CSS = `
   .vc-btn-secondary:hover { background:#F3F4F6; }
 
   .vc-btn-ghost {
-    padding:8px 16px; background:#EFF6FF; color:#1D4ED8;
-    border:1.5px solid #BFDBFE; border-radius:9px; font-size:13px; font-weight:600;
+    padding:8px 16px; background:#e8f5fb; color:#25476a;
+    border:1.5px solid #a8d5ee; border-radius:9px; font-size:13px; font-weight:600;
     font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center;
     gap:7px; transition:all 0.15s; white-space:nowrap;
   }
-  .vc-btn-ghost:hover { background:#DBEAFE; }
+  .vc-btn-ghost:hover { background:#d6edf8; }
 
   .vc-btn-publish {
-    padding:8px 18px; background:#059669; color:#fff; border:none; border-radius:9px;
+    padding:8px 18px; background:#feb139; color:#25476a; border:none; border-radius:9px;
     font-size:13px; font-weight:700; font-family:Inter,sans-serif; cursor:pointer;
     display:inline-flex; align-items:center; gap:7px; transition:background 0.15s;
     white-space:nowrap;
   }
-  .vc-btn-publish:hover:not(:disabled) { background:#047857; }
-  .vc-btn-publish:disabled { background:#6EE7B7; cursor:not-allowed; }
+  .vc-btn-publish:hover:not(:disabled) { background:#f0a800; }
+  .vc-btn-publish:disabled { background:#fef3d0; cursor:not-allowed; }
 
   .vc-btn-restore {
-    padding:8px 16px; background:#F0FDF4; color:#15803D;
-    border:1.5px solid #BBF7D0; border-radius:9px; font-size:13px; font-weight:600;
+    padding:8px 16px; background:#e8f5fb; color:#25476a;
+    border:1.5px solid #a8d5ee; border-radius:9px; font-size:13px; font-weight:600;
     font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center;
     gap:7px; transition:all 0.15s; white-space:nowrap;
   }
-  .vc-btn-restore:hover:not(:disabled) { background:#DCFCE7; }
+  .vc-btn-restore:hover:not(:disabled) { background:#d6edf8; }
   .vc-btn-restore:disabled { opacity:0.5; cursor:not-allowed; }
 
   /* Status selector in editor */
@@ -165,7 +165,7 @@ const CSS = `
   }
   .vc-sidebar-head {
     padding:14px 16px 12px; border-bottom:1px solid #F0F0F0;
-    background:linear-gradient(135deg,#0A3880,#1565C0);
+    background:linear-gradient(135deg,#0A3880,#2e7db5);
   }
 
   /* Timeline */
@@ -180,12 +180,12 @@ const CSS = `
   }
   .vc-tl-entry:last-child { border-bottom:none; }
   .vc-tl-entry:hover { background:#F9FAFB; }
-  .vc-tl-entry.tl-published { background:#F0FDF4; }
+  .vc-tl-entry.tl-published { background:#fff8e6; }
   .vc-tl-entry.tl-focused   { background:#FFFBEB; }
 
   .vc-tl-dot-wrap { width:44px; display:flex; flex-direction:column; align-items:center; flex-shrink:0; padding-top:3px; }
   .vc-tl-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; border:2px solid #E5E7EB; background:#fff; transition:all 0.15s; }
-  .tl-published .vc-tl-dot { background:#10B981; border-color:#10B981; box-shadow:0 0 0 3px rgba(16,185,129,0.15); }
+  .tl-published .vc-tl-dot { background:#feb139; border-color:#feb139; box-shadow:0 0 0 3px rgba(254,177,57,0.2); }
   .tl-focused   .vc-tl-dot { background:#F59E0B; border-color:#F59E0B; box-shadow:0 0 0 3px rgba(245,158,11,0.15); }
 
   .vc-tl-body { flex:1; min-width:0; padding-right:4px; }
@@ -255,14 +255,14 @@ const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
 function Spinner({ size = 13, light = true }) {
   return (
-    <span style={{ width: `${size}px`, height: `${size}px`, border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "#E5E7EB"}`, borderTopColor: light ? "#fff" : "#059669", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite", flexShrink: 0 }} />
+    <span style={{ width: `${size}px`, height: `${size}px`, border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "#E5E7EB"}`, borderTopColor: light ? "#fff" : "#25476a", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite", flexShrink: 0 }} />
   );
 }
 
 function SpinnerPage() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "380px", fontFamily: "Inter,sans-serif", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
-      <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite" }} />
+      <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "vc-spin 0.7s linear infinite" }} />
       Loading…
     </div>
   );
@@ -296,12 +296,12 @@ function StepIndicator({ current }) {
         return (
           <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#0D47A1" : "#F3F4F6", border: `2.5px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(13,71,161,0.1)" : "none" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#25476a" : "#F3F4F6", border: `2.5px solid ${done || active ? "#25476a" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(37,71,106,0.1)" : "none" }}>
                 {done ? "✓" : step.n}
               </div>
-              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
+              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#25476a" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
             </div>
-            {i < STEPS.length - 1 && <div className="vc-connector" style={{ backgroundColor: done ? "#0D47A1" : "#E5E7EB" }} />}
+            {i < STEPS.length - 1 && <div className="vc-connector" style={{ backgroundColor: done ? "#25476a" : "#E5E7EB" }} />}
           </div>
         );
       })}
@@ -348,7 +348,7 @@ function InlineAddForm({ onAdd, onCancel }) {
     <form className="vc-inline-form" onSubmit={submit}>
       <input ref={ref} className="vc-inline-input iname" placeholder="Course name *" value={name} onChange={(e) => setName(e.target.value)} />
       <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} />
-      <button type="submit" disabled={!name.trim()} style={{ padding: "6px 12px", background: "#0D47A1", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5 }}>Add</button>
+      <button type="submit" disabled={!name.trim()} style={{ padding: "6px 12px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5 }}>Add</button>
       <button type="button" onClick={onCancel} style={{ padding: "6px 10px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>Cancel</button>
     </form>
   );
@@ -476,7 +476,7 @@ function VersionHistorySidebar({ published, history, focusedId, onSelect }) {
                   </div>
                   <div className="vc-tl-date">{fmtDate(v.createdAt)}</div>
                   <div className="vc-tl-badges">
-                    {isPub    && <MiniTag color="#065F46" bg="#ECFDF5" border="#6EE7B7">LIVE</MiniTag>}
+                    {isPub    && <MiniTag color="#b07800" bg="#fff8e6" border="#fcd97a">LIVE</MiniTag>}
                     {isFocused && <MiniTag color="#92400E" bg="#FFFBEB" border="#FCD34D">VIEWING</MiniTag>}
                   </div>
                 </div>
@@ -505,18 +505,18 @@ function BrowsePanel({
 
   /* Header accent by status */
   const accent = isPublished
-    ? { bg: "#ECFDF5", border: "#6EE7B7", titleColor: "#064E3B" }
+    ? { bg: "#fff8e6", border: "#fcd97a", titleColor: "#b07800" }
     : isDraft
-    ? { bg: "#F0F7FF", border: "#BFDBFE", titleColor: "#1E3A8A" }
+    ? { bg: "#F0F7FF", border: "#a8d5ee", titleColor: "#25476a" }
     : { bg: "#FAFAFA", border: "#E5E7EB", titleColor: "#374151" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "vc-fadein 0.2s ease" }}>
       {/* Banner for published */}
       {isPublished && (
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#ECFDF5", border: "1.5px solid #6EE7B7", borderRadius: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#fff8e6", border: "1.5px solid #fcd97a", borderRadius: "12px" }}>
           <span style={{ fontSize: "16px" }}>✅</span>
-          <p style={{ margin: 0, fontSize: "12px", color: "#065F46", fontWeight: "500" }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "#b07800", fontWeight: "500" }}>
             This is the <strong>live version</strong> currently in use.
           </p>
         </div>
@@ -620,9 +620,9 @@ function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionN
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "vc-fadein 0.2s ease" }}>
       {/* Info banner */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 16px", backgroundColor: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: "12px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 16px", backgroundColor: "#e8f5fb", border: "1.5px solid #a8d5ee", borderRadius: "12px" }}>
         <span style={{ fontSize: "14px", flexShrink: 0 }}>{type === "edit" ? "✏️" : "📋"}</span>
-        <p style={{ margin: 0, fontSize: "12px", color: "#1E40AF", fontWeight: "500" }}>
+        <p style={{ margin: 0, fontSize: "12px", color: "#25476a", fontWeight: "500" }}>
           {type === "edit"
             ? "Courses pre-filled from the selected version. Add or remove as needed."
             : "All courses start blank. Fill in each grade for every period."}
@@ -631,10 +631,10 @@ function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionN
       </div>
 
       {/* Header */}
-      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE" }}>
+      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #a8d5ee" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#1E3A8A" }}>
+            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#25476a" }}>
               {type === "edit" ? `Editing → Version ${nextVersionNumber}` : `New Version ${nextVersionNumber}`}
             </h2>
             <p style={{ margin: 0, fontSize: "12px", color: "#3B82F6" }}>Saves as a draft — you can publish it from the version panel.</p>

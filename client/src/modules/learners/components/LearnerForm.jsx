@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+﻿import { useEffect, useMemo } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
@@ -7,8 +7,8 @@ import { classApi } from "../../classes/services/classApi";
 const S = {
   form:    { display: "flex", flexDirection: "column", gap: 24 },
   section: { display: "flex", flexDirection: "column", gap: 16 },
-  heading: { fontSize: 13, fontWeight: 600, color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
-  divider: { border: "none", borderTop: "1px solid #BFDBFE", margin: "0 0 8px" },
+  heading: { fontSize: 13, fontWeight: 600, color: "#25476a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
+  divider: { border: "none", borderTop: "1px solid #a8d5ee", margin: "0 0 8px" },
   row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
   field:   { display: "flex", flexDirection: "column", gap: 6 },
   label:   { fontSize: 13, fontWeight: 500, color: "#374151" },
@@ -80,8 +80,8 @@ export default function LearnerForm({ lockedSchoolId = "" }) {
         {lockedSchoolId ? (
           <div style={S.field}>
             <label style={S.label}>School</label>
-            <div style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #BFDBFE", backgroundColor: "#EFF6FF", display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+            <div style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #a8d5ee", backgroundColor: "#e8f5fb", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
                 {lockedSchool?.name?.[0]?.toUpperCase() || "S"}
               </div>
               <div>

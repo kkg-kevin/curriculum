@@ -3512,5 +3512,101 @@
     ],
     "createdAt": "2026-06-24T08:33:06.486Z",
     "updatedAt": "2026-06-24T08:33:09.105Z"
+  },
+  {
+    "id": "941475e2-1e99-472c-91af-f1e164a3c56d",
+    "curriculumId": "f39558c5-3be8-4195-be3e-acfc26d682ad",
+    "academicYearId": "1b6b2760-cb7d-42aa-a3fc-47cd5f98266e",
+    "versionNumber": 1,
+    "status": "inactive",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "g1",
+            "courses": [
+              {
+                "id": "1782295197619-6csk7cjl7",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "g2",
+            "courses": [
+              {
+                "id": "1782295200863-3rmf9f39c",
+                "name": "eng",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "g3",
+            "courses": [
+              {
+                "id": "1782295204892-rm9dsxyb4",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T10:00:11.441Z",
+    "updatedAt": "2026-06-24T10:03:17.364Z"
+  },
+  {
+    "id": "baa5dacb-f54e-4490-9207-875ab12c812c",
+    "curriculumId": "f39558c5-3be8-4195-be3e-acfc26d682ad",
+    "academicYearId": "1b6b2760-cb7d-42aa-a3fc-47cd5f98266e",
+    "versionNumber": 2,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "g1",
+            "courses": [
+              {
+                "id": "1782295197619-6csk7cjl7",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "g2",
+            "courses": [
+              {
+                "id": "1782295200863-3rmf9f39c",
+                "name": "eng",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "g3",
+            "courses": [
+              {
+                "id": "1782295204892-rm9dsxyb4",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T10:03:13.132Z",
+    "updatedAt": "2026-06-24T10:03:17.369Z"
   }
 ]

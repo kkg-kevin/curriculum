@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBulkCreateClasses } from "../hooks/useClasses";
 
-const ACCENT = "#0D47A1";
+const ACCENT = "#25476a";
 
 function extractYear(publishedAcademicYear) {
   if (!publishedAcademicYear) return null;
@@ -105,7 +105,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>Academic Year</span>
-              <span style={{ padding: "4px 12px", borderRadius: 8, backgroundColor: "#EFF6FF", border: "1.5px solid #BFDBFE", fontSize: 13, fontWeight: 700, color: ACCENT }}>
+              <span style={{ padding: "4px 12px", borderRadius: 8, backgroundColor: "#e8f5fb", border: "1.5px solid #a8d5ee", fontSize: 13, fontWeight: 700, color: ACCENT }}>
                 {academicYear}
               </span>
             </div>
@@ -126,9 +126,9 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
                     borderRadius: 20,
                     fontSize: 12,
                     fontWeight: 600,
-                    backgroundColor: done ? "#F3F4F6" : "#EFF6FF",
+                    backgroundColor: done ? "#F3F4F6" : "#e8f5fb",
                     color: done ? "#9CA3AF" : ACCENT,
-                    border: `1px solid ${done ? "#E5E7EB" : "#BFDBFE"}`,
+                    border: `1px solid ${done ? "#E5E7EB" : "#a8d5ee"}`,
                     textDecoration: done ? "line-through" : "none",
                   }}
                 >
@@ -155,7 +155,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
                 type="button"
                 onClick={handleGenerate}
                 disabled={isPending}
-                style={{ padding: "8px 18px", backgroundColor: isPending ? "#93C5FD" : ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                style={{ padding: "8px 18px", backgroundColor: isPending ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 }}
               >
                 {isPending ? (
                   <><span style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Generating…</>

@@ -1,12 +1,12 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllTeachersQuery } from "../hooks/useTeacher";
 
-const ACCENT = "#0D47A1";
+const ACCENT = "#25476a";
 
 const STATUS_STYLES = {
-  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE", label: "Active"   },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active"   },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", label: "On Leave" },
 };
@@ -23,7 +23,7 @@ function StatusBadge({ status }) {
 function TeacherInitials({ firstName, lastName, size = 34 }) {
   const text = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
       {text || "?"}
     </div>
   );
@@ -31,7 +31,7 @@ function TeacherInitials({ firstName, lastName, size = 34 }) {
 
 function SchoolAvatar({ name, size = 42 }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: 12, background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
       {name?.[0]?.toUpperCase() || "S"}
     </div>
   );
@@ -43,7 +43,7 @@ function TeacherRow({ teacher, navigate }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#EFF6FF" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", backgroundColor: hovered ? "#e8f5fb" : "transparent", transition: "background-color 0.12s", borderBottom: "1px solid #F9FAFB" }}
     >
       <TeacherInitials firstName={teacher.firstName} lastName={teacher.lastName} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -58,7 +58,7 @@ function TeacherRow({ teacher, navigate }) {
       <button
         type="button"
         onClick={() => navigate(`/teachers/${teacher.id}/view`)}
-        style={{ padding: "5px 12px", backgroundColor: "#EFF6FF", color: ACCENT, border: "1px solid #BFDBFE", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+        style={{ padding: "5px 12px", backgroundColor: "#e8f5fb", color: "#38aae1", border: "1px solid #a8d5ee", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
       >
         View →
       </button>
@@ -71,12 +71,12 @@ function SchoolAccordion({ school, teachers, navigate, isOpen, onToggle }) {
   const activeCount = teachers.filter((t) => t.status === "active").length;
 
   return (
-    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#BFDBFE" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(13,71,161,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
+    <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#a8d5ee" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(37,71,106,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
 
       {/* Accordion header */}
       <div
         onClick={onToggle}
-        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#EFF6FF" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
+        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#e8f5fb" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
       >
         <SchoolAvatar name={school.name} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -89,7 +89,7 @@ function SchoolAccordion({ school, teachers, navigate, isOpen, onToggle }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#EFF6FF" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#BFDBFE" : "#E5E7EB"}` }}>
+          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: count > 0 ? "#e8f5fb" : "#F9FAFB", color: count > 0 ? ACCENT : "#9CA3AF", border: `1px solid ${count > 0 ? "#a8d5ee" : "#E5E7EB"}` }}>
             {count} {count === 1 ? "teacher" : "teachers"}
           </span>
           {count > 0 && (
@@ -98,7 +98,7 @@ function SchoolAccordion({ school, teachers, navigate, isOpen, onToggle }) {
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); navigate(`/teachers/create?schoolId=${school.id}`); }}
-            style={{ padding: "6px 14px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            style={{ padding: "6px 14px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
           >
             + Add
           </button>
@@ -113,13 +113,13 @@ function SchoolAccordion({ school, teachers, navigate, isOpen, onToggle }) {
         <div style={{ borderTop: "1px solid #F3F4F6" }}>
           {teachers.length === 0 ? (
             <div style={{ padding: "36px 24px", textAlign: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #EFF6FF, #BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>👩‍🏫</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #e8f5fb, #a8d5ee)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>👩‍🏫</div>
               <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No teachers added yet</p>
               <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>Add the first teacher for {school.name}</p>
               <button
                 type="button"
                 onClick={() => navigate(`/teachers/create?schoolId=${school.id}`)}
-                style={{ padding: "8px 18px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
               >
                 + Add Teacher
               </button>
@@ -186,7 +186,7 @@ export default function TeachersPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Hero strip */}
-      <div style={{ background: "linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: "-20px", right: "120px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
@@ -201,7 +201,7 @@ export default function TeachersPage() {
           <button
             type="button"
             onClick={() => navigate("/teachers/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#ffffff", color: "#0D47A1", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
           >
             <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
             Add Teacher

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
@@ -19,7 +19,7 @@ const STEPS = [
 
 const STATUSES = [
   { value: "draft",     label: "Draft",     bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
-  { value: "published", label: "Published", bg: "#ECFDF5", border: "#6EE7B7", color: "#065F46", dot: "#10B981" },
+  { value: "published", label: "Published", bg: "#fff8e6", border: "#fcd97a", color: "#b07800", dot: "#feb139" },
   { value: "inactive",  label: "Inactive",  bg: "#F9FAFB", border: "#E5E7EB", color: "#6B7280", dot: "#9CA3AF" },
 ];
 
@@ -51,7 +51,7 @@ const CSS = `
     background:#F9FAFB; color:#111827; box-sizing:border-box; outline:none;
     transition:border-color 0.15s,box-shadow 0.15s,background 0.15s;
   }
-  .ay-input:focus { border-color:#0D47A1; background:#F0F7FF; box-shadow:0 0 0 3px rgba(13,71,161,0.1); }
+  .ay-input:focus { border-color:#25476a; background:#F0F7FF; box-shadow:0 0 0 3px rgba(37,71,106,0.1); }
   .ay-input.err   { border-color:#EF4444 !important; background:#FFF5F5 !important; }
   .ay-input[type="date"] { cursor:pointer; }
 
@@ -63,26 +63,26 @@ const CSS = `
     align-items:center; justify-content:center; cursor:pointer;
     color:#374151; transition:all 0.15s;
   }
-  .ay-carousel-arrow:enabled:hover { border-color:#0D47A1; background:#EFF6FF; color:#0D47A1; }
+  .ay-carousel-arrow:enabled:hover { border-color:#25476a; background:#e8f5fb; color:#25476a; }
   .ay-carousel-arrow:disabled { opacity:0.25; cursor:not-allowed; }
   .ay-carousel-card { animation:ay-slide 0.16s ease; }
   .ay-carousel-dots { display:flex; gap:6px; justify-content:center; margin-top:16px; }
   .ay-carousel-dot  { width:8px; height:8px; border-radius:50%; background:#E5E7EB; border:none; cursor:pointer; padding:0; transition:all 0.2s; }
-  .ay-carousel-dot.active { background:#0D47A1; width:22px; border-radius:4px; }
+  .ay-carousel-dot.active { background:#25476a; width:22px; border-radius:4px; }
   .ay-break-divider { display:flex; align-items:center; gap:10px; margin:16px 0 12px; }
   .ay-break-line    { flex:1; height:1px; background:repeating-linear-gradient(90deg,#E5E7EB 0,#E5E7EB 4px,transparent 4px,transparent 8px); }
 
   /* Buttons */
-  .ay-btn-primary   { padding:9px 18px; background:#0D47A1; color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:background 0.15s; white-space:nowrap; }
+  .ay-btn-primary   { padding:9px 18px; background:#25476a; color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:background 0.15s; white-space:nowrap; }
   .ay-btn-primary:hover:not(:disabled) { background:#0A3880; }
-  .ay-btn-primary:disabled { background:#93C5FD; cursor:not-allowed; }
+  .ay-btn-primary:disabled { background:#b8d9ee; cursor:not-allowed; }
   .ay-btn-secondary { padding:8px 16px; background:#fff; color:#374151; border:1.5px solid #E5E7EB; border-radius:9px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s; white-space:nowrap; }
   .ay-btn-secondary:hover { background:#F3F4F6; }
-  .ay-btn-ghost     { padding:8px 16px; background:#EFF6FF; color:#1D4ED8; border:1.5px solid #BFDBFE; border-radius:9px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.15s; white-space:nowrap; }
-  .ay-btn-ghost:hover { background:#DBEAFE; }
-  .ay-btn-publish   { padding:9px 18px; background:#059669; color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:700; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:background 0.15s; white-space:nowrap; }
-  .ay-btn-publish:hover:not(:disabled) { background:#047857; }
-  .ay-btn-publish:disabled { background:#6EE7B7; cursor:not-allowed; }
+  .ay-btn-ghost     { padding:8px 16px; background:#e8f5fb; color:#25476a; border:1.5px solid #a8d5ee; border-radius:9px; font-size:13px; font-weight:600; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all 0.15s; white-space:nowrap; }
+  .ay-btn-ghost:hover { background:#d6edf8; }
+  .ay-btn-publish   { padding:9px 18px; background:#feb139; color:#25476a; border:none; border-radius:9px; font-size:13px; font-weight:700; font-family:Inter,sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:background 0.15s; white-space:nowrap; }
+  .ay-btn-publish:hover:not(:disabled) { background:#f0a800; }
+  .ay-btn-publish:disabled { background:#fef3d0; cursor:not-allowed; }
 
   /* Sidebar */
   .ay-sidebar {
@@ -91,7 +91,7 @@ const CSS = `
   }
   .ay-sidebar-head {
     padding:14px 16px 12px; border-bottom:1px solid #F0F0F0;
-    background:linear-gradient(135deg,#0A3880,#1565C0);
+    background:linear-gradient(135deg,#0A3880,#2e7db5);
   }
   .ay-sidebar-body { max-height:560px; overflow-y:auto; }
   .ay-sidebar-body::-webkit-scrollbar { width:3px; }
@@ -115,17 +115,17 @@ const CSS = `
   }
   .ay-ver-entry:hover        { background:#F9FAFB; }
   .ay-ver-entry.ver-selected { background:#FFFBEB; border-left:3px solid #F59E0B; padding-left:25px; }
-  .ay-ver-entry.ver-published{ background:#F0FDF4; }
-  .ay-ver-entry.ver-selected.ver-published { background:#ECFDF5; border-left-color:#10B981; }
+  .ay-ver-entry.ver-published{ background:#fff8e6; }
+  .ay-ver-entry.ver-selected.ver-published { background:#fff8e6; border-left-color:#feb139; }
 
   /* Add year button */
   .ay-add-year-btn {
     width:100%; padding:11px 14px; display:flex; align-items:center; gap:8px;
     background:none; border:none; border-top:1px solid #F0F0F0;
-    font-family:Inter,sans-serif; font-size:12px; font-weight:600; color:#0D47A1;
+    font-family:Inter,sans-serif; font-size:12px; font-weight:600; color:#25476a;
     cursor:pointer; transition:background 0.12s;
   }
-  .ay-add-year-btn:hover:not(:disabled) { background:#EFF6FF; }
+  .ay-add-year-btn:hover:not(:disabled) { background:#e8f5fb; }
   .ay-add-year-btn:disabled { color:#D1D5DB; cursor:not-allowed; }
 `;
 
@@ -139,7 +139,7 @@ const card = {
 };
 const fieldLabel = { display: "block", fontSize: "13px", fontWeight: "500", color: "#374151", marginBottom: "7px" };
 const errMsg     = { fontSize: "12px", color: "#EF4444", marginTop: "5px", marginBottom: 0 };
-const badge      = { width: "26px", height: "26px", borderRadius: "8px", backgroundColor: "#0D47A1", color: "#fff", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
+const badge      = { width: "26px", height: "26px", borderRadius: "8px", backgroundColor: "#25476a", color: "#fff", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
@@ -161,7 +161,7 @@ function buildPeriods(curriculumPeriods, existingPeriods) {
 
 function Spinner({ size = 14, light = true }) {
   return (
-    <span style={{ width: `${size}px`, height: `${size}px`, border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "#E5E7EB"}`, borderTopColor: light ? "#fff" : "#059669", borderRadius: "50%", display: "inline-block", animation: "ay-spin 0.7s linear infinite", flexShrink: 0 }} />
+    <span style={{ width: `${size}px`, height: `${size}px`, border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "#E5E7EB"}`, borderTopColor: light ? "#fff" : "#25476a", borderRadius: "50%", display: "inline-block", animation: "ay-spin 0.7s linear infinite", flexShrink: 0 }} />
   );
 }
 
@@ -185,12 +185,12 @@ function StepIndicator({ current }) {
         return (
           <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#0D47A1" : "#F3F4F6", border: `2.5px solid ${done || active ? "#0D47A1" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(13,71,161,0.1)" : "none" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#25476a" : "#F3F4F6", border: `2.5px solid ${done || active ? "#25476a" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(37,71,106,0.1)" : "none" }}>
                 {done ? "✓" : step.n}
               </div>
-              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#0D47A1" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
+              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#25476a" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
             </div>
-            {i < STEPS.length - 1 && <div className="ay-connector" style={{ backgroundColor: done ? "#0D47A1" : "#E5E7EB" }} />}
+            {i < STEPS.length - 1 && <div className="ay-connector" style={{ backgroundColor: done ? "#25476a" : "#E5E7EB" }} />}
           </div>
         );
       })}
@@ -217,7 +217,7 @@ function PeriodCarousel({ periods, onChange, errors }) {
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
         <button type="button" className="ay-carousel-arrow" onClick={() => setIdx((i) => i - 1)} disabled={idx === 0}><ChevL /></button>
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 18px", background: "linear-gradient(135deg,#0D47A1,#1565C0)", borderRadius: "20px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 18px", background: "linear-gradient(135deg,#25476a,#2e7db5)", borderRadius: "20px" }}>
             <span style={{ color: "#fff", fontSize: "13px", fontWeight: "700" }}>{p.name}</span>
           </div>
           <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>{idx + 1} of {total}</p>
@@ -226,7 +226,7 @@ function PeriodCarousel({ periods, onChange, errors }) {
       </div>
 
       <div key={idx} className="ay-carousel-card" style={{ padding: "18px", backgroundColor: "#F8FAFF", borderRadius: "12px", border: "1.5px solid #E8F0FE" }}>
-        <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Period Dates</p>
+        <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: "700", color: "#25476a", textTransform: "uppercase", letterSpacing: "0.06em" }}>Period Dates</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
             <label style={fieldLabel}>Start date</label>
@@ -284,7 +284,7 @@ function PeriodCarouselView({ periods }) {
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
         <button type="button" className="ay-carousel-arrow" onClick={() => setIdx((i) => i - 1)} disabled={idx === 0}><ChevL /></button>
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 18px", background: "linear-gradient(135deg,#0D47A1,#1565C0)", borderRadius: "20px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 18px", background: "linear-gradient(135deg,#25476a,#2e7db5)", borderRadius: "20px" }}>
             <span style={{ color: "#fff", fontSize: "13px", fontWeight: "700" }}>{p.name}</span>
           </div>
           <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>{idx + 1} of {total}</p>
@@ -293,7 +293,7 @@ function PeriodCarouselView({ periods }) {
       </div>
 
       <div key={idx} className="ay-carousel-card" style={{ padding: "18px", backgroundColor: "#F8FAFF", borderRadius: "12px", border: "1.5px solid #E8F0FE" }}>
-        <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: "700", color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Period Dates</p>
+        <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: "700", color: "#25476a", textTransform: "uppercase", letterSpacing: "0.06em" }}>Period Dates</p>
         {(p.startDate || p.endDate) ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             {[["FROM", p.startDate], ["TO", p.endDate]].map(([lbl, val]) => (
@@ -366,10 +366,10 @@ function CreateGroupForm({ curriculum, publishedGroup, onSave, onCancel, isPendi
 
   return (
     <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "ay-fadein 0.2s ease" }}>
-      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE" }}>
+      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #a8d5ee" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#1E3A8A" }}>New Academic Year</h2>
+            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#25476a" }}>New Academic Year</h2>
             <p style={{ margin: 0, fontSize: "12px", color: "#3B82F6" }}>Creates a new year group with an initial draft version of period dates.</p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -431,10 +431,10 @@ function EditVersionForm({ curriculum, sourceVersion, group, nextVersionNumber, 
 
   return (
     <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "ay-fadein 0.2s ease" }}>
-      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #BFDBFE" }}>
+      <div style={{ ...card, backgroundColor: "#F0F7FF", border: "1.5px solid #a8d5ee" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#1E3A8A" }}>
+            <h2 style={{ margin: "0 0 3px", fontSize: "18px", fontWeight: "800", color: "#25476a" }}>
               {group.label} — Version {nextVersionNumber}
             </h2>
             <p style={{ margin: 0, fontSize: "12px", color: "#3B82F6" }}>
@@ -473,9 +473,9 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "ay-fadein 0.2s ease" }}>
       {/* Status banner */}
       {isPublished && (
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#ECFDF5", border: "1.5px solid #6EE7B7", borderRadius: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#fff8e6", border: "1.5px solid #fcd97a", borderRadius: "12px" }}>
           <span style={{ fontSize: "16px" }}>✅</span>
-          <p style={{ margin: 0, fontSize: "12px", color: "#065F46", fontWeight: "500" }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "#b07800", fontWeight: "500" }}>
             This is the <strong>active version</strong> — currently in use for {group.label}.
           </p>
         </div>
@@ -498,7 +498,7 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
       )}
 
       {/* Header card */}
-      <div style={{ ...card, ...(isPublished ? { border: "1.5px solid #6EE7B7", backgroundColor: "#F0FDF4" } : isDraft ? { border: "1.5px solid #BFDBFE", backgroundColor: "#F0F7FF" } : {}) }}>
+      <div style={{ ...card, ...(isPublished ? { border: "1.5px solid #fcd97a", backgroundColor: "#fff8e6" } : isDraft ? { border: "1.5px solid #a8d5ee", backgroundColor: "#F0F7FF" } : {}) }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexWrap: "wrap" }}>
@@ -593,7 +593,7 @@ function AcademicYearSidebar({
                     {group.label}
                   </span>
                   <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                    {hasPub  && <span style={{ fontSize: "10px", fontWeight: "700", color: "#065F46", backgroundColor: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: "20px", padding: "1px 6px" }}>Live</span>}
+                    {hasPub  && <span style={{ fontSize: "10px", fontWeight: "700", color: "#b07800", backgroundColor: "#fff8e6", border: "1px solid #fcd97a", borderRadius: "20px", padding: "1px 6px" }}>Live</span>}
                     {hasDraft && <span style={{ fontSize: "10px", fontWeight: "700", color: "#92400E", backgroundColor: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: "20px", padding: "1px 6px" }}>Draft</span>}
                     <span style={{ fontSize: "10px", color: "#9CA3AF" }}>{group.versions.length}v</span>
                   </div>
@@ -617,7 +617,7 @@ function AcademicYearSidebar({
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
                       <StatusBadge status={v.status} />
-                      {isPublished && <span style={{ fontSize: "9px", fontWeight: "700", color: "#065F46" }}>LIVE</span>}
+                      {isPublished && <span style={{ fontSize: "9px", fontWeight: "700", color: "#b07800" }}>LIVE</span>}
                       {isSelected  && <span style={{ fontSize: "9px", fontWeight: "700", color: "#92400E" }}>VIEWING</span>}
                     </div>
                   </button>
@@ -636,7 +636,7 @@ function AcademicYearSidebar({
         disabled={!canAddYear}
         title={!canAddYear ? addYearDisabledReason : "Create a new academic year"}
       >
-        <span style={{ width: "20px", height: "20px", borderRadius: "50%", backgroundColor: canAddYear ? "#0D47A1" : "#E5E7EB", color: canAddYear ? "#fff" : "#9CA3AF", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "700", flexShrink: 0 }}>+</span>
+        <span style={{ width: "20px", height: "20px", borderRadius: "50%", backgroundColor: canAddYear ? "#25476a" : "#E5E7EB", color: canAddYear ? "#fff" : "#9CA3AF", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "700", flexShrink: 0 }}>+</span>
         {canAddYear ? "Add Academic Year" : addYearDisabledReason || "Add Academic Year"}
       </button>
     </div>
@@ -752,7 +752,7 @@ export default function AcademicYearPage() {
       <div style={{ fontFamily: "Inter,sans-serif" }}>
         <style>{CSS}</style>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "380px", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
-          <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "ay-spin 0.7s linear infinite" }} />
+          <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "ay-spin 0.7s linear infinite" }} />
           Loading…
         </div>
       </div>

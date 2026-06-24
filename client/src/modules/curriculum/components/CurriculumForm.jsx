@@ -1,4 +1,4 @@
-import { useFormContext } from "react-hook-form";
+﻿import { useFormContext } from "react-hook-form";
 
 /* ── Icons ─────────────────────────────────────────────────────────────── */
 
@@ -37,9 +37,9 @@ const CSS = `
     outline: none;
   }
   .cf-input:focus, .cf-textarea:focus {
-    border-color: #0D47A1;
+    border-color: #25476a;
     background-color: #F0F7FF;
-    box-shadow: 0 0 0 3px rgba(13,71,161,0.1);
+    box-shadow: 0 0 0 3px rgba(37,71,106,0.1);
   }
   .cf-input.cf-error, .cf-textarea.cf-error {
     border-color: #EF4444;
@@ -65,13 +65,13 @@ const CSS = `
     transition: all 0.15s;
   }
   .cf-auto-btn:enabled {
-    background-color: #EFF6FF;
-    color: #0D47A1;
-    border-color: #BFDBFE;
+    background-color: #e8f5fb;
+    color: #25476a;
+    border-color: #a8d5ee;
   }
   .cf-auto-btn:enabled:hover {
-    background-color: #DBEAFE;
-    border-color: #93C5FD;
+    background-color: #d6edf8;
+    border-color: #b8d9ee;
   }
   .cf-auto-btn:disabled {
     background-color: #F9FAFB;
@@ -159,7 +159,7 @@ export default function CurriculumForm() {
       <h3 style={sectionTitleStyle}>
         <span style={{
           width: "28px", height: "28px", borderRadius: "8px",
-          backgroundColor: "#0D47A1", color: "#fff",
+          backgroundColor: "#25476a", color: "#fff",
           fontSize: "13px", fontWeight: "700",
           display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}>1</span>

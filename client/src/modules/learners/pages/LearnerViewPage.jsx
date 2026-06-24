@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLearnerQuery, useDeleteLearner } from "../hooks/useLearners";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
@@ -6,15 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT    = "#0D47A1";
-const GRAD_FROM = "#0D2E6E";
-const GRAD_TO   = "#1976D2";
+const ACCENT    = "#25476a";
+const GRAD_FROM = "#1a3550";
+const GRAD_TO   = "#38aae1";
 
 const STATUS_STYLES = {
-  active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-  transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
-  graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
+  transferred: { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  graduated:   { bg: "#fff8e6", color: "#b07800", border: "#fcd97a" },
 };
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
 
@@ -72,7 +72,7 @@ export default function LearnerViewPage() {
       </div>
 
       {/* Header */}
-      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #0D47A1 40%, #1565C0 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #25476a 40%, #2e7db5 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -102,7 +102,7 @@ export default function LearnerViewPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {/* Enrollment */}
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>Enrollment</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Enrollment</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DetailRow label="Admission Number" value={learner.admissionNumber} />
             <DetailRow label="School"           value={school?.name} />
@@ -115,7 +115,7 @@ export default function LearnerViewPage() {
 
         {/* Guardian */}
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>Guardian</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Guardian</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DetailRow label="Name"  value={learner.guardianName} />
             <DetailRow label="Phone" value={learner.guardianPhone} />

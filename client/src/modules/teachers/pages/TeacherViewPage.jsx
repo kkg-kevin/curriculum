@@ -1,11 +1,11 @@
-import { useNavigate, useParams } from "react-router-dom";
+﻿import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery } from "../hooks/useTeacher";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { classApi } from "../../classes/services/classApi";
 
 const STATUS_STYLES = {
-  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
 };
@@ -17,7 +17,7 @@ function Avatar({ firstName, lastName, size = 64 }) {
     <div
       style={{
         width: size, height: size, borderRadius: "50%",
-        background: "linear-gradient(135deg, #0D47A1, #1565C0)",
+        background: "linear-gradient(135deg, #25476a, #2e7db5)",
         border: "3px solid rgba(255,255,255,0.3)",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: size * 0.34, fontWeight: "700", color: "#ffffff",
@@ -33,7 +33,7 @@ function Section({ title, children }) {
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
       <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
-        <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>{title}</h2>
+        <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</h2>
       </div>
       <div style={{ padding: "20px" }}>{children}</div>
     </div>
@@ -102,7 +102,7 @@ export default function TeacherViewPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
 
       {/* Hero header */}
-      <div style={{ background: "linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           {/* Breadcrumb */}
@@ -137,7 +137,7 @@ export default function TeacherViewPage() {
             <button
               type="button"
               onClick={() => navigate(`/teachers/${id}/edit`)}
-              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 20px", backgroundColor: "#ffffff", color: "#0D47A1", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -158,7 +158,7 @@ export default function TeacherViewPage() {
             {myClasses.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned as class teacher to any class yet.</p>
-                <button type="button" onClick={() => navigate("/classes/create")} style={{ background: "none", border: "none", color: "#0D47A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
+                <button type="button" onClick={() => navigate("/classes/create")} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -172,7 +172,7 @@ export default function TeacherViewPage() {
                       <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.gradeName}</p>
                       <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>Academic Year {c.academicYear}</p>
                     </div>
-                    <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: c.status === "active" ? "#EFF6FF" : "#F9FAFB", color: c.status === "active" ? "#1E3A8A" : "#6B7280", border: `1px solid ${c.status === "active" ? "#BFDBFE" : "#E5E7EB"}` }}>
+                    <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: c.status === "active" ? "#e8f5fb" : "#F9FAFB", color: c.status === "active" ? "#25476a" : "#6B7280", border: `1px solid ${c.status === "active" ? "#a8d5ee" : "#E5E7EB"}` }}>
                       {c.status === "active" ? "Active" : "Inactive"}
                     </span>
                   </div>
@@ -190,21 +190,21 @@ export default function TeacherViewPage() {
             {school ? (
               <div
                 onClick={() => navigate(`/schools/${school.id}/view`)}
-                style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "10px", backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE", cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "10px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", cursor: "pointer" }}
               >
                 <span style={{ fontSize: "24px", flexShrink: 0 }}>🏫</span>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#1E3A8A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{school.name}</p>
+                  <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{school.name}</p>
                   <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>{school.code}{school.address?.county ? ` · ${school.address.county}` : ""}</p>
                 </div>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#BFDBFE", flexShrink: 0, marginLeft: "auto" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#a8d5ee", flexShrink: 0, marginLeft: "auto" }}>
                   <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             ) : (
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <p style={{ margin: "0 0 8px", fontSize: "13px", color: "#9CA3AF" }}>No school assigned.</p>
-                <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#0D47A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
+                <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
                   Assign school →
                 </button>
               </div>
@@ -225,7 +225,7 @@ export default function TeacherViewPage() {
               {!teacher.email && !teacher.phone && (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>
                   No contact details.{" "}
-                  <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#0D47A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
+                  <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
                     Add →
                   </button>
                 </p>

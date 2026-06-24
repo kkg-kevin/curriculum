@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
@@ -23,9 +23,9 @@ const formatDay = () =>
   });
 
 const TYPE_COLORS = {
-  Core:           "#1D4ED8",
-  Complementary:  "#0369A1",
-  Substitutional: "#0F766E",
+  Core:           "#25476a",
+  Complementary:  "#38aae1",
+  Substitutional: "#feb139",
 };
 
 /* ── Skeleton ────────────────────────────────────────────────────────── */
@@ -141,8 +141,8 @@ function CurriculumRow({ curriculum, navigate }) {
         transition: "border-color 0.15s, box-shadow 0.15s",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#BFDBFE";
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(13,71,161,0.07)";
+        e.currentTarget.style.borderColor = "#a8d5ee";
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,71,106,0.07)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = "#F0F4F8";
@@ -189,7 +189,7 @@ function CurriculumRow({ curriculum, navigate }) {
         <div style={{ width: "110px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
           <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "500" }}>Setup</span>
-          <span style={{ fontSize: "10px", fontWeight: "700", color: isComplete ? "#15803D" : "#1D4ED8" }}>
+          <span style={{ fontSize: "10px", fontWeight: "700", color: isComplete ? "#feb139" : "#38aae1" }}>
             {pct}%
           </span>
         </div>
@@ -199,8 +199,8 @@ function CurriculumRow({ curriculum, navigate }) {
               height: "100%",
               width: `${pct}%`,
               background: isComplete
-                ? "linear-gradient(90deg, #15803D, #22C55E)"
-                : "linear-gradient(90deg, #0D47A1, #42A5F5)",
+                ? "linear-gradient(90deg, #feb139, #f59e0b)"
+                : "linear-gradient(90deg, #25476a, #38aae1)",
               borderRadius: "10px",
               transition: "width 0.4s ease",
             }}
@@ -217,9 +217,9 @@ function CurriculumRow({ curriculum, navigate }) {
         onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
         style={{
           padding: "6px 13px",
-          backgroundColor: "#EFF6FF",
-          color: "#1D4ED8",
-          border: "1px solid #BFDBFE",
+          backgroundColor: "#e8f5fb",
+          color: "#38aae1",
+          border: "1px solid #a8d5ee",
           borderRadius: "8px",
           fontSize: "12px",
           fontWeight: "600",
@@ -360,7 +360,7 @@ function QuickAction({ icon, label, description, onClick, primary }) {
         alignItems: "center",
         gap: "12px",
         padding: "12px 14px",
-        backgroundColor: primary ? "#0D47A1" : "#fff",
+        backgroundColor: primary ? "#feb139" : "#fff",
         border: primary ? "none" : "1.5px solid #E5E7EB",
         borderRadius: "10px",
         cursor: "pointer",
@@ -369,11 +369,11 @@ function QuickAction({ icon, label, description, onClick, primary }) {
         transition: "all 0.15s",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = primary ? "#0A3880" : "#F8FAFF";
-        if (!primary) e.currentTarget.style.borderColor = "#BFDBFE";
+        e.currentTarget.style.backgroundColor = primary ? "#f0a800" : "#F8FAFF";
+        if (!primary) e.currentTarget.style.borderColor = "#a8d5ee";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = primary ? "#0D47A1" : "#fff";
+        e.currentTarget.style.backgroundColor = primary ? "#feb139" : "#fff";
         if (!primary) e.currentTarget.style.borderColor = "#E5E7EB";
       }}
     >
@@ -382,7 +382,7 @@ function QuickAction({ icon, label, description, onClick, primary }) {
           width: "34px",
           height: "34px",
           borderRadius: "9px",
-          backgroundColor: primary ? "rgba(255,255,255,0.15)" : "#EFF6FF",
+          backgroundColor: primary ? "rgba(37,71,106,0.12)" : "#e8f5fb",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -393,14 +393,14 @@ function QuickAction({ icon, label, description, onClick, primary }) {
         {icon}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: primary ? "#fff" : "#111827" }}>
+        <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: primary ? "#25476a" : "#111827" }}>
           {label}
         </p>
-        <p style={{ margin: "1px 0 0", fontSize: "11px", color: primary ? "rgba(255,255,255,0.65)" : "#9CA3AF" }}>
+        <p style={{ margin: "1px 0 0", fontSize: "11px", color: primary ? "rgba(37,71,106,0.6)" : "#9CA3AF" }}>
           {description}
         </p>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: primary ? "rgba(255,255,255,0.6)" : "#D1D5DB", flexShrink: 0 }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: primary ? "rgba(37,71,106,0.5)" : "#D1D5DB", flexShrink: 0 }}>
         <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
@@ -410,11 +410,11 @@ function QuickAction({ icon, label, description, onClick, primary }) {
 /* ── Main page ───────────────────────────────────────────────────────── */
 
 const STATUS_COLORS = {
-  active:      { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7" },
+  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave:    { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
-  transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
-  graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
+  transferred: { bg: "#dff2fb", color: "#38aae1", border: "#a8d5ee" },
+  graduated:   { bg: "#fff8e6", color: "#feb139", border: "#fcd97a" },
 };
 
 export default function DashboardPage() {
@@ -465,7 +465,7 @@ export default function DashboardPage() {
       <div
         style={{
           borderRadius: "20px",
-          background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 50%, #1565C0 100%)",
+          background: "linear-gradient(135deg, #0A3880 0%, #25476a 50%, #2e7db5 100%)",
           padding: "28px 32px",
           marginBottom: "24px",
           position: "relative",
@@ -501,7 +501,7 @@ export default function DashboardPage() {
                 gap: "7px",
                 padding: "10px 20px",
                 backgroundColor: "#fff",
-                color: "#0D47A1",
+                color: "#25476a",
                 border: "none",
                 borderRadius: "10px",
                 fontSize: "13px",
@@ -544,7 +544,7 @@ export default function DashboardPage() {
           label="Curricula"
           value={curriculaLoading ? "—" : totalCurricula}
           sub={curriculaLoading ? null : publishedCount > 0 ? `${publishedCount} published` : typesInUse.length > 0 ? typesInUse.join(", ") : "None published yet"}
-          accent="#0D47A1"
+          accent="#25476a"
           actionLabel="View all"
           onAction={() => navigate("/curriculum")}
           loading={curriculaLoading}
@@ -554,7 +554,7 @@ export default function DashboardPage() {
           label="Schools"
           value={schoolsLoading ? "—" : totalSchools}
           sub={schoolsLoading ? null : totalSchools === 0 ? "None added yet" : `${activeSchools} active`}
-          accent="#0369A1"
+          accent="#38aae1"
           actionLabel={totalSchools === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/schools")}
           loading={schoolsLoading}
@@ -564,7 +564,7 @@ export default function DashboardPage() {
           label="Classes"
           value={classesLoading ? "—" : totalClasses}
           sub={classesLoading ? null : totalClasses === 0 ? "No classes yet" : `${activeClasses} active`}
-          accent="#7C3AED"
+          accent="#feb139"
           actionLabel={totalClasses === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/classes")}
           loading={classesLoading}
@@ -574,7 +574,7 @@ export default function DashboardPage() {
           label="Learners"
           value={learnersLoading ? "—" : totalLearners}
           sub={learnersLoading ? null : totalLearners === 0 ? "Enrol learners to begin" : `${activeLearners} active`}
-          accent="#1E40AF"
+          accent="#38aae1"
           actionLabel={totalLearners === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/learners")}
           loading={learnersLoading}
@@ -584,7 +584,7 @@ export default function DashboardPage() {
           label="Teachers"
           value={teachersLoading ? "—" : totalTeachers}
           sub={teachersLoading ? null : totalTeachers === 0 ? "Add teachers to classes" : `${activeTeachers} active`}
-          accent="#0F766E"
+          accent="#25476a"
           actionLabel={totalTeachers === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/teachers")}
           loading={teachersLoading}
@@ -617,7 +617,7 @@ export default function DashboardPage() {
               }}
             >
               <div>
-                <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#111827" }}>
+                <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>
                   Curriculum Overview
                 </h2>
                 <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
@@ -629,9 +629,9 @@ export default function DashboardPage() {
                 onClick={() => navigate("/curriculum")}
                 style={{
                   padding: "6px 12px",
-                  backgroundColor: "#EFF6FF",
-                  color: "#1D4ED8",
-                  border: "1px solid #BFDBFE",
+                  backgroundColor: "#e8f5fb",
+                  color: "#38aae1",
+                  border: "1px solid #a8d5ee",
                   borderRadius: "8px",
                   fontSize: "12px",
                   fontWeight: "600",
@@ -658,7 +658,7 @@ export default function DashboardPage() {
                 ))
               ) : recentCurricula.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "40px 20px", textAlign: "center" }}>
-                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>
                     📋
                   </div>
                   <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#374151" }}>No curricula yet</p>
@@ -666,7 +666,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate("/curriculum/create")}
-                    style={{ marginTop: "4px", padding: "8px 18px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                    style={{ marginTop: "4px", padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
                   >
                     + Create Curriculum
                   </button>
@@ -681,10 +681,10 @@ export default function DashboardPage() {
             {!isLoading && totalCurricula > 0 && (
               <div style={{ padding: "12px 20px", borderTop: "1px solid #F3F4F6", display: "flex", gap: "20px", backgroundColor: "#FAFBFF" }}>
                 {[
-                  { label: "Total Classes",  value: totalCurriculumClasses, color: "#1D4ED8" },
-                  { label: "Total Courses",  value: totalCourses,           color: "#0369A1" },
-                  { label: "Total Periods",  value: totalCurriculumPeriods, color: "#0F766E" },
-                  { label: "Published",      value: publishedCount,         color: "#059669" },
+                  { label: "Total Classes",  value: totalCurriculumClasses, color: "#25476a" },
+                  { label: "Total Courses",  value: totalCourses,           color: "#38aae1" },
+                  { label: "Total Periods",  value: totalCurriculumPeriods, color: "#25476a" },
+                  { label: "Published",      value: publishedCount,         color: "#feb139" },
                 ].map((s) => (
                   <div key={s.label} style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
                     <span style={{ fontSize: "15px", fontWeight: "800", color: s.color }}>{s.value}</span>
@@ -707,8 +707,8 @@ export default function DashboardPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Recent Schools</h2>
-                <button type="button" onClick={() => navigate("/schools")} style={{ background: "none", border: "none", fontSize: "12px", color: "#0369A1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent Schools</h2>
+                <button type="button" onClick={() => navigate("/schools")} style={{ background: "none", border: "none", fontSize: "12px", color: "#38aae1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
                   View all →
                 </button>
               </div>
@@ -718,7 +718,7 @@ export default function DashboardPage() {
                   return (
                     <RecentRow
                       key={s.id}
-                      avatar={{ emoji: "🏫", gradient: "linear-gradient(135deg, #0369A1, #0D47A1)" }}
+                      avatar={{ emoji: "🏫", gradient: "linear-gradient(135deg, #38aae1, #25476a)" }}
                       primary={s.name}
                       secondary={s.code + (s.address?.county ? ` · ${s.address.county}` : "")}
                       badge={s.status}
@@ -745,8 +745,8 @@ export default function DashboardPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Recent Learners</h2>
-                <button type="button" onClick={() => navigate("/learners")} style={{ background: "none", border: "none", fontSize: "12px", color: "#1E40AF", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent Learners</h2>
+                <button type="button" onClick={() => navigate("/learners")} style={{ background: "none", border: "none", fontSize: "12px", color: "#38aae1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
                   View all →
                 </button>
               </div>
@@ -756,7 +756,7 @@ export default function DashboardPage() {
                   return (
                     <RecentRow
                       key={l.id}
-                      avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), gradient: "linear-gradient(135deg, #831843, #BE185D)" }}
+                      avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), gradient: "linear-gradient(135deg, #1a3550, #25476a)" }}
                       primary={`${l.firstName} ${l.lastName}`}
                       secondary={l.admissionNumber || l.id}
                       badge={l.status}
@@ -786,7 +786,7 @@ export default function DashboardPage() {
             }}
           >
             <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid #F3F4F6" }}>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Quick Actions</h2>
+              <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Quick Actions</h2>
             </div>
             <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
               <QuickAction
@@ -834,7 +834,7 @@ export default function DashboardPage() {
             }}
           >
             <div style={{ padding: "16px 18px 12px", borderBottom: "1px solid #F3F4F6" }}>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>System Setup</h2>
+              <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>System Setup</h2>
               <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
                 Complete your setup to unlock all features
               </p>
@@ -845,7 +845,7 @@ export default function DashboardPage() {
                 label="Curriculum"
                 description="Framework & structure"
                 count={totalCurricula}
-                accentColor="#1D4ED8"
+                accentColor="#25476a"
                 path="/curriculum"
                 navigate={navigate}
                 isLive={totalCurricula > 0}
@@ -855,7 +855,7 @@ export default function DashboardPage() {
                 label="Schools"
                 description="Manage schools"
                 count={totalSchools}
-                accentColor="#0369A1"
+                accentColor="#38aae1"
                 path="/schools"
                 navigate={navigate}
                 isLive={totalSchools > 0}
@@ -865,7 +865,7 @@ export default function DashboardPage() {
                 label="Classes"
                 description="School classes"
                 count={totalClasses}
-                accentColor="#7C3AED"
+                accentColor="#feb139"
                 path="/classes"
                 navigate={navigate}
                 isLive={totalClasses > 0}
@@ -875,7 +875,7 @@ export default function DashboardPage() {
                 label="Learners"
                 description="Student enrolment"
                 count={totalLearners}
-                accentColor="#1E40AF"
+                accentColor="#38aae1"
                 path="/learners"
                 navigate={navigate}
                 isLive={totalLearners > 0}
@@ -885,7 +885,7 @@ export default function DashboardPage() {
                 label="Teachers"
                 description="Staff profiles"
                 count={totalTeachers}
-                accentColor="#0F766E"
+                accentColor="#25476a"
                 path="/teachers"
                 navigate={navigate}
                 isLive={totalTeachers > 0}
@@ -895,7 +895,7 @@ export default function DashboardPage() {
                 label="Assessments"
                 description="Coming soon"
                 count={0}
-                accentColor="#D97706"
+                accentColor="#feb139"
                 path="/assessments"
                 navigate={navigate}
                 isLive={false}

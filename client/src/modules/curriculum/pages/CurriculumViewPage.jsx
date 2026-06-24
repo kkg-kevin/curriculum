@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
@@ -29,27 +29,27 @@ function resolvePeriodDates(periodName, activeYear, curriculumPeriods) {
 }
 
 const FRAMEWORK_COLORS = {
-  CBC:       { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  IGCSE:     { bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-  IB:        { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
-  National:  { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-  Cambridge: { bg: "#DBEAFE", color: "#1E3A8A", border: "#93C5FD" },
+  CBC:       { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  IGCSE:     { bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+  IB:        { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  National:  { bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+  Cambridge: { bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
   American:  { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
   Custom:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
 const STATUS_CONFIG = {
-  published: { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7", dot: "#10B981", label: "Published" },
-  active:    { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", dot: "#16A34A", label: "Active"    },
+  published: { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", dot: "#feb139", label: "Published" },
+  active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", dot: "#38aae1", label: "Active"    },
   draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"     },
   inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
 };
 
 const COURSE_SHADES = [
-  { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  { bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-  { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-  { bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+  { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  { bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+  { bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+  { bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
 ];
 
 /* ── CSS ─────────────────────────────────────────────────────────────── */
@@ -85,13 +85,13 @@ const CSS = `
   }
   .cvp-tab-name  { font-size: 13px; font-weight: 700; color: #374151; line-height: 1.2; }
   .cvp-tab-dates { font-size: 10px; font-weight: 500; color: #9CA3AF; line-height: 1.2; }
-  .cvp-tab:hover { border-color: #93C5FD; background: #F0F7FF; }
-  .cvp-tab:hover .cvp-tab-name  { color: #1D4ED8; }
-  .cvp-tab:hover .cvp-tab-dates { color: #93C5FD; }
+  .cvp-tab:hover { border-color: #b8d9ee; background: #F0F7FF; }
+  .cvp-tab:hover .cvp-tab-name  { color: #38aae1; }
+  .cvp-tab:hover .cvp-tab-dates { color: #b8d9ee; }
   .cvp-tab.active {
-    border-color: #0D47A1;
-    background: linear-gradient(135deg, #0D47A1, #1565C0);
-    box-shadow: 0 2px 10px rgba(13,71,161,0.25);
+    border-color: #25476a;
+    background: linear-gradient(135deg, #25476a, #2e7db5);
+    box-shadow: 0 2px 10px rgba(37,71,106,0.25);
   }
   .cvp-tab.active .cvp-tab-name  { color: #fff; }
   .cvp-tab.active .cvp-tab-dates { color: rgba(255,255,255,0.65); }
@@ -118,9 +118,9 @@ const CSS = `
     font-family: Inter, sans-serif;
   }
   .cvp-date-pill-term {
-    background: #EFF6FF;
-    color: #1D4ED8;
-    border: 1.5px solid #BFDBFE;
+    background: #e8f5fb;
+    color: #25476a;
+    border: 1.5px solid #a8d5ee;
   }
   .cvp-date-pill-break {
     background: #FFF7ED;
@@ -140,10 +140,10 @@ const CSS = `
     max-height: 260px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #DBEAFE transparent;
+    scrollbar-color: #d6edf8 transparent;
   }
   .cvp-class-list::-webkit-scrollbar { width: 4px; }
-  .cvp-class-list::-webkit-scrollbar-thumb { background: #BFDBFE; border-radius: 4px; }
+  .cvp-class-list::-webkit-scrollbar-thumb { background: #a8d5ee; border-radius: 4px; }
   .cvp-class-row {
     display: flex;
     align-items: center;
@@ -201,7 +201,7 @@ function LoadingState() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <style>{`@keyframes cvp-spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "400px", gap: "14px", color: "#6B7280", fontSize: "14px" }}>
-        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#0D47A1", borderRadius: "50%", display: "inline-block", animation: "cvp-spin 0.7s linear infinite" }} />
+        <span style={{ width: "28px", height: "28px", border: "3px solid #E5E7EB", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "cvp-spin 0.7s linear infinite" }} />
         Loading curriculum…
       </div>
     </div>
@@ -305,12 +305,12 @@ export default function CurriculumViewPage() {
       {/* ── Hero header card ──────────────────────────────────────────── */}
       <div style={{
         backgroundColor: "#ffffff", borderRadius: "20px",
-        boxShadow: "0 4px 20px rgba(13,71,161,0.10), 0 1px 4px rgba(0,0,0,0.05)",
+        boxShadow: "0 4px 20px rgba(37,71,106,0.10), 0 1px 4px rgba(0,0,0,0.05)",
         overflow: "hidden", marginBottom: "20px",
       }}>
         {/* Gradient banner */}
         <div style={{
-          background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 40%, #1565C0 70%, #1976D2 100%)",
+          background: "linear-gradient(135deg, #0A3880 0%, #25476a 40%, #2e7db5 70%, #38aae1 100%)",
           padding: "24px 28px 28px", position: "relative", overflow: "hidden",
         }}>
           <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "160px", height: "160px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)" }} />
@@ -349,7 +349,7 @@ export default function CurriculumViewPage() {
                 🏗 Structure
               </button>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#0D47A1", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 🗂 Version Control
               </button>
             </div>
@@ -372,10 +372,10 @@ export default function CurriculumViewPage() {
         {/* Stats bar */}
         <div style={{ padding: "18px 28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {[
-            { label: cycleLabel(model), value: periods.length, icon: "📆", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-            { label: "Classes",         value: classes.length,  icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-            { label: "Total Courses",   value: totalCourses,    icon: "📚", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-            { label: "Versions",        value: history.length + (current ? 1 : 0), icon: "🗂", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+            { label: cycleLabel(model), value: periods.length, icon: "📆", bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
+            { label: "Classes",         value: classes.length,  icon: "🎓", bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+            { label: "Total Courses",   value: totalCourses,    icon: "📚", bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+            { label: "Versions",        value: history.length + (current ? 1 : 0), icon: "🗂", bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
           ].map((stat) => (
             <div key={stat.label} style={{
               display: "flex", alignItems: "center", gap: "10px",
@@ -410,7 +410,7 @@ export default function CurriculumViewPage() {
                   <div style={{ flex: "1 1 auto", padding: "10px 20px", borderRight: "1px solid #F3F4F6" }}>
                     <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>Academic Year</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38aae1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                       </svg>
                       <span style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>{activeYearLabel}</span>
@@ -420,7 +420,7 @@ export default function CurriculumViewPage() {
                 {current && (
                   <div style={{ padding: "10px 20px", borderRight: "1px solid #F3F4F6", flexShrink: 0 }}>
                     <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>Version</div>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#0D47A1" }}>v{current.versionNumber}</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#25476a" }}>v{current.versionNumber}</span>
                   </div>
                 )}
                 {current && sc && (
@@ -486,7 +486,7 @@ export default function CurriculumViewPage() {
                     No course assignments yet. Go to Version Control to assign courses to each class per term.
                   </p>
                   <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
-                    style={{ padding: "9px 20px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    style={{ padding: "9px 20px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                     Open Version Control →
                   </button>
                 </div>
@@ -495,13 +495,13 @@ export default function CurriculumViewPage() {
           ) : (
             /* No academic year configured */
             <div style={{ padding: "48px 24px", textAlign: "center" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", border: "2px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>🗂</div>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>🗂</div>
               <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
               <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginInline: "auto" }}>
                 Go to Version Control to assign courses to each class per period, then save as a version.
               </p>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
-                style={{ padding: "10px 22px", backgroundColor: "#0D47A1", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                style={{ padding: "10px 22px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 Open Version Control →
               </button>
             </div>
@@ -601,7 +601,7 @@ export default function CurriculumViewPage() {
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Schools Using This Curriculum</h2>
-          <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+          <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
             {assignedSchools.length}
           </span>
         </div>
@@ -632,9 +632,9 @@ export default function CurriculumViewPage() {
                   </div>
                   <span style={{
                     padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700",
-                    backgroundColor: s.status === "active" ? "#ECFDF5" : "#F9FAFB",
-                    color: s.status === "active" ? "#065F46" : "#6B7280",
-                    border: `1px solid ${s.status === "active" ? "#A7F3D0" : "#E5E7EB"}`,
+                    backgroundColor: s.status === "active" ? "#e8f5fb" : "#F9FAFB",
+                    color: s.status === "active" ? "#25476a" : "#6B7280",
+                    border: `1px solid ${s.status === "active" ? "#a8d5ee" : "#E5E7EB"}`,
                   }}>
                     {s.status === "active" ? "Active" : "Inactive"}
                   </span>
@@ -660,8 +660,8 @@ export default function CurriculumViewPage() {
               onClick={() => navigate(`/curriculum/${id}/versions`)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: "6px",
-                padding: "8px 16px", backgroundColor: "#EFF6FF", color: "#0D47A1",
-                border: "1.5px solid #BFDBFE", borderRadius: "9px",
+                padding: "8px 16px", backgroundColor: "#e8f5fb", color: "#25476a",
+                border: "1.5px solid #a8d5ee", borderRadius: "9px",
                 fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer",
               }}
             >
@@ -680,7 +680,7 @@ export default function CurriculumViewPage() {
                 }}>
                   <span style={{
                     width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0,
-                    backgroundColor: v.isCurrent ? "#0D47A1" : "#F3F4F6",
+                    backgroundColor: v.isCurrent ? "#25476a" : "#F3F4F6",
                     color: v.isCurrent ? "#fff" : "#6B7280",
                     fontSize: "11px", fontWeight: "800",
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -690,7 +690,7 @@ export default function CurriculumViewPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>
                       Version {v.versionNumber}
-                      {v.isCurrent && <span style={{ marginLeft: "6px", fontSize: "10px", color: "#0D47A1", fontWeight: "700" }}>· CURRENT</span>}
+                      {v.isCurrent && <span style={{ marginLeft: "6px", fontSize: "10px", color: "#25476a", fontWeight: "700" }}>· CURRENT</span>}
                     </p>
                     <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>
                       {new Date(v.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}

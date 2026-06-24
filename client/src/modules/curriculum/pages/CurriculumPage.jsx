@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery, useDeleteCurriculum } from "../hooks/useCurriculum";
@@ -10,8 +10,8 @@ import { FRAMEWORKS } from "../schemas/curriculum.schema";
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
 
 const STATUS_COLORS = {
-  active:    { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7", dot: "#10B981", label: "Active"    },
-  published: { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7", dot: "#10B981", label: "Published" },
+  active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", dot: "#38aae1", label: "Active"    },
+  published: { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", dot: "#feb139", label: "Published" },
   draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FCD34D", dot: "#F59E0B", label: "Draft"     },
   inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
 };
@@ -21,8 +21,8 @@ const STATUS_COLORS = {
 function MenuButton({ icon, label, onClick, danger = false }) {
   const [pressed, setPressed] = useState(false);
   const normalColor  = danger ? "#DC2626" : "#374151";
-  const hoverBg      = danger ? "#FEF2F2" : "#EFF6FF";
-  const hoverColor   = danger ? "#DC2626" : "#0D47A1";
+  const hoverBg      = danger ? "#FEF2F2" : "#e8f5fb";
+  const hoverColor   = danger ? "#DC2626" : "#25476a";
 
   return (
     <button
@@ -37,7 +37,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
         gap: "10px",
         width: "100%",
         padding: "10px 12px",
-        backgroundColor: pressed ? (danger ? "#FEE2E2" : "#DBEAFE") : "transparent",
+        backgroundColor: pressed ? (danger ? "#FEE2E2" : "#d6edf8") : "transparent",
         border: "none",
         borderRadius: "8px",
         fontSize: "13.5px",
@@ -94,9 +94,9 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
 
   const go = (path) => { setMenuOpen(false); navigate(path); };
 
-  const triggerBg    = menuOpen ? "#DBEAFE" : triggerHovered ? "#F3F4F6" : "transparent";
-  const triggerColor = menuOpen ? "#1D4ED8" : triggerHovered ? "#374151" : "#9CA3AF";
-  const triggerBorder = menuOpen ? "1.5px solid #BFDBFE" : "1.5px solid transparent";
+  const triggerBg    = menuOpen ? "#d6edf8" : triggerHovered ? "#F3F4F6" : "transparent";
+  const triggerColor = menuOpen ? "#38aae1" : triggerHovered ? "#374151" : "#9CA3AF";
+  const triggerBorder = menuOpen ? "1.5px solid #a8d5ee" : "1.5px solid transparent";
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
@@ -203,7 +203,7 @@ function CurriculumCard({ curriculum }) {
       style={{
         backgroundColor: "#ffffff", borderRadius: "16px",
         boxShadow: hovered
-          ? "0 8px 24px rgba(13,71,161,0.12), 0 2px 6px rgba(0,0,0,0.05)"
+          ? "0 8px 24px rgba(37,71,106,0.12), 0 2px 6px rgba(0,0,0,0.05)"
           : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
         display: "flex", flexDirection: "column", overflow: "hidden",
         transition: "box-shadow 0.2s, transform 0.2s, opacity 0.2s",
@@ -220,7 +220,7 @@ function CurriculumCard({ curriculum }) {
             onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
             style={{
               margin: 0, fontSize: "14px", fontWeight: "700", lineHeight: "1.3",
-              color: hovered ? "#0D47A1" : "#111827",
+              color: hovered ? "#25476a" : "#111827",
               cursor: "pointer", transition: "color 0.15s",
               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
               flex: 1, minWidth: 0,
@@ -230,7 +230,7 @@ function CurriculumCard({ curriculum }) {
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
             {curriculum.curriculumType && (
-              <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#F0FDF4", color: "#166534", border: "1px solid #BBF7D0", whiteSpace: "nowrap" }}>
+              <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#fff8e6", color: "#b07800", border: "1px solid #fcd97a", whiteSpace: "nowrap" }}>
                 {curriculum.curriculumType}
               </span>
             )}
@@ -257,9 +257,9 @@ function CurriculumCard({ curriculum }) {
           ].map((stat, i, arr) => (
             <div key={i} style={{ flex: stat.isText ? "1.4" : "1", textAlign: "center", borderRight: i < arr.length - 1 ? "1px solid #F3F4F6" : "none", padding: "0 6px" }}>
               {stat.isText ? (
-                <div style={{ fontSize: "12px", fontWeight: "800", color: "#0D47A1", lineHeight: 1.2, marginBottom: "2px" }}>{stat.value}</div>
+                <div style={{ fontSize: "12px", fontWeight: "800", color: "#25476a", lineHeight: 1.2, marginBottom: "2px" }}>{stat.value}</div>
               ) : (
-                <div style={{ fontSize: "20px", fontWeight: "800", color: "#0D47A1", lineHeight: 1, marginBottom: "2px" }}>{stat.value}</div>
+                <div style={{ fontSize: "20px", fontWeight: "800", color: "#25476a", lineHeight: 1, marginBottom: "2px" }}>{stat.value}</div>
               )}
               <div style={{ fontSize: "9px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{stat.label}</div>
             </div>
@@ -283,7 +283,7 @@ function CurriculumCard({ curriculum }) {
           <div style={{ height: "4px", backgroundColor: "#F0F4F8", borderRadius: "10px", overflow: "hidden" }}>
             <div style={{
               height: "100%", width: `${pct}%`,
-              background: pct === 100 ? "linear-gradient(90deg, #059669, #34D399)" : "linear-gradient(90deg, #1565C0, #64B5F6)",
+              background: pct === 100 ? "linear-gradient(90deg, #feb139, #f59e0b)" : "linear-gradient(90deg, #25476a, #38aae1)",
               borderRadius: "10px", transition: "width 0.5s ease",
               minWidth: pct > 0 ? "8px" : "0",
             }} />
@@ -321,8 +321,8 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
           width: "72px",
           height: "72px",
           borderRadius: "18px",
-          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-          border: "2px solid #BFDBFE",
+          background: "linear-gradient(135deg, #e8f5fb, #d6edf8)",
+          border: "2px solid #a8d5ee",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -347,8 +347,8 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
           style={{
             padding: "10px 24px",
             backgroundColor: "transparent",
-            color: "#0D47A1",
-            border: "1.5px solid #0D47A1",
+            color: "#25476a",
+            border: "1.5px solid #25476a",
             borderRadius: "10px",
             fontSize: "14px",
             fontWeight: "600",
@@ -364,15 +364,15 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
           onClick={onCreateNew}
           style={{
             padding: "10px 24px",
-            backgroundColor: "#0D47A1",
-            color: "#ffffff",
+            backgroundColor: "#feb139",
+            color: "#25476a",
             border: "none",
             borderRadius: "10px",
             fontSize: "14px",
             fontWeight: "600",
             fontFamily: "Inter, sans-serif",
             cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(13,71,161,0.25)",
+            boxShadow: "0 4px 12px rgba(254,177,57,0.35)",
           }}
         >
           + Create Curriculum
@@ -404,7 +404,7 @@ export default function CurriculumPage() {
       {/* ── Hero strip ──────────────────────────────────────────────── */}
       <div
         style={{
-          background: "linear-gradient(135deg, #0A3880 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)",
+          background: "linear-gradient(135deg, #0A3880 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)",
           borderRadius: "20px",
           padding: "28px 32px",
           marginBottom: "16px",
@@ -444,8 +444,8 @@ export default function CurriculumPage() {
               alignItems: "center",
               gap: "7px",
               padding: "11px 22px",
-              backgroundColor: "#ffffff",
-              color: "#0D47A1",
+              backgroundColor: "#feb139",
+              color: "#25476a",
               border: "none",
               borderRadius: "12px",
               fontSize: "14px",
@@ -453,7 +453,7 @@ export default function CurriculumPage() {
               fontFamily: "Inter, sans-serif",
               cursor: "pointer",
               flexShrink: 0,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              boxShadow: "0 2px 8px rgba(254,177,57,0.35)",
               whiteSpace: "nowrap",
             }}
           >
@@ -473,10 +473,10 @@ export default function CurriculumPage() {
         }}
       >
         {[
-          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length, icon: "📋", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-          { label: "Total Classes",   value: isLoading ? "—" : totalClasses,     icon: "🎓", bg: "#DBEAFE", color: "#1565C0", border: "#93C5FD" },
-          { label: "Total Periods",   value: isLoading ? "—" : totalPeriods,     icon: "📅", bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" },
-          { label: "Types in Use",      value: isLoading ? "—" : typesUsed,       icon: "🏫", bg: "#F0F7FF", color: "#1E40AF", border: "#C7D9F8" },
+          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length, icon: "📋", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Total Classes",   value: isLoading ? "—" : totalClasses,     icon: "🎓", bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+          { label: "Total Periods",   value: isLoading ? "—" : totalPeriods,     icon: "📅", bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Types in Use",      value: isLoading ? "—" : typesUsed,       icon: "🏫", bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
         ].map((stat) => (
           <div
             key={stat.label}
