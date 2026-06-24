@@ -50,7 +50,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
         placeholder={placeholder}
         {...register(name)}
         style={inputStyle(!!error)}
-        onFocus={(e)  => { e.target.style.borderColor = "#A78BFA"; e.target.style.backgroundColor = "#fff"; }}
+        onFocus={(e)  => { e.target.style.borderColor = "#93C5FD"; e.target.style.backgroundColor = "#fff"; }}
         onBlur={(e)   => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
       />
     </Field>

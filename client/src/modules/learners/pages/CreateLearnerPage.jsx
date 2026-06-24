@@ -7,7 +7,7 @@ import { createLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#BE185D";
+const ACCENT = "#0D47A1";
 
 export default function CreateLearnerPage() {
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ export default function CreateLearnerPage() {
             type="submit"
             form="create-learner-form"
             disabled={isPending}
-            style={{ padding: "10px 24px", backgroundColor: isPending ? "#F472B6" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background-color 0.15s" }}
+            style={{ padding: "10px 24px", backgroundColor: isPending ? "#93C5FD" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background-color 0.15s" }}
           >
             {isPending ? (
               <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Enrolling…</>

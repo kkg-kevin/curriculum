@@ -6,12 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT    = "#BE185D";
-const GRAD_FROM = "#831843";
-const GRAD_TO   = "#BE185D";
+const ACCENT    = "#0D47A1";
+const GRAD_FROM = "#0D2E6E";
+const GRAD_TO   = "#1976D2";
 
 const STATUS_STYLES = {
-  active:      { bg: "#FDF2F8", color: "#831843", border: "#FBCFE8" },
+  active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
   graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
@@ -72,7 +72,7 @@ export default function LearnerViewPage() {
       </div>
 
       {/* Header */}
-      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #9D174D 40%, ${ACCENT} 75%, #DB2777 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, ${GRAD_FROM} 0%, #0D47A1 40%, #1565C0 75%, ${GRAD_TO} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>

@@ -7,8 +7,8 @@ import { classApi } from "../../classes/services/classApi";
 const S = {
   form:    { display: "flex", flexDirection: "column", gap: 24 },
   section: { display: "flex", flexDirection: "column", gap: 16 },
-  heading: { fontSize: 13, fontWeight: 600, color: "#BE185D", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
-  divider: { border: "none", borderTop: "1px solid #FBCFE8", margin: "0 0 8px" },
+  heading: { fontSize: 13, fontWeight: 600, color: "#0D47A1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
+  divider: { border: "none", borderTop: "1px solid #BFDBFE", margin: "0 0 8px" },
   row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
   field:   { display: "flex", flexDirection: "column", gap: 6 },
   label:   { fontSize: 13, fontWeight: 500, color: "#374151" },

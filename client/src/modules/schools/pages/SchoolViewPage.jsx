@@ -176,19 +176,19 @@ function DetailRow({ icon, label, value }) {
 }
 
 const STATUS_TEACHER = {
-  active:   { bg: "#F5F3FF", color: "#5B21B6", border: "#C4B5FD" },
+  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
 };
 const STATUS_TEACHER_LABEL = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
 
 const STATUS_CLASS = {
-  active:   { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" },
+  active:   { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
 const STATUS_LEARNER = {
-  active:      { bg: "#FDF2F8", color: "#831843", border: "#FBCFE8" },
+  active:      { bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   transferred: { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
   graduated:   { bg: "#F0FDF4", color: "#065F46", border: "#BBF7D0" },
@@ -468,9 +468,9 @@ export default function SchoolViewPage() {
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Teachers", value: teachers.length, icon: "👩‍🏫", bg: "#F5F3FF", color: "#4C1D95", border: "#C4B5FD" },
-          { label: "Classes",  value: classes.length,  icon: "🏫",   bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" },
-          { label: "Learners", value: learners.length, icon: "🎒",   bg: "#FDF2F8", color: "#831843", border: "#FBCFE8" },
+          { label: "Teachers", value: teachers.length, icon: "👩‍🏫", bg: "#EFF6FF", color: "#1E3A8A", border: "#BFDBFE" },
+          { label: "Classes",  value: classes.length,  icon: "🏫",   bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
+          { label: "Learners", value: learners.length, icon: "🎒",   bg: "#DBEAFE", color: "#1E40AF", border: "#93C5FD" },
         ].map((s) => (
           <div
             key={s.label}
@@ -691,7 +691,7 @@ export default function SchoolViewPage() {
                           width: 34,
                           height: 34,
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, #5B21B6, #7C3AED)",
+                          background: "linear-gradient(135deg, #0D47A1, #1565C0)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -804,7 +804,7 @@ export default function SchoolViewPage() {
                           width: 34,
                           height: 34,
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, #831843, #BE185D)",
+                          background: "linear-gradient(135deg, #0D2E6E, #0D47A1)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
