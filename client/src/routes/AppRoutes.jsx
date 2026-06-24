@@ -8,6 +8,7 @@ import EditCurriculumPage from "../modules/curriculum/pages/EditCurriculumPage";
 import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 import CurriculumVersionControlPage from "../modules/curriculum/pages/CurriculumVersionControlPage";
 import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
+import CompetenciesPage from "../modules/curriculum/pages/CompetenciesPage";
 import SchoolsPage from "../modules/schools/pages/SchoolsPage";
 import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
 import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
@@ -54,6 +55,7 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<CurriculumViewPage />} />
           <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
           <Route path=":id/academic-year" element={<AcademicYearPage />} />
+          <Route path=":id/competencies" element={<CompetenciesPage />} />
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />
