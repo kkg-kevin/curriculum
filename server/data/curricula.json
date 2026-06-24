@@ -103,7 +103,7 @@
     ],
     "id": "c2520f31-7263-44e4-a414-474e5628eb98",
     "createdAt": "2026-06-23T07:24:27.600Z",
-    "updatedAt": "2026-06-23T12:29:27.413Z",
+    "updatedAt": "2026-06-24T07:12:03.561Z",
     "curriculumType": "Core"
   },
   {
@@ -149,7 +149,7 @@
     ],
     "id": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
     "createdAt": "2026-06-23T07:33:48.870Z",
-    "updatedAt": "2026-06-23T12:17:25.766Z",
+    "updatedAt": "2026-06-23T13:57:05.349Z",
     "curriculumType": "Core"
   },
   {
@@ -182,11 +182,12 @@
     "classes": [
       "class 1",
       "class 2",
-      "class 3"
+      "class 3",
+      "class 4"
     ],
     "id": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "createdAt": "2026-06-23T10:10:29.481Z",
-    "updatedAt": "2026-06-23T12:41:58.366Z",
+    "updatedAt": "2026-06-24T07:11:21.690Z",
     "curriculumType": "Complementary"
   }
 ]

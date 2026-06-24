@@ -1,7 +1,10 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllClassesQuery } from "../hooks/useClasses";
+import { curriculumApi } from "../../curriculum/services/curriculumApi";
+import SetUpYearPanel from "../components/SetUpYearPanel";
 
 const ACCENT = "#0D47A1";
 
@@ -65,16 +68,22 @@ function ClassRow({ cls, navigate }) {
   );
 }
 
-function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
+function SchoolAccordion({ school, classes, curriculum, navigate, isOpen, onToggle }) {
+  const [setupOpen, setSetupOpen] = useState(false);
   const count       = classes.length;
   const activeCount = classes.filter((c) => c.status === "active").length;
+
+  const handleToggle = () => {
+    onToggle();
+    if (isOpen) setSetupOpen(false);
+  };
 
   return (
     <div style={{ backgroundColor: "#fff", borderRadius: 16, border: `1.5px solid ${isOpen ? "#BFDBFE" : "#E5E7EB"}`, overflow: "hidden", boxShadow: isOpen ? "0 2px 12px rgba(13,71,161,0.07)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s" }}>
 
       {/* Accordion header */}
       <div
-        onClick={onToggle}
+        onClick={handleToggle}
         style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", backgroundColor: isOpen ? "#EFF6FF" : "#fff", transition: "background-color 0.15s", userSelect: "none" }}
       >
         <SchoolAvatar name={school.name} />
@@ -96,10 +105,10 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
           )}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); navigate(`/classes/create?schoolId=${school.id}`); }}
-            style={{ padding: "6px 14px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            onClick={(e) => { e.stopPropagation(); if (!isOpen) onToggle(); setSetupOpen((v) => !v); }}
+            style={{ padding: "6px 14px", backgroundColor: setupOpen && isOpen ? "#DBEAFE" : ACCENT, color: setupOpen && isOpen ? ACCENT : "#fff", border: `1.5px solid ${setupOpen && isOpen ? "#BFDBFE" : "transparent"}`, borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", transition: "background-color 0.15s" }}
           >
-            + Add
+            Set Up Year
           </button>
           <svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
             <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -110,20 +119,29 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
       {/* Accordion body */}
       {isOpen && (
         <div style={{ borderTop: "1px solid #F3F4F6" }}>
-          {classes.length === 0 ? (
+          {setupOpen && (
+            <SetUpYearPanel
+              school={school}
+              curriculum={curriculum}
+              existingClasses={classes}
+              onClose={() => setSetupOpen(false)}
+            />
+          )}
+
+          {classes.length === 0 && !setupOpen ? (
             <div style={{ padding: "36px 24px", textAlign: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #EFF6FF, #BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>🏫</div>
-              <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No classes added yet</p>
-              <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>Add the first class for {school.name}</p>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg, #EFF6FF, #BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 12px" }}>📚</div>
+              <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No classes set up yet</p>
+              <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>Generate all classes from the curriculum in one step.</p>
               <button
                 type="button"
-                onClick={() => navigate(`/classes/create?schoolId=${school.id}`)}
+                onClick={() => setSetupOpen(true)}
                 style={{ padding: "8px 18px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
               >
-                + Add Class
+                Set Up Classes
               </button>
             </div>
-          ) : (
+          ) : classes.length > 0 ? (
             <>
               <div style={{ display: "flex", alignItems: "center", padding: "7px 18px", backgroundColor: "#FAFAFA", borderBottom: "1px solid #F3F4F6", gap: 12 }}>
                 <div style={{ width: 34, flexShrink: 0 }} />
@@ -135,7 +153,7 @@ function SchoolAccordion({ school, classes, navigate, isOpen, onToggle }) {
                 <ClassRow key={c.id} cls={c} navigate={navigate} />
               ))}
             </>
-          )}
+          ) : null}
         </div>
       )}
     </div>
@@ -157,12 +175,21 @@ function SkeletonRow() {
 
 export default function ClassesPage() {
   const navigate = useNavigate();
-  const { data: schoolsData, isLoading: schoolsLoading } = useAllSchoolsQuery();
-  const { data: classesData, isLoading: classesLoading } = useAllClassesQuery();
+  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllSchoolsQuery();
+  const { data: classesData,  isLoading: classesLoading  } = useAllClassesQuery();
+  const { data: curriculaData } = useQuery({
+    queryKey: ["curricula", "all"],
+    queryFn:  () => curriculumApi.getAll({}),
+  });
   const [openIds, setOpenIds] = useState(new Set());
 
-  const schools = schoolsData?.data || [];
-  const classes = classesData?.data || [];
+  const schools  = schoolsData?.data  || [];
+  const classes  = classesData?.data  || [];
+
+  const curriculaMap = useMemo(
+    () => Object.fromEntries((curriculaData?.data || []).map((c) => [c.id, c])),
+    [curriculaData]
+  );
 
   const classesBySchool = useMemo(() => {
     const map = {};
@@ -184,20 +211,18 @@ export default function ClassesPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Classes</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            {isLoading ? "Loading…" : `${classes.length} class${classes.length !== 1 ? "es" : ""} across ${schools.length} school${schools.length !== 1 ? "s" : ""}`}
+      {/* Hero strip */}
+      <div style={{ background: "linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-20px", right: "120px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+        <div style={{ position: "relative" }}>
+          <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
+            Classes
+          </h1>
+          <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "560px" }}>
+            Organise your school's classes by grade and academic year. Open a school below and use <strong style={{ color: "#fff" }}>Set Up Year</strong> to generate all grade classes from its curriculum at once.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/classes/create")}
-          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(13,71,161,0.25)" }}
-        >
-          + Add Class
-        </button>
       </div>
 
       {isLoading ? (
@@ -207,7 +232,7 @@ export default function ClassesPage() {
       ) : schools.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <p style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 6 }}>No schools found</p>
-          <p style={{ fontSize: 13, color: "#9CA3AF" }}>Add a school first, then create classes under it.</p>
+          <p style={{ fontSize: 13, color: "#9CA3AF" }}>Add a school first, then set up its classes here.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -216,6 +241,7 @@ export default function ClassesPage() {
               key={school.id}
               school={school}
               classes={classesBySchool[school.id] || []}
+              curriculum={curriculaMap[school.curriculumId]}
               navigate={navigate}
               isOpen={openIds.has(school.id)}
               onToggle={() => toggle(school.id)}

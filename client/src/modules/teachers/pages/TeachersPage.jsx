@@ -185,20 +185,28 @@ export default function TeachersPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Teachers</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            {isLoading ? "Loading…" : `${teachers.length} teacher${teachers.length !== 1 ? "s" : ""} across ${schools.length} school${schools.length !== 1 ? "s" : ""}`}
-          </p>
+      {/* Hero strip */}
+      <div style={{ background: "linear-gradient(135deg, #0D2E6E 0%, #0D47A1 40%, #1565C0 75%, #1976D2 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-20px", right: "120px", width: "100px", height: "100px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
+          <div>
+            <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
+              Teachers
+            </h1>
+            <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "480px" }}>
+              Add and manage teachers across your schools. Assign teachers to classes and track their status.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/teachers/create")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#ffffff", color: "#0D47A1", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}
+          >
+            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+            Add Teacher
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/teachers/create")}
-          style={{ padding: "10px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(13,71,161,0.25)" }}
-        >
-          + Add Teacher
-        </button>
       </div>
 
       {isLoading ? (

@@ -57,6 +57,18 @@ export function useUpdateClass() {
   });
 }
 
+export function useBulkCreateClasses() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: classApi.bulkCreate,
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
+      toast.success(`${data.length} class${data.length !== 1 ? "es" : ""} set up successfully!`);
+    },
+    onError: (err) => toast.error(err.message || "Failed to set up classes"),
+  });
+}
+
 export function useDeleteClass() {
   const qc = useQueryClient();
   return useMutation({
