@@ -3415,8 +3415,8 @@
     "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
     "academicYearId": "17e8a1ae-ef37-462c-b152-ac68029d967c",
     "versionNumber": 1,
-    "status": "published",
-    "isCurrent": true,
+    "status": "inactive",
+    "isCurrent": false,
     "versionOf": null,
     "content": [
       {
@@ -3511,7 +3511,7 @@
       }
     ],
     "createdAt": "2026-06-24T08:33:06.486Z",
-    "updatedAt": "2026-06-24T08:33:09.105Z"
+    "updatedAt": "2026-06-24T12:33:35.214Z"
   },
   {
     "id": "941475e2-1e99-472c-91af-f1e164a3c56d",
@@ -3813,5 +3813,211 @@
     ],
     "createdAt": "2026-06-24T11:21:54.730Z",
     "updatedAt": "2026-06-24T11:21:54.730Z"
+  },
+  {
+    "id": "d34dceb8-b410-4de5-88e6-45b84ba581b3",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "academicYearId": "17e8a1ae-ef37-462c-b152-ac68029d967c",
+    "versionNumber": 2,
+    "status": "inactive",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289964774-1r0s386hk",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289966994-ega4glz0f",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289969565-1gbu106mf",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289971594-7m1bhbtln",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289978498-qzcjdhsqp",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289980199-zjb4b8o1m",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289982232-qj6px8utr",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289984263-o5ieljlp3",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T12:33:24.014Z",
+    "updatedAt": "2026-06-24T12:33:44.612Z"
+  },
+  {
+    "id": "e3513a47-016b-4bf0-b004-50ffceab7720",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "academicYearId": "17e8a1ae-ef37-462c-b152-ac68029d967c",
+    "versionNumber": 3,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289964774-1r0s386hk",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289966994-ega4glz0f",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289969565-1gbu106mf",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289971594-7m1bhbtln",
+                "name": "maths 1",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Class 1",
+            "courses": [
+              {
+                "id": "1782289978498-qzcjdhsqp",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 2",
+            "courses": [
+              {
+                "id": "1782289980199-zjb4b8o1m",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 3",
+            "courses": [
+              {
+                "id": "1782289982232-qj6px8utr",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Class 4",
+            "courses": [
+              {
+                "id": "1782289984263-o5ieljlp3",
+                "name": "maths 2",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-24T12:33:41.254Z",
+    "updatedAt": "2026-06-24T12:33:44.616Z"
   }
 ]
