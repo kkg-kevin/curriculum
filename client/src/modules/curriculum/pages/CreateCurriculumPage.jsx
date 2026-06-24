@@ -15,6 +15,7 @@ const STEPS = [
   { n: 2, label: "Structure" },
   { n: 3, label: "Academic Year" },
   { n: 4, label: "Version Control" },
+  { n: 5, label: "Competencies" },
 ];
 
 function StepIndicator({ current }) {
