@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
-import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { curriculumApi } from "../../curriculum/services/curriculumApi";
 import { classApi } from "../services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { ClassCard } from "../components/ClassCard";
@@ -39,7 +39,12 @@ export default function SchoolClassesPage() {
   const teachersMap = (teachersData?.data || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
   const activeCount = classes.filter((c) => c.status === "active").length;
 
-  const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
+  const { data: allCurriculaData } = useQuery({
+    queryKey: ["curricula", "all"],
+    queryFn:  () => curriculumApi.getAll({}),
+    enabled:  !!school?.curriculumId,
+  });
+  const curriculum = (allCurriculaData?.data || []).find((c) => c.id === school?.curriculumId);
 
   if (schoolLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;

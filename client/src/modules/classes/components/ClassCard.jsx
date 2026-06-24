@@ -110,11 +110,17 @@ export function ClassCard({ cls, teachersMap }) {
               ? `${teacher.firstName} ${teacher.lastName}`
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class teacher</span>}
           </div>
-          {cls.capacity && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-              <span>👥</span> Capacity: {cls.capacity}
-            </div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+            <span>👥</span>
+            <span>
+              {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}
+              {cls.capacity ? (
+                <span style={{ color: (cls.learnerCount ?? 0) >= cls.capacity ? "#EF4444" : "#9CA3AF" }}>
+                  {" "}· {cls.capacity} capacity
+                </span>
+              ) : null}
+            </span>
+          </div>
         </div>
 
         <div style={{ marginTop: "auto" }}>

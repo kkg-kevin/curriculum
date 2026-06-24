@@ -1,5 +1,6 @@
 const LearnerModel = require("./learner.model");
-const SchoolModel = require("../schools/school.model");
+const SchoolModel  = require("../schools/school.model");
+const ClassModel   = require("../classes/class.model");
 
 const generateAdmissionNumber = (schoolCode, year) => {
   const prefix = `${schoolCode.toUpperCase()}-${year}`;
@@ -16,7 +17,15 @@ const LearnerService = {
       err.statusCode = 404;
       throw err;
     }
-    const year = new Date().getFullYear();
+
+    const cls = ClassModel.findById(data.classId);
+    if (!cls || cls.schoolId !== data.schoolId) {
+      const err = new Error("Class does not belong to this school");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const year = cls.academicYear || String(new Date().getFullYear());
     const admissionNumber = generateAdmissionNumber(school.code, year);
     return LearnerModel.create({ ...data, admissionNumber });
   },

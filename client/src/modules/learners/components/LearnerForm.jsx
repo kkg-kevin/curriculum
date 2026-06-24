@@ -18,13 +18,14 @@ const S = {
   hint:    { fontSize: 12, color: "#6B7280" },
 };
 
-export default function LearnerForm() {
+export default function LearnerForm({ lockedSchoolId = "" }) {
   const { register, control, watch, setValue, formState: { errors } } = useFormContext();
 
   const schoolId = watch("schoolId");
 
   const { data: schoolsData } = useSchoolsQuery();
   const schools = schoolsData?.data || [];
+  const lockedSchool = lockedSchoolId ? schools.find((s) => s.id === lockedSchoolId) : null;
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", schoolId],
@@ -75,22 +76,41 @@ export default function LearnerForm() {
       <div style={S.section}>
         <p style={S.heading}>Enrollment</p>
         <hr style={S.divider} />
-        <div style={S.field}>
-          <label style={S.label}>School <span style={{ color: "#DC2626" }}>*</span></label>
-          <Controller
-            name="schoolId"
-            control={control}
-            render={({ field }) => (
-              <select {...field} style={S.select}>
-                <option value="">— Select school —</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            )}
-          />
-          {errors.schoolId && <span style={S.error}>{errors.schoolId.message}</span>}
-        </div>
+
+        {lockedSchoolId ? (
+          <div style={S.field}>
+            <label style={S.label}>School</label>
+            <div style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #BFDBFE", backgroundColor: "#EFF6FF", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #0D47A1, #1565C0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                {lockedSchool?.name?.[0]?.toUpperCase() || "S"}
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                  {lockedSchool?.name || "Loading…"}
+                </p>
+                {lockedSchool?.code && <p style={{ margin: 0, fontSize: 11, color: "#6B7280" }}>{lockedSchool.code}</p>}
+              </div>
+            </div>
+            <input type="hidden" {...register("schoolId")} />
+          </div>
+        ) : (
+          <div style={S.field}>
+            <label style={S.label}>School <span style={{ color: "#DC2626" }}>*</span></label>
+            <Controller
+              name="schoolId"
+              control={control}
+              render={({ field }) => (
+                <select {...field} style={S.select}>
+                  <option value="">— Select school —</option>
+                  {schools.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
+            />
+            {errors.schoolId && <span style={S.error}>{errors.schoolId.message}</span>}
+          </div>
+        )}
 
         <div style={S.field}>
           <label style={S.label}>Class <span style={{ color: "#DC2626" }}>*</span></label>

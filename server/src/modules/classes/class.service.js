@@ -1,4 +1,5 @@
-const ClassModel = require("./class.model");
+const ClassModel   = require("./class.model");
+const LearnerModel = require("../learners/learner.model");
 
 const ClassService = {
   async createClass(data) {
@@ -6,7 +7,13 @@ const ClassService = {
   },
 
   async getAllClasses(filters) {
-    return ClassModel.findAll(filters);
+    const classes = ClassModel.findAll(filters);
+    const allLearners = LearnerModel.findAll({});
+    const countMap = {};
+    for (const l of allLearners) {
+      countMap[l.classId] = (countMap[l.classId] || 0) + 1;
+    }
+    return classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
   },
 
   async getClassById(id) {

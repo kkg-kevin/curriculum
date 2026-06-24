@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateLearner } from "../hooks/useLearners";
@@ -9,21 +9,22 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#BE185D";
 
-const DEFAULT_VALUES = {
-  firstName: "", lastName: "", gender: "",
-  schoolId: "", classId: "",
-  guardianName: "", guardianPhone: "", guardianEmail: "",
-  status: "active",
-};
-
 export default function CreateLearnerPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const lockedSchoolId = searchParams.get("schoolId") || "";
+
   const { mutate: createLearner, isPending } = useCreateLearner();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const methods = useForm({
     resolver: zodResolver(createLearnerSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: {
+      firstName: "", lastName: "", gender: "",
+      schoolId: lockedSchoolId, classId: "",
+      guardianName: "", guardianPhone: "", guardianEmail: "",
+      status: "active",
+    },
     mode: "onTouched",
   });
 
@@ -78,7 +79,7 @@ export default function CreateLearnerPage() {
       <div style={{ maxWidth: 640 }}>
         <FormProvider {...methods}>
           <form id="create-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <LearnerForm />
+            <LearnerForm lockedSchoolId={lockedSchoolId} />
           </form>
         </FormProvider>
       </div>

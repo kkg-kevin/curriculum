@@ -137,11 +137,11 @@
       "city": "Kikuyu",
       "county": "Kiambu"
     },
-    "curriculumId": "c3c2de18-3a89-4694-98bd-45657dcc9a2e",
+    "curriculumId": "fcbe4dbf-d267-48b8-948e-34abad04e89e",
     "status": "active",
     "id": "1e8b4c97-6a23-4f50-bd17-9e0c3d5a82f6",
     "createdAt": "2026-06-20T14:23:00.000Z",
-    "updatedAt": "2026-06-22T08:08:53.341Z"
+    "updatedAt": "2026-06-24T07:53:09.507Z"
   },
   {
     "name": "Westlands Primary School",
@@ -185,10 +185,10 @@
       "city": "Nairobi",
       "county": "Nairobi"
     },
-    "curriculumId": "b843d5fb-cbf4-4499-a8fe-a8a88e172610",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
     "status": "active",
     "id": "f2564e14-5ee4-4c91-abd6-9c01e154fef0",
     "createdAt": "2026-06-24T07:14:31.640Z",
-    "updatedAt": "2026-06-24T07:14:31.640Z"
+    "updatedAt": "2026-06-24T08:33:49.811Z"
   }
 ]

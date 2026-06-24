@@ -189,5 +189,43 @@
     "createdAt": "2026-06-23T10:10:29.481Z",
     "updatedAt": "2026-06-24T07:11:21.690Z",
     "curriculumType": "Complementary"
+  },
+  {
+    "name": "Kevin Githinji Curriculum ",
+    "code": "KGC-001",
+    "academicYear": "",
+    "description": "Kevin test curriculum",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "Substitutional",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Class 1",
+      "Class 2",
+      "Class 3",
+      "Class 4"
+    ],
+    "id": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "createdAt": "2026-06-24T08:29:31.705Z",
+    "updatedAt": "2026-06-24T08:30:14.767Z"
   }
 ]
