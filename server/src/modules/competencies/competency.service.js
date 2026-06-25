@@ -1,6 +1,9 @@
 const LearningAreaModel      = require("./learning-area.model");
 const CompetencyModel        = require("./competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
+const AgeCategoryModel       = require("./age-category.model");
+const ProgressLevelModel     = require("./progress-level.model");
+const AssessmentModel        = require("./assessment.model");
 
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
@@ -140,6 +143,124 @@ const CompetencyService = {
     return ProgressionLadderModel.findByCurriculumId(curriculumId).sort(
       (a, b) => a.order - b.order
     );
+  },
+
+  /* ── Age Categories ─────────────────────────────────────────────────── */
+
+  getAgeCategories(curriculumId) {
+    return AgeCategoryModel.findByCurriculumId(curriculumId);
+  },
+
+  createAgeCategory(curriculumId, data) {
+    const existing = AgeCategoryModel.findByCurriculumId(curriculumId);
+    if (existing.some((c) => c.name.toLowerCase() === data.name.toLowerCase())) {
+      const err = new Error("An age category with this name already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+    return AgeCategoryModel.create({ curriculumId, ...data });
+  },
+
+  updateAgeCategory(curriculumId, id, data) {
+    const cat = AgeCategoryModel.findById(id);
+    if (!cat || cat.curriculumId !== curriculumId) {
+      const err = new Error("Age category not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.name) {
+      const others = AgeCategoryModel.findByCurriculumId(curriculumId).filter((c) => c.id !== id);
+      if (others.some((c) => c.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("An age category with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    return AgeCategoryModel.update(id, data);
+  },
+
+  deleteAgeCategory(curriculumId, id) {
+    const cat = AgeCategoryModel.findById(id);
+    if (!cat || cat.curriculumId !== curriculumId) {
+      const err = new Error("Age category not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AgeCategoryModel.delete(id);
+  },
+
+  /* ── Progress Levels ────────────────────────────────────────────────── */
+
+  getProgressLevels(curriculumId) {
+    return ProgressLevelModel.findByCurriculumId(curriculumId);
+  },
+
+  createProgressLevel(curriculumId, data) {
+    const existing = ProgressLevelModel.findByCurriculumId(curriculumId);
+    if (existing.some((l) => l.name.toLowerCase() === data.name.toLowerCase())) {
+      const err = new Error("A level with this name already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+    return ProgressLevelModel.create({ curriculumId, ...data });
+  },
+
+  updateProgressLevel(curriculumId, id, data) {
+    const level = ProgressLevelModel.findById(id);
+    if (!level || level.curriculumId !== curriculumId) {
+      const err = new Error("Level not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.name) {
+      const others = ProgressLevelModel.findByCurriculumId(curriculumId).filter((l) => l.id !== id);
+      if (others.some((l) => l.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("A level with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    return ProgressLevelModel.update(id, data);
+  },
+
+  deleteProgressLevel(curriculumId, id) {
+    const level = ProgressLevelModel.findById(id);
+    if (!level || level.curriculumId !== curriculumId) {
+      const err = new Error("Level not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    ProgressLevelModel.delete(id);
+  },
+
+  /* ── Assessments ────────────────────────────────────────────────────── */
+
+  getAssessments(curriculumId) {
+    return AssessmentModel.findByCurriculumId(curriculumId);
+  },
+
+  createAssessment(curriculumId, data) {
+    return AssessmentModel.create({ curriculumId, ...data });
+  },
+
+  updateAssessment(curriculumId, id, data) {
+    const item = AssessmentModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Assessment not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return AssessmentModel.update(id, data);
+  },
+
+  deleteAssessment(curriculumId, id) {
+    const item = AssessmentModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Assessment not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentModel.delete(id);
   },
 };
 

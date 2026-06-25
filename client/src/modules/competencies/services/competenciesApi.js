@@ -35,4 +35,43 @@ export const competenciesApi = {
 
   updateLadder: (curriculumId, rungs) =>
     api.put(`${base(curriculumId)}/ladder`, { rungs }).then((r) => r.data.data),
+
+  /* Age Categories */
+  getAgeCategories: (curriculumId) =>
+    api.get(`${base(curriculumId)}/age-categories`).then((r) => r.data.data),
+
+  createAgeCategory: (curriculumId, data) =>
+    api.post(`${base(curriculumId)}/age-categories`, data).then((r) => r.data.data),
+
+  updateAgeCategory: (curriculumId, acId, data) =>
+    api.put(`${base(curriculumId)}/age-categories/${acId}`, data).then((r) => r.data.data),
+
+  deleteAgeCategory: (curriculumId, acId) =>
+    api.delete(`${base(curriculumId)}/age-categories/${acId}`).then((r) => r.data),
+
+  /* Progress Levels */
+  getProgressLevels: (curriculumId) =>
+    api.get(`${base(curriculumId)}/levels`).then((r) => r.data.data),
+
+  createProgressLevel: (curriculumId, data) =>
+    api.post(`${base(curriculumId)}/levels`, data).then((r) => r.data.data),
+
+  updateProgressLevel: (curriculumId, plId, data) =>
+    api.put(`${base(curriculumId)}/levels/${plId}`, data).then((r) => r.data.data),
+
+  deleteProgressLevel: (curriculumId, plId) =>
+    api.delete(`${base(curriculumId)}/levels/${plId}`).then((r) => r.data),
+
+  /* Assessments */
+  getAssessments: (curriculumId) =>
+    api.get(`${base(curriculumId)}/assessments`).then((r) => r.data.data),
+
+  createAssessment: (curriculumId, data) =>
+    api.post(`${base(curriculumId)}/assessments`, data).then((r) => r.data.data),
+
+  updateAssessment: (curriculumId, asId, data) =>
+    api.put(`${base(curriculumId)}/assessments/${asId}`, data).then((r) => r.data.data),
+
+  deleteAssessment: (curriculumId, asId) =>
+    api.delete(`${base(curriculumId)}/assessments/${asId}`).then((r) => r.data),
 };

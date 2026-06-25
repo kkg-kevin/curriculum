@@ -1,0 +1,32 @@
+[
+  {
+    "id": "79e1f87e-0601-40a5-968d-106b0f1739fb",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Crib",
+    "ageRange": "5 - 7",
+    "description": "This is the foundational stage where learners are introduced to digital literacy through play-based learning. Children engage with visual, interactive tools (like block-based coding, games, and simple robotics concepts) to build curiosity, basic logic, and familiarity with technology.",
+    "order": 1,
+    "createdAt": "2026-06-25T10:51:00.533Z",
+    "updatedAt": "2026-06-25T10:51:00.533Z"
+  },
+  {
+    "id": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Clicker",
+    "ageRange": "8  - 12",
+    "description": "At this stage, learners transition from guided play to structured creation. They begin working on projects, learning actual programming concepts, and using beginner-friendly languages. Focus is on building problem-solving skills, logical thinking, and creating simple applications or games.",
+    "order": 2,
+    "createdAt": "2026-06-25T10:51:25.221Z",
+    "updatedAt": "2026-06-25T10:51:25.221Z"
+  },
+  {
+    "id": "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Quest",
+    "ageRange": "13 - 17",
+    "description": "This is the advanced stage where learners dive deeper into real-world tech skills such as programming, AI, robotics, and software development. Emphasis is on complex projects, critical thinking, innovation, and preparing learners for future academic or career paths in technology.",
+    "order": 3,
+    "createdAt": "2026-06-25T10:51:48.724Z",
+    "updatedAt": "2026-06-25T10:51:48.724Z"
+  }
+]
