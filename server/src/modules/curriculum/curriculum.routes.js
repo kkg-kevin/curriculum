@@ -29,6 +29,18 @@ const {
   deleteCompetency,
   getLadder,
   updateLadder,
+  getAgeCategories,
+  createAgeCategory,
+  updateAgeCategory,
+  deleteAgeCategory,
+  getProgressLevels,
+  createProgressLevel,
+  updateProgressLevel,
+  deleteProgressLevel,
+  getAssessments,
+  createAssessment,
+  updateAssessment,
+  deleteAssessment,
 } = require("../competencies/competency.controller");
 
 const router = express.Router();
@@ -57,5 +69,17 @@ router.route("/:id/competencies/items/:cId").put(updateCompetency).delete(delete
 
 // Competencies — progression ladder
 router.route("/:id/competencies/ladder").get(getLadder).put(updateLadder);
+
+// Progress Arc — age categories
+router.route("/:id/competencies/age-categories").get(getAgeCategories).post(createAgeCategory);
+router.route("/:id/competencies/age-categories/:acId").put(updateAgeCategory).delete(deleteAgeCategory);
+
+// Progress Arc — progress levels
+router.route("/:id/competencies/levels").get(getProgressLevels).post(createProgressLevel);
+router.route("/:id/competencies/levels/:plId").put(updateProgressLevel).delete(deleteProgressLevel);
+
+// Assessments
+router.route("/:id/competencies/assessments").get(getAssessments).post(createAssessment);
+router.route("/:id/competencies/assessments/:asId").put(updateAssessment).delete(deleteAssessment);
 
 module.exports = router;

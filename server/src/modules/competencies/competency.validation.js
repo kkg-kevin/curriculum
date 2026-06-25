@@ -33,10 +33,41 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
+const createAgeCategorySchema = z.object({
+  name:        z.string().min(1, "Name is required").max(100),
+  ageRange:    z.string().max(50).optional().default(""),
+  description: z.string().max(500).optional().default(""),
+});
+
+const updateAgeCategorySchema = createAgeCategorySchema.partial();
+
+const createProgressLevelSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(100),
+  description: z.string().max(500).optional().default(""),
+});
+
+const updateProgressLevelSchema = createProgressLevelSchema.partial();
+
+const ASSESSMENT_TYPES = ["formative", "summative", "diagnostic", "project"];
+
+const createAssessmentSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(150),
+  type:        z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Invalid assessment type" }) }),
+  description: z.string().max(1000).optional().default(""),
+});
+
+const updateAssessmentSchema = createAssessmentSchema.partial();
+
 module.exports = {
   createLearningAreaSchema,
   updateLearningAreaSchema,
   createCompetencySchema,
   updateCompetencySchema,
   updateLadderSchema,
+  createAgeCategorySchema,
+  updateAgeCategorySchema,
+  createProgressLevelSchema,
+  updateProgressLevelSchema,
+  createAssessmentSchema,
+  updateAssessmentSchema,
 };

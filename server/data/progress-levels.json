@@ -1,0 +1,47 @@
+[
+  {
+    "id": "3d038d9e-b8c4-4a83-83a6-a0c5384c8034",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Exposure",
+    "description": "The learner is introduced to new concepts, tools, and environments, developing initial awareness and familiarity. At this stage, learning is guided and exploratory, with emphasis on observing, recognizing basic ideas, and interacting with technology in a structured and supportive context.",
+    "order": 1,
+    "createdAt": "2026-06-25T10:53:10.942Z",
+    "updatedAt": "2026-06-25T10:53:10.942Z"
+  },
+  {
+    "id": "f61c2d99-aa59-4a91-bfbd-12efd5f1b6a7",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Practice",
+    "description": "The learner begins to actively engage with concepts through repetition and guided tasks. They develop foundational skills by following instructions, completing structured exercises, and applying basic logic, gradually building confidence and consistency in execution.",
+    "order": 2,
+    "createdAt": "2026-06-25T10:53:28.485Z",
+    "updatedAt": "2026-06-25T10:53:28.485Z"
+  },
+  {
+    "id": "a1ef77ba-1bf7-487c-9f8c-c72bb1e6718e",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Application",
+    "description": "The learner independently applies acquired knowledge and skills to solve problems and create functional outputs. They can adapt learned concepts to new situations, make decisions during implementation, and demonstrate understanding through projects or real-world tasks.",
+    "order": 3,
+    "createdAt": "2026-06-25T10:53:46.415Z",
+    "updatedAt": "2026-06-25T10:53:46.415Z"
+  },
+  {
+    "id": "7eb0b888-2fe0-4678-ad51-81fc10ac5019",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Mastery",
+    "description": "The learner demonstrates a high level of proficiency, accuracy, and efficiency in applying skills. They can handle complex problems, optimize solutions, debug effectively, and explain their reasoning clearly, showing deep understanding and consistent performance.",
+    "order": 4,
+    "createdAt": "2026-06-25T10:54:01.898Z",
+    "updatedAt": "2026-06-25T10:54:01.898Z"
+  },
+  {
+    "id": "ad6b53f2-1146-4bf2-aeca-6acef417dc6b",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Specialization",
+    "description": "The learner develops advanced expertise in specific areas of interest, such as AI, software development, or robotics. They work on complex, self-driven projects, explore advanced concepts, and demonstrate innovation, critical thinking, and the ability to extend beyond the standard curriculum.",
+    "order": 5,
+    "createdAt": "2026-06-25T10:54:27.566Z",
+    "updatedAt": "2026-06-25T10:54:27.566Z"
+  }
+]
