@@ -58,6 +58,29 @@ const createAssessmentSchema = z.object({
 
 const updateAssessmentSchema = createAssessmentSchema.partial();
 
+const createAssessmentTypeSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(150),
+  description: z.string().max(1000).optional().default(""),
+});
+
+const updateAssessmentTypeSchema = createAssessmentTypeSchema.partial();
+
+const evidenceWeightSchema = z.object({
+  evidenceTypeId: z.string().min(1),
+  weight:         z.number().min(0).max(100),
+});
+
+const updateScoringSchema = z.object({
+  evidenceWeights: z.array(evidenceWeightSchema),
+});
+
+const createEvidenceTypeSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(150),
+  description: z.string().max(500).optional().default(""),
+});
+
+const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
+
 module.exports = {
   createLearningAreaSchema,
   updateLearningAreaSchema,
@@ -70,4 +93,9 @@ module.exports = {
   updateProgressLevelSchema,
   createAssessmentSchema,
   updateAssessmentSchema,
+  createAssessmentTypeSchema,
+  updateAssessmentTypeSchema,
+  updateScoringSchema,
+  createEvidenceTypeSchema,
+  updateEvidenceTypeSchema,
 };

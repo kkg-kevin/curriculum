@@ -4,6 +4,8 @@ const ProgressionLadderModel = require("./progression-ladder.model");
 const AgeCategoryModel       = require("./age-category.model");
 const ProgressLevelModel     = require("./progress-level.model");
 const AssessmentModel        = require("./assessment.model");
+const AssessmentTypeModel    = require("./assessment-type.model");
+const EvidenceTypeModel      = require("./evidence-type.model");
 
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
@@ -261,6 +263,111 @@ const CompetencyService = {
       throw err;
     }
     AssessmentModel.delete(id);
+  },
+
+  /* ── Assessment Types ───────────────────────────────────────────────── */
+
+  getAssessmentTypes(curriculumId) {
+    return AssessmentTypeModel.findByCurriculumId(curriculumId);
+  },
+
+  createAssessmentType(curriculumId, data) {
+    const existing = AssessmentTypeModel.findByCurriculumId(curriculumId);
+    if (existing.some((t) => t.name.toLowerCase() === data.name.toLowerCase())) {
+      const err = new Error("An assessment type with this name already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+    return AssessmentTypeModel.create({ curriculumId, ...data });
+  },
+
+  updateAssessmentType(curriculumId, id, data) {
+    const item = AssessmentTypeModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Assessment type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.name) {
+      const others = AssessmentTypeModel.findByCurriculumId(curriculumId).filter((t) => t.id !== id);
+      if (others.some((t) => t.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("An assessment type with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    return AssessmentTypeModel.update(id, data);
+  },
+
+  deleteAssessmentType(curriculumId, id) {
+    const item = AssessmentTypeModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Assessment type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentTypeModel.delete(id);
+  },
+
+  updateScoring(curriculumId, id, evidenceWeights) {
+    const item = AssessmentTypeModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Assessment type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return AssessmentTypeModel.update(id, { evidenceWeights });
+  },
+
+  /* ── Evidence Types ─────────────────────────────────────────────────── */
+
+  getEvidenceTypes(curriculumId) {
+    return EvidenceTypeModel.findByCurriculumId(curriculumId);
+  },
+
+  createEvidenceType(curriculumId, data) {
+    const existing = EvidenceTypeModel.findByCurriculumId(curriculumId);
+    if (existing.some((e) => e.name.toLowerCase() === data.name.toLowerCase())) {
+      const err = new Error("An evidence type with this name already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+    return EvidenceTypeModel.create({ curriculumId, ...data });
+  },
+
+  updateEvidenceType(curriculumId, id, data) {
+    const item = EvidenceTypeModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Evidence type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.name) {
+      const others = EvidenceTypeModel.findByCurriculumId(curriculumId).filter((e) => e.id !== id);
+      if (others.some((e) => e.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("An evidence type with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    return EvidenceTypeModel.update(id, data);
+  },
+
+  deleteEvidenceType(curriculumId, id) {
+    const item = EvidenceTypeModel.findById(id);
+    if (!item || item.curriculumId !== curriculumId) {
+      const err = new Error("Evidence type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    EvidenceTypeModel.delete(id);
+    // Remove this evidence type from all assessment type scoring configs
+    AssessmentTypeModel.findByCurriculumId(curriculumId).forEach((at) => {
+      const filtered = (at.evidenceWeights || []).filter((w) => w.evidenceTypeId !== id);
+      if (filtered.length !== (at.evidenceWeights || []).length) {
+        AssessmentTypeModel.update(at.id, { evidenceWeights: filtered });
+      }
+    });
   },
 };
 

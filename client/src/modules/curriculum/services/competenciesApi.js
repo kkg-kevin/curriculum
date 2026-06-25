@@ -74,4 +74,33 @@ export const competenciesApi = {
 
   deleteAssessment: (curriculumId, asId) =>
     api.delete(`${base(curriculumId)}/assessments/${asId}`).then((r) => r.data),
+
+  /* Assessment Framework — Assessment Types */
+  getAssessmentTypes: (curriculumId) =>
+    api.get(`/api/curricula/${curriculumId}/assessments/types`).then((r) => r.data.data),
+
+  createAssessmentType: (curriculumId, data) =>
+    api.post(`/api/curricula/${curriculumId}/assessments/types`, data).then((r) => r.data.data),
+
+  updateAssessmentType: (curriculumId, atId, data) =>
+    api.put(`/api/curricula/${curriculumId}/assessments/types/${atId}`, data).then((r) => r.data.data),
+
+  deleteAssessmentType: (curriculumId, atId) =>
+    api.delete(`/api/curricula/${curriculumId}/assessments/types/${atId}`).then((r) => r.data),
+
+  updateScoring: (curriculumId, atId, evidenceWeights) =>
+    api.put(`/api/curricula/${curriculumId}/assessments/types/${atId}/scoring`, { evidenceWeights }).then((r) => r.data.data),
+
+  /* Assessment Framework — Evidence Types */
+  getEvidenceTypes: (curriculumId) =>
+    api.get(`/api/curricula/${curriculumId}/assessments/evidence`).then((r) => r.data.data),
+
+  createEvidenceType: (curriculumId, data) =>
+    api.post(`/api/curricula/${curriculumId}/assessments/evidence`, data).then((r) => r.data.data),
+
+  updateEvidenceType: (curriculumId, etId, data) =>
+    api.put(`/api/curricula/${curriculumId}/assessments/evidence/${etId}`, data).then((r) => r.data.data),
+
+  deleteEvidenceType: (curriculumId, etId) =>
+    api.delete(`/api/curricula/${curriculumId}/assessments/evidence/${etId}`).then((r) => r.data),
 };

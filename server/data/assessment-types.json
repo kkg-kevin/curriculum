@@ -1,0 +1,60 @@
+[
+  {
+    "id": "c619edac-3c37-4068-ab3c-5d54adee16d6",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Diagnostic Assessment",
+    "description": "An assessment conducted before instruction begins to evaluate the learner’s prior knowledge, existing skills, and readiness level. It helps identify strengths, gaps, and appropriate starting points, enabling personalized learning paths and proper level placement.",
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "a886a1eb-abcb-4655-a3b4-bcdc1a626825",
+        "weight": 100
+      }
+    ],
+    "createdAt": "2026-06-25T11:31:19.130Z",
+    "updatedAt": "2026-06-25T11:36:44.040Z"
+  },
+  {
+    "id": "a436b2ae-3a08-4efa-8f19-46a7a0f17646",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Formative Assessment",
+    "description": "An ongoing assessment used during the learning process to monitor progress, provide feedback, and guide improvement. It focuses on skill development rather than final performance, allowing instructors and learners to adjust strategies in real time.",
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "e8154918-d6da-4785-b632-182f11a5bff4",
+        "weight": 60
+      },
+      {
+        "evidenceTypeId": "baadfd44-27cc-4cbc-a626-d2626649fad8",
+        "weight": 40
+      }
+    ],
+    "createdAt": "2026-06-25T11:31:40.054Z",
+    "updatedAt": "2026-06-25T11:36:23.834Z"
+  },
+  {
+    "id": "648dc7c7-4eba-4ae6-83d2-9faa01be8e30",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Summative Assessment",
+    "description": "An evaluation conducted at the end of a learning period or module to measure overall achievement against defined competencies. It determines whether learning objectives have been met and is typically used for grading, certification, or progression decisions.",
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "e8154918-d6da-4785-b632-182f11a5bff4",
+        "weight": 40
+      },
+      {
+        "evidenceTypeId": "baadfd44-27cc-4cbc-a626-d2626649fad8",
+        "weight": 20
+      },
+      {
+        "evidenceTypeId": "9f3c4252-f74d-4d25-af98-377647d94a88",
+        "weight": 30
+      },
+      {
+        "evidenceTypeId": "a886a1eb-abcb-4655-a3b4-bcdc1a626825",
+        "weight": 10
+      }
+    ],
+    "createdAt": "2026-06-25T11:32:02.670Z",
+    "updatedAt": "2026-06-25T11:37:41.337Z"
+  }
+]

@@ -12,6 +12,11 @@ const {
   updateProgressLevelSchema,
   createAssessmentSchema,
   updateAssessmentSchema,
+  createAssessmentTypeSchema,
+  updateAssessmentTypeSchema,
+  updateScoringSchema,
+  createEvidenceTypeSchema,
+  updateEvidenceTypeSchema,
 } = require("./competency.validation");
 
 /* ── Learning Areas ──────────────────────────────────────────────────────── */
@@ -144,5 +149,59 @@ exports.updateAssessment = asyncHandler(async (req, res) => {
 
 exports.deleteAssessment = asyncHandler(async (req, res) => {
   CompetencyService.deleteAssessment(req.params.id, req.params.asId);
+  res.json({ success: true });
+});
+
+/* ── Assessment Types ────────────────────────────────────────────────────── */
+
+exports.getAssessmentTypes = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getAssessmentTypes(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.createAssessmentType = asyncHandler(async (req, res) => {
+  const body = createAssessmentTypeSchema.parse(req.body);
+  const data = CompetencyService.createAssessmentType(req.params.id, body);
+  res.status(201).json({ success: true, data });
+});
+
+exports.updateAssessmentType = asyncHandler(async (req, res) => {
+  const body = updateAssessmentTypeSchema.parse(req.body);
+  const data = CompetencyService.updateAssessmentType(req.params.id, req.params.atId, body);
+  res.json({ success: true, data });
+});
+
+exports.deleteAssessmentType = asyncHandler(async (req, res) => {
+  CompetencyService.deleteAssessmentType(req.params.id, req.params.atId);
+  res.json({ success: true });
+});
+
+exports.updateScoring = asyncHandler(async (req, res) => {
+  const { evidenceWeights } = updateScoringSchema.parse(req.body);
+  const data = CompetencyService.updateScoring(req.params.id, req.params.atId, evidenceWeights);
+  res.json({ success: true, data });
+});
+
+/* ── Evidence Types ──────────────────────────────────────────────────────── */
+
+exports.getEvidenceTypes = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getEvidenceTypes(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.createEvidenceType = asyncHandler(async (req, res) => {
+  const body = createEvidenceTypeSchema.parse(req.body);
+  const data = CompetencyService.createEvidenceType(req.params.id, body);
+  res.status(201).json({ success: true, data });
+});
+
+exports.updateEvidenceType = asyncHandler(async (req, res) => {
+  const body = updateEvidenceTypeSchema.parse(req.body);
+  const data = CompetencyService.updateEvidenceType(req.params.id, req.params.etId, body);
+  res.json({ success: true, data });
+});
+
+exports.deleteEvidenceType = asyncHandler(async (req, res) => {
+  CompetencyService.deleteEvidenceType(req.params.id, req.params.etId);
   res.json({ success: true });
 });

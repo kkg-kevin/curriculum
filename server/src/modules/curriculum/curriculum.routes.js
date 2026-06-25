@@ -41,6 +41,15 @@ const {
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  getAssessmentTypes,
+  createAssessmentType,
+  updateAssessmentType,
+  deleteAssessmentType,
+  updateScoring,
+  getEvidenceTypes,
+  createEvidenceType,
+  updateEvidenceType,
+  deleteEvidenceType,
 } = require("../competencies/competency.controller");
 
 const router = express.Router();
@@ -78,8 +87,17 @@ router.route("/:id/competencies/age-categories/:acId").put(updateAgeCategory).de
 router.route("/:id/competencies/levels").get(getProgressLevels).post(createProgressLevel);
 router.route("/:id/competencies/levels/:plId").put(updateProgressLevel).delete(deleteProgressLevel);
 
-// Assessments
+// Assessments (legacy simple list)
 router.route("/:id/competencies/assessments").get(getAssessments).post(createAssessment);
 router.route("/:id/competencies/assessments/:asId").put(updateAssessment).delete(deleteAssessment);
+
+// Assessment Framework — assessment types
+router.route("/:id/assessments/types").get(getAssessmentTypes).post(createAssessmentType);
+router.route("/:id/assessments/types/:atId").put(updateAssessmentType).delete(deleteAssessmentType);
+router.route("/:id/assessments/types/:atId/scoring").put(updateScoring);
+
+// Assessment Framework — evidence types
+router.route("/:id/assessments/evidence").get(getEvidenceTypes).post(createEvidenceType);
+router.route("/:id/assessments/evidence/:etId").put(updateEvidenceType).delete(deleteEvidenceType);
 
 module.exports = router;

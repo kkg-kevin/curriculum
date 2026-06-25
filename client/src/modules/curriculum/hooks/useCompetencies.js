@@ -3,12 +3,14 @@ import toast from "react-hot-toast";
 import { competenciesApi } from "../services/competenciesApi";
 
 const KEYS = {
-  areas:       (cid) => ["learning-areas", cid],
-  comps:       (cid) => ["competencies", cid],
-  ladder:      (cid) => ["progression-ladder", cid],
-  ageCats:     (cid) => ["age-categories", cid],
-  levels:      (cid) => ["progress-levels", cid],
-  assessments: (cid) => ["assessments", cid],
+  areas:           (cid) => ["learning-areas", cid],
+  comps:           (cid) => ["competencies", cid],
+  ladder:          (cid) => ["progression-ladder", cid],
+  ageCats:         (cid) => ["age-categories", cid],
+  levels:          (cid) => ["progress-levels", cid],
+  assessments:     (cid) => ["assessments", cid],
+  assessmentTypes: (cid) => ["assessment-types", cid],
+  evidenceTypes:   (cid) => ["evidence-types", cid],
 };
 
 /* ── Learning Areas ─────────────────────────────────────────────────────── */
@@ -262,5 +264,110 @@ export function useDeleteAssessment(curriculumId) {
       toast.success("Assessment deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete assessment"),
+  });
+}
+
+/* ── Assessment Types ───────────────────────────────────────────────────── */
+
+export function useAssessmentTypes(curriculumId) {
+  return useQuery({
+    queryKey: KEYS.assessmentTypes(curriculumId),
+    queryFn:  () => competenciesApi.getAssessmentTypes(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
+export function useCreateAssessmentType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => competenciesApi.createAssessmentType(curriculumId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Assessment type created");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to create assessment type"),
+  });
+}
+
+export function useUpdateAssessmentType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => competenciesApi.updateAssessmentType(curriculumId, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Assessment type updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update assessment type"),
+  });
+}
+
+export function useDeleteAssessmentType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => competenciesApi.deleteAssessmentType(curriculumId, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Assessment type deleted");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete assessment type"),
+  });
+}
+
+export function useUpdateScoring(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, evidenceWeights }) => competenciesApi.updateScoring(curriculumId, id, evidenceWeights),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Scoring saved");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to save scoring"),
+  });
+}
+
+/* ── Evidence Types ─────────────────────────────────────────────────────── */
+
+export function useEvidenceTypes(curriculumId) {
+  return useQuery({
+    queryKey: KEYS.evidenceTypes(curriculumId),
+    queryFn:  () => competenciesApi.getEvidenceTypes(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
+export function useCreateEvidenceType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => competenciesApi.createEvidenceType(curriculumId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.evidenceTypes(curriculumId) });
+      toast.success("Evidence type created");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to create evidence type"),
+  });
+}
+
+export function useUpdateEvidenceType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => competenciesApi.updateEvidenceType(curriculumId, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.evidenceTypes(curriculumId) });
+      toast.success("Evidence type updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update evidence type"),
+  });
+}
+
+export function useDeleteEvidenceType(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => competenciesApi.deleteEvidenceType(curriculumId, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.evidenceTypes(curriculumId) });
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Evidence type deleted");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete evidence type"),
   });
 }
