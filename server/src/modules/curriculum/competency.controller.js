@@ -17,6 +17,9 @@ const {
   updateScoringSchema,
   createEvidenceTypeSchema,
   updateEvidenceTypeSchema,
+  createPerformanceBandSchema,
+  updatePerformanceBandSchema,
+  reorderBandsSchema,
 } = require("./competency.validation");
 
 /* ── Learning Areas ──────────────────────────────────────────────────────── */
@@ -204,4 +207,34 @@ exports.updateEvidenceType = asyncHandler(async (req, res) => {
 exports.deleteEvidenceType = asyncHandler(async (req, res) => {
   CompetencyService.deleteEvidenceType(req.params.id, req.params.etId);
   res.json({ success: true });
+});
+
+/* ── Performance Bands ───────────────────────────────────────────────────── */
+
+exports.getPerformanceBands = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getPerformanceBands(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.createPerformanceBand = asyncHandler(async (req, res) => {
+  const body = createPerformanceBandSchema.parse(req.body);
+  const data = CompetencyService.createPerformanceBand(req.params.id, body);
+  res.status(201).json({ success: true, data });
+});
+
+exports.updatePerformanceBand = asyncHandler(async (req, res) => {
+  const body = updatePerformanceBandSchema.parse(req.body);
+  const data = CompetencyService.updatePerformanceBand(req.params.id, req.params.bandId, body);
+  res.json({ success: true, data });
+});
+
+exports.deletePerformanceBand = asyncHandler(async (req, res) => {
+  CompetencyService.deletePerformanceBand(req.params.id, req.params.bandId);
+  res.json({ success: true });
+});
+
+exports.reorderPerformanceBands = asyncHandler(async (req, res) => {
+  const { orderedIds } = reorderBandsSchema.parse(req.body);
+  const data = CompetencyService.reorderPerformanceBands(req.params.id, orderedIds);
+  res.json({ success: true, data });
 });

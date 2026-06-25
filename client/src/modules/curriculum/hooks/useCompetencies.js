@@ -2,24 +2,28 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { competenciesApi } from "../services/competenciesApi";
 
+const STALE = 5 * 60 * 1000; // 5 minutes — data is fresh across tab switches
+
 const KEYS = {
-  areas:           (cid) => ["learning-areas", cid],
-  comps:           (cid) => ["competencies", cid],
-  ladder:          (cid) => ["progression-ladder", cid],
-  ageCats:         (cid) => ["age-categories", cid],
-  levels:          (cid) => ["progress-levels", cid],
-  assessments:     (cid) => ["assessments", cid],
-  assessmentTypes: (cid) => ["assessment-types", cid],
-  evidenceTypes:   (cid) => ["evidence-types", cid],
+  areas:            (cid) => ["learning-areas", cid],
+  comps:            (cid) => ["competencies", cid],
+  ladder:           (cid) => ["progression-ladder", cid],
+  ageCats:          (cid) => ["age-categories", cid],
+  levels:           (cid) => ["progress-levels", cid],
+  assessments:      (cid) => ["assessments", cid],
+  assessmentTypes:  (cid) => ["assessment-types", cid],
+  evidenceTypes:    (cid) => ["evidence-types", cid],
+  performanceBands: (cid) => ["performance-bands", cid],
 };
 
 /* ── Learning Areas ─────────────────────────────────────────────────────── */
 
 export function useLearningAreas(curriculumId) {
   return useQuery({
-    queryKey: KEYS.areas(curriculumId),
-    queryFn:  () => competenciesApi.getLearningAreas(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.areas(curriculumId),
+    queryFn:   () => competenciesApi.getLearningAreas(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -64,9 +68,10 @@ export function useDeleteLearningArea(curriculumId) {
 
 export function useCompetencies(curriculumId) {
   return useQuery({
-    queryKey: KEYS.comps(curriculumId),
-    queryFn:  () => competenciesApi.getCompetencies(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.comps(curriculumId),
+    queryFn:   () => competenciesApi.getCompetencies(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -111,9 +116,10 @@ export function useDeleteCompetency(curriculumId) {
 
 export function useLadder(curriculumId) {
   return useQuery({
-    queryKey: KEYS.ladder(curriculumId),
-    queryFn:  () => competenciesApi.getLadder(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.ladder(curriculumId),
+    queryFn:   () => competenciesApi.getLadder(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -133,9 +139,10 @@ export function useUpdateLadder(curriculumId) {
 
 export function useAgeCategories(curriculumId) {
   return useQuery({
-    queryKey: KEYS.ageCats(curriculumId),
-    queryFn:  () => competenciesApi.getAgeCategories(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.ageCats(curriculumId),
+    queryFn:   () => competenciesApi.getAgeCategories(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -179,9 +186,10 @@ export function useDeleteAgeCategory(curriculumId) {
 
 export function useProgressLevels(curriculumId) {
   return useQuery({
-    queryKey: KEYS.levels(curriculumId),
-    queryFn:  () => competenciesApi.getProgressLevels(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.levels(curriculumId),
+    queryFn:   () => competenciesApi.getProgressLevels(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -225,9 +233,10 @@ export function useDeleteProgressLevel(curriculumId) {
 
 export function useAssessments(curriculumId) {
   return useQuery({
-    queryKey: KEYS.assessments(curriculumId),
-    queryFn:  () => competenciesApi.getAssessments(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.assessments(curriculumId),
+    queryFn:   () => competenciesApi.getAssessments(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -271,9 +280,10 @@ export function useDeleteAssessment(curriculumId) {
 
 export function useAssessmentTypes(curriculumId) {
   return useQuery({
-    queryKey: KEYS.assessmentTypes(curriculumId),
-    queryFn:  () => competenciesApi.getAssessmentTypes(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.assessmentTypes(curriculumId),
+    queryFn:   () => competenciesApi.getAssessmentTypes(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -329,9 +339,10 @@ export function useUpdateScoring(curriculumId) {
 
 export function useEvidenceTypes(curriculumId) {
   return useQuery({
-    queryKey: KEYS.evidenceTypes(curriculumId),
-    queryFn:  () => competenciesApi.getEvidenceTypes(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey:  KEYS.evidenceTypes(curriculumId),
+    queryFn:   () => competenciesApi.getEvidenceTypes(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
@@ -369,5 +380,63 @@ export function useDeleteEvidenceType(curriculumId) {
       toast.success("Evidence type deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete evidence type"),
+  });
+}
+
+/* ── Performance Bands ──────────────────────────────────────────────────── */
+
+export function usePerformanceBands(curriculumId) {
+  return useQuery({
+    queryKey:  KEYS.performanceBands(curriculumId),
+    queryFn:   () => competenciesApi.getPerformanceBands(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
+  });
+}
+
+export function useCreatePerformanceBand(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => competenciesApi.createPerformanceBand(curriculumId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+      toast.success("Performance band created");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to create performance band"),
+  });
+}
+
+export function useUpdatePerformanceBand(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => competenciesApi.updatePerformanceBand(curriculumId, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+      toast.success("Performance band updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update performance band"),
+  });
+}
+
+export function useDeletePerformanceBand(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => competenciesApi.deletePerformanceBand(curriculumId, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+      toast.success("Performance band deleted");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete performance band"),
+  });
+}
+
+export function useReorderPerformanceBands(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderedIds) => competenciesApi.reorderPerformanceBands(curriculumId, orderedIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to reorder bands"),
   });
 }

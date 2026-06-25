@@ -6,6 +6,7 @@ const ProgressLevelModel     = require("./progress-level.model");
 const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
+const PerformanceBandModel   = require("./performance-band.model");
 
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
@@ -351,6 +352,34 @@ const CompetencyService = {
       }
     }
     return EvidenceTypeModel.update(id, data);
+  },
+
+  /* ── Performance Bands ──────────────────────────────────────────────── */
+
+  getPerformanceBands(curriculumId) {
+    return PerformanceBandModel.findByCurriculum(curriculumId);
+  },
+
+  createPerformanceBand(curriculumId, data) {
+    return PerformanceBandModel.create(curriculumId, data);
+  },
+
+  updatePerformanceBand(curriculumId, id, data) {
+    const band = PerformanceBandModel.update(curriculumId, id, data);
+    if (!band) {
+      const err = new Error("Performance band not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return band;
+  },
+
+  deletePerformanceBand(curriculumId, id) {
+    PerformanceBandModel.delete(curriculumId, id);
+  },
+
+  reorderPerformanceBands(curriculumId, orderedIds) {
+    return PerformanceBandModel.reorder(curriculumId, orderedIds);
   },
 
   deleteEvidenceType(curriculumId, id) {
