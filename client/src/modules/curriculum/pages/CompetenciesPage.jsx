@@ -20,11 +20,16 @@ import {
   useCreateProgressLevel,
   useUpdateProgressLevel,
   useDeleteProgressLevel,
-  useAssessments,
-  useCreateAssessment,
-  useUpdateAssessment,
-  useDeleteAssessment,
-} from "../../competencies/hooks/useCompetencies";
+  useAssessmentTypes,
+  useCreateAssessmentType,
+  useUpdateAssessmentType,
+  useDeleteAssessmentType,
+  useUpdateScoring,
+  useEvidenceTypes,
+  useCreateEvidenceType,
+  useUpdateEvidenceType,
+  useDeleteEvidenceType,
+} from "../hooks/useCompetencies";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -1043,230 +1048,42 @@ function ProgressionLadderPanel({ curriculumId }) {
   );
 }
 
-/* ── AssessmentsPanel ───────────────────────────────────────────────────── */
+/* ── Assessment Framework helpers ───────────────────────────────────────── */
 
-const ASSESSMENT_TYPES = ["formative", "summative", "diagnostic", "project"];
-
-const TYPE_META = {
-  formative:  { label: "Formative",  cls: "cp-type-formative",  icon: "🔄" },
-  summative:  { label: "Summative",  cls: "cp-type-summative",  icon: "✅" },
-  diagnostic: { label: "Diagnostic", cls: "cp-type-diagnostic", icon: "🔍" },
-  project:    { label: "Project",    cls: "cp-type-project",    icon: "🏗️" },
-};
-
-function AssessmentsPanel({ curriculumId }) {
-  const { data: assessments = [], isLoading } = useAssessments(curriculumId);
-  const { mutate: create, isPending: creating } = useCreateAssessment(curriculumId);
-  const { mutate: update, isPending: updating } = useUpdateAssessment(curriculumId);
-  const { mutate: remove, isPending: deleting } = useDeleteAssessment(curriculumId);
-
-  const [mode,       setMode]       = useState("list");
-  const [editTarget, setEditTarget] = useState(null);
-  const [name,       setName]       = useState("");
-  const [type,       setType]       = useState("formative");
-  const [desc,       setDesc]       = useState("");
-  const nameRef = useRef(null);
-
-  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
-
-  function openAdd()   { setEditTarget(null); setName(""); setType("formative"); setDesc(""); setMode("add"); }
-  function openEdit(a) { setEditTarget(a); setName(a.name); setType(a.type); setDesc(a.description || ""); setMode("edit"); }
-  function cancel()    { setMode("list"); setEditTarget(null); }
-
-  function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), type, description: desc.trim() };
-    if (mode === "edit") {
-      update({ id: editTarget.id, data }, { onSuccess: cancel });
-    } else {
-      create(data, { onSuccess: () => { setName(""); setType("formative"); setDesc(""); nameRef.current?.focus(); } });
-    }
-  }
-
+function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent, formTitle }) {
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
   return (
-    <div className="cp-card">
-      {/* Header */}
+    <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Assessments</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {assessments.length === 0
-              ? "Define how learning is assessed in this curriculum"
-              : `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} defined`}
-          </p>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>{title}</h3>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>{subtitle}</p>
         </div>
         {mode === "list" && (
-          <button type="button" className="cp-btn-primary" onClick={openAdd}>
+          <button type="button" className="cp-btn-primary" onClick={onAdd}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            Add Assessment
+            {addLabel}
           </button>
         )}
       </div>
-
-      {/* Form */}
-      {mode !== "list" && (
-        <div className="cp-comp-form-card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0F2645" }}>
-                {mode === "edit" ? "Edit Assessment" : "New Assessment"}
-              </h3>
-              <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-                {mode === "edit" ? "Update the details below." : "Fill in the details and click Add."}
-              </p>
-            </div>
-            <button type="button" className="cp-icon-btn" onClick={cancel}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            </button>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* Name */}
-            <div>
-              <label className="cp-field-label">Name <span className="cp-required">*</span></label>
-              <input
-                ref={nameRef}
-                className="cp-input"
-                style={{ width: "100%", boxSizing: "border-box" }}
-                placeholder="e.g. End-of-Term Reading Assessment, Portfolio Review…"
-                value={name}
-                maxLength={150}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) submit(); if (e.key === "Escape") cancel(); }}
-              />
-              <div className="cp-char-count">{name.length} / 150</div>
-            </div>
-
-            {/* Type */}
-            <div>
-              <label className="cp-field-label">Type <span className="cp-required">*</span></label>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>
-                {ASSESSMENT_TYPES.map((t) => {
-                  const meta = TYPE_META[t];
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setType(t)}
-                      style={{
-                        padding: "7px 14px", borderRadius: "10px", border: `2px solid ${type === t ? "currentColor" : "#E5E7EB"}`,
-                        background: type === t ? undefined : "#fff",
-                        fontFamily: "Inter,sans-serif", fontSize: "12px", fontWeight: "700",
-                        cursor: "pointer", transition: "all 0.12s",
-                        opacity: type === t ? 1 : 0.6,
-                      }}
-                      className={type === t ? meta.cls : ""}
-                    >
-                      {meta.icon} {meta.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Description / Criteria */}
-            <div>
-              <label className="cp-field-label">
-                Description / Criteria <span className="cp-optional">(optional)</span>
-              </label>
-              <textarea
-                className="cp-textarea"
-                rows={4}
-                placeholder="Describe what this assessment covers, how it's conducted, or what criteria are used to evaluate learners…"
-                value={desc}
-                maxLength={1000}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-              <div className="cp-char-count">{desc.length} / 1000</div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px" }}>
-            <button
-              type="button"
-              className="cp-btn-primary"
-              onClick={submit}
-              disabled={(creating || updating) || !name.trim()}
-            >
-              {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Assessment"}
-            </button>
-            <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {assessments.length === 0 && mode === "list" && (
+      {mode !== "list" && formContent}
+      {items.length === 0 && mode === "list" ? (
         <div className="cp-empty">
-          <div style={{ fontSize: "40px", marginBottom: "12px" }}>📝</div>
-          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No assessments yet</p>
-          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
-            Assessments define how and when learning is measured. Add your first one to get started.
-          </p>
-          <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Assessment</button>
+          <div style={{ fontSize: "36px", marginBottom: "10px" }}>{emptyIcon}</div>
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>{emptyTitle}</p>
+          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "300px", marginInline: "auto" }}>{emptyText}</p>
+          <button type="button" className="cp-btn-ghost" onClick={onAdd}>+ {addLabel}</button>
         </div>
-      )}
-
-      {/* Card grid */}
-      {assessments.length > 0 && (
+      ) : (
         <div className="cp-comp-grid">
-          {assessments.map((a, idx) => {
-            const meta    = TYPE_META[a.type] || TYPE_META.formative;
-            const color   = COMP_PALETTE[idx % COMP_PALETTE.length];
-            const initial = a.name.charAt(0).toUpperCase();
-            const isEditing = mode === "edit" && editTarget?.id === a.id;
-
-            return (
-              <div key={a.id} className={`cp-comp-card${isEditing ? " cp-comp-card--editing" : ""}`}>
-                {/* Top row */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
-                    backgroundColor: `${color}15`, border: `2px solid ${color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "17px", fontWeight: "800", color,
-                  }}>
-                    {initial}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
-                      {a.name}
-                    </p>
-                    <span className={`cp-type-badge ${meta.cls}`} style={{ marginTop: "5px" }}>
-                      {meta.icon} {meta.label}
-                    </span>
-                  </div>
-                  <CardKebab onEdit={() => openEdit(a)} onDelete={() => remove(a.id)} disabled={deleting} />
-                </div>
-
-                {/* Description */}
-                <div style={{ flex: 1 }}>
-                  {a.description ? (
-                    <p style={{
-                      margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65",
-                      display: "-webkit-box", WebkitLineClamp: 4,
-                      WebkitBoxOrient: "vertical", overflow: "hidden",
-                    }}>
-                      {a.description}
-                    </p>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description added</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Inline add card */}
+          {items.map(renderCard)}
           {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
+            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={onAdd}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
                 <div className="cp-add-card-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
                 </div>
-                <span className="cp-add-card-label">Add Assessment</span>
+                <span className="cp-add-card-label">{addLabel}</span>
               </div>
             </button>
           )}
@@ -1276,7 +1093,441 @@ function AssessmentsPanel({ curriculumId }) {
   );
 }
 
+/* ── AssessmentTypesSubPanel ─────────────────────────────────────────────── */
+
+function AssessmentTypesSubPanel({ curriculumId }) {
+  const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
+  const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
+  const { mutate: update, isPending: updating } = useUpdateAssessmentType(curriculumId);
+  const { mutate: remove, isPending: deleting } = useDeleteAssessmentType(curriculumId);
+
+  const [mode, setMode]         = useState("list");
+  const [editTarget, setEdit]   = useState(null);
+  const [name, setName]         = useState("");
+  const [desc, setDesc]         = useState("");
+  const nameRef = useRef(null);
+  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
+
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setMode("add"); }
+  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setMode("edit"); }
+  function cancel()   { setMode("list"); setEdit(null); }
+  function submit() {
+    if (!name.trim()) return;
+    const data = { name: name.trim(), description: desc.trim() };
+    if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+  }
+
+  const form = (
+    <div className="cp-comp-form-card" style={{ marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Type" : "New Assessment Type"}</h3>
+        <button type="button" className="cp-icon-btn" onClick={cancel}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div>
+          <label className="cp-field-label">Name <span className="cp-required">*</span></label>
+          <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+            placeholder="e.g. Continuous Assessment, End of Term Test…"
+            value={name} maxLength={150}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
+          />
+          <div className="cp-char-count">{name.length} / 150</div>
+        </div>
+        <div>
+          <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
+          <textarea className="cp-textarea" rows={3} placeholder="What is this assessment type used for?" value={desc} maxLength={1000} onChange={(e) => setDesc(e.target.value)} />
+          <div className="cp-char-count">{desc.length} / 1000</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+        <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim()}>
+          {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Type"}
+        </button>
+        <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <CrudPanel
+      title="Assessment Types" subtitle={types.length === 0 ? "Define the categories of assessment used in this curriculum" : `${types.length} type${types.length !== 1 ? "s" : ""} defined`}
+      emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types}
+      emptyText="Create assessment types like 'Continuous Assessment' or 'End of Term Test'."
+      renderCard={(t, idx) => {
+        const color = COMP_PALETTE[idx % COMP_PALETTE.length];
+        return (
+          <div key={t.id} className={`cp-comp-card${mode === "edit" && editTarget?.id === t.id ? " cp-comp-card--editing" : ""}`}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0, backgroundColor: `${color}15`, border: `2px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "17px", fontWeight: "800", color }}>
+                {t.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{t.name}</p>
+                {(t.evidenceWeights || []).length > 0 && (
+                  <span style={{ display: "inline-block", marginTop: "4px", fontSize: "10px", fontWeight: "600", color: "#059669" }}>
+                    {(t.evidenceWeights || []).length} evidence type{(t.evidenceWeights || []).length !== 1 ? "s" : ""} scored
+                  </span>
+                )}
+              </div>
+              <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} />
+            </div>
+            <div style={{ flex: 1 }}>
+              {t.description ? (
+                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
+              ) : (
+                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              )}
+            </div>
+          </div>
+        );
+      }}
+    />
+  );
+}
+
+/* ── EvidenceTypesSubPanel ───────────────────────────────────────────────── */
+
+const EVIDENCE_PALETTE = ["#0891B2","#7C3AED","#059669","#D97706","#DC2626","#BE185D","#25476a","#38aae1","#2e7db5","#0A3880"];
+
+function EvidenceTypesSubPanel({ curriculumId }) {
+  const { data: evidences = [], isLoading } = useEvidenceTypes(curriculumId);
+  const { mutate: create, isPending: creating } = useCreateEvidenceType(curriculumId);
+  const { mutate: update, isPending: updating } = useUpdateEvidenceType(curriculumId);
+  const { mutate: remove, isPending: deleting } = useDeleteEvidenceType(curriculumId);
+
+  const [mode, setMode]       = useState("list");
+  const [editTarget, setEdit] = useState(null);
+  const [name, setName]       = useState("");
+  const [desc, setDesc]       = useState("");
+  const nameRef = useRef(null);
+  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
+
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setMode("add"); }
+  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setMode("edit"); }
+  function cancel()   { setMode("list"); setEdit(null); }
+  function submit() {
+    if (!name.trim()) return;
+    const data = { name: name.trim(), description: desc.trim() };
+    if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+  }
+
+  const form = (
+    <div className="cp-comp-form-card" style={{ marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Evidence Type" : "New Evidence Type"}</h3>
+        <button type="button" className="cp-icon-btn" onClick={cancel}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div>
+          <label className="cp-field-label">Name <span className="cp-required">*</span></label>
+          <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+            placeholder="e.g. Quiz, Assignment, Project, Teacher Observation…"
+            value={name} maxLength={150}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
+          />
+          <div className="cp-char-count">{name.length} / 150</div>
+        </div>
+        <div>
+          <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
+          <textarea className="cp-textarea" rows={2} placeholder="Briefly describe what this evidence type involves…" value={desc} maxLength={500} onChange={(e) => setDesc(e.target.value)} />
+          <div className="cp-char-count">{desc.length} / 500</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+        <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim()}>
+          {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Evidence Type"}
+        </button>
+        <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <CrudPanel
+      title="Evidence Types" subtitle={evidences.length === 0 ? "Define the evidence methods used to assess learning" : `${evidences.length} evidence type${evidences.length !== 1 ? "s" : ""} defined`}
+      emptyIcon="🔬" emptyTitle="No evidence types yet" addLabel="Add Evidence Type" mode={mode} onAdd={openAdd} formContent={form} items={evidences}
+      emptyText="Add evidence types like Quiz, Assignment, Project, or Teacher Observation."
+      renderCard={(e, idx) => {
+        const color = EVIDENCE_PALETTE[idx % EVIDENCE_PALETTE.length];
+        return (
+          <div key={e.id} className={`cp-comp-card${mode === "edit" && editTarget?.id === e.id ? " cp-comp-card--editing" : ""}`}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0, backgroundColor: `${color}15`, border: `2px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "17px", fontWeight: "800", color }}>
+                {e.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{e.name}</p>
+              </div>
+              <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} />
+            </div>
+            <div style={{ flex: 1 }}>
+              {e.description ? (
+                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
+              ) : (
+                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              )}
+            </div>
+          </div>
+        );
+      }}
+    />
+  );
+}
+
+/* ── ScoringSubPanel ─────────────────────────────────────────────────────── */
+
+function ScoringCard({ assessmentType, evidences, onSave, saving }) {
+  const [weights, setWeights] = useState(() =>
+    (assessmentType.evidenceWeights || []).map((w) => ({ ...w }))
+  );
+  const [adding, setAdding] = useState(false);
+  const [pickId, setPickId] = useState("");
+
+  const total = weights.reduce((s, w) => s + (Number(w.weight) || 0), 0);
+  const isComplete = total === 100;
+  const isOver     = total > 100;
+  const evidenceMap = Object.fromEntries(evidences.map((e) => [e.id, e]));
+  const assignedIds = weights.map((w) => w.evidenceTypeId);
+  const available   = evidences.filter((e) => !assignedIds.includes(e.id));
+
+  function addEvidence() {
+    if (!pickId) return;
+    setWeights((prev) => [...prev, { evidenceTypeId: pickId, weight: 0 }]);
+    setPickId("");
+    setAdding(false);
+  }
+
+  function removeEvidence(etId) {
+    setWeights((prev) => prev.filter((w) => w.evidenceTypeId !== etId));
+  }
+
+  function changeWeight(etId, val) {
+    setWeights((prev) => prev.map((w) => w.evidenceTypeId === etId ? { ...w, weight: Number(val) } : w));
+  }
+
+  function handleSave() {
+    onSave({ id: assessmentType.id, evidenceWeights: weights });
+  }
+
+  const isDirty = JSON.stringify(weights) !== JSON.stringify(assessmentType.evidenceWeights || []);
+
+  return (
+    <div style={{
+      background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "16px",
+      padding: "20px 22px", marginBottom: "14px",
+      transition: "border-color 0.15s, box-shadow 0.15s",
+      boxShadow: isDirty ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
+      borderColor: isDirty ? "#25476a" : "#E5E7EB",
+    }}>
+      {/* Card header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
+        <div>
+          <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#0F2645" }}>{assessmentType.name}</h4>
+          {assessmentType.description && (
+            <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>{assessmentType.description}</p>
+          )}
+        </div>
+        {/* Total indicator */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "12px",
+          padding: "5px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700",
+          background: isComplete ? "#F0FDF4" : isOver ? "#FEF2F2" : "#FFF7ED",
+          color: isComplete ? "#15803D" : isOver ? "#DC2626" : "#C2410C",
+          border: `1px solid ${isComplete ? "#BBF7D0" : isOver ? "#FECACA" : "#FED7AA"}`,
+        }}>
+          {isComplete ? "✓" : isOver ? "!" : "◷"} {total}%
+        </div>
+      </div>
+
+      {/* Weight rows */}
+      {weights.length === 0 ? (
+        <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#9CA3AF" }}>No evidence types assigned yet. Add some below.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
+          {weights.map((w) => {
+            const ev    = evidenceMap[w.evidenceTypeId];
+            if (!ev) return null;
+            const pct   = Math.min(100, Number(w.weight) || 0);
+            return (
+              <div key={w.evidenceTypeId} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {/* Name */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#374151" }}>{ev.name}</span>
+                  {/* Bar */}
+                  <div style={{ height: "4px", background: "#F3F4F6", borderRadius: "2px", marginTop: "4px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: isOver ? "#DC2626" : "#25476a", borderRadius: "2px", transition: "width 0.2s" }} />
+                  </div>
+                </div>
+                {/* Weight input */}
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                  <input
+                    type="number" min="0" max="100"
+                    value={w.weight}
+                    onChange={(e) => changeWeight(w.evidenceTypeId, e.target.value)}
+                    style={{
+                      width: "60px", padding: "5px 8px", border: "1.5px solid #D1D5DB",
+                      borderRadius: "7px", fontSize: "13px", fontWeight: "700",
+                      fontFamily: "Inter,sans-serif", textAlign: "center", outline: "none",
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#25476a"}
+                    onBlur={(e) => e.target.style.borderColor = "#D1D5DB"}
+                  />
+                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: "600" }}>%</span>
+                </div>
+                {/* Remove */}
+                <button type="button" className="cp-icon-btn danger" onClick={() => removeEvidence(w.evidenceTypeId)} title="Remove">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Total bar */}
+      {weights.length > 0 && (
+        <div style={{ marginBottom: "14px" }}>
+          <div style={{ height: "6px", background: "#F3F4F6", borderRadius: "3px", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(100, total)}%`, background: isComplete ? "#059669" : isOver ? "#DC2626" : "#F59E0B", borderRadius: "3px", transition: "width 0.2s, background 0.2s" }} />
+          </div>
+          <p style={{ margin: "5px 0 0", fontSize: "11px", color: isComplete ? "#059669" : isOver ? "#DC2626" : "#C2410C", fontWeight: "600" }}>
+            {isComplete ? "Total is 100% — ready to save" : isOver ? `Over by ${total - 100}% — adjust weights to reach 100%` : `${100 - total}% remaining to reach 100%`}
+          </p>
+        </div>
+      )}
+
+      {/* Add evidence picker */}
+      {available.length > 0 && !adding && (
+        <button type="button" className="cp-btn-add" style={{ fontSize: "12px", padding: "6px 12px", marginBottom: "14px" }} onClick={() => setAdding(true)}>
+          + Assign Evidence Type
+        </button>
+      )}
+      {adding && (
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "14px", padding: "10px 12px", background: "#F0F7FF", borderRadius: "10px", border: "1.5px solid #C7D9F8" }}>
+          <select className="cp-select" style={{ flex: 1 }} value={pickId} onChange={(e) => setPickId(e.target.value)} autoFocus>
+            <option value="">Pick evidence type…</option>
+            {available.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
+          <button type="button" className="cp-btn-primary" style={{ padding: "7px 14px", fontSize: "12px" }} onClick={addEvidence} disabled={!pickId}>Add</button>
+          <button type="button" className="cp-btn-secondary" style={{ padding: "7px 12px", fontSize: "12px" }} onClick={() => { setAdding(false); setPickId(""); }}>Cancel</button>
+        </div>
+      )}
+
+      {/* Save button */}
+      {isDirty && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button type="button" className="cp-btn-primary" onClick={handleSave} disabled={saving || (!isComplete && weights.length > 0)}>
+            {saving ? "Saving…" : "Save Scoring"}
+          </button>
+          {!isComplete && weights.length > 0 && (
+            <span style={{ fontSize: "11px", color: "#C2410C" }}>Weights must total 100% before saving.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScoringSubPanel({ curriculumId }) {
+  const { data: types    = [], isLoading: loadingTypes }    = useAssessmentTypes(curriculumId);
+  const { data: evidences = [], isLoading: loadingEvidence } = useEvidenceTypes(curriculumId);
+  const { mutate: saveScoring, isPending: saving }           = useUpdateScoring(curriculumId);
+
+  if (loadingTypes || loadingEvidence) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+
+  if (types.length === 0) return (
+    <div className="cp-empty">
+      <div style={{ fontSize: "36px", marginBottom: "10px" }}>📋</div>
+      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No assessment types yet</p>
+      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Go to <strong>Types</strong> and define your assessment types first.</p>
+    </div>
+  );
+
+  if (evidences.length === 0) return (
+    <div className="cp-empty">
+      <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔬</div>
+      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No evidence types yet</p>
+      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Go to <strong>Evidence</strong> and define your evidence types first.</p>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: "20px" }}>
+        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Score Evidence</h3>
+        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+          For each assessment type, assign evidence types and set their weighted contribution (must total 100%).
+        </p>
+      </div>
+      {types.map((t) => (
+        <ScoringCard key={t.id} assessmentType={t} evidences={evidences} onSave={saveScoring} saving={saving} />
+      ))}
+    </div>
+  );
+}
+
+/* ── AssessmentsPanel ───────────────────────────────────────────────────── */
+
+const AF_SECTIONS = [
+  { key: "types",    label: "Types",    icon: "📋" },
+  { key: "evidence", label: "Evidence", icon: "🔬" },
+  { key: "scoring",  label: "Scoring",  icon: "⚖️"  },
+];
+
+function AssessmentsPanel({ curriculumId }) {
+  const [sub, setSub] = useState("types");
+
+  return (
+    <div className="cp-card">
+      <div style={{ marginBottom: "20px" }}>
+        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Assessment Framework</h2>
+        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+          Define assessment types, evidence methods, and scoring weights for this curriculum.
+        </p>
+      </div>
+
+      {/* Sub-nav */}
+      <div className="cp-arc-section-nav" style={{ marginBottom: "24px" }}>
+        {AF_SECTIONS.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            className={`cp-arc-section-btn${sub === s.key ? " active" : ""}`}
+            onClick={() => setSub(s.key)}
+          >
+            <span>{s.icon}</span> {s.label}
+          </button>
+        ))}
+      </div>
+
+      {sub === "types"    && <AssessmentTypesSubPanel curriculumId={curriculumId} />}
+      {sub === "evidence" && <EvidenceTypesSubPanel   curriculumId={curriculumId} />}
+      {sub === "scoring"  && <ScoringSubPanel          curriculumId={curriculumId} />}
+    </div>
+  );
+}
+
 /* ── AgeCategoriesPanel ─────────────────────────────────────────────────── */
+
+function parseAgeRange(str) {
+  if (!str) return { min: "", max: "" };
+  const rangeMatch = str.match(/^(\d+)\s*[–\-]\s*(\d+)$/);
+  if (rangeMatch) return { min: rangeMatch[1], max: rangeMatch[2] };
+  const singleMatch = str.match(/^(\d+)\+?$/);
+  if (singleMatch) return { min: singleMatch[1], max: "" };
+  return { min: "", max: "" };
+}
+
+function buildAgeRange(min, max) {
+  const a = min.toString().trim(), b = max.toString().trim();
+  if (a && b) return `${a}–${b}`;
+  if (a)      return `${a}+`;
+  return "";
+}
 
 function AgeCategoriesPanel({ curriculumId }) {
   const { data: cats = [], isLoading } = useAgeCategories(curriculumId);
@@ -1287,23 +1538,30 @@ function AgeCategoriesPanel({ curriculumId }) {
   const [mode,       setMode]       = useState("list");
   const [editTarget, setEditTarget] = useState(null);
   const [name,       setName]       = useState("");
-  const [ageRange,   setAgeRange]   = useState("");
+  const [minAge,     setMinAge]     = useState("");
+  const [maxAge,     setMaxAge]     = useState("");
   const [desc,       setDesc]       = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEditTarget(null); setName(""); setAgeRange(""); setDesc(""); setMode("add"); }
-  function openEdit(c) { setEditTarget(c); setName(c.name); setAgeRange(c.ageRange || ""); setDesc(c.description || ""); setMode("edit"); }
-  function cancel()   { setMode("list"); setEditTarget(null); }
+  function openAdd() {
+    setEditTarget(null); setName(""); setMinAge(""); setMaxAge(""); setDesc(""); setMode("add");
+  }
+  function openEdit(c) {
+    const { min, max } = parseAgeRange(c.ageRange || "");
+    setEditTarget(c); setName(c.name); setMinAge(min); setMaxAge(max); setDesc(c.description || ""); setMode("edit");
+  }
+  function cancel() { setMode("list"); setEditTarget(null); }
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), ageRange: ageRange.trim(), description: desc.trim() };
+    if (minAge && maxAge && Number(maxAge) < Number(minAge)) return;
+    const data = { name: name.trim(), ageRange: buildAgeRange(minAge, maxAge), description: desc.trim() };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setAgeRange(""); setDesc(""); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setMinAge(""); setMaxAge(""); setDesc(""); nameRef.current?.focus(); } });
     }
   }
 
@@ -1349,11 +1607,41 @@ function AgeCategoriesPanel({ curriculumId }) {
             </div>
             <div>
               <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
-              <input className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                placeholder="e.g. 3–5, 6–8, 9–12…"
-                value={ageRange} maxLength={50}
-                onChange={(e) => setAgeRange(e.target.value)}
-              />
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", marginBottom: "3px" }}>FROM</div>
+                  <input
+                    className="cp-input"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="e.g. 3"
+                    value={minAge}
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    onChange={(e) => setMinAge(e.target.value)}
+                  />
+                </div>
+                <div style={{ color: "#9CA3AF", fontWeight: "700", fontSize: "16px", paddingTop: "18px", flexShrink: 0 }}>–</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", marginBottom: "3px" }}>TO</div>
+                  <input
+                    className="cp-input"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="e.g. 5"
+                    value={maxAge}
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                  />
+                </div>
+                <div style={{ color: "#9CA3AF", fontSize: "11px", fontWeight: "600", paddingTop: "18px", flexShrink: 0 }}>yrs</div>
+              </div>
+              {minAge && maxAge && Number(maxAge) < Number(minAge) && (
+                <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#DC2626" }}>
+                  "To" age must be greater than "From" age.
+                </p>
+              )}
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
