@@ -24,11 +24,16 @@ import {
   useCreateAssessmentType,
   useUpdateAssessmentType,
   useDeleteAssessmentType,
-  useUpdateScoring,
+
   useEvidenceTypes,
   useCreateEvidenceType,
   useUpdateEvidenceType,
   useDeleteEvidenceType,
+  usePerformanceBands,
+  useCreatePerformanceBand,
+  useUpdatePerformanceBand,
+  useDeletePerformanceBand,
+  useReorderPerformanceBands,
 } from "../hooks/useCompetencies";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
@@ -1278,204 +1283,12 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   );
 }
 
-/* ── ScoringSubPanel ─────────────────────────────────────────────────────── */
-
-function ScoringCard({ assessmentType, evidences, onSave, saving }) {
-  const [weights, setWeights] = useState(() =>
-    (assessmentType.evidenceWeights || []).map((w) => ({ ...w }))
-  );
-  const [adding, setAdding] = useState(false);
-  const [pickId, setPickId] = useState("");
-
-  const total = weights.reduce((s, w) => s + (Number(w.weight) || 0), 0);
-  const isComplete = total === 100;
-  const isOver     = total > 100;
-  const evidenceMap = Object.fromEntries(evidences.map((e) => [e.id, e]));
-  const assignedIds = weights.map((w) => w.evidenceTypeId);
-  const available   = evidences.filter((e) => !assignedIds.includes(e.id));
-
-  function addEvidence() {
-    if (!pickId) return;
-    setWeights((prev) => [...prev, { evidenceTypeId: pickId, weight: 0 }]);
-    setPickId("");
-    setAdding(false);
-  }
-
-  function removeEvidence(etId) {
-    setWeights((prev) => prev.filter((w) => w.evidenceTypeId !== etId));
-  }
-
-  function changeWeight(etId, val) {
-    setWeights((prev) => prev.map((w) => w.evidenceTypeId === etId ? { ...w, weight: Number(val) } : w));
-  }
-
-  function handleSave() {
-    onSave({ id: assessmentType.id, evidenceWeights: weights });
-  }
-
-  const isDirty = JSON.stringify(weights) !== JSON.stringify(assessmentType.evidenceWeights || []);
-
-  return (
-    <div style={{
-      background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "16px",
-      padding: "20px 22px", marginBottom: "14px",
-      transition: "border-color 0.15s, box-shadow 0.15s",
-      boxShadow: isDirty ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
-      borderColor: isDirty ? "#25476a" : "#E5E7EB",
-    }}>
-      {/* Card header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
-        <div>
-          <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#0F2645" }}>{assessmentType.name}</h4>
-          {assessmentType.description && (
-            <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>{assessmentType.description}</p>
-          )}
-        </div>
-        {/* Total indicator */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "12px",
-          padding: "5px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700",
-          background: isComplete ? "#F0FDF4" : isOver ? "#FEF2F2" : "#FFF7ED",
-          color: isComplete ? "#15803D" : isOver ? "#DC2626" : "#C2410C",
-          border: `1px solid ${isComplete ? "#BBF7D0" : isOver ? "#FECACA" : "#FED7AA"}`,
-        }}>
-          {isComplete ? "✓" : isOver ? "!" : "◷"} {total}%
-        </div>
-      </div>
-
-      {/* Weight rows */}
-      {weights.length === 0 ? (
-        <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#9CA3AF" }}>No evidence types assigned yet. Add some below.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
-          {weights.map((w) => {
-            const ev    = evidenceMap[w.evidenceTypeId];
-            if (!ev) return null;
-            const pct   = Math.min(100, Number(w.weight) || 0);
-            return (
-              <div key={w.evidenceTypeId} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                {/* Name */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#374151" }}>{ev.name}</span>
-                  {/* Bar */}
-                  <div style={{ height: "4px", background: "#F3F4F6", borderRadius: "2px", marginTop: "4px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: isOver ? "#DC2626" : "#25476a", borderRadius: "2px", transition: "width 0.2s" }} />
-                  </div>
-                </div>
-                {/* Weight input */}
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                  <input
-                    type="number" min="0" max="100"
-                    value={w.weight}
-                    onChange={(e) => changeWeight(w.evidenceTypeId, e.target.value)}
-                    style={{
-                      width: "60px", padding: "5px 8px", border: "1.5px solid #D1D5DB",
-                      borderRadius: "7px", fontSize: "13px", fontWeight: "700",
-                      fontFamily: "Inter,sans-serif", textAlign: "center", outline: "none",
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#25476a"}
-                    onBlur={(e) => e.target.style.borderColor = "#D1D5DB"}
-                  />
-                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: "600" }}>%</span>
-                </div>
-                {/* Remove */}
-                <button type="button" className="cp-icon-btn danger" onClick={() => removeEvidence(w.evidenceTypeId)} title="Remove">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Total bar */}
-      {weights.length > 0 && (
-        <div style={{ marginBottom: "14px" }}>
-          <div style={{ height: "6px", background: "#F3F4F6", borderRadius: "3px", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${Math.min(100, total)}%`, background: isComplete ? "#059669" : isOver ? "#DC2626" : "#F59E0B", borderRadius: "3px", transition: "width 0.2s, background 0.2s" }} />
-          </div>
-          <p style={{ margin: "5px 0 0", fontSize: "11px", color: isComplete ? "#059669" : isOver ? "#DC2626" : "#C2410C", fontWeight: "600" }}>
-            {isComplete ? "Total is 100% — ready to save" : isOver ? `Over by ${total - 100}% — adjust weights to reach 100%` : `${100 - total}% remaining to reach 100%`}
-          </p>
-        </div>
-      )}
-
-      {/* Add evidence picker */}
-      {available.length > 0 && !adding && (
-        <button type="button" className="cp-btn-add" style={{ fontSize: "12px", padding: "6px 12px", marginBottom: "14px" }} onClick={() => setAdding(true)}>
-          + Assign Evidence Type
-        </button>
-      )}
-      {adding && (
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "14px", padding: "10px 12px", background: "#F0F7FF", borderRadius: "10px", border: "1.5px solid #C7D9F8" }}>
-          <select className="cp-select" style={{ flex: 1 }} value={pickId} onChange={(e) => setPickId(e.target.value)} autoFocus>
-            <option value="">Pick evidence type…</option>
-            {available.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
-          <button type="button" className="cp-btn-primary" style={{ padding: "7px 14px", fontSize: "12px" }} onClick={addEvidence} disabled={!pickId}>Add</button>
-          <button type="button" className="cp-btn-secondary" style={{ padding: "7px 12px", fontSize: "12px" }} onClick={() => { setAdding(false); setPickId(""); }}>Cancel</button>
-        </div>
-      )}
-
-      {/* Save button */}
-      {isDirty && (
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <button type="button" className="cp-btn-primary" onClick={handleSave} disabled={saving || (!isComplete && weights.length > 0)}>
-            {saving ? "Saving…" : "Save Scoring"}
-          </button>
-          {!isComplete && weights.length > 0 && (
-            <span style={{ fontSize: "11px", color: "#C2410C" }}>Weights must total 100% before saving.</span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ScoringSubPanel({ curriculumId }) {
-  const { data: types    = [], isLoading: loadingTypes }    = useAssessmentTypes(curriculumId);
-  const { data: evidences = [], isLoading: loadingEvidence } = useEvidenceTypes(curriculumId);
-  const { mutate: saveScoring, isPending: saving }           = useUpdateScoring(curriculumId);
-
-  if (loadingTypes || loadingEvidence) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
-  if (types.length === 0) return (
-    <div className="cp-empty">
-      <div style={{ fontSize: "36px", marginBottom: "10px" }}>📋</div>
-      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No assessment types yet</p>
-      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Go to <strong>Types</strong> and define your assessment types first.</p>
-    </div>
-  );
-
-  if (evidences.length === 0) return (
-    <div className="cp-empty">
-      <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔬</div>
-      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No evidence types yet</p>
-      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Go to <strong>Evidence</strong> and define your evidence types first.</p>
-    </div>
-  );
-
-  return (
-    <div>
-      <div style={{ marginBottom: "20px" }}>
-        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Score Evidence</h3>
-        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-          For each assessment type, assign evidence types and set their weighted contribution (must total 100%).
-        </p>
-      </div>
-      {types.map((t) => (
-        <ScoringCard key={t.id} assessmentType={t} evidences={evidences} onSave={saveScoring} saving={saving} />
-      ))}
-    </div>
-  );
-}
-
 /* ── AssessmentsPanel ───────────────────────────────────────────────────── */
 
 const AF_SECTIONS = [
-  { key: "types",    label: "Types",    icon: "📋" },
-  { key: "evidence", label: "Evidence", icon: "🔬" },
-  { key: "scoring",  label: "Scoring",  icon: "⚖️"  },
+  { key: "types",    label: "Types" },
+  { key: "evidence", label: "Evidence Type" },
+  { key: "scoring",  label: "Score Evidence" },
 ];
 
 function AssessmentsPanel({ curriculumId }) {
@@ -1483,30 +1296,37 @@ function AssessmentsPanel({ curriculumId }) {
 
   return (
     <div className="cp-card">
-      <div style={{ marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Assessment Framework</h2>
-        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-          Define assessment types, evidence methods, and scoring weights for this curriculum.
-        </p>
-      </div>
-
-      {/* Sub-nav */}
-      <div className="cp-arc-section-nav" style={{ marginBottom: "24px" }}>
-        {AF_SECTIONS.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            className={`cp-arc-section-btn${sub === s.key ? " active" : ""}`}
-            onClick={() => setSub(s.key)}
-          >
-            <span>{s.icon}</span> {s.label}
-          </button>
-        ))}
+      {/* Header + sub-nav on same row */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "24px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Assessment Framework</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            Define assessment types, evidence methods, and scoring weights for this curriculum.
+          </p>
+        </div>
+        <div className="cp-arc-section-nav" style={{ marginBottom: 0, flexShrink: 0 }}>
+          {AF_SECTIONS.map((s) => (
+            <button
+              key={s.key}
+              type="button"
+              className={`cp-arc-section-btn${sub === s.key ? " active" : ""}`}
+              onClick={() => setSub(s.key)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {sub === "types"    && <AssessmentTypesSubPanel curriculumId={curriculumId} />}
       {sub === "evidence" && <EvidenceTypesSubPanel   curriculumId={curriculumId} />}
-      {sub === "scoring"  && <ScoringSubPanel          curriculumId={curriculumId} />}
+      {sub === "scoring"  && (
+        <div className="cp-empty">
+          <div style={{ fontSize: "36px", marginBottom: "10px" }}>⚖️</div>
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>Score Evidence</p>
+          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Scoring logic coming soon.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1571,15 +1391,15 @@ function AgeCategoriesPanel({ curriculumId }) {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Age Categories</h3>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Developmental Stages</h3>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {cats.length === 0 ? "Define the age groups for this curriculum" : `${cats.length} age group${cats.length !== 1 ? "s" : ""} defined`}
+            {cats.length === 0 ? "Define the developmental stages for this curriculum" : `${cats.length} stage${cats.length !== 1 ? "s" : ""} defined`}
           </p>
         </div>
         {mode === "list" && (
           <button type="button" className="cp-btn-primary" onClick={openAdd}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            Add Age Group
+            Add Stage
           </button>
         )}
       </div>
@@ -1588,7 +1408,7 @@ function AgeCategoriesPanel({ curriculumId }) {
         <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Age Group" : "New Age Group"}</h3>
+              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Stage" : "New Developmental Stage"}</h3>
             </div>
             <button type="button" className="cp-icon-btn" onClick={cancel}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -1665,11 +1485,11 @@ function AgeCategoriesPanel({ curriculumId }) {
       {cats.length === 0 && mode === "list" ? (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", marginBottom: "10px" }}>👶</div>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No age groups yet</p>
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No developmental stages yet</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "300px", marginInline: "auto" }}>
-            Create age groups to organize the progress arc for different learner stages.
+            Create stages to organize the progress arc for different learner developmental phases.
           </p>
-          <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Age Group</button>
+          <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Stage</button>
         </div>
       ) : (
         <div className="cp-comp-grid">
@@ -1718,7 +1538,7 @@ function AgeCategoriesPanel({ curriculumId }) {
                 <div className="cp-add-card-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
                 </div>
-                <span className="cp-add-card-label">Add Age Group</span>
+                <span className="cp-add-card-label">Add Stage</span>
               </div>
             </button>
           )}
@@ -1957,12 +1777,269 @@ function ArcCompetenciesPanel({ curriculumId }) {
   );
 }
 
+/* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
+
+const BAND_PALETTE = ["#D97706","#059669","#2563EB","#7C3AED","#DC2626","#0891B2","#25476a","#BE185D"];
+
+function PerformanceBandsPanel({ curriculumId }) {
+  const { data: bands = [], isLoading }            = usePerformanceBands(curriculumId);
+  const { mutate: create, isPending: creating }    = useCreatePerformanceBand(curriculumId);
+  const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
+  const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
+  const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
+
+  const [mode,       setMode]       = useState("list");
+  const [editTarget, setEdit]       = useState(null);
+  const [name,       setName]       = useState("");
+  const [desc,       setDesc]       = useState("");
+  const [criteria,   setCriteria]   = useState([]);
+  const [newCrit,    setNewCrit]    = useState("");
+  const nameRef    = useRef(null);
+  const critRef    = useRef(null);
+
+  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
+
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMode("edit"); }
+  function cancel()   { setMode("list"); setEdit(null); }
+
+  function addCriterion() {
+    const v = newCrit.trim();
+    if (!v) return;
+    setCriteria((prev) => [...prev, v]);
+    setNewCrit("");
+    critRef.current?.focus();
+  }
+
+  function removeCriterion(idx) {
+    setCriteria((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function submit() {
+    if (!name.trim()) return;
+    const data = { name: name.trim(), description: desc.trim(), criteria };
+    if (mode === "edit") {
+      update({ id: editTarget.id, data }, { onSuccess: cancel });
+    } else {
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); nameRef.current?.focus(); } });
+    }
+  }
+
+  function moveUp(idx) {
+    if (idx === 0) return;
+    const ids = bands.map((b) => b.id);
+    [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+    reorder(ids);
+  }
+
+  function moveDown(idx) {
+    if (idx === bands.length - 1) return;
+    const ids = bands.map((b) => b.id);
+    [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+    reorder(ids);
+  }
+
+  if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Performance Bands</h3>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            {bands.length === 0
+              ? "Define the performance descriptors used across all progress levels"
+              : `${bands.length} band${bands.length !== 1 ? "s" : ""} · ordered from lowest to highest`}
+          </p>
+        </div>
+        {mode === "list" && (
+          <button type="button" className="cp-btn-primary" onClick={openAdd}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            Add Band
+          </button>
+        )}
+      </div>
+
+      {/* Form */}
+      {mode !== "list" && (
+        <div className="cp-comp-form-card" style={{ marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>
+              {mode === "edit" ? "Edit Band" : "New Performance Band"}
+            </h3>
+            <button type="button" className="cp-icon-btn" onClick={cancel}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {/* Name */}
+            <div>
+              <label className="cp-field-label">Band Name <span className="cp-required">*</span></label>
+              <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+                placeholder="e.g. Explorer, Builder, Creator, Innovator, Pioneer…"
+                value={name} maxLength={100}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
+              />
+              <div className="cp-char-count">{name.length} / 100</div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
+              <textarea className="cp-textarea" rows={2}
+                placeholder="Briefly describe what this performance band represents…"
+                value={desc} maxLength={1000}
+                onChange={(e) => setDesc(e.target.value)}
+              />
+              <div className="cp-char-count">{desc.length} / 1000</div>
+            </div>
+
+            {/* Criteria */}
+            <div>
+              <label className="cp-field-label">Performance Indicators <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                Observable behaviours or checkpoints that place a learner in this band.
+              </p>
+              {criteria.length > 0 && (
+                <ul style={{ margin: "0 0 10px", padding: "0 0 0 4px", listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {criteria.map((c, i) => (
+                    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", padding: "7px 10px", background: "#F8FAFC", borderRadius: "8px", border: "1px solid #E5E7EB" }}>
+                      <span style={{ fontSize: "10px", color: "#9CA3AF", marginTop: "2px", flexShrink: 0, fontWeight: "700" }}>#{i + 1}</span>
+                      <span style={{ flex: 1, fontSize: "13px", color: "#374151", lineHeight: "1.5" }}>{c}</span>
+                      <button type="button" className="cp-icon-btn danger" style={{ flexShrink: 0 }} onClick={() => removeCriterion(i)}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input ref={critRef} className="cp-input" style={{ flex: 1 }}
+                  placeholder="Add a performance indicator…"
+                  value={newCrit} maxLength={500}
+                  onChange={(e) => setNewCrit(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCriterion(); } }}
+                />
+                <button type="button" className="cp-btn-secondary" onClick={addCriterion} disabled={!newCrit.trim()}>Add</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", marginTop: "18px" }}>
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim()}>
+              {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Band"}
+            </button>
+            <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {bands.length === 0 && mode === "list" && (
+        <div className="cp-empty">
+          <div style={{ fontSize: "36px", marginBottom: "10px" }}>🏅</div>
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No performance bands yet</p>
+          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
+            Bands like Explorer, Builder, and Pioneer give learners and teachers clear language for where performance sits.
+          </p>
+          <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Band</button>
+        </div>
+      )}
+
+      {/* Band cards — ordered list with move arrows */}
+      {bands.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {bands.map((band, idx) => {
+            const color     = BAND_PALETTE[idx % BAND_PALETTE.length];
+            const isEditing = mode === "edit" && editTarget?.id === band.id;
+            return (
+              <div key={band.id} style={{
+                background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
+                borderRadius: "16px", padding: "18px 20px",
+                boxShadow: isEditing ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
+                transition: "border-color 0.15s, box-shadow 0.15s",
+              }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  {/* Order badge + move arrows */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", flexShrink: 0, paddingTop: "2px" }}>
+                    <button type="button" className="cp-icon-btn" onClick={() => moveUp(idx)} disabled={idx === 0} title="Move up">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <div style={{
+                      width: "32px", height: "32px", borderRadius: "10px",
+                      background: `${color}18`, border: `2px solid ${color}35`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "12px", fontWeight: "800", color,
+                    }}>
+                      {idx + 1}
+                    </div>
+                    <button type="button" className="cp-icon-btn" onClick={() => moveDown(idx)} disabled={idx === bands.length - 1} title="Move down">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span style={{
+                          display: "inline-block", padding: "3px 12px", borderRadius: "20px",
+                          background: `${color}18`, border: `1.5px solid ${color}35`,
+                          fontSize: "13px", fontWeight: "800", color,
+                        }}>
+                          {band.name}
+                        </span>
+                        {(band.criteria || []).length > 0 && (
+                          <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
+                            {band.criteria.length} indicator{band.criteria.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                      <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
+                    </div>
+
+                    {band.description && (
+                      <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}>{band.description}</p>
+                    )}
+
+                    {(band.criteria || []).length > 0 && (
+                      <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "5px" }}>
+                        {band.criteria.map((c, i) => (
+                          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#374151" }}>
+                            <span style={{ color, flexShrink: 0, marginTop: "1px", fontWeight: "700" }}>›</span>
+                            <span style={{ lineHeight: "1.55" }}>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add inline */}
+          {mode === "list" && (
+            <button type="button" className="cp-btn-add" style={{ alignSelf: "flex-start" }} onClick={openAdd}>
+              + Add Band
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── ProgressArcPanel ────────────────────────────────────────────────────── */
 
 const ARC_SECTIONS = [
-  { key: "age-categories", label: "Age Categories", icon: "👶" },
-  { key: "levels",         label: "Levels",         icon: "📊" },
-  { key: "competencies",   label: "Competencies",   icon: "🎯" },
+  { key: "age-categories", label: "Developmental Stages" },
+  { key: "levels",         label: "Levels" },
+  { key: "bands",          label: "Performance Bands" },
+  { key: "competencies",   label: "Competencies" },
 ];
 
 function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubChange }) {
@@ -1974,7 +2051,7 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Progress Arc</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Define age groups, proficiency levels, and view competencies in context.
+            Define developmental stages, proficiency levels, and view competencies in context.
           </p>
         </div>
         <div className="cp-arc-section-nav">
@@ -1991,9 +2068,10 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
         </div>
       </div>
 
-      {arcSub === "age-categories" && <AgeCategoriesPanel  curriculumId={curriculumId} />}
-      {arcSub === "levels"         && <LevelsPanel         curriculumId={curriculumId} />}
-      {arcSub === "competencies"   && <ArcCompetenciesPanel curriculumId={curriculumId} />}
+      {arcSub === "age-categories" && <AgeCategoriesPanel    curriculumId={curriculumId} />}
+      {arcSub === "levels"         && <LevelsPanel           curriculumId={curriculumId} />}
+      {arcSub === "bands"          && <PerformanceBandsPanel curriculumId={curriculumId} />}
+      {arcSub === "competencies"   && <ArcCompetenciesPanel  curriculumId={curriculumId} />}
     </div>
   );
 }
@@ -2008,9 +2086,16 @@ export default function CompetenciesPage() {
   const [activeNav, setActiveNav] = useState("competencies");
   const [arcSub,    setArcSub]    = useState("age-categories");
 
+  useEffect(() => {
+    const el = document.createElement("style");
+    el.id = "cp-styles";
+    el.textContent = CSS;
+    document.head.appendChild(el);
+    return () => { document.getElementById("cp-styles")?.remove(); };
+  }, []);
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{CSS}</style>
 
       {/* ── Page header ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px", flexWrap: "wrap" }}>

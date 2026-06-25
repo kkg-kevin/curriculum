@@ -103,4 +103,20 @@ export const competenciesApi = {
 
   deleteEvidenceType: (curriculumId, etId) =>
     api.delete(`/api/curricula/${curriculumId}/assessments/evidence/${etId}`).then((r) => r.data),
+
+  /* Performance Bands */
+  getPerformanceBands: (curriculumId) =>
+    api.get(`/api/curricula/${curriculumId}/competencies/bands`).then((r) => r.data.data),
+
+  createPerformanceBand: (curriculumId, data) =>
+    api.post(`/api/curricula/${curriculumId}/competencies/bands`, data).then((r) => r.data.data),
+
+  updatePerformanceBand: (curriculumId, bandId, data) =>
+    api.put(`/api/curricula/${curriculumId}/competencies/bands/${bandId}`, data).then((r) => r.data.data),
+
+  deletePerformanceBand: (curriculumId, bandId) =>
+    api.delete(`/api/curricula/${curriculumId}/competencies/bands/${bandId}`).then((r) => r.data),
+
+  reorderPerformanceBands: (curriculumId, orderedIds) =>
+    api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { orderedIds }).then((r) => r.data.data),
 };

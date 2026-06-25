@@ -1,0 +1,47 @@
+[
+  {
+    "id": "3b104638-c37b-4557-8e01-c585dc7bf993",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Explorer",
+    "description": "The learner is beginning their journey by exploring new concepts, tools, and digital environments. They show curiosity, willingness to try, and basic recognition of ideas, but rely heavily on guidance and structured support to complete tasks.\n\n2. Builder (Practice)",
+    "criteria": [],
+    "order": 1,
+    "createdAt": "2026-06-25T12:18:02.591Z"
+  },
+  {
+    "id": "6eb6e38b-8864-41d8-bf31-d3ca7041f944",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Builder",
+    "description": "The learner actively develops foundational skills by engaging in guided activities and structured tasks. They can follow instructions, apply basic concepts, and start constructing simple solutions, demonstrating growing confidence and consistency.",
+    "criteria": [],
+    "order": 2,
+    "createdAt": "2026-06-25T12:18:31.606Z"
+  },
+  {
+    "id": "dbed861d-978c-43db-bb8d-3c59eab7217d",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Creator",
+    "description": "The learner independently applies knowledge to design and develop functional solutions such as simple programs, games, or digital projects. They make decisions during implementation and show the ability to adapt learned concepts to new situations.",
+    "criteria": [],
+    "order": 3,
+    "createdAt": "2026-06-25T12:18:47.836Z"
+  },
+  {
+    "id": "286567bf-8c4a-4214-9c5a-b46769c9db9c",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Innovator",
+    "description": "The learner demonstrates strong proficiency and can solve complex problems efficiently. They refine, optimize, and improve solutions, think critically, and can clearly explain their approach, showing depth of understanding and high-level competence.",
+    "criteria": [],
+    "order": 4,
+    "createdAt": "2026-06-25T12:19:03.050Z"
+  },
+  {
+    "id": "e4f9f25c-d25a-41af-9d6b-9197170adae0",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Pioneer",
+    "description": "The learner operates at an advanced level, exploring specialized areas such as AI, software development, or robotics. They create sophisticated, self-driven projects, demonstrate originality and innovation, and extend beyond standard expectations with minimal guidance.",
+    "criteria": [],
+    "order": 5,
+    "createdAt": "2026-06-25T12:19:29.003Z"
+  }
+]

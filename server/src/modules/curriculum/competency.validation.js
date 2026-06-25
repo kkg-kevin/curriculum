@@ -81,6 +81,18 @@ const createEvidenceTypeSchema = z.object({
 
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
 
+const createPerformanceBandSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(100),
+  description: z.string().max(1000).optional().default(""),
+  criteria:    z.array(z.string().min(1).max(500)).optional().default([]),
+});
+
+const updatePerformanceBandSchema = createPerformanceBandSchema.partial();
+
+const reorderBandsSchema = z.object({
+  orderedIds: z.array(z.string().min(1)),
+});
+
 module.exports = {
   createLearningAreaSchema,
   updateLearningAreaSchema,
@@ -98,4 +110,7 @@ module.exports = {
   updateScoringSchema,
   createEvidenceTypeSchema,
   updateEvidenceTypeSchema,
+  createPerformanceBandSchema,
+  updatePerformanceBandSchema,
+  reorderBandsSchema,
 };

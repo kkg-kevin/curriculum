@@ -50,7 +50,12 @@ const {
   createEvidenceType,
   updateEvidenceType,
   deleteEvidenceType,
-} = require("../competencies/competency.controller");
+  getPerformanceBands,
+  createPerformanceBand,
+  updatePerformanceBand,
+  deletePerformanceBand,
+  reorderPerformanceBands,
+} = require("./competency.controller");
 
 const router = express.Router();
 
@@ -99,5 +104,10 @@ router.route("/:id/assessments/types/:atId/scoring").put(updateScoring);
 // Assessment Framework — evidence types
 router.route("/:id/assessments/evidence").get(getEvidenceTypes).post(createEvidenceType);
 router.route("/:id/assessments/evidence/:etId").put(updateEvidenceType).delete(deleteEvidenceType);
+
+// Performance Bands
+router.route("/:id/competencies/bands").get(getPerformanceBands).post(createPerformanceBand);
+router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
+router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
 
 module.exports = router;
