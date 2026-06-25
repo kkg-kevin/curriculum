@@ -799,7 +799,7 @@ export default function CurriculumVersionControlPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)} className="vc-btn-secondary">← Academic Year</button>
-          <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-primary" style={{ background: "#0F2645" }}>Done</button>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} className="vc-btn-primary">Next: Competencies →</button>
         </div>
       </div>
 

@@ -227,5 +227,42 @@
     "id": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
     "createdAt": "2026-06-24T08:29:31.705Z",
     "updatedAt": "2026-06-24T08:30:14.767Z"
+  },
+  {
+    "name": "Sample Curriculum 2",
+    "code": "SC2",
+    "academicYear": "",
+    "description": "Sample Test 2 ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "academicCycleModel": "semesters",
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Grade 1",
+      "Grade 2",
+      "Grade 3"
+    ],
+    "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "createdAt": "2026-06-25T09:29:38.606Z",
+    "updatedAt": "2026-06-25T09:30:00.123Z"
   }
 ]

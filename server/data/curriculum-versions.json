@@ -4019,5 +4019,88 @@
     ],
     "createdAt": "2026-06-24T12:33:41.254Z",
     "updatedAt": "2026-06-24T12:33:44.616Z"
+  },
+  {
+    "id": "ca06dbb4-bb42-4093-b47c-76c77e6949a6",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782379961399-960jdd6g2",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782379963962-19m0hh346",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782379967923-yndsbmo62",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782379978971-xkb919rr1",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782379981054-oofagsecm",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782379983561-9swicejun",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-25T09:33:06.822Z",
+    "updatedAt": "2026-06-25T09:33:06.823Z"
   }
 ]
