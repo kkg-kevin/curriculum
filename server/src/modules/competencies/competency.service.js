@@ -1,0 +1,146 @@
+const LearningAreaModel      = require("./learning-area.model");
+const CompetencyModel        = require("./competency.model");
+const ProgressionLadderModel = require("./progression-ladder.model");
+
+const DEFAULT_RUNGS = [
+  { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
+  { label: "Lower Primary",    ageRange: "6–8",   order: 2 },
+  { label: "Upper Primary",    ageRange: "9–11",  order: 3 },
+  { label: "Lower Secondary",  ageRange: "12–14", order: 4 },
+  { label: "Upper Secondary",  ageRange: "15–18", order: 5 },
+];
+
+const CompetencyService = {
+  /* ── Learning Areas ─────────────────────────────────────────────────── */
+
+  getLearningAreas(curriculumId) {
+    return LearningAreaModel.findByCurriculumId(curriculumId);
+  },
+
+  createLearningArea(curriculumId, data) {
+    const existing = LearningAreaModel.findByCurriculumId(curriculumId);
+    if (existing.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
+      const err = new Error("A learning area with this name already exists");
+      err.statusCode = 409;
+      throw err;
+    }
+    return LearningAreaModel.create({ curriculumId, ...data });
+  },
+
+  updateLearningArea(curriculumId, id, data) {
+    const area = LearningAreaModel.findById(id);
+    if (!area || area.curriculumId !== curriculumId) {
+      const err = new Error("Learning area not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.name) {
+      const others = LearningAreaModel.findByCurriculumId(curriculumId).filter((a) => a.id !== id);
+      if (others.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("A learning area with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    return LearningAreaModel.update(id, data);
+  },
+
+  deleteLearningArea(curriculumId, id) {
+    const area = LearningAreaModel.findById(id);
+    if (!area || area.curriculumId !== curriculumId) {
+      const err = new Error("Learning area not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    LearningAreaModel.delete(id);
+    // Unlink competencies that belonged to this area
+    const comps = CompetencyModel.findByCurriculumId(curriculumId).filter(
+      (c) => c.learningAreaId === id
+    );
+    comps.forEach((c) => CompetencyModel.update(c.id, { learningAreaId: null }));
+  },
+
+  /* ── Competencies ───────────────────────────────────────────────────── */
+
+  getCompetencies(curriculumId) {
+    return CompetencyModel.findByCurriculumId(curriculumId);
+  },
+
+  createCompetency(curriculumId, data) {
+    if (data.learningAreaId) {
+      const area = LearningAreaModel.findById(data.learningAreaId);
+      if (!area || area.curriculumId !== curriculumId) {
+        const err = new Error("Learning area not found");
+        err.statusCode = 404;
+        throw err;
+      }
+    }
+    return CompetencyModel.create({ curriculumId, ...data });
+  },
+
+  updateCompetency(curriculumId, id, data) {
+    const comp = CompetencyModel.findById(id);
+    if (!comp || comp.curriculumId !== curriculumId) {
+      const err = new Error("Competency not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (data.learningAreaId) {
+      const area = LearningAreaModel.findById(data.learningAreaId);
+      if (!area || area.curriculumId !== curriculumId) {
+        const err = new Error("Learning area not found");
+        err.statusCode = 404;
+        throw err;
+      }
+    }
+    return CompetencyModel.update(id, data);
+  },
+
+  deleteCompetency(curriculumId, id) {
+    const comp = CompetencyModel.findById(id);
+    if (!comp || comp.curriculumId !== curriculumId) {
+      const err = new Error("Competency not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CompetencyModel.delete(id);
+    // Remove this competency from all ladder assignments
+    const rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
+    rungs.forEach((rung) => {
+      const filtered = rung.assignments.filter((a) => a.competencyId !== id);
+      if (filtered.length !== rung.assignments.length) {
+        ProgressionLadderModel.update(rung.id, { assignments: filtered });
+      }
+    });
+  },
+
+  /* ── Progression Ladder ─────────────────────────────────────────────── */
+
+  getLadder(curriculumId) {
+    let rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
+    if (rungs.length === 0) {
+      rungs = DEFAULT_RUNGS.map((r) =>
+        ProgressionLadderModel.create({ curriculumId, ...r, assignments: [] })
+      );
+    }
+    return rungs.sort((a, b) => a.order - b.order);
+  },
+
+  updateLadder(curriculumId, rungs) {
+    rungs.forEach((rung) => {
+      const existing = ProgressionLadderModel.findById(rung.id);
+      if (existing && existing.curriculumId === curriculumId) {
+        ProgressionLadderModel.update(rung.id, {
+          label:       rung.label,
+          ageRange:    rung.ageRange,
+          assignments: rung.assignments,
+        });
+      }
+    });
+    return ProgressionLadderModel.findByCurriculumId(curriculumId).sort(
+      (a, b) => a.order - b.order
+    );
+  },
+};
+
+module.exports = CompetencyService;

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "e29822f2-fc47-498e-ae02-53181a340326",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "label": "Early Childhood",
+    "ageRange": "3–5",
+    "order": 1,
+    "assignments": [],
+    "createdAt": "2026-06-25T09:56:50.618Z",
+    "updatedAt": "2026-06-25T09:56:50.618Z"
+  },
+  {
+    "id": "3b5def6d-6c62-47e0-848e-ed422ec1d634",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "label": "Lower Primary",
+    "ageRange": "6–8",
+    "order": 2,
+    "assignments": [],
+    "createdAt": "2026-06-25T09:56:50.628Z",
+    "updatedAt": "2026-06-25T09:56:50.628Z"
+  },
+  {
+    "id": "147230ef-5c50-49d8-9fb3-89f4d82e6d77",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "label": "Upper Primary",
+    "ageRange": "9–11",
+    "order": 3,
+    "assignments": [],
+    "createdAt": "2026-06-25T09:56:50.633Z",
+    "updatedAt": "2026-06-25T09:56:50.633Z"
+  },
+  {
+    "id": "a0277275-4a65-4d1b-9d41-fca9f7587187",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "label": "Lower Secondary",
+    "ageRange": "12–14",
+    "order": 4,
+    "assignments": [],
+    "createdAt": "2026-06-25T09:56:50.636Z",
+    "updatedAt": "2026-06-25T09:56:50.636Z"
+  },
+  {
+    "id": "129d956f-cc8b-4762-84b9-e447907c0f61",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "label": "Upper Secondary",
+    "ageRange": "15–18",
+    "order": 5,
+    "assignments": [],
+    "createdAt": "2026-06-25T09:56:50.639Z",
+    "updatedAt": "2026-06-25T09:56:50.639Z"
+  }
+]
