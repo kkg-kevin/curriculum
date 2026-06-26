@@ -23,6 +23,8 @@ const PerformanceBandModel = {
       name:         fields.name,
       description:  fields.description || "",
       criteria:     fields.criteria    || [],
+      minScore:     fields.minScore    ?? 0,
+      maxScore:     fields.maxScore    ?? 100,
       order:        count + 1,
       createdAt:    new Date().toISOString(),
     };

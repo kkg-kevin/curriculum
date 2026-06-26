@@ -9,9 +9,10 @@ const createLearningAreaSchema = z.object({
 const updateLearningAreaSchema = createLearningAreaSchema.partial();
 
 const createCompetencySchema = z.object({
-  name:           z.string().min(1, "Name is required").max(150),
-  description:    z.string().max(500).optional().default(""),
-  learningAreaId: z.string().nullable().optional().default(null),
+  name:             z.string().min(1, "Name is required").max(150),
+  description:      z.string().max(500).optional().default(""),
+  learningAreaId:   z.string().nullable().optional().default(null),
+  minimumThreshold: z.number().min(0).max(100).optional().default(60),
 });
 
 const updateCompetencySchema = createCompetencySchema.partial();
@@ -44,6 +45,8 @@ const updateAgeCategorySchema = createAgeCategorySchema.partial();
 const createProgressLevelSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
+  minScore:    z.number().min(0).max(100).optional().default(0),
+  maxScore:    z.number().min(0).max(100).optional().default(100),
 });
 
 const updateProgressLevelSchema = createProgressLevelSchema.partial();
@@ -58,16 +61,27 @@ const createAssessmentSchema = z.object({
 
 const updateAssessmentSchema = createAssessmentSchema.partial();
 
+const BEHAVIOR_TYPES = ["diagnostic", "formative", "summative"];
+
 const createAssessmentTypeSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(150),
-  description: z.string().max(1000).optional().default(""),
+  name:              z.string().min(1, "Name is required").max(150),
+  description:       z.string().max(1000).optional().default(""),
+  behaviorType:      z.enum(BEHAVIOR_TYPES, { errorMap: () => ({ message: "Behavior type must be diagnostic, formative, or summative" }) }),
+  progressionWeight: z.number().min(0).max(1).optional().default(1.0),
 });
 
 const updateAssessmentTypeSchema = createAssessmentTypeSchema.partial();
 
+const competencyMappingSchema = z.object({
+  competencyId: z.string().min(1),
+  weight:       z.number().min(0).max(100),
+});
+
 const evidenceWeightSchema = z.object({
-  evidenceTypeId: z.string().min(1),
-  weight:         z.number().min(0).max(100),
+  evidenceTypeId:     z.string().min(1),
+  contribution:       z.number().min(0).max(100),
+  minRequirement:     z.number().min(0).max(100).nullable().optional().default(null),
+  competencyMappings: z.array(competencyMappingSchema).optional().default([]),
 });
 
 const updateScoringSchema = z.object({
@@ -75,8 +89,10 @@ const updateScoringSchema = z.object({
 });
 
 const createEvidenceTypeSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(150),
-  description: z.string().max(500).optional().default(""),
+  name:                z.string().min(1, "Name is required").max(150),
+  description:         z.string().max(500).optional().default(""),
+  defaultContribution: z.number().min(0).max(100).optional().default(0),
+  minRequirement:      z.number().min(0).max(100).optional().default(0),
 });
 
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
@@ -85,12 +101,23 @@ const createPerformanceBandSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(1000).optional().default(""),
   criteria:    z.array(z.string().min(1).max(500)).optional().default([]),
+  minScore:    z.number().min(0).max(100).optional().default(0),
+  maxScore:    z.number().min(0).max(100).optional().default(100),
 });
 
 const updatePerformanceBandSchema = createPerformanceBandSchema.partial();
 
 const reorderBandsSchema = z.object({
   orderedIds: z.array(z.string().min(1)),
+});
+
+const evidenceScoreSchema = z.object({
+  evidenceTypeId: z.string().min(1),
+  score:          z.number().min(0).max(100),
+});
+
+const calculateScoreSchema = z.object({
+  evidenceScores: z.array(evidenceScoreSchema),
 });
 
 module.exports = {
@@ -113,4 +140,5 @@ module.exports = {
   createPerformanceBandSchema,
   updatePerformanceBandSchema,
   reorderBandsSchema,
+  calculateScoreSchema,
 };

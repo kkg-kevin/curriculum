@@ -7,6 +7,7 @@ const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
+const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine } = require("./scoring-engines");
 
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
@@ -317,7 +318,85 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
+    const total = evidenceWeights.reduce((sum, w) => sum + w.contribution, 0);
+    if (Math.round(total) !== 100) {
+      const err = new Error(`Contributions must total exactly 100% (currently ${total}%)`);
+      err.statusCode = 422;
+      throw err;
+    }
     return AssessmentTypeModel.update(id, { evidenceWeights });
+  },
+
+  calculateScore(curriculumId, id, evidenceScores) {
+    const assessmentType = AssessmentTypeModel.findById(id);
+    if (!assessmentType || assessmentType.curriculumId !== curriculumId) {
+      const err = new Error("Assessment type not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const evidenceTypes    = EvidenceTypeModel.findByCurriculumId(curriculumId);
+    const competencies     = CompetencyModel.findByCurriculumId(curriculumId);
+    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId);
+    const progressLevels   = ProgressLevelModel.findByCurriculumId(curriculumId);
+    const config           = assessmentType.evidenceWeights || [];
+
+    // Engine 1 — weighted evidence scores
+    const { finalScore, breakdown: rawBreakdown, belowReq } = runAssessmentEngine(evidenceScores, config);
+
+    // Enrich breakdown with evidence names and evidence-type min requirements
+    const breakdown = rawBreakdown.map((row) => {
+      const et     = evidenceTypes.find((e) => e.id === row.evidenceTypeId);
+      const minReq = row.minRequirement > 0 ? row.minRequirement : (et?.minRequirement ?? 0);
+      return { ...row, name: et?.name || "Unknown", minRequirement: minReq, belowMin: row.score < minReq };
+    });
+    const belowRequirement = breakdown.filter((r) => r.belowMin);
+
+    // Engine 2 — competency distribution + normalization
+    const competencyScores = runCompetencyEngine(breakdown, config, competencies);
+
+    // Engine 3 — map competency scores to levels and bands
+    const rawCompetencyBreakdown = runProgressArcEngine(competencyScores, progressLevels, performanceBands);
+
+    // Competency gate — check each competency against its minimumThreshold
+    const competencyBreakdown = rawCompetencyBreakdown.map((cr) => {
+      const comp      = competencies.find((c) => c.id === cr.competencyId);
+      const threshold = comp?.minimumThreshold ?? 60;
+      return { ...cr, threshold, thresholdMet: cr.score >= threshold };
+    });
+    const allCompetenciesMet = competencyBreakdown.length > 0 && competencyBreakdown.every((cr) => cr.thresholdMet);
+
+    // Overall band for the final score
+    const band = [...performanceBands]
+      .sort((a, b) => a.minScore - b.minScore)
+      .find((b) => finalScore >= b.minScore && finalScore <= b.maxScore) || null;
+
+    const behaviorType = assessmentType.behaviorType || "formative";
+
+    const failedCompetencies = competencyBreakdown.filter((cr) => !cr.thresholdMet);
+
+    let outcome;
+    if (behaviorType === "diagnostic") {
+      outcome = { type: "placement",        label: band ? `Placement: ${band.name} level` : "No band matched" };
+    } else if (!allCompetenciesMet && failedCompetencies.length > 0 && behaviorType === "summative") {
+      outcome = { type: "cannot_progress",  label: `Cannot progress — ${failedCompetencies.length} competenc${failedCompetencies.length !== 1 ? "ies" : "y"} below threshold` };
+    } else if (belowRequirement.length > 0 && behaviorType === "summative") {
+      outcome = { type: "cannot_progress",  label: "Cannot progress to next level" };
+    } else if (belowRequirement.length > 0) {
+      outcome = { type: "below_requirement", label: "Some evidence types below minimum requirement" };
+    } else if (allCompetenciesMet) {
+      outcome = { type: "passed",           label: "All competencies met — learner can progress" };
+    } else {
+      outcome = { type: "passed",           label: "All requirements met" };
+    }
+
+    const hasCompetencyMappings = config.some((c) => (c.competencyMappings || []).length > 0);
+
+    return {
+      finalScore, breakdown, belowRequirement,
+      band, behaviorType, outcome,
+      competencyBreakdown, failedCompetencies, allCompetenciesMet, hasCompetencyMappings,
+    };
   },
 
   /* ── Evidence Types ─────────────────────────────────────────────────── */

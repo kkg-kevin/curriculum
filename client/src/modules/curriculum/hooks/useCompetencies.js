@@ -335,6 +335,13 @@ export function useUpdateScoring(curriculumId) {
   });
 }
 
+export function useCalculateScore(curriculumId) {
+  return useMutation({
+    mutationFn: ({ id, evidenceScores }) => competenciesApi.calculateScore(curriculumId, id, evidenceScores),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to calculate score"),
+  });
+}
+
 /* ── Evidence Types ─────────────────────────────────────────────────────── */
 
 export function useEvidenceTypes(curriculumId) {
