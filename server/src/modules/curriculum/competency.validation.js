@@ -88,9 +88,10 @@ const updateScoringSchema = z.object({
   evidenceWeights: z.array(evidenceWeightSchema),
 });
 
-// Global scoring: all three assessment types together must sum to 100%
+// Two-tier scoring: each type has its own weight (tier-2) and its own evidence weights (tier-1)
 const assessmentTypeScoringSchema = z.object({
   id:              z.string().min(1),
+  typeWeight:      z.number().min(0).max(100),
   evidenceWeights: z.array(evidenceWeightSchema),
 });
 
