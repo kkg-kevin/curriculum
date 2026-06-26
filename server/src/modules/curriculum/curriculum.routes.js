@@ -47,6 +47,7 @@ const {
   deleteAssessmentType,
   updateScoring,
   updateGlobalScoring,
+  getCompetencyWeights,
   calculateScore,
   getEvidenceTypes,
   createEvidenceType,
@@ -104,8 +105,8 @@ router.route("/:id/assessments/types/:atId").put(updateAssessmentType).delete(de
 router.route("/:id/assessments/types/:atId/scoring").put(updateScoring);
 router.route("/:id/assessments/types/:atId/calculate").post(calculateScore);
 
-// Assessment Framework — global scoring (all types share one 100% pool)
-router.route("/:id/assessments/scoring").put(updateGlobalScoring);
+// Assessment Framework — global scoring (two-tier + competency contributions)
+router.route("/:id/assessments/scoring").get(getCompetencyWeights).put(updateGlobalScoring);
 
 // Assessment Framework — evidence types
 router.route("/:id/assessments/evidence").get(getEvidenceTypes).post(createEvidenceType);

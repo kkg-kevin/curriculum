@@ -95,8 +95,15 @@ const assessmentTypeScoringSchema = z.object({
   evidenceWeights: z.array(evidenceWeightSchema),
 });
 
+// Tier-3: overall assessment score → competency contribution
+const competencyWeightSchema = z.object({
+  competencyId: z.string().min(1),
+  weight:       z.number().min(0).max(100),
+});
+
 const updateGlobalScoringSchema = z.object({
-  assessmentTypes: z.array(assessmentTypeScoringSchema).min(1),
+  assessmentTypes:   z.array(assessmentTypeScoringSchema).min(1),
+  competencyWeights: z.array(competencyWeightSchema).optional().default([]),
 });
 
 const createEvidenceTypeSchema = z.object({

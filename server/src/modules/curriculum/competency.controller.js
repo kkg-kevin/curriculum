@@ -193,9 +193,14 @@ exports.calculateScore = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+exports.getCompetencyWeights = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getCompetencyWeights(req.params.id);
+  res.json({ success: true, data });
+});
+
 exports.updateGlobalScoring = asyncHandler(async (req, res) => {
-  const { assessmentTypes } = updateGlobalScoringSchema.parse(req.body);
-  const data = CompetencyService.updateGlobalScoring(req.params.id, assessmentTypes);
+  const { assessmentTypes, competencyWeights } = updateGlobalScoringSchema.parse(req.body);
+  const data = CompetencyService.updateGlobalScoring(req.params.id, assessmentTypes, competencyWeights);
   res.json({ success: true, data });
 });
 
