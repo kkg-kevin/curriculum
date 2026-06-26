@@ -1618,37 +1618,62 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
             const atTw     = typeWeights[at.id] ?? 0;
             const selCount = Object.values(typeConfigs[at.id] || {}).filter((v) => v.selected).length;
             const active   = activeTypeId === at.id;
+            const evColor  = atOk && selCount > 0 ? "#059669" : selCount > 0 ? "#D97706" : "#9CA3AF";
             return (
               <button key={at.id} type="button"
                 onClick={() => setActiveTypeId(at.id)}
                 style={{
-                  flex: 1, padding: "10px 8px", borderRadius: "10px", cursor: "pointer",
-                  border: `2px solid ${active ? col : "#E5E7EB"}`,
-                  background: active ? `${col}0D` : "#F9FAFB",
-                  textAlign: "center", transition: "all 0.15s",
+                  flex: 1, borderRadius: "12px", cursor: "pointer", textAlign: "left",
+                  border: `1.5px solid ${active ? col : "#E5E7EB"}`,
+                  background: active ? "#fff" : "#F9FAFB",
+                  boxShadow: active ? `0 2px 14px ${col}22` : "none",
+                  transition: "all 0.18s", overflow: "hidden",
                 }}>
-                {/* Color dot + name */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "6px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col, flexShrink: 0 }} />
-                  <span style={{ fontSize: "12px", fontWeight: "800", color: active ? col : "#374151", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{at.name}</span>
+                {/* Top accent bar */}
+                <div style={{ height: "3px", background: active ? col : "#E9EAEC", transition: "background 0.18s" }} />
+                <div style={{ padding: "10px 12px 12px" }}>
+                  {/* Dot + name */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col, flexShrink: 0, boxShadow: active ? `0 0 0 3px ${col}20` : "none" }} />
+                    <span style={{ fontSize: "12px", fontWeight: "800", color: active ? col : "#374151", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{at.name}</span>
+                  </div>
+                  {/* Behavior tag */}
+                  {at.behaviorType && (
+                    <div style={{ marginBottom: "10px", paddingLeft: "15px" }}>
+                      <span style={{ fontSize: "9px", fontWeight: "700", color: col, background: `${col}15`, padding: "2px 7px", borderRadius: "20px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        {at.behaviorType}
+                      </span>
+                    </div>
+                  )}
+                  {/* Weight input */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <p style={{ margin: "0 0 4px", fontSize: "9px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Type Weight</p>
+                    <div style={{ position: "relative", width: "76px" }}>
+                      <input className="cp-input" type="number" min="0" max="100"
+                        style={{ width: "100%", boxSizing: "border-box", padding: "5px 22px 5px 10px", fontSize: "15px", fontWeight: "900", textAlign: "left", borderColor: active ? `${col}55` : "#E5E7EB", background: active ? `${col}07` : "#fff", color: active ? col : "#111827" }}
+                        value={atTw}
+                        onChange={(e) => {
+                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                          setTypeWeights((prev) => ({ ...prev, [at.id]: val }));
+                          setIsDirty(true);
+                        }}
+                      />
+                      <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", fontWeight: "700", color: active ? col : "#9CA3AF", pointerEvents: "none" }}>%</span>
+                    </div>
+                  </div>
+                  {/* Evidence status pill */}
+                  <div style={{ marginTop: "10px" }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      fontSize: "10px", fontWeight: "700", color: evColor,
+                      background: atOk && selCount > 0 ? "#05966914" : selCount > 0 ? "#D9770614" : "#F3F4F6",
+                      border: `1px solid ${atOk && selCount > 0 ? "#05966930" : selCount > 0 ? "#D9770630" : "#E5E7EB"}`,
+                      padding: "3px 8px", borderRadius: "20px",
+                    }}>
+                      {total}%{atOk && selCount > 0 ? " ✓" : selCount > 0 ? " — adjust" : " — none"}
+                    </span>
+                  </div>
                 </div>
-                {/* Type weight input */}
-                <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "64px", margin: "0 auto 6px" }}>
-                  <input className="cp-input" type="number" min="0" max="100"
-                    style={{ width: "100%", boxSizing: "border-box", padding: "3px 18px 3px 8px", fontSize: "13px", fontWeight: "800", textAlign: "center", borderColor: active ? `${col}60` : "#E5E7EB" }}
-                    value={atTw}
-                    onChange={(e) => {
-                      const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                      setTypeWeights((prev) => ({ ...prev, [at.id]: val }));
-                      setIsDirty(true);
-                    }}
-                  />
-                  <span style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
-                </div>
-                {/* Evidence status */}
-                <span style={{ fontSize: "11px", fontWeight: "700", color: atOk && selCount > 0 ? "#059669" : selCount > 0 ? "#D97706" : "#9CA3AF" }}>
-                  {total}%{atOk && selCount > 0 ? " ✓" : ""}
-                </span>
               </button>
             );
           })}
