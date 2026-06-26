@@ -335,6 +335,18 @@ export function useUpdateScoring(curriculumId) {
   });
 }
 
+export function useUpdateGlobalScoring(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ assessmentTypes }) => competenciesApi.updateGlobalScoring(curriculumId, assessmentTypes),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+      toast.success("Scoring configuration saved");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to save scoring"),
+  });
+}
+
 export function useCalculateScore(curriculumId) {
   return useMutation({
     mutationFn: ({ id, evidenceScores }) => competenciesApi.calculateScore(curriculumId, id, evidenceScores),

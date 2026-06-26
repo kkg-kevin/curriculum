@@ -318,13 +318,31 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    const total = evidenceWeights.reduce((sum, w) => sum + w.contribution, 0);
-    if (Math.round(total) !== 100) {
-      const err = new Error(`Contributions must total exactly 100% (currently ${total}%)`);
+    return AssessmentTypeModel.update(id, { evidenceWeights });
+  },
+
+  updateGlobalScoring(curriculumId, assessmentTypes) {
+    // Validate that all contributions across ALL assessment types sum to exactly 100%
+    let globalTotal = 0;
+    for (const atConfig of assessmentTypes) {
+      const at = AssessmentTypeModel.findById(atConfig.id);
+      if (!at || at.curriculumId !== curriculumId) {
+        const err = new Error(`Assessment type not found: ${atConfig.id}`);
+        err.statusCode = 404;
+        throw err;
+      }
+      globalTotal += atConfig.evidenceWeights.reduce((sum, w) => sum + w.contribution, 0);
+    }
+    if (Math.round(globalTotal) !== 100) {
+      const err = new Error(`Global contributions must total exactly 100% (currently ${Math.round(globalTotal)}%)`);
       err.statusCode = 422;
       throw err;
     }
-    return AssessmentTypeModel.update(id, { evidenceWeights });
+    // Save each assessment type's evidence weights
+    for (const atConfig of assessmentTypes) {
+      AssessmentTypeModel.update(atConfig.id, { evidenceWeights: atConfig.evidenceWeights });
+    }
+    return AssessmentTypeModel.findByCurriculumId(curriculumId);
   },
 
   calculateScore(curriculumId, id, evidenceScores) {

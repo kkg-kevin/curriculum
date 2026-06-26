@@ -91,6 +91,9 @@ export const competenciesApi = {
   updateScoring: (curriculumId, atId, evidenceWeights) =>
     api.put(`/api/curricula/${curriculumId}/assessments/types/${atId}/scoring`, { evidenceWeights }).then((r) => r.data.data),
 
+  updateGlobalScoring: (curriculumId, assessmentTypes) =>
+    api.put(`/api/curricula/${curriculumId}/assessments/scoring`, { assessmentTypes }).then((r) => r.data.data),
+
   calculateScore: (curriculumId, atId, evidenceScores) =>
     api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores }).then((r) => r.data.data),
 
