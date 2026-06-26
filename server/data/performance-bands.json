@@ -5,6 +5,8 @@
     "name": "Explorer",
     "description": "The learner is beginning their journey by exploring new concepts, tools, and digital environments. They show curiosity, willingness to try, and basic recognition of ideas, but rely heavily on guidance and structured support to complete tasks.\n\n2. Builder (Practice)",
     "criteria": [],
+    "minScore": 0,
+    "maxScore": 39,
     "order": 1,
     "createdAt": "2026-06-25T12:18:02.591Z"
   },
@@ -14,6 +16,8 @@
     "name": "Builder",
     "description": "The learner actively develops foundational skills by engaging in guided activities and structured tasks. They can follow instructions, apply basic concepts, and start constructing simple solutions, demonstrating growing confidence and consistency.",
     "criteria": [],
+    "minScore": 40,
+    "maxScore": 59,
     "order": 2,
     "createdAt": "2026-06-25T12:18:31.606Z"
   },
@@ -23,8 +27,10 @@
     "name": "Creator",
     "description": "The learner independently applies knowledge to design and develop functional solutions such as simple programs, games, or digital projects. They make decisions during implementation and show the ability to adapt learned concepts to new situations.",
     "criteria": [],
+    "minScore": 60,
+    "maxScore": 74,
     "order": 3,
-    "createdAt": "2026-06-25T12:18:47.836Z"
+    "createdAt": "2026-06-25T12:18:47.606Z"
   },
   {
     "id": "286567bf-8c4a-4214-9c5a-b46769c9db9c",
@@ -32,8 +38,10 @@
     "name": "Innovator",
     "description": "The learner demonstrates strong proficiency and can solve complex problems efficiently. They refine, optimize, and improve solutions, think critically, and can clearly explain their approach, showing depth of understanding and high-level competence.",
     "criteria": [],
+    "minScore": 75,
+    "maxScore": 89,
     "order": 4,
-    "createdAt": "2026-06-25T12:19:03.050Z"
+    "createdAt": "2026-06-25T12:19:03.606Z"
   },
   {
     "id": "e4f9f25c-d25a-41af-9d6b-9197170adae0",
@@ -41,7 +49,9 @@
     "name": "Pioneer",
     "description": "The learner operates at an advanced level, exploring specialized areas such as AI, software development, or robotics. They create sophisticated, self-driven projects, demonstrate originality and innovation, and extend beyond standard expectations with minimal guidance.",
     "criteria": [],
+    "minScore": 90,
+    "maxScore": 100,
     "order": 5,
-    "createdAt": "2026-06-25T12:19:29.003Z"
+    "createdAt": "2026-06-25T12:19:29.606Z"
   }
 ]

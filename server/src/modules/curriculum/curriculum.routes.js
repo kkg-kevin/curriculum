@@ -46,6 +46,7 @@ const {
   updateAssessmentType,
   deleteAssessmentType,
   updateScoring,
+  calculateScore,
   getEvidenceTypes,
   createEvidenceType,
   updateEvidenceType,
@@ -100,6 +101,7 @@ router.route("/:id/competencies/assessments/:asId").put(updateAssessment).delete
 router.route("/:id/assessments/types").get(getAssessmentTypes).post(createAssessmentType);
 router.route("/:id/assessments/types/:atId").put(updateAssessmentType).delete(deleteAssessmentType);
 router.route("/:id/assessments/types/:atId/scoring").put(updateScoring);
+router.route("/:id/assessments/types/:atId/calculate").post(calculateScore);
 
 // Assessment Framework — evidence types
 router.route("/:id/assessments/evidence").get(getEvidenceTypes).post(createEvidenceType);

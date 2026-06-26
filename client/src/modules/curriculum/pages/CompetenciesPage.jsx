@@ -24,6 +24,7 @@ import {
   useCreateAssessmentType,
   useUpdateAssessmentType,
   useDeleteAssessmentType,
+  useUpdateScoring,
 
   useEvidenceTypes,
   useCreateEvidenceType,
@@ -341,6 +342,18 @@ const CSS = `
     transition:border-color 0.15s, box-shadow 0.15s;
   }
   .cp-arc-comp-card:hover { border-color:#b8d9ee; box-shadow:0 2px 10px rgba(37,71,106,0.07); }
+
+  /* Competency gate */
+  .cp-gate-banner {
+    border-radius:10px; padding:12px 16px;
+    display:flex; align-items:center; gap:10px;
+    animation:cp-fadein 0.15s ease;
+  }
+  .cp-gate-banner--pass { background:#F0FDF4; border:1.5px solid #86EFAC; }
+  .cp-gate-banner--fail { background:#FEF2F2; border:1.5px solid #FCA5A5; }
+  .cp-gate-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .cp-threshold-met    { background:#F0FDF4; border:1px solid #86EFAC; color:#15803D; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; }
+  .cp-threshold-notmet { background:#FEF2F2; border:1px solid #FCA5A5; color:#DC2626; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; }
 `;
 
 /* ── Step Indicator ─────────────────────────────────────────────────────── */
@@ -578,30 +591,32 @@ function CompetenciesPanel({ curriculumId }) {
   const [name,       setName]       = useState("");
   const [desc,       setDesc]       = useState("");
   const [areaId,     setAreaId]     = useState("");
+  const [threshold,  setThreshold]  = useState(60);
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setAreaId(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setAreaId(""); setThreshold(60); setMode("add");
   }
   function openEdit(comp) {
     setEditTarget(comp);
     setName(comp.name);
     setDesc(comp.description || "");
     setAreaId(comp.learningAreaId || "");
+    setThreshold(comp.minimumThreshold ?? 60);
     setMode("edit");
   }
   function cancelForm() { setMode("list"); setEditTarget(null); }
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), learningAreaId: areaId || null };
+    const data = { name: name.trim(), description: desc.trim(), learningAreaId: areaId || null, minimumThreshold: Number(threshold) || 60 };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancelForm });
     } else {
       create(data, {
-        onSuccess: () => { setName(""); setDesc(""); setAreaId(""); nameRef.current?.focus(); },
+        onSuccess: () => { setName(""); setDesc(""); setAreaId(""); setThreshold(60); nameRef.current?.focus(); },
       });
     }
   }
@@ -708,6 +723,34 @@ function CompetenciesPanel({ curriculumId }) {
                 </select>
               </div>
             )}
+
+            {/* Minimum threshold */}
+            <div>
+              <label className="cp-field-label">
+                Minimum Threshold % <span className="cp-required">*</span>
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+                <input
+                  type="range"
+                  min={0} max={100} step={5}
+                  value={threshold}
+                  onChange={(e) => setThreshold(Number(e.target.value))}
+                  style={{ flex: 1, accentColor: "#25476a" }}
+                />
+                <span style={{
+                  minWidth: "42px", padding: "4px 10px", borderRadius: "8px", textAlign: "center",
+                  background: threshold >= 75 ? "#F0FDF4" : threshold >= 60 ? "#EFF6FF" : "#FFF7ED",
+                  border: `1.5px solid ${threshold >= 75 ? "#BBF7D0" : threshold >= 60 ? "#BFDBFE" : "#FED7AA"}`,
+                  fontSize: "13px", fontWeight: "700",
+                  color: threshold >= 75 ? "#15803D" : threshold >= 60 ? "#1D4ED8" : "#C2410C",
+                }}>
+                  {threshold}%
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                Learner must score at least {threshold}% on this competency to be considered competent.
+              </p>
+            </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px" }}>
@@ -803,7 +846,7 @@ function CompetenciesPanel({ curriculumId }) {
                   {comp.description ? (
                     <p style={{
                       margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65",
-                      display: "-webkit-box", WebkitLineClamp: 4,
+                      display: "-webkit-box", WebkitLineClamp: 3,
                       WebkitBoxOrient: "vertical", overflow: "hidden",
                     }}>
                       {comp.description}
@@ -813,6 +856,22 @@ function CompetenciesPanel({ curriculumId }) {
                       No description added
                     </p>
                   )}
+                </div>
+
+                {/* Threshold badge */}
+                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>
+                  <span style={{
+                    padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
+                    background: (comp.minimumThreshold ?? 60) >= 75 ? "#F0FDF4" : (comp.minimumThreshold ?? 60) >= 60 ? "#EFF6FF" : "#FFF7ED",
+                    border: `1px solid ${(comp.minimumThreshold ?? 60) >= 75 ? "#BBF7D0" : (comp.minimumThreshold ?? 60) >= 60 ? "#BFDBFE" : "#FED7AA"}`,
+                    color: (comp.minimumThreshold ?? 60) >= 75 ? "#15803D" : (comp.minimumThreshold ?? 60) >= 60 ? "#1D4ED8" : "#C2410C",
+                  }}>
+                    {comp.minimumThreshold ?? 60}%
+                  </span>
                 </div>
               </div>
             );
@@ -1100,6 +1159,14 @@ function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel
 
 /* ── AssessmentTypesSubPanel ─────────────────────────────────────────────── */
 
+const BEHAVIOR_OPTIONS = [
+  { value: "diagnostic", label: "Diagnostic", desc: "Evaluates prior knowledge and placement — no pass/fail" },
+  { value: "formative",  label: "Formative",  desc: "Tracks continuous progress — flexible evaluation" },
+  { value: "summative",  label: "Summative",  desc: "Determines final competency — strict requirements" },
+];
+
+const BEHAVIOR_COLORS = { diagnostic: "#0891B2", formative: "#059669", summative: "#7C3AED" };
+
 function AssessmentTypesSubPanel({ curriculumId }) {
   const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
@@ -1110,17 +1177,18 @@ function AssessmentTypesSubPanel({ curriculumId }) {
   const [editTarget, setEdit]   = useState(null);
   const [name, setName]         = useState("");
   const [desc, setDesc]         = useState("");
+  const [behavior, setBehavior] = useState("formative");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setMode("add"); }
-  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setBehavior("formative"); setMode("add"); }
+  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setBehavior(t.behaviorType || "formative"); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim() };
+    const data = { name: name.trim(), description: desc.trim(), behaviorType: behavior };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setBehavior("formative"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1139,6 +1207,35 @@ function AssessmentTypesSubPanel({ curriculumId }) {
             onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
           />
           <div className="cp-char-count">{name.length} / 150</div>
+        </div>
+        <div>
+          <label className="cp-field-label">Behavior Mode <span className="cp-required">*</span></label>
+          <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>Controls how scoring rules and outcomes are applied for this type.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {BEHAVIOR_OPTIONS.map((opt) => {
+              const active = behavior === opt.value;
+              const col    = BEHAVIOR_COLORS[opt.value];
+              return (
+                <button
+                  key={opt.value} type="button"
+                  onClick={() => setBehavior(opt.value)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "9px 12px", borderRadius: "8px", cursor: "pointer", textAlign: "left",
+                    border: `2px solid ${active ? col : "#E5E7EB"}`,
+                    background: active ? `${col}10` : "#F9FAFB",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <div style={{ width: "14px", height: "14px", borderRadius: "50%", border: `2px solid ${active ? col : "#D1D5DB"}`, background: active ? col : "transparent", flexShrink: 0 }} />
+                  <div>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: active ? col : "#374151" }}>{opt.label}</span>
+                    <span style={{ fontSize: "11px", color: "#9CA3AF", marginLeft: "8px" }}>{opt.desc}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
@@ -1170,11 +1267,18 @@ function AssessmentTypesSubPanel({ curriculumId }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{t.name}</p>
-                {(t.evidenceWeights || []).length > 0 && (
-                  <span style={{ display: "inline-block", marginTop: "4px", fontSize: "10px", fontWeight: "600", color: "#059669" }}>
-                    {(t.evidenceWeights || []).length} evidence type{(t.evidenceWeights || []).length !== 1 ? "s" : ""} scored
-                  </span>
-                )}
+                <div style={{ display: "flex", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
+                  {t.behaviorType && (
+                    <span style={{ fontSize: "10px", fontWeight: "700", color: BEHAVIOR_COLORS[t.behaviorType] || "#6B7280", background: `${BEHAVIOR_COLORS[t.behaviorType] || "#6B7280"}15`, padding: "2px 7px", borderRadius: "20px", textTransform: "capitalize" }}>
+                      {t.behaviorType}
+                    </span>
+                  )}
+                  {(t.evidenceWeights || []).length > 0 && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", color: "#059669", background: "#05966915", padding: "2px 7px", borderRadius: "20px" }}>
+                      {(t.evidenceWeights || []).length} evidence scored
+                    </span>
+                  )}
+                </div>
               </div>
               <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} />
             </div>
@@ -1202,21 +1306,27 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   const { mutate: update, isPending: updating } = useUpdateEvidenceType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteEvidenceType(curriculumId);
 
-  const [mode, setMode]       = useState("list");
-  const [editTarget, setEdit] = useState(null);
-  const [name, setName]       = useState("");
-  const [desc, setDesc]       = useState("");
+  const [mode,        setMode]       = useState("list");
+  const [editTarget,  setEdit]       = useState(null);
+  const [name,        setName]       = useState("");
+  const [desc,        setDesc]       = useState("");
+  const [defContrib,  setDefContrib] = useState("0");
+  const [minReq,      setMinReq]     = useState("0");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setMode("add"); }
-  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setDefContrib("0"); setMinReq("0"); setMode("add"); }
+  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim() };
+    const data = {
+      name: name.trim(), description: desc.trim(),
+      defaultContribution: Math.min(100, Math.max(0, Number(defContrib) || 0)),
+      minRequirement:      Math.min(100, Math.max(0, Number(minReq) || 0)),
+    };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setDefContrib("0"); setMinReq("0"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1235,6 +1345,30 @@ function EvidenceTypesSubPanel({ curriculumId }) {
             onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
           />
           <div className="cp-char-count">{name.length} / 150</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div>
+            <label className="cp-field-label">Default Contribution %</label>
+            <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>Auto-filled when attached to an assessment type.</p>
+            <div style={{ position: "relative" }}>
+              <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                value={defContrib}
+                onChange={(e) => setDefContrib(e.target.value)}
+              />
+              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+            </div>
+          </div>
+          <div>
+            <label className="cp-field-label">Minimum Requirement %</label>
+            <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>Score below this flags the learner as below requirement.</p>
+            <div style={{ position: "relative" }}>
+              <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                value={minReq}
+                onChange={(e) => setMinReq(e.target.value)}
+              />
+              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+            </div>
+          </div>
         </div>
         <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
@@ -1266,6 +1400,18 @@ function EvidenceTypesSubPanel({ curriculumId }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{e.name}</p>
+                <div style={{ display: "flex", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
+                  {e.defaultContribution > 0 && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", color: "#2563EB", background: "#2563EB15", padding: "2px 7px", borderRadius: "20px" }}>
+                      {e.defaultContribution}% default
+                    </span>
+                  )}
+                  {e.minRequirement > 0 && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", color: "#D97706", background: "#D9770615", padding: "2px 7px", borderRadius: "20px" }}>
+                      {e.minRequirement}% min
+                    </span>
+                  )}
+                </div>
               </div>
               <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} />
             </div>
@@ -1280,6 +1426,639 @@ function EvidenceTypesSubPanel({ curriculumId }) {
         );
       }}
     />
+  );
+}
+
+/* ── Scoring utilities ──────────────────────────────────────────────────── */
+
+function calcScore(evidenceScores, evidenceConfig, evidenceTypes, bands, competencies, progressLevels) {
+  // Engine 1 — weighted evidence scores
+  let total = 0;
+  const breakdown = [];
+  const belowReq  = [];
+  for (const cfg of evidenceConfig) {
+    const et    = evidenceTypes.find((e) => e.id === cfg.evidenceTypeId);
+    const score = Math.min(100, Math.max(0, Number(evidenceScores[cfg.evidenceTypeId]) || 0));
+    const contribution = cfg.contribution;
+    const weighted     = Math.round((score * contribution) / 100 * 10) / 10;
+    const minReq       = cfg.minRequirement != null ? cfg.minRequirement : (et?.minRequirement ?? 0);
+    total += weighted;
+    const row = { id: cfg.evidenceTypeId, name: et?.name || "Unknown", score, contribution, weighted, minRequirement: minReq, belowMin: score < minReq };
+    breakdown.push(row);
+    if (score < minReq) belowReq.push(row);
+  }
+  const finalScore = Math.round(total * 10) / 10;
+  const band = [...bands].sort((a, b) => a.minScore - b.minScore).find((b) => finalScore >= b.minScore && finalScore <= b.maxScore) || null;
+
+  // Engine 2 — competency distribution
+  const raw = {}, maxPossible = {};
+  for (const cfg of evidenceConfig) {
+    const mappings = cfg.competencyMappings || [];
+    if (!mappings.length) continue;
+    const evRow = breakdown.find((r) => r.id === cfg.evidenceTypeId);
+    if (!evRow) continue;
+    const totalW = mappings.reduce((s, m) => s + m.weight, 0);
+    if (totalW === 0) continue;
+    for (const m of mappings) {
+      const nw = m.weight / totalW;
+      raw[m.competencyId]         = (raw[m.competencyId]         || 0) + evRow.weighted  * nw;
+      maxPossible[m.competencyId] = (maxPossible[m.competencyId] || 0) + cfg.contribution * nw;
+    }
+  }
+
+  // Engine 3 — normalize + map to level/band + threshold gate
+  const sortedBands  = [...bands].sort((a, b) => a.minScore - b.minScore);
+  const sortedLevels = [...(progressLevels || [])].filter((l) => l.minScore != null).sort((a, b) => a.minScore - b.minScore);
+  const competencyBreakdown = Object.entries(raw).map(([cId, rawScore]) => {
+    const comp      = competencies?.find((c) => c.id === cId);
+    const max       = maxPossible[cId] || 1;
+    const score     = Math.min(100, Math.round((rawScore / max) * 100 * 10) / 10);
+    const cBand     = sortedBands.find((b) => score >= b.minScore && score <= b.maxScore) || null;
+    const cLevel    = sortedLevels.find((l) => score >= l.minScore && score <= l.maxScore) || null;
+    const threshold = comp?.minimumThreshold ?? 60;
+    return { id: cId, name: comp?.name || "Unknown", score, band: cBand, level: cLevel, threshold, thresholdMet: score >= threshold };
+  });
+  const allCompetenciesMet = competencyBreakdown.length > 0 && competencyBreakdown.every((cr) => cr.thresholdMet);
+
+  return { finalScore, breakdown, belowReq, band, competencyBreakdown, allCompetenciesMet };
+}
+
+const BAND_SCORE_COLORS = ["#9CA3AF", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"];
+
+/* ── ScoreEvidenceSubPanel ──────────────────────────────────────────────── */
+
+function ScoreEvidenceSubPanel({ curriculumId }) {
+  const { data: types         = [], isLoading: typesLoading }  = useAssessmentTypes(curriculumId);
+  const { data: evidences     = [], isLoading: evLoading }     = useEvidenceTypes(curriculumId);
+  const { data: bands         = [], isLoading: bandsLoading }  = usePerformanceBands(curriculumId);
+  const { data: competencies  = [] }                           = useCompetencies(curriculumId);
+  const { data: progressLevels = [] }                          = useProgressLevels(curriculumId);
+  const { mutate: saveScoring, isPending: saving }             = useUpdateScoring(curriculumId);
+
+  const [selectedTypeId,    setSelectedTypeId]    = useState(null);
+  const [localConfig,       setLocalConfig]       = useState({});
+  const [scores,            setScores]            = useState({});
+  const [isDirty,           setIsDirty]           = useState(false);
+  const [expandedMappings,  setExpandedMappings]  = useState(new Set());
+
+  const selectedType = types.find((t) => t.id === selectedTypeId) || types[0] || null;
+
+  useEffect(() => {
+    if (types.length > 0 && !selectedTypeId) setSelectedTypeId(types[0].id);
+  }, [types, selectedTypeId]);
+
+  useEffect(() => {
+    if (!selectedType) return;
+    const saved = selectedType.evidenceWeights || [];
+    const cfg = {};
+    evidences.forEach((et) => {
+      const w = saved.find((s) => s.evidenceTypeId === et.id);
+      cfg[et.id] = {
+        included:           !!w,
+        contribution:       w ? w.contribution        : (et.defaultContribution ?? 0),
+        minRequirement:     w ? w.minRequirement       : null,
+        competencyMappings: w ? (w.competencyMappings || []) : [],
+      };
+    });
+    setLocalConfig(cfg);
+    setScores({});
+    setIsDirty(false);
+    setExpandedMappings(new Set());
+  }, [selectedType?.id, evidences]);
+
+  function toggleInclude(etId) {
+    const et = evidences.find((e) => e.id === etId);
+    setLocalConfig((prev) => {
+      const cur = prev[etId];
+      return { ...prev, [etId]: { ...cur, included: !cur.included, contribution: cur.included ? cur.contribution : (et?.defaultContribution ?? 0) } };
+    });
+    setIsDirty(true);
+  }
+
+  function setContrib(etId, val) {
+    setLocalConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], contribution: Math.min(100, Math.max(0, Number(val) || 0)) } }));
+    setIsDirty(true);
+  }
+
+  function setMinReqOverride(etId, val) {
+    setLocalConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], minRequirement: val === "" ? null : Math.min(100, Math.max(0, Number(val) || 0)) } }));
+    setIsDirty(true);
+  }
+
+  function toggleCompetencyMapping(etId, competencyId) {
+    setLocalConfig((prev) => {
+      const cur = prev[etId];
+      const existing = cur.competencyMappings || [];
+      const isOn = existing.some((m) => m.competencyId === competencyId);
+      const next = isOn
+        ? existing.filter((m) => m.competencyId !== competencyId)
+        : [...existing, { competencyId, weight: 0 }];
+      return { ...prev, [etId]: { ...cur, competencyMappings: next } };
+    });
+    setIsDirty(true);
+  }
+
+  function setCompetencyWeight(etId, competencyId, val) {
+    setLocalConfig((prev) => {
+      const cur = prev[etId];
+      const next = (cur.competencyMappings || []).map((m) =>
+        m.competencyId === competencyId ? { ...m, weight: Math.min(100, Math.max(0, Number(val) || 0)) } : m
+      );
+      return { ...prev, [etId]: { ...cur, competencyMappings: next } };
+    });
+    setIsDirty(true);
+  }
+
+  function toggleMappingExpand(etId) {
+    setExpandedMappings((prev) => {
+      const next = new Set(prev);
+      next.has(etId) ? next.delete(etId) : next.add(etId);
+      return next;
+    });
+  }
+
+  const includedEntries = evidences.filter((et) => localConfig[et.id]?.included);
+  const totalContrib    = includedEntries.reduce((sum, et) => sum + (localConfig[et.id]?.contribution || 0), 0);
+  const totalRounded    = Math.round(totalContrib);
+  const contribOk       = totalRounded === 100;
+
+  const contribColor    = totalRounded < 100 ? "#D97706" : totalRounded > 100 ? "#DC2626" : "#059669";
+  const contribBg       = totalRounded < 100 ? "#D9770610" : totalRounded > 100 ? "#DC262610" : "#05966910";
+
+  function handleSave() {
+    if (!selectedType || !contribOk) return;
+    const evidenceWeights = includedEntries.map((et) => ({
+      evidenceTypeId:     et.id,
+      contribution:       localConfig[et.id].contribution,
+      minRequirement:     localConfig[et.id].minRequirement,
+      competencyMappings: localConfig[et.id].competencyMappings || [],
+    }));
+    saveScoring({ id: selectedType.id, evidenceWeights }, { onSuccess: () => setIsDirty(false) });
+  }
+
+  const result = calcScore(
+    scores,
+    includedEntries.map((et) => ({ evidenceTypeId: et.id, ...localConfig[et.id] })),
+    evidences, bands, competencies, progressLevels
+  );
+  const bandIdx  = bands.findIndex((b) => b.id === result.band?.id);
+  const bandColor = bandIdx >= 0 ? BAND_SCORE_COLORS[Math.min(bandIdx, BAND_SCORE_COLORS.length - 1)] : "#9CA3AF";
+
+  const behaviorType = selectedType?.behaviorType || "formative";
+  let outcome = null;
+  if (includedEntries.length > 0) {
+    if (behaviorType === "diagnostic") {
+      outcome = { type: "placement", color: "#0891B2", bg: "#0891B210", label: result.band ? `Placement: ${result.band.name} level` : "Enter scores to see placement" };
+    } else if (result.belowReq.length > 0 && behaviorType === "summative") {
+      outcome = { type: "cannot_progress", color: "#DC2626", bg: "#DC262610", label: "Cannot progress to next level" };
+    } else if (result.belowReq.length > 0) {
+      outcome = { type: "below_req", color: "#D97706", bg: "#D9770610", label: `${result.belowReq.length} evidence type${result.belowReq.length > 1 ? "s" : ""} below minimum requirement` };
+    } else if (Object.values(scores).some((s) => s !== "")) {
+      outcome = { type: "passed", color: "#059669", bg: "#05966910", label: "All requirements met" };
+    }
+  }
+
+  if (typesLoading || evLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+
+  if (types.length === 0) {
+    return (
+      <div className="cp-empty">
+        <div style={{ fontSize: "36px", marginBottom: "10px" }}>⚖️</div>
+        <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Assessment Types Yet</p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create assessment types first, then configure their scoring here.</p>
+      </div>
+    );
+  }
+
+  if (evidences.length === 0) {
+    return (
+      <div className="cp-empty">
+        <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔬</div>
+        <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Evidence Types Yet</p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create evidence types first, then attach them to assessment types here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* Assessment Type Selector */}
+      <div>
+        <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "600", color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Select Assessment Type</p>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {types.map((t) => {
+            const active = t.id === (selectedType?.id);
+            const col    = BEHAVIOR_COLORS[t.behaviorType] || "#6B7280";
+            return (
+              <button key={t.id} type="button"
+                onClick={() => setSelectedTypeId(t.id)}
+                style={{
+                  padding: "7px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", fontWeight: "600",
+                  border: `2px solid ${active ? col : "#E5E7EB"}`,
+                  background: active ? `${col}15` : "#F9FAFB",
+                  color: active ? col : "#6B7280",
+                  transition: "all 0.15s",
+                }}
+              >
+                {t.name}
+                {t.behaviorType && (
+                  <span style={{ fontSize: "10px", marginLeft: "6px", opacity: 0.7, textTransform: "capitalize" }}>({t.behaviorType})</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+
+        {/* ── Left: Configure Evidence ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Configure Evidence Scoring</h3>
+            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Select evidence types and set their contribution weights. Total must equal 100%.</p>
+          </div>
+
+          {/* Evidence rows */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {evidences.map((et) => {
+              const cfg      = localConfig[et.id] || { included: false, contribution: et.defaultContribution || 0, minRequirement: null };
+              const included = cfg.included;
+              const saved    = (selectedType?.evidenceWeights || []).find((w) => w.evidenceTypeId === et.id);
+              const isOverridden = saved && (saved.contribution !== et.defaultContribution || saved.minRequirement != null);
+              return (
+                <div key={et.id} style={{
+                  border: `1.5px solid ${included ? "#25476a30" : "#E5E7EB"}`,
+                  borderRadius: "10px", padding: "12px 14px",
+                  background: included ? "#25476a05" : "#F9FAFB",
+                  transition: "all 0.15s",
+                }}>
+                  {/* Row header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button type="button" onClick={() => toggleInclude(et.id)} style={{
+                      width: "18px", height: "18px", borderRadius: "5px", flexShrink: 0, cursor: "pointer",
+                      border: `2px solid ${included ? "#25476a" : "#D1D5DB"}`,
+                      background: included ? "#25476a" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {included && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </button>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: included ? "#111827" : "#9CA3AF", flex: 1 }}>{et.name}</span>
+                    {included && isOverridden && (
+                      <span style={{ fontSize: "10px", color: "#7C3AED", background: "#7C3AED10", padding: "2px 6px", borderRadius: "10px", fontWeight: "600" }}>overridden</span>
+                    )}
+                    {included && !isOverridden && saved && (
+                      <span style={{ fontSize: "10px", color: "#059669", background: "#05966910", padding: "2px 6px", borderRadius: "10px", fontWeight: "600" }}>saved</span>
+                    )}
+                  </div>
+
+                  {/* Contribution + Min Req inputs */}
+                  {included && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "4px" }}>
+                          Contribution %
+                          {et.defaultContribution > 0 && cfg.contribution !== et.defaultContribution && (
+                            <span style={{ marginLeft: "5px", color: "#9CA3AF", fontWeight: "400" }}>(default: {et.defaultContribution}%)</span>
+                          )}
+                        </label>
+                        <div style={{ position: "relative" }}>
+                          <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", padding: "7px 28px 7px 10px", fontSize: "13px" }}
+                            value={cfg.contribution}
+                            onChange={(e) => setContrib(et.id, e.target.value)}
+                          />
+                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "4px" }}>
+                          Min Requirement %
+                          {et.minRequirement > 0 && cfg.minRequirement == null && (
+                            <span style={{ marginLeft: "5px", color: "#9CA3AF", fontWeight: "400" }}>(default: {et.minRequirement}%)</span>
+                          )}
+                        </label>
+                        <div style={{ position: "relative" }}>
+                          <input className="cp-input" type="number" min="0" max="100"
+                            placeholder={`default ${et.minRequirement ?? 0}%`}
+                            style={{ width: "100%", boxSizing: "border-box", padding: "7px 28px 7px 10px", fontSize: "13px" }}
+                            value={cfg.minRequirement == null ? "" : cfg.minRequirement}
+                            onChange={(e) => setMinReqOverride(et.id, e.target.value)}
+                          />
+                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Competency Mapping */}
+                  {included && competencies.length > 0 && (() => {
+                    const expanded       = expandedMappings.has(et.id);
+                    const mappings       = cfg.competencyMappings || [];
+                    const totalMapW      = mappings.reduce((s, m) => s + m.weight, 0);
+                    const mappedCount    = mappings.length;
+                    const mapColor       = totalMapW === 0 ? "#9CA3AF" : totalMapW < 100 ? "#D97706" : totalMapW > 100 ? "#DC2626" : "#059669";
+                    return (
+                      <div style={{ marginTop: "8px" }}>
+                        <button type="button"
+                          onClick={() => toggleMappingExpand(et.id)}
+                          style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", padding: "4px 0", cursor: "pointer", fontSize: "11px", fontWeight: "700", color: "#6B7280" }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
+                            <polyline points="9 18 15 12 9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Map to Competencies
+                          {mappedCount > 0 && (
+                            <span style={{ color: mapColor, fontWeight: "700" }}>
+                              ({mappedCount} mapped · {Math.round(totalMapW)}%)
+                            </span>
+                          )}
+                        </button>
+                        {expanded && (
+                          <div style={{ marginTop: "8px", padding: "10px 12px", background: "#F8FAFC", borderRadius: "8px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <p style={{ margin: "0 0 6px", fontSize: "11px", color: "#9CA3AF" }}>
+                              Distribute how this evidence's score contributes to competencies. Weights are normalized automatically.
+                            </p>
+                            {competencies.map((comp) => {
+                              const mapped  = mappings.find((m) => m.competencyId === comp.id);
+                              const isOn    = !!mapped;
+                              return (
+                                <div key={comp.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <button type="button" onClick={() => toggleCompetencyMapping(et.id, comp.id)} style={{
+                                    width: "15px", height: "15px", borderRadius: "4px", flexShrink: 0, cursor: "pointer",
+                                    border: `2px solid ${isOn ? "#7C3AED" : "#D1D5DB"}`,
+                                    background: isOn ? "#7C3AED" : "transparent",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                  }}>
+                                    {isOn && <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                  </button>
+                                  <span style={{ flex: 1, fontSize: "11px", color: isOn ? "#374151" : "#9CA3AF", fontWeight: isOn ? "600" : "400", lineHeight: 1.3 }}>
+                                    {comp.name.replace(/^\d+\.\s*/, "")}
+                                  </span>
+                                  {isOn && (
+                                    <div style={{ position: "relative", width: "60px", flexShrink: 0 }}>
+                                      <input className="cp-input" type="number" min="0" max="100"
+                                        style={{ padding: "4px 20px 4px 8px", fontSize: "12px", width: "100%", boxSizing: "border-box" }}
+                                        value={mapped.weight}
+                                        onChange={(e) => setCompetencyWeight(et.id, comp.id, e.target.value)}
+                                      />
+                                      <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {mappedCount > 0 && (
+                              <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <span style={{ fontSize: "11px", color: "#6B7280" }}>Total mapped</span>
+                                <span style={{ fontSize: "12px", fontWeight: "800", color: mapColor }}>{Math.round(totalMapW)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Contribution tracker */}
+          <div style={{ padding: "14px", borderRadius: "10px", background: contribBg, border: `1.5px solid ${contribColor}30` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>Total Contribution</span>
+              <span style={{ fontSize: "14px", fontWeight: "800", color: contribColor }}>{totalRounded}%</span>
+            </div>
+            <div style={{ height: "8px", borderRadius: "4px", background: "#E5E7EB", overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: "4px",
+                width: `${Math.min(100, totalRounded)}%`,
+                background: contribColor,
+                transition: "width 0.2s, background 0.2s",
+              }} />
+            </div>
+            <p style={{ margin: "6px 0 0", fontSize: "11px", color: contribColor, fontWeight: "600" }}>
+              {totalRounded < 100 ? `${100 - totalRounded}% remaining to allocate` : totalRounded > 100 ? `${totalRounded - 100}% over limit — reduce contributions` : "Contributions balance to 100%"}
+            </p>
+          </div>
+
+          {/* Save button */}
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button type="button" className="cp-btn-primary" onClick={handleSave}
+              disabled={!contribOk || !isDirty || saving || includedEntries.length === 0}
+            >
+              {saving ? "Saving…" : "Save Scoring"}
+            </button>
+            {!contribOk && includedEntries.length > 0 && (
+              <span style={{ fontSize: "12px", color: contribColor, alignSelf: "center", fontWeight: "600" }}>
+                Total must be exactly 100%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ── Right: Score Calculator ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Score Calculator</h3>
+            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Enter scores to preview the final result and performance band.</p>
+          </div>
+
+          {includedEntries.length === 0 ? (
+            <div style={{ padding: "24px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px dashed #E5E7EB", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Select and configure evidence types on the left to use the calculator.</p>
+            </div>
+          ) : (
+            <>
+              {/* Score inputs */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {includedEntries.map((et) => {
+                  const cfg  = localConfig[et.id];
+                  const minR = cfg.minRequirement != null ? cfg.minRequirement : (et.minRequirement ?? 0);
+                  const scoreVal = Number(scores[et.id]) || 0;
+                  const below    = scoreVal < minR && scores[et.id] !== undefined && scores[et.id] !== "";
+                  return (
+                    <div key={et.id} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "600", color: "#374151" }}>{et.name}</span>
+                          <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{cfg.contribution}% weight · min {minR}%</span>
+                        </div>
+                        <div style={{ position: "relative" }}>
+                          <input className="cp-input" type="number" min="0" max="100"
+                            placeholder="0–100"
+                            style={{ width: "100%", boxSizing: "border-box", padding: "7px 42px 7px 10px", fontSize: "13px", borderColor: below ? "#DC262650" : undefined }}
+                            value={scores[et.id] || ""}
+                            onChange={(e) => setScores((prev) => ({ ...prev, [et.id]: e.target.value }))}
+                          />
+                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>/ 100</span>
+                        </div>
+                        {below && (
+                          <p style={{ margin: "3px 0 0", fontSize: "11px", color: "#DC2626", fontWeight: "600" }}>Below minimum ({minR}%)</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Breakdown table */}
+              {Object.keys(scores).length > 0 && (
+                <div style={{ borderRadius: "10px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                    <thead>
+                      <tr style={{ background: "#F9FAFB" }}>
+                        <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Evidence</th>
+                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
+                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weight</th>
+                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weighted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.breakdown.map((row, i) => (
+                        <tr key={row.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
+                          <td style={{ padding: "8px 12px", color: "#374151", fontWeight: "600" }}>
+                            {row.name}
+                            {row.belowMin && <span style={{ marginLeft: "6px", fontSize: "10px", color: "#DC2626", fontWeight: "700" }}>↓ min</span>}
+                          </td>
+                          <td style={{ padding: "8px 12px", textAlign: "center", color: row.belowMin ? "#DC2626" : "#374151" }}>{row.score}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#6B7280" }}>{row.contribution}%</td>
+                          <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#111827" }}>{row.weighted}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Final score + band */}
+              <div style={{ padding: "16px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px solid #E5E7EB", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ textAlign: "center", minWidth: "70px" }}>
+                  <div style={{ fontSize: "28px", fontWeight: "900", color: "#0F2645", lineHeight: 1 }}>{result.finalScore}</div>
+                  <div style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600", marginTop: "2px" }}>/ 100</div>
+                </div>
+                <div style={{ width: "1px", height: "40px", background: "#E5E7EB" }} />
+                {result.band ? (
+                  <div>
+                    <span style={{
+                      display: "inline-block", padding: "4px 14px", borderRadius: "20px",
+                      background: `${bandColor}15`, border: `2px solid ${bandColor}40`,
+                      fontSize: "14px", fontWeight: "800", color: bandColor,
+                    }}>
+                      {result.band.name}
+                    </span>
+                    <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>{result.band.minScore}–{result.band.maxScore}% range</p>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Enter scores to see result</p>
+                )}
+              </div>
+
+              {/* Outcome status */}
+              {outcome && (
+                <div style={{ padding: "10px 14px", borderRadius: "8px", background: outcome.bg, border: `1.5px solid ${outcome.color}30`, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: outcome.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: "13px", fontWeight: "700", color: outcome.color }}>{outcome.label}</span>
+                </div>
+              )}
+
+              {/* Below requirement details */}
+              {result.belowReq.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {result.belowReq.map((row) => (
+                    <div key={row.id} style={{ padding: "7px 12px", borderRadius: "8px", background: "#DC262608", border: "1px solid #DC262625", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", fontWeight: "600", color: "#DC2626" }}>{row.name}</span>
+                      <span style={{ fontSize: "11px", color: "#DC2626" }}>scored {row.score}% — min {row.minRequirement}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Competency Breakdown + Gate */}
+              {result.competencyBreakdown?.length > 0 && Object.values(scores).some((s) => s !== "") && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 2px" }}>
+                    <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Competency Gate</span>
+                    <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
+                  </div>
+
+                  {/* Gate banner */}
+                  <div className={`cp-gate-banner ${result.allCompetenciesMet ? "cp-gate-banner--pass" : "cp-gate-banner--fail"}`}>
+                    <div className="cp-gate-dot" style={{ background: result.allCompetenciesMet ? "#22C55E" : "#EF4444" }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: result.allCompetenciesMet ? "#15803D" : "#DC2626" }}>
+                        {result.allCompetenciesMet ? "All competencies met" : `${result.competencyBreakdown.filter((c) => !c.thresholdMet).length} competenc${result.competencyBreakdown.filter((c) => !c.thresholdMet).length !== 1 ? "ies" : "y"} below threshold`}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", color: result.allCompetenciesMet ? "#166534" : "#991B1B" }}>
+                        {result.allCompetenciesMet
+                          ? "Learner has demonstrated all required competencies and can progress."
+                          : "Learner must meet the minimum threshold on every competency before progressing."}
+                      </p>
+                    </div>
+                    <span style={{
+                      padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "700",
+                      background: result.allCompetenciesMet ? "#DCFCE7" : "#FEE2E2",
+                      color: result.allCompetenciesMet ? "#15803D" : "#DC2626",
+                      border: `1.5px solid ${result.allCompetenciesMet ? "#86EFAC" : "#FCA5A5"}`,
+                      flexShrink: 0,
+                    }}>
+                      {result.allCompetenciesMet ? "Can Progress" : "Blocked"}
+                    </span>
+                  </div>
+
+                  {/* Per-competency table */}
+                  <div style={{ borderRadius: "10px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ background: "#F9FAFB" }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Competency</th>
+                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
+                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Level</th>
+                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Min.</th>
+                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.competencyBreakdown.map((cr, i) => {
+                          const cBandIdx = bands.findIndex((b) => b.id === cr.band?.id);
+                          const cCol     = cBandIdx >= 0 ? BAND_SCORE_COLORS[Math.min(cBandIdx, BAND_SCORE_COLORS.length - 1)] : "#9CA3AF";
+                          const rowBg    = !cr.thresholdMet ? "#FEF2F2" : i % 2 === 0 ? "#fff" : "#FAFAFA";
+                          return (
+                            <tr key={cr.id} style={{ background: rowBg, borderBottom: "1px solid #F3F4F6" }}>
+                              <td style={{ padding: "8px 12px", color: "#374151", fontWeight: "600", fontSize: "11px", maxWidth: "140px" }}>
+                                <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                  {cr.name.replace(/^\d+\.\s*/, "")}
+                                </span>
+                              </td>
+                              <td style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: cCol, whiteSpace: "nowrap" }}>{cr.score}%</td>
+                              <td style={{ padding: "8px 10px", textAlign: "center", whiteSpace: "nowrap" }}>
+                                {cr.level
+                                  ? <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>{cr.level.name}</span>
+                                  : <span style={{ color: "#D1D5DB" }}>—</span>}
+                              </td>
+                              <td style={{ padding: "8px 10px", textAlign: "center", whiteSpace: "nowrap" }}>
+                                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>{cr.threshold}%</span>
+                              </td>
+                              <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                                {cr.thresholdMet
+                                  ? <span className="cp-threshold-met">Met ✓</span>
+                                  : <span className="cp-threshold-notmet">Not Met ✗</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1320,13 +2099,7 @@ function AssessmentsPanel({ curriculumId }) {
 
       {sub === "types"    && <AssessmentTypesSubPanel curriculumId={curriculumId} />}
       {sub === "evidence" && <EvidenceTypesSubPanel   curriculumId={curriculumId} />}
-      {sub === "scoring"  && (
-        <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>⚖️</div>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>Score Evidence</p>
-          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Scoring logic coming soon.</p>
-        </div>
-      )}
+      {sub === "scoring"  && <ScoreEvidenceSubPanel   curriculumId={curriculumId} />}
     </div>
   );
 }
@@ -1566,21 +2339,27 @@ function LevelsPanel({ curriculumId }) {
   const [editTarget, setEditTarget] = useState(null);
   const [name,       setName]       = useState("");
   const [desc,       setDesc]       = useState("");
+  const [minScore,   setMinScore]   = useState("0");
+  const [maxScore,   setMaxScore]   = useState("100");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()   { setEditTarget(null); setName(""); setDesc(""); setMode("add"); }
-  function openEdit(l) { setEditTarget(l); setName(l.name); setDesc(l.description || ""); setMode("edit"); }
+  function openAdd()   { setEditTarget(null); setName(""); setDesc(""); setMinScore("0"); setMaxScore("100"); setMode("add"); }
+  function openEdit(l) { setEditTarget(l); setName(l.name); setDesc(l.description || ""); setMinScore(String(l.minScore ?? 0)); setMaxScore(String(l.maxScore ?? 100)); setMode("edit"); }
   function cancel()    { setMode("list"); setEditTarget(null); }
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim() };
+    const data = {
+      name: name.trim(), description: desc.trim(),
+      minScore: Math.min(100, Math.max(0, Number(minScore) || 0)),
+      maxScore: Math.min(100, Math.max(0, Number(maxScore) || 100)),
+    };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setMinScore("0"); setMaxScore("100"); nameRef.current?.focus(); } });
     }
   }
 
@@ -1621,6 +2400,23 @@ function LevelsPanel({ curriculumId }) {
                 onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
               />
               <div className="cp-char-count">{name.length} / 100</div>
+            </div>
+            <div>
+              <label className="cp-field-label">Score Range <span className="cp-required">*</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>The score range that places a learner in this level.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "8px", alignItems: "center" }}>
+                <div style={{ position: "relative" }}>
+                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                    placeholder="0" value={minScore} onChange={(e) => setMinScore(e.target.value)} />
+                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>min</span>
+                </div>
+                <span style={{ fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>–</span>
+                <div style={{ position: "relative" }}>
+                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                    placeholder="100" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} />
+                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>max</span>
+                </div>
+              </div>
             </div>
             <div>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
@@ -1668,9 +2464,14 @@ function LevelsPanel({ curriculumId }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{level.name}</p>
-                    <span style={{ display: "inline-block", marginTop: "5px", fontSize: "10px", color: "#9CA3AF" }}>
-                      Level {level.order}
-                    </span>
+                    <div style={{ display: "flex", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "10px", color: "#9CA3AF" }}>Level {level.order}</span>
+                      {level.minScore != null && level.maxScore != null && (
+                        <span style={{ fontSize: "10px", fontWeight: "700", color: color, background: `${color}12`, padding: "1px 7px", borderRadius: "20px" }}>
+                          {level.minScore}–{level.maxScore}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <CardKebab onEdit={() => openEdit(level)} onDelete={() => remove(level.id)} disabled={deleting} />
                 </div>
@@ -1794,13 +2595,15 @@ function PerformanceBandsPanel({ curriculumId }) {
   const [desc,       setDesc]       = useState("");
   const [criteria,   setCriteria]   = useState([]);
   const [newCrit,    setNewCrit]    = useState("");
+  const [minScore,   setMinScore]   = useState("0");
+  const [maxScore,   setMaxScore]   = useState("100");
   const nameRef    = useRef(null);
   const critRef    = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMode("add"); }
-  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMinScore(String(b.minScore ?? 0)); setMaxScore(String(b.maxScore ?? 100)); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
 
   function addCriterion() {
@@ -1817,11 +2620,15 @@ function PerformanceBandsPanel({ curriculumId }) {
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), criteria };
+    const data = {
+      name: name.trim(), description: desc.trim(), criteria,
+      minScore: Math.min(100, Math.max(0, Number(minScore) || 0)),
+      maxScore: Math.min(100, Math.max(0, Number(maxScore) || 100)),
+    };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); nameRef.current?.focus(); } });
     }
   }
 
@@ -1884,6 +2691,25 @@ function PerformanceBandsPanel({ curriculumId }) {
                 onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
               />
               <div className="cp-char-count">{name.length} / 100</div>
+            </div>
+
+            {/* Score Range */}
+            <div>
+              <label className="cp-field-label">Score Range <span className="cp-required">*</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>The score range (0–100) that places a learner in this band.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "8px", alignItems: "center" }}>
+                <div style={{ position: "relative" }}>
+                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                    placeholder="0" value={minScore} onChange={(e) => setMinScore(e.target.value)} />
+                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>min</span>
+                </div>
+                <span style={{ fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>–</span>
+                <div style={{ position: "relative" }}>
+                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+                    placeholder="100" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} />
+                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>max</span>
+                </div>
+              </div>
             </div>
 
             {/* Description */}
@@ -1992,6 +2818,11 @@ function PerformanceBandsPanel({ curriculumId }) {
                         }}>
                           {band.name}
                         </span>
+                        {(band.minScore != null && band.maxScore != null) && (
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#6B7280", background: "#F3F4F6", padding: "2px 8px", borderRadius: "20px" }}>
+                            {band.minScore}–{band.maxScore}%
+                          </span>
+                        )}
                         {(band.criteria || []).length > 0 && (
                           <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
                             {band.criteria.length} indicator{band.criteria.length !== 1 ? "s" : ""}

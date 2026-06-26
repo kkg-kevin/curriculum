@@ -5,6 +5,7 @@
     "name": "1. Computational Thinking & Problem Decomposition",
     "description": "The learner is able to analyze problems by breaking them down into smaller, manageable components, identify patterns and relationships, and design clear, logical step-by-step solutions. This includes using structured thinking approaches such as sequencing, abstraction, and basic algorithm design before implementation.",
     "learningAreaId": null,
+    "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:18:46.354Z",
     "updatedAt": "2026-06-25T10:18:46.354Z"
   },
@@ -14,6 +15,7 @@
     "name": "2. Programming & Implementation Skills",
     "description": "The learner can translate logical solutions into functional code using appropriate programming constructs such as variables, conditionals, loops, and functions. They demonstrate the ability to write clear, organized code, test outputs, identify errors, and apply basic debugging techniques to improve program correctness and efficiency.",
     "learningAreaId": null,
+    "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:17.027Z",
     "updatedAt": "2026-06-25T10:19:17.027Z"
   },
@@ -23,6 +25,7 @@
     "name": "3. Digital Creativity & Project Development",
     "description": "The learner applies acquired technical skills to design and develop complete digital projects such as games, animations, or simple applications. They demonstrate creativity in idea generation, effective use of tools and features, and the ability to integrate multiple concepts into a coherent and functional solution.",
     "learningAreaId": null,
+    "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:33.282Z",
     "updatedAt": "2026-06-25T10:19:33.282Z"
   },
@@ -32,6 +35,7 @@
     "name": "4. AI & Data Literacy Awareness",
     "description": "The learner demonstrates an understanding of foundational concepts in artificial intelligence and data usage, including how systems process inputs and generate outputs. They can interact with basic AI tools, recognize the role of data in training systems, and show awareness of key issues such as bias, accuracy, and responsible use of AI technologies.",
     "learningAreaId": null,
+    "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:49.869Z",
     "updatedAt": "2026-06-25T10:19:49.869Z"
   },
@@ -41,6 +45,7 @@
     "name": "5. Collaboration, Communication & Digital Citizenship",
     "description": "The learner effectively collaborates with peers in shared tasks, clearly communicates ideas, processes, and outcomes, and engages constructively in discussions. They also demonstrate responsible digital behavior, including respect for others, safe use of technology, and adherence to ethical standards in online and collaborative environments.",
     "learningAreaId": null,
+    "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:20:10.642Z",
     "updatedAt": "2026-06-25T10:20:10.642Z"
   }

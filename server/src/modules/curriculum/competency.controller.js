@@ -20,6 +20,7 @@ const {
   createPerformanceBandSchema,
   updatePerformanceBandSchema,
   reorderBandsSchema,
+  calculateScoreSchema,
 } = require("./competency.validation");
 
 /* ── Learning Areas ──────────────────────────────────────────────────────── */
@@ -182,6 +183,12 @@ exports.deleteAssessmentType = asyncHandler(async (req, res) => {
 exports.updateScoring = asyncHandler(async (req, res) => {
   const { evidenceWeights } = updateScoringSchema.parse(req.body);
   const data = CompetencyService.updateScoring(req.params.id, req.params.atId, evidenceWeights);
+  res.json({ success: true, data });
+});
+
+exports.calculateScore = asyncHandler(async (req, res) => {
+  const { evidenceScores } = calculateScoreSchema.parse(req.body);
+  const data = CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores);
   res.json({ success: true, data });
 });
 

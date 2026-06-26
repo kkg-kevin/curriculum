@@ -4,6 +4,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Quizzes",
     "description": "Short, structured assessments used to test understanding of specific concepts or topics. Typically objective-based (e.g., multiple choice, true/false) and used frequently in formative or diagnostic stages.",
+    "defaultContribution": 20,
+    "minRequirement": 50,
     "createdAt": "2026-06-25T11:32:43.245Z",
     "updatedAt": "2026-06-25T11:32:43.245Z"
   },
@@ -12,6 +14,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Assignments",
     "description": "Task-based activities that require learners to apply knowledge and demonstrate understanding through written, coded, or practical responses. They are more detailed than quizzes and often assess comprehension and execution.",
+    "defaultContribution": 20,
+    "minRequirement": 50,
     "createdAt": "2026-06-25T11:32:59.652Z",
     "updatedAt": "2026-06-25T11:32:59.652Z"
   },
@@ -20,6 +24,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Projects",
     "description": "Comprehensive, practical tasks where learners design and build complete solutions (e.g., apps, games, AI models). Projects evaluate multiple competencies simultaneously, including creativity, problem-solving, and technical implementation.",
+    "defaultContribution": 30,
+    "minRequirement": 60,
     "createdAt": "2026-06-25T11:33:16.508Z",
     "updatedAt": "2026-06-25T11:33:16.508Z"
   },
@@ -28,6 +34,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Practical Exercises",
     "description": "Hands-on tasks focused on developing specific technical skills through guided or semi-guided activities. These emphasize doing rather than just knowing.",
+    "defaultContribution": 20,
+    "minRequirement": 50,
     "createdAt": "2026-06-25T11:33:44.756Z",
     "updatedAt": "2026-06-25T11:33:44.756Z"
   },
@@ -36,6 +44,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Observations",
     "description": "Instructor-based evaluation of learner behavior, participation, collaboration, and problem-solving approach during activities. Useful for assessing soft skills and engagement.",
+    "defaultContribution": 10,
+    "minRequirement": 40,
     "createdAt": "2026-06-25T11:34:12.030Z",
     "updatedAt": "2026-06-25T11:34:12.030Z"
   }
