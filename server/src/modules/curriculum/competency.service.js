@@ -322,8 +322,14 @@ const CompetencyService = {
   },
 
   updateGlobalScoring(curriculumId, assessmentTypes) {
-    // Validate that all contributions across ALL assessment types sum to exactly 100%
-    let globalTotal = 0;
+    // Tier-2: all type weights must sum to exactly 100%
+    const typeWeightTotal = assessmentTypes.reduce((sum, at) => sum + at.typeWeight, 0);
+    if (Math.round(typeWeightTotal) !== 100) {
+      const err = new Error(`Assessment type weights must total exactly 100% (currently ${Math.round(typeWeightTotal)}%)`);
+      err.statusCode = 422;
+      throw err;
+    }
+    // Tier-1: each type's evidence weights must independently sum to 100% (if any assigned)
     for (const atConfig of assessmentTypes) {
       const at = AssessmentTypeModel.findById(atConfig.id);
       if (!at || at.curriculumId !== curriculumId) {
@@ -331,16 +337,16 @@ const CompetencyService = {
         err.statusCode = 404;
         throw err;
       }
-      globalTotal += atConfig.evidenceWeights.reduce((sum, w) => sum + w.contribution, 0);
+      if (atConfig.evidenceWeights.length === 0) continue;
+      const evTotal = atConfig.evidenceWeights.reduce((sum, w) => sum + w.contribution, 0);
+      if (Math.round(evTotal) !== 100) {
+        const err = new Error(`"${at.name}" evidence contributions must total exactly 100% (currently ${Math.round(evTotal)}%)`);
+        err.statusCode = 422;
+        throw err;
+      }
     }
-    if (Math.round(globalTotal) !== 100) {
-      const err = new Error(`Global contributions must total exactly 100% (currently ${Math.round(globalTotal)}%)`);
-      err.statusCode = 422;
-      throw err;
-    }
-    // Save each assessment type's evidence weights
     for (const atConfig of assessmentTypes) {
-      AssessmentTypeModel.update(atConfig.id, { evidenceWeights: atConfig.evidenceWeights });
+      AssessmentTypeModel.update(atConfig.id, { typeWeight: atConfig.typeWeight, evidenceWeights: atConfig.evidenceWeights });
     }
     return AssessmentTypeModel.findByCurriculumId(curriculumId);
   },
