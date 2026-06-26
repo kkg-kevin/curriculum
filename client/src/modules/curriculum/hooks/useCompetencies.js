@@ -14,6 +14,7 @@ const KEYS = {
   assessmentTypes:  (cid) => ["assessment-types", cid],
   evidenceTypes:    (cid) => ["evidence-types", cid],
   performanceBands: (cid) => ["performance-bands", cid],
+  compWeights:      (cid) => ["competency-weights", cid],
 };
 
 /* ── Learning Areas ─────────────────────────────────────────────────────── */
@@ -335,12 +336,27 @@ export function useUpdateScoring(curriculumId) {
   });
 }
 
+export function useCompetencyWeights(curriculumId) {
+  return useQuery({
+    queryKey:  KEYS.compWeights(curriculumId),
+    queryFn:   () => competenciesApi.getCompetencyWeights(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
+  });
+}
+
 export function useUpdateGlobalScoring(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ assessmentTypes }) => competenciesApi.updateGlobalScoring(curriculumId, assessmentTypes),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
+    mutationFn: ({ assessmentTypes, competencyWeights }) =>
+      competenciesApi.updateGlobalScoring(curriculumId, assessmentTypes, competencyWeights),
+    onSuccess: (data) => {
+      // Directly populate the cache from the save response — avoids a refetch
+      // that could briefly clear typeConfigs and lose the right panel state.
+      if (data?.assessmentTypes) {
+        qc.setQueryData(KEYS.assessmentTypes(curriculumId), data.assessmentTypes);
+      }
+      qc.invalidateQueries({ queryKey: KEYS.compWeights(curriculumId) });
       toast.success("Scoring configuration saved");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to save scoring"),

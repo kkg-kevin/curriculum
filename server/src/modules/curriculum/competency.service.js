@@ -1,3 +1,4 @@
+const CurriculumModel        = require("./curriculum.model");
 const LearningAreaModel      = require("./learning-area.model");
 const CompetencyModel        = require("./competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
@@ -321,14 +322,7 @@ const CompetencyService = {
     return AssessmentTypeModel.update(id, { evidenceWeights });
   },
 
-  updateGlobalScoring(curriculumId, assessmentTypes) {
-    // Tier-2: all type weights must sum to exactly 100%
-    const typeWeightTotal = assessmentTypes.reduce((sum, at) => sum + at.typeWeight, 0);
-    if (Math.round(typeWeightTotal) !== 100) {
-      const err = new Error(`Assessment type weights must total exactly 100% (currently ${Math.round(typeWeightTotal)}%)`);
-      err.statusCode = 422;
-      throw err;
-    }
+  updateGlobalScoring(curriculumId, assessmentTypes, competencyWeights = []) {
     // Tier-1: each type's evidence weights must independently sum to 100% (if any assigned)
     for (const atConfig of assessmentTypes) {
       const at = AssessmentTypeModel.findById(atConfig.id);
@@ -348,7 +342,22 @@ const CompetencyService = {
     for (const atConfig of assessmentTypes) {
       AssessmentTypeModel.update(atConfig.id, { typeWeight: atConfig.typeWeight, evidenceWeights: atConfig.evidenceWeights });
     }
-    return AssessmentTypeModel.findByCurriculumId(curriculumId);
+    // Tier-3: persist competency weights on the curriculum
+    CurriculumModel.update(curriculumId, { competencyWeights });
+    return {
+      assessmentTypes:   AssessmentTypeModel.findByCurriculumId(curriculumId),
+      competencyWeights,
+    };
+  },
+
+  getCompetencyWeights(curriculumId) {
+    const curriculum = CurriculumModel.findById(curriculumId);
+    if (!curriculum) {
+      const err = new Error("Curriculum not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return curriculum.competencyWeights || [];
   },
 
   calculateScore(curriculumId, id, evidenceScores) {
@@ -501,6 +510,7 @@ const CompetencyService = {
       }
     });
   },
+
 };
 
 module.exports = CompetencyService;

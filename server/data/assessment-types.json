@@ -10,15 +10,13 @@
       {
         "evidenceTypeId": "a886a1eb-abcb-4655-a3b4-bcdc1a626825",
         "contribution": 100,
-        "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09", "weight": 50 },
-          { "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c", "weight": 50 }
-        ]
+        "minRequirement": 0,
+        "competencyMappings": []
       }
     ],
     "createdAt": "2026-06-25T11:31:19.130Z",
-    "updatedAt": "2026-06-26T07:03:13.710Z"
+    "updatedAt": "2026-06-26T12:29:06.188Z",
+    "typeWeight": 0
   },
   {
     "id": "a436b2ae-3a08-4efa-8f19-46a7a0f17646",
@@ -30,25 +28,38 @@
     "evidenceWeights": [
       {
         "evidenceTypeId": "e8154918-d6da-4785-b632-182f11a5bff4",
-        "contribution": 60,
+        "contribution": 20,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2", "weight": 70 },
-          { "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09", "weight": 30 }
-        ]
+        "competencyMappings": []
       },
       {
         "evidenceTypeId": "baadfd44-27cc-4cbc-a626-d2626649fad8",
-        "contribution": 40,
+        "contribution": 20,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2", "weight": 60 },
-          { "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58", "weight": 40 }
-        ]
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "ebbede46-ef4a-4910-835f-3a5396d04d85",
+        "contribution": 30,
+        "minRequirement": null,
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "9f3c4252-f74d-4d25-af98-377647d94a88",
+        "contribution": 20,
+        "minRequirement": null,
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "a886a1eb-abcb-4655-a3b4-bcdc1a626825",
+        "contribution": 10,
+        "minRequirement": null,
+        "competencyMappings": []
       }
     ],
     "createdAt": "2026-06-25T11:31:40.054Z",
-    "updatedAt": "2026-06-25T11:36:23.834Z"
+    "updatedAt": "2026-06-26T12:29:06.191Z",
+    "typeWeight": 60
   },
   {
     "id": "648dc7c7-4eba-4ae6-83d2-9faa01be8e30",
@@ -56,45 +67,41 @@
     "name": "Summative Assessment",
     "description": "An evaluation conducted at the end of a learning period or module to measure overall achievement against defined competencies. It determines whether learning objectives have been met and is typically used for grading, certification, or progression decisions.",
     "behaviorType": "summative",
-    "progressionWeight": 1.0,
+    "progressionWeight": 1,
     "evidenceWeights": [
       {
         "evidenceTypeId": "e8154918-d6da-4785-b632-182f11a5bff4",
-        "contribution": 40,
+        "contribution": 20,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2", "weight": 70 },
-          { "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09", "weight": 30 }
-        ]
+        "competencyMappings": []
       },
       {
         "evidenceTypeId": "baadfd44-27cc-4cbc-a626-d2626649fad8",
         "contribution": 20,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2", "weight": 50 },
-          { "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58", "weight": 50 }
-        ]
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "ebbede46-ef4a-4910-835f-3a5396d04d85",
+        "contribution": 30,
+        "minRequirement": null,
+        "competencyMappings": []
       },
       {
         "evidenceTypeId": "9f3c4252-f74d-4d25-af98-377647d94a88",
-        "contribution": 30,
+        "contribution": 20,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58", "weight": 60 },
-          { "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2", "weight": 40 }
-        ]
+        "competencyMappings": []
       },
       {
         "evidenceTypeId": "a886a1eb-abcb-4655-a3b4-bcdc1a626825",
         "contribution": 10,
         "minRequirement": null,
-        "competencyMappings": [
-          { "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c", "weight": 100 }
-        ]
+        "competencyMappings": []
       }
     ],
     "createdAt": "2026-06-25T11:32:02.670Z",
-    "updatedAt": "2026-06-26T07:03:13.710Z"
+    "updatedAt": "2026-06-26T12:29:06.193Z",
+    "typeWeight": 40
   }
 ]
