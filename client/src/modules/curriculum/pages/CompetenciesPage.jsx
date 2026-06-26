@@ -24,7 +24,7 @@ import {
   useCreateAssessmentType,
   useUpdateAssessmentType,
   useDeleteAssessmentType,
-  useUpdateScoring,
+  useUpdateGlobalScoring,
 
   useEvidenceTypes,
   useCreateEvidenceType,
@@ -1488,79 +1488,81 @@ const BAND_SCORE_COLORS = ["#9CA3AF", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"
 /* ── ScoreEvidenceSubPanel ──────────────────────────────────────────────── */
 
 function ScoreEvidenceSubPanel({ curriculumId }) {
-  const { data: types         = [], isLoading: typesLoading }  = useAssessmentTypes(curriculumId);
-  const { data: evidences     = [], isLoading: evLoading }     = useEvidenceTypes(curriculumId);
-  const { data: bands         = [], isLoading: bandsLoading }  = usePerformanceBands(curriculumId);
-  const { data: competencies  = [] }                           = useCompetencies(curriculumId);
-  const { data: progressLevels = [] }                          = useProgressLevels(curriculumId);
-  const { mutate: saveScoring, isPending: saving }             = useUpdateScoring(curriculumId);
+  const { data: types          = [], isLoading: typesLoading }  = useAssessmentTypes(curriculumId);
+  const { data: evidences      = [], isLoading: evLoading }     = useEvidenceTypes(curriculumId);
+  const { data: bands          = [], isLoading: bandsLoading }  = usePerformanceBands(curriculumId);
+  const { data: competencies   = [] }                           = useCompetencies(curriculumId);
+  const { data: progressLevels = [] }                           = useProgressLevels(curriculumId);
+  const { mutate: saveGlobal, isPending: saving }               = useUpdateGlobalScoring(curriculumId);
 
-  const [selectedTypeId,    setSelectedTypeId]    = useState(null);
-  const [localConfig,       setLocalConfig]       = useState({});
-  const [scores,            setScores]            = useState({});
-  const [isDirty,           setIsDirty]           = useState(false);
-  const [expandedMappings,  setExpandedMappings]  = useState(new Set());
+  // evConfig: { [etId]: { assignedTo: atId|null, contribution, minRequirement, competencyMappings } }
+  const [evConfig,         setEvConfig]         = useState({});
+  const [expandedMappings, setExpandedMappings] = useState(new Set());
+  const [scores,           setScores]           = useState({});
+  const [isDirty,          setIsDirty]          = useState(false);
+  const [activeTypeIdx,    setActiveTypeIdx]    = useState(0);
 
-  const selectedType = types.find((t) => t.id === selectedTypeId) || types[0] || null;
-
+  // Initialize from each assessment type's saved evidenceWeights
   useEffect(() => {
-    if (types.length > 0 && !selectedTypeId) setSelectedTypeId(types[0].id);
-  }, [types, selectedTypeId]);
-
-  useEffect(() => {
-    if (!selectedType) return;
-    const saved = selectedType.evidenceWeights || [];
+    if (!types.length || !evidences.length) return;
     const cfg = {};
     evidences.forEach((et) => {
-      const w = saved.find((s) => s.evidenceTypeId === et.id);
-      cfg[et.id] = {
-        included:           !!w,
-        contribution:       w ? w.contribution        : (et.defaultContribution ?? 0),
-        minRequirement:     w ? w.minRequirement       : null,
-        competencyMappings: w ? (w.competencyMappings || []) : [],
-      };
+      cfg[et.id] = { assignedTo: null, contribution: et.defaultContribution ?? 0, minRequirement: null, competencyMappings: [] };
     });
-    setLocalConfig(cfg);
+    types.forEach((at) => {
+      (at.evidenceWeights || []).forEach((ew) => {
+        if (cfg[ew.evidenceTypeId]) {
+          cfg[ew.evidenceTypeId] = {
+            assignedTo:         at.id,
+            contribution:       ew.contribution,
+            minRequirement:     ew.minRequirement,
+            competencyMappings: ew.competencyMappings || [],
+          };
+        }
+      });
+    });
+    setEvConfig(cfg);
     setScores({});
     setIsDirty(false);
     setExpandedMappings(new Set());
-  }, [selectedType?.id, evidences]);
+  }, [types, evidences]);
 
-  function toggleInclude(etId) {
+  function assignTo(etId, atId) {
     const et = evidences.find((e) => e.id === etId);
-    setLocalConfig((prev) => {
+    setEvConfig((prev) => {
       const cur = prev[etId];
-      return { ...prev, [etId]: { ...cur, included: !cur.included, contribution: cur.included ? cur.contribution : (et?.defaultContribution ?? 0) } };
+      if (cur.assignedTo === atId) {
+        return { ...prev, [etId]: { ...cur, assignedTo: null, contribution: 0 } };
+      }
+      return { ...prev, [etId]: { ...cur, assignedTo: atId, contribution: cur.contribution || (et?.defaultContribution ?? 0) } };
     });
     setIsDirty(true);
   }
 
   function setContrib(etId, val) {
-    setLocalConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], contribution: Math.min(100, Math.max(0, Number(val) || 0)) } }));
+    setEvConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], contribution: Math.min(100, Math.max(0, Number(val) || 0)) } }));
     setIsDirty(true);
   }
 
   function setMinReqOverride(etId, val) {
-    setLocalConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], minRequirement: val === "" ? null : Math.min(100, Math.max(0, Number(val) || 0)) } }));
+    setEvConfig((prev) => ({ ...prev, [etId]: { ...prev[etId], minRequirement: val === "" ? null : Math.min(100, Math.max(0, Number(val) || 0)) } }));
     setIsDirty(true);
   }
 
   function toggleCompetencyMapping(etId, competencyId) {
-    setLocalConfig((prev) => {
-      const cur = prev[etId];
+    setEvConfig((prev) => {
+      const cur      = prev[etId];
       const existing = cur.competencyMappings || [];
-      const isOn = existing.some((m) => m.competencyId === competencyId);
-      const next = isOn
-        ? existing.filter((m) => m.competencyId !== competencyId)
-        : [...existing, { competencyId, weight: 0 }];
+      const isOn     = existing.some((m) => m.competencyId === competencyId);
+      const next     = isOn ? existing.filter((m) => m.competencyId !== competencyId) : [...existing, { competencyId, weight: 0 }];
       return { ...prev, [etId]: { ...cur, competencyMappings: next } };
     });
     setIsDirty(true);
   }
 
   function setCompetencyWeight(etId, competencyId, val) {
-    setLocalConfig((prev) => {
-      const cur = prev[etId];
+    setEvConfig((prev) => {
+      const cur  = prev[etId];
       const next = (cur.competencyMappings || []).map((m) =>
         m.competencyId === competencyId ? { ...m, weight: Math.min(100, Math.max(0, Number(val) || 0)) } : m
       );
@@ -1570,493 +1572,496 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
   }
 
   function toggleMappingExpand(etId) {
-    setExpandedMappings((prev) => {
-      const next = new Set(prev);
-      next.has(etId) ? next.delete(etId) : next.add(etId);
-      return next;
-    });
+    setExpandedMappings((prev) => { const n = new Set(prev); n.has(etId) ? n.delete(etId) : n.add(etId); return n; });
   }
 
-  const includedEntries = evidences.filter((et) => localConfig[et.id]?.included);
-  const totalContrib    = includedEntries.reduce((sum, et) => sum + (localConfig[et.id]?.contribution || 0), 0);
-  const totalRounded    = Math.round(totalContrib);
-  const contribOk       = totalRounded === 100;
-
-  const contribColor    = totalRounded < 100 ? "#D97706" : totalRounded > 100 ? "#DC2626" : "#059669";
-  const contribBg       = totalRounded < 100 ? "#D9770610" : totalRounded > 100 ? "#DC262610" : "#05966910";
+  // Global totals across all three types
+  const assignedEntries = Object.entries(evConfig).filter(([, v]) => v.assignedTo !== null);
+  const globalTotal     = assignedEntries.reduce((sum, [, v]) => sum + (v.contribution || 0), 0);
+  const globalRounded   = Math.round(globalTotal);
+  const globalOk        = globalRounded === 100;
+  const contribColor    = globalRounded < 100 ? "#D97706" : globalRounded > 100 ? "#DC2626" : "#059669";
+  const contribBg       = globalRounded < 100 ? "#D9770610" : globalRounded > 100 ? "#DC262610" : "#05966910";
 
   function handleSave() {
-    if (!selectedType || !contribOk) return;
-    const evidenceWeights = includedEntries.map((et) => ({
-      evidenceTypeId:     et.id,
-      contribution:       localConfig[et.id].contribution,
-      minRequirement:     localConfig[et.id].minRequirement,
-      competencyMappings: localConfig[et.id].competencyMappings || [],
+    if (!globalOk) return;
+    const assessmentTypes = types.map((at) => ({
+      id: at.id,
+      evidenceWeights: Object.entries(evConfig)
+        .filter(([, v]) => v.assignedTo === at.id)
+        .map(([etId, v]) => ({
+          evidenceTypeId:     etId,
+          contribution:       v.contribution,
+          minRequirement:     v.minRequirement,
+          competencyMappings: v.competencyMappings || [],
+        })),
     }));
-    saveScoring({ id: selectedType.id, evidenceWeights }, { onSuccess: () => setIsDirty(false) });
+    saveGlobal({ assessmentTypes }, { onSuccess: () => setIsDirty(false) });
   }
 
-  const result = calcScore(
-    scores,
-    includedEntries.map((et) => ({ evidenceTypeId: et.id, ...localConfig[et.id] })),
-    evidences, bands, competencies, progressLevels
-  );
-  const bandIdx  = bands.findIndex((b) => b.id === result.band?.id);
+  // Unified config for the calculator (all assigned evidences flat)
+  const unifiedConfig = assignedEntries.map(([etId, v]) => {
+    const at = types.find((t) => t.id === v.assignedTo);
+    return { evidenceTypeId: etId, contribution: v.contribution, minRequirement: v.minRequirement, competencyMappings: v.competencyMappings, behaviorType: at?.behaviorType || "formative" };
+  });
+
+  const result    = calcScore(scores, unifiedConfig, evidences, bands, competencies, progressLevels);
+  const bandIdx   = bands.findIndex((b) => b.id === result.band?.id);
   const bandColor = bandIdx >= 0 ? BAND_SCORE_COLORS[Math.min(bandIdx, BAND_SCORE_COLORS.length - 1)] : "#9CA3AF";
 
-  const behaviorType = selectedType?.behaviorType || "formative";
+  const hasAnyScores       = Object.values(scores).some((s) => s !== "");
+  const hasSummativeBelow  = unifiedConfig.some((cfg) => {
+    const sc   = Number(scores[cfg.evidenceTypeId]) || 0;
+    const minR = cfg.minRequirement != null ? cfg.minRequirement : (evidences.find((e) => e.id === cfg.evidenceTypeId)?.minRequirement ?? 0);
+    return cfg.behaviorType === "summative" && scores[cfg.evidenceTypeId] !== undefined && scores[cfg.evidenceTypeId] !== "" && sc < minR;
+  });
   let outcome = null;
-  if (includedEntries.length > 0) {
-    if (behaviorType === "diagnostic") {
-      outcome = { type: "placement", color: "#0891B2", bg: "#0891B210", label: result.band ? `Placement: ${result.band.name} level` : "Enter scores to see placement" };
-    } else if (result.belowReq.length > 0 && behaviorType === "summative") {
-      outcome = { type: "cannot_progress", color: "#DC2626", bg: "#DC262610", label: "Cannot progress to next level" };
+  if (assignedEntries.length > 0 && hasAnyScores) {
+    const allDiag = unifiedConfig.every((c) => c.behaviorType === "diagnostic");
+    if (allDiag) {
+      outcome = { type: "placement",       color: "#0891B2", bg: "#0891B210", label: result.band ? `Placement: ${result.band.name} level` : "No band matched" };
+    } else if (hasSummativeBelow) {
+      outcome = { type: "cannot_progress", color: "#DC2626", bg: "#DC262610", label: "Cannot progress — summative evidence below minimum" };
     } else if (result.belowReq.length > 0) {
-      outcome = { type: "below_req", color: "#D97706", bg: "#D9770610", label: `${result.belowReq.length} evidence type${result.belowReq.length > 1 ? "s" : ""} below minimum requirement` };
-    } else if (Object.values(scores).some((s) => s !== "")) {
-      outcome = { type: "passed", color: "#059669", bg: "#05966910", label: "All requirements met" };
+      outcome = { type: "below_req",       color: "#D97706", bg: "#D9770610", label: `${result.belowReq.length} evidence type${result.belowReq.length > 1 ? "s" : ""} below minimum requirement` };
+    } else {
+      outcome = { type: "passed",          color: "#059669", bg: "#05966910", label: result.allCompetenciesMet ? "All competencies met — can progress" : "All requirements met" };
     }
   }
 
   if (typesLoading || evLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
-  if (types.length === 0) {
-    return (
-      <div className="cp-empty">
-        <div style={{ fontSize: "36px", marginBottom: "10px" }}>⚖️</div>
-        <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Assessment Types Yet</p>
-        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create assessment types first, then configure their scoring here.</p>
-      </div>
-    );
-  }
-
-  if (evidences.length === 0) {
-    return (
-      <div className="cp-empty">
-        <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔬</div>
-        <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Evidence Types Yet</p>
-        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create evidence types first, then attach them to assessment types here.</p>
-      </div>
-    );
-  }
+  if (types.length === 0) return (
+    <div className="cp-empty">
+      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Assessment Types Yet</p>
+      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create assessment types first, then configure scoring here.</p>
+    </div>
+  );
+  if (evidences.length === 0) return (
+    <div className="cp-empty">
+      <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Evidence Types Yet</p>
+      <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Create evidence types first, then assign them here.</p>
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0", height: "calc(100vh - 270px)", minHeight: "480px", overflow: "hidden" }}>
 
-      {/* Assessment Type Selector */}
-      <div>
-        <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "600", color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Select Assessment Type</p>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {types.map((t) => {
-            const active = t.id === (selectedType?.id);
-            const col    = BEHAVIOR_COLORS[t.behaviorType] || "#6B7280";
-            return (
-              <button key={t.id} type="button"
-                onClick={() => setSelectedTypeId(t.id)}
-                style={{
-                  padding: "7px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "13px", fontWeight: "600",
-                  border: `2px solid ${active ? col : "#E5E7EB"}`,
-                  background: active ? `${col}15` : "#F9FAFB",
-                  color: active ? col : "#6B7280",
-                  transition: "all 0.15s",
-                }}
-              >
-                {t.name}
-                {t.behaviorType && (
-                  <span style={{ fontSize: "10px", marginLeft: "6px", opacity: 0.7, textTransform: "capitalize" }}>({t.behaviorType})</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* ── Left: Global scoring configuration ── */}
+      {(() => {
+        const safeIdx = Math.min(activeTypeIdx, types.length - 1);
+        const at      = types[safeIdx];
+        const col     = BEHAVIOR_COLORS[at?.behaviorType] || "#6B7280";
+        const typeTotal = at ? Object.entries(evConfig).filter(([, v]) => v.assignedTo === at.id).reduce((s, [, v]) => s + (v.contribution || 0), 0) : 0;
+        return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", borderRight: "1.5px solid #E5E7EB" }}>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+        {/* ── Type carousel header ── */}
+        <div style={{ paddingRight: "16px", paddingBottom: "10px", flexShrink: 0 }}>
+          <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Assessment Type</p>
 
-        {/* ── Left: Configure Evidence ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Configure Evidence Scoring</h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Select evidence types and set their contribution weights. Total must equal 100%.</p>
+          {/* Arrow nav row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button type="button" onClick={() => setActiveTypeIdx((i) => Math.max(0, i - 1))}
+              disabled={safeIdx === 0}
+              style={{
+                width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0, cursor: safeIdx === 0 ? "default" : "pointer",
+                border: "1.5px solid #E5E7EB", background: safeIdx === 0 ? "#F9FAFB" : "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: safeIdx === 0 ? 0.35 : 1, transition: "all 0.15s",
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <polyline points="15 18 9 12 15 6" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Active type pill */}
+            <div style={{ flex: 1, padding: "8px 14px", borderRadius: "10px", background: `${col}12`, border: `1.5px solid ${col}40`, display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: "800", color: col, lineHeight: 1.2 }}>{at?.name || "—"}</p>
+                <p style={{ margin: "2px 0 0", fontSize: "10px", color: col, opacity: 0.7, textTransform: "capitalize" }}>{at?.behaviorType}</p>
+              </div>
+              <span style={{ fontSize: "16px", fontWeight: "900", color: col }}>{Math.round(typeTotal)}%</span>
+            </div>
+
+            <button type="button" onClick={() => setActiveTypeIdx((i) => Math.min(types.length - 1, i + 1))}
+              disabled={safeIdx === types.length - 1}
+              style={{
+                width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0, cursor: safeIdx === types.length - 1 ? "default" : "pointer",
+                border: "1.5px solid #E5E7EB", background: safeIdx === types.length - 1 ? "#F9FAFB" : "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: safeIdx === types.length - 1 ? 0.35 : 1, transition: "all 0.15s",
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <polyline points="9 18 15 12 9 6" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
 
-          {/* Evidence rows */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {evidences.map((et) => {
-              const cfg      = localConfig[et.id] || { included: false, contribution: et.defaultContribution || 0, minRequirement: null };
-              const included = cfg.included;
-              const saved    = (selectedType?.evidenceWeights || []).find((w) => w.evidenceTypeId === et.id);
-              const isOverridden = saved && (saved.contribution !== et.defaultContribution || saved.minRequirement != null);
+          {/* Step dots */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "10px" }}>
+            {types.map((t, i) => {
+              const tCol   = BEHAVIOR_COLORS[t.behaviorType] || "#6B7280";
+              const tTotal = Object.entries(evConfig).filter(([, v]) => v.assignedTo === t.id).reduce((s, [, v]) => s + (v.contribution || 0), 0);
+              const active = i === safeIdx;
               return (
-                <div key={et.id} style={{
-                  border: `1.5px solid ${included ? "#25476a30" : "#E5E7EB"}`,
-                  borderRadius: "10px", padding: "12px 14px",
-                  background: included ? "#25476a05" : "#F9FAFB",
-                  transition: "all 0.15s",
-                }}>
-                  {/* Row header */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <button type="button" onClick={() => toggleInclude(et.id)} style={{
-                      width: "18px", height: "18px", borderRadius: "5px", flexShrink: 0, cursor: "pointer",
-                      border: `2px solid ${included ? "#25476a" : "#D1D5DB"}`,
-                      background: included ? "#25476a" : "transparent",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {included && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </button>
-                    <span style={{ fontSize: "13px", fontWeight: "600", color: included ? "#111827" : "#9CA3AF", flex: 1 }}>{et.name}</span>
-                    {included && isOverridden && (
-                      <span style={{ fontSize: "10px", color: "#7C3AED", background: "#7C3AED10", padding: "2px 6px", borderRadius: "10px", fontWeight: "600" }}>overridden</span>
-                    )}
-                    {included && !isOverridden && saved && (
-                      <span style={{ fontSize: "10px", color: "#059669", background: "#05966910", padding: "2px 6px", borderRadius: "10px", fontWeight: "600" }}>saved</span>
-                    )}
-                  </div>
+                <button key={t.id} type="button" onClick={() => setActiveTypeIdx(i)}
+                  title={`${t.name} — ${Math.round(tTotal)}%`}
+                  style={{
+                    flex: active ? 2 : 1, height: "5px", borderRadius: "3px", border: "none", cursor: "pointer",
+                    background: active ? tCol : `${tCol}40`,
+                    transition: "all 0.2s",
+                    padding: 0,
+                  }}
+                />
+              );
+            })}
+          </div>
 
-                  {/* Contribution + Min Req inputs */}
-                  {included && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+          {/* Per-type mini summary row */}
+          <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+            {types.map((t, i) => {
+              const tCol   = BEHAVIOR_COLORS[t.behaviorType] || "#6B7280";
+              const tTotal = Object.entries(evConfig).filter(([, v]) => v.assignedTo === t.id).reduce((s, [, v]) => s + (v.contribution || 0), 0);
+              const tCount = Object.values(evConfig).filter((v) => v.assignedTo === t.id).length;
+              const active = i === safeIdx;
+              return (
+                <button key={t.id} type="button" onClick={() => setActiveTypeIdx(i)}
+                  style={{
+                    flex: 1, padding: "5px 8px", borderRadius: "8px", border: `1.5px solid ${active ? tCol + "60" : "#E5E7EB"}`,
+                    background: active ? `${tCol}08` : "#F9FAFB", cursor: "pointer", textAlign: "left", transition: "all 0.15s",
+                  }}>
+                  <p style={{ margin: 0, fontSize: "10px", fontWeight: "700", color: active ? tCol : "#9CA3AF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "800", color: active ? tCol : "#6B7280" }}>{Math.round(tTotal)}% <span style={{ fontWeight: "400", fontSize: "10px" }}>· {tCount} ev.</span></p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable evidence rows for the active type */}
+        <div style={{ flex: 1, overflowY: "auto", paddingRight: "16px", display: "flex", flexDirection: "column", gap: "7px", paddingBottom: "4px" }}>
+          {at && evidences.map((et) => {
+            const cfg         = evConfig[et.id] || { assignedTo: null, contribution: 0 };
+            const isHere      = cfg.assignedTo === at.id;
+            const isElsewhere = cfg.assignedTo !== null && cfg.assignedTo !== at.id;
+            const otherType   = isElsewhere ? types.find((t) => t.id === cfg.assignedTo) : null;
+            const expandKey   = `${at.id}-${et.id}`;
+            const expanded    = expandedMappings.has(expandKey);
+            const mappings    = cfg.competencyMappings || [];
+            const totalMapW   = mappings.reduce((s, m) => s + m.weight, 0);
+
+            return (
+              <div key={et.id} style={{
+                borderRadius: "8px", padding: "9px 11px",
+                border: `1.5px solid ${isHere ? col + "50" : "#E5E7EB"}`,
+                background: isHere ? `${col}08` : "#fff",
+                opacity: isElsewhere ? 0.55 : 1, transition: "all 0.15s",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button type="button" onClick={() => assignTo(et.id, at.id)} style={{
+                    width: "16px", height: "16px", borderRadius: "4px", flexShrink: 0, cursor: "pointer",
+                    border: `2px solid ${isHere ? col : "#D1D5DB"}`, background: isHere ? col : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {isHere && <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </button>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: isHere ? "#111827" : "#9CA3AF", flex: 1 }}>{et.name}</span>
+                  {isElsewhere && (
+                    <span style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "20px", background: "#F3F4F6", color: "#6B7280", fontWeight: "600", whiteSpace: "nowrap" }}>
+                      → {otherType?.name || "Other"}
+                    </span>
+                  )}
+                </div>
+
+                {isHere && (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px", marginTop: "9px" }}>
                       <div>
-                        <label style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "4px" }}>
-                          Contribution %
-                          {et.defaultContribution > 0 && cfg.contribution !== et.defaultContribution && (
-                            <span style={{ marginLeft: "5px", color: "#9CA3AF", fontWeight: "400" }}>(default: {et.defaultContribution}%)</span>
-                          )}
-                        </label>
+                        <label style={{ fontSize: "10px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "3px" }}>Contribution %</label>
                         <div style={{ position: "relative" }}>
-                          <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", padding: "7px 28px 7px 10px", fontSize: "13px" }}
+                          <input className="cp-input" type="number" min="0" max="100"
+                            style={{ width: "100%", boxSizing: "border-box", padding: "5px 22px 5px 9px", fontSize: "12px" }}
                             value={cfg.contribution}
                             onChange={(e) => setContrib(et.id, e.target.value)}
                           />
-                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                          <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "4px" }}>
-                          Min Requirement %
-                          {et.minRequirement > 0 && cfg.minRequirement == null && (
-                            <span style={{ marginLeft: "5px", color: "#9CA3AF", fontWeight: "400" }}>(default: {et.minRequirement}%)</span>
-                          )}
-                        </label>
+                        <label style={{ fontSize: "10px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "3px" }}>Min Req %</label>
                         <div style={{ position: "relative" }}>
                           <input className="cp-input" type="number" min="0" max="100"
-                            placeholder={`default ${et.minRequirement ?? 0}%`}
-                            style={{ width: "100%", boxSizing: "border-box", padding: "7px 28px 7px 10px", fontSize: "13px" }}
+                            placeholder={`${et.minRequirement ?? 0}%`}
+                            style={{ width: "100%", boxSizing: "border-box", padding: "5px 22px 5px 9px", fontSize: "12px" }}
                             value={cfg.minRequirement == null ? "" : cfg.minRequirement}
                             onChange={(e) => setMinReqOverride(et.id, e.target.value)}
                           />
-                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                          <span style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
                         </div>
                       </div>
                     </div>
-                  )}
 
-                  {/* Competency Mapping */}
-                  {included && competencies.length > 0 && (() => {
-                    const expanded       = expandedMappings.has(et.id);
-                    const mappings       = cfg.competencyMappings || [];
-                    const totalMapW      = mappings.reduce((s, m) => s + m.weight, 0);
-                    const mappedCount    = mappings.length;
-                    const mapColor       = totalMapW === 0 ? "#9CA3AF" : totalMapW < 100 ? "#D97706" : totalMapW > 100 ? "#DC2626" : "#059669";
-                    return (
-                      <div style={{ marginTop: "8px" }}>
+                    {competencies.length > 0 && (
+                      <div style={{ marginTop: "7px" }}>
                         <button type="button"
-                          onClick={() => toggleMappingExpand(et.id)}
-                          style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", padding: "4px 0", cursor: "pointer", fontSize: "11px", fontWeight: "700", color: "#6B7280" }}
-                        >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
+                          onClick={() => setExpandedMappings((prev) => { const n = new Set(prev); n.has(expandKey) ? n.delete(expandKey) : n.add(expandKey); return n; })}
+                          style={{ display: "flex", alignItems: "center", gap: "5px", background: "none", border: "none", padding: "3px 0", cursor: "pointer", fontSize: "10px", fontWeight: "700", color: "#6B7280" }}>
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>
                             <polyline points="9 18 15 12 9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                           Map to Competencies
-                          {mappedCount > 0 && (
-                            <span style={{ color: mapColor, fontWeight: "700" }}>
-                              ({mappedCount} mapped · {Math.round(totalMapW)}%)
-                            </span>
-                          )}
+                          {mappings.length > 0 && <span style={{ color: totalMapW === 100 ? "#059669" : "#D97706" }}>({mappings.length} · {Math.round(totalMapW)}%)</span>}
                         </button>
                         {expanded && (
-                          <div style={{ marginTop: "8px", padding: "10px 12px", background: "#F8FAFC", borderRadius: "8px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: "6px" }}>
-                            <p style={{ margin: "0 0 6px", fontSize: "11px", color: "#9CA3AF" }}>
-                              Distribute how this evidence's score contributes to competencies. Weights are normalized automatically.
-                            </p>
+                          <div style={{ marginTop: "5px", padding: "7px 9px", background: "#F8FAFC", borderRadius: "7px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: "5px" }}>
                             {competencies.map((comp) => {
-                              const mapped  = mappings.find((m) => m.competencyId === comp.id);
-                              const isOn    = !!mapped;
+                              const mapped = mappings.find((m) => m.competencyId === comp.id);
+                              const isOn   = !!mapped;
                               return (
-                                <div key={comp.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <div key={comp.id} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                   <button type="button" onClick={() => toggleCompetencyMapping(et.id, comp.id)} style={{
-                                    width: "15px", height: "15px", borderRadius: "4px", flexShrink: 0, cursor: "pointer",
-                                    border: `2px solid ${isOn ? "#7C3AED" : "#D1D5DB"}`,
-                                    background: isOn ? "#7C3AED" : "transparent",
+                                    width: "13px", height: "13px", borderRadius: "3px", flexShrink: 0, cursor: "pointer",
+                                    border: `2px solid ${isOn ? "#7C3AED" : "#D1D5DB"}`, background: isOn ? "#7C3AED" : "transparent",
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                   }}>
-                                    {isOn && <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    {isOn && <svg width="6" height="6" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                   </button>
-                                  <span style={{ flex: 1, fontSize: "11px", color: isOn ? "#374151" : "#9CA3AF", fontWeight: isOn ? "600" : "400", lineHeight: 1.3 }}>
-                                    {comp.name.replace(/^\d+\.\s*/, "")}
-                                  </span>
+                                  <span style={{ flex: 1, fontSize: "10px", color: isOn ? "#374151" : "#9CA3AF", fontWeight: isOn ? "600" : "400", lineHeight: 1.3 }}>{comp.name.replace(/^\d+\.\s*/, "")}</span>
                                   {isOn && (
-                                    <div style={{ position: "relative", width: "60px", flexShrink: 0 }}>
+                                    <div style={{ position: "relative", width: "50px", flexShrink: 0 }}>
                                       <input className="cp-input" type="number" min="0" max="100"
-                                        style={{ padding: "4px 20px 4px 8px", fontSize: "12px", width: "100%", boxSizing: "border-box" }}
+                                        style={{ padding: "3px 16px 3px 6px", fontSize: "10px", width: "100%", boxSizing: "border-box" }}
                                         value={mapped.weight}
                                         onChange={(e) => setCompetencyWeight(et.id, comp.id, e.target.value)}
                                       />
-                                      <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                                      <span style={{ position: "absolute", right: "4px", top: "50%", transform: "translateY(-50%)", fontSize: "9px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
                                     </div>
                                   )}
                                 </div>
                               );
                             })}
-                            {mappedCount > 0 && (
-                              <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <span style={{ fontSize: "11px", color: "#6B7280" }}>Total mapped</span>
-                                <span style={{ fontSize: "12px", fontWeight: "800", color: mapColor }}>{Math.round(totalMapW)}%</span>
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
-                    );
-                  })()}
-                </div>
-              );
-            })}
-          </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>{/* end scrollable evidence rows */}
 
-          {/* Contribution tracker */}
-          <div style={{ padding: "14px", borderRadius: "10px", background: contribBg, border: `1.5px solid ${contribColor}30` }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>Total Contribution</span>
-              <span style={{ fontSize: "14px", fontWeight: "800", color: contribColor }}>{totalRounded}%</span>
+        {/* Sticky bottom: global tracker + save */}
+        <div style={{ flexShrink: 0, paddingRight: "16px", paddingTop: "10px", borderTop: "1.5px solid #E5E7EB", background: "#fff" }}>
+          <div style={{ padding: "10px 12px", borderRadius: "10px", background: contribBg, border: `1.5px solid ${contribColor}30`, marginBottom: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>Global Total</span>
+              <span style={{ fontSize: "14px", fontWeight: "800", color: contribColor }}>{globalRounded}% / 100%</span>
             </div>
-            <div style={{ height: "8px", borderRadius: "4px", background: "#E5E7EB", overflow: "hidden" }}>
-              <div style={{
-                height: "100%", borderRadius: "4px",
-                width: `${Math.min(100, totalRounded)}%`,
-                background: contribColor,
-                transition: "width 0.2s, background 0.2s",
-              }} />
+            <div style={{ height: "6px", borderRadius: "3px", background: "#E5E7EB", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: "3px", width: `${Math.min(100, globalRounded)}%`, background: contribColor, transition: "width 0.2s, background 0.2s" }} />
             </div>
-            <p style={{ margin: "6px 0 0", fontSize: "11px", color: contribColor, fontWeight: "600" }}>
-              {totalRounded < 100 ? `${100 - totalRounded}% remaining to allocate` : totalRounded > 100 ? `${totalRounded - 100}% over limit — reduce contributions` : "Contributions balance to 100%"}
+            <p style={{ margin: "5px 0 0", fontSize: "11px", color: contribColor, fontWeight: "600" }}>
+              {globalRounded < 100 ? `${100 - globalRounded}% remaining` : globalRounded > 100 ? `${globalRounded - 100}% over — reduce contributions` : "Balanced ✓"}
             </p>
           </div>
-
-          {/* Save button */}
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button type="button" className="cp-btn-primary" onClick={handleSave}
-              disabled={!contribOk || !isDirty || saving || includedEntries.length === 0}
+              disabled={!globalOk || !isDirty || saving || assignedEntries.length === 0}
             >
-              {saving ? "Saving…" : "Save Scoring"}
+              {saving ? "Saving…" : "Save All"}
             </button>
-            {!contribOk && includedEntries.length > 0 && (
-              <span style={{ fontSize: "12px", color: contribColor, alignSelf: "center", fontWeight: "600" }}>
-                Total must be exactly 100%
-              </span>
+            {!globalOk && assignedEntries.length > 0 && (
+              <span style={{ fontSize: "11px", color: contribColor, fontWeight: "600" }}>Must total 100%</span>
             )}
           </div>
         </div>
+      </div>
+        );
+      })()}
 
-        {/* ── Right: Score Calculator ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Score Calculator</h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Enter scores to preview the final result and performance band.</p>
+      {/* ── Right: Score Calculator ── */}
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", paddingLeft: "20px", overflow: "hidden" }}>
+        {/* Sticky column header */}
+        <div style={{ flexShrink: 0, paddingBottom: "10px" }}>
+          <h3 style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>Score Calculator</h3>
+          <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Enter learner scores to preview the result and competency gate.</p>
+        </div>
+
+        {/* Scrollable calculator content */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px", paddingBottom: "4px" }}>
+        {assignedEntries.length === 0 ? (
+          <div style={{ padding: "24px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px dashed #E5E7EB", textAlign: "center" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Assign evidence types to assessment types on the left to use the calculator.</p>
           </div>
-
-          {includedEntries.length === 0 ? (
-            <div style={{ padding: "24px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px dashed #E5E7EB", textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Select and configure evidence types on the left to use the calculator.</p>
-            </div>
-          ) : (
-            <>
-              {/* Score inputs */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {includedEntries.map((et) => {
-                  const cfg  = localConfig[et.id];
-                  const minR = cfg.minRequirement != null ? cfg.minRequirement : (et.minRequirement ?? 0);
-                  const scoreVal = Number(scores[et.id]) || 0;
-                  const below    = scoreVal < minR && scores[et.id] !== undefined && scores[et.id] !== "";
-                  return (
-                    <div key={et.id} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "12px", fontWeight: "600", color: "#374151" }}>{et.name}</span>
-                          <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{cfg.contribution}% weight · min {minR}%</span>
-                        </div>
-                        <div style={{ position: "relative" }}>
-                          <input className="cp-input" type="number" min="0" max="100"
-                            placeholder="0–100"
-                            style={{ width: "100%", boxSizing: "border-box", padding: "7px 42px 7px 10px", fontSize: "13px", borderColor: below ? "#DC262650" : undefined }}
-                            value={scores[et.id] || ""}
-                            onChange={(e) => setScores((prev) => ({ ...prev, [et.id]: e.target.value }))}
-                          />
-                          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>/ 100</span>
-                        </div>
-                        {below && (
-                          <p style={{ margin: "3px 0 0", fontSize: "11px", color: "#DC2626", fontWeight: "600" }}>Below minimum ({minR}%)</p>
-                        )}
-                      </div>
+        ) : (
+          <>
+            {/* Score inputs grouped by assessment type */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {types.map((at) => {
+                const col      = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+                const typeEvs  = Object.entries(evConfig).filter(([, v]) => v.assignedTo === at.id);
+                if (typeEvs.length === 0) return null;
+                const typeTotal = typeEvs.reduce((s, [, v]) => s + v.contribution, 0);
+                return (
+                  <div key={at.id}>
+                    <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: "700", color: col, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {at.name} · {Math.round(typeTotal)}%
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {typeEvs.map(([etId, v]) => {
+                        const et       = evidences.find((e) => e.id === etId);
+                        const minR     = v.minRequirement != null ? v.minRequirement : (et?.minRequirement ?? 0);
+                        const scoreVal = Number(scores[etId]) || 0;
+                        const below    = scoreVal < minR && scores[etId] !== undefined && scores[etId] !== "";
+                        return (
+                          <div key={etId}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                              <span style={{ fontSize: "12px", fontWeight: "600", color: "#374151" }}>{et?.name || etId}</span>
+                              <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{v.contribution}% · min {minR}%</span>
+                            </div>
+                            <div style={{ position: "relative" }}>
+                              <input className="cp-input" type="number" min="0" max="100" placeholder="0–100"
+                                style={{ width: "100%", boxSizing: "border-box", padding: "6px 40px 6px 10px", fontSize: "13px", borderColor: below ? "#DC262650" : undefined }}
+                                value={scores[etId] || ""}
+                                onChange={(e) => setScores((prev) => ({ ...prev, [etId]: e.target.value }))}
+                              />
+                              <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>/ 100</span>
+                            </div>
+                            {below && <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#DC2626", fontWeight: "600" }}>Below minimum ({minR}%)</p>}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Breakdown table */}
-              {Object.keys(scores).length > 0 && (
+            {/* Breakdown + result */}
+            {hasAnyScores && (
+              <>
                 <div style={{ borderRadius: "10px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                     <thead>
                       <tr style={{ background: "#F9FAFB" }}>
-                        <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Evidence</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weight</th>
-                        <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weighted</th>
+                        <th style={{ padding: "7px 10px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Evidence</th>
+                        <th style={{ padding: "7px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
+                        <th style={{ padding: "7px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weight</th>
+                        <th style={{ padding: "7px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Weighted</th>
                       </tr>
                     </thead>
                     <tbody>
                       {result.breakdown.map((row, i) => (
                         <tr key={row.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
-                          <td style={{ padding: "8px 12px", color: "#374151", fontWeight: "600" }}>
-                            {row.name}
-                            {row.belowMin && <span style={{ marginLeft: "6px", fontSize: "10px", color: "#DC2626", fontWeight: "700" }}>↓ min</span>}
-                          </td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: row.belowMin ? "#DC2626" : "#374151" }}>{row.score}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", color: "#6B7280" }}>{row.contribution}%</td>
-                          <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#111827" }}>{row.weighted}</td>
+                          <td style={{ padding: "7px 10px", color: "#374151", fontWeight: "600", fontSize: "11px" }}>{row.name}</td>
+                          <td style={{ padding: "7px 10px", textAlign: "center", color: row.belowMin ? "#DC2626" : "#374151", fontWeight: "700" }}>{row.score}%</td>
+                          <td style={{ padding: "7px 10px", textAlign: "center", color: "#9CA3AF" }}>{row.contribution}%</td>
+                          <td style={{ padding: "7px 10px", textAlign: "center", fontWeight: "700", color: "#374151" }}>{row.weighted}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-
-              {/* Final score + band */}
-              <div style={{ padding: "16px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px solid #E5E7EB", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ textAlign: "center", minWidth: "70px" }}>
-                  <div style={{ fontSize: "28px", fontWeight: "900", color: "#0F2645", lineHeight: 1 }}>{result.finalScore}</div>
-                  <div style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600", marginTop: "2px" }}>/ 100</div>
-                </div>
-                <div style={{ width: "1px", height: "40px", background: "#E5E7EB" }} />
-                {result.band ? (
-                  <div>
-                    <span style={{
-                      display: "inline-block", padding: "4px 14px", borderRadius: "20px",
-                      background: `${bandColor}15`, border: `2px solid ${bandColor}40`,
-                      fontSize: "14px", fontWeight: "800", color: bandColor,
-                    }}>
-                      {result.band.name}
-                    </span>
-                    <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>{result.band.minScore}–{result.band.maxScore}% range</p>
+                  <div style={{ padding: "10px 14px", background: "#F9FAFB", borderTop: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#374151" }}>Final Score</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "18px", fontWeight: "800", color: bandColor }}>{result.finalScore}%</span>
+                      {result.band && (
+                        <span style={{ padding: "3px 12px", borderRadius: "20px", background: `${bandColor}15`, border: `1.5px solid ${bandColor}40`, fontSize: "12px", fontWeight: "700", color: bandColor }}>
+                          {result.band.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Enter scores to see result</p>
+                </div>
+
+                {outcome && (
+                  <div style={{ padding: "10px 14px", borderRadius: "8px", background: outcome.bg, border: `1.5px solid ${outcome.color}30`, display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: outcome.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: outcome.color }}>{outcome.label}</span>
+                  </div>
                 )}
-              </div>
 
-              {/* Outcome status */}
-              {outcome && (
-                <div style={{ padding: "10px 14px", borderRadius: "8px", background: outcome.bg, border: `1.5px solid ${outcome.color}30`, display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: outcome.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: "13px", fontWeight: "700", color: outcome.color }}>{outcome.label}</span>
-                </div>
-              )}
+                {result.belowReq.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {result.belowReq.map((row) => (
+                      <div key={row.id} style={{ padding: "7px 12px", borderRadius: "8px", background: "#DC262608", border: "1px solid #DC262625", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#DC2626" }}>{row.name}</span>
+                        <span style={{ fontSize: "11px", color: "#DC2626" }}>scored {row.score}% — min {row.minRequirement}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {/* Below requirement details */}
-              {result.belowReq.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  {result.belowReq.map((row) => (
-                    <div key={row.id} style={{ padding: "7px 12px", borderRadius: "8px", background: "#DC262608", border: "1px solid #DC262625", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "12px", fontWeight: "600", color: "#DC2626" }}>{row.name}</span>
-                      <span style={{ fontSize: "11px", color: "#DC2626" }}>scored {row.score}% — min {row.minRequirement}%</span>
+                {/* Competency Gate */}
+                {result.competencyBreakdown?.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 2px" }}>
+                      <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Competency Gate</span>
+                      <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {/* Competency Breakdown + Gate */}
-              {result.competencyBreakdown?.length > 0 && Object.values(scores).some((s) => s !== "") && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 2px" }}>
-                    <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>Competency Gate</span>
-                    <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
-                  </div>
-
-                  {/* Gate banner */}
-                  <div className={`cp-gate-banner ${result.allCompetenciesMet ? "cp-gate-banner--pass" : "cp-gate-banner--fail"}`}>
-                    <div className="cp-gate-dot" style={{ background: result.allCompetenciesMet ? "#22C55E" : "#EF4444" }} />
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: result.allCompetenciesMet ? "#15803D" : "#DC2626" }}>
-                        {result.allCompetenciesMet ? "All competencies met" : `${result.competencyBreakdown.filter((c) => !c.thresholdMet).length} competenc${result.competencyBreakdown.filter((c) => !c.thresholdMet).length !== 1 ? "ies" : "y"} below threshold`}
-                      </p>
-                      <p style={{ margin: "2px 0 0", fontSize: "11px", color: result.allCompetenciesMet ? "#166534" : "#991B1B" }}>
-                        {result.allCompetenciesMet
-                          ? "Learner has demonstrated all required competencies and can progress."
-                          : "Learner must meet the minimum threshold on every competency before progressing."}
-                      </p>
+                    <div className={`cp-gate-banner ${result.allCompetenciesMet ? "cp-gate-banner--pass" : "cp-gate-banner--fail"}`}>
+                      <div className="cp-gate-dot" style={{ background: result.allCompetenciesMet ? "#22C55E" : "#EF4444" }} />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: result.allCompetenciesMet ? "#15803D" : "#DC2626" }}>
+                          {result.allCompetenciesMet ? "All competencies met" : `${result.competencyBreakdown.filter((c) => !c.thresholdMet).length} competenc${result.competencyBreakdown.filter((c) => !c.thresholdMet).length !== 1 ? "ies" : "y"} below threshold`}
+                        </p>
+                        <p style={{ margin: "2px 0 0", fontSize: "11px", color: result.allCompetenciesMet ? "#166534" : "#991B1B" }}>
+                          {result.allCompetenciesMet ? "Learner has demonstrated all required competencies and can progress." : "Learner must meet the minimum threshold on every competency before progressing."}
+                        </p>
+                      </div>
+                      <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", background: result.allCompetenciesMet ? "#DCFCE7" : "#FEE2E2", color: result.allCompetenciesMet ? "#15803D" : "#DC2626", border: `1.5px solid ${result.allCompetenciesMet ? "#86EFAC" : "#FCA5A5"}`, flexShrink: 0 }}>
+                        {result.allCompetenciesMet ? "Can Progress" : "Blocked"}
+                      </span>
                     </div>
-                    <span style={{
-                      padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "700",
-                      background: result.allCompetenciesMet ? "#DCFCE7" : "#FEE2E2",
-                      color: result.allCompetenciesMet ? "#15803D" : "#DC2626",
-                      border: `1.5px solid ${result.allCompetenciesMet ? "#86EFAC" : "#FCA5A5"}`,
-                      flexShrink: 0,
-                    }}>
-                      {result.allCompetenciesMet ? "Can Progress" : "Blocked"}
-                    </span>
-                  </div>
 
-                  {/* Per-competency table */}
-                  <div style={{ borderRadius: "10px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                      <thead>
-                        <tr style={{ background: "#F9FAFB" }}>
-                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Competency</th>
-                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
-                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Level</th>
-                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Min.</th>
-                          <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {result.competencyBreakdown.map((cr, i) => {
-                          const cBandIdx = bands.findIndex((b) => b.id === cr.band?.id);
-                          const cCol     = cBandIdx >= 0 ? BAND_SCORE_COLORS[Math.min(cBandIdx, BAND_SCORE_COLORS.length - 1)] : "#9CA3AF";
-                          const rowBg    = !cr.thresholdMet ? "#FEF2F2" : i % 2 === 0 ? "#fff" : "#FAFAFA";
-                          return (
-                            <tr key={cr.id} style={{ background: rowBg, borderBottom: "1px solid #F3F4F6" }}>
-                              <td style={{ padding: "8px 12px", color: "#374151", fontWeight: "600", fontSize: "11px", maxWidth: "140px" }}>
-                                <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                                  {cr.name.replace(/^\d+\.\s*/, "")}
-                                </span>
-                              </td>
-                              <td style={{ padding: "8px 10px", textAlign: "center", fontWeight: "700", color: cCol, whiteSpace: "nowrap" }}>{cr.score}%</td>
-                              <td style={{ padding: "8px 10px", textAlign: "center", whiteSpace: "nowrap" }}>
-                                {cr.level
-                                  ? <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>{cr.level.name}</span>
-                                  : <span style={{ color: "#D1D5DB" }}>—</span>}
-                              </td>
-                              <td style={{ padding: "8px 10px", textAlign: "center", whiteSpace: "nowrap" }}>
-                                <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>{cr.threshold}%</span>
-                              </td>
-                              <td style={{ padding: "8px 10px", textAlign: "center" }}>
-                                {cr.thresholdMet
-                                  ? <span className="cp-threshold-met">Met ✓</span>
-                                  : <span className="cp-threshold-notmet">Not Met ✗</span>}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    <div style={{ borderRadius: "10px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                        <thead>
+                          <tr style={{ background: "#F9FAFB" }}>
+                            <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Competency</th>
+                            <th style={{ padding: "8px 8px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Score</th>
+                            <th style={{ padding: "8px 8px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Level</th>
+                            <th style={{ padding: "8px 8px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Min.</th>
+                            <th style={{ padding: "8px 8px", textAlign: "center", fontWeight: "700", color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {result.competencyBreakdown.map((cr, i) => {
+                            const cBandIdx = bands.findIndex((b) => b.id === cr.band?.id);
+                            const cCol     = cBandIdx >= 0 ? BAND_SCORE_COLORS[Math.min(cBandIdx, BAND_SCORE_COLORS.length - 1)] : "#9CA3AF";
+                            return (
+                              <tr key={cr.id} style={{ background: !cr.thresholdMet ? "#FEF2F2" : i % 2 === 0 ? "#fff" : "#FAFAFA", borderBottom: "1px solid #F3F4F6" }}>
+                                <td style={{ padding: "7px 12px", color: "#374151", fontWeight: "600", fontSize: "11px" }}>
+                                  <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                    {cr.name.replace(/^\d+\.\s*/, "")}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "7px 8px", textAlign: "center", fontWeight: "700", color: cCol }}>{cr.score}%</td>
+                                <td style={{ padding: "7px 8px", textAlign: "center" }}>
+                                  {cr.level ? <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>{cr.level.name}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}
+                                </td>
+                                <td style={{ padding: "7px 8px", textAlign: "center" }}>
+                                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>{cr.threshold}%</span>
+                                </td>
+                                <td style={{ padding: "7px 8px", textAlign: "center" }}>
+                                  {cr.thresholdMet ? <span className="cp-threshold-met">Met ✓</span> : <span className="cp-threshold-notmet">Not Met ✗</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+        </div>{/* end scrollable calculator */}
       </div>
     </div>
   );

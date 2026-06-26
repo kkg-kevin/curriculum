@@ -15,6 +15,7 @@ const {
   createAssessmentTypeSchema,
   updateAssessmentTypeSchema,
   updateScoringSchema,
+  updateGlobalScoringSchema,
   createEvidenceTypeSchema,
   updateEvidenceTypeSchema,
   createPerformanceBandSchema,
@@ -189,6 +190,12 @@ exports.updateScoring = asyncHandler(async (req, res) => {
 exports.calculateScore = asyncHandler(async (req, res) => {
   const { evidenceScores } = calculateScoreSchema.parse(req.body);
   const data = CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores);
+  res.json({ success: true, data });
+});
+
+exports.updateGlobalScoring = asyncHandler(async (req, res) => {
+  const { assessmentTypes } = updateGlobalScoringSchema.parse(req.body);
+  const data = CompetencyService.updateGlobalScoring(req.params.id, assessmentTypes);
   res.json({ success: true, data });
 });
 

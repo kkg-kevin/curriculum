@@ -88,6 +88,16 @@ const updateScoringSchema = z.object({
   evidenceWeights: z.array(evidenceWeightSchema),
 });
 
+// Global scoring: all three assessment types together must sum to 100%
+const assessmentTypeScoringSchema = z.object({
+  id:              z.string().min(1),
+  evidenceWeights: z.array(evidenceWeightSchema),
+});
+
+const updateGlobalScoringSchema = z.object({
+  assessmentTypes: z.array(assessmentTypeScoringSchema).min(1),
+});
+
 const createEvidenceTypeSchema = z.object({
   name:                z.string().min(1, "Name is required").max(150),
   description:         z.string().max(500).optional().default(""),
@@ -135,6 +145,7 @@ module.exports = {
   createAssessmentTypeSchema,
   updateAssessmentTypeSchema,
   updateScoringSchema,
+  updateGlobalScoringSchema,
   createEvidenceTypeSchema,
   updateEvidenceTypeSchema,
   createPerformanceBandSchema,
