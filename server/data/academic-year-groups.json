@@ -70,5 +70,14 @@
     "endDate": "2026-12-31",
     "createdAt": "2026-06-25T09:32:30.211Z",
     "updatedAt": "2026-06-25T09:32:30.211Z"
+  },
+  {
+    "id": "1e27f26c-7d0c-4a20-8a8e-21cc3425f0e0",
+    "curriculumId": "43e9c555-5eb6-42d0-a6ec-0e30b77d7456",
+    "label": "knfinirnu 2026",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-06-26T14:20:03.131Z",
+    "updatedAt": "2026-06-26T14:20:03.131Z"
   }
 ]

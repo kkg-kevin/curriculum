@@ -4102,5 +4102,33 @@
     ],
     "createdAt": "2026-06-25T09:33:06.822Z",
     "updatedAt": "2026-06-25T09:33:06.823Z"
+  },
+  {
+    "id": "ca67232e-dd1f-4acf-ad09-ca5f9e09ce24",
+    "curriculumId": "43e9c555-5eb6-42d0-a6ec-0e30b77d7456",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "cclass 1",
+            "courses": [
+              {
+                "id": "1782483620096-cgo4aoyoa",
+                "name": "Grammar",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-26T14:20:22.729Z",
+    "updatedAt": "2026-06-26T14:20:22.729Z"
   }
 ]
