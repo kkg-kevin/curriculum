@@ -2088,6 +2088,8 @@ function parseAgeRange(str) {
   return { min: "", max: "" };
 }
 
+const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
+
 function buildAgeRange(min, max) {
   const a = min.toString().trim(), b = max.toString().trim();
   if (a && b) return `${a}–${b}`;
@@ -2151,6 +2153,8 @@ function AgeCategoriesPanel({ curriculumId }) {
       </div>
 
       {mode !== "list" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "480px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
@@ -2226,6 +2230,8 @@ function AgeCategoriesPanel({ curriculumId }) {
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
+          </div>
+        </div>
       )}
 
       {cats.length === 0 && mode === "list" ? (
@@ -2240,7 +2246,7 @@ function AgeCategoriesPanel({ curriculumId }) {
       ) : (
         <div className="cp-comp-grid">
           {cats.map((cat, idx) => {
-            const color   = COMP_PALETTE[idx % COMP_PALETTE.length];
+            const color   = ARC_PALETTE[idx % ARC_PALETTE.length];
             const initial = cat.name.charAt(0).toUpperCase();
             return (
               <div key={cat.id} className="cp-comp-card">
@@ -2278,16 +2284,6 @@ function AgeCategoriesPanel({ curriculumId }) {
               </div>
             );
           })}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">Add Stage</span>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -2295,12 +2291,6 @@ function AgeCategoriesPanel({ curriculumId }) {
 }
 
 /* ── LevelsPanel ─────────────────────────────────────────────────────────── */
-
-const LEVEL_PALETTE = [
-  "#059669","#0891B2","#7C3AED","#D97706",
-  "#DC2626","#BE185D","#25476a","#38aae1",
-  "#2e7db5","#0A3880",
-];
 
 function LevelsPanel({ curriculumId }) {
   const { data: levels = [], isLoading } = useProgressLevels(curriculumId);
@@ -2356,6 +2346,8 @@ function LevelsPanel({ curriculumId }) {
       </div>
 
       {mode !== "list" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "480px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Level" : "New Level"}</h3>
@@ -2408,6 +2400,8 @@ function LevelsPanel({ curriculumId }) {
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
+          </div>
+        </div>
       )}
 
       {levels.length === 0 && mode === "list" ? (
@@ -2422,7 +2416,7 @@ function LevelsPanel({ curriculumId }) {
       ) : (
         <div className="cp-comp-grid">
           {levels.map((level, idx) => {
-            const color   = LEVEL_PALETTE[idx % LEVEL_PALETTE.length];
+            const color   = ARC_PALETTE[idx % ARC_PALETTE.length];
             const initial = level.name.charAt(0).toUpperCase();
             return (
               <div key={level.id} className="cp-comp-card">
@@ -2460,16 +2454,6 @@ function LevelsPanel({ curriculumId }) {
               </div>
             );
           })}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">Add Level</span>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -2553,7 +2537,6 @@ function ArcCompetenciesPanel({ curriculumId }) {
 
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
-const BAND_PALETTE = ["#D97706","#059669","#2563EB","#7C3AED","#DC2626","#0891B2","#25476a","#BE185D"];
 
 function PerformanceBandsPanel({ curriculumId }) {
   const { data: bands = [], isLoading }            = usePerformanceBands(curriculumId);
@@ -2643,7 +2626,9 @@ function PerformanceBandsPanel({ curriculumId }) {
 
       {/* Form */}
       {mode !== "list" && (
-        <div className="cp-comp-form-card" style={{ marginBottom: "20px" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+        <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>
               {mode === "edit" ? "Edit Band" : "New Performance Band"}
@@ -2734,6 +2719,8 @@ function PerformanceBandsPanel({ curriculumId }) {
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
+          </div>
+        </div>
       )}
 
       {/* Empty state */}
@@ -2752,7 +2739,7 @@ function PerformanceBandsPanel({ curriculumId }) {
       {bands.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {bands.map((band, idx) => {
-            const color     = BAND_PALETTE[idx % BAND_PALETTE.length];
+            const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
             return (
               <div key={band.id} style={{
@@ -2825,12 +2812,6 @@ function PerformanceBandsPanel({ curriculumId }) {
             );
           })}
 
-          {/* Add inline */}
-          {mode === "list" && (
-            <button type="button" className="cp-btn-add" style={{ alignSelf: "flex-start" }} onClick={openAdd}>
-              + Add Band
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -2843,7 +2824,6 @@ const ARC_SECTIONS = [
   { key: "age-categories", label: "Developmental Stages" },
   { key: "levels",         label: "Levels" },
   { key: "bands",          label: "Performance Bands" },
-  { key: "competencies",   label: "Competencies" },
 ];
 
 function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubChange }) {
@@ -2875,7 +2855,6 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
       {arcSub === "age-categories" && <AgeCategoriesPanel    curriculumId={curriculumId} />}
       {arcSub === "levels"         && <LevelsPanel           curriculumId={curriculumId} />}
       {arcSub === "bands"          && <PerformanceBandsPanel curriculumId={curriculumId} />}
-      {arcSub === "competencies"   && <ArcCompetenciesPanel  curriculumId={curriculumId} />}
     </div>
   );
 }
