@@ -1114,24 +1114,43 @@ function ProgressionLadderPanel({ curriculumId }) {
 
 /* ── Assessment Framework helpers ───────────────────────────────────────── */
 
-function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent, formTitle }) {
+function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent }) {
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
   return (
     <div>
+      {/* ── Modal overlay for add / edit form ── */}
+      {mode !== "list" && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(15,38,69,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "16px",
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: "16px",
+            width: "100%", maxWidth: "480px",
+            maxHeight: "88vh", overflowY: "auto",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          }}>
+            {formContent}
+          </div>
+        </div>
+      )}
+
+      {/* ── Panel header ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
           <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>{title}</h3>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>{subtitle}</p>
         </div>
-        {mode === "list" && (
-          <button type="button" className="cp-btn-primary" onClick={onAdd}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            {addLabel}
-          </button>
-        )}
+        <button type="button" className="cp-btn-primary" onClick={onAdd}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+          {addLabel}
+        </button>
       </div>
-      {mode !== "list" && formContent}
-      {items.length === 0 && mode === "list" ? (
+
+      {/* ── List / empty state ── */}
+      {items.length === 0 ? (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", marginBottom: "10px" }}>{emptyIcon}</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>{emptyTitle}</p>
@@ -1141,16 +1160,6 @@ function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel
       ) : (
         <div className="cp-comp-grid">
           {items.map(renderCard)}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={onAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">{addLabel}</span>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -1165,10 +1174,11 @@ const BEHAVIOR_OPTIONS = [
   { value: "summative",  label: "Summative",  desc: "Determines final competency — strict requirements" },
 ];
 
-const BEHAVIOR_COLORS = { diagnostic: "#0891B2", formative: "#059669", summative: "#7C3AED" };
+const BEHAVIOR_COLORS = { diagnostic: "#feb139", formative: "#38aae1", summative: "#25476a" };
 
 function AssessmentTypesSubPanel({ curriculumId }) {
   const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
+  const { data: evidences = [] }        = useEvidenceTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAssessmentType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAssessmentType(curriculumId);
@@ -1258,7 +1268,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
       emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types}
       emptyText="Create assessment types like 'Continuous Assessment' or 'End of Term Test'."
       renderCard={(t, idx) => {
-        const color = COMP_PALETTE[idx % COMP_PALETTE.length];
+        const color = BEHAVIOR_COLORS[t.behaviorType] || "#25476a";
         return (
           <div key={t.id} className={`cp-comp-card${mode === "edit" && editTarget?.id === t.id ? " cp-comp-card--editing" : ""}`}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
@@ -1283,10 +1293,63 @@ function AssessmentTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} />
             </div>
             <div style={{ flex: 1 }}>
-              {t.description ? (
-                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
-              ) : (
-                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              {t.description && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
+              )}
+
+              {/* ── Evidence breakdown (from Score Evidence config) ── */}
+              {(t.evidenceWeights || []).length > 0 ? (() => {
+                const evTotal = Math.round((t.evidenceWeights || []).reduce((s, ew) => s + (ew.contribution || 0), 0));
+                const evOk    = evTotal === 100;
+                const bCol    = BEHAVIOR_COLORS[t.behaviorType] || color;
+                return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Evidence Breakdown</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      {(t.evidenceWeights || []).map((ew) => {
+                        const ev   = evidences.find((e) => e.id === ew.evidenceTypeId);
+                        const minR = ew.minRequirement;
+                        return (
+                          <div key={ew.evidenceTypeId}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                              <span style={{ fontSize: "11px", fontWeight: "600", color: "#374151", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {ev?.name || "Unknown evidence"}
+                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, marginLeft: "8px" }}>
+                                {minR != null && minR > 0 && (
+                                  <span style={{ fontSize: "10px", color: "#9CA3AF" }}>min {minR}%</span>
+                                )}
+                                <span style={{ fontSize: "12px", fontWeight: "800", color: bCol }}>{ew.contribution}%</span>
+                              </div>
+                            </div>
+                            <div style={{ height: "4px", borderRadius: "2px", background: "#F3F4F6", overflow: "hidden" }}>
+                              <div style={{ height: "100%", borderRadius: "2px", width: `${Math.min(100, ew.contribution)}%`, background: `${bCol}70`, transition: "width 0.3s" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Totals row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "7px", borderTop: "1px dashed #EBEBEB" }}>
+                      <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Evidence total</span>
+                      <span style={{ fontSize: "11px", fontWeight: "800", color: evOk ? "#059669" : "#D97706" }}>
+                        {evTotal}%{evOk ? " ✓" : " — incomplete"}
+                      </span>
+                    </div>
+                    {t.typeWeight > 0 && (
+                      <div style={{ marginTop: "7px", padding: "5px 10px", borderRadius: "8px", background: `${bCol}08`, border: `1px solid ${bCol}20`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Final score contribution</span>
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: bCol }}>{t.typeWeight}%</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                  <p style={{ margin: 0, fontSize: "11px", color: "#C4C9D4", fontStyle: "italic" }}>
+                    No evidence assigned — configure in <strong style={{ fontWeight: "600" }}>Score Evidence</strong>.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -1298,10 +1361,11 @@ function AssessmentTypesSubPanel({ curriculumId }) {
 
 /* ── EvidenceTypesSubPanel ───────────────────────────────────────────────── */
 
-const EVIDENCE_PALETTE = ["#0891B2","#7C3AED","#059669","#D97706","#DC2626","#BE185D","#25476a","#38aae1","#2e7db5","#0A3880"];
+const EVIDENCE_PALETTE = ["#25476a","#feb139","#38aae1"];
 
 function EvidenceTypesSubPanel({ curriculumId }) {
   const { data: evidences = [], isLoading } = useEvidenceTypes(curriculumId);
+  const { data: types = [] }               = useAssessmentTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateEvidenceType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateEvidenceType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteEvidenceType(curriculumId);
@@ -1416,11 +1480,49 @@ function EvidenceTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} />
             </div>
             <div style={{ flex: 1 }}>
-              {e.description ? (
-                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
-              ) : (
-                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              {e.description && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
               )}
+
+              {/* ── Used in (from Score Evidence config) ── */}
+              {(() => {
+                const usedIn = types.filter((at) =>
+                  (at.evidenceWeights || []).some((ew) => ew.evidenceTypeId === e.id)
+                );
+                if (usedIn.length === 0) return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: 0, fontSize: "11px", color: "#C4C9D4", fontStyle: "italic" }}>
+                      Not assigned to any assessment type yet — configure in <strong style={{ fontWeight: "600" }}>Score Evidence</strong>.
+                    </p>
+                  </div>
+                );
+                return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Used In</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      {usedIn.map((at) => {
+                        const ew   = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === e.id);
+                        const col  = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+                        const minR = ew?.minRequirement;
+                        return (
+                          <div key={at.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "8px", background: `${col}08`, border: `1px solid ${col}18` }}>
+                            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: col, flexShrink: 0 }} />
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: col, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {at.name}
+                            </span>
+                            {minR != null && minR > 0 && (
+                              <span style={{ fontSize: "10px", color: "#9CA3AF", flexShrink: 0 }}>min {minR}%</span>
+                            )}
+                            <span style={{ fontSize: "12px", fontWeight: "800", color: col, flexShrink: 0 }}>
+                              {ew?.contribution ?? 0}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
@@ -1599,213 +1701,251 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
   );
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0", alignItems: "start" }}>
+    <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
 
-      {/* ── Left: Assessment type tabs + evidence config ── */}
-      <div style={{ display: "flex", flexDirection: "column", borderRight: "1.5px solid #E5E7EB", paddingBottom: "16px" }}>
+      {/* ══ LEFT — Config ══ */}
+      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: "28px" }}>
 
-        {/* Section label */}
-        <div style={{ paddingRight: "16px", paddingBottom: "8px" }}>
-          <p style={{ margin: 0, fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Assessment Types</p>
+      {/* ══ STEP 1 — Evidence Weights ══ */}
+      <div>
+        {/* Step header */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "14px" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", background: "#0F2645", color: "#fff", fontSize: "11px", fontWeight: "800", flexShrink: 0, marginTop: "1px" }}>1</span>
+          <div>
+            <h3 style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Evidence Weights</h3>
+            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>For each assessment type, select the evidence types that apply and set how much each one contributes. Contributions must total 100%.</p>
+          </div>
         </div>
 
-        {/* Tab buttons — one per type */}
-        <div style={{ paddingRight: "16px", display: "flex", gap: "8px", paddingBottom: "14px" }}>
+        {/* Assessment type pill tabs */}
+        <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
           {types.map((at) => {
-            const col      = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
-            const total    = typeTotals[at.id] ?? 0;
-            const atOk     = evOk(at.id);
-            const atTw     = typeWeights[at.id] ?? 0;
-            const selCount = Object.values(typeConfigs[at.id] || {}).filter((v) => v.selected).length;
-            const active   = activeTypeId === at.id;
-            const evColor  = atOk && selCount > 0 ? "#059669" : selCount > 0 ? "#D97706" : "#9CA3AF";
+            const col    = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+            const active = activeTypeId === at.id;
+            const ok     = evOk(at.id);
+            const count  = Object.values(typeConfigs[at.id] || {}).filter((v) => v.selected).length;
+            const total  = typeTotals[at.id] ?? 0;
             return (
-              <button key={at.id} type="button"
-                onClick={() => setActiveTypeId(at.id)}
-                style={{
-                  flex: 1, borderRadius: "12px", cursor: "pointer", textAlign: "left",
-                  border: `1.5px solid ${active ? col : "#E5E7EB"}`,
-                  background: active ? "#fff" : "#F9FAFB",
-                  boxShadow: active ? `0 2px 14px ${col}22` : "none",
-                  transition: "all 0.18s", overflow: "hidden",
-                }}>
-                {/* Top accent bar */}
-                <div style={{ height: "3px", background: active ? col : "#E9EAEC", transition: "background 0.18s" }} />
-                <div style={{ padding: "10px 12px 12px" }}>
-                  {/* Dot + name */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px" }}>
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col, flexShrink: 0, boxShadow: active ? `0 0 0 3px ${col}20` : "none" }} />
-                    <span style={{ fontSize: "12px", fontWeight: "800", color: active ? col : "#374151", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{at.name}</span>
-                  </div>
-                  {/* Behavior tag */}
-                  {at.behaviorType && (
-                    <div style={{ marginBottom: "10px", paddingLeft: "15px" }}>
-                      <span style={{ fontSize: "9px", fontWeight: "700", color: col, background: `${col}15`, padding: "2px 7px", borderRadius: "20px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                        {at.behaviorType}
-                      </span>
-                    </div>
-                  )}
-                  {/* Weight input */}
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <p style={{ margin: "0 0 4px", fontSize: "9px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Type Weight</p>
-                    <div style={{ position: "relative", width: "76px" }}>
-                      <input className="cp-input" type="number" min="0" max="100"
-                        style={{ width: "100%", boxSizing: "border-box", padding: "5px 22px 5px 10px", fontSize: "15px", fontWeight: "900", textAlign: "left", borderColor: active ? `${col}55` : "#E5E7EB", background: active ? `${col}07` : "#fff", color: active ? col : "#111827" }}
-                        value={atTw}
-                        onChange={(e) => {
-                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                          setTypeWeights((prev) => ({ ...prev, [at.id]: val }));
-                          setIsDirty(true);
-                        }}
-                      />
-                      <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", fontWeight: "700", color: active ? col : "#9CA3AF", pointerEvents: "none" }}>%</span>
-                    </div>
-                  </div>
-                  {/* Evidence status pill */}
-                  <div style={{ marginTop: "10px" }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: "4px",
-                      fontSize: "10px", fontWeight: "700", color: evColor,
-                      background: atOk && selCount > 0 ? "#05966914" : selCount > 0 ? "#D9770614" : "#F3F4F6",
-                      border: `1px solid ${atOk && selCount > 0 ? "#05966930" : selCount > 0 ? "#D9770630" : "#E5E7EB"}`,
-                      padding: "3px 8px", borderRadius: "20px",
-                    }}>
-                      {total}%{atOk && selCount > 0 ? " ✓" : selCount > 0 ? " — adjust" : " — none"}
-                    </span>
-                  </div>
-                </div>
+              <button key={at.id} type="button" onClick={() => setActiveTypeId(at.id)} style={{
+                display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px",
+                borderRadius: "24px", cursor: "pointer", transition: "all 0.18s",
+                border: `2px solid ${active ? col : "#E5E7EB"}`,
+                background: active ? col : "#fff",
+                boxShadow: active ? `0 2px 10px ${col}30` : "none",
+              }}>
+                <span style={{ fontSize: "13px", fontWeight: "700", color: active ? "#fff" : "#374151" }}>{at.name}</span>
+                {count > 0 && (
+                  <span style={{
+                    fontSize: "10px", fontWeight: "800", padding: "2px 7px", borderRadius: "12px",
+                    color: active ? col : (ok ? "#059669" : "#D97706"),
+                    background: active ? "#fff" : (ok ? "#05966914" : "#D9770614"),
+                    border: `1px solid ${active ? "transparent" : (ok ? "#05966930" : "#D9770630")}`,
+                  }}>
+                    {total}%{ok && count > 0 ? " ✓" : ""}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Evidence list for active type */}
+        {/* Evidence panel for active type */}
         {(() => {
-          const at  = types.find((t) => t.id === activeTypeId);
+          const at = types.find((t) => t.id === activeTypeId);
           if (!at) return null;
           const col   = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
           const total = typeTotals[at.id] ?? 0;
-          const atOk  = evOk(at.id);
+          const ok    = evOk(at.id);
           return (
-            <div style={{ paddingRight: "16px", display: "flex", flexDirection: "column", gap: "6px", paddingBottom: "8px" }}>
-              {evidences.map((et) => {
-                const slot   = typeConfigs[at.id]?.[et.id] || { selected: false, contribution: et.defaultContribution ?? 0, minRequirement: null };
-                const isHere = slot.selected;
-                return (
-                  <div key={et.id} style={{
-                    borderRadius: "8px", padding: "8px 10px",
-                    border: `1.5px solid ${isHere ? col + "45" : "#E5E7EB"}`,
-                    background: isHere ? `${col}07` : "#fff",
-                    transition: "all 0.15s",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <button type="button" onClick={() => toggleEvidence(at.id, et.id)} style={{
-                        width: "16px", height: "16px", borderRadius: "4px", flexShrink: 0, cursor: "pointer",
-                        border: `2px solid ${isHere ? col : "#D1D5DB"}`, background: isHere ? col : "transparent",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        {isHere && <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </button>
-                      <span style={{ fontSize: "12px", fontWeight: "600", color: isHere ? "#111827" : "#9CA3AF", flex: 1 }}>{et.name}</span>
-                    </div>
-                    {isHere && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px", marginTop: "8px" }}>
-                        <div>
-                          <label style={{ fontSize: "10px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "3px" }}>Contribution %</label>
-                          <div style={{ position: "relative" }}>
-                            <input className="cp-input" type="number" min="0" max="100"
-                              style={{ width: "100%", boxSizing: "border-box", padding: "4px 20px 4px 8px", fontSize: "12px" }}
-                              value={slot.contribution}
-                              onChange={(e) => setContrib(at.id, et.id, e.target.value)}
-                            />
-                            <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+            <div style={{ border: `1.5px solid ${col}30`, borderRadius: "12px", overflow: "hidden" }}>
+              {/* Panel header */}
+              <div style={{ padding: "11px 16px", background: `${col}0c`, borderBottom: `1px solid ${col}20`, display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: col, flexShrink: 0 }} />
+                <span style={{ fontSize: "13px", fontWeight: "800", color: col }}>{at.name}</span>
+                {at.behaviorType && (
+                  <span style={{ fontSize: "10px", fontWeight: "700", color: col, background: `${col}18`, padding: "2px 9px", borderRadius: "10px", textTransform: "capitalize", letterSpacing: "0.03em" }}>
+                    {at.behaviorType}
+                  </span>
+                )}
+              </div>
+
+              {/* Evidence rows */}
+              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "6px", background: "#fff" }}>
+                {evidences.map((et) => {
+                  const slot = typeConfigs[at.id]?.[et.id] || { selected: false, contribution: et.defaultContribution ?? 0, minRequirement: null };
+                  const isOn = slot.selected;
+                  const minR = slot.minRequirement;
+                  return (
+                    <div key={et.id} style={{
+                      borderRadius: "10px", overflow: "hidden",
+                      border: `1.5px solid ${isOn ? col + "35" : "#F0F0F0"}`,
+                      background: isOn ? `${col}06` : "#FAFAFA",
+                      transition: "all 0.15s",
+                    }}>
+                      {/* Main row */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px" }}>
+                        {/* Checkbox */}
+                        <button type="button" onClick={() => toggleEvidence(at.id, et.id)} style={{
+                          width: "19px", height: "19px", borderRadius: "5px", flexShrink: 0, cursor: "pointer",
+                          border: `2px solid ${isOn ? col : "#D1D5DB"}`,
+                          background: isOn ? col : "transparent",
+                          display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s",
+                        }}>
+                          {isOn && <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </button>
+                        {/* Name */}
+                        <span style={{ fontSize: "13px", fontWeight: isOn ? "700" : "500", color: isOn ? "#111827" : "#9CA3AF", flex: 1, transition: "color 0.15s" }}>
+                          {et.name}
+                        </span>
+                        {/* Contribution input — inline when selected */}
+                        {isOn ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                            <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600" }}>Contribution</span>
+                            <div style={{ position: "relative" }}>
+                              <input className="cp-input" type="number" min="0" max="100"
+                                style={{ width: "76px", boxSizing: "border-box", padding: "5px 24px 5px 10px", fontSize: "14px", fontWeight: "800", color: col, borderColor: `${col}45`, background: `${col}07`, textAlign: "right" }}
+                                value={slot.contribution}
+                                onChange={(e) => setContrib(at.id, et.id, e.target.value)}
+                              />
+                              <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", fontWeight: "700", color: `${col}90`, pointerEvents: "none" }}>%</span>
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: "10px", fontWeight: "600", color: "#6B7280", display: "block", marginBottom: "3px" }}>Min Req %</label>
+                        ) : (
+                          <span style={{ fontSize: "11px", color: "#D1D5DB", fontWeight: "500" }}>not assigned</span>
+                        )}
+                      </div>
+                      {/* Min requirement row — only when selected */}
+                      {isOn && (
+                        <div style={{ padding: "0 14px 10px 43px", display: "flex", alignItems: "center", gap: "10px", borderTop: `1px solid ${col}12` }}>
+                          <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600" }}>Min passing score</span>
                           <div style={{ position: "relative" }}>
                             <input className="cp-input" type="number" min="0" max="100"
-                              placeholder={`${et.minRequirement ?? 0}`}
-                              style={{ width: "100%", boxSizing: "border-box", padding: "4px 20px 4px 8px", fontSize: "12px" }}
-                              value={slot.minRequirement == null ? "" : slot.minRequirement}
+                              placeholder={et.minRequirement != null ? `${et.minRequirement}` : "0"}
+                              style={{ width: "76px", boxSizing: "border-box", padding: "4px 24px 4px 10px", fontSize: "12px", borderColor: "#E5E7EB" }}
+                              value={minR == null ? "" : minR}
                               onChange={(e) => setMinReqOverride(at.id, et.id, e.target.value)}
                             />
-                            <span style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
+                            <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
                           </div>
+                          {et.minRequirement != null && (
+                            <span style={{ fontSize: "11px", color: "#C4C9D4" }}>default: {et.minRequirement}%</span>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-              {/* Evidence total bar */}
-              <div style={{ marginTop: "4px", padding: "7px 10px", borderRadius: "7px", background: atOk && total > 0 ? "#05966910" : total > 0 ? "#D9770610" : "#F9FAFB", border: `1px solid ${atOk && total > 0 ? "#05966930" : total > 0 ? "#D9770630" : "#E5E7EB"}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: "600", color: "#6B7280" }}>Evidence total — {at.name}</span>
-                  <span style={{ fontSize: "11px", fontWeight: "800", color: atOk && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#9CA3AF" }}>
-                    {total}% / 100%{!atOk && total > 0 ? (total > 100 ? ` (${total - 100} over)` : ` (need ${100 - total})`) : atOk && total > 0 ? " ✓" : ""}
+              {/* Progress bar footer */}
+              <div style={{ padding: "10px 16px", background: ok && total > 0 ? "#05966908" : total > 0 ? "#D9770908" : "#F9FAFB", borderTop: `1px solid ${ok && total > 0 ? "#05966922" : total > 0 ? "#D9770922" : "#F0F0F0"}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>Evidence total</span>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: ok && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#9CA3AF" }}>
+                    {total}% / 100%
+                    {ok && total > 0 ? "  ✓" : total > 100 ? `  (${total - 100} over)` : total > 0 ? `  (need ${100 - total} more)` : ""}
                   </span>
                 </div>
-                <div style={{ height: "4px", borderRadius: "2px", background: "#E5E7EB", overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: "2px", width: `${Math.min(100, total)}%`, background: atOk && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#E5E7EB", transition: "width 0.2s" }} />
+                <div style={{ height: "6px", borderRadius: "3px", background: "#E5E7EB", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: "3px", width: `${Math.min(100, total)}%`, background: ok && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#E5E7EB", transition: "width 0.25s, background 0.2s" }} />
                 </div>
               </div>
             </div>
           );
         })()}
+      </div>
 
-        {/* Bottom: type weight total + save */}
-        <div style={{ paddingRight: "16px", paddingTop: "10px", borderTop: "1.5px solid #E5E7EB", display: "flex", flexDirection: "column", gap: "7px" }}>
-          <div style={{ padding: "8px 12px", borderRadius: "8px", background: twBg, border: `1.5px solid ${twColor}30` }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "700", color: "#374151" }}>Type Weights Total</span>
-              <span style={{ fontSize: "13px", fontWeight: "800", color: twColor }}>
-                {typeWeightRounded}% / 100%{twOk ? " ✓" : ""}
-              </span>
-            </div>
-            <div style={{ height: "5px", borderRadius: "3px", background: "#E5E7EB", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: "3px", width: `${Math.min(100, typeWeightRounded)}%`, background: twColor, transition: "width 0.2s, background 0.2s" }} />
-            </div>
+      {/* ══ STEP 2 — Assessment Type Weights ══ */}
+      <div>
+        {/* Step header */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "14px" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", background: "#0F2645", color: "#fff", fontSize: "11px", fontWeight: "800", flexShrink: 0, marginTop: "1px" }}>2</span>
+          <div>
+            <h3 style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Assessment Type Weights</h3>
+            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Set how much each assessment type counts toward the final score. All weights must total 100%.</p>
           </div>
+        </div>
 
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button type="button" className="cp-btn-primary" onClick={handleSave}
-              disabled={!allTypesOk || !isDirty || saving || !anyAssigned}
-            >
-              {saving ? "Saving…" : "Save All"}
-            </button>
-            {!twOk && anyAssigned && (
-              <span style={{ fontSize: "11px", color: twColor, fontWeight: "600" }}>
-                {typeWeightRounded > 100 ? `${typeWeightRounded - 100}% over` : `need ${100 - typeWeightRounded}% more`}
-              </span>
-            )}
-            {twOk && !types.every((at) => evOk(at.id)) && (
-              <span style={{ fontSize: "11px", color: "#D97706", fontWeight: "600" }}>
-                {types.filter((at) => !evOk(at.id)).map((at) => at.name).join(", ")} evidence ≠ 100%
-              </span>
-            )}
+        <div style={{ border: "1.5px solid #E5E7EB", borderRadius: "12px", overflow: "hidden" }}>
+          {types.map((at, i) => {
+            const col = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+            const tw  = typeWeights[at.id] ?? 0;
+            return (
+              <div key={at.id} style={{ padding: "14px 16px", borderBottom: i < types.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+                {/* Top row: dot + name + badge + input */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                  <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: col, flexShrink: 0 }} />
+                  <span style={{ fontSize: "13px", fontWeight: "700", color: "#111827", flex: 1 }}>{at.name}</span>
+                  {at.behaviorType && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", color: col, background: `${col}15`, padding: "2px 8px", borderRadius: "8px", textTransform: "capitalize", flexShrink: 0 }}>
+                      {at.behaviorType}
+                    </span>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                    <input className="cp-input" type="number" min="0" max="100"
+                      style={{ width: "60px", padding: "5px 8px", fontSize: "14px", fontWeight: "800", color: col, borderColor: `${col}45`, background: `${col}07`, textAlign: "right" }}
+                      value={tw}
+                      onChange={(e) => {
+                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                        setTypeWeights((prev) => ({ ...prev, [at.id]: val }));
+                        setIsDirty(true);
+                      }}
+                    />
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: col, minWidth: "14px" }}>%</span>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div style={{ height: "5px", borderRadius: "3px", background: "#F3F4F6", overflow: "hidden", marginLeft: "19px" }}>
+                  <div style={{ height: "100%", borderRadius: "3px", width: `${Math.min(100, tw)}%`, background: col, opacity: tw > 0 ? 1 : 0.2, transition: "width 0.25s, opacity 0.2s" }} />
+                </div>
+              </div>
+            );
+          })}
+          {/* Totals footer */}
+          <div style={{ padding: "11px 16px", background: twBg, borderTop: `1.5px solid ${twColor}25`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>Total</span>
+            <span style={{ fontSize: "14px", fontWeight: "800", color: twColor }}>
+              {typeWeightRounded}% / 100%
+              {twOk ? "  ✓" : typeWeightRounded > 100 ? `  (${typeWeightRounded - 100} over)` : `  (need ${100 - typeWeightRounded} more)`}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ── Right: Scoring Overview ── */}
-      <div style={{ display: "flex", flexDirection: "column", paddingLeft: "20px", paddingBottom: "16px" }}>
+      {/* ══ Save ══ */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <button type="button" className="cp-btn-primary" onClick={handleSave}
+          disabled={!allTypesOk || !isDirty || saving || !anyAssigned}>
+          {saving ? "Saving…" : "Save Configuration"}
+        </button>
+        {isDirty && !allTypesOk && anyAssigned && (
+          <span style={{ fontSize: "12px", color: "#D97706", fontWeight: "600" }}>
+            {!twOk
+              ? `Type weights total ${typeWeightRounded}% — must be 100%`
+              : `${types.filter((at) => !evOk(at.id)).map((at) => at.name).join(", ")} evidence doesn't total 100%`}
+          </span>
+        )}
+      </div>
+
+      </div>{/* end LEFT column */}
+
+      {/* ══ RIGHT — Scoring Preview ══ */}
+      <div style={{ flex: "0 0 272px", display: "flex", flexDirection: "column", gap: "10px" }}>
 
         {/* Header */}
-        <div style={{ paddingBottom: "10px" }}>
-          <h3 style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>Scoring Overview</h3>
-          <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>How scores are structured and combined.</p>
+        <div style={{ paddingBottom: "4px" }}>
+          <h3 style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>Scoring Preview</h3>
+          <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Live view of your scoring structure.</p>
         </div>
 
         {!anyAssigned ? (
-          <div style={{ padding: "24px", borderRadius: "10px", background: "#F9FAFB", border: "1.5px dashed #E5E7EB", textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Assign evidence types on the left to see the scoring structure.</p>
+          <div style={{ padding: "28px 16px", borderRadius: "12px", background: "#F9FAFB", border: "1.5px dashed #E5E7EB", textAlign: "center" }}>
+            <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#9CA3AF" }}>Nothing configured yet</p>
+            <p style={{ margin: 0, fontSize: "12px", color: "#C4C9D4" }}>Assign evidence types on the left to see the breakdown here.</p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-
-            {/* Per-type evidence weight cards */}
+          <>
+            {/* Per-type evidence breakdown cards */}
             {types.map((at) => {
               const col     = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
               const typeEvs = Object.entries(typeConfigs[at.id] || {}).filter(([, v]) => v.selected);
@@ -1815,19 +1955,21 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
               const ok    = evOk(at.id);
               return (
                 <div key={at.id} style={{ borderRadius: "10px", border: `1.5px solid ${col}25`, overflow: "hidden" }}>
-                  <div style={{ padding: "8px 12px", background: `${col}10`, borderBottom: `1px solid ${col}15`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  {/* Card header */}
+                  <div style={{ padding: "8px 12px", background: `${col}0e`, borderBottom: `1px solid ${col}18`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col, flexShrink: 0 }} />
                       <span style={{ fontSize: "12px", fontWeight: "800", color: col }}>{at.name}</span>
-                      <span style={{ fontSize: "10px", color: col, opacity: 0.6, textTransform: "capitalize" }}>{at.behaviorType}</span>
+                      {at.behaviorType && <span style={{ fontSize: "9px", fontWeight: "700", color: col, opacity: 0.7, textTransform: "capitalize" }}>{at.behaviorType}</span>}
                     </div>
                     {tw > 0 && (
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: col, padding: "2px 8px", borderRadius: "20px", background: `${col}15`, border: `1px solid ${col}30` }}>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: col, background: `${col}15`, padding: "2px 8px", borderRadius: "20px", border: `1px solid ${col}25` }}>
                         {tw}% of final
                       </span>
                     )}
                   </div>
-                  <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                  {/* Evidence rows */}
+                  <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
                     {typeEvs.map(([etId, v]) => {
                       const et   = evidences.find((e) => e.id === etId);
                       const minR = v.minRequirement != null ? v.minRequirement : (et?.minRequirement ?? 0);
@@ -1835,76 +1977,60 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                         <div key={etId}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
                             <span style={{ fontSize: "11px", fontWeight: "600", color: "#374151" }}>{et?.name || etId}</span>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {minR > 0 && <span style={{ fontSize: "10px", color: "#9CA3AF" }}>min {minR}%</span>}
                               <span style={{ fontSize: "12px", fontWeight: "800", color: col }}>{v.contribution}%</span>
                             </div>
                           </div>
                           <div style={{ height: "4px", borderRadius: "2px", background: "#F3F4F6", overflow: "hidden" }}>
-                            <div style={{ height: "100%", borderRadius: "2px", width: `${Math.min(100, v.contribution)}%`, background: `${col}70`, transition: "width 0.3s" }} />
+                            <div style={{ height: "100%", borderRadius: "2px", width: `${Math.min(100, v.contribution)}%`, background: `${col}80`, transition: "width 0.25s" }} />
                           </div>
                         </div>
                       );
                     })}
                   </div>
+                  {/* Evidence total footer */}
                   <div style={{ padding: "6px 12px", background: "#FAFAFA", borderTop: `1px solid ${col}10`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Evidence total</span>
                     <span style={{ fontSize: "11px", fontWeight: "800", color: ok && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#9CA3AF" }}>
-                      {total}% {ok && total > 0 ? "✓" : total > 100 ? `(${total - 100} over)` : total > 0 ? `(${100 - total} short)` : ""}
+                      {total}%{ok && total > 0 ? " ✓" : total > 100 ? ` (${total - 100} over)` : total > 0 ? ` (${100 - total} short)` : ""}
                     </span>
                   </div>
                 </div>
               );
             })}
 
-            {/* Final Assessment Score — live formula */}
-            {(() => {
-              const activeTypes = types.filter((at) => Object.values(typeConfigs[at.id] || {}).some((v) => v.selected));
-              if (activeTypes.length === 0) return null;
-              return (
-                <div style={{ borderRadius: "10px", border: `1.5px solid ${twOk ? "#05966930" : "#D9770630"}`, overflow: "hidden" }}>
-                  <div style={{ padding: "8px 12px", background: twOk ? "#05966908" : "#D9770608", borderBottom: `1px solid ${twOk ? "#05966920" : "#D9770620"}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#374151" }}>Final Assessment Score</span>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: twOk ? "#059669" : "#D97706" }}>
-                      Weights: {typeWeightRounded}%{twOk ? " ✓" : " / 100%"}
+            {/* Final formula */}
+            <div style={{ borderRadius: "10px", border: `1.5px solid ${allTypesOk ? "#05966930" : "#E9EAEC"}`, overflow: "hidden", background: allTypesOk ? "#05966906" : "#FAFAFA" }}>
+              <div style={{ padding: "8px 12px", borderBottom: `1px solid ${allTypesOk ? "#05966920" : "#F0F0F0"}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "11px", fontWeight: "800", color: "#374151" }}>Final Score Formula</span>
+                {allTypesOk
+                  ? <span style={{ fontSize: "10px", fontWeight: "700", color: "#059669", background: "#05966912", padding: "2px 8px", borderRadius: "20px", border: "1px solid #05966930" }}>Ready</span>
+                  : <span style={{ fontSize: "10px", fontWeight: "600", color: "#D97706" }}>Incomplete</span>
+                }
+              </div>
+              <div style={{ padding: "10px 12px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
+                {types.filter((at) => Object.values(typeConfigs[at.id] || {}).some((v) => v.selected)).map((at, i) => {
+                  const col = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+                  const tw  = typeWeights[at.id] ?? 0;
+                  return (
+                    <span key={at.id} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {i > 0 && <span style={{ fontSize: "12px", fontWeight: "700", color: "#C4C9D4" }}>+</span>}
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: col, background: `${col}10`, padding: "4px 10px", borderRadius: "7px", border: `1.5px solid ${col}20` }}>
+                        {at.name} × {tw}%
+                      </span>
                     </span>
-                  </div>
-                  <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {activeTypes.map((at, i) => {
-                      const tw  = typeWeights[at.id] ?? 0;
-                      const col = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
-                      return (
-                        <div key={at.id}>
-                          {i > 0 && <div style={{ paddingLeft: "2px", marginBottom: "4px" }}><span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "700" }}>+</span></div>}
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "7px", background: `${col}08`, border: `1px solid ${col}20` }}>
-                            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col, flexShrink: 0 }} />
-                            <span style={{ fontSize: "12px", fontWeight: "700", color: col, flex: 1 }}>{at.name}</span>
-                            <span style={{ fontSize: "11px", color: "#9CA3AF" }}>score ×</span>
-                            <span style={{ fontSize: "13px", fontWeight: "800", color: tw > 0 ? col : "#9CA3AF" }}>{tw}%</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div style={{ marginTop: "4px", paddingTop: "8px", borderTop: "1.5px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "700" }}>=</span>
-                        <span style={{ fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>Final Score</span>
-                        <span style={{ fontSize: "11px", color: "#9CA3AF" }}>0 – 100</span>
-                      </div>
-                      {twOk && (
-                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#059669", padding: "2px 8px", borderRadius: "20px", background: "#05966912", border: "1px solid #05966930" }}>
-                          Ready
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-          </div>
+                  );
+                })}
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#C4C9D4" }}>=</span>
+                <span style={{ fontSize: "12px", fontWeight: "800", color: "#0F2645", background: "#F0F4F8", padding: "4px 10px", borderRadius: "7px" }}>Final Score</span>
+              </div>
+            </div>
+          </>
         )}
-      </div>
+
+      </div>{/* end RIGHT column */}
+
     </div>
   );
 }
