@@ -13,9 +13,9 @@ import {
 const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
-  { n: 3, label: "Academic Year" },
-  { n: 4, label: "Version Control" },
-  { n: 5, label: "Competencies" },
+  { n: 3, label: "Competencies" },
+  { n: 4, label: "Academic Year" },
+  { n: 5, label: "Version Control" },
 ];
 
 const STATUSES = [
@@ -799,11 +799,11 @@ export default function CurriculumVersionControlPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)} className="vc-btn-secondary">← Academic Year</button>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} className="vc-btn-primary">Next: Competencies →</button>
+          <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-primary">Done</button>
         </div>
       </div>
 
-      <StepIndicator current={4} />
+      <StepIndicator current={5} />
 
       {/* Empty state */}
       {mode === "empty" && (

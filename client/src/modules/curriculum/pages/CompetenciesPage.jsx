@@ -38,9 +38,9 @@ import {
 const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
-  { n: 3, label: "Academic Year" },
-  { n: 4, label: "Version Control" },
-  { n: 5, label: "Competencies" },
+  { n: 3, label: "Competencies" },
+  { n: 4, label: "Academic Year" },
+  { n: 5, label: "Version Control" },
 ];
 
 const AREA_COLORS = [
@@ -2760,16 +2760,16 @@ export default function CompetenciesPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>Define competencies, learning areas, the progress arc, and assessments for this curriculum.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          <button type="button" className="cp-btn-secondary" onClick={() => navigate(`/curriculum/${id}/versions`)}>
-            ← Version Control
+          <button type="button" className="cp-btn-secondary" onClick={() => navigate(`/curriculum/${id}/structure`)}>
+            ← Structure
           </button>
-          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate("/curriculum")}>
-            Done
+          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/academic-year`)}>
+            Next: Academic Year →
           </button>
         </div>
       </div>
 
-      <StepIndicator current={5} />
+      <StepIndicator current={3} />
 
       {/* ── Panel navigation ────────────────────────────────────────── */}
       <div className="cp-nav">

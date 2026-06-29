@@ -265,5 +265,33 @@
     "createdAt": "2026-06-25T09:29:38.606Z",
     "updatedAt": "2026-06-26T14:09:56.535Z",
     "competencyWeights": []
+  },
+  {
+    "name": "biy",
+    "code": "u",
+    "academicYear": "",
+    "description": "ububyvbyuvyuvb",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "class one"
+    ],
+    "id": "f22aa982-a3a5-4ccc-9b62-be6993f002a0",
+    "createdAt": "2026-06-29T12:10:48.191Z",
+    "updatedAt": "2026-06-29T12:11:00.760Z"
   }
 ]
