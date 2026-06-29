@@ -1114,24 +1114,43 @@ function ProgressionLadderPanel({ curriculumId }) {
 
 /* ── Assessment Framework helpers ───────────────────────────────────────── */
 
-function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent, formTitle }) {
+function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent }) {
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
   return (
     <div>
+      {/* ── Modal overlay for add / edit form ── */}
+      {mode !== "list" && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(15,38,69,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "16px",
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: "16px",
+            width: "100%", maxWidth: "480px",
+            maxHeight: "88vh", overflowY: "auto",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          }}>
+            {formContent}
+          </div>
+        </div>
+      )}
+
+      {/* ── Panel header ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
           <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>{title}</h3>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>{subtitle}</p>
         </div>
-        {mode === "list" && (
-          <button type="button" className="cp-btn-primary" onClick={onAdd}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            {addLabel}
-          </button>
-        )}
+        <button type="button" className="cp-btn-primary" onClick={onAdd}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+          {addLabel}
+        </button>
       </div>
-      {mode !== "list" && formContent}
-      {items.length === 0 && mode === "list" ? (
+
+      {/* ── List / empty state ── */}
+      {items.length === 0 ? (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", marginBottom: "10px" }}>{emptyIcon}</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>{emptyTitle}</p>
@@ -1141,16 +1160,6 @@ function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel
       ) : (
         <div className="cp-comp-grid">
           {items.map(renderCard)}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={onAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">{addLabel}</span>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -1165,10 +1174,11 @@ const BEHAVIOR_OPTIONS = [
   { value: "summative",  label: "Summative",  desc: "Determines final competency — strict requirements" },
 ];
 
-const BEHAVIOR_COLORS = { diagnostic: "#0891B2", formative: "#059669", summative: "#7C3AED" };
+const BEHAVIOR_COLORS = { diagnostic: "#feb139", formative: "#38aae1", summative: "#25476a" };
 
 function AssessmentTypesSubPanel({ curriculumId }) {
   const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
+  const { data: evidences = [] }        = useEvidenceTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAssessmentType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAssessmentType(curriculumId);
@@ -1258,7 +1268,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
       emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types}
       emptyText="Create assessment types like 'Continuous Assessment' or 'End of Term Test'."
       renderCard={(t, idx) => {
-        const color = COMP_PALETTE[idx % COMP_PALETTE.length];
+        const color = BEHAVIOR_COLORS[t.behaviorType] || "#25476a";
         return (
           <div key={t.id} className={`cp-comp-card${mode === "edit" && editTarget?.id === t.id ? " cp-comp-card--editing" : ""}`}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
@@ -1283,10 +1293,63 @@ function AssessmentTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} />
             </div>
             <div style={{ flex: 1 }}>
-              {t.description ? (
-                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
-              ) : (
-                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              {t.description && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
+              )}
+
+              {/* ── Evidence breakdown (from Score Evidence config) ── */}
+              {(t.evidenceWeights || []).length > 0 ? (() => {
+                const evTotal = Math.round((t.evidenceWeights || []).reduce((s, ew) => s + (ew.contribution || 0), 0));
+                const evOk    = evTotal === 100;
+                const bCol    = BEHAVIOR_COLORS[t.behaviorType] || color;
+                return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Evidence Breakdown</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      {(t.evidenceWeights || []).map((ew) => {
+                        const ev   = evidences.find((e) => e.id === ew.evidenceTypeId);
+                        const minR = ew.minRequirement;
+                        return (
+                          <div key={ew.evidenceTypeId}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                              <span style={{ fontSize: "11px", fontWeight: "600", color: "#374151", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {ev?.name || "Unknown evidence"}
+                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, marginLeft: "8px" }}>
+                                {minR != null && minR > 0 && (
+                                  <span style={{ fontSize: "10px", color: "#9CA3AF" }}>min {minR}%</span>
+                                )}
+                                <span style={{ fontSize: "12px", fontWeight: "800", color: bCol }}>{ew.contribution}%</span>
+                              </div>
+                            </div>
+                            <div style={{ height: "4px", borderRadius: "2px", background: "#F3F4F6", overflow: "hidden" }}>
+                              <div style={{ height: "100%", borderRadius: "2px", width: `${Math.min(100, ew.contribution)}%`, background: `${bCol}70`, transition: "width 0.3s" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Totals row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "7px", borderTop: "1px dashed #EBEBEB" }}>
+                      <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Evidence total</span>
+                      <span style={{ fontSize: "11px", fontWeight: "800", color: evOk ? "#059669" : "#D97706" }}>
+                        {evTotal}%{evOk ? " ✓" : " — incomplete"}
+                      </span>
+                    </div>
+                    {t.typeWeight > 0 && (
+                      <div style={{ marginTop: "7px", padding: "5px 10px", borderRadius: "8px", background: `${bCol}08`, border: `1px solid ${bCol}20`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Final score contribution</span>
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: bCol }}>{t.typeWeight}%</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                  <p style={{ margin: 0, fontSize: "11px", color: "#C4C9D4", fontStyle: "italic" }}>
+                    No evidence assigned — configure in <strong style={{ fontWeight: "600" }}>Score Evidence</strong>.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -1298,10 +1361,11 @@ function AssessmentTypesSubPanel({ curriculumId }) {
 
 /* ── EvidenceTypesSubPanel ───────────────────────────────────────────────── */
 
-const EVIDENCE_PALETTE = ["#0891B2","#7C3AED","#059669","#D97706","#DC2626","#BE185D","#25476a","#38aae1","#2e7db5","#0A3880"];
+const EVIDENCE_PALETTE = ["#25476a","#feb139","#38aae1"];
 
 function EvidenceTypesSubPanel({ curriculumId }) {
   const { data: evidences = [], isLoading } = useEvidenceTypes(curriculumId);
+  const { data: types = [] }               = useAssessmentTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateEvidenceType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateEvidenceType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteEvidenceType(curriculumId);
@@ -1416,11 +1480,49 @@ function EvidenceTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} />
             </div>
             <div style={{ flex: 1 }}>
-              {e.description ? (
-                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
-              ) : (
-                <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+              {e.description && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
               )}
+
+              {/* ── Used in (from Score Evidence config) ── */}
+              {(() => {
+                const usedIn = types.filter((at) =>
+                  (at.evidenceWeights || []).some((ew) => ew.evidenceTypeId === e.id)
+                );
+                if (usedIn.length === 0) return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: 0, fontSize: "11px", color: "#C4C9D4", fontStyle: "italic" }}>
+                      Not assigned to any assessment type yet — configure in <strong style={{ fontWeight: "600" }}>Score Evidence</strong>.
+                    </p>
+                  </div>
+                );
+                return (
+                  <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "10px" }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Used In</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      {usedIn.map((at) => {
+                        const ew   = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === e.id);
+                        const col  = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
+                        const minR = ew?.minRequirement;
+                        return (
+                          <div key={at.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "8px", background: `${col}08`, border: `1px solid ${col}18` }}>
+                            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: col, flexShrink: 0 }} />
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: col, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {at.name}
+                            </span>
+                            {minR != null && minR > 0 && (
+                              <span style={{ fontSize: "10px", color: "#9CA3AF", flexShrink: 0 }}>min {minR}%</span>
+                            )}
+                            <span style={{ fontSize: "12px", fontWeight: "800", color: col, flexShrink: 0 }}>
+                              {ew?.contribution ?? 0}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
