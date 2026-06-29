@@ -13,6 +13,7 @@ const createCompetencySchema = z.object({
   description:      z.string().max(500).optional().default(""),
   learningAreaId:   z.string().nullable().optional().default(null),
   minimumThreshold: z.number().min(0).max(100).optional().default(60),
+  weight:           z.number().min(0).max(100).optional().default(0),
 });
 
 const updateCompetencySchema = createCompetencySchema.partial();
