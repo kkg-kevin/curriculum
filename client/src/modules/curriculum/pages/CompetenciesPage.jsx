@@ -2818,11 +2818,122 @@ function PerformanceBandsPanel({ curriculumId }) {
   );
 }
 
+/* ── IdentityMatrix ──────────────────────────────────────────────────────── */
+
+function IdentityMatrix({ curriculumId }) {
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const { data: bands  = [] } = usePerformanceBands(curriculumId);
+
+  const isEmpty = stages.length === 0 || bands.length === 0;
+
+  return (
+    <div style={{ marginTop: "32px", borderTop: "1.5px solid #E5E7EB", paddingTop: "24px" }}>
+      <div style={{ marginBottom: "18px" }}>
+        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Identity Matrix</h3>
+        <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+          {isEmpty
+            ? "Configure developmental stages and performance bands above to generate all possible learner identities."
+            : `${stages.length} stage${stages.length !== 1 ? "s" : ""} × ${bands.length} band${bands.length !== 1 ? "s" : ""} = ${stages.length * bands.length} learner identities · placed by age (stage) + score (band)`}
+        </p>
+      </div>
+
+      {!isEmpty && (
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ minWidth: `${116 + bands.length * 128}px` }}>
+
+            {/* ── Band column headers ── */}
+            <div style={{ display: "flex", gap: "6px", marginBottom: "8px", paddingLeft: "122px" }}>
+              {bands.map((band, idx) => {
+                const color = ARC_PALETTE[idx % ARC_PALETTE.length];
+                return (
+                  <div key={band.id} style={{
+                    flex: 1, textAlign: "center",
+                    padding: "7px 6px 6px",
+                    background: `${color}10`,
+                    borderRadius: "10px",
+                    border: `1.5px solid ${color}25`,
+                  }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color }}>{band.name}</div>
+                    {band.minScore != null && (
+                      <div style={{ fontSize: "9px", fontWeight: "600", color: "#9CA3AF", marginTop: "2px" }}>
+                        {band.minScore}–{band.maxScore}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Stage rows ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {stages.map((stage, sIdx) => {
+                const stageColor = ARC_PALETTE[sIdx % ARC_PALETTE.length];
+                return (
+                  <div key={stage.id} style={{ display: "flex", alignItems: "stretch", gap: "6px" }}>
+                    {/* Stage label */}
+                    <div style={{
+                      width: "116px", flexShrink: 0,
+                      padding: "10px 12px",
+                      background: `${stageColor}10`,
+                      borderRadius: "10px",
+                      border: `1.5px solid ${stageColor}28`,
+                      display: "flex", flexDirection: "column", justifyContent: "center",
+                    }}>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: stageColor, lineHeight: 1.2 }}>
+                        {stage.name}
+                      </div>
+                      {stage.ageRange && (
+                        <div style={{ fontSize: "10px", color: "#9CA3AF", marginTop: "3px" }}>
+                          {stage.ageRange} yrs
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Identity cells */}
+                    {bands.map((band, bIdx) => {
+                      const badgeColor = ARC_PALETTE[bIdx % ARC_PALETTE.length];
+                      return (
+                        <div key={band.id} style={{
+                          flex: 1,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          padding: "8px 6px",
+                          background: "#FAFAFA",
+                          borderRadius: "10px",
+                          border: "1px solid #F0F0F0",
+                        }}>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "5px 10px",
+                            borderRadius: "20px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            background: `${badgeColor}12`,
+                            color: badgeColor,
+                            border: `1px solid ${badgeColor}28`,
+                            whiteSpace: "nowrap",
+                            textAlign: "center",
+                          }}>
+                            {stage.name} {band.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── ProgressArcPanel ────────────────────────────────────────────────────── */
 
 const ARC_SECTIONS = [
   { key: "age-categories", label: "Developmental Stages" },
-  { key: "levels",         label: "Levels" },
   { key: "bands",          label: "Performance Bands" },
 ];
 
@@ -2835,7 +2946,7 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Progress Arc</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Define developmental stages, proficiency levels, and view competencies in context.
+            Define stages (age-based) and bands (score-based) — together they form each learner's identity.
           </p>
         </div>
         <div className="cp-arc-section-nav">
@@ -2853,8 +2964,9 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
       </div>
 
       {arcSub === "age-categories" && <AgeCategoriesPanel    curriculumId={curriculumId} />}
-      {arcSub === "levels"         && <LevelsPanel           curriculumId={curriculumId} />}
       {arcSub === "bands"          && <PerformanceBandsPanel curriculumId={curriculumId} />}
+
+      <IdentityMatrix curriculumId={curriculumId} />
     </div>
   );
 }
