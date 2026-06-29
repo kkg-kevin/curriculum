@@ -13,9 +13,9 @@ import {
 const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
-  { n: 3, label: "Academic Year" },
-  { n: 4, label: "Version Control" },
-  { n: 5, label: "Competencies" },
+  { n: 3, label: "Competencies" },
+  { n: 4, label: "Academic Year" },
+  { n: 5, label: "Version Control" },
 ];
 
 const STATUSES = [
@@ -784,12 +784,12 @@ export default function AcademicYearPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>{subtitleText}</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)} className="ay-btn-secondary">← Structure</button>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} className="ay-btn-secondary">← Competencies</button>
           <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)} className="ay-btn-primary">Next: Version Control →</button>
         </div>
       </div>
 
-      <StepIndicator current={3} />
+      <StepIndicator current={4} />
 
       {/* Empty state (no groups) */}
       {groups.length === 0 && mode === "view" && (

@@ -48,5 +48,27 @@
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:20:10.642Z",
     "updatedAt": "2026-06-25T10:20:10.642Z"
+  },
+  {
+    "id": "8714a925-90b6-4b07-9a39-b736497b80b7",
+    "curriculumId": "6516d0d2-af4a-47c5-afa1-b5651fc84516",
+    "name": "buhqeug",
+    "description": "jbugeugu",
+    "learningAreaId": null,
+    "minimumThreshold": 60,
+    "weight": 30,
+    "createdAt": "2026-06-29T12:06:44.808Z",
+    "updatedAt": "2026-06-29T12:06:44.808Z"
+  },
+  {
+    "id": "bbdb4051-bcb6-4bcc-8867-d8ecbe1498f6",
+    "curriculumId": "f22aa982-a3a5-4ccc-9b62-be6993f002a0",
+    "name": "gyyy",
+    "description": "ugygyggyg",
+    "learningAreaId": null,
+    "minimumThreshold": 60,
+    "weight": 20,
+    "createdAt": "2026-06-29T12:11:11.100Z",
+    "updatedAt": "2026-06-29T12:11:11.100Z"
   }
 ]

@@ -4130,5 +4130,33 @@
     ],
     "createdAt": "2026-06-26T14:20:22.729Z",
     "updatedAt": "2026-06-26T14:20:22.729Z"
+  },
+  {
+    "id": "509d2dbd-7b34-46d8-b748-fa42cd991e54",
+    "curriculumId": "f22aa982-a3a5-4ccc-9b62-be6993f002a0",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class one",
+            "courses": [
+              {
+                "id": "1782735133747-6vt2255d1",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-06-29T12:12:16.271Z",
+    "updatedAt": "2026-06-29T12:12:18.864Z"
   }
 ]

@@ -20,9 +20,9 @@ const CYCLE_OPTIONS = [
 const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
-  { n: 3, label: "Academic Year" },
-  { n: 4, label: "Version Control" },
-  { n: 5, label: "Competencies" },
+  { n: 3, label: "Competencies" },
+  { n: 4, label: "Academic Year" },
+  { n: 5, label: "Version Control" },
 ];
 
 /* ── CSS ─────────────────────────────────────────────────────────────────── */
@@ -386,8 +386,8 @@ export default function CurriculumStructurePage() {
           <button type="button" onClick={() => handleSave("/curriculum")} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
             Done
           </button>
-          <button type="button" onClick={() => handleSave(`/curriculum/${id}/academic-year`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
-            {isPending ? <><Spinner /> Saving…</> : "Next: Academic Year →"}
+          <button type="button" onClick={() => handleSave(`/curriculum/${id}/competencies`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
+            {isPending ? <><Spinner /> Saving…</> : "Next: Competencies →"}
           </button>
         </div>
       </div>
