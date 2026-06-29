@@ -16,10 +16,6 @@ import {
   useCreateAgeCategory,
   useUpdateAgeCategory,
   useDeleteAgeCategory,
-  useProgressLevels,
-  useCreateProgressLevel,
-  useUpdateProgressLevel,
-  useDeleteProgressLevel,
   useAssessmentTypes,
   useCreateAssessmentType,
   useUpdateAssessmentType,
@@ -231,22 +227,6 @@ const CSS = `
     border-color:#25476a !important;
     box-shadow:0 0 0 3px rgba(37,71,106,0.1) !important;
   }
-  .cp-comp-card--add {
-    border:1.5px dashed #D1D5DB; background:#FAFAFA;
-    align-items:center; justify-content:center; cursor:pointer;
-    min-height:130px;
-  }
-  .cp-comp-card--add:hover { border-color:#25476a; background:#e8f5fb; }
-  .cp-comp-card--add:hover .cp-add-card-icon { border-color:#a8d5ee; color:#25476a; }
-  .cp-comp-card--add:hover .cp-add-card-label { color:#25476a; }
-
-  .cp-add-card-icon {
-    width:40px; height:40px; border-radius:12px; border:2px dashed #D1D5DB;
-    display:flex; align-items:center; justify-content:center; color:#C4C9D4;
-    transition:border-color 0.15s, color 0.15s; margin-bottom:8px;
-  }
-  .cp-add-card-label { font-size:13px; font-weight:600; color:#9CA3AF; transition:color 0.15s; }
-
   /* Card kebab */
   .cp-card-kebab-btn {
     width:28px; height:28px; border-radius:7px; border:none; background:transparent;
@@ -334,14 +314,6 @@ const CSS = `
   .cp-type-summative   { background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; }
   .cp-type-diagnostic  { background:#FFF7ED; color:#C2410C; border:1px solid #FED7AA; }
   .cp-type-project     { background:#F5F3FF; color:#6D28D9; border:1px solid #DDD6FE; }
-
-  /* Read-only competency card in arc */
-  .cp-arc-comp-card {
-    background:#fff; border:1.5px solid #E5E7EB; border-radius:14px;
-    padding:16px; display:flex; flex-direction:column; min-height:110px;
-    transition:border-color 0.15s, box-shadow 0.15s;
-  }
-  .cp-arc-comp-card:hover { border-color:#b8d9ee; box-shadow:0 2px 10px rgba(37,71,106,0.07); }
 
   /* Competency gate */
   .cp-gate-banner {
@@ -592,12 +564,13 @@ function CompetenciesPanel({ curriculumId }) {
   const [desc,       setDesc]       = useState("");
   const [areaId,     setAreaId]     = useState("");
   const [threshold,  setThreshold]  = useState(60);
+  const [weight,     setWeight]     = useState(0);
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setAreaId(""); setThreshold(60); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setAreaId(""); setThreshold(60); setWeight(0); setMode("add");
   }
   function openEdit(comp) {
     setEditTarget(comp);
@@ -605,18 +578,19 @@ function CompetenciesPanel({ curriculumId }) {
     setDesc(comp.description || "");
     setAreaId(comp.learningAreaId || "");
     setThreshold(comp.minimumThreshold ?? 60);
+    setWeight(comp.weight ?? 0);
     setMode("edit");
   }
   function cancelForm() { setMode("list"); setEditTarget(null); }
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), learningAreaId: areaId || null, minimumThreshold: Number(threshold) || 60 };
+    const data = { name: name.trim(), description: desc.trim(), learningAreaId: areaId || null, minimumThreshold: Number(threshold) || 60, weight: Math.min(100, Math.max(0, Number(weight) || 0)) };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancelForm });
     } else {
       create(data, {
-        onSuccess: () => { setName(""); setDesc(""); setAreaId(""); setThreshold(60); nameRef.current?.focus(); },
+        onSuccess: () => { setName(""); setDesc(""); setAreaId(""); setThreshold(60); setWeight(0); nameRef.current?.focus(); },
       });
     }
   }
@@ -649,129 +623,154 @@ function CompetenciesPanel({ curriculumId }) {
         )}
       </div>
 
-      {/* ── Add / Edit form ───────────────────────────────────────── */}
+      {/* ── Add / Edit form (modal overlay) ───────────────────────── */}
       {mode !== "list" && (
-        <div className="cp-comp-form-card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0F2645" }}>
-                {mode === "edit" ? "Edit Competency" : "New Competency"}
-              </h3>
-              <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-                {mode === "edit" ? "Update the name or description below." : "Fill in the details and click Add."}
-              </p>
-            </div>
-            <button type="button" className="cp-icon-btn" onClick={cancelForm} title="Close">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+            <div className="cp-comp-form-card">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0F2645" }}>
+                    {mode === "edit" ? "Edit Competency" : "New Competency"}
+                  </h3>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+                    {mode === "edit" ? "Update the name or description below." : "Fill in the details and click Add."}
+                  </p>
+                </div>
+                <button type="button" className="cp-icon-btn" onClick={cancelForm} title="Close">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-            {/* Name */}
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label className="cp-field-label">
-                Name <span className="cp-required">*</span>
-              </label>
-              <input
-                ref={nameRef}
-                className="cp-input"
-                style={{ width: "100%", boxSizing: "border-box" }}
-                placeholder="e.g. Critical Thinking, Communication, Creativity…"
-                value={name}
-                maxLength={150}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) submit(); if (e.key === "Escape") cancelForm(); }}
-              />
-              <div className="cp-char-count">{name.length} / 150</div>
-            </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                {/* Name */}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label className="cp-field-label">
+                    Name <span className="cp-required">*</span>
+                  </label>
+                  <input
+                    ref={nameRef}
+                    className="cp-input"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                    placeholder="e.g. Critical Thinking, Communication, Creativity…"
+                    value={name}
+                    maxLength={150}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) submit(); if (e.key === "Escape") cancelForm(); }}
+                  />
+                  <div className="cp-char-count">{name.length} / 150</div>
+                </div>
 
-            {/* Description */}
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label className="cp-field-label">
-                Description <span className="cp-optional">(optional)</span>
-              </label>
-              <textarea
-                className="cp-textarea"
-                placeholder="What does this competency mean? What skills, behaviours, or attitudes does it encompass?"
-                value={desc}
-                maxLength={500}
-                onChange={(e) => setDesc(e.target.value)}
-                rows={3}
-              />
-              <div className="cp-char-count">{desc.length} / 500</div>
-            </div>
+                {/* Description */}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label className="cp-field-label">
+                    Description <span className="cp-optional">(optional)</span>
+                  </label>
+                  <textarea
+                    className="cp-textarea"
+                    placeholder="What does this competency mean? What skills, behaviours, or attitudes does it encompass?"
+                    value={desc}
+                    maxLength={500}
+                    onChange={(e) => setDesc(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="cp-char-count">{desc.length} / 500</div>
+                </div>
 
-            {/* Learning area (only if areas exist) */}
-            {areas.length > 0 && (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label className="cp-field-label">
-                  Learning Area <span className="cp-optional">(optional)</span>
-                </label>
-                <select
-                  className="cp-select"
-                  style={{ width: "100%", marginTop: "0" }}
-                  value={areaId}
-                  onChange={(e) => setAreaId(e.target.value)}
+                {/* Learning area (only if areas exist) */}
+                {areas.length > 0 && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label className="cp-field-label">
+                      Learning Area <span className="cp-optional">(optional)</span>
+                    </label>
+                    <select
+                      className="cp-select"
+                      style={{ width: "100%", marginTop: "0" }}
+                      value={areaId}
+                      onChange={(e) => setAreaId(e.target.value)}
+                    >
+                      <option value="">No area assigned</option>
+                      {areas.map((a) => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Minimum threshold */}
+                <div>
+                  <label className="cp-field-label">
+                    Minimum Threshold % <span className="cp-required">*</span>
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+                    <input
+                      type="range"
+                      min={0} max={100} step={5}
+                      value={threshold}
+                      onChange={(e) => setThreshold(Number(e.target.value))}
+                      style={{ flex: 1, accentColor: "#25476a" }}
+                    />
+                    <span style={{
+                      minWidth: "42px", padding: "4px 10px", borderRadius: "8px", textAlign: "center",
+                      background: threshold >= 75 ? "#F0FDF4" : threshold >= 60 ? "#EFF6FF" : "#FFF7ED",
+                      border: `1.5px solid ${threshold >= 75 ? "#BBF7D0" : threshold >= 60 ? "#BFDBFE" : "#FED7AA"}`,
+                      fontSize: "13px", fontWeight: "700",
+                      color: threshold >= 75 ? "#15803D" : threshold >= 60 ? "#1D4ED8" : "#C2410C",
+                    }}>
+                      {threshold}%
+                    </span>
+                  </div>
+                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                    Learner must score at least {threshold}% to be considered competent.
+                  </p>
+                </div>
+
+                {/* Weight contribution */}
+                <div>
+                  <label className="cp-field-label">
+                    Weight % <span className="cp-optional">(optional)</span>
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                    <input
+                      type="number"
+                      className="cp-input"
+                      min={0} max={100} step={1}
+                      value={weight}
+                      onChange={(e) => setWeight(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                      style={{ width: "80px", boxSizing: "border-box", textAlign: "center" }}
+                    />
+                    <span style={{ fontSize: "13px", color: "#6B7280", fontWeight: "600" }}>%</span>
+                  </div>
+                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
+                    Contribution to overall score (0 = unweighted).
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px" }}>
+                <button
+                  type="button"
+                  className="cp-btn-primary"
+                  onClick={submit}
+                  disabled={creating || updating || !name.trim()}
                 >
-                  <option value="">No area assigned</option>
-                  {areas.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
+                  {creating || updating
+                    ? "Saving…"
+                    : mode === "edit"
+                      ? "Save Changes"
+                      : "Add Competency"}
+                </button>
+                <button type="button" className="cp-btn-secondary" onClick={cancelForm}>Cancel</button>
+                {mode === "add" && (
+                  <span style={{ marginLeft: "auto", fontSize: "11px", color: "#9CA3AF" }}>
+                    Press Enter to add
+                  </span>
+                )}
               </div>
-            )}
-
-            {/* Minimum threshold */}
-            <div>
-              <label className="cp-field-label">
-                Minimum Threshold % <span className="cp-required">*</span>
-              </label>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
-                <input
-                  type="range"
-                  min={0} max={100} step={5}
-                  value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))}
-                  style={{ flex: 1, accentColor: "#25476a" }}
-                />
-                <span style={{
-                  minWidth: "42px", padding: "4px 10px", borderRadius: "8px", textAlign: "center",
-                  background: threshold >= 75 ? "#F0FDF4" : threshold >= 60 ? "#EFF6FF" : "#FFF7ED",
-                  border: `1.5px solid ${threshold >= 75 ? "#BBF7D0" : threshold >= 60 ? "#BFDBFE" : "#FED7AA"}`,
-                  fontSize: "13px", fontWeight: "700",
-                  color: threshold >= 75 ? "#15803D" : threshold >= 60 ? "#1D4ED8" : "#C2410C",
-                }}>
-                  {threshold}%
-                </span>
-              </div>
-              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                Learner must score at least {threshold}% on this competency to be considered competent.
-              </p>
             </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px" }}>
-            <button
-              type="button"
-              className="cp-btn-primary"
-              onClick={submit}
-              disabled={creating || updating || !name.trim()}
-            >
-              {creating || updating
-                ? "Saving…"
-                : mode === "edit"
-                  ? "Save Changes"
-                  : "Add Competency"}
-            </button>
-            <button type="button" className="cp-btn-secondary" onClick={cancelForm}>Cancel</button>
-            {mode === "add" && (
-              <span style={{ marginLeft: "auto", fontSize: "11px", color: "#9CA3AF" }}>
-                Press Enter to add
-              </span>
-            )}
           </div>
         </div>
       )}
@@ -858,39 +857,37 @@ function CompetenciesPanel({ curriculumId }) {
                   )}
                 </div>
 
-                {/* Threshold badge */}
-                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>
-                  <span style={{
-                    padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
-                    background: (comp.minimumThreshold ?? 60) >= 75 ? "#F0FDF4" : (comp.minimumThreshold ?? 60) >= 60 ? "#EFF6FF" : "#FFF7ED",
-                    border: `1px solid ${(comp.minimumThreshold ?? 60) >= 75 ? "#BBF7D0" : (comp.minimumThreshold ?? 60) >= 60 ? "#BFDBFE" : "#FED7AA"}`,
-                    color: (comp.minimumThreshold ?? 60) >= 75 ? "#15803D" : (comp.minimumThreshold ?? 60) >= 60 ? "#1D4ED8" : "#C2410C",
-                  }}>
-                    {comp.minimumThreshold ?? 60}%
-                  </span>
+                {/* Card footer: threshold + per-competency weight bar */}
+                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>
+                    <span style={{
+                      padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
+                      background: (comp.minimumThreshold ?? 60) >= 75 ? "#F0FDF4" : (comp.minimumThreshold ?? 60) >= 60 ? "#EFF6FF" : "#FFF7ED",
+                      border: `1px solid ${(comp.minimumThreshold ?? 60) >= 75 ? "#BBF7D0" : (comp.minimumThreshold ?? 60) >= 60 ? "#BFDBFE" : "#FED7AA"}`,
+                      color: (comp.minimumThreshold ?? 60) >= 75 ? "#15803D" : (comp.minimumThreshold ?? 60) >= 60 ? "#1D4ED8" : "#C2410C",
+                    }}>
+                      {comp.minimumThreshold ?? 60}%
+                    </span>
+                  </div>
+                  <div style={{ marginTop: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
+                      <span style={{ fontSize: "10px", color: "#9CA3AF" }}>Competency weight</span>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: (comp.weight ?? 0) > 0 ? "#0369A1" : "#D1D5DB" }}>
+                        {(comp.weight ?? 0) > 0 ? `${comp.weight}%` : "Not set"}
+                      </span>
+                    </div>
+                    <div style={{ height: "4px", background: "#E0F2FE", borderRadius: "2px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${comp.weight ?? 0}%`, background: "#38aae1", borderRadius: "2px" }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
-
-          {/* Inline add card — quick entry when cards already exist */}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <span className="cp-add-card-label">Add Competency</span>
-              </div>
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -2088,6 +2085,8 @@ function parseAgeRange(str) {
   return { min: "", max: "" };
 }
 
+const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
+
 function buildAgeRange(min, max) {
   const a = min.toString().trim(), b = max.toString().trim();
   if (a && b) return `${a}–${b}`;
@@ -2151,6 +2150,8 @@ function AgeCategoriesPanel({ curriculumId }) {
       </div>
 
       {mode !== "list" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "480px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
@@ -2226,6 +2227,8 @@ function AgeCategoriesPanel({ curriculumId }) {
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
+          </div>
+        </div>
       )}
 
       {cats.length === 0 && mode === "list" ? (
@@ -2240,7 +2243,7 @@ function AgeCategoriesPanel({ curriculumId }) {
       ) : (
         <div className="cp-comp-grid">
           {cats.map((cat, idx) => {
-            const color   = COMP_PALETTE[idx % COMP_PALETTE.length];
+            const color   = ARC_PALETTE[idx % ARC_PALETTE.length];
             const initial = cat.name.charAt(0).toUpperCase();
             return (
               <div key={cat.id} className="cp-comp-card">
@@ -2278,274 +2281,7 @@ function AgeCategoriesPanel({ curriculumId }) {
               </div>
             );
           })}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">Add Stage</span>
-              </div>
-            </button>
-          )}
         </div>
-      )}
-    </div>
-  );
-}
-
-/* ── LevelsPanel ─────────────────────────────────────────────────────────── */
-
-const LEVEL_PALETTE = [
-  "#059669","#0891B2","#7C3AED","#D97706",
-  "#DC2626","#BE185D","#25476a","#38aae1",
-  "#2e7db5","#0A3880",
-];
-
-function LevelsPanel({ curriculumId }) {
-  const { data: levels = [], isLoading } = useProgressLevels(curriculumId);
-  const { mutate: create, isPending: creating } = useCreateProgressLevel(curriculumId);
-  const { mutate: update, isPending: updating } = useUpdateProgressLevel(curriculumId);
-  const { mutate: remove, isPending: deleting } = useDeleteProgressLevel(curriculumId);
-
-  const [mode,       setMode]       = useState("list");
-  const [editTarget, setEditTarget] = useState(null);
-  const [name,       setName]       = useState("");
-  const [desc,       setDesc]       = useState("");
-  const [minScore,   setMinScore]   = useState("0");
-  const [maxScore,   setMaxScore]   = useState("100");
-  const nameRef = useRef(null);
-
-  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
-
-  function openAdd()   { setEditTarget(null); setName(""); setDesc(""); setMinScore("0"); setMaxScore("100"); setMode("add"); }
-  function openEdit(l) { setEditTarget(l); setName(l.name); setDesc(l.description || ""); setMinScore(String(l.minScore ?? 0)); setMaxScore(String(l.maxScore ?? 100)); setMode("edit"); }
-  function cancel()    { setMode("list"); setEditTarget(null); }
-
-  function submit() {
-    if (!name.trim()) return;
-    const data = {
-      name: name.trim(), description: desc.trim(),
-      minScore: Math.min(100, Math.max(0, Number(minScore) || 0)),
-      maxScore: Math.min(100, Math.max(0, Number(maxScore) || 100)),
-    };
-    if (mode === "edit") {
-      update({ id: editTarget.id, data }, { onSuccess: cancel });
-    } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setMinScore("0"); setMaxScore("100"); nameRef.current?.focus(); } });
-    }
-  }
-
-  if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Levels</h3>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {levels.length === 0 ? "Define proficiency levels for learners" : `${levels.length} level${levels.length !== 1 ? "s" : ""} defined`}
-          </p>
-        </div>
-        {mode === "list" && (
-          <button type="button" className="cp-btn-primary" onClick={openAdd}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            Add Level
-          </button>
-        )}
-      </div>
-
-      {mode !== "list" && (
-        <div className="cp-comp-form-card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>{mode === "edit" ? "Edit Level" : "New Level"}</h3>
-            <button type="button" className="cp-icon-btn" onClick={cancel}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            </button>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div>
-              <label className="cp-field-label">Name <span className="cp-required">*</span></label>
-              <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                placeholder="e.g. Emerging, Developing, Proficient, Advanced…"
-                value={name} maxLength={100}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
-              />
-              <div className="cp-char-count">{name.length} / 100</div>
-            </div>
-            <div>
-              <label className="cp-field-label">Score Range <span className="cp-required">*</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>The score range that places a learner in this level.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "8px", alignItems: "center" }}>
-                <div style={{ position: "relative" }}>
-                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                    placeholder="0" value={minScore} onChange={(e) => setMinScore(e.target.value)} />
-                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>min</span>
-                </div>
-                <span style={{ fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>–</span>
-                <div style={{ position: "relative" }}>
-                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                    placeholder="100" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} />
-                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>max</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
-              <textarea className="cp-textarea" rows={3}
-                placeholder="What does this proficiency level mean? What can a learner at this level do?"
-                value={desc} maxLength={500}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-              <div className="cp-char-count">{desc.length} / 500</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim()}>
-              {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Level"}
-            </button>
-            <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {levels.length === 0 && mode === "list" ? (
-        <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>📊</div>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No levels yet</p>
-          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "300px", marginInline: "auto" }}>
-            Define proficiency levels so learners and teachers have clear progression benchmarks.
-          </p>
-          <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Level</button>
-        </div>
-      ) : (
-        <div className="cp-comp-grid">
-          {levels.map((level, idx) => {
-            const color   = LEVEL_PALETTE[idx % LEVEL_PALETTE.length];
-            const initial = level.name.charAt(0).toUpperCase();
-            return (
-              <div key={level.id} className="cp-comp-card">
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
-                    backgroundColor: `${color}15`, border: `2px solid ${color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "17px", fontWeight: "800", color,
-                  }}>
-                    {initial}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{level.name}</p>
-                    <div style={{ display: "flex", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: "10px", color: "#9CA3AF" }}>Level {level.order}</span>
-                      {level.minScore != null && level.maxScore != null && (
-                        <span style={{ fontSize: "10px", fontWeight: "700", color: color, background: `${color}12`, padding: "1px 7px", borderRadius: "20px" }}>
-                          {level.minScore}–{level.maxScore}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <CardKebab onEdit={() => openEdit(level)} onDelete={() => remove(level.id)} disabled={deleting} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  {level.description ? (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {level.description}
-                    </p>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {mode === "list" && (
-            <button type="button" className="cp-comp-card cp-comp-card--add" onClick={openAdd}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <div className="cp-add-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </div>
-                <span className="cp-add-card-label">Add Level</span>
-              </div>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── ArcCompetenciesPanel ────────────────────────────────────────────────── */
-
-function ArcCompetenciesPanel({ curriculumId }) {
-  const { data: comps  = [], isLoading } = useCompetencies(curriculumId);
-  const { data: areas  = [] }            = useLearningAreas(curriculumId);
-  const areaMap = Object.fromEntries(areas.map((a) => [a.id, a]));
-
-  if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Competencies</h3>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {comps.length === 0 ? "No competencies defined yet" : `${comps.length} competenc${comps.length !== 1 ? "ies" : "y"} from the Competencies tab`}
-          </p>
-        </div>
-      </div>
-
-      {comps.length === 0 ? (
-        <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>🎯</div>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No competencies defined yet</p>
-          <p style={{ margin: "0 0 6px", fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-            Switch to the <strong>Competencies</strong> tab to define the core capabilities for this curriculum.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div style={{ padding: "10px 14px", background: "#F0F7FF", border: "1px solid #C7D9F8", borderRadius: "10px", fontSize: "12px", color: "#25476a", marginBottom: "18px" }}>
-            These competencies are defined in the <strong>Competencies</strong> tab. Manage them there; they will appear here for reference.
-          </div>
-          <div className="cp-comp-grid">
-            {comps.map((comp, idx) => {
-              const area    = areaMap[comp.learningAreaId];
-              const color   = area?.color || COMP_PALETTE[idx % COMP_PALETTE.length];
-              const initial = comp.name.charAt(0).toUpperCase();
-              return (
-                <div key={comp.id} className="cp-arc-comp-card">
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-                    <div style={{
-                      width: "40px", height: "40px", borderRadius: "11px", flexShrink: 0,
-                      backgroundColor: `${color}15`, border: `2px solid ${color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "16px", fontWeight: "800", color,
-                    }}>
-                      {initial}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{comp.name}</p>
-                      {area ? (
-                        <span style={{ display: "inline-block", marginTop: "4px", padding: "2px 7px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: `${color}12`, color, border: `1px solid ${color}28` }}>
-                          {area.name}
-                        </span>
-                      ) : (
-                        <span style={{ display: "inline-block", marginTop: "4px", fontSize: "10px", color: "#D1D5DB" }}>No area</span>
-                      )}
-                    </div>
-                  </div>
-                  {comp.description && (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {comp.description}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
       )}
     </div>
   );
@@ -2553,7 +2289,6 @@ function ArcCompetenciesPanel({ curriculumId }) {
 
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
-const BAND_PALETTE = ["#D97706","#059669","#2563EB","#7C3AED","#DC2626","#0891B2","#25476a","#BE185D"];
 
 function PerformanceBandsPanel({ curriculumId }) {
   const { data: bands = [], isLoading }            = usePerformanceBands(curriculumId);
@@ -2643,7 +2378,9 @@ function PerformanceBandsPanel({ curriculumId }) {
 
       {/* Form */}
       {mode !== "list" && (
-        <div className="cp-comp-form-card" style={{ marginBottom: "20px" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+        <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0F2645" }}>
               {mode === "edit" ? "Edit Band" : "New Performance Band"}
@@ -2734,6 +2471,8 @@ function PerformanceBandsPanel({ curriculumId }) {
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
+          </div>
+        </div>
       )}
 
       {/* Empty state */}
@@ -2752,7 +2491,7 @@ function PerformanceBandsPanel({ curriculumId }) {
       {bands.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {bands.map((band, idx) => {
-            const color     = BAND_PALETTE[idx % BAND_PALETTE.length];
+            const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
             return (
               <div key={band.id} style={{
@@ -2825,12 +2564,118 @@ function PerformanceBandsPanel({ curriculumId }) {
             );
           })}
 
-          {/* Add inline */}
-          {mode === "list" && (
-            <button type="button" className="cp-btn-add" style={{ alignSelf: "flex-start" }} onClick={openAdd}>
-              + Add Band
-            </button>
-          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── IdentityMatrix ──────────────────────────────────────────────────────── */
+
+function IdentityMatrix({ curriculumId }) {
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const { data: bands  = [] } = usePerformanceBands(curriculumId);
+
+  const isEmpty = stages.length === 0 || bands.length === 0;
+
+  return (
+    <div style={{ marginTop: "32px", borderTop: "1.5px solid #E5E7EB", paddingTop: "24px" }}>
+      <div style={{ marginBottom: "18px" }}>
+        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Identity Matrix</h3>
+        <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+          {isEmpty
+            ? "Configure developmental stages and performance bands above to generate all possible learner identities."
+            : `${stages.length} stage${stages.length !== 1 ? "s" : ""} × ${bands.length} band${bands.length !== 1 ? "s" : ""} = ${stages.length * bands.length} learner identities · placed by age (stage) + score (band)`}
+        </p>
+      </div>
+
+      {!isEmpty && (
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ minWidth: `${116 + bands.length * 128}px` }}>
+
+            {/* ── Band column headers ── */}
+            <div style={{ display: "flex", gap: "6px", marginBottom: "8px", paddingLeft: "122px" }}>
+              {bands.map((band, idx) => {
+                const color = ARC_PALETTE[idx % ARC_PALETTE.length];
+                return (
+                  <div key={band.id} style={{
+                    flex: 1, textAlign: "center",
+                    padding: "7px 6px 6px",
+                    background: `${color}10`,
+                    borderRadius: "10px",
+                    border: `1.5px solid ${color}25`,
+                  }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color }}>{band.name}</div>
+                    {band.minScore != null && (
+                      <div style={{ fontSize: "9px", fontWeight: "600", color: "#9CA3AF", marginTop: "2px" }}>
+                        {band.minScore}–{band.maxScore}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Stage rows ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {stages.map((stage, sIdx) => {
+                const stageColor = ARC_PALETTE[sIdx % ARC_PALETTE.length];
+                return (
+                  <div key={stage.id} style={{ display: "flex", alignItems: "stretch", gap: "6px" }}>
+                    {/* Stage label */}
+                    <div style={{
+                      width: "116px", flexShrink: 0,
+                      padding: "10px 12px",
+                      background: `${stageColor}10`,
+                      borderRadius: "10px",
+                      border: `1.5px solid ${stageColor}28`,
+                      display: "flex", flexDirection: "column", justifyContent: "center",
+                    }}>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: stageColor, lineHeight: 1.2 }}>
+                        {stage.name}
+                      </div>
+                      {stage.ageRange && (
+                        <div style={{ fontSize: "10px", color: "#9CA3AF", marginTop: "3px" }}>
+                          {stage.ageRange} yrs
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Identity cells */}
+                    {bands.map((band, bIdx) => {
+                      const badgeColor = ARC_PALETTE[bIdx % ARC_PALETTE.length];
+                      return (
+                        <div key={band.id} style={{
+                          flex: 1,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          padding: "8px 6px",
+                          background: "#FAFAFA",
+                          borderRadius: "10px",
+                          border: "1px solid #F0F0F0",
+                        }}>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "5px 10px",
+                            borderRadius: "20px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            background: `${badgeColor}12`,
+                            color: badgeColor,
+                            border: `1px solid ${badgeColor}28`,
+                            whiteSpace: "nowrap",
+                            textAlign: "center",
+                          }}>
+                            {stage.name} {band.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
         </div>
       )}
     </div>
@@ -2841,9 +2686,7 @@ function PerformanceBandsPanel({ curriculumId }) {
 
 const ARC_SECTIONS = [
   { key: "age-categories", label: "Developmental Stages" },
-  { key: "levels",         label: "Levels" },
   { key: "bands",          label: "Performance Bands" },
-  { key: "competencies",   label: "Competencies" },
 ];
 
 function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubChange }) {
@@ -2855,7 +2698,7 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Progress Arc</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Define developmental stages, proficiency levels, and view competencies in context.
+            Define stages (age-based) and bands (score-based) — together they form each learner's identity.
           </p>
         </div>
         <div className="cp-arc-section-nav">
@@ -2873,9 +2716,9 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
       </div>
 
       {arcSub === "age-categories" && <AgeCategoriesPanel    curriculumId={curriculumId} />}
-      {arcSub === "levels"         && <LevelsPanel           curriculumId={curriculumId} />}
       {arcSub === "bands"          && <PerformanceBandsPanel curriculumId={curriculumId} />}
-      {arcSub === "competencies"   && <ArcCompetenciesPanel  curriculumId={curriculumId} />}
+
+      <IdentityMatrix curriculumId={curriculumId} />
     </div>
   );
 }
