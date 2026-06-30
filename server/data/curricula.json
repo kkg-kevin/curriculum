@@ -293,5 +293,34 @@
     "id": "f22aa982-a3a5-4ccc-9b62-be6993f002a0",
     "createdAt": "2026-06-29T12:10:48.191Z",
     "updatedAt": "2026-06-29T12:11:00.760Z"
+  },
+  {
+    "name": "nbubuyby",
+    "code": "jbb",
+    "academicYear": "",
+    "description": "ububububb",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "class1",
+      "class2"
+    ],
+    "id": "1f464d1a-b499-4f14-9fc8-71c4ae623504",
+    "createdAt": "2026-06-30T08:28:22.521Z",
+    "updatedAt": "2026-06-30T08:28:52.976Z"
   }
 ]
