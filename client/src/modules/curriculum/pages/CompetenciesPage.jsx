@@ -77,15 +77,57 @@ const CSS = `
   .cp-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 
   .cp-item {
-    display:flex; align-items:center; gap:12px;
+    display:flex; align-items:flex-start; gap:12px;
     padding:11px 14px; border-radius:10px; border:1.5px solid #E5E7EB;
     background:#FAFAFA; transition:border-color 0.15s, background 0.15s;
   }
   .cp-item:hover { border-color:#b8d9ee; background:#F8FBFF; }
 
-  .cp-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-  .cp-item-name { flex:1; min-width:0; font-size:13px; font-weight:600; color:#111827; }
+  .cp-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .cp-item-name { flex:1; min-width:0; font-size:13px; font-weight:600; color:#111827; padding-top:1px; }
   .cp-item-sub  { font-size:11px; color:#9CA3AF; font-weight:400; margin-top:1px; }
+
+  /* Course list (Learning Areas) */
+  .cp-course-section {
+    margin-top:12px; padding-top:12px; border-top:1px dashed #E5E7EB;
+  }
+  .cp-course-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;
+  }
+  .cp-course-header-left { display:flex; align-items:center; gap:6px; }
+  .cp-course-title {
+    font-size:12px; font-weight:700; color:#374151; font-family:Inter,sans-serif;
+  }
+  .cp-course-count-badge {
+    padding:1px 8px; border-radius:20px; font-size:10.5px; font-weight:700; border:1px solid;
+  }
+  .cp-course-list { display:flex; flex-direction:column; gap:5px; }
+  .cp-course-row {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 10px; border-radius:8px; background:#fff;
+    border:1px solid #EEF0F2; transition:border-color 0.12s, background 0.12s;
+  }
+  .cp-course-row:hover { background:#FAFCFF; }
+  .cp-course-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .cp-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
+
+  .cp-course-wrap { display:flex; flex-wrap:wrap; gap:7px; }
+  .cp-course-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 8px 4px 12px; border-radius:20px; font-size:11.5px; font-weight:600;
+    border:1.5px solid; white-space:nowrap; font-family:Inter,sans-serif;
+  }
+  .cp-course-chip-x {
+    width:15px; height:15px; border-radius:50%; border:none;
+    background:rgba(0,0,0,0.08); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:900; padding:0; flex-shrink:0; color:inherit;
+    transition:background 0.1s, color 0.1s;
+  }
+  .cp-course-chip-x:hover { background:rgba(239,68,68,0.2); color:#DC2626; }
+  .cp-course-empty-hint {
+    font-size:11px; color:#9CA3AF; font-style:italic; margin-top:6px;
+  }
   .cp-item-badge {
     padding:2px 9px; border-radius:20px; font-size:10px; font-weight:700;
     background:#e8f5fb; color:#25476a; border:1px solid #a8d5ee; white-space:nowrap; flex-shrink:0;
@@ -377,21 +419,34 @@ function LearningAreasPanel({ curriculumId }) {
   const [name,     setName]       = useState("");
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
+  const [courses,     setCourses]     = useState([]);
+  const [courseInput, setCourseInput] = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setShowForm(true);
+    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setCourseInput(""); setShowForm(true);
   }
   function openEdit(area) {
-    setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]); setShowForm(true);
+    setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
+    setCourses(area.courses || []); setCourseInput(""); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
+  function addCourse() {
+    const value = courseInput.trim();
+    if (!value || courses.includes(value)) { setCourseInput(""); return; }
+    setCourses((prev) => [...prev, value]);
+    setCourseInput("");
+  }
+  function removeCourse(course) {
+    setCourses((prev) => prev.filter((c) => c !== course));
+  }
+
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), color };
+    const data = { name: name.trim(), description: desc.trim(), color, courses };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
@@ -445,6 +500,40 @@ function LearningAreasPanel({ curriculumId }) {
               />
             ))}
           </div>
+
+          <div style={{ marginTop: "12px" }}>
+            <label className="cp-field-label">
+              Courses <span className="cp-optional">(optional)</span>
+              {courses.length > 0 && (
+                <span style={{ fontWeight: 400, color: "#9CA3AF" }}> · {courses.length} added</span>
+              )}
+            </label>
+            <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+              <input
+                className="cp-input"
+                placeholder="Course name (e.g. Phonics, Algebra I)"
+                value={courseInput}
+                onChange={(e) => setCourseInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
+              />
+              <button type="button" className="cp-btn-secondary" onClick={addCourse} disabled={!courseInput.trim()}>
+                + Add
+              </button>
+            </div>
+            {courses.length > 0 ? (
+              <div className="cp-course-wrap" style={{ marginTop: "8px" }}>
+                {courses.map((c) => (
+                  <span key={c} className="cp-course-chip" style={{ backgroundColor: `${color}12`, borderColor: `${color}40`, color }}>
+                    {c}
+                    <button type="button" className="cp-course-chip-x" onClick={() => removeCourse(c)} title={`Remove ${c}`}>×</button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="cp-course-empty-hint">No courses added yet — type a name above and press Enter.</p>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
             <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim()}>
               {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
@@ -463,21 +552,51 @@ function LearningAreasPanel({ curriculumId }) {
         </div>
       ) : (
         <div className="cp-list">
-          {areas.map((area) => (
-            <div key={area.id} className="cp-item">
-              <div className="cp-item-dot" style={{ backgroundColor: area.color || "#25476a" }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="cp-item-name">{area.name}</div>
-                {area.description && <div className="cp-item-sub">{area.description}</div>}
+          {areas.map((area) => {
+            const areaColor = area.color || "#25476a";
+            return (
+              <div key={area.id} className="cp-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div className="cp-item-dot" style={{ backgroundColor: areaColor }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="cp-item-name">{area.name}</div>
+                    {area.description && <div className="cp-item-sub">{area.description}</div>}
+                  </div>
+                  <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button type="button" className="cp-icon-btn danger" onClick={() => remove(area.id)} disabled={deleting} title="Delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+
+                {area.courses?.length > 0 && (
+                  <div className="cp-course-section">
+                    <div className="cp-course-header">
+                      <div className="cp-course-header-left">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color: areaColor, flexShrink: 0 }}>
+                          <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor"/>
+                          <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span className="cp-course-title">Courses</span>
+                      </div>
+                      <span className="cp-course-count-badge" style={{ backgroundColor: `${areaColor}12`, borderColor: `${areaColor}35`, color: areaColor }}>
+                        {area.courses.length}
+                      </span>
+                    </div>
+                    <div className="cp-course-list">
+                      {area.courses.map((c) => (
+                        <div key={c} className="cp-course-row">
+                          <span className="cp-course-dot" style={{ backgroundColor: areaColor }} />
+                          <span className="cp-course-name">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-              <button type="button" className="cp-icon-btn danger" onClick={() => remove(area.id)} disabled={deleting} title="Delete">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
