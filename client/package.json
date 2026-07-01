@@ -4,7 +4,9 @@
   "description": "This project follows a Feature-Based Full Stack Architecture designed for scalability, maintainability, and team collaboration.",
   "main": "index.js",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "keywords": [],
   "author": "",
