@@ -75,6 +75,7 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditClassPage />} />
           <Route path=":id/view" element={<ClassViewPage />} />
         </Route>
+        <Route path="courses" element={<ComingSoon name="Courses" />} />
         <Route path="assessments" element={<ComingSoon name="Assessments" />} />
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<ComingSoon name="Settings" />} />

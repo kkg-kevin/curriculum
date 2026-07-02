@@ -19,6 +19,14 @@ const createCompetencySchema = z.object({
 
 const updateCompetencySchema = createCompetencySchema.partial();
 
+const createIndicatorSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(150),
+  description: z.string().max(300).optional().default(""),
+  weight:      z.number().min(0).max(100).optional().default(0),
+});
+
+const updateIndicatorSchema = createIndicatorSchema.partial();
+
 const assignmentSchema = z.object({
   competencyId: z.string(),
   descriptor:   z.string().max(300).optional().default(""),
@@ -145,6 +153,8 @@ module.exports = {
   updateLearningAreaSchema,
   createCompetencySchema,
   updateCompetencySchema,
+  createIndicatorSchema,
+  updateIndicatorSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,
