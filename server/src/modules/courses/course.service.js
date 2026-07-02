@@ -5,8 +5,8 @@ const CourseService = {
     return CourseModel.create(data);
   },
 
-  async getAllCourses(filters) {
-    return CourseModel.findAll(filters);
+  async getAllCourses() {
+    return CourseModel.findAll();
   },
 
   async getCourseById(id) {

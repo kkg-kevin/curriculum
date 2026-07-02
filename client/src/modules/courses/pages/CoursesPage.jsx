@@ -4,18 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useCoursesQuery, useDeleteCourse } from "../hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const STATUS_STYLES = {
-  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.inactive;
-  return (
-    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}`, textTransform: "capitalize", letterSpacing: "0.02em" }}>
-      {status}
-    </span>
-  );
+// Description is now rich-text HTML (from RichTextEditor) — strip tags for the plain-text card preview.
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function MenuButton({ icon, label, onClick, danger = false }) {
@@ -103,7 +95,6 @@ function CourseCard({ course }) {
                 </svg>
               </button>
             </div>
-            <StatusBadge status={course.status} />
           </div>
         </div>
 
@@ -111,7 +102,7 @@ function CourseCard({ course }) {
           margin: 0, fontSize: "13px", color: "#6B7280", lineHeight: "1.6",
           display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
         }}>
-          {course.description || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
+          {stripHtml(course.description) || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
         </p>
       </div>
 

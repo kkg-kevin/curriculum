@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCourseQuery } from "../hooks/useCourse";
 
-const STATUS_STYLES = {
-  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-};
+const TABS = [
+  { key: "outcomes",     label: "Outcomes" },
+  { key: "introduction", label: "Introduction" },
+  { key: "mainConcept",  label: "Main Concept" },
+  { key: "activities",   label: "Activities" },
+  { key: "teachersNote", label: "Teacher's Note" },
+];
 
 function Section({ title, children }) {
   return (
@@ -19,21 +23,128 @@ function Section({ title, children }) {
   );
 }
 
-function DetailRow({ label, value }) {
+// TipTap's "empty" state is still markup (e.g. "<p></p>"), not an empty string —
+// strip tags before deciding whether there's anything to show.
+function isEmptyHtml(html) {
+  if (!html) return true;
+  if (/<img[\s>]/i.test(html)) return false;
+  return html.replace(/<[^>]*>/g, "").trim().length === 0;
+}
+
+// Content here was authored by the same user through RichTextEditor (internal tool,
+// no untrusted third-party input), so rendering raw HTML without a sanitizer is fine.
+function RichContent({ html, emptyText }) {
+  if (isEmptyHtml(html)) {
+    return <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>{emptyText}</p>;
+  }
+  return (
+    <>
+      <style>{`
+        .course-rich-content { font-size: 14px; color: #374151; line-height: 1.65; }
+        .course-rich-content p { margin: 0 0 10px; }
+        .course-rich-content p:last-child { margin-bottom: 0; }
+        .course-rich-content ul, .course-rich-content ol { margin: 0 0 10px; padding-left: 22px; }
+        .course-rich-content img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
+        .course-rich-content strong { font-weight: 700; }
+      `}</style>
+      <div className="course-rich-content" dangerouslySetInnerHTML={{ __html: html }} />
+    </>
+  );
+}
+
+function DetailBlock({ label, value }) {
   return (
     <div>
-      <p style={{ margin: "0 0 1px 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {label}
-      </p>
-      <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>{value}</p>
+      {label && (
+        <p style={{ margin: "0 0 4px 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {label}
+        </p>
+      )}
+      <RichContent html={value} emptyText="Not added" />
     </div>
   );
+}
+
+function TabBar({ activeTab, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: "6px", padding: "6px", backgroundColor: "#F9FAFB", borderRadius: "12px", flexWrap: "wrap" }}>
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.key;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => onChange(tab.key)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "9px",
+              border: "none",
+              fontSize: "13px",
+              fontWeight: "700",
+              fontFamily: "Inter, sans-serif",
+              cursor: "pointer",
+              backgroundColor: isActive ? "#25476a" : "transparent",
+              color: isActive ? "#ffffff" : "#6B7280",
+              transition: "background-color 0.15s, color 0.15s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TabContent({ tab, course }) {
+  switch (tab) {
+    case "outcomes":
+      return (course.outcomes || []).length > 0 ? (
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {course.outcomes.map((outcome, idx) => (
+            <li key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+              <span style={{ color: "#38aae1", fontSize: "13px", lineHeight: "1.5", flexShrink: 0 }}>●</span>
+              <span style={{ fontSize: "14px", color: "#374151", lineHeight: "1.5" }}>{outcome}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No outcomes added</p>
+      );
+
+    case "introduction":
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <DetailBlock label="Introduction" value={course.introduction?.overview} />
+          <DetailBlock label="Ice Breaker" value={course.introduction?.iceBreaker} />
+        </div>
+      );
+
+    case "mainConcept":
+      return <DetailBlock value={course.mainConcept} />;
+
+    case "activities":
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <DetailBlock label="Class Activity" value={course.activities?.classActivity} />
+          <DetailBlock label="Wrap Activity" value={course.activities?.wrapActivity} />
+        </div>
+      );
+
+    case "teachersNote":
+      return <DetailBlock value={course.teachersNote} />;
+
+    default:
+      return null;
+  }
 }
 
 export default function CourseViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: course, isLoading, isError } = useCourseQuery(id);
+  const [activeTab, setActiveTab] = useState("outcomes");
 
   if (isLoading) {
     return (
@@ -50,8 +161,6 @@ export default function CourseViewPage() {
       </div>
     );
   }
-
-  const statusStyle = STATUS_STYLES[course.status] || STATUS_STYLES.inactive;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -76,9 +185,6 @@ export default function CourseViewPage() {
                   <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>
                     {course.name}
                   </h1>
-                  <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, textTransform: "capitalize" }}>
-                    {course.status}
-                  </span>
                 </div>
               </div>
             </div>
@@ -98,27 +204,19 @@ export default function CourseViewPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <Section title="Description">
-          {course.description ? (
-            <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65" }}>{course.description}</p>
-          ) : (
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No description added</p>
-          )}
+          <RichContent html={course.description} emptyText="No description added" />
         </Section>
 
-        <Section title="Record Info">
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <DetailRow
-              label="Created"
-              value={new Date(course.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
-            />
-            <DetailRow
-              label="Last Updated"
-              value={new Date(course.updatedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
-            />
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px 0" }}>
+            <TabBar activeTab={activeTab} onChange={setActiveTab} />
           </div>
-        </Section>
+          <div style={{ padding: "20px" }}>
+            <TabContent tab={activeTab} course={course} />
+          </div>
+        </div>
       </div>
     </div>
   );
