@@ -1,11 +1,28 @@
 const { z } = require("zod");
 
-const createCourseSchema = z.object({
-  name:        z.string().min(1, "Course name is required").max(150, "Max 150 characters"),
-  description: z.string().max(1000, "Max 1000 characters").optional().default(""),
-  status:      z.enum(["active", "inactive"]).default("active"),
+const introductionSchema = z.object({
+  overview:   z.string().optional().default(""),
+  iceBreaker: z.string().optional().default(""),
 });
 
-const updateCourseSchema = createCourseSchema.partial();
+const activitiesSchema = z.object({
+  classActivity: z.string().optional().default(""),
+  wrapActivity:  z.string().optional().default(""),
+});
+
+const createCourseSchema = z.object({
+  name:         z.string().min(1, "Course name is required"),
+  description:  z.string().optional().default(""),
+  outcomes:     z.array(z.string().min(1)).optional().default([]),
+  introduction: introductionSchema.optional().default({}),
+  mainConcept:  z.string().optional().default(""),
+  activities:   activitiesSchema.optional().default({}),
+  teachersNote: z.string().optional().default(""),
+});
+
+const updateCourseSchema = createCourseSchema.partial().extend({
+  introduction: introductionSchema.partial().optional(),
+  activities:   activitiesSchema.partial().optional(),
+});
 
 module.exports = { createCourseSchema, updateCourseSchema };

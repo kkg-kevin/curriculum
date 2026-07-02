@@ -33,10 +33,8 @@ const CourseModel = {
     return course;
   },
 
-  findAll({ status } = {}) {
-    let all = readAll();
-    if (status) all = all.filter((c) => c.status === status);
-    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  findAll() {
+    return readAll().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   findById(id) {

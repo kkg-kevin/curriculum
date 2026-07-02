@@ -10,7 +10,11 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 const DEFAULT_VALUES = {
   name: "",
   description: "",
-  status: "active",
+  outcomes: [],
+  introduction: { overview: "", iceBreaker: "" },
+  mainConcept: "",
+  activities: { classActivity: "", wrapActivity: "" },
+  teachersNote: "",
 };
 
 export default function CreateCoursePage() {

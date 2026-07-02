@@ -9,8 +9,7 @@ const createCourse = asyncHandler(async (req, res) => {
 });
 
 const getAllCourses = asyncHandler(async (req, res) => {
-  const { status } = req.query;
-  const courses = await CourseService.getAllCourses({ status });
+  const courses = await CourseService.getAllCourses();
   res.json({ success: true, data: courses, count: courses.length });
 });
 
