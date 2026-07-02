@@ -26,17 +26,7 @@ export default function EditCoursePage() {
       reset({
         name: course.name || "",
         description: course.description || "",
-        outcomes: course.outcomes || [],
-        introduction: {
-          overview: course.introduction?.overview || "",
-          iceBreaker: course.introduction?.iceBreaker || "",
-        },
-        mainConcept: course.mainConcept || "",
-        activities: {
-          classActivity: course.activities?.classActivity || "",
-          wrapActivity: course.activities?.wrapActivity || "",
-        },
-        teachersNote: course.teachersNote || "",
+        coverImage: course.coverImage || null,
       });
     }
   }, [course, reset]);

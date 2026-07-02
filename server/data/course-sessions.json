@@ -1,0 +1,38 @@
+[
+  {
+    "courseId": "7f9cf661-8cec-47da-8840-ad5ac52dd305",
+    "title": "vyuyuyuy",
+    "outcomes": [],
+    "introduction": "<p>ybfuegwufhw</p>",
+    "mainConcepts": "<p>uggugweg</p>",
+    "activities": "<p>dug98gfe9g</p>",
+    "notes": "<p>euihhjjbd   eiwni</p>",
+    "resources": [
+      {
+        "id": "e8d0d6bc-8346-46c3-a6db-d60d5c43d4d8",
+        "filename": "Digifunzi For Schools - Current (1) (1).pdf",
+        "url": "http://localhost:5000/uploads/9fd9df68-bea1-45ec-85b8-7b1b6b42f7c5.pdf",
+        "mimeType": "application/pdf",
+        "size": 8867397
+      }
+    ],
+    "order": 1,
+    "id": "3b6e1a2b-eb0f-490d-8096-fb3e0c6eb3e7",
+    "createdAt": "2026-07-02T13:40:49.799Z",
+    "updatedAt": "2026-07-02T13:40:49.800Z"
+  },
+  {
+    "courseId": "7f9cf661-8cec-47da-8840-ad5ac52dd305",
+    "title": "hwbybvyuW",
+    "outcomes": [],
+    "introduction": "<p>BFHTRHTW</p>",
+    "mainConcepts": "<p>HETWHET</p>",
+    "activities": "<p>HETWET</p>",
+    "notes": "<p>EHTETHEWTH</p>",
+    "resources": [],
+    "order": 2,
+    "id": "a3974f75-75b0-450d-8681-b0ed57c944ba",
+    "createdAt": "2026-07-02T13:44:48.953Z",
+    "updatedAt": "2026-07-02T13:44:48.953Z"
+  }
+]

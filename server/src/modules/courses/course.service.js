@@ -1,4 +1,5 @@
 const CourseModel = require("./course.model");
+const SessionModel = require("./session.model");
 
 const CourseService = {
   async createCourse(data) {
@@ -6,7 +7,10 @@ const CourseService = {
   },
 
   async getAllCourses() {
-    return CourseModel.findAll();
+    return CourseModel.findAll().map((course) => ({
+      ...course,
+      sessionCount: SessionModel.findByCourseId(course.id).length,
+    }));
   },
 
   async getCourseById(id) {
@@ -36,7 +40,63 @@ const CourseService = {
       err.statusCode = 404;
       throw err;
     }
+    SessionModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
+  },
+
+  /* ── Sessions ────────────────────────────────────────────────────────── */
+
+  async getSessions(courseId) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return SessionModel.findByCourseId(courseId);
+  },
+
+  async createSession(courseId, data) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const order = data.order ?? SessionModel.findByCourseId(courseId).length + 1;
+    return SessionModel.create({ courseId, ...data, order });
+  },
+
+  async updateSession(courseId, sessionId, data) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const session = SessionModel.findById(sessionId);
+    if (!session || session.courseId !== courseId) {
+      const err = new Error("Session not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return SessionModel.update(sessionId, data);
+  },
+
+  async deleteSession(courseId, sessionId) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const session = SessionModel.findById(sessionId);
+    if (!session || session.courseId !== courseId) {
+      const err = new Error("Session not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    SessionModel.delete(sessionId);
   },
 };
 
