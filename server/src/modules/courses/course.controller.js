@@ -1,6 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const CourseService = require("./course.service");
-const { createCourseSchema, updateCourseSchema } = require("./course.validation");
+const {
+  createCourseSchema,
+  updateCourseSchema,
+  createSessionSchema,
+  updateSessionSchema,
+} = require("./course.validation");
 
 const createCourse = asyncHandler(async (req, res) => {
   const data = createCourseSchema.parse(req.body);
@@ -29,4 +34,38 @@ const deleteCourse = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-module.exports = { createCourse, getAllCourses, getCourseById, updateCourse, deleteCourse };
+/* ── Sessions ────────────────────────────────────────────────────────────── */
+
+const getSessions = asyncHandler(async (req, res) => {
+  const data = await CourseService.getSessions(req.params.id);
+  res.json({ success: true, data });
+});
+
+const createSession = asyncHandler(async (req, res) => {
+  const body = createSessionSchema.parse(req.body);
+  const data = await CourseService.createSession(req.params.id, body);
+  res.status(201).json({ success: true, data });
+});
+
+const updateSession = asyncHandler(async (req, res) => {
+  const body = updateSessionSchema.parse(req.body);
+  const data = await CourseService.updateSession(req.params.id, req.params.sessionId, body);
+  res.json({ success: true, data });
+});
+
+const deleteSession = asyncHandler(async (req, res) => {
+  await CourseService.deleteSession(req.params.id, req.params.sessionId);
+  res.json({ success: true });
+});
+
+module.exports = {
+  createCourse,
+  getAllCourses,
+  getCourseById,
+  updateCourse,
+  deleteCourse,
+  getSessions,
+  createSession,
+  updateSession,
+  deleteSession,
+};

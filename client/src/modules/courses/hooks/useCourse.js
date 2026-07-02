@@ -5,6 +5,7 @@ import { courseApi } from "../services/courseApi";
 export const COURSE_KEYS = {
   all: ["courses"],
   detail: (id) => ["courses", "detail", id],
+  sessions: (courseId) => ["courses", "sessions", courseId],
 };
 
 export function useCoursesQuery() {
@@ -62,5 +63,51 @@ export function useDeleteCourse() {
     onError: (err) => {
       toast.error(err.message || "Failed to delete course");
     },
+  });
+}
+
+/* ── Sessions ─────────────────────────────────────────────────────────── */
+
+export function useSessions(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.sessions(courseId),
+    queryFn: () => courseApi.getSessions(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useCreateSession(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => courseApi.createSession(courseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
+      toast.success("Session added");
+    },
+    onError: (err) => toast.error(err.message || "Failed to add session"),
+  });
+}
+
+export function useUpdateSession(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => courseApi.updateSession(courseId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
+      toast.success("Session updated");
+    },
+    onError: (err) => toast.error(err.message || "Failed to update session"),
+  });
+}
+
+export function useDeleteSession(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => courseApi.deleteSession(courseId, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
+      toast.success("Session deleted");
+    },
+    onError: (err) => toast.error(err.message || "Failed to delete session"),
   });
 }

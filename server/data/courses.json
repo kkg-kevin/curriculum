@@ -1,24 +1,10 @@
 [
   {
-    "name": "Introduction to Python",
-    "description": "<p>This course carries the introductory concepts for python programming</p>",
-    "outcomes": [
-      "By the end of the lesson, students should be able to understand what is computer programming",
-      "Students should be able to understand and confidently navigate the PictoBlox interface, including identifying key tools, blocks, and features essential for programming and robotics tasks.",
-      "By the end of the session, students will be able to create a simple and engaging program using basic coding concepts in PictoBlox."
-    ],
-    "introduction": {
-      "overview": "<p>In this lesson, you will explore the fundamentals of programming and their significance by interacting with the Pictoblox interface which is a user-friendly platform for coding. By the end of the session, you will create a simple yet fun piece of code, allowing you to apply what you've learned and experience the joy of bringing your ideas to life through programming. This hands-on approach will build your confidence and spark your creativity.<br><br><br><br></p>",
-      "iceBreaker": "<p>Students will get to know each other, have them pair up and share one interesting fact about themselves that they can represent with a sprite or character in Scratch.</p>"
-    },
-    "mainConcept": "<p>Another example is that when you're in a car, you see traffic lights turn red, then yellow, then green. They don't just change randomly! A program inside the traffic light tells it exactly when to turn red (so cars stop) and when to turn green (so cars go).</p><p></p><p>According to&nbsp;<em>Linda Liukas</em>, a Finnish computer programmer, children’s writer, and programming instructor,&nbsp;<strong><em>programming consists</em></strong>&nbsp;of three parts:Planning the programWriting the program in a programming language into a codeTesting and debugging the program</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/flow-chart_v1-300x213.png\" width=\"300\" height=\"213\"><p></p><p>The second part is what everybody generally considers programming. Only this part requires coding skills; the first and third parts require additional skills like problem-solving, and decomposition (the ability to break down bigger problems into smaller, manageable tasks).</p>",
-    "activities": {
-      "classActivity": "<p>Class Activity Let’s make Tobi walk – In this activity, You will create an animation in PictoBlox featuring Tobi walking across the screen. Through this project, you'll gain practical experience with fundamental programming concepts such as sequencing steps, employing loops for repetition, and initiating code with events.</p>",
-      "wrapActivity": "<p>Wrap Activity Open the floor for questions. Summarize what students have learned in the class. Remind them of the next class and the assignment deadline.</p>"
-    },
-    "teachersNote": "<p>Teacher's Notes Introduction to PictoBlox – Creating a Simple and Fun Project Lesson Objective By the end of the session, students will: Understand and confidently navigate the PictoBlox interface. Identify key tools, blocks, and features used in basic programming. Create a simple and engaging project using basic coding concepts. Demonstrate foundational problem-solving and creativity in programming. Materials Needed Computers with PictoBlox installed \"Introduction to PictoBlox\" Activity Sheet (printed or digital) Projector or screen for demonstration Internet access (optional, for Scratch community exploration) Notebooks/pens (optional, for taking notes) Preparation (Before Class) Ensure all computers have PictoBlox installed and updated. Print or digitally share the \"Introduction to PictoBlox Activity Sheet.\" Prepare a demo version of the simple project to show students. Familiarize yourself with the project instructions and troubleshooting tips. Class Structure (Estimated Duration: 60 Minutes) 1. Introduction (10 mins) Greet students and introduce the topic: “Today we’ll learn how to use PictoBlox and create our first fun coding project!” Briefly explain what PictoBlox is: A graphical programming platform based on Scratch, used for learning coding and robotics. Ask guiding questions to assess prior knowledge: “Has anyone used Scratch or PictoBlox before?” “What do you think coding is used for?” Assignment</p>",
-    "id": "1c9c5b52-8f19-4a8d-aed8-09cc399f8def",
-    "createdAt": "2026-07-02T11:21:28.132Z",
-    "updatedAt": "2026-07-02T11:51:46.508Z"
+    "name": "sample course",
+    "description": "<p>jweihivhqwrhvuqwusu</p>",
+    "coverImage": "http://localhost:5000/uploads/f734c2e4-70f5-4712-ac9b-f1b33291d6e3.jpeg",
+    "id": "7f9cf661-8cec-47da-8840-ad5ac52dd305",
+    "createdAt": "2026-07-02T13:39:53.252Z",
+    "updatedAt": "2026-07-02T13:39:53.252Z"
   }
 ]

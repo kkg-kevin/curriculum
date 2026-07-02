@@ -29,6 +29,7 @@ import CoursesPage from "../modules/courses/pages/CoursesPage";
 import CreateCoursePage from "../modules/courses/pages/CreateCoursePage";
 import EditCoursePage from "../modules/courses/pages/EditCoursePage";
 import CourseViewPage from "../modules/courses/pages/CourseViewPage";
+import SectionViewPage from "../modules/courses/pages/SectionViewPage";
 import AssessmentsPage from "../modules/assessments/pages/AssessmentsPage";
 import CreateAssessmentPage from "../modules/assessments/pages/CreateAssessmentPage";
 import EditAssessmentPage from "../modules/assessments/pages/EditAssessmentPage";
@@ -88,6 +89,7 @@ export default function AppRoutes() {
           <Route path="create" element={<CreateCoursePage />} />
           <Route path=":id/edit" element={<EditCoursePage />} />
           <Route path=":id/view" element={<CourseViewPage />} />
+          <Route path=":id/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
         </Route>
         <Route path="assessments">
           <Route index element={<AssessmentsPage />} />

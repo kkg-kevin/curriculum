@@ -29,6 +29,7 @@ export default function ConfirmDialog({
         backdropFilter: "blur(2px)",
       }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      onClick={(e) => e.stopPropagation()}
     >
       <div
         style={{

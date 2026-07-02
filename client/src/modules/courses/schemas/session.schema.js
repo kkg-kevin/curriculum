@@ -1,12 +1,4 @@
-const { z } = require("zod");
-
-const createCourseSchema = z.object({
-  name:        z.string().min(1, "Course name is required"),
-  description: z.string().optional().default(""),
-  coverImage:  z.string().nullable().optional().default(null),
-});
-
-const updateCourseSchema = createCourseSchema.partial();
+import { z } from "zod";
 
 const resourceSchema = z.object({
   id:       z.string().min(1),
@@ -16,9 +8,8 @@ const resourceSchema = z.object({
   size:     z.number(),
 });
 
-const createSessionSchema = z.object({
+export const sessionSchema = z.object({
   title:        z.string().min(1, "Session title is required"),
-  order:        z.number().int().min(1).optional(),
   outcomes:     z.array(z.string().min(1)).optional().default([]),
   introduction: z.string().optional().default(""),
   mainConcepts: z.string().optional().default(""),
@@ -26,12 +17,3 @@ const createSessionSchema = z.object({
   notes:        z.string().optional().default(""),
   resources:    z.array(resourceSchema).optional().default([]),
 });
-
-const updateSessionSchema = createSessionSchema.partial();
-
-module.exports = {
-  createCourseSchema,
-  updateCourseSchema,
-  createSessionSchema,
-  updateSessionSchema,
-};

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useCoursesQuery, useDeleteCourse } from "../hooks/useCourse";
@@ -8,6 +8,20 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 function stripHtml(html) {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const SORT_OPTIONS = [
+  { value: "recent", label: "Recently Added" },
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+];
+
+function sortCourses(courses, sortBy) {
+  const sorted = [...courses];
+  if (sortBy === "name-asc") sorted.sort((a, b) => a.name.localeCompare(b.name));
+  else if (sortBy === "name-desc") sorted.sort((a, b) => b.name.localeCompare(a.name));
+  else sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return sorted;
 }
 
 function MenuButton({ icon, label, onClick, danger = false }) {
@@ -57,12 +71,15 @@ function CourseCard({ course }) {
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, [menuOpen]);
 
+  const sessionCount = course.sessionCount ?? 0;
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/courses/${course.id}/view`)}
       style={{
-        backgroundColor: "#ffffff", borderRadius: "16px",
+        backgroundColor: "#ffffff", borderRadius: "16px", cursor: "pointer",
         boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.12), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",
         display: "flex", flexDirection: "column", overflow: "hidden",
         transition: "box-shadow 0.2s, transform 0.2s, opacity 0.2s",
@@ -70,51 +87,43 @@ function CourseCard({ course }) {
         opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto",
       }}
     >
-      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "20px" }}>
+      <div style={{ position: "relative", height: "140px", flexShrink: 0 }}>
+        {course.coverImage ? (
+          <img src={course.coverImage} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
             📚
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
-              <h3
-                onClick={() => navigate(`/courses/${course.id}/view`)}
-                style={{ margin: "0 0 3px 0", fontSize: "15px", fontWeight: "700", color: hovered ? "#25476a" : "#111827", cursor: "pointer", transition: "color 0.15s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-              >
-                {course.name}
-              </h3>
-              <button
-                ref={triggerRef}
-                type="button"
-                onClick={() => (menuOpen ? setMenuOpen(false) : openMenu())}
-                title="More options"
-                style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#e8f5fb" : "transparent", border: `1.5px solid ${menuOpen ? "#b8d9ee" : "transparent"}`, borderRadius: "8px", cursor: "pointer", color: menuOpen ? "#25476a" : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-                </svg>
-              </button>
-            </div>
-          </div>
+        )}
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); menuOpen ? setMenuOpen(false) : openMenu(); }}
+          title="More options"
+          style={{ position: "absolute", top: "10px", right: "10px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.9)", border: "none", borderRadius: "8px", cursor: "pointer", color: "#25476a" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+        <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {course.name}
+        </h3>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#38aae1", fontWeight: "600" }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {sessionCount} lesson{sessionCount !== 1 ? "s" : ""}
         </div>
 
         <p style={{
           margin: 0, fontSize: "13px", color: "#6B7280", lineHeight: "1.6",
-          display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
         }}>
           {stripHtml(course.description) || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
         </p>
-      </div>
-
-      <div style={{ padding: "10px 20px", borderTop: "1px solid #F3F4F6", backgroundColor: "#FAFBFF", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button
-          type="button"
-          onClick={() => navigate(`/courses/${course.id}/view`)}
-          style={{ background: "none", border: "none", fontSize: "13px", fontWeight: "600", color: "#38aae1", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
-        >
-          View Details
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
       </div>
 
       {menuOpen && createPortal(
@@ -126,13 +135,13 @@ function CourseCard({ course }) {
             { label: "View", path: `/courses/${course.id}/view`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
             { label: "Edit", path: `/courses/${course.id}/edit`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
           ].map(({ label, path, icon }) => (
-            <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
+            <MenuButton key={path} icon={icon} label={label} onClick={(e) => { e?.stopPropagation?.(); setMenuOpen(false); navigate(path); }} />
           ))}
           <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
             icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             label="Delete"
-            onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}
+            onClick={(e) => { e?.stopPropagation?.(); setMenuOpen(false); setConfirmOpen(true); }}
             danger
           />
         </div>,
@@ -168,10 +177,24 @@ function EmptyState({ onCreateNew }) {
   );
 }
 
+const selectStyle = {
+  border: "1.5px solid #E5E7EB", borderRadius: "10px", padding: "10px 14px", fontSize: "13px",
+  fontFamily: "Inter, sans-serif", color: "#374151", backgroundColor: "#fff", outline: "none", cursor: "pointer",
+};
+
 export default function CoursesPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useCoursesQuery();
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
   const courses = data?.data || [];
+
+  const visibleCourses = useMemo(() => {
+    const filtered = search.trim()
+      ? courses.filter((c) => c.name.toLowerCase().includes(search.trim().toLowerCase()))
+      : courses;
+    return sortCourses(filtered, sortBy);
+  }, [courses, search, sortBy]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -197,19 +220,40 @@ export default function CoursesPage() {
         </div>
       </div>
 
+      <div style={{ display: "flex", gap: "12px", marginBottom: "18px", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 240px", position: "relative" }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }}>
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search courses..."
+            style={{ ...selectStyle, width: "100%", boxSizing: "border-box", paddingLeft: "38px" }}
+          />
+        </div>
+
+        <div style={{ ...selectStyle, display: "flex", alignItems: "center", gap: "8px", color: "#374151" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4h16l-6 8v6l-4 2v-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          All Courses
+        </div>
+
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={selectStyle}>
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
       {isLoading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-          {[1, 2, 3].map((n) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
+          {[1, 2, 3, 4].map((n) => (
             <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#e8f5fb" }} />
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <div style={{ height: "15px", width: "55%", backgroundColor: "#EEF2F7", borderRadius: "5px" }} />
-                    <div style={{ height: "11px", width: "35%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />
-                  </div>
-                </div>
-                <div style={{ height: "40px", backgroundColor: "#F9FAFB", borderRadius: "10px" }} />
+              <div style={{ height: "140px", backgroundColor: "#e8f5fb" }} />
+              <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ height: "15px", width: "70%", backgroundColor: "#EEF2F7", borderRadius: "5px" }} />
+                <div style={{ height: "11px", width: "35%", backgroundColor: "#F3F4F6", borderRadius: "5px" }} />
+                <div style={{ height: "30px", backgroundColor: "#F9FAFB", borderRadius: "6px" }} />
               </div>
             </div>
           ))}
@@ -220,9 +264,13 @@ export default function CoursesPage() {
         </div>
       ) : courses.length === 0 ? (
         <EmptyState onCreateNew={() => navigate("/courses/create")} />
+      ) : visibleCourses.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB", color: "#9CA3AF", fontSize: "14px" }}>
+          No courses match "{search}".
+        </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-          {courses.map((course) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
+          {visibleCourses.map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>

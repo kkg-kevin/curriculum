@@ -10,4 +10,15 @@ export const uploadApi = {
       // API origin, not the app's own origin, since the two run on different ports/hosts.
       .then((r) => new URL(r.data.data.url, api.defaults.baseURL).toString());
   },
+
+  uploadDocument: (file) => {
+    const formData = new FormData();
+    formData.append("document", file);
+    return api
+      .post("/api/uploads/document", formData, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => ({
+        ...r.data.data,
+        url: new URL(r.data.data.url, api.defaults.baseURL).toString(),
+      }));
+  },
 };
