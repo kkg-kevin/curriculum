@@ -29,6 +29,19 @@ export const competenciesApi = {
   deleteCompetency: (curriculumId, cId) =>
     api.delete(`${base(curriculumId)}/items/${cId}`).then((r) => r.data),
 
+  /* Competency Indicators */
+  getIndicators: (curriculumId, cId) =>
+    api.get(`${base(curriculumId)}/items/${cId}/indicators`).then((r) => r.data.data),
+
+  createIndicator: (curriculumId, cId, data) =>
+    api.post(`${base(curriculumId)}/items/${cId}/indicators`, data).then((r) => r.data.data),
+
+  updateIndicator: (curriculumId, cId, iId, data) =>
+    api.put(`${base(curriculumId)}/items/${cId}/indicators/${iId}`, data).then((r) => r.data.data),
+
+  deleteIndicator: (curriculumId, cId, iId) =>
+    api.delete(`${base(curriculumId)}/items/${cId}/indicators/${iId}`).then((r) => r.data),
+
   /* Progression Ladder */
   getLadder: (curriculumId) =>
     api.get(`${base(curriculumId)}/ladder`).then((r) => r.data.data),

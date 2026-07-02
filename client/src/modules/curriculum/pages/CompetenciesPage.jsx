@@ -10,6 +10,10 @@ import {
   useCreateCompetency,
   useUpdateCompetency,
   useDeleteCompetency,
+  useIndicators,
+  useCreateIndicator,
+  useUpdateIndicator,
+  useDeleteIndicator,
   useLadder,
   useUpdateLadder,
   useAgeCategories,
@@ -252,6 +256,7 @@ const CSS = `
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(248px,1fr));
     gap:14px;
+    align-items:start;
   }
   @media(max-width:580px){ .cp-comp-grid{ grid-template-columns:1fr; } }
 
@@ -662,6 +667,160 @@ function CardKebab({ onEdit, onDelete, disabled }) {
   );
 }
 
+/* ── CompetencyIndicators ──────────────────────────────────────────────── */
+
+function CompetencyIndicators({ curriculumId, competencyId }) {
+  const { data: indicators = [], isLoading } = useIndicators(curriculumId, competencyId);
+  const { mutate: create, isPending: creating } = useCreateIndicator(curriculumId, competencyId);
+  const { mutate: update, isPending: updating } = useUpdateIndicator(curriculumId, competencyId);
+  const { mutate: remove, isPending: deleting } = useDeleteIndicator(curriculumId, competencyId);
+
+  const [formMode, setFormMode] = useState("closed"); // "closed" | "add" | "edit"
+  const [editId,   setEditId]   = useState(null);
+  const [name,     setName]     = useState("");
+  const [desc,     setDesc]     = useState("");
+  const [weight,   setWeight]   = useState(0);
+
+  function openAdd() {
+    setEditId(null); setName(""); setDesc(""); setWeight(0); setFormMode("add");
+  }
+  function openEdit(ind) {
+    setEditId(ind.id);
+    setName(ind.name);
+    setDesc(ind.description || "");
+    setWeight(ind.weight ?? 0);
+    setFormMode("edit");
+  }
+  function cancelForm() { setFormMode("closed"); setEditId(null); }
+
+  function submit() {
+    if (!name.trim()) return;
+    const data = { name: name.trim(), description: desc.trim(), weight: Math.min(100, Math.max(0, Number(weight) || 0)) };
+    if (formMode === "edit") {
+      update({ id: editId, data }, { onSuccess: cancelForm });
+    } else {
+      create(data, { onSuccess: cancelForm });
+    }
+  }
+
+  return (
+    <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed #E5E7EB" }}>
+      {isLoading ? (
+        <div style={{ fontSize: "11px", color: "#9CA3AF" }}>Loading indicators…</div>
+      ) : (
+        <>
+          {indicators.length === 0 && formMode === "closed" && (
+            <p style={{ margin: "0 0 8px", fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>
+              No indicators yet
+            </p>
+          )}
+
+          {indicators.map((ind) => (
+            <div key={ind.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 0" }}>
+              <span style={{ flex: 1, fontSize: "12px", color: "#374151", wordBreak: "break-word" }}>
+                {ind.name}
+              </span>
+              {(ind.weight ?? 0) > 0 && (
+                <span style={{ fontSize: "10px", fontWeight: "700", color: "#0369A1", flexShrink: 0 }}>
+                  {ind.weight}%
+                </span>
+              )}
+              <button
+                type="button"
+                className="cp-icon-btn"
+                title="Edit indicator"
+                onClick={() => openEdit(ind)}
+                style={{ flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="cp-icon-btn"
+                title="Delete indicator"
+                onClick={() => remove(ind.id)}
+                disabled={deleting}
+                style={{ flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+
+          {formMode === "closed" ? (
+            <button
+              type="button"
+              className="cp-btn-ghost"
+              style={{ marginTop: "6px", fontSize: "11px", padding: "4px 10px" }}
+              onClick={openAdd}
+            >
+              + Add indicator
+            </button>
+          ) : (
+            <div style={{ marginTop: "8px", padding: "10px", background: "#F9FAFB", borderRadius: "8px" }}>
+              <input
+                className="cp-input"
+                style={{ width: "100%", boxSizing: "border-box", marginBottom: "6px" }}
+                placeholder="Indicator name"
+                value={name}
+                maxLength={150}
+                autoFocus
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancelForm(); }}
+              />
+              <textarea
+                className="cp-textarea"
+                style={{ width: "100%", boxSizing: "border-box", marginBottom: "6px" }}
+                placeholder="Description (optional)"
+                rows={2}
+                value={desc}
+                maxLength={300}
+                onChange={(e) => setDesc(e.target.value)}
+              />
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="number"
+                  className="cp-input"
+                  min={0} max={100} step={1}
+                  value={weight}
+                  onChange={(e) => setWeight(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                  style={{ width: "70px", boxSizing: "border-box", textAlign: "center" }}
+                />
+                <span style={{ fontSize: "11px", color: "#6B7280" }}>% weight</span>
+                <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
+                  <button
+                    type="button"
+                    className="cp-btn-primary"
+                    style={{ padding: "4px 12px", fontSize: "11px" }}
+                    onClick={submit}
+                    disabled={creating || updating || !name.trim()}
+                  >
+                    {formMode === "edit" ? "Save" : "Add"}
+                  </button>
+                  <button
+                    type="button"
+                    className="cp-btn-secondary"
+                    style={{ padding: "4px 12px", fontSize: "11px" }}
+                    onClick={cancelForm}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ── CompetenciesPanel ──────────────────────────────────────────────────── */
 
 const COMP_PALETTE = [
@@ -684,6 +843,7 @@ function CompetenciesPanel({ curriculumId }) {
   const [areaId,     setAreaId]     = useState("");
   const [threshold,  setThreshold]  = useState(60);
   const [weight,     setWeight]     = useState(0);
+  const [expandedId, setExpandedId] = useState(null);
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
@@ -1003,6 +1163,19 @@ function CompetenciesPanel({ curriculumId }) {
                       <div style={{ height: "100%", width: `${comp.weight ?? 0}%`, background: "#38aae1", borderRadius: "2px" }} />
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    className="cp-btn-ghost"
+                    style={{ marginTop: "10px", fontSize: "11px", padding: "4px 10px", width: "100%" }}
+                    onClick={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
+                  >
+                    {expandedId === comp.id ? "Hide indicators ▲" : "Indicators ▾"}
+                  </button>
+
+                  {expandedId === comp.id && (
+                    <CompetencyIndicators curriculumId={curriculumId} competencyId={comp.id} />
+                  )}
                 </div>
               </div>
             );

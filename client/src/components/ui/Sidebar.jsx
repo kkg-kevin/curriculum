@@ -9,6 +9,7 @@ function Sidebar() {
     { name: "Learners", path: "/learners" },
     { name: "Teachers", path: "/teachers" },
     { name: "Classes", path: "/classes" },
+    { name: "Courses", path: "/courses" },
     { name: "Assessments", path: "/assessments" },
     { name: "Reports", path: "/reports" },
     { name: "Settings", path: "/settings" },

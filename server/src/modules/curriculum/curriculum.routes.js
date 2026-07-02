@@ -27,6 +27,10 @@ const {
   createCompetency,
   updateCompetency,
   deleteCompetency,
+  getIndicators,
+  createIndicator,
+  updateIndicator,
+  deleteIndicator,
   getLadder,
   updateLadder,
   getAgeCategories,
@@ -83,6 +87,10 @@ router.route("/:id/competencies/learning-areas/:aId").put(updateLearningArea).de
 // Competencies — competency items
 router.route("/:id/competencies/items").get(getCompetencies).post(createCompetency);
 router.route("/:id/competencies/items/:cId").put(updateCompetency).delete(deleteCompetency);
+
+// Competencies — competency indicators
+router.route("/:id/competencies/items/:cId/indicators").get(getIndicators).post(createIndicator);
+router.route("/:id/competencies/items/:cId/indicators/:iId").put(updateIndicator).delete(deleteIndicator);
 
 // Competencies — progression ladder
 router.route("/:id/competencies/ladder").get(getLadder).put(updateLadder);
