@@ -25,6 +25,14 @@ import LearnersPage from "../modules/learners/pages/LearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
+import CoursesPage from "../modules/courses/pages/CoursesPage";
+import CreateCoursePage from "../modules/courses/pages/CreateCoursePage";
+import EditCoursePage from "../modules/courses/pages/EditCoursePage";
+import CourseViewPage from "../modules/courses/pages/CourseViewPage";
+import AssessmentsPage from "../modules/assessments/pages/AssessmentsPage";
+import CreateAssessmentPage from "../modules/assessments/pages/CreateAssessmentPage";
+import EditAssessmentPage from "../modules/assessments/pages/EditAssessmentPage";
+import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 
 function ComingSoon({ name }) {
   return (
@@ -75,8 +83,18 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditClassPage />} />
           <Route path=":id/view" element={<ClassViewPage />} />
         </Route>
-        <Route path="courses" element={<ComingSoon name="Courses" />} />
-        <Route path="assessments" element={<ComingSoon name="Assessments" />} />
+        <Route path="courses">
+          <Route index element={<CoursesPage />} />
+          <Route path="create" element={<CreateCoursePage />} />
+          <Route path=":id/edit" element={<EditCoursePage />} />
+          <Route path=":id/view" element={<CourseViewPage />} />
+        </Route>
+        <Route path="assessments">
+          <Route index element={<AssessmentsPage />} />
+          <Route path="create" element={<CreateAssessmentPage />} />
+          <Route path=":id/edit" element={<EditAssessmentPage />} />
+          <Route path=":id/view" element={<AssessmentViewPage />} />
+        </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<ComingSoon name="Settings" />} />
       </Route>

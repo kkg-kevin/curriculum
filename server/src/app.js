@@ -6,6 +6,8 @@ const schoolRoutes = require("./modules/schools/school.routes");
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
+const courseRoutes = require("./modules/courses/course.routes");
+const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 
 const app = express();
@@ -26,6 +28,8 @@ app.use("/api/schools", schoolRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/learners", learnerRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/assessments", assessmentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
