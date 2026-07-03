@@ -1,12 +1,9 @@
 const asyncHandler      = require("express-async-handler");
 const CompetencyService = require("./competency.service");
 const {
+  linkCompetencySchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
-  createCompetencySchema,
-  updateCompetencySchema,
-  createIndicatorSchema,
-  updateIndicatorSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,
@@ -25,6 +22,24 @@ const {
   reorderBandsSchema,
   calculateScoreSchema,
 } = require("./competency.validation");
+
+/* ── Curriculum ↔ Competency links ─────────────────────────────────────── */
+
+exports.getCurriculumCompetencies = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getCurriculumCompetencies(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.linkCompetency = asyncHandler(async (req, res) => {
+  const { competencyId } = linkCompetencySchema.parse(req.body);
+  const data = CompetencyService.linkCompetency(req.params.id, competencyId);
+  res.status(201).json({ success: true, data });
+});
+
+exports.unlinkCompetency = asyncHandler(async (req, res) => {
+  const data = CompetencyService.unlinkCompetency(req.params.id, req.params.competencyId);
+  res.json({ success: true, data });
+});
 
 /* ── Learning Areas ──────────────────────────────────────────────────────── */
 
@@ -47,54 +62,6 @@ exports.updateLearningArea = asyncHandler(async (req, res) => {
 
 exports.deleteLearningArea = asyncHandler(async (req, res) => {
   CompetencyService.deleteLearningArea(req.params.id, req.params.aId);
-  res.json({ success: true });
-});
-
-/* ── Competencies ────────────────────────────────────────────────────────── */
-
-exports.getCompetencies = asyncHandler(async (req, res) => {
-  const data = CompetencyService.getCompetencies(req.params.id);
-  res.json({ success: true, data });
-});
-
-exports.createCompetency = asyncHandler(async (req, res) => {
-  const body = createCompetencySchema.parse(req.body);
-  const data = CompetencyService.createCompetency(req.params.id, body);
-  res.status(201).json({ success: true, data });
-});
-
-exports.updateCompetency = asyncHandler(async (req, res) => {
-  const body = updateCompetencySchema.parse(req.body);
-  const data = CompetencyService.updateCompetency(req.params.id, req.params.cId, body);
-  res.json({ success: true, data });
-});
-
-exports.deleteCompetency = asyncHandler(async (req, res) => {
-  CompetencyService.deleteCompetency(req.params.id, req.params.cId);
-  res.json({ success: true });
-});
-
-/* ── Competency Indicators ───────────────────────────────────────────────── */
-
-exports.getIndicators = asyncHandler(async (req, res) => {
-  const data = CompetencyService.getIndicators(req.params.id, req.params.cId);
-  res.json({ success: true, data });
-});
-
-exports.createIndicator = asyncHandler(async (req, res) => {
-  const body = createIndicatorSchema.parse(req.body);
-  const data = CompetencyService.createIndicator(req.params.id, req.params.cId, body);
-  res.status(201).json({ success: true, data });
-});
-
-exports.updateIndicator = asyncHandler(async (req, res) => {
-  const body = updateIndicatorSchema.parse(req.body);
-  const data = CompetencyService.updateIndicator(req.params.id, req.params.cId, req.params.iId, body);
-  res.json({ success: true, data });
-});
-
-exports.deleteIndicator = asyncHandler(async (req, res) => {
-  CompetencyService.deleteIndicator(req.params.id, req.params.cId, req.params.iId);
   res.json({ success: true });
 });
 

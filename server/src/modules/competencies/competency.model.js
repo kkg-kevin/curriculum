@@ -11,8 +11,13 @@ function genId() {
 }
 
 const CompetencyModel = {
-  findByCurriculumId(curriculumId) {
-    return read().filter((c) => c.curriculumId === curriculumId);
+  findAll() {
+    return read();
+  },
+
+  findByIds(ids) {
+    const idSet = new Set(ids);
+    return read().filter((c) => idSet.has(c.id));
   },
 
   findById(id) {
@@ -43,12 +48,6 @@ const CompetencyModel = {
     if (filtered.length === all.length) return false;
     write(filtered);
     return true;
-  },
-
-  deleteByCurriculumId(curriculumId) {
-    const all      = read();
-    const filtered = all.filter((c) => c.curriculumId !== curriculumId);
-    write(filtered);
   },
 };
 

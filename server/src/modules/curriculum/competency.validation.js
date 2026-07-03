@@ -1,5 +1,9 @@
 const { z } = require("zod");
 
+const linkCompetencySchema = z.object({
+  competencyId: z.string().min(1, "competencyId is required"),
+});
+
 const createLearningAreaSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -8,24 +12,6 @@ const createLearningAreaSchema = z.object({
 });
 
 const updateLearningAreaSchema = createLearningAreaSchema.partial();
-
-const createCompetencySchema = z.object({
-  name:             z.string().min(1, "Name is required").max(150),
-  description:      z.string().max(500).optional().default(""),
-  learningAreaId:   z.string().nullable().optional().default(null),
-  minimumThreshold: z.number().min(0).max(100).optional().default(60),
-  weight:           z.number().min(0).max(100).optional().default(0),
-});
-
-const updateCompetencySchema = createCompetencySchema.partial();
-
-const createIndicatorSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(150),
-  description: z.string().max(300).optional().default(""),
-  weight:      z.number().min(0).max(100).optional().default(0),
-});
-
-const updateIndicatorSchema = createIndicatorSchema.partial();
 
 const assignmentSchema = z.object({
   competencyId: z.string(),
@@ -149,12 +135,9 @@ const calculateScoreSchema = z.object({
 });
 
 module.exports = {
+  linkCompetencySchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
-  createCompetencySchema,
-  updateCompetencySchema,
-  createIndicatorSchema,
-  updateIndicatorSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,

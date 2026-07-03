@@ -1,7 +1,7 @@
 [
   {
-    "id": "c752921d-ac63-4ec8-aebe-508c73417b76",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "id": "c752921d-ac63-4ec8-aebe-508c73417b76",
     "name": "Coding & Artificial Intelligence",
     "description": "This learning area introduces learners (ages 8–18) to the fundamentals of computer programming and artificial intelligence. Students progress from basic computational thinking and visual coding to advanced programming concepts such as data structures, algorithms, and machine learning. The program emphasizes problem-solving, creativity, and real-world application, enabling learners to build software, automate tasks, and understand how AI systems are designed and used.",
     "color": "#25476a",
@@ -16,8 +16,8 @@
     "updatedAt": "2026-07-01T12:57:26.269Z"
   },
   {
-    "id": "8d2f5ab3-81c8-4011-91ed-3f288717c495",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "id": "8d2f5ab3-81c8-4011-91ed-3f288717c495",
     "name": "Machine Learning with Python",
     "description": "This learning area introduces learner to the concept of algorithms, model design, and cutrating data to meet the model - train and test",
     "color": "#25476a",

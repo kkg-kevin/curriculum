@@ -1,10 +1,8 @@
 [
   {
     "id": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "1. Computational Thinking & Problem Decomposition",
     "description": "The learner is able to analyze problems by breaking them down into smaller, manageable components, identify patterns and relationships, and design clear, logical step-by-step solutions. This includes using structured thinking approaches such as sequencing, abstraction, and basic algorithm design before implementation.",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:18:46.354Z",
     "updatedAt": "2026-07-01T12:40:04.197Z",
@@ -12,50 +10,40 @@
   },
   {
     "id": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "2. Programming & Implementation Skills",
     "description": "The learner can translate logical solutions into functional code using appropriate programming constructs such as variables, conditionals, loops, and functions. They demonstrate the ability to write clear, organized code, test outputs, identify errors, and apply basic debugging techniques to improve program correctness and efficiency.",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:17.027Z",
     "updatedAt": "2026-06-25T10:19:17.027Z"
   },
   {
     "id": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "3. Digital Creativity & Project Development",
     "description": "The learner applies acquired technical skills to design and develop complete digital projects such as games, animations, or simple applications. They demonstrate creativity in idea generation, effective use of tools and features, and the ability to integrate multiple concepts into a coherent and functional solution.",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:33.282Z",
     "updatedAt": "2026-06-25T10:19:33.282Z"
   },
   {
     "id": "c3d95126-1121-4de8-bdab-14adbf00d218",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "4. AI & Data Literacy Awareness",
     "description": "The learner demonstrates an understanding of foundational concepts in artificial intelligence and data usage, including how systems process inputs and generate outputs. They can interact with basic AI tools, recognize the role of data in training systems, and show awareness of key issues such as bias, accuracy, and responsible use of AI technologies.",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:19:49.869Z",
     "updatedAt": "2026-06-25T10:19:49.869Z"
   },
   {
     "id": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "5. Collaboration, Communication & Digital Citizenship",
     "description": "The learner effectively collaborates with peers in shared tasks, clearly communicates ideas, processes, and outcomes, and engages constructively in discussions. They also demonstrate responsible digital behavior, including respect for others, safe use of technology, and adherence to ethical standards in online and collaborative environments.",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "createdAt": "2026-06-25T10:20:10.642Z",
     "updatedAt": "2026-06-25T10:20:10.642Z"
   },
   {
     "id": "8714a925-90b6-4b07-9a39-b736497b80b7",
-    "curriculumId": "6516d0d2-af4a-47c5-afa1-b5651fc84516",
     "name": "buhqeug",
     "description": "jbugeugu",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "weight": 30,
     "createdAt": "2026-06-29T12:06:44.808Z",
@@ -63,10 +51,8 @@
   },
   {
     "id": "bbdb4051-bcb6-4bcc-8867-d8ecbe1498f6",
-    "curriculumId": "f22aa982-a3a5-4ccc-9b62-be6993f002a0",
     "name": "gyyy",
     "description": "ugygyggyg",
-    "learningAreaId": null,
     "minimumThreshold": 60,
     "weight": 20,
     "createdAt": "2026-06-29T12:11:11.100Z",

@@ -1,7 +1,7 @@
 const CurriculumModel        = require("./curriculum.model");
+const CurriculumCompetencyLinkModel = require("./curriculum-competency-link.model");
 const LearningAreaModel      = require("./learning-area.model");
-const CompetencyModel        = require("./competency.model");
-const CompetencyIndicatorModel = require("./competency-indicator.model");
+const CompetencyModel        = require("../competencies/competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
 const AgeCategoryModel       = require("./age-category.model");
 const ProgressLevelModel     = require("./progress-level.model");
@@ -20,6 +20,41 @@ const DEFAULT_RUNGS = [
 ];
 
 const CompetencyService = {
+  /* ── Curriculum ↔ Competency links ───────────────────────────────────
+   * Competencies are now authored globally (see server/src/modules/competencies).
+   * A curriculum no longer owns competency records — it just adopts entries
+   * from the shared catalog. */
+
+  getCurriculumCompetencies(curriculumId) {
+    const links = CurriculumCompetencyLinkModel.findByCurriculumId(curriculumId);
+    return CompetencyModel.findByIds(links.map((l) => l.competencyId));
+  },
+
+  linkCompetency(curriculumId, competencyId) {
+    const comp = CompetencyModel.findById(competencyId);
+    if (!comp) {
+      const err = new Error("Competency not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CurriculumCompetencyLinkModel.link(curriculumId, competencyId);
+    return this.getCurriculumCompetencies(curriculumId);
+  },
+
+  unlinkCompetency(curriculumId, competencyId) {
+    CurriculumCompetencyLinkModel.unlink(curriculumId, competencyId);
+    // This curriculum no longer uses the competency — drop it from this curriculum's
+    // own progression ladder too (other curricula's ladders are untouched).
+    const rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
+    rungs.forEach((rung) => {
+      const filtered = (rung.assignments || []).filter((a) => a.competencyId !== competencyId);
+      if (filtered.length !== (rung.assignments || []).length) {
+        ProgressionLadderModel.update(rung.id, { assignments: filtered });
+      }
+    });
+    return this.getCurriculumCompetencies(curriculumId);
+  },
+
   /* ── Learning Areas ─────────────────────────────────────────────────── */
 
   getLearningAreas(curriculumId) {
@@ -62,120 +97,6 @@ const CompetencyService = {
       throw err;
     }
     LearningAreaModel.delete(id);
-    // Unlink competencies that belonged to this area
-    const comps = CompetencyModel.findByCurriculumId(curriculumId).filter(
-      (c) => c.learningAreaId === id
-    );
-    comps.forEach((c) => CompetencyModel.update(c.id, { learningAreaId: null }));
-  },
-
-  /* ── Competencies ───────────────────────────────────────────────────── */
-
-  getCompetencies(curriculumId) {
-    return CompetencyModel.findByCurriculumId(curriculumId);
-  },
-
-  createCompetency(curriculumId, data) {
-    if (data.learningAreaId) {
-      const area = LearningAreaModel.findById(data.learningAreaId);
-      if (!area || area.curriculumId !== curriculumId) {
-        const err = new Error("Learning area not found");
-        err.statusCode = 404;
-        throw err;
-      }
-    }
-    return CompetencyModel.create({ curriculumId, ...data });
-  },
-
-  updateCompetency(curriculumId, id, data) {
-    const comp = CompetencyModel.findById(id);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    if (data.learningAreaId) {
-      const area = LearningAreaModel.findById(data.learningAreaId);
-      if (!area || area.curriculumId !== curriculumId) {
-        const err = new Error("Learning area not found");
-        err.statusCode = 404;
-        throw err;
-      }
-    }
-    return CompetencyModel.update(id, data);
-  },
-
-  deleteCompetency(curriculumId, id) {
-    const comp = CompetencyModel.findById(id);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    CompetencyModel.delete(id);
-    CompetencyIndicatorModel.deleteByCompetencyId(id);
-    // Remove this competency from all ladder assignments
-    const rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
-    rungs.forEach((rung) => {
-      const filtered = rung.assignments.filter((a) => a.competencyId !== id);
-      if (filtered.length !== rung.assignments.length) {
-        ProgressionLadderModel.update(rung.id, { assignments: filtered });
-      }
-    });
-  },
-
-  /* ── Competency Indicators ─────────────────────────────────────────── */
-
-  getIndicators(curriculumId, competencyId) {
-    const comp = CompetencyModel.findById(competencyId);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    return CompetencyIndicatorModel.findByCompetencyId(competencyId);
-  },
-
-  createIndicator(curriculumId, competencyId, data) {
-    const comp = CompetencyModel.findById(competencyId);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    return CompetencyIndicatorModel.create({ competencyId, ...data });
-  },
-
-  updateIndicator(curriculumId, competencyId, id, data) {
-    const comp = CompetencyModel.findById(competencyId);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    const indicator = CompetencyIndicatorModel.findById(id);
-    if (!indicator || indicator.competencyId !== competencyId) {
-      const err = new Error("Competency indicator not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    return CompetencyIndicatorModel.update(id, data);
-  },
-
-  deleteIndicator(curriculumId, competencyId, id) {
-    const comp = CompetencyModel.findById(competencyId);
-    if (!comp || comp.curriculumId !== curriculumId) {
-      const err = new Error("Competency not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    const indicator = CompetencyIndicatorModel.findById(id);
-    if (!indicator || indicator.competencyId !== competencyId) {
-      const err = new Error("Competency indicator not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    CompetencyIndicatorModel.delete(id);
   },
 
   /* ── Progression Ladder ─────────────────────────────────────────────── */
@@ -425,7 +346,7 @@ const CompetencyService = {
     }
 
     const evidenceTypes    = EvidenceTypeModel.findByCurriculumId(curriculumId);
-    const competencies     = CompetencyModel.findByCurriculumId(curriculumId);
+    const competencies     = this.getCurriculumCompetencies(curriculumId);
     const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId);
     const progressLevels   = ProgressLevelModel.findByCurriculumId(curriculumId);
     const config           = assessmentType.evidenceWeights || [];

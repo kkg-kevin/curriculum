@@ -42,6 +42,22 @@ const ProgressionLadderModel = {
     const filtered = all.filter((r) => r.curriculumId !== curriculumId);
     write(filtered);
   },
+
+  // Cross-curriculum cleanup used when a competency is deleted from the global catalog —
+  // strips it out of every rung's assignments, in every curriculum's ladder.
+  removeCompetencyFromAllRungs(competencyId) {
+    const all = read();
+    let changed = false;
+    const next = all.map((rung) => {
+      const assignments = (rung.assignments || []).filter((a) => a.competencyId !== competencyId);
+      if (assignments.length !== (rung.assignments || []).length) {
+        changed = true;
+        return { ...rung, assignments };
+      }
+      return rung;
+    });
+    if (changed) write(next);
+  },
 };
 
 module.exports = ProgressionLadderModel;

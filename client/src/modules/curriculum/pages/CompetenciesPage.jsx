@@ -1,19 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
+  useCompetencies,
+  useLinkCompetency,
+  useUnlinkCompetency,
   useLearningAreas,
   useCreateLearningArea,
   useUpdateLearningArea,
   useDeleteLearningArea,
-  useCompetencies,
-  useCreateCompetency,
-  useUpdateCompetency,
-  useDeleteCompetency,
-  useIndicators,
-  useCreateIndicator,
-  useUpdateIndicator,
-  useDeleteIndicator,
   useLadder,
   useUpdateLadder,
   useAgeCategories,
@@ -36,6 +31,7 @@ import {
   useDeletePerformanceBand,
   useReorderPerformanceBands,
 } from "../hooks/useCompetencies";
+import { useCompetencies as useGlobalCompetencies } from "../../settings/hooks/useCompetencies";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -467,7 +463,7 @@ function LearningAreasPanel({ curriculumId }) {
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Areas</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {areas.length} area{areas.length !== 1 ? "s" : ""} — broad domains that group competencies (e.g. Language, STEM, Arts)
+            {areas.length} area{areas.length !== 1 ? "s" : ""} — broad domains that group the competencies this curriculum uses (e.g. Language, STEM, Arts)
           </p>
         </div>
         {!showForm && (
@@ -552,7 +548,7 @@ function LearningAreasPanel({ curriculumId }) {
         <div className="cp-empty">
           <div style={{ fontSize: "32px", marginBottom: "10px" }}>📂</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No learning areas yet</p>
-          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Group your competencies under broad learning areas.</p>
+          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Group the competencies this curriculum uses under broad learning areas.</p>
           <button type="button" className="cp-btn-ghost" onClick={openCreate}>+ Add First Area</button>
         </div>
       ) : (
@@ -667,161 +663,10 @@ function CardKebab({ onEdit, onDelete, disabled }) {
   );
 }
 
-/* ── CompetencyIndicators ──────────────────────────────────────────────── */
-
-function CompetencyIndicators({ curriculumId, competencyId }) {
-  const { data: indicators = [], isLoading } = useIndicators(curriculumId, competencyId);
-  const { mutate: create, isPending: creating } = useCreateIndicator(curriculumId, competencyId);
-  const { mutate: update, isPending: updating } = useUpdateIndicator(curriculumId, competencyId);
-  const { mutate: remove, isPending: deleting } = useDeleteIndicator(curriculumId, competencyId);
-
-  const [formMode, setFormMode] = useState("closed"); // "closed" | "add" | "edit"
-  const [editId,   setEditId]   = useState(null);
-  const [name,     setName]     = useState("");
-  const [desc,     setDesc]     = useState("");
-  const [weight,   setWeight]   = useState(0);
-
-  function openAdd() {
-    setEditId(null); setName(""); setDesc(""); setWeight(0); setFormMode("add");
-  }
-  function openEdit(ind) {
-    setEditId(ind.id);
-    setName(ind.name);
-    setDesc(ind.description || "");
-    setWeight(ind.weight ?? 0);
-    setFormMode("edit");
-  }
-  function cancelForm() { setFormMode("closed"); setEditId(null); }
-
-  function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), weight: Math.min(100, Math.max(0, Number(weight) || 0)) };
-    if (formMode === "edit") {
-      update({ id: editId, data }, { onSuccess: cancelForm });
-    } else {
-      create(data, { onSuccess: cancelForm });
-    }
-  }
-
-  return (
-    <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed #E5E7EB" }}>
-      {isLoading ? (
-        <div style={{ fontSize: "11px", color: "#9CA3AF" }}>Loading indicators…</div>
-      ) : (
-        <>
-          {indicators.length === 0 && formMode === "closed" && (
-            <p style={{ margin: "0 0 8px", fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>
-              No indicators yet
-            </p>
-          )}
-
-          {indicators.map((ind) => (
-            <div key={ind.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 0" }}>
-              <span style={{ flex: 1, fontSize: "12px", color: "#374151", wordBreak: "break-word" }}>
-                {ind.name}
-              </span>
-              {(ind.weight ?? 0) > 0 && (
-                <span style={{ fontSize: "10px", fontWeight: "700", color: "#0369A1", flexShrink: 0 }}>
-                  {ind.weight}%
-                </span>
-              )}
-              <button
-                type="button"
-                className="cp-icon-btn"
-                title="Edit indicator"
-                onClick={() => openEdit(ind)}
-                style={{ flexShrink: 0 }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="cp-icon-btn"
-                title="Delete indicator"
-                onClick={() => remove(ind.id)}
-                disabled={deleting}
-                style={{ flexShrink: 0 }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          ))}
-
-          {formMode === "closed" ? (
-            <button
-              type="button"
-              className="cp-btn-ghost"
-              style={{ marginTop: "6px", fontSize: "11px", padding: "4px 10px" }}
-              onClick={openAdd}
-            >
-              + Add indicator
-            </button>
-          ) : (
-            <div style={{ marginTop: "8px", padding: "10px", background: "#F9FAFB", borderRadius: "8px" }}>
-              <input
-                className="cp-input"
-                style={{ width: "100%", boxSizing: "border-box", marginBottom: "6px" }}
-                placeholder="Indicator name"
-                value={name}
-                maxLength={150}
-                autoFocus
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancelForm(); }}
-              />
-              <textarea
-                className="cp-textarea"
-                style={{ width: "100%", boxSizing: "border-box", marginBottom: "6px" }}
-                placeholder="Description (optional)"
-                rows={2}
-                value={desc}
-                maxLength={300}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <input
-                  type="number"
-                  className="cp-input"
-                  min={0} max={100} step={1}
-                  value={weight}
-                  onChange={(e) => setWeight(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                  style={{ width: "70px", boxSizing: "border-box", textAlign: "center" }}
-                />
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>% weight</span>
-                <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
-                  <button
-                    type="button"
-                    className="cp-btn-primary"
-                    style={{ padding: "4px 12px", fontSize: "11px" }}
-                    onClick={submit}
-                    disabled={creating || updating || !name.trim()}
-                  >
-                    {formMode === "edit" ? "Save" : "Add"}
-                  </button>
-                  <button
-                    type="button"
-                    className="cp-btn-secondary"
-                    style={{ padding: "4px 12px", fontSize: "11px" }}
-                    onClick={cancelForm}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ── CompetenciesPanel ──────────────────────────────────────────────────── */
+/* ── CompetencyPickerPanel ───────────────────────────────────────────────
+ * Competencies are authored once in Settings and shared across the whole app.
+ * This panel no longer creates/edits competencies — it just lets a curriculum
+ * adopt entries from that catalog and see what it's already using. */
 
 const COMP_PALETTE = [
   "#25476a","#38aae1","#059669","#7C3AED",
@@ -829,262 +674,137 @@ const COMP_PALETTE = [
   "#2e7db5","#0A3880",
 ];
 
-function CompetenciesPanel({ curriculumId }) {
-  const { data: areas = [] }            = useLearningAreas(curriculumId);
-  const { data: comps = [], isLoading } = useCompetencies(curriculumId);
-  const { mutate: create, isPending: creating } = useCreateCompetency(curriculumId);
-  const { mutate: update, isPending: updating } = useUpdateCompetency(curriculumId);
-  const { mutate: remove, isPending: deleting } = useDeleteCompetency(curriculumId);
+function AddCompetencyDropdown({ available, onAdd, isPending }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const [mode,       setMode]       = useState("list"); // "list" | "add" | "edit"
-  const [editTarget, setEditTarget] = useState(null);
-  const [name,       setName]       = useState("");
-  const [desc,       setDesc]       = useState("");
-  const [areaId,     setAreaId]     = useState("");
-  const [threshold,  setThreshold]  = useState(60);
-  const [weight,     setWeight]     = useState(0);
-  const [expandedId, setExpandedId] = useState(null);
-  const nameRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
 
-  useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button type="button" className="cp-btn-primary" onClick={() => setOpen((v) => !v)}>
+        + Add Competency
+      </button>
+      {open && (
+        <div className="cp-card-menu" style={{ minWidth: "260px", maxHeight: "320px", overflowY: "auto", right: 0 }}>
+          {available.length === 0 ? (
+            <div style={{ padding: "14px 12px", fontSize: "12px", color: "#9CA3AF", textAlign: "center" }}>
+              All competencies are already added to this curriculum.
+            </div>
+          ) : (
+            available.map((comp) => (
+              <button
+                key={comp.id}
+                type="button"
+                className="cp-card-menu-item"
+                disabled={isPending}
+                onClick={() => { onAdd(comp.id); setOpen(false); }}
+              >
+                {comp.name}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setAreaId(""); setThreshold(60); setWeight(0); setMode("add");
-  }
-  function openEdit(comp) {
-    setEditTarget(comp);
-    setName(comp.name);
-    setDesc(comp.description || "");
-    setAreaId(comp.learningAreaId || "");
-    setThreshold(comp.minimumThreshold ?? 60);
-    setWeight(comp.weight ?? 0);
-    setMode("edit");
-  }
-  function cancelForm() { setMode("list"); setEditTarget(null); }
+function CompetencyRemoveMenu({ onRemove }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), learningAreaId: areaId || null, minimumThreshold: Number(threshold) || 60, weight: Math.min(100, Math.max(0, Number(weight) || 0)) };
-    if (mode === "edit") {
-      update({ id: editTarget.id, data }, { onSuccess: cancelForm });
-    } else {
-      create(data, {
-        onSuccess: () => { setName(""); setDesc(""); setAreaId(""); setThreshold(60); setWeight(0); nameRef.current?.focus(); },
-      });
-    }
-  }
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
 
-  const areaMap = Object.fromEntries(areas.map((a) => [a.id, a]));
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button type="button" className="cp-card-kebab-btn" onClick={() => setOpen((v) => !v)} title="Options">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="cp-card-menu">
+          <button
+            type="button"
+            className="cp-card-menu-item cp-card-menu-item--danger"
+            onClick={() => { setOpen(false); onRemove(); }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Remove from curriculum
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompetencyPickerPanel({ curriculumId }) {
+  const { data: allComps = [], isLoading: loadingAll } = useGlobalCompetencies();
+  const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
+  const { mutate: link, isPending: linking } = useLinkCompetency(curriculumId);
+  const { mutate: unlink } = useUnlinkCompetency(curriculumId);
+
+  const linkedIds = new Set(linkedComps.map((c) => c.id));
+  const availableComps = allComps.filter((c) => !linkedIds.has(c.id));
+  const isLoading = loadingAll || loadingLinked;
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
 
   return (
     <div className="cp-card">
-
-      {/* ── Panel header ──────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", gap: "16px", flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Competencies</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {comps.length === 0
-              ? "Core capabilities learners will develop through this curriculum"
-              : `${comps.length} competenc${comps.length !== 1 ? "ies" : "y"} defined`}
+            {linkedComps.length} competenc{linkedComps.length !== 1 ? "ies" : "y"} used in this curriculum
           </p>
         </div>
-        {mode === "list" && (
-          <button type="button" className="cp-btn-primary" onClick={openAdd}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            Add Competency
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Link to="/settings" className="cp-btn-secondary" style={{ textDecoration: "none" }}>
+            Manage in Settings →
+          </Link>
+          <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
+        </div>
       </div>
 
-      {/* ── Add / Edit form (modal overlay) ───────────────────────── */}
-      {mode !== "list" && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
-            <div className="cp-comp-form-card">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0F2645" }}>
-                    {mode === "edit" ? "Edit Competency" : "New Competency"}
-                  </h3>
-                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-                    {mode === "edit" ? "Update the name or description below." : "Fill in the details and click Add."}
-                  </p>
-                </div>
-                <button type="button" className="cp-icon-btn" onClick={cancelForm} title="Close">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                {/* Name */}
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label className="cp-field-label">
-                    Name <span className="cp-required">*</span>
-                  </label>
-                  <input
-                    ref={nameRef}
-                    className="cp-input"
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                    placeholder="e.g. Critical Thinking, Communication, Creativity…"
-                    value={name}
-                    maxLength={150}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) submit(); if (e.key === "Escape") cancelForm(); }}
-                  />
-                  <div className="cp-char-count">{name.length} / 150</div>
-                </div>
-
-                {/* Description */}
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label className="cp-field-label">
-                    Description <span className="cp-optional">(optional)</span>
-                  </label>
-                  <textarea
-                    className="cp-textarea"
-                    placeholder="What does this competency mean? What skills, behaviours, or attitudes does it encompass?"
-                    value={desc}
-                    maxLength={500}
-                    onChange={(e) => setDesc(e.target.value)}
-                    rows={3}
-                  />
-                  <div className="cp-char-count">{desc.length} / 500</div>
-                </div>
-
-                {/* Learning area (only if areas exist) */}
-                {areas.length > 0 && (
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <label className="cp-field-label">
-                      Learning Area <span className="cp-optional">(optional)</span>
-                    </label>
-                    <select
-                      className="cp-select"
-                      style={{ width: "100%", marginTop: "0" }}
-                      value={areaId}
-                      onChange={(e) => setAreaId(e.target.value)}
-                    >
-                      <option value="">No area assigned</option>
-                      {areas.map((a) => (
-                        <option key={a.id} value={a.id}>{a.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Minimum threshold */}
-                <div>
-                  <label className="cp-field-label">
-                    Minimum Threshold % <span className="cp-required">*</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
-                    <input
-                      type="range"
-                      min={0} max={100} step={5}
-                      value={threshold}
-                      onChange={(e) => setThreshold(Number(e.target.value))}
-                      style={{ flex: 1, accentColor: "#25476a" }}
-                    />
-                    <span style={{
-                      minWidth: "42px", padding: "4px 10px", borderRadius: "8px", textAlign: "center",
-                      background: threshold >= 75 ? "#F0FDF4" : threshold >= 60 ? "#EFF6FF" : "#FFF7ED",
-                      border: `1.5px solid ${threshold >= 75 ? "#BBF7D0" : threshold >= 60 ? "#BFDBFE" : "#FED7AA"}`,
-                      fontSize: "13px", fontWeight: "700",
-                      color: threshold >= 75 ? "#15803D" : threshold >= 60 ? "#1D4ED8" : "#C2410C",
-                    }}>
-                      {threshold}%
-                    </span>
-                  </div>
-                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                    Learner must score at least {threshold}% to be considered competent.
-                  </p>
-                </div>
-
-                {/* Weight contribution */}
-                <div>
-                  <label className="cp-field-label">
-                    Weight % <span className="cp-optional">(optional)</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
-                    <input
-                      type="number"
-                      className="cp-input"
-                      min={0} max={100} step={1}
-                      value={weight}
-                      onChange={(e) => setWeight(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                      style={{ width: "80px", boxSizing: "border-box", textAlign: "center" }}
-                    />
-                    <span style={{ fontSize: "13px", color: "#6B7280", fontWeight: "600" }}>%</span>
-                  </div>
-                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                    Contribution to overall score (0 = unweighted).
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "18px" }}>
-                <button
-                  type="button"
-                  className="cp-btn-primary"
-                  onClick={submit}
-                  disabled={creating || updating || !name.trim()}
-                >
-                  {creating || updating
-                    ? "Saving…"
-                    : mode === "edit"
-                      ? "Save Changes"
-                      : "Add Competency"}
-                </button>
-                <button type="button" className="cp-btn-secondary" onClick={cancelForm}>Cancel</button>
-                {mode === "add" && (
-                  <span style={{ marginLeft: "auto", fontSize: "11px", color: "#9CA3AF" }}>
-                    Press Enter to add
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty state ───────────────────────────────────────────── */}
-      {comps.length === 0 && mode === "list" && (
+      {linkedComps.length === 0 ? (
         <div className="cp-empty">
           <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎯</div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>
-            No competencies yet
+            No competencies added yet
           </p>
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
-            Competencies are the core capabilities learners develop. Add your first one to get started.
+            {allComps.length === 0
+              ? "Competencies are authored in Settings so every curriculum, course, and assessment can share the same catalog."
+              : "Add competencies from the shared catalog to use them in this curriculum."}
           </p>
-          <button type="button" className="cp-btn-ghost" onClick={openAdd}>
-            + Add First Competency
-          </button>
+          {allComps.length === 0 ? (
+            <Link to="/settings" className="cp-btn-ghost">+ Define Competencies in Settings</Link>
+          ) : (
+            <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
+          )}
         </div>
-      )}
-
-      {/* ── Card grid ────────────────────────────────────────────── */}
-      {comps.length > 0 && (
+      ) : (
         <div className="cp-comp-grid">
-          {comps.map((comp, idx) => {
-            const area       = areaMap[comp.learningAreaId];
-            const color      = area?.color || COMP_PALETTE[idx % COMP_PALETTE.length];
-            const initial    = comp.name.charAt(0).toUpperCase();
-            const isEditing  = mode === "edit" && editTarget?.id === comp.id;
+          {linkedComps.map((comp, idx) => {
+            const color = COMP_PALETTE[idx % COMP_PALETTE.length];
+            const initial = comp.name.charAt(0).toUpperCase();
 
             return (
-              <div
-                key={comp.id}
-                className={`cp-comp-card${isEditing ? " cp-comp-card--editing" : ""}`}
-              >
-                {/* Top: initial + name + area badge + kebab */}
+              <div key={comp.id} className="cp-comp-card">
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
                   <div style={{
                     width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
@@ -1098,28 +818,10 @@ function CompetenciesPanel({ curriculumId }) {
                     <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
                       {comp.name}
                     </p>
-                    {area ? (
-                      <span style={{
-                        display: "inline-block", marginTop: "5px",
-                        padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
-                        backgroundColor: `${color}12`, color, border: `1px solid ${color}28`,
-                      }}>
-                        {area.name}
-                      </span>
-                    ) : (
-                      <span style={{ display: "inline-block", marginTop: "5px", fontSize: "10px", color: "#D1D5DB" }}>
-                        No area
-                      </span>
-                    )}
                   </div>
-                  <CardKebab
-                    onEdit={() => openEdit(comp)}
-                    onDelete={() => remove(comp.id)}
-                    disabled={deleting}
-                  />
+                  <CompetencyRemoveMenu onRemove={() => unlink(comp.id)} />
                 </div>
 
-                {/* Description */}
                 <div style={{ flex: 1 }}>
                   {comp.description ? (
                     <p style={{
@@ -1136,46 +838,9 @@ function CompetenciesPanel({ curriculumId }) {
                   )}
                 </div>
 
-                {/* Card footer: threshold + per-competency weight bar */}
                 <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
-                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700",
-                      background: (comp.minimumThreshold ?? 60) >= 75 ? "#F0FDF4" : (comp.minimumThreshold ?? 60) >= 60 ? "#EFF6FF" : "#FFF7ED",
-                      border: `1px solid ${(comp.minimumThreshold ?? 60) >= 75 ? "#BBF7D0" : (comp.minimumThreshold ?? 60) >= 60 ? "#BFDBFE" : "#FED7AA"}`,
-                      color: (comp.minimumThreshold ?? 60) >= 75 ? "#15803D" : (comp.minimumThreshold ?? 60) >= 60 ? "#1D4ED8" : "#C2410C",
-                    }}>
-                      {comp.minimumThreshold ?? 60}%
-                    </span>
-                  </div>
-                  <div style={{ marginTop: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
-                      <span style={{ fontSize: "10px", color: "#9CA3AF" }}>Competency weight</span>
-                      <span style={{ fontSize: "10px", fontWeight: "700", color: (comp.weight ?? 0) > 0 ? "#0369A1" : "#D1D5DB" }}>
-                        {(comp.weight ?? 0) > 0 ? `${comp.weight}%` : "Not set"}
-                      </span>
-                    </div>
-                    <div style={{ height: "4px", background: "#E0F2FE", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${comp.weight ?? 0}%`, background: "#38aae1", borderRadius: "2px" }} />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="cp-btn-ghost"
-                    style={{ marginTop: "10px", fontSize: "11px", padding: "4px 10px", width: "100%" }}
-                    onClick={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
-                  >
-                    {expandedId === comp.id ? "Hide indicators ▲" : "Indicators ▾"}
-                  </button>
-
-                  {expandedId === comp.id && (
-                    <CompetencyIndicators curriculumId={curriculumId} competencyId={comp.id} />
-                  )}
+                  <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>{" "}
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#374151" }}>{comp.minimumThreshold ?? 60}%</span>
                 </div>
               </div>
             );
@@ -3049,7 +2714,7 @@ export default function CompetenciesPage() {
             <span style={{ fontSize: "12px", color: "#374151", fontWeight: "600" }}>Competencies</span>
           </div>
           <h1 style={{ margin: "0 0 3px", fontSize: "22px", fontWeight: "800", color: "#0F2645" }}>Competencies</h1>
-          <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>Define competencies, learning areas, the progress arc, and assessments for this curriculum.</p>
+          <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>Pick which competencies this curriculum uses, and configure its progress arc and assessments.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button type="button" className="cp-btn-secondary" onClick={() => navigate(`/curriculum/${id}/structure`)}>
@@ -3065,20 +2730,21 @@ export default function CompetenciesPage() {
 
       {/* ── Panel navigation ────────────────────────────────────────── */}
       <div className="cp-nav">
-        {/* Standard tabs */}
-        {[
-          { key: "competencies", label: "Competencies" },
-          { key: "areas",        label: "Learning Areas" },
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            className={`cp-nav-btn${activeNav === key ? " active" : ""}`}
-            onClick={() => setActiveNav(key)}
-          >
-            {label}
-          </button>
-        ))}
+        <button
+          type="button"
+          className={`cp-nav-btn${activeNav === "competencies" ? " active" : ""}`}
+          onClick={() => setActiveNav("competencies")}
+        >
+          Competencies
+        </button>
+
+        <button
+          type="button"
+          className={`cp-nav-btn${activeNav === "areas" ? " active" : ""}`}
+          onClick={() => setActiveNav("areas")}
+        >
+          Learning Areas
+        </button>
 
         <button
           type="button"
@@ -3098,9 +2764,9 @@ export default function CompetenciesPage() {
       </div>
 
       {/* ── Panels ──────────────────────────────────────────────────── */}
-      {activeNav === "competencies" && <CompetenciesPanel  curriculumId={id} />}
-      {activeNav === "areas"        && <LearningAreasPanel curriculumId={id} />}
-      {activeNav === "arc"          && <ProgressArcPanel   curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
+      {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
+      {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
+      {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>
   );

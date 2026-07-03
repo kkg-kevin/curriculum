@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
+const competencyRoutes = require("./modules/competencies/competency.routes");
 const schoolRoutes = require("./modules/schools/school.routes");
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
@@ -27,6 +28,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/curricula", curriculumRoutes);
+app.use("/api/competencies", competencyRoutes);
 app.use("/api/schools", schoolRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/classes", classRoutes);
