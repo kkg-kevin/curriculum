@@ -14,6 +14,22 @@ export const competenciesApi = {
   unlinkCompetency: (curriculumId, competencyId) =>
     api.delete(`${base(curriculumId)}/links/${competencyId}`).then((r) => r.data.data),
 
+  updateCompetencyLink: (curriculumId, competencyId, data) =>
+    api.put(`${base(curriculumId)}/links/${competencyId}`, data).then((r) => r.data.data),
+
+  /* Competency Indicators — how THIS curriculum evaluates an adopted competency */
+  getCompetencyIndicators: (curriculumId, competencyId) =>
+    api.get(`${base(curriculumId)}/links/${competencyId}/indicators`).then((r) => r.data.data),
+
+  createCompetencyIndicator: (curriculumId, competencyId, data) =>
+    api.post(`${base(curriculumId)}/links/${competencyId}/indicators`, data).then((r) => r.data.data),
+
+  updateCompetencyIndicator: (curriculumId, competencyId, indicatorId, data) =>
+    api.put(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`, data).then((r) => r.data.data),
+
+  deleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) =>
+    api.delete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`).then((r) => r.data),
+
   /* Learning Areas — grouping for competencies as used within this curriculum */
   getLearningAreas: (curriculumId) =>
     api.get(`${base(curriculumId)}/learning-areas`).then((r) => r.data.data),

@@ -5,9 +5,24 @@ import { competenciesApi } from "../services/competenciesApi";
 const STALE = 5 * 60 * 1000;
 
 export const COMPETENCY_KEYS = {
-  comps:      ["settings", "competencies"],
-  indicators: (compId) => ["settings", "competency-indicators", compId],
+  comps: ["settings", "competencies"],
 };
+
+// Query key prefixes used by OTHER modules that consume this shared catalog by
+// reference (never by copy — see the competencies integration plan). Any create/
+// update/delete here must invalidate these too, or a module that already fetched
+// its cached view (e.g. a curriculum's Competencies tab) would keep showing stale
+// names/descriptions until its own staleTime expires.
+const CROSS_MODULE_KEYS = [
+  ["curriculum-competencies"],     // client/src/modules/curriculum/hooks/useCompetencies.js
+  ["courses", "competencies"],     // client/src/modules/courses/hooks/useCourse.js
+  ["assessments", "competencies"], // client/src/modules/assessments/hooks/useAssessment.js
+];
+
+function invalidateEverywhere(qc) {
+  qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.comps });
+  CROSS_MODULE_KEYS.forEach((queryKey) => qc.invalidateQueries({ queryKey }));
+}
 
 /* ── Competencies ───────────────────────────────────────────────────────── */
 
@@ -24,7 +39,7 @@ export function useCreateCompetency() {
   return useMutation({
     mutationFn: competenciesApi.createCompetency,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.comps });
+      invalidateEverywhere(qc);
       toast.success("Competency created");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to create competency"),
@@ -36,7 +51,7 @@ export function useUpdateCompetency() {
   return useMutation({
     mutationFn: ({ id, data }) => competenciesApi.updateCompetency(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.comps });
+      invalidateEverywhere(qc);
       toast.success("Competency updated");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to update competency"),
@@ -48,56 +63,9 @@ export function useDeleteCompetency() {
   return useMutation({
     mutationFn: competenciesApi.deleteCompetency,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.comps });
+      invalidateEverywhere(qc);
       toast.success("Competency deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete competency"),
-  });
-}
-
-/* ── Competency Indicators ──────────────────────────────────────────────── */
-
-export function useIndicators(competencyId, enabled = true) {
-  return useQuery({
-    queryKey:  COMPETENCY_KEYS.indicators(competencyId),
-    queryFn:   () => competenciesApi.getIndicators(competencyId),
-    enabled:   !!competencyId && enabled,
-    staleTime: STALE,
-  });
-}
-
-export function useCreateIndicator(competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createIndicator(competencyId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.indicators(competencyId) });
-      toast.success("Indicator added");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to add indicator"),
-  });
-}
-
-export function useUpdateIndicator(competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateIndicator(competencyId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.indicators(competencyId) });
-      toast.success("Indicator updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update indicator"),
-  });
-}
-
-export function useDeleteIndicator(competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteIndicator(competencyId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: COMPETENCY_KEYS.indicators(competencyId) });
-      toast.success("Indicator deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete indicator"),
   });
 }

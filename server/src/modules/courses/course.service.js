@@ -1,6 +1,8 @@
 const crypto = require("crypto");
 const CourseModel = require("./course.model");
 const SessionModel = require("./session.model");
+const CourseCompetencyLinkModel = require("./course-competency-link.model");
+const CompetencyModel = require("../competencies/competency.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -47,7 +49,37 @@ const CourseService = {
       throw err;
     }
     SessionModel.deleteByCourseId(id);
+    CourseCompetencyLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
+  },
+
+  /* ── Competencies (authored globally in Settings, tagged onto a course here) ── */
+
+  async getCourseCompetencies(courseId) {
+    const links = CourseCompetencyLinkModel.findByCourseId(courseId);
+    return CompetencyModel.findByIds(links.map((l) => l.competencyId));
+  },
+
+  async linkCompetency(courseId, competencyId) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const comp = CompetencyModel.findById(competencyId);
+    if (!comp) {
+      const err = new Error("Competency not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CourseCompetencyLinkModel.link(courseId, competencyId);
+    return this.getCourseCompetencies(courseId);
+  },
+
+  async unlinkCompetency(courseId, competencyId) {
+    CourseCompetencyLinkModel.unlink(courseId, competencyId);
+    return this.getCourseCompetencies(courseId);
   },
 
   /* ── Sessions ────────────────────────────────────────────────────────── */

@@ -5,6 +5,11 @@ import {
   useCompetencies,
   useLinkCompetency,
   useUnlinkCompetency,
+  useUpdateCompetencyLink,
+  useCompetencyIndicators,
+  useCreateCompetencyIndicator,
+  useUpdateCompetencyIndicator,
+  useDeleteCompetencyIndicator,
   useLearningAreas,
   useCreateLearningArea,
   useUpdateLearningArea,
@@ -294,6 +299,70 @@ const CSS = `
   .cp-card-menu-item:hover { background:#F3F4F6; color:#111827; }
   .cp-card-menu-item--danger { color:#DC2626; }
   .cp-card-menu-item--danger:hover { background:#FEF2F2; }
+
+  /* ── Per-curriculum competency config (threshold/weight/indicators) ── */
+  .cp-comp-eval {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:11px;
+    padding:10px 12px;
+  }
+  .cp-comp-eval-field { min-width:0; }
+  .cp-comp-eval-label {
+    display:flex; align-items:center; gap:5px; margin-bottom:6px;
+    font-size:10.5px; font-weight:700; color:#6B7280; text-transform:uppercase; letter-spacing:0.03em;
+    white-space:nowrap;
+  }
+  .cp-comp-eval-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .cp-comp-eval-input-wrap { position:relative; }
+  .cp-comp-config-input {
+    width:100%; padding:7px 26px 7px 10px; border-radius:8px; border:1.5px solid #E5E7EB;
+    font-size:13px; font-weight:700; font-family:Inter,sans-serif; color:#111827; background:#fff; outline:none;
+    box-sizing:border-box; transition:border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance:textfield;
+  }
+  .cp-comp-config-input::-webkit-outer-spin-button,
+  .cp-comp-config-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .cp-comp-config-input:focus { border-color:#38aae1; box-shadow:0 0 0 3px rgba(56,170,225,0.12); }
+  .cp-comp-eval-suffix {
+    position:absolute; right:9px; top:50%; transform:translateY(-50%);
+    font-size:11.5px; font-weight:700; color:#9CA3AF; pointer-events:none;
+  }
+
+  .cp-indicators-toggle {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding-top:10px; margin-top:10px; border-top:1px solid #F3F4F6; background:none;
+    border-left:none; border-right:none; border-bottom-width:0; cursor:pointer; font-family:Inter,sans-serif;
+  }
+  .cp-indicators-toggle span:first-child { font-size:11px; font-weight:700; color:#374151; }
+  .cp-indicator-count {
+    font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:20px;
+    background:#F3F4F6; color:#6B7280;
+  }
+  .cp-indicators-chevron { transition:transform 0.15s; color:#9CA3AF; }
+  .cp-indicators-chevron.open { transform:rotate(180deg); }
+  .cp-indicators-body { margin-top:8px; }
+  .cp-indicator-row {
+    display:flex; align-items:center; gap:8px; padding:5px 9px;
+    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:7px; margin-bottom:5px;
+  }
+  .cp-indicator-row span { flex:1; font-size:12px; color:#374151; }
+  .cp-indicator-x {
+    background:none; border:none; color:#9CA3AF; cursor:pointer; font-size:14px;
+    line-height:1; padding:0; transition:color 0.1s;
+  }
+  .cp-indicator-x:hover { color:#DC2626; }
+  .cp-indicator-add-row { display:flex; gap:6px; }
+  .cp-indicator-add-input {
+    padding:5px 8px; border-radius:7px; border:1.5px solid #E5E7EB;
+    font-size:12px; font-family:Inter,sans-serif; color:#374151; outline:none;
+    box-sizing:border-box; transition:border-color 0.15s;
+  }
+  .cp-indicator-add-input:focus { border-color:#38aae1; }
+  .cp-indicator-add-btn {
+    background:none; border:none; color:#38aae1; font-size:11.5px; font-weight:700;
+    cursor:pointer; padding:0; font-family:Inter,sans-serif;
+  }
+  .cp-indicator-add-btn:hover { color:#25476a; }
 
   /* ── Add / Edit form card ── */
   .cp-comp-form-card {
@@ -664,9 +733,10 @@ function CardKebab({ onEdit, onDelete, disabled }) {
 }
 
 /* ── CompetencyPickerPanel ───────────────────────────────────────────────
- * Competencies are authored once in Settings and shared across the whole app.
- * This panel no longer creates/edits competencies — it just lets a curriculum
- * adopt entries from that catalog and see what it's already using. */
+ * Competencies (name/description) are authored once in Settings and shared
+ * across the whole app. This panel lets a curriculum adopt entries from that
+ * catalog, then configure how IT evaluates each one — threshold, weight, and
+ * indicators are per-curriculum-usage, not properties of the global competency. */
 
 const COMP_PALETTE = [
   "#25476a","#38aae1","#059669","#7C3AED",
@@ -751,6 +821,61 @@ function CompetencyRemoveMenu({ onRemove }) {
   );
 }
 
+/* ── Per-curriculum indicators for an adopted competency ─────────────────── */
+
+function CompetencyIndicatorsSection({ curriculumId, competencyId, expanded, onToggle }) {
+  const { data: indicators = [] } = useCompetencyIndicators(curriculumId, competencyId, expanded);
+  const { mutate: createIndicator } = useCreateCompetencyIndicator(curriculumId, competencyId);
+  const { mutate: deleteIndicator } = useDeleteCompetencyIndicator(curriculumId, competencyId);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+
+  const submit = () => {
+    if (!name.trim()) return;
+    createIndicator({ name: name.trim() }, { onSuccess: () => { setName(""); setAdding(false); } });
+  };
+
+  return (
+    <>
+      <button type="button" className="cp-indicators-toggle" onClick={onToggle}>
+        <span>Indicators</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="cp-indicator-count">{indicators.length || (expanded ? 0 : "…")}</span>
+          <svg className={`cp-indicators-chevron${expanded ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+      {expanded && (
+        <div className="cp-indicators-body">
+          {indicators.length === 0 && !adding && (
+            <p style={{ margin: "0 0 6px", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>No indicators added</p>
+          )}
+          {indicators.map((ind) => (
+            <div key={ind.id} className="cp-indicator-row">
+              <span>{ind.name}</span>
+              <button type="button" className="cp-indicator-x" onClick={() => deleteIndicator(ind.id)}>×</button>
+            </div>
+          ))}
+          {adding ? (
+            <div className="cp-indicator-add-row">
+              <input
+                autoFocus className="cp-indicator-add-input" style={{ flex: 1 }}
+                value={name} onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="Indicator name"
+              />
+              <button type="button" onClick={submit} style={{ padding: "0 10px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>Add</button>
+              <button type="button" onClick={() => { setAdding(false); setName(""); }} style={{ padding: "0 8px", background: "none", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "11px", color: "#6B7280", cursor: "pointer" }}>Cancel</button>
+            </div>
+          ) : (
+            <button type="button" className="cp-indicator-add-btn" onClick={() => setAdding(true)}>+ Add Indicator</button>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 function CompetencyPickerPanel({ curriculumId }) {
   const { data: allComps = [], isLoading: loadingAll } = useGlobalCompetencies();
   const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
@@ -799,54 +924,116 @@ function CompetencyPickerPanel({ curriculumId }) {
         </div>
       ) : (
         <div className="cp-comp-grid">
-          {linkedComps.map((comp, idx) => {
-            const color = COMP_PALETTE[idx % COMP_PALETTE.length];
-            const initial = comp.name.charAt(0).toUpperCase();
-
-            return (
-              <div key={comp.id} className="cp-comp-card">
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
-                    backgroundColor: `${color}15`, border: `2px solid ${color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "17px", fontWeight: "800", color,
-                  }}>
-                    {initial}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
-                      {comp.name}
-                    </p>
-                  </div>
-                  <CompetencyRemoveMenu onRemove={() => unlink(comp.id)} />
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  {comp.description ? (
-                    <p style={{
-                      margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65",
-                      display: "-webkit-box", WebkitLineClamp: 3,
-                      WebkitBoxOrient: "vertical", overflow: "hidden",
-                    }}>
-                      {comp.description}
-                    </p>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>
-                      No description added
-                    </p>
-                  )}
-                </div>
-
-                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Min. threshold:</span>{" "}
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#374151" }}>{comp.minimumThreshold ?? 60}%</span>
-                </div>
-              </div>
-            );
-          })}
+          {linkedComps.map((comp, idx) => (
+            <LinkedCompetencyCard
+              key={comp.id}
+              curriculumId={curriculumId}
+              comp={comp}
+              color={COMP_PALETTE[idx % COMP_PALETTE.length]}
+              onRemove={() => unlink(comp.id)}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function LinkedCompetencyCard({ curriculumId, comp, color, onRemove }) {
+  const { mutate: updateLink } = useUpdateCompetencyLink(curriculumId);
+  const [threshold, setThreshold] = useState(comp.minimumThreshold ?? 60);
+  const [weight, setWeight] = useState(comp.weight ?? 0);
+  const [indicatorsOpen, setIndicatorsOpen] = useState(false);
+  const initial = comp.name.charAt(0).toUpperCase();
+
+  useEffect(() => { setThreshold(comp.minimumThreshold ?? 60); }, [comp.minimumThreshold]);
+  useEffect(() => { setWeight(comp.weight ?? 0); }, [comp.weight]);
+
+  const saveThreshold = () => {
+    const v = Math.min(100, Math.max(0, Number(threshold) || 0));
+    setThreshold(v);
+    if (v !== comp.minimumThreshold) updateLink({ competencyId: comp.id, data: { minimumThreshold: v } });
+  };
+  const saveWeight = () => {
+    const v = Math.min(100, Math.max(0, Number(weight) || 0));
+    setWeight(v);
+    if (v !== comp.weight) updateLink({ competencyId: comp.id, data: { weight: v } });
+  };
+
+  return (
+    <div className="cp-comp-card">
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+        <div style={{
+          width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
+          backgroundColor: `${color}15`, border: `2px solid ${color}30`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "17px", fontWeight: "800", color,
+        }}>
+          {initial}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
+            {comp.name}
+          </p>
+        </div>
+        <CompetencyRemoveMenu onRemove={onRemove} />
+      </div>
+
+      <div style={{ flex: 1 }}>
+        {comp.description ? (
+          <p style={{
+            margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65",
+            display: "-webkit-box", WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}>
+            {comp.description}
+          </p>
+        ) : (
+          <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>
+            No description added
+          </p>
+        )}
+      </div>
+
+      <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
+        <div className="cp-comp-eval">
+          <div className="cp-comp-eval-field">
+            <div className="cp-comp-eval-label">
+              <span className="cp-comp-eval-dot" style={{ background: "#38aae1" }} />
+              Min. threshold
+            </div>
+            <div className="cp-comp-eval-input-wrap">
+              <input
+                type="number" min="0" max="100" className="cp-comp-config-input"
+                value={threshold} onChange={(e) => setThreshold(e.target.value)}
+                onBlur={saveThreshold}
+              />
+              <span className="cp-comp-eval-suffix">%</span>
+            </div>
+          </div>
+          <div className="cp-comp-eval-field">
+            <div className="cp-comp-eval-label">
+              <span className="cp-comp-eval-dot" style={{ background: "#feb139" }} />
+              Weight
+            </div>
+            <div className="cp-comp-eval-input-wrap">
+              <input
+                type="number" min="0" max="100" className="cp-comp-config-input"
+                value={weight} onChange={(e) => setWeight(e.target.value)}
+                onBlur={saveWeight}
+              />
+              <span className="cp-comp-eval-suffix">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <CompetencyIndicatorsSection
+        curriculumId={curriculumId}
+        competencyId={comp.id}
+        expanded={indicatorsOpen}
+        onToggle={() => setIndicatorsOpen((v) => !v)}
+      />
     </div>
   );
 }

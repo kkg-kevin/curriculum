@@ -15,17 +15,4 @@ export const competenciesApi = {
 
   deleteCompetency: (id) =>
     api.delete(`${BASE}/${id}`).then((r) => r.data),
-
-  /* Competency Indicators */
-  getIndicators: (competencyId) =>
-    api.get(`${BASE}/${competencyId}/indicators`).then((r) => r.data.data),
-
-  createIndicator: (competencyId, data) =>
-    api.post(`${BASE}/${competencyId}/indicators`, data).then((r) => r.data.data),
-
-  updateIndicator: (competencyId, id, data) =>
-    api.put(`${BASE}/${competencyId}/indicators/${id}`, data).then((r) => r.data.data),
-
-  deleteIndicator: (competencyId, id) =>
-    api.delete(`${BASE}/${competencyId}/indicators/${id}`).then((r) => r.data),
 };

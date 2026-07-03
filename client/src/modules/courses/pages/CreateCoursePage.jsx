@@ -7,11 +7,13 @@ import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import { Input } from "../components/formFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { courseApi } from "../services/courseApi";
 
 const DEFAULT_VALUES = {
   name: "",
   description: "",
   coverImage: null,
+  competencyIds: [],
   sessionCount: "1",
 };
 
@@ -30,10 +32,13 @@ export default function CreateCoursePage() {
   const { handleSubmit, getValues, formState: { isDirty } } = methods;
   const isBusy = isPending || creatingSessions;
 
-  const onSubmit = (data) => {
+  const onSubmit = ({ competencyIds, ...data }) => {
     const sessionCount = Math.max(0, Number(getValues("sessionCount")) || 0);
     createCourse(data, {
-      onSuccess: (course) => {
+      onSuccess: async (course) => {
+        if (competencyIds.length > 0) {
+          await Promise.all(competencyIds.map((cid) => courseApi.linkCompetency(course.id, cid)));
+        }
         if (sessionCount > 0) {
           createSessionsBulk(
             { courseId: course.id, count: sessionCount },

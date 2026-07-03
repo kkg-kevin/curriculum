@@ -9,6 +9,16 @@ export const assessmentApi = {
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
 
+  /* Competencies — this assessment's tagged competencies (authored globally in Settings) */
+  getAssessmentCompetencies: (assessmentId) =>
+    api.get(`${ENDPOINT}/${assessmentId}/competencies/links`).then((r) => r.data.data),
+
+  linkCompetency: (assessmentId, competencyId) =>
+    api.post(`${ENDPOINT}/${assessmentId}/competencies/links`, { competencyId }).then((r) => r.data.data),
+
+  unlinkCompetency: (assessmentId, competencyId) =>
+    api.delete(`${ENDPOINT}/${assessmentId}/competencies/links/${competencyId}`).then((r) => r.data.data),
+
   addItem: (assessmentId, data) => api.post(`${ENDPOINT}/${assessmentId}/items`, data).then((r) => r.data.data),
   updateItem: (assessmentId, itemId, data) => api.put(`${ENDPOINT}/${assessmentId}/items/${itemId}`, data).then((r) => r.data.data),
   removeItem: (assessmentId, itemId) => api.delete(`${ENDPOINT}/${assessmentId}/items/${itemId}`).then((r) => r.data),

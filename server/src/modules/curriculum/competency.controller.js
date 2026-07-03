@@ -2,6 +2,9 @@ const asyncHandler      = require("express-async-handler");
 const CompetencyService = require("./competency.service");
 const {
   linkCompetencySchema,
+  updateCompetencyLinkSchema,
+  createIndicatorSchema,
+  updateIndicatorSchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
   updateLadderSchema,
@@ -39,6 +42,36 @@ exports.linkCompetency = asyncHandler(async (req, res) => {
 exports.unlinkCompetency = asyncHandler(async (req, res) => {
   const data = CompetencyService.unlinkCompetency(req.params.id, req.params.competencyId);
   res.json({ success: true, data });
+});
+
+exports.updateCompetencyLink = asyncHandler(async (req, res) => {
+  const body = updateCompetencyLinkSchema.parse(req.body);
+  const data = CompetencyService.updateCompetencyLink(req.params.id, req.params.competencyId, body);
+  res.json({ success: true, data });
+});
+
+/* ── Competency Indicators (curriculum-scoped) ─────────────────────────── */
+
+exports.getCompetencyIndicators = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getCompetencyIndicators(req.params.id, req.params.competencyId);
+  res.json({ success: true, data });
+});
+
+exports.createCompetencyIndicator = asyncHandler(async (req, res) => {
+  const body = createIndicatorSchema.parse(req.body);
+  const data = CompetencyService.createCompetencyIndicator(req.params.id, req.params.competencyId, body);
+  res.status(201).json({ success: true, data });
+});
+
+exports.updateCompetencyIndicator = asyncHandler(async (req, res) => {
+  const body = updateIndicatorSchema.parse(req.body);
+  const data = CompetencyService.updateCompetencyIndicator(req.params.id, req.params.competencyId, req.params.indicatorId, body);
+  res.json({ success: true, data });
+});
+
+exports.deleteCompetencyIndicator = asyncHandler(async (req, res) => {
+  CompetencyService.deleteCompetencyIndicator(req.params.id, req.params.competencyId, req.params.indicatorId);
+  res.json({ success: true });
 });
 
 /* ── Learning Areas ──────────────────────────────────────────────────────── */

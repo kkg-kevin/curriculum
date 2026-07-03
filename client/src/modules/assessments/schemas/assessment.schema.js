@@ -10,6 +10,9 @@ export const assessmentSchema = z.object({
   description:  z.string().max(1000, "Max 1000 characters").optional().default(""),
   type:         z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Select a valid assessment type" }) }),
   instructions: z.string().max(5000, "Max 5000 characters").optional(),
+  // Not part of the Assessment record itself — reconciled into assessment-competency
+  // links after save. See CreateAssessmentPage/EditAssessmentPage onSubmit.
+  competencyIds: z.array(z.string()).optional().default([]),
 });
 
 export const itemSchema = z.object({

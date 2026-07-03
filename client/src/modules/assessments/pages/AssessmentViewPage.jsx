@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion } from "../hooks/useAssessment";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useAssessmentCompetencies } from "../hooks/useAssessment";
 import { QUESTION_BASED_TYPES, TASK_BASED_TYPES } from "../schemas/assessment.schema";
 import QuestionModal from "../components/QuestionModal";
 import RubricCriterionModal from "../components/RubricCriterionModal";
@@ -187,6 +187,7 @@ export default function AssessmentViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: assessment, isLoading, isError } = useAssessmentQuery(id);
+  const { data: competencies = [] } = useAssessmentCompetencies(id);
 
   if (isLoading) {
     return (
@@ -277,6 +278,32 @@ export default function AssessmentViewPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <DetailRow label="Type" value={TYPE_LABELS[assessment.type] || assessment.type} />
             </div>
+          </Section>
+
+          <Section title="Competencies">
+            {competencies.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                No competencies tagged.{" "}
+                <Link to={`/assessments/${id}/edit`} style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Add some →</Link>
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {competencies.map((comp, idx) => {
+                  const color = ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706"][idx % 6];
+                  return (
+                    <span
+                      key={comp.id}
+                      style={{
+                        padding: "4px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700",
+                        backgroundColor: `${color}12`, border: `1.5px solid ${color}30`, color,
+                      }}
+                    >
+                      {comp.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </Section>
 
           <Section title="Record Info">

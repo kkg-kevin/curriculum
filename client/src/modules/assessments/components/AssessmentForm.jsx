@@ -1,6 +1,7 @@
 import { useFormContext } from "react-hook-form";
 import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
 import RichTextEditor from "../../courses/components/RichTextEditor";
+import CompetenciesField from "../../courses/components/CompetenciesField";
 
 const selectStyle = {
   width: "100%",
@@ -124,6 +125,18 @@ export default function AssessmentForm() {
             Content
           </h3>
           <RichTextEditor name="instructions" label="Content" hint="Shown to learners when they open this assessment — add text and images" />
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px" }}>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+            Competencies
+          </h3>
+          <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
+            Tag which competencies this assessment measures.
+          </p>
+          <CompetenciesField name="competencyIds" label="Competencies" hint="Pick from the shared catalog defined in Settings." />
         </div>
       </div>
     </div>

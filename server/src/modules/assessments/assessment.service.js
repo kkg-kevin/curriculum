@@ -1,5 +1,7 @@
 const crypto = require("crypto");
 const AssessmentModel = require("./assessment.model");
+const AssessmentCompetencyLinkModel = require("./assessment-competency-link.model");
+const CompetencyModel = require("../competencies/competency.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -52,7 +54,32 @@ const AssessmentService = {
       err.statusCode = 404;
       throw err;
     }
+    AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
     return { message: "Assessment deleted successfully" };
+  },
+
+  /* ── Competencies (authored globally in Settings, tagged onto an assessment here) ── */
+
+  async getAssessmentCompetencies(assessmentId) {
+    const links = AssessmentCompetencyLinkModel.findByAssessmentId(assessmentId);
+    return CompetencyModel.findByIds(links.map((l) => l.competencyId));
+  },
+
+  async linkCompetency(assessmentId, competencyId) {
+    requireAssessment(assessmentId);
+    const comp = CompetencyModel.findById(competencyId);
+    if (!comp) {
+      const err = new Error("Competency not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentCompetencyLinkModel.link(assessmentId, competencyId);
+    return this.getAssessmentCompetencies(assessmentId);
+  },
+
+  async unlinkCompetency(assessmentId, competencyId) {
+    AssessmentCompetencyLinkModel.unlink(assessmentId, competencyId);
+    return this.getAssessmentCompetencies(assessmentId);
   },
 
   async addItem(assessmentId, data) {

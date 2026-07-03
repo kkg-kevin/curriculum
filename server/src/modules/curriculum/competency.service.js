@@ -1,5 +1,6 @@
 const CurriculumModel        = require("./curriculum.model");
 const CurriculumCompetencyLinkModel = require("./curriculum-competency-link.model");
+const CurriculumCompetencyIndicatorModel = require("./curriculum-competency-indicator.model");
 const LearningAreaModel      = require("./learning-area.model");
 const CompetencyModel        = require("../competencies/competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
@@ -27,7 +28,15 @@ const CompetencyService = {
 
   getCurriculumCompetencies(curriculumId) {
     const links = CurriculumCompetencyLinkModel.findByCurriculumId(curriculumId);
-    return CompetencyModel.findByIds(links.map((l) => l.competencyId));
+    const comps = CompetencyModel.findByIds(links.map((l) => l.competencyId));
+    return comps.map((c) => {
+      const link = links.find((l) => l.competencyId === c.id);
+      return {
+        ...c,
+        minimumThreshold: link?.minimumThreshold ?? 60,
+        weight: link?.weight ?? 0,
+      };
+    });
   },
 
   linkCompetency(curriculumId, competencyId) {
@@ -43,6 +52,7 @@ const CompetencyService = {
 
   unlinkCompetency(curriculumId, competencyId) {
     CurriculumCompetencyLinkModel.unlink(curriculumId, competencyId);
+    CurriculumCompetencyIndicatorModel.deleteByLink(curriculumId, competencyId);
     // This curriculum no longer uses the competency — drop it from this curriculum's
     // own progression ladder too (other curricula's ladders are untouched).
     const rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
@@ -53,6 +63,56 @@ const CompetencyService = {
       }
     });
     return this.getCurriculumCompetencies(curriculumId);
+  },
+
+  updateCompetencyLink(curriculumId, competencyId, data) {
+    const link = CurriculumCompetencyLinkModel.updateLink(curriculumId, competencyId, data);
+    if (!link) {
+      const err = new Error("This curriculum hasn't adopted that competency yet");
+      err.statusCode = 404;
+      throw err;
+    }
+    return this.getCurriculumCompetencies(curriculumId);
+  },
+
+  /* ── Competency Indicators (how THIS curriculum evaluates an adopted competency) ── */
+
+  getCompetencyIndicators(curriculumId, competencyId) {
+    if (!CurriculumCompetencyLinkModel.findOne(curriculumId, competencyId)) {
+      const err = new Error("This curriculum hasn't adopted that competency yet");
+      err.statusCode = 404;
+      throw err;
+    }
+    return CurriculumCompetencyIndicatorModel.findByLink(curriculumId, competencyId);
+  },
+
+  createCompetencyIndicator(curriculumId, competencyId, data) {
+    if (!CurriculumCompetencyLinkModel.findOne(curriculumId, competencyId)) {
+      const err = new Error("This curriculum hasn't adopted that competency yet");
+      err.statusCode = 404;
+      throw err;
+    }
+    return CurriculumCompetencyIndicatorModel.create({ curriculumId, competencyId, ...data });
+  },
+
+  updateCompetencyIndicator(curriculumId, competencyId, id, data) {
+    const indicator = CurriculumCompetencyIndicatorModel.findById(id);
+    if (!indicator || indicator.curriculumId !== curriculumId || indicator.competencyId !== competencyId) {
+      const err = new Error("Indicator not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return CurriculumCompetencyIndicatorModel.update(id, data);
+  },
+
+  deleteCompetencyIndicator(curriculumId, competencyId, id) {
+    const indicator = CurriculumCompetencyIndicatorModel.findById(id);
+    if (!indicator || indicator.curriculumId !== curriculumId || indicator.competencyId !== competencyId) {
+      const err = new Error("Indicator not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CurriculumCompetencyIndicatorModel.delete(id);
   },
 
   /* ── Learning Areas ─────────────────────────────────────────────────── */

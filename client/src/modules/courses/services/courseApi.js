@@ -9,6 +9,16 @@ export const courseApi = {
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
 
+  /* Competencies — this course's tagged competencies (authored globally in Settings) */
+  getCourseCompetencies: (courseId) =>
+    api.get(`${ENDPOINT}/${courseId}/competencies/links`).then((r) => r.data.data),
+
+  linkCompetency: (courseId, competencyId) =>
+    api.post(`${ENDPOINT}/${courseId}/competencies/links`, { competencyId }).then((r) => r.data.data),
+
+  unlinkCompetency: (courseId, competencyId) =>
+    api.delete(`${ENDPOINT}/${courseId}/competencies/links/${competencyId}`).then((r) => r.data.data),
+
   /* Sessions */
   getSessions: (courseId) =>
     api.get(`${ENDPOINT}/${courseId}/sessions`).then((r) => r.data.data),

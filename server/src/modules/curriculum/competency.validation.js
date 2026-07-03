@@ -4,6 +4,20 @@ const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
 });
 
+// Threshold/weight are how THIS curriculum evaluates an adopted competency.
+const updateCompetencyLinkSchema = z.object({
+  minimumThreshold: z.number().min(0).max(100).optional(),
+  weight:           z.number().min(0).max(100).optional(),
+});
+
+const createIndicatorSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(150),
+  description: z.string().max(300).optional().default(""),
+  weight:      z.number().min(0).max(100).optional().default(0),
+});
+
+const updateIndicatorSchema = createIndicatorSchema.partial();
+
 const createLearningAreaSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -136,6 +150,9 @@ const calculateScoreSchema = z.object({
 
 module.exports = {
   linkCompetencySchema,
+  updateCompetencyLinkSchema,
+  createIndicatorSchema,
+  updateIndicatorSchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
   updateLadderSchema,

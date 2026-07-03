@@ -22,6 +22,11 @@ const {
   getCurriculumCompetencies,
   linkCompetency,
   unlinkCompetency,
+  updateCompetencyLink,
+  getCompetencyIndicators,
+  createCompetencyIndicator,
+  updateCompetencyIndicator,
+  deleteCompetencyIndicator,
   getLearningAreas,
   createLearningArea,
   updateLearningArea,
@@ -77,7 +82,11 @@ router.route("/:id/academic-years/:groupId/versions/:versionId/status").patch(ch
 
 // Competencies — this curriculum's adopted competencies (authored globally under /api/competencies)
 router.route("/:id/competencies/links").get(getCurriculumCompetencies).post(linkCompetency);
-router.route("/:id/competencies/links/:competencyId").delete(unlinkCompetency);
+router.route("/:id/competencies/links/:competencyId").put(updateCompetencyLink).delete(unlinkCompetency);
+
+// Competencies — indicators for how THIS curriculum evaluates an adopted competency
+router.route("/:id/competencies/links/:competencyId/indicators").get(getCompetencyIndicators).post(createCompetencyIndicator);
+router.route("/:id/competencies/links/:competencyId/indicators/:indicatorId").put(updateCompetencyIndicator).delete(deleteCompetencyIndicator);
 
 // Competencies — learning areas (curriculum-scoped groupings for adopted competencies)
 router.route("/:id/competencies/learning-areas").get(getLearningAreas).post(createLearningArea);

@@ -25,10 +25,25 @@ const CurriculumCompetencyLinkModel = {
     const all = read();
     const existing = all.find((l) => l.curriculumId === curriculumId && l.competencyId === competencyId);
     if (existing) return existing;
-    const item = { id: genId(), curriculumId, competencyId, createdAt: new Date().toISOString() };
+    const item = {
+      id: genId(), curriculumId, competencyId,
+      minimumThreshold: 60, weight: 0,
+      createdAt: new Date().toISOString(),
+    };
     all.push(item);
     write(all);
     return item;
+  },
+
+  // Threshold/weight are how THIS curriculum evaluates the competency — not a
+  // property of the global competency, so they live on the adoption link.
+  updateLink(curriculumId, competencyId, data) {
+    const all = read();
+    const idx = all.findIndex((l) => l.curriculumId === curriculumId && l.competencyId === competencyId);
+    if (idx === -1) return null;
+    all[idx] = { ...all[idx], ...data };
+    write(all);
+    return all[idx];
   },
 
   unlink(curriculumId, competencyId) {
