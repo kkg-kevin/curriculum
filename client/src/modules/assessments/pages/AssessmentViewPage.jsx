@@ -1,21 +1,24 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAssessmentQuery } from "../hooks/useAssessment";
-
-const STATUS_STYLES = {
-  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-};
+import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion } from "../hooks/useAssessment";
+import { QUESTION_BASED_TYPES, TASK_BASED_TYPES } from "../schemas/assessment.schema";
+import QuestionModal from "../components/QuestionModal";
+import RubricCriterionModal from "../components/RubricCriterionModal";
+import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄" };
+const QUESTION_TYPE_LABELS = { mcq: "Multiple Choice", trueFalse: "True / False", shortAnswer: "Short Answer" };
 
-function Section({ title, children }) {
+function Section({ title, action, children }) {
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           {title}
         </h2>
+        {action}
       </div>
       <div style={{ padding: "16px 20px" }}>{children}</div>
     </div>
@@ -30,6 +33,153 @@ function DetailRow({ label, value }) {
       </p>
       <p style={{ margin: 0, fontSize: "14px", color: "#111827" }}>{value}</p>
     </div>
+  );
+}
+
+function AddButton({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+    >
+      <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span> {label}
+    </button>
+  );
+}
+
+function RowActions({ onEdit, onDelete }) {
+  return (
+    <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+      <button type="button" onClick={onEdit} style={{ background: "none", border: "none", color: "#38aae1", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+        Edit
+      </button>
+      <button type="button" onClick={onDelete} style={{ background: "none", border: "none", color: "#EF4444", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+        Delete
+      </button>
+    </div>
+  );
+}
+
+function QuestionsSection({ assessmentId, items }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { mutate: deleteItem } = useDeleteItem();
+
+  const totalPoints = items.reduce((sum, i) => sum + (Number(i.points) || 0), 0);
+
+  return (
+    <Section
+      title={`Questions${items.length ? ` · ${totalPoints} pts` : ""}`}
+      action={<AddButton label="Add Question" onClick={() => { setEditTarget(null); setModalOpen(true); }} />}
+    >
+      {items.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No questions added yet</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {items.map((item, index) => (
+            <div key={item.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#111827", flexShrink: 0 }}>{index + 1}.</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <RichContent html={item.question} emptyText="No question text" />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#b07800", backgroundColor: "#fff8e6", border: "1px solid #fcd97a", borderRadius: "20px", padding: "2px 8px" }}>
+                      {QUESTION_TYPE_LABELS[item.questionType] || item.questionType}
+                    </span>
+                    <span style={{ fontSize: "12px", color: "#6B7280" }}>{item.points} pts</span>
+                  </div>
+                </div>
+                <RowActions
+                  onEdit={() => { setEditTarget(item); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(item)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modalOpen && (
+        <QuestionModal assessmentId={assessmentId} editTarget={editTarget} onClose={() => setModalOpen(false)} />
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Question"
+        message="This question will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          deleteItem({ assessmentId, itemId: deleteTarget.id });
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </Section>
+  );
+}
+
+function RubricSection({ assessmentId, rubric }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { mutate: deleteCriterion } = useDeleteRubricCriterion();
+
+  const totalPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+
+  return (
+    <Section
+      title={`Rubric${rubric.length ? ` · ${totalPoints} pts` : ""}`}
+      action={<AddButton label="Add Criterion" onClick={() => { setEditTarget(null); setModalOpen(true); }} />}
+    >
+      {rubric.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No rubric criteria added yet</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {rubric.map((c) => (
+            <div key={c.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: "0 0 4px 0", fontSize: "13px", fontWeight: "600", color: "#111827" }}>
+                    {c.criterion} <span style={{ fontWeight: "500", color: "#6B7280" }}>· {c.points} pts</span>
+                  </p>
+                  {!isEmptyHtml(c.description) && <RichContent html={c.description} />}
+                </div>
+                <RowActions
+                  onEdit={() => { setEditTarget(c); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(c)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modalOpen && (
+        <RubricCriterionModal assessmentId={assessmentId} editTarget={editTarget} onClose={() => setModalOpen(false)} />
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Criterion"
+        message="This rubric criterion will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          deleteCriterion({ assessmentId, criterionId: deleteTarget.id });
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </Section>
   );
 }
 
@@ -54,7 +204,8 @@ export default function AssessmentViewPage() {
     );
   }
 
-  const statusStyle = STATUS_STYLES[assessment.status] || STATUS_STYLES.inactive;
+  const isQuestionBased = QUESTION_BASED_TYPES.includes(assessment.type);
+  const isTaskBased = TASK_BASED_TYPES.includes(assessment.type);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -79,9 +230,6 @@ export default function AssessmentViewPage() {
                   <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>
                     {assessment.name}
                   </h1>
-                  <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, textTransform: "capitalize" }}>
-                    {assessment.status}
-                  </span>
                 </div>
                 <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
                   {TYPE_LABELS[assessment.type] || assessment.type}
@@ -105,17 +253,30 @@ export default function AssessmentViewPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
-        <Section title="Description">
-          {assessment.description ? (
-            <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65" }}>{assessment.description}</p>
-          ) : (
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No description added</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Section title="Description">
+            {assessment.description ? (
+              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65" }}>{assessment.description}</p>
+            ) : (
+              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No description added</p>
+            )}
+          </Section>
+
+          {!isEmptyHtml(assessment.instructions) && (
+            <Section title="Content">
+              <RichContent html={assessment.instructions} />
+            </Section>
           )}
-        </Section>
+
+          {isQuestionBased && <QuestionsSection assessmentId={id} items={assessment.items || []} />}
+          {isTaskBased && <RubricSection assessmentId={id} rubric={assessment.rubric || []} />}
+        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Section title="Details">
-            <DetailRow label="Type" value={TYPE_LABELS[assessment.type] || assessment.type} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <DetailRow label="Type" value={TYPE_LABELS[assessment.type] || assessment.type} />
+            </div>
           </Section>
 
           <Section title="Record Info">

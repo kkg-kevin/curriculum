@@ -1,6 +1,13 @@
 const asyncHandler = require("express-async-handler");
 const AssessmentService = require("./assessment.service");
-const { createAssessmentSchema, updateAssessmentSchema } = require("./assessment.validation");
+const {
+  createAssessmentSchema,
+  updateAssessmentSchema,
+  createItemSchema,
+  updateItemSchema,
+  createRubricCriterionSchema,
+  updateRubricCriterionSchema,
+} = require("./assessment.validation");
 
 const createAssessment = asyncHandler(async (req, res) => {
   const data = createAssessmentSchema.parse(req.body);
@@ -9,8 +16,8 @@ const createAssessment = asyncHandler(async (req, res) => {
 });
 
 const getAllAssessments = asyncHandler(async (req, res) => {
-  const { status, type } = req.query;
-  const assessments = await AssessmentService.getAllAssessments({ status, type });
+  const { type } = req.query;
+  const assessments = await AssessmentService.getAllAssessments({ type });
   res.json({ success: true, data: assessments, count: assessments.length });
 });
 
@@ -30,4 +37,50 @@ const deleteAssessment = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-module.exports = { createAssessment, getAllAssessments, getAssessmentById, updateAssessment, deleteAssessment };
+const addItem = asyncHandler(async (req, res) => {
+  const data = createItemSchema.parse(req.body);
+  const item = await AssessmentService.addItem(req.params.id, data);
+  res.status(201).json({ success: true, data: item });
+});
+
+const updateItem = asyncHandler(async (req, res) => {
+  const data = updateItemSchema.parse(req.body);
+  const item = await AssessmentService.updateItem(req.params.id, req.params.itemId, data);
+  res.json({ success: true, data: item });
+});
+
+const deleteItem = asyncHandler(async (req, res) => {
+  const result = await AssessmentService.deleteItem(req.params.id, req.params.itemId);
+  res.json({ success: true, ...result });
+});
+
+const addRubricCriterion = asyncHandler(async (req, res) => {
+  const data = createRubricCriterionSchema.parse(req.body);
+  const criterion = await AssessmentService.addRubricCriterion(req.params.id, data);
+  res.status(201).json({ success: true, data: criterion });
+});
+
+const updateRubricCriterion = asyncHandler(async (req, res) => {
+  const data = updateRubricCriterionSchema.parse(req.body);
+  const criterion = await AssessmentService.updateRubricCriterion(req.params.id, req.params.criterionId, data);
+  res.json({ success: true, data: criterion });
+});
+
+const deleteRubricCriterion = asyncHandler(async (req, res) => {
+  const result = await AssessmentService.deleteRubricCriterion(req.params.id, req.params.criterionId);
+  res.json({ success: true, ...result });
+});
+
+module.exports = {
+  createAssessment,
+  getAllAssessments,
+  getAssessmentById,
+  updateAssessment,
+  deleteAssessment,
+  addItem,
+  updateItem,
+  deleteItem,
+  addRubricCriterion,
+  updateRubricCriterion,
+  deleteRubricCriterion,
+};

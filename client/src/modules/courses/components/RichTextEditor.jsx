@@ -27,7 +27,7 @@ function ToolbarButton({ onClick, disabled, title, children }) {
   );
 }
 
-function Editor({ value, onChange }) {
+export function Editor({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 

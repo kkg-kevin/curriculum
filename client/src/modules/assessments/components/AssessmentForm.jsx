@@ -1,5 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
+import RichTextEditor from "../../courses/components/RichTextEditor";
 
 const selectStyle = {
   width: "100%",
@@ -96,15 +97,15 @@ export default function AssessmentForm() {
   const { register, formState: { errors } } = useFormContext();
 
   return (
-    <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-      <div style={{ padding: "20px 24px" }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-          Assessment Details
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <Input name="name" label="Assessment Name" placeholder="e.g. Mid-term Mathematics Exam" required />
-          <Textarea name="description" label="Description" placeholder="What does this assessment cover?" />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+            Assessment Details
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <Input name="name" label="Assessment Name" placeholder="e.g. Mid-term Mathematics Exam" required />
+            <Textarea name="description" label="Description" placeholder="What does this assessment cover?" />
             <Field label="Type" required error={errors?.type?.message}>
               <select {...register("type")} style={selectStyle}>
                 <option value="">Select type…</option>
@@ -113,13 +114,16 @@ export default function AssessmentForm() {
                 ))}
               </select>
             </Field>
-            <Field label="Status" required>
-              <select {...register("status")} style={selectStyle}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </Field>
           </div>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+            Content
+          </h3>
+          <RichTextEditor name="instructions" label="Content" hint="Shown to learners when they open this assessment — add text and images" />
         </div>
       </div>
     </div>

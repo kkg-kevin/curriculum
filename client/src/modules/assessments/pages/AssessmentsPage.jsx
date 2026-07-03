@@ -1,25 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
+import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-
-const STATUS_STYLES = {
-  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-};
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄" };
-
-function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.inactive;
-  return (
-    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}`, textTransform: "capitalize", letterSpacing: "0.02em" }}>
-      {status}
-    </span>
-  );
-}
 
 function TypeBadge({ type }) {
   return (
@@ -116,7 +103,6 @@ function AssessmentCard({ assessment }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
               <TypeBadge type={assessment.type} />
-              <StatusBadge status={assessment.status} />
             </div>
           </div>
         </div>
@@ -194,7 +180,20 @@ function EmptyState({ onCreateNew }) {
 export default function AssessmentsPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useAssessmentsQuery();
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const assessments = data?.data || [];
+
+  const visibleAssessments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return assessments.filter((a) => {
+      const matchesSearch = !query
+        || a.name.toLowerCase().includes(query)
+        || (a.description || "").toLowerCase().includes(query);
+      const matchesType = !typeFilter || a.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [assessments, search, typeFilter]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -220,6 +219,55 @@ export default function AssessmentsPage() {
         </div>
       </div>
 
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "14px", padding: "0 14px", marginBottom: "18px", maxWidth: "100%", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "220px", maxWidth: "100%" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search assessments..."
+            style={{ border: "none", outline: "none", background: "transparent", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#374151", padding: "10px 0", width: "100%", boxSizing: "border-box" }}
+          />
+        </div>
+
+        <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB", flexShrink: 0 }} />
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          style={{ border: "none", outline: "none", background: "transparent", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#374151", cursor: "pointer", padding: "10px 2px", width: "130px" }}
+        >
+          <option value="">All Types</option>
+          {ASSESSMENT_TYPES.map((t) => (
+            <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+          ))}
+        </select>
+
+        {(search || typeFilter) && (
+          <>
+            <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB", flexShrink: 0 }} />
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setTypeFilter(""); }}
+              style={{ background: "none", border: "none", color: "#38aae1", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "6px 2px", whiteSpace: "nowrap" }}
+            >
+              Clear
+            </button>
+          </>
+        )}
+
+        {assessments.length > 0 && (
+          <>
+            <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB", flexShrink: 0 }} />
+            <div style={{ fontSize: "12px", color: "#9CA3AF", whiteSpace: "nowrap", padding: "10px 0" }}>
+              {visibleAssessments.length} of {assessments.length}
+            </div>
+          </>
+        )}
+      </div>
+
       {isLoading ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
           {[1, 2, 3].map((n) => (
@@ -243,9 +291,13 @@ export default function AssessmentsPage() {
         </div>
       ) : assessments.length === 0 ? (
         <EmptyState onCreateNew={() => navigate("/assessments/create")} />
+      ) : visibleAssessments.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB", color: "#9CA3AF", fontSize: "14px" }}>
+          No assessments match your search{search ? ` "${search}"` : ""}{typeFilter ? ` in ${TYPE_LABELS[typeFilter]}` : ""}.
+        </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-          {assessments.map((assessment) => (
+          {visibleAssessments.map((assessment) => (
             <AssessmentCard key={assessment.id} assessment={assessment} />
           ))}
         </div>

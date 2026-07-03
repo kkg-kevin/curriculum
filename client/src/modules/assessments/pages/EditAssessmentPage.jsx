@@ -27,7 +27,7 @@ export default function EditAssessmentPage() {
         name: assessment.name || "",
         description: assessment.description || "",
         type: assessment.type || "",
-        status: assessment.status || "active",
+        instructions: assessment.instructions || "",
       });
     }
   }, [assessment, reset]);

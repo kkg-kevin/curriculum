@@ -1,6 +1,6 @@
 // TipTap's "empty" state is still markup (e.g. "<p></p>"), not an empty string —
 // strip tags before deciding whether there's anything to show.
-function isEmptyHtml(html) {
+export function isEmptyHtml(html) {
   if (!html) return true;
   if (/<img[\s>]/i.test(html)) return false;
   return html.replace(/<[^>]*>/g, "").trim().length === 0;

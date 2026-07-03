@@ -33,10 +33,9 @@ const AssessmentModel = {
     return assessment;
   },
 
-  findAll({ status, type } = {}) {
+  findAll({ type } = {}) {
     let all = readAll();
-    if (status) all = all.filter((a) => a.status === status);
-    if (type)   all = all.filter((a) => a.type === type);
+    if (type) all = all.filter((a) => a.type === type);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
