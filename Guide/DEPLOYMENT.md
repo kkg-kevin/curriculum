@@ -66,7 +66,7 @@ JSON files (server/data/*.json)
 ### Steps to Deploy / Re-deploy Backend
 
 1. **Create the deployment zip** from the project root:
-   - Include: `src/`, `data/`, `package.json`, `package-lock.json`
+   - Include: `src/`, `data/`, `uploads/`, `package.json`, `package-lock.json`
    - Exclude: `node_modules/`, `.env`
    - The ready-made zip is: `backend-deploy.zip`
 
@@ -75,6 +75,7 @@ JSON files (server/data/*.json)
 3. **Delete** existing files:
    - `src/` folder
    - `data/` folder
+   - `uploads/` folder
    - `package.json`
    - `package-lock.json`
 
@@ -88,6 +89,12 @@ JSON files (server/data/*.json)
 
 7. **Test** — visit `https://nodeapp.digifunzi.com`  
    Expected response: `{ "message": "API is running" }`
+
+### Uploaded files (cover images, inline images, attached documents)
+
+Uploaded files are saved to `server/uploads/` and served directly at `https://nodeapp.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
+
+> ⚠️ **Once real content is uploaded on the live site, stop overwriting `data/` and `uploads/` on every redeploy** — those steps above currently replace both folders wholesale with whatever's in your local copy, which would erase anything created directly on the live site. At that point, only re-upload `src/`, `package.json`, and `package-lock.json` for code changes, and leave `data/`/`uploads/` alone unless you specifically mean to overwrite them.
 
 ---
 
@@ -148,5 +155,6 @@ JSON files (server/data/*.json)
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip (no node_modules, no .env) |
-| `assets.zip` | Ready-to-upload frontend assets zip |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `data/`, `uploads/`, `package.json`, `package-lock.json` (no node_modules, no .env) |
+| `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/`) |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract |
