@@ -64,3 +64,58 @@ export function useDeleteAssessment() {
     },
   });
 }
+
+function useAssessmentDetailMutation(mutationFn, { successMessage, errorMessage }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (_data, variables) => {
+      const assessmentId = Array.isArray(variables) ? variables[0] : variables.assessmentId;
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.detail(assessmentId) });
+      toast.success(successMessage);
+    },
+    onError: (err) => toast.error(err.message || errorMessage),
+  });
+}
+
+export function useAddItem() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, data }) => assessmentApi.addItem(assessmentId, data),
+    { successMessage: "Question added", errorMessage: "Failed to add question" }
+  );
+}
+
+export function useUpdateItem() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, itemId, data }) => assessmentApi.updateItem(assessmentId, itemId, data),
+    { successMessage: "Question updated", errorMessage: "Failed to update question" }
+  );
+}
+
+export function useDeleteItem() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, itemId }) => assessmentApi.removeItem(assessmentId, itemId),
+    { successMessage: "Question deleted", errorMessage: "Failed to delete question" }
+  );
+}
+
+export function useAddRubricCriterion() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, data }) => assessmentApi.addRubricCriterion(assessmentId, data),
+    { successMessage: "Criterion added", errorMessage: "Failed to add criterion" }
+  );
+}
+
+export function useUpdateRubricCriterion() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, criterionId, data }) => assessmentApi.updateRubricCriterion(assessmentId, criterionId, data),
+    { successMessage: "Criterion updated", errorMessage: "Failed to update criterion" }
+  );
+}
+
+export function useDeleteRubricCriterion() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, criterionId }) => assessmentApi.removeRubricCriterion(assessmentId, criterionId),
+    { successMessage: "Criterion deleted", errorMessage: "Failed to delete criterion" }
+  );
+}

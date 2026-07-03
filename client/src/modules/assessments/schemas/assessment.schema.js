@@ -1,11 +1,30 @@
 import { z } from "zod";
 
-export const ASSESSMENT_STATUSES = ["active", "inactive"];
 export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment"];
+export const QUESTION_BASED_TYPES = ["quiz", "exam"];
+export const TASK_BASED_TYPES = ["assignment", "project"];
+export const QUESTION_TYPES = ["mcq", "trueFalse", "shortAnswer"];
 
 export const assessmentSchema = z.object({
-  name:        z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
-  description: z.string().max(1000, "Max 1000 characters").optional().default(""),
-  type:        z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Select a valid assessment type" }) }),
-  status:      z.enum(["active", "inactive"]).default("active"),
+  name:         z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
+  description:  z.string().max(1000, "Max 1000 characters").optional().default(""),
+  type:         z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Select a valid assessment type" }) }),
+  instructions: z.string().max(5000, "Max 5000 characters").optional(),
+});
+
+export const itemSchema = z.object({
+  question:      z.string().min(1, "Question text is required").max(5000, "Max 5000 characters"),
+  questionType:  z.enum(QUESTION_TYPES, { errorMap: () => ({ message: "Select a valid question type" }) }),
+  options:       z.array(z.string().min(1, "Option can't be empty")).optional().default([]),
+  correctAnswer: z.string().optional().default(""),
+  points:        z.coerce.number().min(0, "Points must be 0 or more"),
+}).refine(
+  (data) => data.questionType !== "mcq" || data.options.length >= 2,
+  { message: "Add at least 2 options", path: ["options"] }
+);
+
+export const rubricCriterionSchema = z.object({
+  criterion:   z.string().min(1, "Criterion name is required").max(200, "Max 200 characters"),
+  description: z.string().max(5000, "Max 5000 characters").optional().default(""),
+  points:      z.coerce.number().min(0, "Points must be 0 or more"),
 });

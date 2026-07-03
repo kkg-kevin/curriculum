@@ -11,7 +11,7 @@ const DEFAULT_VALUES = {
   name: "",
   description: "",
   type: "",
-  status: "active",
+  instructions: "",
 };
 
 export default function CreateAssessmentPage() {
