@@ -2,13 +2,28 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import RichContent from "../components/RichContent";
-import { SECTIONS, SECTION_LABELS, sessionLabel } from "../sectionConfig";
+import { SECTIONS, SECTION_LABELS, sessionLabel, sectionLinkPath, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const AUDIENCE_STYLES = {
+  teacher: { label: "Teacher only", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  student: { label: "Student only", bg: "#fff8e6", color: "#b07800", border: "#fcd97a" },
+  both:    { label: "Teacher & Student", bg: "#F3F4F6", color: "#6B7280", border: "#E5E7EB" },
+};
+
+function AudienceBadge({ audience }) {
+  const s = AUDIENCE_STYLES[audience] || AUDIENCE_STYLES.both;
+  return (
+    <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: "nowrap", flexShrink: 0 }}>
+      {s.label}
+    </span>
+  );
 }
 
 function ChevronDown({ open }) {
@@ -32,20 +47,40 @@ function SectionIcon() {
 
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey }) {
+function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey, activeItemId }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
+  // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
+  const [expandedRepeatable, setExpandedRepeatable] = useState(
+    () => new Set(isRepeatableSection(activeSectionKey) ? [`${activeSectionKey}:${activeSessionId}`] : [])
+  );
 
-  // Auto-expand whichever session becomes active (e.g. via Prev/Next crossing a session boundary),
-  // without collapsing sessions the user expanded manually.
+  // Auto-expand whichever session/sub-list becomes active (e.g. via Prev/Next crossing a
+  // boundary), without collapsing anything the user expanded manually.
   useEffect(() => {
     setExpandedIds((prev) => (prev.has(activeSessionId) ? prev : new Set(prev).add(activeSessionId)));
   }, [activeSessionId]);
+
+  useEffect(() => {
+    if (isRepeatableSection(activeSectionKey)) {
+      const key = `${activeSectionKey}:${activeSessionId}`;
+      setExpandedRepeatable((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+    }
+  }, [activeSessionId, activeSectionKey]);
 
   const toggleSession = (id) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleRepeatable = (key) => {
+    setExpandedRepeatable((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -82,10 +117,60 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey 
               <div>
                 {SECTIONS.map((section) => {
                   const isActive = isCurrentSession && section.key === activeSectionKey;
+
+                  if (isRepeatableSection(section.key)) {
+                    const repeatKey = `${section.key}:${session.id}`;
+                    const repExpanded = expandedRepeatable.has(repeatKey);
+                    const items = session[section.key] || [];
+                    return (
+                      <div key={section.key}>
+                        <div
+                          onClick={() => toggleRepeatable(repeatKey)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px 8px 32px", cursor: "pointer",
+                            borderTop: "1px solid #F3F4F6",
+                            backgroundColor: isActive ? "#e8f5fb" : "transparent",
+                            color: isActive ? "#25476a" : "#6B7280",
+                          }}
+                        >
+                          <SectionIcon />
+                          <span style={{ flex: 1, fontSize: "12px", fontWeight: isActive ? "700" : "500" }}>{section.label}</span>
+                          <ChevronDown open={repExpanded} />
+                        </div>
+                        {repExpanded && (
+                          items.length === 0 ? (
+                            <p style={{ margin: 0, padding: "6px 12px 8px 54px", fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>
+                              None added yet
+                            </p>
+                          ) : (
+                            items.map((item, i) => {
+                              const itemActive = isActive && item.id === activeItemId;
+                              return (
+                                <Link
+                                  key={item.id}
+                                  to={`/courses/${courseId}/sessions/${session.id}/sections/${section.key}/${item.id}`}
+                                  style={{
+                                    display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px 7px 54px",
+                                    borderTop: "1px solid #F9FAFB", textDecoration: "none", fontSize: "11.5px",
+                                    backgroundColor: itemActive ? "#d6edf8" : "transparent",
+                                    color: itemActive ? "#25476a" : "#9CA3AF",
+                                    fontWeight: itemActive ? "700" : "500",
+                                  }}
+                                >
+                                  {repeatableItemLabel(section.key, item, i)}
+                                </Link>
+                              );
+                            })
+                          )
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={section.key}
-                      to={`/courses/${courseId}/sessions/${session.id}/sections/${section.key}`}
+                      to={sectionLinkPath(courseId, session, section)}
                       style={{
                         display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px 8px 32px",
                         borderTop: "1px solid #F3F4F6", textDecoration: "none",
@@ -109,17 +194,6 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey 
 
 /* ── Section content by type ──────────────────────────────────────────── */
 
-function SubBlock({ title, html, last }) {
-  return (
-    <div style={{ marginBottom: last ? 0 : "28px" }}>
-      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        {title}
-      </h3>
-      <RichContent html={html} emptyText="Nothing added yet" />
-    </div>
-  );
-}
-
 function SectionBody({ sectionKey, session }) {
   if (sectionKey === "outcomes") {
     const outcomes = session.outcomes || [];
@@ -140,26 +214,14 @@ function SectionBody({ sectionKey, session }) {
   if (sectionKey === "introduction") {
     return (
       <>
-        <SubBlock title="Introduction" html={session.introduction} />
-        <SubBlock title="Ice Breaker" html={session.iceBreaker} last />
-      </>
-    );
-  }
-
-  if (sectionKey === "mainConcepts") {
-    return (
-      <>
-        <SubBlock title="Introduction" html={session.mainConceptsIntro} />
-        <SubBlock title={session.mainConceptsBodyTitle || "Body"} html={session.mainConceptsBody} last />
-      </>
-    );
-  }
-
-  if (sectionKey === "activities") {
-    return (
-      <>
-        <SubBlock title="Class Activity" html={session.classActivity} />
-        <SubBlock title="Wrap Activity" html={session.wrapActivity} last />
+        <div style={{ marginBottom: "28px" }}>
+          <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Introduction</h3>
+          <RichContent html={session.introduction} emptyText="Nothing added yet" />
+        </div>
+        <div>
+          <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ice Breaker</h3>
+          <RichContent html={session.iceBreaker} emptyText="Nothing added yet" />
+        </div>
       </>
     );
   }
@@ -169,11 +231,12 @@ function SectionBody({ sectionKey, session }) {
     return resources.length > 0 ? (
       <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
         {resources.map((r) => (
-          <li key={r.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px" }}>
+          <li key={r.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", flexWrap: "wrap" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#38aae1", flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
-            <a href={r.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
+            <a href={r.url} target="_blank" rel="noreferrer" style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
               {r.filename}
             </a>
+            <AudienceBadge audience={r.audience} />
             <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{formatSize(r.size)}</span>
           </li>
         ))}
@@ -189,21 +252,42 @@ function SectionBody({ sectionKey, session }) {
 /* ── Main page ────────────────────────────────────────────────────────── */
 
 export default function SectionViewPage() {
-  const { id, sessionId, sectionKey } = useParams();
+  const { id, sessionId, sectionKey, itemId } = useParams();
   const navigate = useNavigate();
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
 
   const session = sessions.find((s) => s.id === sessionId);
+  const isRepeatable = isRepeatableSection(sectionKey);
+  const items = session?.[sectionKey] || [];
+  const effectiveItemId = isRepeatable ? (itemId || items[0]?.id || null) : null;
+  const itemIndex = isRepeatable ? items.findIndex((i) => i.id === effectiveItemId) : -1;
+  const item = itemIndex !== -1 ? items[itemIndex] : null;
 
-  // Flatten (session, section) pairs across the whole course, in order, for Prev/Next.
-  const flat = sessions.flatMap((s) => SECTIONS.map((sec) => ({ sessionId: s.id, sectionKey: sec.key })));
-  const currentIndex = flat.findIndex((f) => f.sessionId === sessionId && f.sectionKey === sectionKey);
+  // Flatten (session, section[, item]) triples across the whole course, in order, for Prev/Next.
+  // Repeatable sections contribute one entry per item (or a single item-less placeholder if
+  // empty) instead of one entry for the whole section.
+  const flat = sessions.flatMap((s) =>
+    SECTIONS.flatMap((sec) => {
+      if (isRepeatableSection(sec.key)) {
+        const secItems = s[sec.key]?.length ? s[sec.key] : [{ id: null }];
+        return secItems.map((it) => ({ sessionId: s.id, sectionKey: sec.key, itemId: it.id }));
+      }
+      return [{ sessionId: s.id, sectionKey: sec.key, itemId: null }];
+    })
+  );
+  const currentIndex = flat.findIndex((f) =>
+    f.sessionId === sessionId && f.sectionKey === sectionKey && f.itemId === (isRepeatable ? effectiveItemId : null)
+  );
   const prev = currentIndex > 0 ? flat[currentIndex - 1] : null;
   const next = currentIndex >= 0 && currentIndex < flat.length - 1 ? flat[currentIndex + 1] : null;
 
   const goTo = (target) => {
-    if (target) navigate(`/courses/${id}/sessions/${target.sessionId}/sections/${target.sectionKey}`);
+    if (!target) return;
+    const path = target.itemId
+      ? `/courses/${id}/sessions/${target.sessionId}/sections/${target.sectionKey}/${target.itemId}`
+      : `/courses/${id}/sessions/${target.sessionId}/sections/${target.sectionKey}`;
+    navigate(path);
   };
 
   if (isLoading) {
@@ -223,6 +307,9 @@ export default function SectionViewPage() {
   }
 
   const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+  const pageTitle = isRepeatable
+    ? (item ? repeatableItemLabel(sectionKey, item, itemIndex) : SECTION_LABELS[sectionKey])
+    : SECTION_LABELS[sectionKey];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -240,6 +327,7 @@ export default function SectionViewPage() {
           sessions={sessions}
           activeSessionId={sessionId}
           activeSectionKey={sectionKey}
+          activeItemId={effectiveItemId}
         />
 
         <div>
@@ -249,7 +337,13 @@ export default function SectionViewPage() {
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
               <span style={{ color: "#6B7280" }}>{sessionLabel(session, sessionIndex)}</span>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
-              <span style={{ color: "#111827", fontWeight: "600" }}>{SECTION_LABELS[sectionKey]}</span>
+              {isRepeatable && (
+                <>
+                  <span style={{ color: "#6B7280" }}>{SECTION_LABELS[sectionKey]}</span>
+                  <span style={{ color: "#D1D5DB" }}>&gt;</span>
+                </>
+              )}
+              <span style={{ color: "#111827", fontWeight: "600" }}>{pageTitle}</span>
             </div>
 
             <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
@@ -276,14 +370,37 @@ export default function SectionViewPage() {
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "32px" }}>
             <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Session {sessionIndex + 1}, {SECTION_LABELS[sectionKey]}
+              Session {sessionIndex + 1}{isRepeatable ? `, ${SECTION_LABELS[sectionKey]}` : ""}
             </p>
             <h1 style={{ margin: "0 0 12px", fontSize: "30px", fontWeight: "900", color: "#111827" }}>
-              {SECTION_LABELS[sectionKey]}
+              {pageTitle}
             </h1>
             <div style={{ height: "3px", width: "80px", backgroundColor: "#EF4444", borderRadius: "2px", marginBottom: "28px" }} />
 
-            <SectionBody sectionKey={sectionKey} session={session} />
+            {isRepeatable ? (
+              item ? (
+                sectionKey === "activities" ? (
+                  <>
+                    <div style={{ marginBottom: "28px" }}>
+                      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Class Activity</h3>
+                      <RichContent html={item.classActivity} emptyText="Nothing added yet" />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Wrap Activity</h3>
+                      <RichContent html={item.wrapActivity} emptyText="Nothing added yet" />
+                    </div>
+                  </>
+                ) : (
+                  <RichContent html={item.content} emptyText="Nothing added yet" />
+                )
+              ) : (
+                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
+                  Nothing added to {SECTION_LABELS[sectionKey]} yet.
+                </p>
+              )
+            ) : (
+              <SectionBody sectionKey={sectionKey} session={session} />
+            )}
           </div>
         </div>
       </div>

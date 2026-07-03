@@ -90,6 +90,7 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditCoursePage />} />
           <Route path=":id/view" element={<CourseViewPage />} />
           <Route path=":id/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
+          <Route path=":id/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
         </Route>
         <Route path="assessments">
           <Route index element={<AssessmentsPage />} />

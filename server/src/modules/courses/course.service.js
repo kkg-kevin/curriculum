@@ -1,5 +1,11 @@
+const crypto = require("crypto");
 const CourseModel = require("./course.model");
 const SessionModel = require("./session.model");
+
+const generateId = () =>
+  typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const CourseService = {
   async createCourse(data) {
@@ -82,12 +88,9 @@ const CourseService = {
       outcomes: [],
       introduction: "",
       iceBreaker: "",
-      mainConceptsIntro: "",
-      mainConceptsBodyTitle: "Body",
-      mainConceptsBody: "",
-      classActivity: "",
-      wrapActivity: "",
-      notes: "",
+      mainConcepts: [{ id: generateId(), title: "Introduction", content: "" }],
+      activities: [{ id: generateId(), title: "", classActivity: "", wrapActivity: "" }],
+      notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));
     return SessionModel.createMany(sessionsData);
