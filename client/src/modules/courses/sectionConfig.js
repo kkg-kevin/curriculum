@@ -3,7 +3,7 @@ export const SECTIONS = [
   { key: "introduction", label: "Introduction" },
   { key: "mainConcepts", label: "Main Concepts" },
   { key: "activities",   label: "Activities" },
-  { key: "notes",        label: "Notes" },
+  { key: "notes",        label: "Teacher's Note" },
   { key: "resources",    label: "Resources" },
 ];
 

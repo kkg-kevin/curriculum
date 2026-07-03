@@ -88,6 +88,17 @@ export function useCreateSession(courseId) {
   });
 }
 
+export function useCreateSessionsBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ courseId, count }) => courseApi.createSessionsBulk(courseId, count),
+    onSuccess: (_data, { courseId }) => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to create sessions"),
+  });
+}
+
 export function useUpdateSession(courseId) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -9,11 +9,15 @@ const resourceSchema = z.object({
 });
 
 export const sessionSchema = z.object({
-  title:        z.string().min(1, "Session title is required"),
-  outcomes:     z.array(z.string().min(1)).optional().default([]),
-  introduction: z.string().optional().default(""),
-  mainConcepts: z.string().optional().default(""),
-  activities:   z.string().optional().default(""),
-  notes:        z.string().optional().default(""),
-  resources:    z.array(resourceSchema).optional().default([]),
+  title:                 z.string().min(1, "Session title is required"),
+  outcomes:              z.array(z.string().min(1)).optional().default([]),
+  introduction:          z.string().optional().default(""),
+  iceBreaker:            z.string().optional().default(""),
+  mainConceptsIntro:     z.string().optional().default(""),
+  mainConceptsBodyTitle: z.string().optional().default("Body"),
+  mainConceptsBody:      z.string().optional().default(""),
+  classActivity:         z.string().optional().default(""),
+  wrapActivity:          z.string().optional().default(""),
+  notes:                 z.string().optional().default(""),
+  resources:             z.array(resourceSchema).optional().default([]),
 });

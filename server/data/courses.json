@@ -1,10 +1,10 @@
 [
   {
-    "name": "sample course",
-    "description": "<p>jweihivhqwrhvuqwusu</p>",
-    "coverImage": "http://localhost:5000/uploads/fe1fb133-66c8-4f1f-9326-f4f7bc01cdab.png",
-    "id": "7f9cf661-8cec-47da-8840-ad5ac52dd305",
-    "createdAt": "2026-07-02T13:39:53.252Z",
-    "updatedAt": "2026-07-02T16:41:54.967Z"
+    "name": "Level 1: Code Foundations",
+    "description": "<p>Introduction to Pictoblox and Coding..</p>",
+    "coverImage": "http://localhost:5000/uploads/59083a4b-036e-4396-bda6-48242d61aa6a.png",
+    "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "createdAt": "2026-07-03T08:03:21.515Z",
+    "updatedAt": "2026-07-03T08:21:03.177Z"
   }
 ]

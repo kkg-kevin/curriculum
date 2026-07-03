@@ -2,20 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateCourse } from "../hooks/useCourse";
+import { useCreateCourse, useCreateSessionsBulk } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
+import { Input } from "../components/formFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const DEFAULT_VALUES = {
   name: "",
   description: "",
   coverImage: null,
+  sessionCount: "1",
 };
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
   const { mutate: createCourse, isPending } = useCreateCourse();
+  const { mutate: createSessionsBulk, isPending: creatingSessions } = useCreateSessionsBulk();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const methods = useForm({
@@ -24,11 +27,22 @@ export default function CreateCoursePage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, formState: { isDirty } } = methods;
+  const { handleSubmit, getValues, formState: { isDirty } } = methods;
+  const isBusy = isPending || creatingSessions;
 
   const onSubmit = (data) => {
+    const sessionCount = Math.max(0, Number(getValues("sessionCount")) || 0);
     createCourse(data, {
-      onSuccess: (course) => navigate(`/courses/${course.id}/view`),
+      onSuccess: (course) => {
+        if (sessionCount > 0) {
+          createSessionsBulk(
+            { courseId: course.id, count: sessionCount },
+            { onSettled: () => navigate(`/courses/${course.id}/view`) }
+          );
+        } else {
+          navigate(`/courses/${course.id}/view`);
+        }
+      },
     });
   };
 
@@ -69,10 +83,10 @@ export default function CreateCoursePage() {
           <button
             type="submit"
             form="create-course-form"
-            disabled={isPending}
-            style={{ padding: "10px 24px", backgroundColor: isPending ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}
+            disabled={isBusy}
+            style={{ padding: "10px 24px", backgroundColor: isBusy ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isBusy ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}
           >
-            {isPending ? (
+            {isBusy ? (
               <>
                 <span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#ffffff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
                 Saving...
@@ -87,6 +101,16 @@ export default function CreateCoursePage() {
       <FormProvider {...methods}>
         <form id="create-course-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <CourseForm />
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px", marginTop: "16px" }}>
+            <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Sessions</h3>
+            <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#9CA3AF" }}>
+              How many sessions will this course have? You can add more later.
+            </p>
+            <div style={{ maxWidth: "160px" }}>
+              <Input name="sessionCount" type="number" min="0" label="Number of Sessions" />
+            </div>
+          </div>
         </form>
       </FormProvider>
 

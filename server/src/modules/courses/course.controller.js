@@ -5,6 +5,7 @@ const {
   updateCourseSchema,
   createSessionSchema,
   updateSessionSchema,
+  bulkCreateSessionsSchema,
 } = require("./course.validation");
 
 const createCourse = asyncHandler(async (req, res) => {
@@ -47,6 +48,12 @@ const createSession = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data });
 });
 
+const createSessionsBulk = asyncHandler(async (req, res) => {
+  const { count } = bulkCreateSessionsSchema.parse(req.body);
+  const data = await CourseService.createSessionsBulk(req.params.id, count);
+  res.status(201).json({ success: true, data });
+});
+
 const updateSession = asyncHandler(async (req, res) => {
   const body = updateSessionSchema.parse(req.body);
   const data = await CourseService.updateSession(req.params.id, req.params.sessionId, body);
@@ -66,6 +73,7 @@ module.exports = {
   deleteCourse,
   getSessions,
   createSession,
+  createSessionsBulk,
   updateSession,
   deleteSession,
 };

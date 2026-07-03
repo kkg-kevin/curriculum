@@ -16,6 +16,9 @@ export const courseApi = {
   createSession: (courseId, data) =>
     api.post(`${ENDPOINT}/${courseId}/sessions`, data).then((r) => r.data.data),
 
+  createSessionsBulk: (courseId, count) =>
+    api.post(`${ENDPOINT}/${courseId}/sessions/bulk`, { count }).then((r) => r.data.data),
+
   updateSession: (courseId, sessionId, data) =>
     api.put(`${ENDPOINT}/${courseId}/sessions/${sessionId}`, data).then((r) => r.data.data),
 

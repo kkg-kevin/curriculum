@@ -67,6 +67,32 @@ const CourseService = {
     return SessionModel.create({ courseId, ...data, order });
   },
 
+  async createSessionsBulk(courseId, count) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const startOrder = SessionModel.findByCourseId(courseId).length + 1;
+    const sessionsData = Array.from({ length: count }, (_, i) => ({
+      courseId,
+      title: `Session ${startOrder + i}`,
+      order: startOrder + i,
+      outcomes: [],
+      introduction: "",
+      iceBreaker: "",
+      mainConceptsIntro: "",
+      mainConceptsBodyTitle: "Body",
+      mainConceptsBody: "",
+      classActivity: "",
+      wrapActivity: "",
+      notes: "",
+      resources: [],
+    }));
+    return SessionModel.createMany(sessionsData);
+  },
+
   async updateSession(courseId, sessionId, data) {
     const course = CourseModel.findById(courseId);
     if (!course) {

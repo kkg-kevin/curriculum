@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,8 +19,12 @@ const SESSION_DEFAULT_VALUES = {
   title: "",
   outcomes: [],
   introduction: "",
-  mainConcepts: "",
-  activities: "",
+  iceBreaker: "",
+  mainConceptsIntro: "",
+  mainConceptsBodyTitle: "Body",
+  mainConceptsBody: "",
+  classActivity: "",
+  wrapActivity: "",
   notes: "",
   resources: [],
 };
@@ -44,74 +48,122 @@ function ChevronDown({ open }) {
   );
 }
 
-/* ── Add / Edit Session modal ─────────────────────────────────────────── */
+/* ── Session content editor modal — cycles through every session in the course, auto-saving on Prev/Next/Close ── */
 
-function SessionModal({ courseId, editTarget, onClose }) {
-  const { mutate: createSession, isPending: creating } = useCreateSession(courseId);
-  const { mutate: updateSession, isPending: updating } = useUpdateSession(courseId);
+function NavArrow({ direction }) {
+  const points = direction === "prev" ? "15 18 9 12 15 6" : "9 18 15 12 9 6";
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <polyline points={points} stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SessionModal({ courseId, sessions, startSessionId, onClose }) {
+  const { mutate: updateSession, isPending: saving } = useUpdateSession(courseId);
+  const [currentId, setCurrentId] = useState(startSessionId);
+
+  const index = sessions.findIndex((s) => s.id === currentId);
+  const current = index !== -1 ? sessions[index] : null;
 
   const methods = useForm({
     resolver: zodResolver(sessionSchema),
-    defaultValues: editTarget
-      ? {
-          title: editTarget.title || "",
-          outcomes: editTarget.outcomes || [],
-          introduction: editTarget.introduction || "",
-          mainConcepts: editTarget.mainConcepts || "",
-          activities: editTarget.activities || "",
-          notes: editTarget.notes || "",
-          resources: editTarget.resources || [],
-        }
-      : SESSION_DEFAULT_VALUES,
+    defaultValues: SESSION_DEFAULT_VALUES,
     mode: "onTouched",
   });
 
-  const { handleSubmit } = methods;
-  const isPending = creating || updating;
+  const { reset, getValues } = methods;
 
-  const onSubmit = (data) => {
-    if (editTarget) {
-      updateSession({ id: editTarget.id, data }, { onSuccess: onClose });
-    } else {
-      createSession(data, { onSuccess: onClose });
+  useEffect(() => {
+    if (current) {
+      reset({
+        title: current.title || "",
+        outcomes: current.outcomes || [],
+        introduction: current.introduction || "",
+        iceBreaker: current.iceBreaker || "",
+        mainConceptsIntro: current.mainConceptsIntro || "",
+        mainConceptsBodyTitle: current.mainConceptsBodyTitle || "Body",
+        mainConceptsBody: current.mainConceptsBody || "",
+        classActivity: current.classActivity || "",
+        wrapActivity: current.wrapActivity || "",
+        notes: current.notes || "",
+        resources: current.resources || [],
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId]);
+
+  const saveCurrent = () => {
+    if (!current) return;
+    updateSession({ id: current.id, data: getValues() });
   };
+
+  const goTo = (targetId) => {
+    saveCurrent();
+    setCurrentId(targetId);
+  };
+
+  const handleClose = () => {
+    saveCurrent();
+    onClose();
+  };
+
+  const canPrev = index > 0;
+  const canNext = index !== -1 && index < sessions.length - 1;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px", overflowY: "auto" }}>
-      <div style={{ background: "#F3F4F6", borderRadius: "16px", width: "100%", maxWidth: "640px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
-        <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: "16px 16px 0 0", borderBottom: "1px solid #E5E7EB" }}>
-          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#0F2645" }}>
-            {editTarget ? "Edit Session" : "New Session"}
-          </h2>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px", lineHeight: 1, padding: 0 }}>
+      <div style={{ background: "#F3F4F6", borderRadius: "16px", width: "100%", maxWidth: "1080px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+        <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: "16px 16px 0 0", borderBottom: "1px solid #E5E7EB" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={() => canPrev && goTo(sessions[index - 1].id)}
+              disabled={!canPrev}
+              title="Previous session"
+              style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB", border: "1.5px solid #E5E7EB", borderRadius: "8px", color: canPrev ? "#25476a" : "#D1D5DB", cursor: canPrev ? "pointer" : "not-allowed" }}
+            >
+              <NavArrow direction="prev" />
+            </button>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#0F2645" }}>
+                {current ? `Session ${index + 1} of ${sessions.length}` : "Loading…"}
+              </h2>
+              {saving && <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Saving…</p>}
+            </div>
+            <button
+              type="button"
+              onClick={() => canNext && goTo(sessions[index + 1].id)}
+              disabled={!canNext}
+              title="Next session"
+              style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB", border: "1.5px solid #E5E7EB", borderRadius: "8px", color: canNext ? "#25476a" : "#D1D5DB", cursor: canNext ? "pointer" : "not-allowed" }}
+            >
+              <NavArrow direction="next" />
+            </button>
+          </div>
+          <button type="button" onClick={handleClose} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px", lineHeight: 1, padding: 0 }}>
             ×
           </button>
         </div>
 
-        <div style={{ padding: "20px" }}>
-          <FormProvider {...methods}>
-            <form id="session-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div style={{ padding: "24px", maxHeight: "82vh", overflowY: "auto" }}>
+          {current ? (
+            <FormProvider {...methods}>
               <SessionForm />
-            </form>
-          </FormProvider>
+            </FormProvider>
+          ) : (
+            <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>Loading session…</div>
+          )}
         </div>
 
-        <div style={{ padding: "16px 24px", display: "flex", gap: "10px", justifyContent: "flex-end", backgroundColor: "#fff", borderRadius: "0 0 16px 16px", borderTop: "1px solid #E5E7EB" }}>
+        <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: "0 0 16px 16px", borderTop: "1px solid #E5E7EB" }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Changes save automatically as you move between sessions.</p>
           <button
             type="button"
-            onClick={onClose}
-            style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            onClick={handleClose}
+            style={{ padding: "10px 24px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="session-form"
-            disabled={isPending}
-            style={{ padding: "10px 24px", backgroundColor: isPending ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
-          >
-            {isPending ? "Saving…" : editTarget ? "Save Changes" : "Add Session"}
+            Done
           </button>
         </div>
       </div>
@@ -193,9 +245,17 @@ export default function CourseViewPage() {
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
 
   const [expandedIds, setExpandedIds] = useState(new Set());
-  const [modalMode, setModalMode] = useState(null); // null | "add" | session object being edited
+  const [modalSessionId, setModalSessionId] = useState(null);
+  const { mutate: createSession, isPending: creatingSession } = useCreateSession(id);
 
   const allExpanded = sessions.length > 0 && expandedIds.size === sessions.length;
+
+  const handleAddSession = () => {
+    createSession(
+      { title: `Session ${sessions.length + 1}` },
+      { onSuccess: (newSession) => setModalSessionId(newSession.id) }
+    );
+  };
 
   const toggleSession = (sessionId) => {
     setExpandedIds((prev) => {
@@ -259,8 +319,9 @@ export default function CourseViewPage() {
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
             <button
               type="button"
-              onClick={() => setModalMode("add")}
-              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+              onClick={handleAddSession}
+              disabled={creatingSession}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 18px", backgroundColor: creatingSession ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: creatingSession ? "not-allowed" : "pointer" }}
             >
               + Add Session
             </button>
@@ -283,7 +344,7 @@ export default function CourseViewPage() {
                   index={idx}
                   expanded={expandedIds.has(session.id)}
                   onToggle={() => toggleSession(session.id)}
-                  onEdit={(s) => setModalMode(s)}
+                  onEdit={(s) => setModalSessionId(s.id)}
                 />
               ))}
             </div>
@@ -315,11 +376,12 @@ export default function CourseViewPage() {
         </div>
       </div>
 
-      {modalMode && (
+      {modalSessionId && (
         <SessionModal
           courseId={id}
-          editTarget={modalMode === "add" ? null : modalMode}
-          onClose={() => setModalMode(null)}
+          sessions={sessions}
+          startSessionId={modalSessionId}
+          onClose={() => setModalSessionId(null)}
         />
       )}
     </div>

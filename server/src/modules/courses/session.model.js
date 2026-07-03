@@ -33,6 +33,19 @@ const SessionModel = {
     return session;
   },
 
+  createMany(sessionsData) {
+    const all = readAll();
+    const now = new Date().toISOString();
+    const created = sessionsData.map((data) => ({
+      ...data,
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+    }));
+    writeAll([...all, ...created]);
+    return created;
+  },
+
   findByCourseId(courseId) {
     return readAll()
       .filter((s) => s.courseId === courseId)
