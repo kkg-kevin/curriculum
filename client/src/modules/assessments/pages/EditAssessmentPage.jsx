@@ -2,15 +2,19 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAssessmentQuery, useUpdateAssessment } from "../hooks/useAssessment";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAssessmentQuery, useUpdateAssessment, useAssessmentCompetencies, ASSESSMENT_KEYS } from "../hooks/useAssessment";
 import { assessmentSchema } from "../schemas/assessment.schema";
 import AssessmentForm from "../components/AssessmentForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { assessmentApi } from "../services/assessmentApi";
 
 export default function EditAssessmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: assessment, isLoading, isError } = useAssessmentQuery(id);
+  const { data: linkedCompetencies, isLoading: competenciesLoading } = useAssessmentCompetencies(id);
   const { mutate: updateAssessment, isPending } = useUpdateAssessment();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -22,19 +26,30 @@ export default function EditAssessmentPage() {
   const { handleSubmit, reset, formState: { isDirty } } = methods;
 
   useEffect(() => {
-    if (assessment) {
+    if (assessment && linkedCompetencies) {
       reset({
         name: assessment.name || "",
         description: assessment.description || "",
         type: assessment.type || "",
         instructions: assessment.instructions || "",
+        competencyIds: linkedCompetencies.map((c) => c.id),
       });
     }
-  }, [assessment, reset]);
+  }, [assessment, linkedCompetencies, reset]);
 
-  const onSubmit = (data) => {
+  const onSubmit = ({ competencyIds, ...data }) => {
     updateAssessment({ id, data }, {
-      onSuccess: () => navigate(`/assessments/${id}/view`),
+      onSuccess: async () => {
+        const originalIds = (linkedCompetencies || []).map((c) => c.id);
+        const toAdd = competencyIds.filter((cid) => !originalIds.includes(cid));
+        const toRemove = originalIds.filter((cid) => !competencyIds.includes(cid));
+        await Promise.all([
+          ...toAdd.map((cid) => assessmentApi.linkCompetency(id, cid)),
+          ...toRemove.map((cid) => assessmentApi.unlinkCompetency(id, cid)),
+        ]);
+        queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.competencies(id) });
+        navigate(`/assessments/${id}/view`);
+      },
     });
   };
 
@@ -43,7 +58,7 @@ export default function EditAssessmentPage() {
     else navigate(`/assessments/${id}/view`);
   };
 
-  if (isLoading) {
+  if (isLoading || competenciesLoading) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>
         Loading assessment…

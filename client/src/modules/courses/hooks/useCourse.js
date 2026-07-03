@@ -6,6 +6,7 @@ export const COURSE_KEYS = {
   all: ["courses"],
   detail: (id) => ["courses", "detail", id],
   sessions: (courseId) => ["courses", "sessions", courseId],
+  competencies: (courseId) => ["courses", "competencies", courseId],
 };
 
 export function useCoursesQuery() {
@@ -63,6 +64,38 @@ export function useDeleteCourse() {
     onError: (err) => {
       toast.error(err.message || "Failed to delete course");
     },
+  });
+}
+
+/* ── Competencies (authored globally in Settings, tagged onto a course here) ── */
+
+export function useCourseCompetencies(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.competencies(courseId),
+    queryFn: () => courseApi.getCourseCompetencies(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useLinkCourseCompetency(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => courseApi.linkCompetency(courseId, competencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(courseId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to add competency"),
+  });
+}
+
+export function useUnlinkCourseCompetency(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => courseApi.unlinkCompetency(courseId, competencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(courseId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to remove competency"),
   });
 }
 

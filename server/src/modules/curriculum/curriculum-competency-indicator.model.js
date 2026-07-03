@@ -1,18 +1,20 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/competency-indicators.json");
+const FILE = path.join(__dirname, "../../../data/curriculum-competency-indicators.json");
 
-function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
+function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
 function genId() {
   try { return require("crypto").randomUUID(); }
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
-const CompetencyIndicatorModel = {
-  findByCompetencyId(competencyId) {
-    return read().filter((i) => i.competencyId === competencyId);
+// Indicators describe how THIS curriculum evaluates a competency it has adopted —
+// two curricula using the same global competency can define different indicators.
+const CurriculumCompetencyIndicatorModel = {
+  findByLink(curriculumId, competencyId) {
+    return read().filter((i) => i.curriculumId === curriculumId && i.competencyId === competencyId);
   },
 
   findById(id) {
@@ -45,6 +47,18 @@ const CompetencyIndicatorModel = {
     return true;
   },
 
+  deleteByLink(curriculumId, competencyId) {
+    const all      = read();
+    const filtered = all.filter((i) => !(i.curriculumId === curriculumId && i.competencyId === competencyId));
+    write(filtered);
+  },
+
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((i) => i.curriculumId !== curriculumId);
+    write(filtered);
+  },
+
   deleteByCompetencyId(competencyId) {
     const all      = read();
     const filtered = all.filter((i) => i.competencyId !== competencyId);
@@ -52,4 +66,4 @@ const CompetencyIndicatorModel = {
   },
 };
 
-module.exports = CompetencyIndicatorModel;
+module.exports = CurriculumCompetencyIndicatorModel;

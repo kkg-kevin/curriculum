@@ -6,12 +6,14 @@ import { useCreateAssessment } from "../hooks/useAssessment";
 import { assessmentSchema } from "../schemas/assessment.schema";
 import AssessmentForm from "../components/AssessmentForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { assessmentApi } from "../services/assessmentApi";
 
 const DEFAULT_VALUES = {
   name: "",
   description: "",
   type: "",
   instructions: "",
+  competencyIds: [],
 };
 
 export default function CreateAssessmentPage() {
@@ -27,9 +29,14 @@ export default function CreateAssessmentPage() {
 
   const { handleSubmit, formState: { isDirty } } = methods;
 
-  const onSubmit = (data) => {
+  const onSubmit = ({ competencyIds, ...data }) => {
     createAssessment(data, {
-      onSuccess: (assessment) => navigate(`/assessments/${assessment.id}/view`),
+      onSuccess: async (assessment) => {
+        if (competencyIds.length > 0) {
+          await Promise.all(competencyIds.map((cid) => assessmentApi.linkCompetency(assessment.id, cid)));
+        }
+        navigate(`/assessments/${assessment.id}/view`);
+      },
     });
   };
 

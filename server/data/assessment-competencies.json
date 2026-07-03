@@ -1,0 +1,32 @@
+[
+  {
+    "id": "6202b374-015f-4465-913f-85204244bc9d",
+    "assessmentId": "152b886c-5dea-42cf-b9d3-55642703b1f1",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "createdAt": "2026-07-03T13:50:53.517Z"
+  },
+  {
+    "id": "5eff28e4-460d-4013-a95d-c94af7a4240f",
+    "assessmentId": "152b886c-5dea-42cf-b9d3-55642703b1f1",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-03T13:50:53.571Z"
+  },
+  {
+    "id": "d96d918a-c08e-4e23-89d0-06b9c9c4a75a",
+    "assessmentId": "152b886c-5dea-42cf-b9d3-55642703b1f1",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-03T13:50:53.625Z"
+  },
+  {
+    "id": "739c5ba9-d403-44e4-944b-f365cce565ea",
+    "assessmentId": "152b886c-5dea-42cf-b9d3-55642703b1f1",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "createdAt": "2026-07-03T13:50:53.711Z"
+  },
+  {
+    "id": "68f0f7bc-ecef-4dbb-9f86-f557e620cb23",
+    "assessmentId": "152b886c-5dea-42cf-b9d3-55642703b1f1",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-03T13:50:53.797Z"
+  }
+]

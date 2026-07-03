@@ -19,18 +19,18 @@ const {
   changeStatus,
 } = require("./academic-years.controller");
 const {
+  getCurriculumCompetencies,
+  linkCompetency,
+  unlinkCompetency,
+  updateCompetencyLink,
+  getCompetencyIndicators,
+  createCompetencyIndicator,
+  updateCompetencyIndicator,
+  deleteCompetencyIndicator,
   getLearningAreas,
   createLearningArea,
   updateLearningArea,
   deleteLearningArea,
-  getCompetencies,
-  createCompetency,
-  updateCompetency,
-  deleteCompetency,
-  getIndicators,
-  createIndicator,
-  updateIndicator,
-  deleteIndicator,
   getLadder,
   updateLadder,
   getAgeCategories,
@@ -80,17 +80,17 @@ router.route("/:id/academic-years").get(getAcademicYears).post(createGroup);
 router.route("/:id/academic-years/:groupId/versions").post(createAYVersion);
 router.route("/:id/academic-years/:groupId/versions/:versionId/status").patch(changeStatus);
 
-// Competencies — learning areas
+// Competencies — this curriculum's adopted competencies (authored globally under /api/competencies)
+router.route("/:id/competencies/links").get(getCurriculumCompetencies).post(linkCompetency);
+router.route("/:id/competencies/links/:competencyId").put(updateCompetencyLink).delete(unlinkCompetency);
+
+// Competencies — indicators for how THIS curriculum evaluates an adopted competency
+router.route("/:id/competencies/links/:competencyId/indicators").get(getCompetencyIndicators).post(createCompetencyIndicator);
+router.route("/:id/competencies/links/:competencyId/indicators/:indicatorId").put(updateCompetencyIndicator).delete(deleteCompetencyIndicator);
+
+// Competencies — learning areas (curriculum-scoped groupings for adopted competencies)
 router.route("/:id/competencies/learning-areas").get(getLearningAreas).post(createLearningArea);
 router.route("/:id/competencies/learning-areas/:aId").put(updateLearningArea).delete(deleteLearningArea);
-
-// Competencies — competency items
-router.route("/:id/competencies/items").get(getCompetencies).post(createCompetency);
-router.route("/:id/competencies/items/:cId").put(updateCompetency).delete(deleteCompetency);
-
-// Competencies — competency indicators
-router.route("/:id/competencies/items/:cId/indicators").get(getIndicators).post(createIndicator);
-router.route("/:id/competencies/items/:cId/indicators/:iId").put(updateIndicator).delete(deleteIndicator);
 
 // Competencies — progression ladder
 router.route("/:id/competencies/ladder").get(getLadder).put(updateLadder);

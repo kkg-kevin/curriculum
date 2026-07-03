@@ -7,6 +7,7 @@ const {
   updateItemSchema,
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
+  linkCompetencySchema,
 } = require("./assessment.validation");
 
 const createAssessment = asyncHandler(async (req, res) => {
@@ -35,6 +36,22 @@ const updateAssessment = asyncHandler(async (req, res) => {
 const deleteAssessment = asyncHandler(async (req, res) => {
   const result = await AssessmentService.deleteAssessment(req.params.id);
   res.json({ success: true, ...result });
+});
+
+const getAssessmentCompetencies = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.getAssessmentCompetencies(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkCompetency = asyncHandler(async (req, res) => {
+  const { competencyId } = linkCompetencySchema.parse(req.body);
+  const data = await AssessmentService.linkCompetency(req.params.id, competencyId);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkCompetency = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.unlinkCompetency(req.params.id, req.params.competencyId);
+  res.json({ success: true, data });
 });
 
 const addItem = asyncHandler(async (req, res) => {
@@ -77,6 +94,9 @@ module.exports = {
   getAssessmentById,
   updateAssessment,
   deleteAssessment,
+  getAssessmentCompetencies,
+  linkCompetency,
+  unlinkCompetency,
   addItem,
   updateItem,
   deleteItem,

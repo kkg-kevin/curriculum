@@ -3,7 +3,34 @@ import api from "../../../services/api";
 const base = (curriculumId) => `/api/curricula/${curriculumId}/competencies`;
 
 export const competenciesApi = {
-  /* Learning Areas */
+  /* Curriculum ↔ Competency links — competencies are authored in Settings; a curriculum
+   * just adopts entries from that shared catalog. */
+  getCurriculumCompetencies: (curriculumId) =>
+    api.get(`${base(curriculumId)}/links`).then((r) => r.data.data),
+
+  linkCompetency: (curriculumId, competencyId) =>
+    api.post(`${base(curriculumId)}/links`, { competencyId }).then((r) => r.data.data),
+
+  unlinkCompetency: (curriculumId, competencyId) =>
+    api.delete(`${base(curriculumId)}/links/${competencyId}`).then((r) => r.data.data),
+
+  updateCompetencyLink: (curriculumId, competencyId, data) =>
+    api.put(`${base(curriculumId)}/links/${competencyId}`, data).then((r) => r.data.data),
+
+  /* Competency Indicators — how THIS curriculum evaluates an adopted competency */
+  getCompetencyIndicators: (curriculumId, competencyId) =>
+    api.get(`${base(curriculumId)}/links/${competencyId}/indicators`).then((r) => r.data.data),
+
+  createCompetencyIndicator: (curriculumId, competencyId, data) =>
+    api.post(`${base(curriculumId)}/links/${competencyId}/indicators`, data).then((r) => r.data.data),
+
+  updateCompetencyIndicator: (curriculumId, competencyId, indicatorId, data) =>
+    api.put(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`, data).then((r) => r.data.data),
+
+  deleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) =>
+    api.delete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`).then((r) => r.data),
+
+  /* Learning Areas — grouping for competencies as used within this curriculum */
   getLearningAreas: (curriculumId) =>
     api.get(`${base(curriculumId)}/learning-areas`).then((r) => r.data.data),
 
@@ -15,32 +42,6 @@ export const competenciesApi = {
 
   deleteLearningArea: (curriculumId, aId) =>
     api.delete(`${base(curriculumId)}/learning-areas/${aId}`).then((r) => r.data),
-
-  /* Competencies */
-  getCompetencies: (curriculumId) =>
-    api.get(`${base(curriculumId)}/items`).then((r) => r.data.data),
-
-  createCompetency: (curriculumId, data) =>
-    api.post(`${base(curriculumId)}/items`, data).then((r) => r.data.data),
-
-  updateCompetency: (curriculumId, cId, data) =>
-    api.put(`${base(curriculumId)}/items/${cId}`, data).then((r) => r.data.data),
-
-  deleteCompetency: (curriculumId, cId) =>
-    api.delete(`${base(curriculumId)}/items/${cId}`).then((r) => r.data),
-
-  /* Competency Indicators */
-  getIndicators: (curriculumId, cId) =>
-    api.get(`${base(curriculumId)}/items/${cId}/indicators`).then((r) => r.data.data),
-
-  createIndicator: (curriculumId, cId, data) =>
-    api.post(`${base(curriculumId)}/items/${cId}/indicators`, data).then((r) => r.data.data),
-
-  updateIndicator: (curriculumId, cId, iId, data) =>
-    api.put(`${base(curriculumId)}/items/${cId}/indicators/${iId}`, data).then((r) => r.data.data),
-
-  deleteIndicator: (curriculumId, cId, iId) =>
-    api.delete(`${base(curriculumId)}/items/${cId}/indicators/${iId}`).then((r) => r.data),
 
   /* Progression Ladder */
   getLadder: (curriculumId) =>

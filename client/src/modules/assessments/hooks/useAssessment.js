@@ -5,6 +5,7 @@ import { assessmentApi } from "../services/assessmentApi";
 export const ASSESSMENT_KEYS = {
   all: ["assessments"],
   detail: (id) => ["assessments", "detail", id],
+  competencies: (id) => ["assessments", "competencies", id],
 };
 
 export function useAssessmentsQuery() {
@@ -62,6 +63,38 @@ export function useDeleteAssessment() {
     onError: (err) => {
       toast.error(err.message || "Failed to delete assessment");
     },
+  });
+}
+
+/* ── Competencies (authored globally in Settings, tagged onto an assessment here) ── */
+
+export function useAssessmentCompetencies(assessmentId) {
+  return useQuery({
+    queryKey: ASSESSMENT_KEYS.competencies(assessmentId),
+    queryFn: () => assessmentApi.getAssessmentCompetencies(assessmentId),
+    enabled: !!assessmentId,
+  });
+}
+
+export function useLinkAssessmentCompetency(assessmentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => assessmentApi.linkCompetency(assessmentId, competencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.competencies(assessmentId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to add competency"),
+  });
+}
+
+export function useUnlinkAssessmentCompetency(assessmentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => assessmentApi.unlinkCompetency(assessmentId, competencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.competencies(assessmentId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to remove competency"),
   });
 }
 

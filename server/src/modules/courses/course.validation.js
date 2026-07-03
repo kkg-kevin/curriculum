@@ -52,10 +52,15 @@ const bulkCreateSessionsSchema = z.object({
   count: z.number().int().min(1, "At least 1 session").max(30, "Max 30 sessions at once"),
 });
 
+const linkCompetencySchema = z.object({
+  competencyId: z.string().min(1, "competencyId is required"),
+});
+
 module.exports = {
   createCourseSchema,
   updateCourseSchema,
   createSessionSchema,
   updateSessionSchema,
   bulkCreateSessionsSchema,
+  linkCompetencySchema,
 };

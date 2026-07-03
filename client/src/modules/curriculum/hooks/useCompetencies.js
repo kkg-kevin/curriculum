@@ -5,9 +5,9 @@ import { competenciesApi } from "../services/competenciesApi";
 const STALE = 5 * 60 * 1000; // 5 minutes — data is fresh across tab switches
 
 const KEYS = {
+  comps:            (cid) => ["curriculum-competencies", cid],
+  indicators:       (cid, compId) => ["curriculum-competency-indicators", cid, compId],
   areas:            (cid) => ["learning-areas", cid],
-  comps:            (cid) => ["competencies", cid],
-  indicators:       (cid, compId) => ["competency-indicators", cid, compId],
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
   levels:           (cid) => ["progress-levels", cid],
@@ -18,7 +18,102 @@ const KEYS = {
   compWeights:      (cid) => ["competency-weights", cid],
 };
 
-/* ── Learning Areas ─────────────────────────────────────────────────────── */
+/* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
+
+export function useCompetencies(curriculumId) {
+  return useQuery({
+    queryKey:  KEYS.comps(curriculumId),
+    queryFn:   () => competenciesApi.getCurriculumCompetencies(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
+  });
+}
+
+export function useLinkCompetency(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => competenciesApi.linkCompetency(curriculumId, competencyId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
+      toast.success("Competency added to this curriculum");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to add competency"),
+  });
+}
+
+export function useUnlinkCompetency(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (competencyId) => competenciesApi.unlinkCompetency(curriculumId, competencyId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
+      qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
+      toast.success("Competency removed from this curriculum");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to remove competency"),
+  });
+}
+
+// Threshold/weight are how THIS curriculum evaluates an adopted competency.
+export function useUpdateCompetencyLink(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ competencyId, data }) => competenciesApi.updateCompetencyLink(curriculumId, competencyId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update competency"),
+  });
+}
+
+/* ── Competency Indicators (how THIS curriculum evaluates an adopted competency) ── */
+
+export function useCompetencyIndicators(curriculumId, competencyId, enabled = true) {
+  return useQuery({
+    queryKey:  KEYS.indicators(curriculumId, competencyId),
+    queryFn:   () => competenciesApi.getCompetencyIndicators(curriculumId, competencyId),
+    enabled:   !!curriculumId && !!competencyId && enabled,
+    staleTime: STALE,
+  });
+}
+
+export function useCreateCompetencyIndicator(curriculumId, competencyId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => competenciesApi.createCompetencyIndicator(curriculumId, competencyId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
+      toast.success("Indicator added");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to add indicator"),
+  });
+}
+
+export function useUpdateCompetencyIndicator(curriculumId, competencyId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => competenciesApi.updateCompetencyIndicator(curriculumId, competencyId, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
+      toast.success("Indicator updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update indicator"),
+  });
+}
+
+export function useDeleteCompetencyIndicator(curriculumId, competencyId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => competenciesApi.deleteCompetencyIndicator(curriculumId, competencyId, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
+      toast.success("Indicator deleted");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete indicator"),
+  });
+}
+
+/* ── Learning Areas (grouping for competencies as used within this curriculum) ── */
 
 export function useLearningAreas(curriculumId) {
   return useQuery({
@@ -63,101 +158,6 @@ export function useDeleteLearningArea(curriculumId) {
       toast.success("Learning area deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete learning area"),
-  });
-}
-
-/* ── Competencies ───────────────────────────────────────────────────────── */
-
-export function useCompetencies(curriculumId) {
-  return useQuery({
-    queryKey:  KEYS.comps(curriculumId),
-    queryFn:   () => competenciesApi.getCompetencies(curriculumId),
-    enabled:   !!curriculumId,
-    staleTime: STALE,
-  });
-}
-
-export function useCreateCompetency(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createCompetency(curriculumId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-      toast.success("Competency created");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create competency"),
-  });
-}
-
-export function useUpdateCompetency(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateCompetency(curriculumId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-      toast.success("Competency updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update competency"),
-  });
-}
-
-export function useDeleteCompetency(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteCompetency(curriculumId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-      qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
-      toast.success("Competency deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete competency"),
-  });
-}
-
-/* ── Competency Indicators ──────────────────────────────────────────────── */
-
-export function useIndicators(curriculumId, competencyId, enabled = true) {
-  return useQuery({
-    queryKey:  KEYS.indicators(curriculumId, competencyId),
-    queryFn:   () => competenciesApi.getIndicators(curriculumId, competencyId),
-    enabled:   !!curriculumId && !!competencyId && enabled,
-    staleTime: STALE,
-  });
-}
-
-export function useCreateIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createIndicator(curriculumId, competencyId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator added");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to add indicator"),
-  });
-}
-
-export function useUpdateIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateIndicator(curriculumId, competencyId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update indicator"),
-  });
-}
-
-export function useDeleteIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteIndicator(curriculumId, competencyId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete indicator"),
   });
 }
 

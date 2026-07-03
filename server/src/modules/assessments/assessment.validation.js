@@ -41,6 +41,10 @@ const rubricCriterionSchema = z.object({
 const createRubricCriterionSchema = rubricCriterionSchema;
 const updateRubricCriterionSchema = rubricCriterionSchema.partial();
 
+const linkCompetencySchema = z.object({
+  competencyId: z.string().min(1, "competencyId is required"),
+});
+
 module.exports = {
   createAssessmentSchema,
   updateAssessmentSchema,
@@ -48,6 +52,7 @@ module.exports = {
   updateItemSchema,
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
+  linkCompetencySchema,
   ASSESSMENT_TYPES,
   QUESTION_TYPES,
 };

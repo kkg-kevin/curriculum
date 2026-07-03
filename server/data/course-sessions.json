@@ -573,5 +573,39 @@
         "wrapActivity": ""
       }
     ]
+  },
+  {
+    "courseId": "86b4717d-7ec1-49b5-9bdc-456fd1137804",
+    "title": "",
+    "order": 1,
+    "outcomes": [],
+    "introduction": "",
+    "iceBreaker": "",
+    "mainConcepts": [
+      {
+        "id": "9aadd1cc-7f4a-4120-bff5-d684b6b2819f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "09c68ba0-8215-493d-8e40-461199ac2449",
+        "title": "",
+        "classActivity": "",
+        "wrapActivity": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "554cbec1-31a3-4fe0-943d-66ad11e15820",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "a46f1139-3b18-44cb-8c6e-d0e7ae9fe18e",
+    "createdAt": "2026-07-03T13:30:50.403Z",
+    "updatedAt": "2026-07-03T13:30:50.403Z"
   }
 ]

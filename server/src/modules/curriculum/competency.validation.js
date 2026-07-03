@@ -1,23 +1,14 @@
 const { z } = require("zod");
 
-const createLearningAreaSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(100),
-  description: z.string().max(500).optional().default(""),
-  color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
-  courses:     z.array(z.string().min(1).max(150)).optional().default([]),
+const linkCompetencySchema = z.object({
+  competencyId: z.string().min(1, "competencyId is required"),
 });
 
-const updateLearningAreaSchema = createLearningAreaSchema.partial();
-
-const createCompetencySchema = z.object({
-  name:             z.string().min(1, "Name is required").max(150),
-  description:      z.string().max(500).optional().default(""),
-  learningAreaId:   z.string().nullable().optional().default(null),
-  minimumThreshold: z.number().min(0).max(100).optional().default(60),
-  weight:           z.number().min(0).max(100).optional().default(0),
+// Threshold/weight are how THIS curriculum evaluates an adopted competency.
+const updateCompetencyLinkSchema = z.object({
+  minimumThreshold: z.number().min(0).max(100).optional(),
+  weight:           z.number().min(0).max(100).optional(),
 });
-
-const updateCompetencySchema = createCompetencySchema.partial();
 
 const createIndicatorSchema = z.object({
   name:        z.string().min(1, "Name is required").max(150),
@@ -26,6 +17,15 @@ const createIndicatorSchema = z.object({
 });
 
 const updateIndicatorSchema = createIndicatorSchema.partial();
+
+const createLearningAreaSchema = z.object({
+  name:        z.string().min(1, "Name is required").max(100),
+  description: z.string().max(500).optional().default(""),
+  color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
+  courses:     z.array(z.string().min(1).max(150)).optional().default([]),
+});
+
+const updateLearningAreaSchema = createLearningAreaSchema.partial();
 
 const assignmentSchema = z.object({
   competencyId: z.string(),
@@ -149,12 +149,12 @@ const calculateScoreSchema = z.object({
 });
 
 module.exports = {
-  createLearningAreaSchema,
-  updateLearningAreaSchema,
-  createCompetencySchema,
-  updateCompetencySchema,
+  linkCompetencySchema,
+  updateCompetencyLinkSchema,
   createIndicatorSchema,
   updateIndicatorSchema,
+  createLearningAreaSchema,
+  updateLearningAreaSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,
