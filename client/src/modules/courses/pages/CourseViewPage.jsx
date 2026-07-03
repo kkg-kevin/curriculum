@@ -13,21 +13,23 @@ import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { SECTIONS } from "../sectionConfig";
+import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
 
 const SESSION_DEFAULT_VALUES = {
   title: "",
   outcomes: [],
   introduction: "",
   iceBreaker: "",
-  mainConceptsIntro: "",
-  mainConceptsBodyTitle: "Body",
-  mainConceptsBody: "",
-  classActivity: "",
-  wrapActivity: "",
-  notes: "",
+  mainConcepts: [],
+  activities: [],
+  notes: [],
   resources: [],
 };
+
+// A blank session always has at least one editable block per repeatable section, even if none was saved yet.
+const defaultMainConcepts = () => [{ id: crypto.randomUUID(), title: "Introduction", content: "" }];
+const defaultActivities = () => [{ id: crypto.randomUUID(), title: "", classActivity: "", wrapActivity: "" }];
+const defaultNotes = () => [{ id: crypto.randomUUID(), title: "", content: "" }];
 
 function SectionIcon() {
   return (
@@ -81,12 +83,9 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
         outcomes: current.outcomes || [],
         introduction: current.introduction || "",
         iceBreaker: current.iceBreaker || "",
-        mainConceptsIntro: current.mainConceptsIntro || "",
-        mainConceptsBodyTitle: current.mainConceptsBodyTitle || "Body",
-        mainConceptsBody: current.mainConceptsBody || "",
-        classActivity: current.classActivity || "",
-        wrapActivity: current.wrapActivity || "",
-        notes: current.notes || "",
+        mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
+        activities: current.activities?.length ? current.activities : defaultActivities(),
+        notes: current.notes?.length ? current.notes : defaultNotes(),
         resources: current.resources || [],
       });
     }
@@ -185,7 +184,7 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
       >
         <ChevronDown open={expanded} />
         <span style={{ flex: 1, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-          Session {index + 1}: {session.title}
+          {sessionLabel(session, index)}
         </span>
         <span style={{ fontSize: "12px", color: "#38aae1", fontWeight: "600" }}>{SECTIONS.length} Sections</span>
         <button
@@ -212,7 +211,7 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
           {SECTIONS.map((section) => (
             <Link
               key={section.key}
-              to={`/courses/${courseId}/sessions/${session.id}/sections/${section.key}`}
+              to={sectionLinkPath(courseId, session, section)}
               style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px 10px 40px", borderTop: "1px solid #F3F4F6", textDecoration: "none", color: "#25476a" }}
             >
               <SectionIcon />
@@ -252,7 +251,7 @@ export default function CourseViewPage() {
 
   const handleAddSession = () => {
     createSession(
-      { title: `Session ${sessions.length + 1}` },
+      { title: "" },
       { onSuccess: (newSession) => setModalSessionId(newSession.id) }
     );
   };

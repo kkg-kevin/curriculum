@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/uploadApi";
 import { Field } from "./formFields";
 
+const AUDIENCE_LABELS = { teacher: "Teacher only", student: "Student only", both: "Teacher & Student" };
+
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -23,7 +25,7 @@ function ResourcesUploader({ value, onChange }) {
     setUploading(true);
     try {
       const { url, filename, mimeType, size } = await uploadApi.uploadDocument(file);
-      onChange([...resources, { id: crypto.randomUUID(), url, filename, mimeType, size }]);
+      onChange([...resources, { id: crypto.randomUUID(), url, filename, mimeType, size, audience: "both" }]);
     } catch (err) {
       toast.error(err.message || "Failed to upload document");
     } finally {
@@ -33,6 +35,10 @@ function ResourcesUploader({ value, onChange }) {
 
   const removeResource = (id) => {
     onChange(resources.filter((r) => r.id !== id));
+  };
+
+  const setAudience = (id, audience) => {
+    onChange(resources.map((r) => (r.id === id ? { ...r, audience } : r)));
   };
 
   return (
@@ -66,7 +72,7 @@ function ResourcesUploader({ value, onChange }) {
               key={r.id}
               style={{
                 display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px",
-                backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px",
+                backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px", flexWrap: "wrap",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#38aae1", flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
@@ -74,11 +80,25 @@ function ResourcesUploader({ value, onChange }) {
                 href={r.url}
                 target="_blank"
                 rel="noreferrer"
-                style={{ flex: 1, fontSize: "13px", color: "#25476a", fontWeight: "600", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                style={{ flex: 1, minWidth: "120px", fontSize: "13px", color: "#25476a", fontWeight: "600", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               >
                 {r.filename}
               </a>
               <span style={{ fontSize: "11px", color: "#9CA3AF", flexShrink: 0 }}>{formatSize(r.size)}</span>
+              <select
+                value={r.audience || "both"}
+                onChange={(e) => setAudience(r.id, e.target.value)}
+                title="Who is this resource for?"
+                style={{
+                  padding: "4px 8px", borderRadius: "7px", border: "1.5px solid #E5E7EB",
+                  fontSize: "11px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+                  backgroundColor: "#fff", color: "#25476a", outline: "none", cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={() => removeResource(r.id)}
