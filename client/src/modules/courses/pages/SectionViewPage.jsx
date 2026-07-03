@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import RichContent from "../components/RichContent";
-import { SECTIONS, SECTION_LABELS } from "../sectionConfig";
+import { SECTIONS, SECTION_LABELS, sessionLabel } from "../sectionConfig";
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return "";
@@ -71,9 +71,9 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey 
                   color: isCurrentSession ? "#25476a" : "#374151",
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}
-                title={`Session ${idx + 1}: ${session.title}`}
+                title={sessionLabel(session, idx)}
               >
-                Session {idx + 1}: {session.title}
+                {sessionLabel(session, idx)}
               </span>
               <span style={{ fontSize: "10.5px", color: "#9CA3AF", flexShrink: 0 }}>{SECTIONS.length} Sections</span>
             </div>
@@ -247,7 +247,7 @@ export default function SectionViewPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", flexWrap: "wrap" }}>
               <Link to={`/courses/${id}/view`} style={{ color: "#38aae1", textDecoration: "none", fontWeight: "600" }}>{course.name}</Link>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
-              <span style={{ color: "#6B7280" }}>Session {sessionIndex + 1}: {session.title}</span>
+              <span style={{ color: "#6B7280" }}>{sessionLabel(session, sessionIndex)}</span>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
               <span style={{ color: "#111827", fontWeight: "600" }}>{SECTION_LABELS[sectionKey]}</span>
             </div>

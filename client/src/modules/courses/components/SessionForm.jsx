@@ -9,7 +9,7 @@ export default function SessionForm() {
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={cardStyle}>
         <SectionHeader title="Session Details" />
-        <Input name="title" label="Session Title" placeholder="e.g. Introduction to Educational Robotics" required />
+        <Input name="title" label="Session Title" placeholder="e.g. Introduction to Educational Robotics" />
       </div>
 
       <div style={cardStyle}>

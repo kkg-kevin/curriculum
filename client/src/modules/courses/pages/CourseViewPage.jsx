@@ -13,7 +13,7 @@ import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { SECTIONS } from "../sectionConfig";
+import { SECTIONS, sessionLabel } from "../sectionConfig";
 
 const SESSION_DEFAULT_VALUES = {
   title: "",
@@ -185,7 +185,7 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
       >
         <ChevronDown open={expanded} />
         <span style={{ flex: 1, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-          Session {index + 1}: {session.title}
+          {sessionLabel(session, index)}
         </span>
         <span style={{ fontSize: "12px", color: "#38aae1", fontWeight: "600" }}>{SECTIONS.length} Sections</span>
         <button
@@ -252,7 +252,7 @@ export default function CourseViewPage() {
 
   const handleAddSession = () => {
     createSession(
-      { title: `Session ${sessions.length + 1}` },
+      { title: "" },
       { onSuccess: (newSession) => setModalSessionId(newSession.id) }
     );
   };

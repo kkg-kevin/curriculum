@@ -77,7 +77,7 @@ const CourseService = {
     const startOrder = SessionModel.findByCourseId(courseId).length + 1;
     const sessionsData = Array.from({ length: count }, (_, i) => ({
       courseId,
-      title: `Session ${startOrder + i}`,
+      title: "",
       order: startOrder + i,
       outcomes: [],
       introduction: "",

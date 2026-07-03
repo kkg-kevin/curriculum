@@ -9,7 +9,7 @@ const resourceSchema = z.object({
 });
 
 export const sessionSchema = z.object({
-  title:                 z.string().min(1, "Session title is required"),
+  title:                 z.string().optional().default(""),
   outcomes:              z.array(z.string().min(1)).optional().default([]),
   introduction:          z.string().optional().default(""),
   iceBreaker:            z.string().optional().default(""),

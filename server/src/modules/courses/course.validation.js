@@ -17,7 +17,7 @@ const resourceSchema = z.object({
 });
 
 const createSessionSchema = z.object({
-  title:                 z.string().min(1, "Session title is required"),
+  title:                 z.string().optional().default(""),
   order:                 z.number().int().min(1).optional(),
   outcomes:              z.array(z.string().min(1)).optional().default([]),
   introduction:          z.string().optional().default(""),
