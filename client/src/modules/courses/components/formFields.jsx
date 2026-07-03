@@ -106,7 +106,7 @@ export function ListField({ name, label, hint, placeholder }) {
       </div>
 
       {items.length > 0 && (
-        <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+        <ol style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px", maxHeight: "220px", overflowY: "auto" }}>
           {items.map((item, idx) => (
             <li
               key={idx}
@@ -115,7 +115,7 @@ export function ListField({ name, label, hint, placeholder }) {
                 backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px",
               }}
             >
-              <span style={{ color: "#38aae1", fontSize: "13px", lineHeight: "1.5", flexShrink: 0 }}>●</span>
+              <span style={{ color: "#38aae1", fontSize: "13px", fontWeight: "700", lineHeight: "1.5", flexShrink: 0, minWidth: "16px" }}>{idx + 1}.</span>
               <span style={{ flex: 1, fontSize: "13px", color: "#374151", lineHeight: "1.5" }}>{item}</span>
               <button
                 type="button"
@@ -130,7 +130,7 @@ export function ListField({ name, label, hint, placeholder }) {
               </button>
             </li>
           ))}
-        </ul>
+        </ol>
       )}
     </Field>
   );

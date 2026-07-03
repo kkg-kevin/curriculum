@@ -109,20 +109,58 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey 
 
 /* ── Section content by type ──────────────────────────────────────────── */
 
+function SubBlock({ title, html, last }) {
+  return (
+    <div style={{ marginBottom: last ? 0 : "28px" }}>
+      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        {title}
+      </h3>
+      <RichContent html={html} emptyText="Nothing added yet" />
+    </div>
+  );
+}
+
 function SectionBody({ sectionKey, session }) {
   if (sectionKey === "outcomes") {
     const outcomes = session.outcomes || [];
     return outcomes.length > 0 ? (
-      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
         {outcomes.map((outcome, idx) => (
           <li key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-            <span style={{ color: "#feb139", fontSize: "14px", lineHeight: "1.6", flexShrink: 0 }}>●</span>
+            <span style={{ color: "#feb139", fontSize: "14px", fontWeight: "700", lineHeight: "1.6", flexShrink: 0 }}>{idx + 1}.</span>
             <span style={{ fontSize: "15px", color: "#374151", lineHeight: "1.6" }}>{outcome}</span>
           </li>
         ))}
-      </ul>
+      </ol>
     ) : (
       <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No outcomes added</p>
+    );
+  }
+
+  if (sectionKey === "introduction") {
+    return (
+      <>
+        <SubBlock title="Introduction" html={session.introduction} />
+        <SubBlock title="Ice Breaker" html={session.iceBreaker} last />
+      </>
+    );
+  }
+
+  if (sectionKey === "mainConcepts") {
+    return (
+      <>
+        <SubBlock title="Introduction" html={session.mainConceptsIntro} />
+        <SubBlock title={session.mainConceptsBodyTitle || "Body"} html={session.mainConceptsBody} last />
+      </>
+    );
+  }
+
+  if (sectionKey === "activities") {
+    return (
+      <>
+        <SubBlock title="Class Activity" html={session.classActivity} />
+        <SubBlock title="Wrap Activity" html={session.wrapActivity} last />
+      </>
     );
   }
 

@@ -60,7 +60,7 @@ function ResourcesUploader({ value, onChange }) {
       </button>
 
       {resources.length > 0 && (
-        <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+        <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px", maxHeight: "220px", overflowY: "auto" }}>
           {resources.map((r) => (
             <li
               key={r.id}

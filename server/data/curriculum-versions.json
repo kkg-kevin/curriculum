@@ -4158,5 +4158,93 @@
     ],
     "createdAt": "2026-06-29T12:12:16.271Z",
     "updatedAt": "2026-06-29T12:12:18.864Z"
+  },
+  {
+    "id": "186baef6-3ae6-4149-8e7c-ce8908d55f0d",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "academicYearId": "08bd4695-dcef-4c72-b853-1820f29ece53",
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782379961399-960jdd6g2",
+                "name": "maths",
+                "code": ""
+              },
+              {
+                "id": "1783063564625-i9x8g1z6v",
+                "name": "vygy",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782379963962-19m0hh346",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782379967923-yndsbmo62",
+                "name": "maths",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "1782379978971-xkb919rr1",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "1782379981054-oofagsecm",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "1782379983561-9swicejun",
+                "name": "science",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-03T07:26:06.279Z",
+    "updatedAt": "2026-07-03T07:26:06.279Z"
   }
 ]

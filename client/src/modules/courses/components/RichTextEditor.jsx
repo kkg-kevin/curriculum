@@ -68,7 +68,7 @@ export function Editor({ value, onChange }) {
   return (
     <div style={{ border: "1.5px solid #E5E7EB", borderRadius: "10px", overflow: "hidden", backgroundColor: "#F9FAFB" }}>
       <style>{`
-        .rte-content { min-height: 120px; padding: 10px 12px; outline: none; font-size: 14px; color: #374151; line-height: 1.65; }
+        .rte-content { min-height: 160px; max-height: 280px; overflow-y: auto; padding: 10px 12px; outline: none; font-size: 14px; color: #374151; line-height: 1.65; }
         .rte-content p { margin: 0 0 10px; }
         .rte-content p:last-child { margin-bottom: 0; }
         .rte-content ul, .rte-content ol { margin: 0 0 10px; padding-left: 22px; }
