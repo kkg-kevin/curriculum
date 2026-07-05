@@ -93,9 +93,9 @@ function Textarea({ name, placeholder, label, hint }) {
   );
 }
 
-const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment" };
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
 
-export default function AssessmentForm() {
+export default function AssessmentForm({ afterType }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -116,6 +116,7 @@ export default function AssessmentForm() {
                 ))}
               </select>
             </Field>
+            {afterType}
           </div>
         </div>
       </div>

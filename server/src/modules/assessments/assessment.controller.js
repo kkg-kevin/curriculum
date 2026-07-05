@@ -7,6 +7,8 @@ const {
   updateItemSchema,
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
+  createIndicatorSchema,
+  updateIndicatorSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
 } = require("./assessment.validation");
@@ -105,6 +107,23 @@ const deleteRubricCriterion = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+const addIndicator = asyncHandler(async (req, res) => {
+  const data = createIndicatorSchema.parse(req.body);
+  const indicator = await AssessmentService.addIndicator(req.params.id, data);
+  res.status(201).json({ success: true, data: indicator });
+});
+
+const updateIndicator = asyncHandler(async (req, res) => {
+  const data = updateIndicatorSchema.parse(req.body);
+  const indicator = await AssessmentService.updateIndicator(req.params.id, req.params.indicatorId, data);
+  res.json({ success: true, data: indicator });
+});
+
+const deleteIndicator = asyncHandler(async (req, res) => {
+  const result = await AssessmentService.deleteIndicator(req.params.id, req.params.indicatorId);
+  res.json({ success: true, ...result });
+});
+
 module.exports = {
   createAssessment,
   getAllAssessments,
@@ -123,4 +142,7 @@ module.exports = {
   addRubricCriterion,
   updateRubricCriterion,
   deleteRubricCriterion,
+  addIndicator,
+  updateIndicator,
+  deleteIndicator,
 };

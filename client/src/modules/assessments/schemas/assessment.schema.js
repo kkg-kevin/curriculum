@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment"];
+export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation"];
 export const QUESTION_BASED_TYPES = ["quiz", "exam"];
 export const TASK_BASED_TYPES = ["assignment", "project"];
+export const OBSERVATION_BASED_TYPES = ["observation"];
 export const QUESTION_TYPES = ["mcq", "trueFalse", "shortAnswer"];
+export const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
 
 export const assessmentSchema = z.object({
   name:         z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
@@ -32,4 +34,9 @@ export const rubricCriterionSchema = z.object({
   criterion:   z.string().min(1, "Criterion name is required").max(200, "Max 200 characters"),
   description: z.string().max(5000, "Max 5000 characters").optional().default(""),
   points:      z.coerce.number().min(0, "Points must be 0 or more"),
+});
+
+export const indicatorSchema = z.object({
+  text:        z.string().min(1, "Indicator text is required").max(300, "Max 300 characters"),
+  ratingScale: z.array(z.string().min(1, "Rating label can't be empty")).min(2, "Need at least 2 rating levels").optional().default(DEFAULT_RATING_SCALE),
 });

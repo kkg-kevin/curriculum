@@ -1,7 +1,8 @@
 const { z } = require("zod");
 
-const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment"];
+const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation"];
 const QUESTION_TYPES = ["mcq", "trueFalse", "shortAnswer"];
+const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
 
 const createAssessmentSchema = z.object({
   name:         z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
@@ -41,6 +42,19 @@ const rubricCriterionSchema = z.object({
 const createRubricCriterionSchema = rubricCriterionSchema;
 const updateRubricCriterionSchema = rubricCriterionSchema.partial();
 
+// Teacher Observation content — a checklist of observable indicators, each rated
+// against a scale, rather than scored with points like items/rubric criteria.
+const indicatorSchema = z.object({
+  text:        z.string().min(1, "Indicator text is required").max(300, "Max 300 characters"),
+  ratingScale: z.array(z.string().min(1)).min(2, "Need at least 2 rating levels").optional().default(DEFAULT_RATING_SCALE),
+});
+
+const createIndicatorSchema = indicatorSchema;
+const updateIndicatorSchema = z.object({
+  text:        z.string().min(1).max(300).optional(),
+  ratingScale: z.array(z.string().min(1)).min(2).optional(),
+});
+
 const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
 });
@@ -56,8 +70,11 @@ module.exports = {
   updateItemSchema,
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
+  createIndicatorSchema,
+  updateIndicatorSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
   ASSESSMENT_TYPES,
   QUESTION_TYPES,
+  DEFAULT_RATING_SCALE,
 };

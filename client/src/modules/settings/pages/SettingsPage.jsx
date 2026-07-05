@@ -5,6 +5,8 @@ import {
 import {
   useLearningAreas, useCreateLearningArea, useUpdateLearningArea, useDeleteLearningArea,
 } from "../hooks/useLearningAreas";
+import { useTemplates, useDeleteTemplate } from "../../assessments/hooks/useTemplates";
+import TemplateModal from "../../assessments/components/TemplateModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const PALETTE = [
@@ -698,11 +700,168 @@ function LearningAreasPanel() {
   );
 }
 
+/* ── Assessment Templates ──────────────────────────────────────────────── */
+
+const TEMPLATE_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
+const TEMPLATE_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
+
+function templateContentSummary(template) {
+  if (template.type === "quiz" || template.type === "exam") {
+    const n = template.items?.length || 0;
+    return `${n} question${n !== 1 ? "s" : ""}`;
+  }
+  if (template.type === "assignment" || template.type === "project") {
+    const n = template.rubric?.length || 0;
+    return `${n} criteri${n !== 1 ? "a" : "on"}`;
+  }
+  const n = template.indicators?.length || 0;
+  return `${n} indicator${n !== 1 ? "s" : ""}`;
+}
+
+function TemplateCard({ template, onEdit, onDelete }) {
+  const color = TEMPLATE_TYPE_COLORS[template.type] || "#25476a";
+  const hasDetails = !!template.description || !!template.instructions;
+  const [expanded, setExpanded] = useState(false);
+  const isOpen = hasDetails && expanded;
+
+  return (
+    <div className="stg-item">
+      <div
+        className="stg-item-top"
+        style={{ cursor: hasDetails ? "pointer" : "default" }}
+        onClick={() => hasDetails && setExpanded((v) => !v)}
+      >
+        <div className="stg-item-dot" style={{ backgroundColor: color }} />
+        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="stg-item-name" style={{ flex: "none", maxWidth: "60%" }}>{template.name}</span>
+          <span style={{ fontSize: "10.5px", fontWeight: "700", color, backgroundColor: `${color}12`, border: `1px solid ${color}35`, borderRadius: "20px", padding: "1px 8px", whiteSpace: "nowrap" }}>
+            {TEMPLATE_TYPE_LABELS[template.type] || template.type}
+          </span>
+          <span style={{ fontSize: "11.5px", color: "#9CA3AF", whiteSpace: "nowrap" }}>{templateContentSummary(template)}</span>
+        </div>
+        {hasDetails && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0, transition: "transform 0.15s", transform: isOpen ? "rotate(180deg)" : "none" }}>
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button type="button" className="stg-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      {isOpen && (
+        <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+          {template.description && <div className="stg-item-sub">{template.description}</div>}
+          {template.instructions && <div className="stg-item-sub" style={{ fontStyle: "italic" }}>"{template.instructions}"</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TemplatesPanel() {
+  const { data: templates = [], isLoading } = useTemplates();
+  const { mutate: deleteTemplate } = useDeleteTemplate();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredTemplates = query ? templates.filter((t) => t.name.toLowerCase().includes(query)) : templates;
+
+  if (isLoading) return <div className="stg-spinner" />;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", gap: "12px", flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Assessment Templates</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            {templates.length} template{templates.length !== 1 ? "s" : ""} defined — applying one copies its content into a new assessment
+          </p>
+        </div>
+        <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
+          + New Template
+        </button>
+      </div>
+
+      {templates.length === 0 ? (
+        <div className="stg-empty">
+          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧩</div>
+          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No templates yet</p>
+          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "380px", marginInline: "auto", lineHeight: "1.6" }}>
+            Build reusable starting points for Quizzes, Assignments, Projects, and Teacher Observations.
+          </p>
+          <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
+            + New Template
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${templates.length} template${templates.length !== 1 ? "s" : ""}…`}
+            />
+          </div>
+
+          {filteredTemplates.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-list">
+              {filteredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onEdit={() => { setEditTarget(template); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(template)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {modalOpen && <TemplateModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Template"
+        message={`"${deleteTarget?.name}" will be permanently deleted. Assessments already created from it are unaffected. This cannot be undone.`}
+        confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => { deleteTemplate(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </div>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 const TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "learning-areas", label: "Learning Areas" },
+  { key: "templates", label: "Assessment Templates" },
 ];
 
 export default function SettingsPage() {
@@ -741,6 +900,7 @@ export default function SettingsPage() {
       <div className="stg-card">
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
+        {activeTab === "templates" && <TemplatesPanel />}
       </div>
     </div>
   );

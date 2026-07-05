@@ -185,3 +185,24 @@ export function useDeleteRubricCriterion() {
     { successMessage: "Criterion deleted", errorMessage: "Failed to delete criterion" }
   );
 }
+
+export function useAddIndicator() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, data }) => assessmentApi.addIndicator(assessmentId, data),
+    { successMessage: "Indicator added", errorMessage: "Failed to add indicator" }
+  );
+}
+
+export function useUpdateIndicator() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, indicatorId, data }) => assessmentApi.updateIndicator(assessmentId, indicatorId, data),
+    { successMessage: "Indicator updated", errorMessage: "Failed to update indicator" }
+  );
+}
+
+export function useDeleteIndicator() {
+  return useAssessmentDetailMutation(
+    ({ assessmentId, indicatorId }) => assessmentApi.removeIndicator(assessmentId, indicatorId),
+    { successMessage: "Indicator deleted", errorMessage: "Failed to delete indicator" }
+  );
+}
