@@ -2,6 +2,7 @@ const CurriculumModel        = require("./curriculum.model");
 const CurriculumCompetencyLinkModel = require("./curriculum-competency-link.model");
 const CurriculumCompetencyIndicatorModel = require("./curriculum-competency-indicator.model");
 const LearningAreaModel      = require("./learning-area.model");
+const LearningAreaCatalogModel = require("../learning-areas/learning-area.model");
 const CompetencyModel        = require("../competencies/competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
 const AgeCategoryModel       = require("./age-category.model");
@@ -157,6 +158,24 @@ const CompetencyService = {
       throw err;
     }
     LearningAreaModel.delete(id);
+  },
+
+  // Clones a catalog entry (authored in Settings) into a new, independent record
+  // owned by this curriculum — not a link. Once imported, editing this curriculum's
+  // copy never touches the Settings default, and vice versa.
+  importLearningArea(curriculumId, learningAreaId) {
+    const source = LearningAreaCatalogModel.findById(learningAreaId);
+    if (!source) {
+      const err = new Error("Learning area not found in catalog");
+      err.statusCode = 404;
+      throw err;
+    }
+    return this.createLearningArea(curriculumId, {
+      name:        source.name,
+      description: source.description,
+      color:       source.color,
+      courses:     source.courses,
+    });
   },
 
   /* ── Progression Ladder ─────────────────────────────────────────────── */

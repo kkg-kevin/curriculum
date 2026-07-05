@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAssessmentQuery, useUpdateAssessment, useAssessmentCompetencies, ASSESSMENT_KEYS } from "../hooks/useAssessment";
+import { useAssessmentQuery, useUpdateAssessment, useAssessmentCompetencies, useAssessmentLearningAreas, ASSESSMENT_KEYS } from "../hooks/useAssessment";
 import { assessmentSchema } from "../schemas/assessment.schema";
 import AssessmentForm from "../components/AssessmentForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -15,6 +15,7 @@ export default function EditAssessmentPage() {
   const queryClient = useQueryClient();
   const { data: assessment, isLoading, isError } = useAssessmentQuery(id);
   const { data: linkedCompetencies, isLoading: competenciesLoading } = useAssessmentCompetencies(id);
+  const { data: linkedLearningAreas, isLoading: learningAreasLoading } = useAssessmentLearningAreas(id);
   const { mutate: updateAssessment, isPending } = useUpdateAssessment();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -26,28 +27,35 @@ export default function EditAssessmentPage() {
   const { handleSubmit, reset, formState: { isDirty } } = methods;
 
   useEffect(() => {
-    if (assessment && linkedCompetencies) {
+    if (assessment && linkedCompetencies && linkedLearningAreas) {
       reset({
         name: assessment.name || "",
         description: assessment.description || "",
         type: assessment.type || "",
         instructions: assessment.instructions || "",
         competencyIds: linkedCompetencies.map((c) => c.id),
+        learningAreaIds: linkedLearningAreas.map((a) => a.id),
       });
     }
-  }, [assessment, linkedCompetencies, reset]);
+  }, [assessment, linkedCompetencies, linkedLearningAreas, reset]);
 
-  const onSubmit = ({ competencyIds, ...data }) => {
+  const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
     updateAssessment({ id, data }, {
       onSuccess: async () => {
         const originalIds = (linkedCompetencies || []).map((c) => c.id);
         const toAdd = competencyIds.filter((cid) => !originalIds.includes(cid));
         const toRemove = originalIds.filter((cid) => !competencyIds.includes(cid));
+        const originalAreaIds = (linkedLearningAreas || []).map((a) => a.id);
+        const areasToAdd = learningAreaIds.filter((aid) => !originalAreaIds.includes(aid));
+        const areasToRemove = originalAreaIds.filter((aid) => !learningAreaIds.includes(aid));
         await Promise.all([
           ...toAdd.map((cid) => assessmentApi.linkCompetency(id, cid)),
           ...toRemove.map((cid) => assessmentApi.unlinkCompetency(id, cid)),
+          ...areasToAdd.map((aid) => assessmentApi.linkLearningArea(id, aid)),
+          ...areasToRemove.map((aid) => assessmentApi.unlinkLearningArea(id, aid)),
         ]);
         queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.competencies(id) });
+        queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.learningAreas(id) });
         navigate(`/assessments/${id}/view`);
       },
     });
@@ -58,7 +66,7 @@ export default function EditAssessmentPage() {
     else navigate(`/assessments/${id}/view`);
   };
 
-  if (isLoading || competenciesLoading) {
+  if (isLoading || competenciesLoading || learningAreasLoading) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>
         Loading assessment…

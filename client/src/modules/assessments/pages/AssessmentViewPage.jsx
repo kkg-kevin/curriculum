@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useAssessmentCompetencies } from "../hooks/useAssessment";
+import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useAssessmentCompetencies, useAssessmentLearningAreas } from "../hooks/useAssessment";
 import { QUESTION_BASED_TYPES, TASK_BASED_TYPES } from "../schemas/assessment.schema";
 import QuestionModal from "../components/QuestionModal";
 import RubricCriterionModal from "../components/RubricCriterionModal";
@@ -188,6 +188,7 @@ export default function AssessmentViewPage() {
   const navigate = useNavigate();
   const { data: assessment, isLoading, isError } = useAssessmentQuery(id);
   const { data: competencies = [] } = useAssessmentCompetencies(id);
+  const { data: learningAreas = [] } = useAssessmentLearningAreas(id);
 
   if (isLoading) {
     return (
@@ -299,6 +300,32 @@ export default function AssessmentViewPage() {
                       }}
                     >
                       {comp.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </Section>
+
+          <Section title="Learning Areas">
+            {learningAreas.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                No learning areas tagged.{" "}
+                <Link to={`/assessments/${id}/edit`} style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Add some →</Link>
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {learningAreas.map((area, idx) => {
+                  const color = area.color || ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706"][idx % 6];
+                  return (
+                    <span
+                      key={area.id}
+                      style={{
+                        padding: "4px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700",
+                        backgroundColor: `${color}12`, border: `1.5px solid ${color}30`, color,
+                      }}
+                    >
+                      {area.name}
                     </span>
                   );
                 })}

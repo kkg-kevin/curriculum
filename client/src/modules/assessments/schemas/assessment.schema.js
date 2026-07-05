@@ -13,6 +13,8 @@ export const assessmentSchema = z.object({
   // Not part of the Assessment record itself — reconciled into assessment-competency
   // links after save. See CreateAssessmentPage/EditAssessmentPage onSubmit.
   competencyIds: z.array(z.string()).optional().default([]),
+  // Same pattern as competencyIds, reconciled into assessment-learning-area links.
+  learningAreaIds: z.array(z.string()).optional().default([]),
 });
 
 export const itemSchema = z.object({

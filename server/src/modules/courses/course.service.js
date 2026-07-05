@@ -3,6 +3,8 @@ const CourseModel = require("./course.model");
 const SessionModel = require("./session.model");
 const CourseCompetencyLinkModel = require("./course-competency-link.model");
 const CompetencyModel = require("../competencies/competency.model");
+const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
+const LearningAreaModel = require("../learning-areas/learning-area.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -50,6 +52,7 @@ const CourseService = {
     }
     SessionModel.deleteByCourseId(id);
     CourseCompetencyLinkModel.deleteByCourseId(id);
+    CourseLearningAreaLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
   },
 
@@ -80,6 +83,35 @@ const CourseService = {
   async unlinkCompetency(courseId, competencyId) {
     CourseCompetencyLinkModel.unlink(courseId, competencyId);
     return this.getCourseCompetencies(courseId);
+  },
+
+  /* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
+
+  async getCourseLearningAreas(courseId) {
+    const links = CourseLearningAreaLinkModel.findByCourseId(courseId);
+    return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
+  },
+
+  async linkLearningArea(courseId, learningAreaId) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const area = LearningAreaModel.findById(learningAreaId);
+    if (!area) {
+      const err = new Error("Learning area not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CourseLearningAreaLinkModel.link(courseId, learningAreaId);
+    return this.getCourseLearningAreas(courseId);
+  },
+
+  async unlinkLearningArea(courseId, learningAreaId) {
+    CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
+    return this.getCourseLearningAreas(courseId);
   },
 
   /* ── Sessions ────────────────────────────────────────────────────────── */

@@ -19,6 +19,16 @@ export const assessmentApi = {
   unlinkCompetency: (assessmentId, competencyId) =>
     api.delete(`${ENDPOINT}/${assessmentId}/competencies/links/${competencyId}`).then((r) => r.data.data),
 
+  /* Learning Areas — this assessment's tagged learning areas (authored globally in Settings) */
+  getAssessmentLearningAreas: (assessmentId) =>
+    api.get(`${ENDPOINT}/${assessmentId}/learning-areas/links`).then((r) => r.data.data),
+
+  linkLearningArea: (assessmentId, learningAreaId) =>
+    api.post(`${ENDPOINT}/${assessmentId}/learning-areas/links`, { learningAreaId }).then((r) => r.data.data),
+
+  unlinkLearningArea: (assessmentId, learningAreaId) =>
+    api.delete(`${ENDPOINT}/${assessmentId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
+
   addItem: (assessmentId, data) => api.post(`${ENDPOINT}/${assessmentId}/items`, data).then((r) => r.data.data),
   updateItem: (assessmentId, itemId, data) => api.put(`${ENDPOINT}/${assessmentId}/items/${itemId}`, data).then((r) => r.data.data),
   removeItem: (assessmentId, itemId) => api.delete(`${ENDPOINT}/${assessmentId}/items/${itemId}`).then((r) => r.data),

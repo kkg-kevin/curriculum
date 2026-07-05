@@ -8,6 +8,7 @@ const {
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
   linkCompetencySchema,
+  linkLearningAreaSchema,
 } = require("./assessment.validation");
 
 const createAssessment = asyncHandler(async (req, res) => {
@@ -54,6 +55,22 @@ const unlinkCompetency = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+const getAssessmentLearningAreas = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.getAssessmentLearningAreas(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkLearningArea = asyncHandler(async (req, res) => {
+  const { learningAreaId } = linkLearningAreaSchema.parse(req.body);
+  const data = await AssessmentService.linkLearningArea(req.params.id, learningAreaId);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkLearningArea = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.unlinkLearningArea(req.params.id, req.params.learningAreaId);
+  res.json({ success: true, data });
+});
+
 const addItem = asyncHandler(async (req, res) => {
   const data = createItemSchema.parse(req.body);
   const item = await AssessmentService.addItem(req.params.id, data);
@@ -97,6 +114,9 @@ module.exports = {
   getAssessmentCompetencies,
   linkCompetency,
   unlinkCompetency,
+  getAssessmentLearningAreas,
+  linkLearningArea,
+  unlinkLearningArea,
   addItem,
   updateItem,
   deleteItem,

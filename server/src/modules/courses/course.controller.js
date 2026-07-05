@@ -7,6 +7,7 @@ const {
   updateSessionSchema,
   bulkCreateSessionsSchema,
   linkCompetencySchema,
+  linkLearningAreaSchema,
 } = require("./course.validation");
 
 const createCourse = asyncHandler(async (req, res) => {
@@ -54,6 +55,24 @@ const unlinkCompetency = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+/* ── Learning Areas ──────────────────────────────────────────────────────── */
+
+const getCourseLearningAreas = asyncHandler(async (req, res) => {
+  const data = await CourseService.getCourseLearningAreas(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkLearningArea = asyncHandler(async (req, res) => {
+  const { learningAreaId } = linkLearningAreaSchema.parse(req.body);
+  const data = await CourseService.linkLearningArea(req.params.id, learningAreaId);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkLearningArea = asyncHandler(async (req, res) => {
+  const data = await CourseService.unlinkLearningArea(req.params.id, req.params.learningAreaId);
+  res.json({ success: true, data });
+});
+
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
 const getSessions = asyncHandler(async (req, res) => {
@@ -93,6 +112,9 @@ module.exports = {
   getCourseCompetencies,
   linkCompetency,
   unlinkCompetency,
+  getCourseLearningAreas,
+  linkLearningArea,
+  unlinkLearningArea,
   getSessions,
   createSession,
   createSessionsBulk,

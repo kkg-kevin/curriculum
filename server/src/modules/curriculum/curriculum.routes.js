@@ -31,6 +31,7 @@ const {
   createLearningArea,
   updateLearningArea,
   deleteLearningArea,
+  importLearningArea,
   getLadder,
   updateLadder,
   getAgeCategories,
@@ -90,6 +91,7 @@ router.route("/:id/competencies/links/:competencyId/indicators/:indicatorId").pu
 
 // Competencies — learning areas (curriculum-scoped groupings for adopted competencies)
 router.route("/:id/competencies/learning-areas").get(getLearningAreas).post(createLearningArea);
+router.route("/:id/competencies/learning-areas/import").post(importLearningArea);
 router.route("/:id/competencies/learning-areas/:aId").put(updateLearningArea).delete(deleteLearningArea);
 
 // Competencies — progression ladder

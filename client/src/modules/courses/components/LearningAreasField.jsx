@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { useCompetencies as useGlobalCompetencies } from "../../settings/hooks/useCompetencies";
+import { useLearningAreas as useGlobalLearningAreas } from "../../settings/hooks/useLearningAreas";
 import { Field } from "./formFields";
-import CreateCompetencyModal from "./CreateCompetencyModal";
+import CreateLearningAreaModal from "./CreateLearningAreaModal";
 
 const PALETTE = [
   "#25476a", "#38aae1", "#059669", "#7C3AED",
   "#DC2626", "#D97706", "#0891B2", "#BE185D",
 ];
 
-function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) {
+function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -30,11 +30,11 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
 
   const trimmed = query.trim();
   const filtered = trimmed
-    ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
+    ? available.filter((a) => a.name.toLowerCase().includes(trimmed.toLowerCase()))
     : available;
   // Only offer "create" when the name is genuinely new — otherwise we'd let this
   // field silently mint duplicate catalog entries for something that already exists.
-  const canCreate = trimmed !== "" && !allComps.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+  const canCreate = trimmed !== "" && !allAreas.some((a) => a.name.toLowerCase() === trimmed.toLowerCase());
 
   const handleCreate = () => {
     onRequestCreate(trimmed);
@@ -53,7 +53,7 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
           cursor: "pointer",
         }}
       >
-        + Add Competency
+        + Add Learning Area
       </button>
       {open && (
         <div style={{
@@ -84,24 +84,25 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
                 <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  {available.length === 0 ? "All competencies are already added." : "No matches found."}
+                  {available.length === 0 ? "All learning areas are already added." : "No matches found."}
                 </p>
               </div>
             )}
-            {filtered.map((comp) => (
+            {filtered.map((area) => (
               <button
-                key={comp.id}
+                key={area.id}
                 type="button"
-                onClick={() => { onAdd(comp.id); setOpen(false); }}
+                onClick={() => { onAdd(area.id); setOpen(false); }}
                 style={{
-                  display: "block", width: "100%", padding: "8px 10px", border: "none", borderRadius: "8px",
-                  background: "transparent", fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif",
-                  color: "#374151", textAlign: "left", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 10px",
+                  border: "none", borderRadius: "8px", background: "transparent", fontSize: "12.5px",
+                  fontWeight: "600", fontFamily: "Inter, sans-serif", color: "#374151", textAlign: "left", cursor: "pointer",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#F3F4F6"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                {comp.name}
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, backgroundColor: area.color || "#9CA3AF" }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{area.name}</span>
               </button>
             ))}
             {canCreate && (
@@ -140,46 +141,46 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
   );
 }
 
-export default function CompetenciesField({ name, label, hint }) {
+export default function LearningAreasField({ name, label, hint }) {
   const { watch, setValue } = useFormContext();
-  const { data: allComps = [], isLoading } = useGlobalCompetencies();
+  const { data: allAreas = [], isLoading } = useGlobalLearningAreas();
   const [createQuery, setCreateQuery] = useState(null);
   const selectedIds = watch(name) || [];
 
   const selected = selectedIds
-    .map((id) => allComps.find((c) => c.id === id))
+    .map((id) => allAreas.find((a) => a.id === id))
     .filter(Boolean);
-  const available = allComps.filter((c) => !selectedIds.includes(c.id));
+  const available = allAreas.filter((a) => !selectedIds.includes(a.id));
 
-  const addCompetency = (id) => {
+  const addLearningArea = (id) => {
     setValue(name, [...selectedIds, id], { shouldDirty: true });
   };
-  const removeCompetency = (id) => {
+  const removeLearningArea = (id) => {
     setValue(name, selectedIds.filter((x) => x !== id), { shouldDirty: true });
   };
 
   return (
     <Field label={label} hint={hint}>
       {isLoading ? (
-        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>Loading competencies…</p>
-      ) : allComps.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>Loading learning areas…</p>
+      ) : allAreas.length === 0 ? (
         <div style={{ padding: "12px 14px", backgroundColor: "#F9FAFB", border: "1.5px dashed #E5E7EB", borderRadius: "10px" }}>
           <p style={{ margin: "0 0 6px", fontSize: "12.5px", color: "#6B7280" }}>
-            No competencies have been defined yet.
+            No learning areas have been defined yet.
           </p>
           <Link to="/settings" style={{ fontSize: "12.5px", fontWeight: "700", color: "#38aae1", textDecoration: "none" }}>
-            + Define Competencies in Settings →
+            + Define Learning Areas in Settings →
           </Link>
         </div>
       ) : (
         <div>
           {selected.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-              {selected.map((comp, idx) => {
-                const color = PALETTE[idx % PALETTE.length];
+              {selected.map((area, idx) => {
+                const color = area.color || PALETTE[idx % PALETTE.length];
                 return (
                   <span
-                    key={comp.id}
+                    key={area.id}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "7px",
                       padding: "5px 8px 5px 12px", borderRadius: "20px",
@@ -187,10 +188,10 @@ export default function CompetenciesField({ name, label, hint }) {
                       fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif",
                     }}
                   >
-                    {comp.name}
+                    {area.name}
                     <button
                       type="button"
-                      onClick={() => removeCompetency(comp.id)}
+                      onClick={() => removeLearningArea(area.id)}
                       title="Remove"
                       style={{
                         width: "16px", height: "16px", borderRadius: "50%", border: "none",
@@ -206,14 +207,14 @@ export default function CompetenciesField({ name, label, hint }) {
               })}
             </div>
           )}
-          <AddCompetencyDropdown available={available} allComps={allComps} onAdd={addCompetency} onRequestCreate={setCreateQuery} />
+          <AddLearningAreaDropdown available={available} allAreas={allAreas} onAdd={addLearningArea} onRequestCreate={setCreateQuery} />
         </div>
       )}
       {createQuery !== null && (
-        <CreateCompetencyModal
+        <CreateLearningAreaModal
           initialName={createQuery}
           onClose={() => setCreateQuery(null)}
-          onCreated={addCompetency}
+          onCreated={addLearningArea}
         />
       )}
     </Field>

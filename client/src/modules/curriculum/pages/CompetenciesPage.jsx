@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
   useCompetencies,
@@ -14,6 +15,7 @@ import {
   useCreateLearningArea,
   useUpdateLearningArea,
   useDeleteLearningArea,
+  useImportLearningArea,
   useLadder,
   useUpdateLadder,
   useAgeCategories,
@@ -37,6 +39,9 @@ import {
   useReorderPerformanceBands,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/hooks/useCompetencies";
+import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/hooks/useLearningAreas";
+import { learningAreasApi as catalogLearningAreasApi } from "../../settings/services/learningAreasApi";
+import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -478,11 +483,58 @@ function StepIndicator({ current }) {
 
 /* ── LearningAreasPanel ─────────────────────────────────────────────────── */
 
+function ImportLearningAreaDropdown({ available, onImport, isPending }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button type="button" className="cp-btn-secondary" onClick={() => setOpen((v) => !v)}>
+        Import from Catalog
+      </button>
+      {open && (
+        <div className="cp-card-menu" style={{ minWidth: "260px", maxHeight: "320px", overflowY: "auto", right: 0 }}>
+          {available.length === 0 ? (
+            <div style={{ padding: "14px 12px", fontSize: "12px", color: "#9CA3AF", textAlign: "center" }}>
+              Nothing left to import — either the catalog is empty or every entry is already added here.
+            </div>
+          ) : (
+            available.map((area) => (
+              <button
+                key={area.id}
+                type="button"
+                className="cp-card-menu-item"
+                disabled={isPending}
+                onClick={() => { onImport(area.id); setOpen(false); }}
+              >
+                {area.name}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LearningAreasPanel({ curriculumId }) {
   const { data: areas = [], isLoading } = useLearningAreas(curriculumId);
   const { mutate: create, isPending: creating } = useCreateLearningArea(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateLearningArea(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteLearningArea(curriculumId);
+  const { data: catalogAreas = [] } = useCatalogLearningAreas();
+  const { mutate: importArea, isPending: importing } = useImportLearningArea(curriculumId);
+  const queryClient = useQueryClient();
+  const availableToImport = catalogAreas.filter(
+    (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
+  );
 
   const [showForm, setShowForm]   = useState(false);
   const [editId,   setEditId]     = useState(null);
@@ -520,7 +572,21 @@ function LearningAreasPanel({ curriculumId }) {
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: cancel });
+      // A brand-new area authored here should also become a Settings default so other
+      // curricula/courses/assessments can pick it up — but only if it's genuinely new;
+      // otherwise we'd mint a duplicate catalog entry alongside the existing one. Synced
+      // silently (no toast) since the curriculum-copy creation above already confirmed the save.
+      const existsInCatalog = catalogAreas.some((c) => c.name.toLowerCase() === data.name.toLowerCase());
+      create(data, {
+        onSuccess: () => {
+          if (!existsInCatalog) {
+            catalogLearningAreasApi.createLearningArea(data).then(() => {
+              queryClient.invalidateQueries({ queryKey: LEARNING_AREA_KEYS.areas });
+            }).catch(() => {});
+          }
+          cancel();
+        },
+      });
     }
   }
 
@@ -536,9 +602,12 @@ function LearningAreasPanel({ curriculumId }) {
           </p>
         </div>
         {!showForm && (
-          <button type="button" className="cp-btn-add" onClick={openCreate}>
-            + Add Area
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <ImportLearningAreaDropdown available={availableToImport} onImport={importArea} isPending={importing} />
+            <button type="button" className="cp-btn-add" onClick={openCreate}>
+              + Add Area
+            </button>
+          </div>
         )}
       </div>
 
@@ -744,9 +813,11 @@ const COMP_PALETTE = [
   "#2e7db5","#0A3880",
 ];
 
-function AddCompetencyDropdown({ available, onAdd, isPending }) {
+function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, isPending }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -755,19 +826,58 @@ function AddCompetencyDropdown({ available, onAdd, isPending }) {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => inputRef.current?.focus());
+    else setQuery("");
+  }, [open]);
+
+  const trimmed = query.trim();
+  const filtered = trimmed
+    ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
+    : available;
+  // Only offer "create" when the name is genuinely new — otherwise we'd let this
+  // field silently mint duplicate catalog entries for something that already exists.
+  const canCreate = trimmed !== "" && !allComps.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+
+  const handleCreate = () => {
+    onRequestCreate(trimmed);
+    setOpen(false);
+  };
+
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
       <button type="button" className="cp-btn-primary" onClick={() => setOpen((v) => !v)}>
         + Add Competency
       </button>
       {open && (
-        <div className="cp-card-menu" style={{ minWidth: "260px", maxHeight: "320px", overflowY: "auto", right: 0 }}>
-          {available.length === 0 ? (
-            <div style={{ padding: "14px 12px", fontSize: "12px", color: "#9CA3AF", textAlign: "center" }}>
-              All competencies are already added to this curriculum.
-            </div>
-          ) : (
-            available.map((comp) => (
+        <div className="cp-card-menu" style={{ width: "280px", maxHeight: "360px", overflow: "hidden", display: "flex", flexDirection: "column", right: 0, padding: 0 }}>
+          <div style={{ position: "relative", flexShrink: 0, borderBottom: "1px solid #F0F2F5" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}>
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search or create…"
+              onKeyDown={(e) => { if (e.key === "Enter" && canCreate && filtered.length === 0) { e.preventDefault(); handleCreate(); } }}
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", border: "none",
+                fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", color: "#111827", background: "#fff",
+              }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", padding: "6px" }}>
+            {filtered.length === 0 && !canCreate && (
+              <div style={{ padding: "22px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
+                  {available.length === 0 ? "All competencies are already added to this curriculum." : "No matches found."}
+                </p>
+              </div>
+            )}
+            {filtered.map((comp) => (
               <button
                 key={comp.id}
                 type="button"
@@ -777,8 +887,37 @@ function AddCompetencyDropdown({ available, onAdd, isPending }) {
               >
                 {comp.name}
               </button>
-            ))
-          )}
+            ))}
+            {canCreate && (
+              <>
+                {filtered.length > 0 && (
+                  <div style={{ margin: "6px 4px 4px", paddingTop: "6px", borderTop: "1px dashed #E5E7EB", fontSize: "10px", fontWeight: "700", color: "#B0B8C4", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Create new
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "9px", width: "100%", padding: "9px 10px",
+                    border: "none", borderRadius: "8px", background: "#F0F7FF", fontSize: "12.5px", fontWeight: "700",
+                    fontFamily: "Inter, sans-serif", color: "#25476a", textAlign: "left", cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#e0f0fb"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#F0F7FF"; }}
+                >
+                  <span style={{
+                    width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0,
+                    backgroundColor: "#25476a", color: "#fff", fontSize: "12px", fontWeight: "900",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+                  }}>+</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    Create "{trimmed}"
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -881,6 +1020,7 @@ function CompetencyPickerPanel({ curriculumId }) {
   const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
   const { mutate: link, isPending: linking } = useLinkCompetency(curriculumId);
   const { mutate: unlink } = useUnlinkCompetency(curriculumId);
+  const [createQuery, setCreateQuery] = useState(null);
 
   const linkedIds = new Set(linkedComps.map((c) => c.id));
   const availableComps = allComps.filter((c) => !linkedIds.has(c.id));
@@ -901,7 +1041,7 @@ function CompetencyPickerPanel({ curriculumId }) {
           <Link to="/settings" className="cp-btn-secondary" style={{ textDecoration: "none" }}>
             Manage in Settings →
           </Link>
-          <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
+          <AddCompetencyDropdown available={availableComps} allComps={allComps} onAdd={link} onRequestCreate={setCreateQuery} isPending={linking} />
         </div>
       </div>
 
@@ -919,7 +1059,7 @@ function CompetencyPickerPanel({ curriculumId }) {
           {allComps.length === 0 ? (
             <Link to="/settings" className="cp-btn-ghost">+ Define Competencies in Settings</Link>
           ) : (
-            <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
+            <AddCompetencyDropdown available={availableComps} allComps={allComps} onAdd={link} onRequestCreate={setCreateQuery} isPending={linking} />
           )}
         </div>
       ) : (
@@ -934,6 +1074,14 @@ function CompetencyPickerPanel({ curriculumId }) {
             />
           ))}
         </div>
+      )}
+
+      {createQuery !== null && (
+        <CreateCompetencyModal
+          initialName={createQuery}
+          onClose={() => setCreateQuery(null)}
+          onCreated={link}
+        />
       )}
     </div>
   );

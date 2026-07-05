@@ -14,6 +14,7 @@ const DEFAULT_VALUES = {
   type: "",
   instructions: "",
   competencyIds: [],
+  learningAreaIds: [],
 };
 
 export default function CreateAssessmentPage() {
@@ -29,11 +30,14 @@ export default function CreateAssessmentPage() {
 
   const { handleSubmit, formState: { isDirty } } = methods;
 
-  const onSubmit = ({ competencyIds, ...data }) => {
+  const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
     createAssessment(data, {
       onSuccess: async (assessment) => {
         if (competencyIds.length > 0) {
           await Promise.all(competencyIds.map((cid) => assessmentApi.linkCompetency(assessment.id, cid)));
+        }
+        if (learningAreaIds.length > 0) {
+          await Promise.all(learningAreaIds.map((aid) => assessmentApi.linkLearningArea(assessment.id, aid)));
         }
         navigate(`/assessments/${assessment.id}/view`);
       },

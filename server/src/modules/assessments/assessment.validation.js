@@ -45,6 +45,10 @@ const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
 });
 
+const linkLearningAreaSchema = z.object({
+  learningAreaId: z.string().min(1, "learningAreaId is required"),
+});
+
 module.exports = {
   createAssessmentSchema,
   updateAssessmentSchema,
@@ -53,6 +57,7 @@ module.exports = {
   createRubricCriterionSchema,
   updateRubricCriterionSchema,
   linkCompetencySchema,
+  linkLearningAreaSchema,
   ASSESSMENT_TYPES,
   QUESTION_TYPES,
 };

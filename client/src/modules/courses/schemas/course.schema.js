@@ -7,4 +7,6 @@ export const courseSchema = z.object({
   // Not part of the Course record itself — reconciled into course-competency
   // links after save. See CreateCoursePage/EditCoursePage onSubmit.
   competencyIds: z.array(z.string()).optional().default([]),
+  // Same pattern as competencyIds, reconciled into course-learning-area links.
+  learningAreaIds: z.array(z.string()).optional().default([]),
 });
