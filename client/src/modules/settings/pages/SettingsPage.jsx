@@ -167,9 +167,9 @@ const CSS = `
     animation:stg-fadein 0.18s ease;
   }
   .stg-item:hover { border-color:#b8d9ee; background:#F8FBFF; }
-  .stg-item-top { display:flex; align-items:flex-start; gap:12px; }
-  .stg-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
-  .stg-item-name { flex:1; min-width:0; font-size:14px; font-weight:700; color:#111827; padding-top:1px; }
+  .stg-item-top { display:flex; align-items:center; gap:12px; }
+  .stg-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .stg-item-name { flex:1; min-width:0; font-size:14px; font-weight:700; color:#111827; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .stg-item-sub  { font-size:12.5px; color:#9CA3AF; font-weight:400; margin-top:4px; line-height:1.6; }
 
   .stg-icon-btn {
@@ -196,6 +196,18 @@ const CSS = `
   .stg-course-row:hover { background:#FAFCFF; }
   .stg-course-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .stg-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
+
+  .stg-search-wrap { position:relative; margin-bottom:14px; max-width:280px; }
+  .stg-search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#9CA3AF; pointer-events:none; }
+  .stg-search-input {
+    width:100%; box-sizing:border-box; padding:10px 12px 10px 36px; border-radius:10px;
+    border:1.5px solid #E5E7EB; font-size:13.5px; font-family:Inter,sans-serif;
+    background:#F9FAFB; color:#374151; outline:none;
+    transition:border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .stg-search-input:focus {
+    border-color:#38aae1; background:#fff; box-shadow:0 0 0 3px rgba(56,170,225,0.12);
+  }
 `;
 
 function Label({ children }) {
@@ -343,6 +355,10 @@ function CompetenciesPanel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredComps = query ? competencies.filter((c) => c.name.toLowerCase().includes(query)) : competencies;
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -372,17 +388,39 @@ function CompetenciesPanel() {
           </button>
         </div>
       ) : (
-        <div className="stg-grid">
-          {competencies.map((comp, idx) => (
-            <CompetencyCard
-              key={comp.id}
-              comp={comp}
-              color={PALETTE[idx % PALETTE.length]}
-              onEdit={() => { setEditTarget(comp); setModalOpen(true); }}
-              onDelete={() => setDeleteTarget(comp)}
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${competencies.length} competenc${competencies.length !== 1 ? "ies" : "y"}…`}
             />
-          ))}
-        </div>
+          </div>
+
+          {filteredComps.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-grid">
+              {filteredComps.map((comp) => (
+                <CompetencyCard
+                  key={comp.id}
+                  comp={comp}
+                  color={PALETTE[competencies.findIndex((c) => c.id === comp.id) % PALETTE.length]}
+                  onEdit={() => { setEditTarget(comp); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(comp)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {modalOpen && <CompetencyModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
@@ -501,22 +539,36 @@ function LearningAreaModal({ editTarget, onClose }) {
 
 function LearningAreaCard({ area, onEdit, onDelete }) {
   const color = area.color || "#25476a";
+  const hasDetails = !!area.description || area.courses?.length > 0;
+  const [expanded, setExpanded] = useState(false);
+  const isOpen = hasDetails && expanded;
 
   return (
     <div className="stg-item">
-      <div className="stg-item-top">
+      <div
+        className="stg-item-top"
+        style={{ cursor: hasDetails ? "pointer" : "default" }}
+        onClick={() => hasDetails && setExpanded((v) => !v)}
+      >
         <div className="stg-item-dot" style={{ backgroundColor: color }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="stg-item-name">{area.name}</div>
-          {area.description && <div className="stg-item-sub">{area.description}</div>}
         </div>
-        <button type="button" className="stg-icon-btn" onClick={onEdit} title="Edit">
+        {hasDetails && (
+          <svg
+            width="14" height="14" viewBox="0 0 24 24" fill="none"
+            style={{ color: "#9CA3AF", flexShrink: 0, transition: "transform 0.15s", transform: isOpen ? "rotate(180deg)" : "none" }}
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button type="button" className="stg-icon-btn danger" onClick={onDelete} title="Delete">
+        <button type="button" className="stg-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -526,29 +578,35 @@ function LearningAreaCard({ area, onEdit, onDelete }) {
         </button>
       </div>
 
-      {area.courses?.length > 0 && (
-        <div className="stg-course-section">
-          <div className="stg-course-header">
-            <div className="stg-course-header-left">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-                <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor" />
-                <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="stg-course-title">Courses</span>
-            </div>
-            <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
-              {area.courses.length}
-            </span>
-          </div>
-          <div className="stg-course-list">
-            {area.courses.map((c) => (
-              <div key={c} className="stg-course-row">
-                <span className="stg-course-dot" style={{ backgroundColor: color }} />
-                <span className="stg-course-name">{c}</span>
+      {isOpen && (
+        <>
+          {area.description && <div className="stg-item-sub" style={{ marginTop: "8px" }}>{area.description}</div>}
+
+          {area.courses?.length > 0 && (
+            <div className="stg-course-section">
+              <div className="stg-course-header">
+                <div className="stg-course-header-left">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+                    <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor" />
+                    <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="stg-course-title">Courses</span>
+                </div>
+                <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
+                  {area.courses.length}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="stg-course-list">
+                {area.courses.map((c) => (
+                  <div key={c} className="stg-course-row">
+                    <span className="stg-course-dot" style={{ backgroundColor: color }} />
+                    <span className="stg-course-name">{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -560,6 +618,10 @@ function LearningAreasPanel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredAreas = query ? areas.filter((a) => a.name.toLowerCase().includes(query)) : areas;
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -589,16 +651,38 @@ function LearningAreasPanel() {
           </button>
         </div>
       ) : (
-        <div className="stg-list">
-          {areas.map((area) => (
-            <LearningAreaCard
-              key={area.id}
-              area={area}
-              onEdit={() => { setEditTarget(area); setModalOpen(true); }}
-              onDelete={() => setDeleteTarget(area)}
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${areas.length} learning area${areas.length !== 1 ? "s" : ""}…`}
             />
-          ))}
-        </div>
+          </div>
+
+          {filteredAreas.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-list">
+              {filteredAreas.map((area) => (
+                <LearningAreaCard
+                  key={area.id}
+                  area={area}
+                  onEdit={() => { setEditTarget(area); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(area)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {modalOpen && <LearningAreaModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
