@@ -65,17 +65,17 @@ JSON files (server/data/*.json)
 
 ### Steps to Deploy / Re-deploy Backend
 
+> ⚠️ **`data/` and `uploads/` are no longer part of the redeploy zip by default.** Once real content exists on the live site, wholesale-replacing those folders on every redeploy would erase anything created directly on the live site. `backend-deploy.zip` is now **code-only**: `src/`, `package.json`, `package-lock.json`. Only rebuild it including `data/`/`uploads/` if you specifically intend to overwrite live data with your local copy (see "Full data reset" below).
+
 1. **Create the deployment zip** from the project root:
-   - Include: `src/`, `data/`, `uploads/`, `package.json`, `package-lock.json`
-   - Exclude: `node_modules/`, `.env`
+   - Include: `src/`, `package.json`, `package-lock.json`
+   - Exclude: `node_modules/`, `.env`, `data/`, `uploads/`
    - The ready-made zip is: `backend-deploy.zip`
 
 2. **In cPanel File Manager**, navigate to `curriculum.digifunzi` folder
 
-3. **Delete** existing files:
+3. **Delete** existing files (code only — leave `data/` and `uploads/` alone):
    - `src/` folder
-   - `data/` folder
-   - `uploads/` folder
    - `package.json`
    - `package-lock.json`
 
@@ -94,7 +94,9 @@ JSON files (server/data/*.json)
 
 Uploaded files are saved to `server/uploads/` and served directly at `https://nodeapp.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
 
-> ⚠️ **Once real content is uploaded on the live site, stop overwriting `data/` and `uploads/` on every redeploy** — those steps above currently replace both folders wholesale with whatever's in your local copy, which would erase anything created directly on the live site. At that point, only re-upload `src/`, `package.json`, and `package-lock.json` for code changes, and leave `data/`/`uploads/` alone unless you specifically mean to overwrite them.
+### Full data reset (rare — only when you mean to overwrite live data)
+
+If you genuinely want to replace the live `data/` and/or `uploads/` with your local copy (e.g. first-ever deploy, or a deliberate reset), build the zip including them (`src/`, `data/`, `uploads/`, `package.json`, `package-lock.json`), delete the corresponding folders in cPanel before extracting, and be aware this destroys whatever is currently live in those folders.
 
 ---
 
@@ -155,6 +157,6 @@ Uploaded files are saved to `server/uploads/` and served directly at `https://no
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `data/`, `uploads/`, `package.json`, `package-lock.json` (no node_modules, no .env) |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no data/uploads) |
 | `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/`) |
 | `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract |
