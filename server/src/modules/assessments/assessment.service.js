@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const AssessmentModel = require("./assessment.model");
 const AssessmentCompetencyLinkModel = require("./assessment-competency-link.model");
 const CompetencyModel = require("../competencies/competency.model");
+const AssessmentLearningAreaLinkModel = require("./assessment-learning-area-link.model");
+const LearningAreaModel = require("../learning-areas/learning-area.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -55,6 +57,7 @@ const AssessmentService = {
       throw err;
     }
     AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
+    AssessmentLearningAreaLinkModel.deleteByAssessmentId(id);
     return { message: "Assessment deleted successfully" };
   },
 
@@ -80,6 +83,30 @@ const AssessmentService = {
   async unlinkCompetency(assessmentId, competencyId) {
     AssessmentCompetencyLinkModel.unlink(assessmentId, competencyId);
     return this.getAssessmentCompetencies(assessmentId);
+  },
+
+  /* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
+
+  async getAssessmentLearningAreas(assessmentId) {
+    const links = AssessmentLearningAreaLinkModel.findByAssessmentId(assessmentId);
+    return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
+  },
+
+  async linkLearningArea(assessmentId, learningAreaId) {
+    requireAssessment(assessmentId);
+    const area = LearningAreaModel.findById(learningAreaId);
+    if (!area) {
+      const err = new Error("Learning area not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentLearningAreaLinkModel.link(assessmentId, learningAreaId);
+    return this.getAssessmentLearningAreas(assessmentId);
+  },
+
+  async unlinkLearningArea(assessmentId, learningAreaId) {
+    AssessmentLearningAreaLinkModel.unlink(assessmentId, learningAreaId);
+    return this.getAssessmentLearningAreas(assessmentId);
   },
 
   async addItem(assessmentId, data) {

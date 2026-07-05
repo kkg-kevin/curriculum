@@ -43,6 +43,9 @@ export const competenciesApi = {
   deleteLearningArea: (curriculumId, aId) =>
     api.delete(`${base(curriculumId)}/learning-areas/${aId}`).then((r) => r.data),
 
+  importLearningArea: (curriculumId, learningAreaId) =>
+    api.post(`${base(curriculumId)}/learning-areas/import`, { learningAreaId }).then((r) => r.data.data),
+
   /* Progression Ladder */
   getLadder: (curriculumId) =>
     api.get(`${base(curriculumId)}/ladder`).then((r) => r.data.data),

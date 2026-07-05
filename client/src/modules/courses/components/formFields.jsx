@@ -4,10 +4,12 @@ import { useFormContext } from "react-hook-form";
 export function Field({ label, error, required, children, hint }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-      <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "flex", alignItems: "center", gap: "3px" }}>
-        {label}
-        {required && <span style={{ color: "#EF4444" }}>*</span>}
-      </label>
+      {label && (
+        <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "flex", alignItems: "center", gap: "3px" }}>
+          {label}
+          {required && <span style={{ color: "#EF4444" }}>*</span>}
+        </label>
+      )}
       {children}
       {hint && !error && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{hint}</p>}
       {error && <p style={{ margin: 0, fontSize: "12px", color: "#EF4444" }}>{error}</p>}

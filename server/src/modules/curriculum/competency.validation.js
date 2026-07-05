@@ -27,6 +27,10 @@ const createLearningAreaSchema = z.object({
 
 const updateLearningAreaSchema = createLearningAreaSchema.partial();
 
+const importLearningAreaSchema = z.object({
+  learningAreaId: z.string().min(1, "learningAreaId is required"),
+});
+
 const assignmentSchema = z.object({
   competencyId: z.string(),
   descriptor:   z.string().max(300).optional().default(""),
@@ -155,6 +159,7 @@ module.exports = {
   updateIndicatorSchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
+  importLearningAreaSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,

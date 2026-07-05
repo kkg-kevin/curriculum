@@ -7,6 +7,7 @@ const {
   updateIndicatorSchema,
   createLearningAreaSchema,
   updateLearningAreaSchema,
+  importLearningAreaSchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,
@@ -96,6 +97,12 @@ exports.updateLearningArea = asyncHandler(async (req, res) => {
 exports.deleteLearningArea = asyncHandler(async (req, res) => {
   CompetencyService.deleteLearningArea(req.params.id, req.params.aId);
   res.json({ success: true });
+});
+
+exports.importLearningArea = asyncHandler(async (req, res) => {
+  const { learningAreaId } = importLearningAreaSchema.parse(req.body);
+  const data = CompetencyService.importLearningArea(req.params.id, learningAreaId);
+  res.status(201).json({ success: true, data });
 });
 
 /* ── Progression Ladder ──────────────────────────────────────────────────── */

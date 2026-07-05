@@ -2,6 +2,7 @@ import { useFormContext } from "react-hook-form";
 import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
 import RichTextEditor from "../../courses/components/RichTextEditor";
 import CompetenciesField from "../../courses/components/CompetenciesField";
+import LearningAreasField from "../../courses/components/LearningAreasField";
 
 const selectStyle = {
   width: "100%",
@@ -128,7 +129,7 @@ export default function AssessmentForm() {
         </div>
       </div>
 
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB" }}>
         <div style={{ padding: "20px 24px" }}>
           <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
             Competencies
@@ -136,7 +137,19 @@ export default function AssessmentForm() {
           <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
             Tag which competencies this assessment measures.
           </p>
-          <CompetenciesField name="competencyIds" label="Competencies" hint="Pick from the shared catalog defined in Settings." />
+          <CompetenciesField name="competencyIds" hint="Pick from the shared catalog defined in Settings." />
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB" }}>
+        <div style={{ padding: "20px 24px" }}>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+            Learning Areas
+          </h3>
+          <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
+            Tag which learning areas this assessment falls under.
+          </p>
+          <LearningAreasField name="learningAreaIds" hint="Pick from the shared catalog defined in Settings." />
         </div>
       </div>
     </div>

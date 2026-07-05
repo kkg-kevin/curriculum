@@ -14,6 +14,7 @@ const DEFAULT_VALUES = {
   description: "",
   coverImage: null,
   competencyIds: [],
+  learningAreaIds: [],
   sessionCount: "1",
 };
 
@@ -32,12 +33,15 @@ export default function CreateCoursePage() {
   const { handleSubmit, getValues, formState: { isDirty } } = methods;
   const isBusy = isPending || creatingSessions;
 
-  const onSubmit = ({ competencyIds, ...data }) => {
+  const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
     const sessionCount = Math.max(0, Number(getValues("sessionCount")) || 0);
     createCourse(data, {
       onSuccess: async (course) => {
         if (competencyIds.length > 0) {
           await Promise.all(competencyIds.map((cid) => courseApi.linkCompetency(course.id, cid)));
+        }
+        if (learningAreaIds.length > 0) {
+          await Promise.all(learningAreaIds.map((aid) => courseApi.linkLearningArea(course.id, aid)));
         }
         if (sessionCount > 0) {
           createSessionsBulk(

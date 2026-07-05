@@ -161,6 +161,20 @@ export function useDeleteLearningArea(curriculumId) {
   });
 }
 
+// Clones a learning area from the Settings catalog into this curriculum. The result is
+// a brand-new, independent record — editing it afterwards never touches the catalog default.
+export function useImportLearningArea(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (learningAreaId) => competenciesApi.importLearningArea(curriculumId, learningAreaId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
+      toast.success("Learning area imported");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to import learning area"),
+  });
+}
+
 /* ── Progression Ladder ─────────────────────────────────────────────────── */
 
 export function useLadder(curriculumId) {

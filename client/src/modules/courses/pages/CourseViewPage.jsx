@@ -9,6 +9,7 @@ import {
   useUpdateSession,
   useDeleteSession,
   useCourseCompetencies,
+  useCourseLearningAreas,
 } from "../hooks/useCourse";
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
@@ -244,6 +245,7 @@ export default function CourseViewPage() {
   const { data: course, isLoading: courseLoading, isError: courseError } = useCourseQuery(id);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
+  const { data: learningAreas = [] } = useCourseLearningAreas(id);
 
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [modalSessionId, setModalSessionId] = useState(null);
@@ -395,6 +397,33 @@ export default function CourseViewPage() {
                       }}
                     >
                       {comp.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Learning Areas</h3>
+            {learningAreas.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                No learning areas tagged.{" "}
+                <Link to={`/courses/${id}/edit`} style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Add some →</Link>
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {learningAreas.map((area, idx) => {
+                  const color = area.color || ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706"][idx % 6];
+                  return (
+                    <span
+                      key={area.id}
+                      style={{
+                        padding: "4px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700",
+                        backgroundColor: `${color}12`, border: `1.5px solid ${color}30`, color,
+                      }}
+                    >
+                      {area.name}
                     </span>
                   );
                 })}

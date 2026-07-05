@@ -7,6 +7,7 @@ export const COURSE_KEYS = {
   detail: (id) => ["courses", "detail", id],
   sessions: (courseId) => ["courses", "sessions", courseId],
   competencies: (courseId) => ["courses", "competencies", courseId],
+  learningAreas: (courseId) => ["courses", "learning-areas", courseId],
 };
 
 export function useCoursesQuery() {
@@ -96,6 +97,38 @@ export function useUnlinkCourseCompetency(courseId) {
       queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(courseId) });
     },
     onError: (err) => toast.error(err.message || "Failed to remove competency"),
+  });
+}
+
+/* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
+
+export function useCourseLearningAreas(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.learningAreas(courseId),
+    queryFn: () => courseApi.getCourseLearningAreas(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useLinkCourseLearningArea(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (learningAreaId) => courseApi.linkLearningArea(courseId, learningAreaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(courseId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to add learning area"),
+  });
+}
+
+export function useUnlinkCourseLearningArea(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (learningAreaId) => courseApi.unlinkLearningArea(courseId, learningAreaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(courseId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to remove learning area"),
   });
 }
 

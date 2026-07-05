@@ -6,6 +6,7 @@ export const ASSESSMENT_KEYS = {
   all: ["assessments"],
   detail: (id) => ["assessments", "detail", id],
   competencies: (id) => ["assessments", "competencies", id],
+  learningAreas: (id) => ["assessments", "learning-areas", id],
 };
 
 export function useAssessmentsQuery() {
@@ -95,6 +96,38 @@ export function useUnlinkAssessmentCompetency(assessmentId) {
       queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.competencies(assessmentId) });
     },
     onError: (err) => toast.error(err.message || "Failed to remove competency"),
+  });
+}
+
+/* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
+
+export function useAssessmentLearningAreas(assessmentId) {
+  return useQuery({
+    queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId),
+    queryFn: () => assessmentApi.getAssessmentLearningAreas(assessmentId),
+    enabled: !!assessmentId,
+  });
+}
+
+export function useLinkAssessmentLearningArea(assessmentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (learningAreaId) => assessmentApi.linkLearningArea(assessmentId, learningAreaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to add learning area"),
+  });
+}
+
+export function useUnlinkAssessmentLearningArea(assessmentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (learningAreaId) => assessmentApi.unlinkLearningArea(assessmentId, learningAreaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId) });
+    },
+    onError: (err) => toast.error(err.message || "Failed to remove learning area"),
   });
 }
 
