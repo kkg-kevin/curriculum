@@ -32,6 +32,8 @@ export default function EditCoursePage() {
         name: course.name || "",
         description: course.description || "",
         coverImage: course.coverImage || null,
+        ageMin: course.ageMin ?? "",
+        ageMax: course.ageMax ?? "",
         competencyIds: linkedCompetencies.map((c) => c.id),
         learningAreaIds: linkedLearningAreas.map((a) => a.id),
       });
