@@ -33,6 +33,7 @@ export const sessionSchema = z.object({
   iceBreaker:   z.string().optional().default(""),
   mainConcepts: z.array(repeatableItemSchema).optional().default([]),
   activities:   z.array(activityItemSchema).optional().default([]),
+  assessmentIds: z.array(z.string().min(1)).optional().default([]),
   notes:        z.array(repeatableItemSchema).optional().default([]),
   resources:    z.array(resourceSchema).optional().default([]),
 });

@@ -50,7 +50,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-06T05:47:18.733Z",
+    "updatedAt": "2026-07-06T14:08:49.451Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -76,6 +76,10 @@
         "classActivity": "<p>vwvdzc6whtrsg</p>",
         "wrapActivity": "<p>ebfxettnd</p>"
       }
+    ],
+    "assessmentIds": [
+      "87aeff8c-1f29-4fc1-aa79-c09006d6043d",
+      "32b39932-175d-4159-aa65-c67085b17fa4"
     ]
   },
   {
@@ -606,7 +610,8 @@
     "resources": [],
     "id": "a46f1139-3b18-44cb-8c6e-d0e7ae9fe18e",
     "createdAt": "2026-07-03T13:30:50.403Z",
-    "updatedAt": "2026-07-03T13:30:50.403Z"
+    "updatedAt": "2026-07-06T13:44:50.195Z",
+    "assessmentIds": []
   },
   {
     "courseId": "e8658ada-1b15-4729-9f41-2204cdb25000",

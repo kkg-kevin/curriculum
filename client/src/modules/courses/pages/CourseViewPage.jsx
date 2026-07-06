@@ -11,11 +11,15 @@ import {
   useCourseCompetencies,
   useCourseLearningAreas,
 } from "../hooks/useCourse";
+import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
+
+const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
+const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
 
 function formatAgeRange(min, max) {
   if (min == null && max == null) return null;
@@ -30,6 +34,7 @@ const SESSION_DEFAULT_VALUES = {
   iceBreaker: "",
   mainConcepts: [],
   activities: [],
+  assessmentIds: [],
   notes: [],
   resources: [],
 };
@@ -93,6 +98,7 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
         iceBreaker: current.iceBreaker || "",
         mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
         activities: current.activities?.length ? current.activities : defaultActivities(),
+        assessmentIds: current.assessmentIds || [],
         notes: current.notes?.length ? current.notes : defaultNotes(),
         resources: current.resources || [],
       });
@@ -252,6 +258,10 @@ export default function CourseViewPage() {
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
   const { data: learningAreas = [] } = useCourseLearningAreas(id);
+  const { data: assessmentsData } = useAssessmentsQuery();
+  const allAssessments = assessmentsData?.data || [];
+  const attachedAssessmentIds = [...new Set(sessions.flatMap((s) => s.assessmentIds || []))];
+  const attachedAssessments = attachedAssessmentIds.map((aid) => allAssessments.find((a) => a.id === aid)).filter(Boolean);
 
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [modalSessionId, setModalSessionId] = useState(null);
@@ -388,6 +398,32 @@ export default function CourseViewPage() {
                 <span>☰</span> {sessions.length * SECTIONS.length} Sections
               </div>
             </div>
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Assessments</h3>
+            {attachedAssessments.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>No assessments attached yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {attachedAssessments.map((a) => {
+                  const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+                  return (
+                    <Link
+                      key={a.id}
+                      to={`/assessments/${a.id}/view`}
+                      style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", textDecoration: "none" }}
+                    >
+                      <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", fontWeight: "600", color: "#25476a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 8px", borderRadius: "20px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {ASM_TYPE_LABELS[a.type] || a.type}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
