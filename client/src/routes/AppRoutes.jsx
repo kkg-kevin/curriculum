@@ -35,6 +35,7 @@ import CreateAssessmentPage from "../modules/assessments/pages/CreateAssessmentP
 import EditAssessmentPage from "../modules/assessments/pages/EditAssessmentPage";
 import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
+import TemplateBuilderPage from "../modules/assessments/pages/TemplateBuilderPage";
 
 function ComingSoon({ name }) {
   return (
@@ -101,6 +102,8 @@ export default function AppRoutes() {
         </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/templates/new/:type" element={<TemplateBuilderPage />} />
+        <Route path="settings/templates/:id/edit" element={<TemplateBuilderPage />} />
       </Route>
     </Routes>
   );

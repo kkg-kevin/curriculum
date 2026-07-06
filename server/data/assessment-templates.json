@@ -144,5 +144,22 @@
     ],
     "createdAt": "2026-07-06T05:30:00.000Z",
     "updatedAt": "2026-07-06T05:30:00.000Z"
+  },
+  {
+    "id": "06f64775-8068-4d1e-9f6b-9c5f8815dba4",
+    "name": "Assignment one",
+    "type": "assignment",
+    "description": "ijvuerunuvbufbnu",
+    "instructions": "unvuneruvnunu",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [],
+    "items": [],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "createdAt": "2026-07-06T07:37:18.666Z",
+    "updatedAt": "2026-07-06T07:37:18.666Z"
   }
 ]
