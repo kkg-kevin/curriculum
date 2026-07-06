@@ -1,20 +1,10 @@
 const { z } = require("zod");
 const { ASSESSMENT_TYPES } = require("../assessments/assessment.validation");
 const {
-  STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, PROGRESS_ARC_LEVELS, SUBMISSION_ITEM_KINDS,
+  STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, SUBMISSION_ITEM_KINDS,
 } = require("./builder.constants");
 
 const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
-
-// Item-level mapping to Competency / Progress Arc / Learning Outcome / Performance Indicator.
-// Only Competency is a hard reference (global catalog) — the other three are curriculum-scoped
-// concepts with no template-safe id to reference, so they're soft (enum label / free text).
-const mappingSchema = z.object({
-  competencyId:        z.string().optional().default(""),
-  progressArcLevel:    z.enum(PROGRESS_ARC_LEVELS).optional().nullable().default(null),
-  learningOutcome:     z.string().max(500).optional().default(""),
-  performanceIndicator: z.string().max(500).optional().default(""),
-}).optional().default({});
 
 const sectionSchema = z.object({
   id:    z.string().min(1),
@@ -40,7 +30,6 @@ const templateItemSchema = z.object({
   // Assignment/Project task fields
   taskType:      z.enum(TASK_TYPES).optional().nullable().default(null),
   submissionKinds: z.array(z.enum(SUBMISSION_ITEM_KINDS)).optional().default([]),
-  mapping:       mappingSchema,
 })
   .refine((d) => !["mcqSingle", "mcqMultiple"].includes(d.kind) || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
   .refine((d) => d.kind !== "matching" || d.pairs.length >= 2, { message: "Add at least 2 pairs", path: ["pairs"] })
@@ -52,7 +41,6 @@ const templateRubricCriterionSchema = z.object({
   description: z.string().max(5000).optional().default(""),
   points:      z.number().min(0).optional().default(0),
   sectionId:   z.string().optional().nullable().default(null),
-  mapping:     mappingSchema,
 });
 
 // Teacher Observation content — a checklist of observable items. `kind` defaults to "rating" so
@@ -63,7 +51,6 @@ const templateIndicatorSchema = z.object({
   kind:        z.enum(OBSERVATION_ITEM_KINDS).optional().default("rating"),
   ratingScale: z.array(z.string().min(1)).min(2).optional().default(DEFAULT_RATING_SCALE),
   sectionId:   z.string().optional().nullable().default(null),
-  mapping:     mappingSchema,
 });
 
 const deliverableSchema = z.object({
@@ -72,7 +59,6 @@ const deliverableSchema = z.object({
   description:     z.string().max(2000).optional().default(""),
   submissionKinds: z.array(z.enum(SUBMISSION_ITEM_KINDS)).optional().default([]),
   sectionId:       z.string().optional().nullable().default(null),
-  mapping:         mappingSchema,
 });
 
 const milestoneSchema = z.object({

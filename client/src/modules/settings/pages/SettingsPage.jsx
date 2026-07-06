@@ -711,8 +711,14 @@ function templateContentSummary(template) {
     return `${n} question${n !== 1 ? "s" : ""}`;
   }
   if (template.type === "assignment" || template.type === "project") {
-    const n = template.rubric?.length || 0;
-    return `${n} criteri${n !== 1 ? "a" : "on"}`;
+    const parts = [];
+    const taskCount = template.items?.length || 0;
+    if (taskCount > 0) parts.push(`${taskCount} task${taskCount !== 1 ? "s" : ""}`);
+    const criteriaCount = template.rubric?.length || 0;
+    if (criteriaCount > 0) parts.push(`${criteriaCount} criteri${criteriaCount !== 1 ? "a" : "on"}`);
+    const deliverableCount = template.deliverables?.length || 0;
+    if (deliverableCount > 0) parts.push(`${deliverableCount} deliverable${deliverableCount !== 1 ? "s" : ""}`);
+    return parts.length ? parts.join(" · ") : "0 tasks";
   }
   const n = template.indicators?.length || 0;
   return `${n} indicator${n !== 1 ? "s" : ""}`;
@@ -723,7 +729,9 @@ function templateTotalPoints(template) {
     return template.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) ?? 0;
   }
   if (template.type === "assignment" || template.type === "project") {
-    return template.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) ?? 0;
+    const itemsPoints = template.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) || 0;
+    const rubricPoints = template.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) || 0;
+    return itemsPoints + rubricPoints;
   }
   return null;
 }
@@ -765,12 +773,14 @@ function TemplateTypeIcon({ type }) {
 const MEDIA_TYPE_LABELS = { audio: "Audio", video: "Video", either: "Audio or Video" };
 
 function itemDetailSuffix(item) {
-  switch (item.questionType) {
-    case "mcq": return item.options?.length ? ` · ${item.options.length} options` : "";
+  switch (item.kind || item.questionType) {
+    case "mcq": case "mcqSingle": case "mcqMultiple":
+      return item.options?.length ? ` · ${item.options.length} options` : "";
     case "matching": return ` · ${item.pairs?.length || 0} pairs`;
     case "fillBlank": return ` · ${item.blanks?.length || 0} blank${item.blanks?.length !== 1 ? "s" : ""}`;
     case "ordering": return ` · ${item.sequence?.length || 0} steps`;
-    case "fileUpload": return item.acceptedFileTypes?.length ? ` · ${item.acceptedFileTypes.join(", ")}` : "";
+    case "fileUpload": case "documentUpload": case "imageUpload": case "videoUpload": case "audioUpload": case "codeUpload":
+      return item.acceptedFileTypes?.length ? ` · ${item.acceptedFileTypes.join(", ")}` : "";
     case "mediaResponse": return ` · ${MEDIA_TYPE_LABELS[item.mediaType] || item.mediaType}`;
     default: return "";
   }
@@ -795,14 +805,33 @@ function TemplateContentPreview({ template }) {
     );
   }
   if (template.type === "assignment" || template.type === "project") {
-    if (!template.rubric?.length) return null;
+    const hasAny = template.items?.length || template.rubric?.length || template.deliverables?.length || template.milestones?.length;
+    if (!hasAny) return null;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {template.rubric.map((c, idx) => (
-          <div key={idx} style={row}>
+        {template.items?.map((item, idx) => (
+          <div key={`item-${idx}`} style={row}>
+            <span style={label}>{item.question}</span>
+            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
+          </div>
+        ))}
+        {template.rubric?.map((c, idx) => (
+          <div key={`rubric-${idx}`} style={row}>
             <span style={label}>{c.criterion}</span>
             <span style={meta}>· {c.points} pt{c.points !== 1 ? "s" : ""}</span>
             {c.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{c.description}</div>}
+          </div>
+        ))}
+        {template.deliverables?.map((d, idx) => (
+          <div key={`deliverable-${idx}`} style={row}>
+            <span style={label}>📦 {d.name}</span>
+            {d.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{d.description}</div>}
+          </div>
+        ))}
+        {template.milestones?.map((m, idx) => (
+          <div key={`milestone-${idx}`} style={row}>
+            <span style={label}>🚩 {m.name}</span>
+            {m.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{m.description}</div>}
           </div>
         ))}
       </div>
@@ -813,12 +842,16 @@ function TemplateContentPreview({ template }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       {template.indicators.map((ind, idx) => (
         <div key={idx} style={row}>
-          <div style={{ ...label, marginBottom: "5px" }}>{ind.text}</div>
-          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-            {ind.ratingScale.map((r) => (
-              <span key={r} style={{ fontSize: "10px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 7px" }}>{r}</span>
-            ))}
-          </div>
+          <div style={{ ...label, marginBottom: ind.kind === "checklist" || ind.kind === "note" ? 0 : "5px" }}>{ind.text}</div>
+          {ind.kind === "checklist" && <span style={{ fontSize: "10.5px", color: "#9CA3AF" }}>Checklist item</span>}
+          {ind.kind === "note" && <span style={{ fontSize: "10.5px", color: "#9CA3AF", fontStyle: "italic" }}>Freeform note</span>}
+          {(!ind.kind || ["rating", "practicalSkill", "behaviour"].includes(ind.kind)) && (
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+              {ind.ratingScale.map((r) => (
+                <span key={r} style={{ fontSize: "10px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 7px" }}>{r}</span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -829,7 +862,7 @@ function TemplateCard({ template, onEdit, onDelete }) {
   const color = TEMPLATE_TYPE_COLORS[template.type] || "#25476a";
   const [expanded, setExpanded] = useState(false);
   const totalPoints = templateTotalPoints(template);
-  const hasContent = !!(template.items?.length || template.rubric?.length || template.indicators?.length);
+  const hasContent = !!(template.items?.length || template.rubric?.length || template.indicators?.length || template.deliverables?.length || template.milestones?.length);
 
   return (
     <div className="stg-comp-card">

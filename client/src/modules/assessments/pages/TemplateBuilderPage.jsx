@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTemplates, useCreateTemplate, useUpdateTemplate } from "../hooks/useTemplates";
-import { useCompetencies } from "../../settings/hooks/useCompetencies";
-import CompetencyMappingPanel from "../components/CompetencyMappingPanel";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem, emptyMapping, hasMapping, PROGRESS_ARC_LEVEL_LABELS,
+  BUILDER_REGISTRY, normalizeLegacyItem,
 } from "../schemas/templateBuilder.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -137,10 +135,6 @@ const CSS = `
     width:44px; height:44px; border-radius:12px; background:#F3F4F6; display:flex; align-items:center;
     justify-content:center; margin:0 auto 10px; color:#D1D5DB;
   }
-  .tb-callout {
-    margin-top:14px; padding:11px 13px; border-radius:10px; background:#F0F7FF; border:1px solid #C7D9F8;
-    font-size:11.5px; color:#25476a; line-height:1.5;
-  }
 `;
 
 /* ── small shared bits ─────────────────────────────────────────────────── */
@@ -186,7 +180,7 @@ function ChipList({ values, options, labels, onToggle }) {
 /* ── entry factory ──────────────────────────────────────────────────────── */
 
 function defaultEntry(kind, sectionId) {
-  const base = { id: genId(), kind, sectionId, mapping: emptyMapping() };
+  const base = { id: genId(), kind, sectionId };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
     return { ...base, text: "", ratingScale: ["Not Yet", "Developing", "Proficient"] };
   }
@@ -503,47 +497,6 @@ function RightPanel({ form, selectedEntry, onUpdateEntry }) {
           <PlaceholderPanel text="Select an item from the builder to configure its properties." />
         )}
       </div>
-
-      <div className="tb-card">
-        <p className="tb-card-title">Competency Mapping (Item Level)</p>
-        {selectedEntry ? (
-          <CompetencyMappingPanel mapping={selectedEntry.mapping} onChange={(mapping) => onUpdateEntry({ ...selectedEntry, mapping })} />
-        ) : (
-          <PlaceholderPanel text="Select an item from the builder to map competencies." />
-        )}
-        <div className="tb-callout">
-          Competency mapping is applied at item level. Different items can map to different competencies and progress levels.
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Mapping overview tab ───────────────────────────────────────────────── */
-
-function MappingOverviewTab({ entries, competencies }) {
-  const mapped = entries.filter((e) => hasMapping(e.mapping));
-  if (entries.length === 0) {
-    return <div className="tb-card"><PlaceholderPanel text="Add items in the Structure & Items tab to map them to competencies." /></div>;
-  }
-  return (
-    <div className="tb-card">
-      <p className="tb-card-title">Competency Mapping Overview</p>
-      <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>{mapped.length} of {entries.length} items mapped</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {entries.map((entry) => {
-          const comp = competencies.find((c) => c.id === entry.mapping?.competencyId);
-          return (
-            <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "9px", border: "1px solid #F0F1F3", background: "#FAFBFF", flexWrap: "wrap" }}>
-              <span style={{ flex: 1, minWidth: "160px", fontSize: "12.5px", color: "#374151" }}>{entryLabel(entry) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
-              {comp && <span style={{ fontSize: "11px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "2px 8px" }}>{comp.name}</span>}
-              {entry.mapping?.progressArcLevel && <span style={{ fontSize: "11px", fontWeight: 700, color: "#7C3AED", background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: "20px", padding: "2px 8px" }}>{PROGRESS_ARC_LEVEL_LABELS[entry.mapping.progressArcLevel]}</span>}
-              {entry.mapping?.learningOutcome && <span style={{ fontSize: "11px", color: "#6B7280" }}>{entry.mapping.learningOutcome}</span>}
-              {!hasMapping(entry.mapping) && <span style={{ fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>Not mapped</span>}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -551,7 +504,7 @@ function MappingOverviewTab({ entries, competencies }) {
 /* ── Deliverables & Milestones tab (Project only) ──────────────────────── */
 
 function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverables, onChangeMilestones }) {
-  const addDeliverable = () => onChangeDeliverables([...deliverables, { id: genId(), name: "", description: "", submissionKinds: [], mapping: emptyMapping() }]);
+  const addDeliverable = () => onChangeDeliverables([...deliverables, { id: genId(), name: "", description: "", submissionKinds: [] }]);
   const updateDeliverable = (id, patch) => onChangeDeliverables(deliverables.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   const removeDeliverable = (id) => onChangeDeliverables(deliverables.filter((d) => d.id !== id));
 
@@ -652,9 +605,9 @@ function buildFormFromTemplate(t) {
     type: t.type, name: t.name || "", description: t.description || "", instructions: t.instructions || "",
     structureType: t.structureType || "mixed", overview: t.overview || "",
     sections: t.sections || [],
-    items: (t.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), mapping: item.mapping || emptyMapping() })),
-    indicators: (t.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, mapping: ind.mapping || emptyMapping(), ...ind })),
-    deliverables: (t.deliverables || []).map((d) => ({ ...d, id: d.id || genId(), mapping: d.mapping || emptyMapping() })),
+    items: (t.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId() })),
+    indicators: (t.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, ...ind })),
+    deliverables: (t.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (t.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
   };
 }
@@ -669,7 +622,6 @@ export default function TemplateBuilderPage() {
   const { data: templates = [], isLoading: loadingTemplates } = useTemplates();
   const { mutate: createTemplate, isPending: creating } = useCreateTemplate();
   const { mutate: updateTemplate, isPending: updating } = useUpdateTemplate();
-  const { data: competencies = [] } = useCompetencies();
 
   const editTarget = isEdit ? templates.find((t) => t.id === id) : null;
 
@@ -803,7 +755,6 @@ export default function TemplateBuilderPage() {
   const tabs = [
     { key: "info", label: "Template Information" },
     { key: "structure", label: "Structure & Items" },
-    { key: "mapping", label: "Competency Mapping" },
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
   ];
 
@@ -893,8 +844,6 @@ export default function TemplateBuilderPage() {
               <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} />
             </div>
           )}
-
-          {activeTab === "mapping" && <MappingOverviewTab entries={entries} competencies={competencies} />}
 
           {activeTab === "deliverables" && (
             <DeliverablesMilestonesTab
