@@ -161,5 +161,345 @@
     "milestones": [],
     "createdAt": "2026-07-06T07:37:18.666Z",
     "updatedAt": "2026-07-06T07:37:18.666Z"
+  },
+  {
+    "id": "feaab77a-37b0-40a2-934a-78687071a322",
+    "name": "Robotics Fundamentals Quiz",
+    "type": "quiz",
+    "description": "A mixed-format quiz checking core robotics vocabulary and asking learners to apply it.",
+    "instructions": "Instructions:\n\nAnswer every question in Section 1 before moving to Section 2.\nSection 2 has no single right answer — explain your thinking clearly.",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "sec-core-concepts",
+        "name": "Core Concepts",
+        "order": 0
+      },
+      {
+        "id": "sec-applying",
+        "name": "Applying What You Know",
+        "order": 1
+      }
+    ],
+    "items": [
+      {
+        "question": "Which part of a robot allows it to sense its environment?",
+        "kind": "mcqSingle",
+        "sectionId": "sec-core-concepts",
+        "points": 2,
+        "options": [
+          "Sensor",
+          "Motor",
+          "Battery",
+          "Wire"
+        ],
+        "correctAnswer": "Sensor",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A robot's motor is used to power its movement.",
+        "kind": "trueFalse",
+        "sectionId": "sec-core-concepts",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "True",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A robot uses a ___ to detect light levels.",
+        "kind": "fillBlank",
+        "sectionId": "sec-core-concepts",
+        "points": 2,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [
+          "light sensor"
+        ],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Explain in your own words how a robot decides what action to take when its sensor detects an obstacle.",
+        "kind": "essay",
+        "sectionId": "sec-applying",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a diagram labeling the main parts of your robot.",
+        "kind": "documentUpload",
+        "sectionId": "sec-applying",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".png"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "createdAt": "2026-07-06T07:58:32.439Z",
+    "updatedAt": "2026-07-06T07:58:32.439Z"
+  },
+  {
+    "id": "5187645c-a22a-4b9b-9a16-48370d3954f8",
+    "name": "Robot Sensor Investigation Assignment",
+    "type": "assignment",
+    "description": "Learners research a sensor type, then attach and test one on their own robot kit.",
+    "instructions": "Instructions:\n\nComplete the research task first.\nThen complete the hands-on task using your robot kit.\nSubmit all files requested for each task.",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "sec-research",
+        "name": "Research Task",
+        "order": 0
+      },
+      {
+        "id": "sec-handson",
+        "name": "Hands-On Task",
+        "order": 1
+      }
+    ],
+    "items": [
+      {
+        "question": "Research two different types of sensors used in robotics and describe what each one does.",
+        "kind": "longAnswer",
+        "sectionId": "sec-research",
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "research",
+        "submissionKinds": [
+          "documentUpload"
+        ]
+      },
+      {
+        "question": "Attach a sensor to your robot kit and test that it responds correctly to changes in its environment.",
+        "kind": "practicalTask",
+        "sectionId": "sec-handson",
+        "points": 15,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "practical",
+        "submissionKinds": [
+          "videoUpload",
+          "documentUpload"
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "createdAt": "2026-07-06T07:58:32.528Z",
+    "updatedAt": "2026-07-06T07:58:32.528Z"
+  },
+  {
+    "id": "cce6fff9-b567-41a5-9825-5da7ccd66fa8",
+    "name": "Line-Following Robot Project",
+    "type": "project",
+    "description": "A multi-week build project where learners design, build, and program a robot that follows a line on the floor.",
+    "instructions": "Instructions:\n\nWork through Planning before you start building.\nUse the Build & Test tasks to guide your work sessions.\nSubmit each deliverable as you complete it.",
+    "structureType": "mixed",
+    "overview": "Design, build, and program a robot that can follow a line on the floor using sensors and motors. Learners will plan their approach, build the robot, and iteratively test it against a practice track.",
+    "sections": [
+      {
+        "id": "sec-planning",
+        "name": "Planning",
+        "order": 0
+      },
+      {
+        "id": "sec-build",
+        "name": "Build & Test",
+        "order": 1
+      }
+    ],
+    "items": [
+      {
+        "question": "Sketch and describe your planned robot design, including sensor placement.",
+        "kind": "longAnswer",
+        "sectionId": "sec-planning",
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": [
+          "documentUpload"
+        ]
+      },
+      {
+        "question": "Build your robot and test it on the practice track.",
+        "kind": "practicalTask",
+        "sectionId": "sec-build",
+        "points": 20,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "practical",
+        "submissionKinds": [
+          "videoUpload"
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [
+      {
+        "name": "Design Sketch",
+        "description": "A labeled diagram of your robot design, including where each sensor is placed.",
+        "submissionKinds": [
+          "imageUpload",
+          "documentUpload"
+        ],
+        "sectionId": "sec-planning"
+      },
+      {
+        "name": "Working Robot Demo",
+        "description": "A short video demonstrating your robot following the line on the practice track.",
+        "submissionKinds": [
+          "videoUpload"
+        ],
+        "sectionId": "sec-build"
+      }
+    ],
+    "milestones": [
+      {
+        "name": "Design Approved",
+        "description": "Teacher reviews and signs off on your design sketch before building starts.",
+        "order": 0
+      },
+      {
+        "name": "First Successful Test Run",
+        "description": "Robot completes the practice track without going off the line.",
+        "order": 1
+      }
+    ],
+    "createdAt": "2026-07-06T07:58:32.614Z",
+    "updatedAt": "2026-07-06T07:58:32.614Z"
+  },
+  {
+    "id": "34c5a515-fb06-43cd-9dda-9365543721e2",
+    "name": "Robotics Lab Skills Observation",
+    "type": "observation",
+    "description": "An observation checklist used during robotics lab sessions to assess collaboration, communication, and hands-on build skills.",
+    "instructions": "Instructions:\n\nObserve the learner during a robotics lab session.\nRate each item based on what you directly observe.\nUse the notes item to record anything noteworthy that isn't covered above.",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "sec-collab",
+        "name": "Collaboration & Communication",
+        "order": 0
+      },
+      {
+        "id": "sec-skills",
+        "name": "Practical Skills",
+        "order": 1
+      }
+    ],
+    "items": [],
+    "rubric": [],
+    "indicators": [
+      {
+        "text": "Shares tools and materials with teammates",
+        "kind": "checklist",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-collab"
+      },
+      {
+        "text": "Communicates ideas clearly during group work",
+        "kind": "rating",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-collab"
+      },
+      {
+        "text": "Assembles robot components correctly",
+        "kind": "practicalSkill",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-skills"
+      },
+      {
+        "text": "Stays focused and on-task during build time",
+        "kind": "behaviour",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-skills"
+      },
+      {
+        "text": "Additional observations",
+        "kind": "note",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-skills"
+      }
+    ],
+    "deliverables": [],
+    "milestones": [],
+    "createdAt": "2026-07-06T07:58:32.706Z",
+    "updatedAt": "2026-07-06T07:58:32.706Z"
   }
 ]

@@ -11,7 +11,6 @@ const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill"
 const ITEM_KINDS = [...STRUCTURED_ITEM_KINDS, ...UNSTRUCTURED_ITEM_KINDS, ...SUBMISSION_ITEM_KINDS];
 
 const TASK_TYPES = ["written", "practical", "research"];
-const PROGRESS_ARC_LEVELS = ["exposure", "practice", "application", "mastery", "specialization"];
 
 // Which item-kind groups a builder's palette offers, and which extra content blocks it supports.
 const BUILDER_REGISTRY = {
@@ -30,6 +29,5 @@ module.exports = {
   OBSERVATION_ITEM_KINDS,
   ITEM_KINDS,
   TASK_TYPES,
-  PROGRESS_ARC_LEVELS,
   BUILDER_REGISTRY,
 };

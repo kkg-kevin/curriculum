@@ -14,11 +14,6 @@ export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practica
 export const TASK_TYPES = ["written", "practical", "research"];
 export const TASK_TYPE_LABELS = { written: "Written", practical: "Practical", research: "Research" };
 
-export const PROGRESS_ARC_LEVELS = ["exposure", "practice", "application", "mastery", "specialization"];
-export const PROGRESS_ARC_LEVEL_LABELS = {
-  exposure: "Exposure", practice: "Practice", application: "Application", mastery: "Mastery", specialization: "Specialization",
-};
-
 export const ITEM_KIND_LABELS = {
   mcqSingle: "Multiple Choice (Single)", mcqMultiple: "Multiple Choice (Multiple)", trueFalse: "True / False",
   matching: "Matching", ordering: "Ordering", fillBlank: "Fill in the Blank", shortAnswer: "Short Answer",
@@ -61,14 +56,5 @@ export function normalizeLegacyItem(item) {
   if (item.kind) return item;
   const kind = LEGACY_KIND_MAP[item.questionType] || "shortAnswer";
   const { questionType, mediaType, ...rest } = item;
-  return { kind, mapping: {}, sectionId: null, ...rest };
-}
-
-export function emptyMapping() {
-  return { competencyId: "", progressArcLevel: null, learningOutcome: "", performanceIndicator: "" };
-}
-
-export function hasMapping(mapping) {
-  if (!mapping) return false;
-  return !!(mapping.competencyId || mapping.progressArcLevel || mapping.learningOutcome?.trim() || mapping.performanceIndicator?.trim());
+  return { kind, sectionId: null, ...rest };
 }
