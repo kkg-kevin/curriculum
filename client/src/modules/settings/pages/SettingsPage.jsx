@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useCompetencies, useCreateCompetency, useUpdateCompetency, useDeleteCompetency,
 } from "../hooks/useCompetencies";
@@ -6,7 +7,6 @@ import {
   useLearningAreas, useCreateLearningArea, useUpdateLearningArea, useDeleteLearningArea,
 } from "../hooks/useLearningAreas";
 import { useTemplates, useDeleteTemplate } from "../../assessments/hooks/useTemplates";
-import TemplateModal from "../../assessments/components/TemplateModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const PALETTE = [
@@ -882,11 +882,40 @@ function TemplateCard({ template, onEdit, onDelete }) {
   );
 }
 
+function NewTemplateMenu({ onPick }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button type="button" className="stg-btn-primary" onClick={() => setOpen((v) => !v)}>
+        + New Template
+      </button>
+      {open && (
+        <div className="stg-menu" style={{ minWidth: "180px" }}>
+          {Object.entries(TEMPLATE_TYPE_LABELS).filter(([t]) => t !== "exam").map(([t, label]) => (
+            <button key={t} type="button" className="stg-menu-item" onClick={() => { setOpen(false); onPick(t); }}>
+              <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: TEMPLATE_TYPE_COLORS[t], flexShrink: 0 }} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TemplatesPanel() {
+  const navigate = useNavigate();
   const { data: templates = [], isLoading } = useTemplates();
   const { mutate: deleteTemplate } = useDeleteTemplate();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -904,9 +933,7 @@ function TemplatesPanel() {
             {templates.length} template{templates.length !== 1 ? "s" : ""} defined — applying one copies its content into a new assessment
           </p>
         </div>
-        <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-          + New Template
-        </button>
+        <NewTemplateMenu onPick={(t) => navigate(`/settings/templates/new/${t}`)} />
       </div>
 
       {templates.length === 0 ? (
@@ -916,9 +943,7 @@ function TemplatesPanel() {
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "380px", marginInline: "auto", lineHeight: "1.6" }}>
             Build reusable starting points for Quizzes, Assignments, Projects, and Teacher Observations.
           </p>
-          <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-            + New Template
-          </button>
+          <NewTemplateMenu onPick={(t) => navigate(`/settings/templates/new/${t}`)} />
         </div>
       ) : (
         <>
@@ -946,7 +971,7 @@ function TemplatesPanel() {
                 <TemplateCard
                   key={template.id}
                   template={template}
-                  onEdit={() => { setEditTarget(template); setModalOpen(true); }}
+                  onEdit={() => navigate(`/settings/templates/${template.id}/edit`)}
                   onDelete={() => setDeleteTarget(template)}
                 />
               ))}
@@ -955,7 +980,6 @@ function TemplatesPanel() {
         </>
       )}
 
-      {modalOpen && <TemplateModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title="Delete Template"
