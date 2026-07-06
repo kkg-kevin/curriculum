@@ -87,5 +87,14 @@
     ],
     "createdAt": "2026-07-06T05:16:32.538Z",
     "updatedAt": "2026-07-06T05:16:32.538Z"
+  },
+  {
+    "id": "866ead55-6d5f-4b35-9cfb-a12fc94b63d1",
+    "name": "dev",
+    "description": "dev 101",
+    "color": "#25476a",
+    "courses": [],
+    "createdAt": "2026-07-06T11:42:42.629Z",
+    "updatedAt": "2026-07-06T11:42:42.629Z"
   }
 ]
