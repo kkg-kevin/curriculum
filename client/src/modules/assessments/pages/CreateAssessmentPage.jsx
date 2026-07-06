@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateAssessment } from "../hooks/useAssessment";
+import { useTemplates } from "../hooks/useTemplates";
 import { assessmentSchema } from "../schemas/assessment.schema";
 import AssessmentForm from "../components/AssessmentForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -17,10 +18,51 @@ const DEFAULT_VALUES = {
   learningAreaIds: [],
 };
 
+const selectStyle = {
+  width: "100%", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #a8d5ee",
+  fontSize: "13px", fontFamily: "Inter, sans-serif", backgroundColor: "#fff", color: "#25476a",
+  outline: "none", cursor: "pointer",
+};
+
+function TemplatePicker({ type, onApply }) {
+  const { data: templates = [] } = useTemplates(type);
+  const [selected, setSelected] = useState("");
+
+  if (!type) return null;
+
+  return (
+    <div style={{ padding: "12px 14px", backgroundColor: "#F0F7FF", border: "1.5px solid #C7D9F8", borderRadius: "10px" }}>
+      <label style={{ fontSize: "12px", fontWeight: "700", color: "#25476a", display: "block", marginBottom: "6px" }}>
+        Start from a template <span style={{ fontWeight: 400, color: "#6B7280" }}>(optional)</span>
+      </label>
+      {templates.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "12.5px", color: "#6B7280" }}>
+          No templates yet for this type.{" "}
+          <Link to="/settings" style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Create one in Settings →</Link>
+        </p>
+      ) : (
+        <select
+          value={selected}
+          onChange={(e) => {
+            const id = e.target.value;
+            setSelected(id);
+            if (id) onApply(templates.find((t) => t.id === id));
+          }}
+          style={selectStyle}
+        >
+          <option value="">Select a template…</option>
+          {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+      )}
+    </div>
+  );
+}
+
 export default function CreateAssessmentPage() {
   const navigate = useNavigate();
   const { mutate: createAssessment, isPending } = useCreateAssessment();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [appliedTemplate, setAppliedTemplate] = useState(null);
 
   const methods = useForm({
     resolver: zodResolver(assessmentSchema),
@@ -28,7 +70,17 @@ export default function CreateAssessmentPage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, formState: { isDirty } } = methods;
+  const { handleSubmit, watch, setValue, formState: { isDirty } } = methods;
+  const type = watch("type");
+
+  // Applied content is type-specific (items vs rubric vs indicators) — if the user
+  // switches type after picking a template, the stashed content no longer applies.
+  useEffect(() => { setAppliedTemplate(null); }, [type]);
+
+  const applyTemplate = (template) => {
+    if (template.instructions) setValue("instructions", template.instructions, { shouldDirty: true });
+    setAppliedTemplate(template);
+  };
 
   const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
     createAssessment(data, {
@@ -38,6 +90,13 @@ export default function CreateAssessmentPage() {
         }
         if (learningAreaIds.length > 0) {
           await Promise.all(learningAreaIds.map((aid) => assessmentApi.linkLearningArea(assessment.id, aid)));
+        }
+        if (appliedTemplate) {
+          await Promise.all([
+            ...(appliedTemplate.items || []).map((item) => assessmentApi.addItem(assessment.id, item)),
+            ...(appliedTemplate.rubric || []).map((c) => assessmentApi.addRubricCriterion(assessment.id, c)),
+            ...(appliedTemplate.indicators || []).map((ind) => assessmentApi.addIndicator(assessment.id, ind)),
+          ]);
         }
         navigate(`/assessments/${assessment.id}/view`);
       },
@@ -98,7 +157,7 @@ export default function CreateAssessmentPage() {
 
       <FormProvider {...methods}>
         <form id="create-assessment-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <AssessmentForm />
+          <AssessmentForm afterType={<TemplatePicker key={type} type={type} onApply={applyTemplate} />} />
         </form>
       </FormProvider>
 

@@ -75,5 +75,17 @@
     ],
     "createdAt": "2026-07-05T08:14:38.267Z",
     "updatedAt": "2026-07-05T08:14:38.267Z"
+  },
+  {
+    "id": "8931ab6b-e0d8-4983-8514-1dbd7596eb5e",
+    "name": "saas",
+    "description": "etsgdxc",
+    "color": "#25476a",
+    "courses": [
+      "ets",
+      "rzduxhn"
+    ],
+    "createdAt": "2026-07-06T05:16:32.538Z",
+    "updatedAt": "2026-07-06T05:16:32.538Z"
   }
 ]

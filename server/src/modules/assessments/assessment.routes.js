@@ -17,6 +17,9 @@ const {
   addRubricCriterion,
   updateRubricCriterion,
   deleteRubricCriterion,
+  addIndicator,
+  updateIndicator,
+  deleteIndicator,
 } = require("./assessment.controller");
 
 const router = express.Router();
@@ -37,5 +40,8 @@ router.route("/:id/items/:itemId").put(updateItem).delete(deleteItem);
 
 router.route("/:id/rubric").post(addRubricCriterion);
 router.route("/:id/rubric/:criterionId").put(updateRubricCriterion).delete(deleteRubricCriterion);
+
+router.route("/:id/indicators").post(addIndicator);
+router.route("/:id/indicators/:indicatorId").put(updateIndicator).delete(deleteIndicator);
 
 module.exports = router;

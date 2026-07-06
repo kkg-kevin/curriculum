@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useAssessmentCompetencies, useAssessmentLearningAreas } from "../hooks/useAssessment";
-import { QUESTION_BASED_TYPES, TASK_BASED_TYPES } from "../schemas/assessment.schema";
-import QuestionModal from "../components/QuestionModal";
+import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useDeleteIndicator, useAssessmentCompetencies, useAssessmentLearningAreas } from "../hooks/useAssessment";
+import { QUESTION_BASED_TYPES, TASK_BASED_TYPES, OBSERVATION_BASED_TYPES } from "../schemas/assessment.schema";
+import QuestionModal, { QUESTION_TYPE_LABELS } from "../components/QuestionModal";
 import RubricCriterionModal from "../components/RubricCriterionModal";
+import IndicatorModal from "../components/IndicatorModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
-const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment" };
-const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄" };
-const QUESTION_TYPE_LABELS = { mcq: "Multiple Choice", trueFalse: "True / False", shortAnswer: "Short Answer" };
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
+const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
 
 function Section({ title, action, children }) {
   return (
@@ -183,6 +183,65 @@ function RubricSection({ assessmentId, rubric }) {
   );
 }
 
+function IndicatorsSection({ assessmentId, indicators }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { mutate: deleteIndicator } = useDeleteIndicator();
+
+  return (
+    <Section
+      title="Indicators"
+      action={<AddButton label="Add Indicator" onClick={() => { setEditTarget(null); setModalOpen(true); }} />}
+    >
+      {indicators.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No indicators added yet</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {indicators.map((ind) => (
+            <div key={ind.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: "0 0 6px 0", fontSize: "13px", fontWeight: "600", color: "#111827" }}>{ind.text}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {(ind.ratingScale || []).map((r) => (
+                      <span key={r} style={{ fontSize: "11px", fontWeight: "700", color: "#25476a", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "2px 8px" }}>
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <RowActions
+                  onEdit={() => { setEditTarget(ind); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(ind)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modalOpen && (
+        <IndicatorModal assessmentId={assessmentId} editTarget={editTarget} onClose={() => setModalOpen(false)} />
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Indicator"
+        message="This indicator will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          deleteIndicator({ assessmentId, indicatorId: deleteTarget.id });
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </Section>
+  );
+}
+
 export default function AssessmentViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -208,6 +267,7 @@ export default function AssessmentViewPage() {
 
   const isQuestionBased = QUESTION_BASED_TYPES.includes(assessment.type);
   const isTaskBased = TASK_BASED_TYPES.includes(assessment.type);
+  const isObservationBased = OBSERVATION_BASED_TYPES.includes(assessment.type);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -272,6 +332,7 @@ export default function AssessmentViewPage() {
 
           {isQuestionBased && <QuestionsSection assessmentId={id} items={assessment.items || []} />}
           {isTaskBased && <RubricSection assessmentId={id} rubric={assessment.rubric || []} />}
+          {isObservationBased && <IndicatorsSection assessmentId={id} indicators={assessment.indicators || []} />}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

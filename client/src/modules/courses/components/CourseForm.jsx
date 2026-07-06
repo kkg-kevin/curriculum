@@ -1,4 +1,4 @@
-import { Input, SectionHeader } from "./formFields";
+import { Input, SectionHeader, AgeRangeField } from "./formFields";
 import RichTextEditor from "./RichTextEditor";
 import CoverImageField from "./CoverImageField";
 import CompetenciesField from "./CompetenciesField";
@@ -11,6 +11,7 @@ export default function CourseForm() {
         <SectionHeader title="Course Details" />
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <Input name="name" label="Course Name" placeholder="e.g. Code for Educators - Robotics" required />
+          <AgeRangeField minName="ageMin" maxName="ageMax" label="Age Range" hint="The age group this course is designed for" />
           <RichTextEditor name="description" label="Description" />
           <CoverImageField name="coverImage" label="Cover Image" />
         </div>

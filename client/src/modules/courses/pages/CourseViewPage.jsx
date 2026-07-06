@@ -17,6 +17,12 @@ import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
 
+function formatAgeRange(min, max) {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return min === max ? `${min}` : `${min}–${max}`;
+  return min != null ? `${min}+` : `Up to ${max}`;
+}
+
 const SESSION_DEFAULT_VALUES = {
   title: "",
   outcomes: [],
@@ -303,7 +309,14 @@ export default function CourseViewPage() {
         <div>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "12px" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", color: "#111827" }}>{course.name}</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", color: "#111827" }}>{course.name}</h1>
+                {formatAgeRange(course.ageMin, course.ageMax) && (
+                  <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1.5px solid #a8d5ee", whiteSpace: "nowrap" }}>
+                    Ages {formatAgeRange(course.ageMin, course.ageMax)}
+                  </span>
+                )}
+              </div>
               <div style={{ marginTop: "6px" }}>
                 <RichContent html={course.description} emptyText="No description added" />
               </div>

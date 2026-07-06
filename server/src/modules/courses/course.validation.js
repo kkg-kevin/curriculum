@@ -4,6 +4,8 @@ const createCourseSchema = z.object({
   name:        z.string().min(1, "Course name is required"),
   description: z.string().optional().default(""),
   coverImage:  z.string().nullable().optional().default(null),
+  ageMin:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  ageMax:      z.number().int().min(0).max(120).nullable().optional().default(null),
 });
 
 const updateCourseSchema = createCourseSchema.partial();

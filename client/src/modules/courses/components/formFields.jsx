@@ -51,6 +51,29 @@ export function Input({ name, placeholder, label, required, hint, ...rest }) {
   );
 }
 
+export function AgeRangeField({ minName, maxName, label, hint }) {
+  const { register, formState: { errors } } = useFormContext();
+  const error = fieldError(errors, minName) || fieldError(errors, maxName);
+
+  const inputStyle = {
+    width: "84px", padding: "10px 12px", borderRadius: "10px",
+    border: `1.5px solid ${error ? "#FCA5A5" : "#E5E7EB"}`, fontSize: "14px",
+    fontFamily: "Inter, sans-serif", backgroundColor: error ? "#FFF5F5" : "#F9FAFB",
+    color: "#374151", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s",
+  };
+
+  return (
+    <Field label={label} error={error} hint={hint}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <input type="number" min="0" max="120" placeholder="Min" {...register(minName)} style={inputStyle} />
+        <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+        <input type="number" min="0" max="120" placeholder="Max" {...register(maxName)} style={inputStyle} />
+        <span style={{ color: "#6B7280", fontSize: "13px" }}>years</span>
+      </div>
+    </Field>
+  );
+}
+
 export function SectionHeader({ title, subtitle }) {
   return (
     <div style={{ marginBottom: "16px" }}>

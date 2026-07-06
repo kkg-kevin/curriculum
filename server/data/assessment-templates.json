@@ -1,0 +1,148 @@
+[
+  {
+    "id": "2ab66e1d-596a-4885-8987-e0363484be95",
+    "name": "Introduction to Robotics Quiz (Kids Level)",
+    "type": "quiz",
+    "description": "This quiz helps learners understand the basics of robotics, including robot components, movement, sensors, and simple logic. It is designed for beginners to test their foundational knowledge in a fun and engaging way.",
+    "instructions": "Instructions:\n\nRead each question carefully.\nChoose the correct answer from the options provided.\nEach question has only one correct answer.\nSelect the best answer and proceed to the next question.\nTry your best and have fun!",
+    "items": [
+      {
+        "question": "1. What is a robot?",
+        "questionType": "mcq",
+        "points": 1,
+        "options": [
+          "A. A type of animal",
+          "B. A machine that can perform tasks automatically",
+          "C. A toy only used for playing",
+          "D. A computer game"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "mediaType": "either"
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "createdAt": "2026-07-06T05:15:24.832Z",
+    "updatedAt": "2026-07-06T06:39:20.539Z"
+  },
+  {
+    "id": "1c79b2d0-adba-4653-a1a8-1838e0c772b0",
+    "name": "Robot Parts Labeling Assignment",
+    "type": "assignment",
+    "description": "Learners identify and describe the function of key robot components in a short written and diagram-based assignment.",
+    "instructions": "Instructions:\n\nLabel each part of the robot diagram provided.\nWrite one sentence explaining what each part does.\nSubmit your labeled diagram and written answers together.\nUse full sentences and correct spelling where possible.",
+    "items": [],
+    "rubric": [
+      {
+        "criterion": "Accuracy of Labels",
+        "description": "All robot parts are correctly identified and labeled.",
+        "points": 30
+      },
+      {
+        "criterion": "Explanation of Function",
+        "description": "Each part's function is explained clearly and correctly.",
+        "points": 30
+      },
+      {
+        "criterion": "Neatness & Organization",
+        "description": "Diagram and answers are neat, organized, and easy to follow.",
+        "points": 20
+      },
+      {
+        "criterion": "Completion",
+        "description": "All required parts and questions are fully attempted.",
+        "points": 20
+      }
+    ],
+    "indicators": [],
+    "createdAt": "2026-07-06T05:20:00.000Z",
+    "updatedAt": "2026-07-06T05:20:00.000Z"
+  },
+  {
+    "id": "2ea2f4c9-c5e9-4903-92f9-82f22b809d0e",
+    "name": "Build-a-Simple-Robot Project",
+    "type": "project",
+    "description": "A hands-on project where learners design, build, and test a simple robot using provided materials, applying concepts of movement, sensors, and basic logic.",
+    "instructions": "Instructions:\n\nWork individually or in small groups to design your robot.\nBuild your robot using the provided kit or materials.\nTest that your robot performs its intended task.\nPresent your robot and explain how it works to the class.",
+    "items": [],
+    "rubric": [
+      {
+        "criterion": "Design & Planning",
+        "description": "Robot design is thoughtful and matches the stated goal.",
+        "points": 20
+      },
+      {
+        "criterion": "Construction Quality",
+        "description": "Robot is built securely and components are properly connected.",
+        "points": 25
+      },
+      {
+        "criterion": "Functionality",
+        "description": "Robot successfully performs its intended task.",
+        "points": 30
+      },
+      {
+        "criterion": "Presentation & Explanation",
+        "description": "Learner clearly explains how the robot works and the choices made.",
+        "points": 15
+      },
+      {
+        "criterion": "Teamwork & Effort",
+        "description": "Learner collaborates well and shows consistent effort throughout.",
+        "points": 10
+      }
+    ],
+    "indicators": [],
+    "createdAt": "2026-07-06T05:25:00.000Z",
+    "updatedAt": "2026-07-06T05:25:00.000Z"
+  },
+  {
+    "id": "70cfc79b-1ca1-45f1-8da4-712a48068e71",
+    "name": "Robotics Classroom Behavior Observation",
+    "type": "observation",
+    "description": "An observational checklist used by the teacher to assess a learner's engagement, collaboration, and problem-solving behavior during robotics activities.",
+    "instructions": "Instructions:\n\nObserve the learner during the robotics session.\nRate each indicator based on what you observe, not what the learner says.\nUse the rating scale consistently across all learners.\nAdd notes separately if needed for report comments.",
+    "items": [],
+    "rubric": [],
+    "indicators": [
+      {
+        "text": "Follows multi-step building instructions",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ]
+      },
+      {
+        "text": "Collaborates respectfully with peers during group tasks",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ]
+      },
+      {
+        "text": "Attempts to troubleshoot problems before asking for help",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ]
+      },
+      {
+        "text": "Stays engaged and on-task throughout the session",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ]
+      }
+    ],
+    "createdAt": "2026-07-06T05:30:00.000Z",
+    "updatedAt": "2026-07-06T05:30:00.000Z"
+  }
+]

@@ -5,6 +5,8 @@ import {
 import {
   useLearningAreas, useCreateLearningArea, useUpdateLearningArea, useDeleteLearningArea,
 } from "../hooks/useLearningAreas";
+import { useTemplates, useDeleteTemplate } from "../../assessments/hooks/useTemplates";
+import TemplateModal from "../../assessments/components/TemplateModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const PALETTE = [
@@ -167,9 +169,9 @@ const CSS = `
     animation:stg-fadein 0.18s ease;
   }
   .stg-item:hover { border-color:#b8d9ee; background:#F8FBFF; }
-  .stg-item-top { display:flex; align-items:flex-start; gap:12px; }
-  .stg-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
-  .stg-item-name { flex:1; min-width:0; font-size:14px; font-weight:700; color:#111827; padding-top:1px; }
+  .stg-item-top { display:flex; align-items:center; gap:12px; }
+  .stg-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .stg-item-name { flex:1; min-width:0; font-size:14px; font-weight:700; color:#111827; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .stg-item-sub  { font-size:12.5px; color:#9CA3AF; font-weight:400; margin-top:4px; line-height:1.6; }
 
   .stg-icon-btn {
@@ -196,6 +198,18 @@ const CSS = `
   .stg-course-row:hover { background:#FAFCFF; }
   .stg-course-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .stg-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
+
+  .stg-search-wrap { position:relative; margin-bottom:14px; max-width:280px; }
+  .stg-search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#9CA3AF; pointer-events:none; }
+  .stg-search-input {
+    width:100%; box-sizing:border-box; padding:10px 12px 10px 36px; border-radius:10px;
+    border:1.5px solid #E5E7EB; font-size:13.5px; font-family:Inter,sans-serif;
+    background:#F9FAFB; color:#374151; outline:none;
+    transition:border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .stg-search-input:focus {
+    border-color:#38aae1; background:#fff; box-shadow:0 0 0 3px rgba(56,170,225,0.12);
+  }
 `;
 
 function Label({ children }) {
@@ -343,6 +357,10 @@ function CompetenciesPanel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredComps = query ? competencies.filter((c) => c.name.toLowerCase().includes(query)) : competencies;
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -372,17 +390,39 @@ function CompetenciesPanel() {
           </button>
         </div>
       ) : (
-        <div className="stg-grid">
-          {competencies.map((comp, idx) => (
-            <CompetencyCard
-              key={comp.id}
-              comp={comp}
-              color={PALETTE[idx % PALETTE.length]}
-              onEdit={() => { setEditTarget(comp); setModalOpen(true); }}
-              onDelete={() => setDeleteTarget(comp)}
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${competencies.length} competenc${competencies.length !== 1 ? "ies" : "y"}…`}
             />
-          ))}
-        </div>
+          </div>
+
+          {filteredComps.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-grid">
+              {filteredComps.map((comp) => (
+                <CompetencyCard
+                  key={comp.id}
+                  comp={comp}
+                  color={PALETTE[competencies.findIndex((c) => c.id === comp.id) % PALETTE.length]}
+                  onEdit={() => { setEditTarget(comp); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(comp)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {modalOpen && <CompetencyModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
@@ -501,22 +541,36 @@ function LearningAreaModal({ editTarget, onClose }) {
 
 function LearningAreaCard({ area, onEdit, onDelete }) {
   const color = area.color || "#25476a";
+  const hasDetails = !!area.description || area.courses?.length > 0;
+  const [expanded, setExpanded] = useState(false);
+  const isOpen = hasDetails && expanded;
 
   return (
     <div className="stg-item">
-      <div className="stg-item-top">
+      <div
+        className="stg-item-top"
+        style={{ cursor: hasDetails ? "pointer" : "default" }}
+        onClick={() => hasDetails && setExpanded((v) => !v)}
+      >
         <div className="stg-item-dot" style={{ backgroundColor: color }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="stg-item-name">{area.name}</div>
-          {area.description && <div className="stg-item-sub">{area.description}</div>}
         </div>
-        <button type="button" className="stg-icon-btn" onClick={onEdit} title="Edit">
+        {hasDetails && (
+          <svg
+            width="14" height="14" viewBox="0 0 24 24" fill="none"
+            style={{ color: "#9CA3AF", flexShrink: 0, transition: "transform 0.15s", transform: isOpen ? "rotate(180deg)" : "none" }}
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button type="button" className="stg-icon-btn danger" onClick={onDelete} title="Delete">
+        <button type="button" className="stg-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -526,29 +580,35 @@ function LearningAreaCard({ area, onEdit, onDelete }) {
         </button>
       </div>
 
-      {area.courses?.length > 0 && (
-        <div className="stg-course-section">
-          <div className="stg-course-header">
-            <div className="stg-course-header-left">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-                <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor" />
-                <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="stg-course-title">Courses</span>
-            </div>
-            <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
-              {area.courses.length}
-            </span>
-          </div>
-          <div className="stg-course-list">
-            {area.courses.map((c) => (
-              <div key={c} className="stg-course-row">
-                <span className="stg-course-dot" style={{ backgroundColor: color }} />
-                <span className="stg-course-name">{c}</span>
+      {isOpen && (
+        <>
+          {area.description && <div className="stg-item-sub" style={{ marginTop: "8px" }}>{area.description}</div>}
+
+          {area.courses?.length > 0 && (
+            <div className="stg-course-section">
+              <div className="stg-course-header">
+                <div className="stg-course-header-left">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+                    <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor" />
+                    <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="stg-course-title">Courses</span>
+                </div>
+                <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
+                  {area.courses.length}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="stg-course-list">
+                {area.courses.map((c) => (
+                  <div key={c} className="stg-course-row">
+                    <span className="stg-course-dot" style={{ backgroundColor: color }} />
+                    <span className="stg-course-name">{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -560,6 +620,10 @@ function LearningAreasPanel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredAreas = query ? areas.filter((a) => a.name.toLowerCase().includes(query)) : areas;
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -589,16 +653,38 @@ function LearningAreasPanel() {
           </button>
         </div>
       ) : (
-        <div className="stg-list">
-          {areas.map((area) => (
-            <LearningAreaCard
-              key={area.id}
-              area={area}
-              onEdit={() => { setEditTarget(area); setModalOpen(true); }}
-              onDelete={() => setDeleteTarget(area)}
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${areas.length} learning area${areas.length !== 1 ? "s" : ""}…`}
             />
-          ))}
-        </div>
+          </div>
+
+          {filteredAreas.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-list">
+              {filteredAreas.map((area) => (
+                <LearningAreaCard
+                  key={area.id}
+                  area={area}
+                  onEdit={() => { setEditTarget(area); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(area)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {modalOpen && <LearningAreaModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
@@ -614,11 +700,280 @@ function LearningAreasPanel() {
   );
 }
 
+/* ── Assessment Templates ──────────────────────────────────────────────── */
+
+const TEMPLATE_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
+const TEMPLATE_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
+
+function templateContentSummary(template) {
+  if (template.type === "quiz" || template.type === "exam") {
+    const n = template.items?.length || 0;
+    return `${n} question${n !== 1 ? "s" : ""}`;
+  }
+  if (template.type === "assignment" || template.type === "project") {
+    const n = template.rubric?.length || 0;
+    return `${n} criteri${n !== 1 ? "a" : "on"}`;
+  }
+  const n = template.indicators?.length || 0;
+  return `${n} indicator${n !== 1 ? "s" : ""}`;
+}
+
+function templateTotalPoints(template) {
+  if (template.type === "quiz" || template.type === "exam") {
+    return template.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) ?? 0;
+  }
+  if (template.type === "assignment" || template.type === "project") {
+    return template.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) ?? 0;
+  }
+  return null;
+}
+
+function TemplateTypeIcon({ type }) {
+  const p = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none" };
+  if (type === "quiz" || type === "exam") {
+    return (
+      <svg {...p}>
+        <path d="M9 11.5l2.5 2.5L20 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === "assignment") {
+    return (
+      <svg {...p}>
+        <rect x="5" y="4" width="14" height="18" rx="2.5" stroke="currentColor" strokeWidth="2" />
+        <path d="M9 4.5h6a1 1 0 0 1 1 1V7H8V5.5a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M8.5 12h7M8.5 16h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (type === "project") {
+    return (
+      <svg {...p}>
+        <path d="M12 2.5l2.7 5.6 6.1.9-4.4 4.4 1 6.2L12 16.5l-5.4 3.1 1-6.2-4.4-4.4 6.1-.9L12 2.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...p}>
+      <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+const MEDIA_TYPE_LABELS = { audio: "Audio", video: "Video", either: "Audio or Video" };
+
+function itemDetailSuffix(item) {
+  switch (item.questionType) {
+    case "mcq": return item.options?.length ? ` · ${item.options.length} options` : "";
+    case "matching": return ` · ${item.pairs?.length || 0} pairs`;
+    case "fillBlank": return ` · ${item.blanks?.length || 0} blank${item.blanks?.length !== 1 ? "s" : ""}`;
+    case "ordering": return ` · ${item.sequence?.length || 0} steps`;
+    case "fileUpload": return item.acceptedFileTypes?.length ? ` · ${item.acceptedFileTypes.join(", ")}` : "";
+    case "mediaResponse": return ` · ${MEDIA_TYPE_LABELS[item.mediaType] || item.mediaType}`;
+    default: return "";
+  }
+}
+
+function TemplateContentPreview({ template }) {
+  const row = { fontSize: "12px", color: "#4B5563", padding: "7px 10px", background: "#F9FAFB", borderRadius: "8px", border: "1px solid #F0F1F3" };
+  const label = { fontWeight: 600, color: "#111827" };
+  const meta = { marginLeft: "6px", color: "#9CA3AF", fontWeight: 400 };
+
+  if (template.type === "quiz" || template.type === "exam") {
+    if (!template.items?.length) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {template.items.map((item, idx) => (
+          <div key={idx} style={row}>
+            <span style={label}>{idx + 1}. {item.question}</span>
+            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (template.type === "assignment" || template.type === "project") {
+    if (!template.rubric?.length) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {template.rubric.map((c, idx) => (
+          <div key={idx} style={row}>
+            <span style={label}>{c.criterion}</span>
+            <span style={meta}>· {c.points} pt{c.points !== 1 ? "s" : ""}</span>
+            {c.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{c.description}</div>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (!template.indicators?.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {template.indicators.map((ind, idx) => (
+        <div key={idx} style={row}>
+          <div style={{ ...label, marginBottom: "5px" }}>{ind.text}</div>
+          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+            {ind.ratingScale.map((r) => (
+              <span key={r} style={{ fontSize: "10px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 7px" }}>{r}</span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TemplateCard({ template, onEdit, onDelete }) {
+  const color = TEMPLATE_TYPE_COLORS[template.type] || "#25476a";
+  const [expanded, setExpanded] = useState(false);
+  const totalPoints = templateTotalPoints(template);
+  const hasContent = !!(template.items?.length || template.rubric?.length || template.indicators?.length);
+
+  return (
+    <div className="stg-comp-card">
+      <div className="stg-comp-card-top">
+        <div className="stg-avatar" style={{ backgroundColor: `${color}15`, border: `2px solid ${color}30`, color }}>
+          <TemplateTypeIcon type={template.type} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, paddingTop: "2px" }}>
+          <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, wordBreak: "break-word" }}>
+            {template.name}
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10.5px", fontWeight: "700", color, backgroundColor: `${color}12`, border: `1px solid ${color}35`, borderRadius: "20px", padding: "1px 8px" }}>
+              {TEMPLATE_TYPE_LABELS[template.type] || template.type}
+            </span>
+            <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
+              {templateContentSummary(template)}{totalPoints ? ` · ${totalPoints} pts` : ""}
+            </span>
+          </div>
+        </div>
+        <CardKebab onEdit={onEdit} onDelete={onDelete} />
+      </div>
+
+      <p className="stg-comp-desc">
+        {template.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
+      </p>
+
+      {template.instructions && (
+        <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9CA3AF", fontStyle: "italic", lineHeight: 1.5 }}>
+          "{template.instructions}"
+        </p>
+      )}
+
+      {hasContent && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            style={{ marginTop: "12px", alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", color, fontSize: "11.5px", fontWeight: "700", padding: 0 }}
+          >
+            {expanded ? "Hide content" : "Preview content"}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {expanded && <div style={{ marginTop: "10px" }}><TemplateContentPreview template={template} /></div>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TemplatesPanel() {
+  const { data: templates = [], isLoading } = useTemplates();
+  const { mutate: deleteTemplate } = useDeleteTemplate();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredTemplates = query ? templates.filter((t) => t.name.toLowerCase().includes(query)) : templates;
+
+  if (isLoading) return <div className="stg-spinner" />;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", gap: "12px", flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Assessment Templates</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            {templates.length} template{templates.length !== 1 ? "s" : ""} defined — applying one copies its content into a new assessment
+          </p>
+        </div>
+        <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
+          + New Template
+        </button>
+      </div>
+
+      {templates.length === 0 ? (
+        <div className="stg-empty">
+          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧩</div>
+          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No templates yet</p>
+          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "380px", marginInline: "auto", lineHeight: "1.6" }}>
+            Build reusable starting points for Quizzes, Assignments, Projects, and Teacher Observations.
+          </p>
+          <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
+            + New Template
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="stg-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className="stg-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${templates.length} template${templates.length !== 1 ? "s" : ""}…`}
+            />
+          </div>
+
+          {filteredTemplates.length === 0 ? (
+            <div className="stg-empty" style={{ padding: "40px 24px" }}>
+              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
+            </div>
+          ) : (
+            <div className="stg-grid">
+              {filteredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onEdit={() => { setEditTarget(template); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(template)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {modalOpen && <TemplateModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Template"
+        message={`"${deleteTarget?.name}" will be permanently deleted. Assessments already created from it are unaffected. This cannot be undone.`}
+        confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => { deleteTemplate(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </div>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 const TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "learning-areas", label: "Learning Areas" },
+  { key: "templates", label: "Assessment Templates" },
 ];
 
 export default function SettingsPage() {
@@ -657,6 +1012,7 @@ export default function SettingsPage() {
       <div className="stg-card">
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
+        {activeTab === "templates" && <TemplatesPanel />}
       </div>
     </div>
   );

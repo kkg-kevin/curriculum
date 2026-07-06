@@ -11,8 +11,19 @@ const generateId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+// Cross-field check — zod validates each bound independently, but "max < min" can
+// only be caught once both values are known together.
+function assertValidAgeRange(ageMin, ageMax) {
+  if (ageMin != null && ageMax != null && ageMax < ageMin) {
+    const err = new Error("Max age must be greater than or equal to min age");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
 const CourseService = {
   async createCourse(data) {
+    assertValidAgeRange(data.ageMin, data.ageMax);
     return CourseModel.create(data);
   },
 
@@ -40,6 +51,8 @@ const CourseService = {
       err.statusCode = 404;
       throw err;
     }
+    const merged = { ...existing, ...data };
+    assertValidAgeRange(merged.ageMin, merged.ageMax);
     return CourseModel.update(id, data);
   },
 

@@ -13,6 +13,8 @@ const DEFAULT_VALUES = {
   name: "",
   description: "",
   coverImage: null,
+  ageMin: "",
+  ageMax: "",
   competencyIds: [],
   learningAreaIds: [],
   sessionCount: "1",

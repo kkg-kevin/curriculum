@@ -50,7 +50,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T10:40:02.674Z",
+    "updatedAt": "2026-07-06T05:47:18.733Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -641,5 +641,20 @@
     "id": "1f91edec-4aae-4395-b196-2a1a2ec9601e",
     "createdAt": "2026-07-05T07:39:05.985Z",
     "updatedAt": "2026-07-05T07:39:05.985Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "title": "",
+    "outcomes": [],
+    "introduction": "",
+    "iceBreaker": "",
+    "mainConcepts": [],
+    "activities": [],
+    "notes": [],
+    "resources": [],
+    "order": 12,
+    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+    "createdAt": "2026-07-06T05:07:59.620Z",
+    "updatedAt": "2026-07-06T05:09:04.668Z"
   }
 ]

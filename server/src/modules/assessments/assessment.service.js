@@ -180,6 +180,42 @@ const AssessmentService = {
     AssessmentModel.update(assessmentId, { rubric: rubric.filter((c) => c.id !== criterionId) });
     return { message: "Rubric criterion deleted successfully" };
   },
+
+  async addIndicator(assessmentId, data) {
+    const assessment = requireAssessment(assessmentId);
+    const indicator = { ...data, id: generateId() };
+    const indicators = [...(assessment.indicators || []), indicator];
+    AssessmentModel.update(assessmentId, { indicators });
+    return indicator;
+  },
+
+  async updateIndicator(assessmentId, indicatorId, data) {
+    const assessment = requireAssessment(assessmentId);
+    const indicators = assessment.indicators || [];
+    const index = indicators.findIndex((i) => i.id === indicatorId);
+    if (index === -1) {
+      const err = new Error("Indicator not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const updated = { ...indicators[index], ...data, id: indicatorId };
+    const nextIndicators = [...indicators];
+    nextIndicators[index] = updated;
+    AssessmentModel.update(assessmentId, { indicators: nextIndicators });
+    return updated;
+  },
+
+  async deleteIndicator(assessmentId, indicatorId) {
+    const assessment = requireAssessment(assessmentId);
+    const indicators = assessment.indicators || [];
+    if (!indicators.some((i) => i.id === indicatorId)) {
+      const err = new Error("Indicator not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentModel.update(assessmentId, { indicators: indicators.filter((i) => i.id !== indicatorId) });
+    return { message: "Indicator deleted successfully" };
+  },
 };
 
 module.exports = AssessmentService;
