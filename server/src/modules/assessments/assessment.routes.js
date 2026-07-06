@@ -11,15 +11,6 @@ const {
   getAssessmentLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
-  addItem,
-  updateItem,
-  deleteItem,
-  addRubricCriterion,
-  updateRubricCriterion,
-  deleteRubricCriterion,
-  addIndicator,
-  updateIndicator,
-  deleteIndicator,
 } = require("./assessment.controller");
 
 const router = express.Router();
@@ -34,14 +25,5 @@ router.route("/:id/competencies/links/:competencyId").delete(unlinkCompetency);
 // Learning Areas — this assessment's tagged learning areas (authored globally under /api/learning-areas)
 router.route("/:id/learning-areas/links").get(getAssessmentLearningAreas).post(linkLearningArea);
 router.route("/:id/learning-areas/links/:learningAreaId").delete(unlinkLearningArea);
-
-router.route("/:id/items").post(addItem);
-router.route("/:id/items/:itemId").put(updateItem).delete(deleteItem);
-
-router.route("/:id/rubric").post(addRubricCriterion);
-router.route("/:id/rubric/:criterionId").put(updateRubricCriterion).delete(deleteRubricCriterion);
-
-router.route("/:id/indicators").post(addIndicator);
-router.route("/:id/indicators/:indicatorId").put(updateIndicator).delete(deleteIndicator);
 
 module.exports = router;

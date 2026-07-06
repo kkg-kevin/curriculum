@@ -1,61 +1,60 @@
-import { z } from "zod";
+// Assessment schema & Builder registry. Mirrors server/src/modules/assessments/builder.constants.js
+// and assessment.validation.js — single source of truth for the Assessment Builder UI.
 
 export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation"];
-export const QUESTION_BASED_TYPES = ["quiz", "exam"];
-export const TASK_BASED_TYPES = ["assignment", "project"];
-export const OBSERVATION_BASED_TYPES = ["observation"];
 
-// Structured: fixed shape, auto-gradable. Unstructured: open-ended, human-graded.
-export const STRUCTURED_QUESTION_TYPES = ["mcq", "trueFalse", "matching", "fillBlank", "ordering"];
-export const UNSTRUCTURED_QUESTION_TYPES = ["shortAnswer", "essay", "fileUpload", "mediaResponse", "linkSubmission"];
-export const QUESTION_TYPES = [...STRUCTURED_QUESTION_TYPES, ...UNSTRUCTURED_QUESTION_TYPES];
+export const STRUCTURE_MODES = ["structured", "unstructured", "mixed"];
+export const STRUCTURE_MODE_LABELS = { structured: "Structured", unstructured: "Unstructured", mixed: "Mixed" };
 
-export const MEDIA_RESPONSE_TYPES = ["audio", "video", "either"];
-export const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
+export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "shortAnswer"];
+export const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
+export const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
+export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
 
-export const assessmentSchema = z.object({
-  name:         z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
-  description:  z.string().max(1000, "Max 1000 characters").optional().default(""),
-  type:         z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Select a valid assessment type" }) }),
-  instructions: z.string().max(5000, "Max 5000 characters").optional(),
-  // Not part of the Assessment record itself — reconciled into assessment-competency
-  // links after save. See CreateAssessmentPage/EditAssessmentPage onSubmit.
-  competencyIds: z.array(z.string()).optional().default([]),
-  // Same pattern as competencyIds, reconciled into assessment-learning-area links.
-  learningAreaIds: z.array(z.string()).optional().default([]),
-});
+export const TASK_TYPES = ["written", "practical", "research"];
+export const TASK_TYPE_LABELS = { written: "Written", practical: "Practical", research: "Research" };
 
-export const itemSchema = z.object({
-  question:      z.string().min(1, "Question text is required").max(5000, "Max 5000 characters"),
-  questionType:  z.enum(QUESTION_TYPES, { errorMap: () => ({ message: "Select a valid question type" }) }),
-  points:        z.coerce.number().min(0, "Points must be 0 or more"),
-  // mcq
-  options:       z.array(z.string().min(1, "Option can't be empty")).optional().default([]),
-  // mcq / trueFalse / shortAnswer
-  correctAnswer: z.string().optional().default(""),
-  // matching
-  pairs:         z.array(z.object({ left: z.string().min(1), right: z.string().min(1) })).optional().default([]),
-  // fillBlank — one accepted answer per blank, in order
-  blanks:        z.array(z.string().min(1, "Blank answer can't be empty")).optional().default([]),
-  // ordering — steps in the correct sequence
-  sequence:      z.array(z.string().min(1, "Step can't be empty")).optional().default([]),
-  // fileUpload
-  acceptedFileTypes: z.array(z.string().min(1)).optional().default([]),
-  // mediaResponse
-  mediaType:     z.enum(MEDIA_RESPONSE_TYPES).optional().default("either"),
-})
-  .refine((d) => d.questionType !== "mcq" || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
-  .refine((d) => d.questionType !== "matching" || d.pairs.length >= 2, { message: "Add at least 2 pairs", path: ["pairs"] })
-  .refine((d) => d.questionType !== "fillBlank" || d.blanks.length >= 1, { message: "Add at least 1 blank answer", path: ["blanks"] })
-  .refine((d) => d.questionType !== "ordering" || d.sequence.length >= 2, { message: "Add at least 2 steps", path: ["sequence"] });
+export const ITEM_KIND_LABELS = {
+  mcqSingle: "Multiple Choice (Single)", mcqMultiple: "Multiple Choice (Multiple)", trueFalse: "True / False",
+  matching: "Matching", ordering: "Ordering", fillBlank: "Fill in the Blank", shortAnswer: "Short Answer",
+  longAnswer: "Long Answer", essay: "Essay", reflection: "Reflection", scenarioResponse: "Scenario Based",
+  practicalTask: "Practical Task", openEnded: "Open-ended Question",
+  documentUpload: "Document Upload", imageUpload: "Image Upload", videoUpload: "Video Upload",
+  audioUpload: "Audio Upload", codeUpload: "Code Upload", externalLink: "External Link",
+  checklist: "Checklist Item", rating: "Rating Item", note: "Observation Note",
+  practicalSkill: "Practical Skill Observation", behaviour: "Behaviour Observation",
+};
 
-export const rubricCriterionSchema = z.object({
-  criterion:   z.string().min(1, "Criterion name is required").max(200, "Max 200 characters"),
-  description: z.string().max(5000, "Max 5000 characters").optional().default(""),
-  points:      z.coerce.number().min(0, "Points must be 0 or more"),
-});
+// Reuses the app's existing palette — no new colors introduced.
+export const ITEM_GROUP_COLORS = { structured: "#25476a", unstructured: "#38aae1", submission: "#059669", observation: "#D97706" };
+export const ITEM_GROUP_LABELS = { structured: "Structured Items", unstructured: "Unstructured Items", submission: "Submission Items", observation: "Observation Items" };
 
-export const indicatorSchema = z.object({
-  text:        z.string().min(1, "Indicator text is required").max(300, "Max 300 characters"),
-  ratingScale: z.array(z.string().min(1, "Rating label can't be empty")).min(2, "Need at least 2 rating levels").optional().default(DEFAULT_RATING_SCALE),
-});
+export const ITEM_GROUPS = {
+  structured: STRUCTURED_ITEM_KINDS,
+  unstructured: UNSTRUCTURED_ITEM_KINDS,
+  submission: SUBMISSION_ITEM_KINDS,
+  observation: OBSERVATION_ITEM_KINDS,
+};
+
+// Which item-kind groups each assessment type's palette offers, and which extra content blocks it supports.
+export const BUILDER_REGISTRY = {
+  quiz:        { label: "Quiz", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
+  exam:        { label: "Exam", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
+  assignment:  { label: "Assignment", itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true, supportsRubric: true },
+  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsSections: true, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true },
+  observation: { label: "Teacher Observation", itemGroups: ["observation"], supportsSections: true },
+};
+
+// Legacy items authored before the Builder existed used `questionType` with a smaller kind set.
+// Normalize them so the Builder can still open/edit older assessments.
+const LEGACY_KIND_MAP = {
+  mcq: "mcqSingle", trueFalse: "trueFalse", matching: "matching", fillBlank: "fillBlank", ordering: "ordering",
+  shortAnswer: "shortAnswer", essay: "essay", fileUpload: "documentUpload", mediaResponse: "videoUpload", linkSubmission: "externalLink",
+};
+
+export function normalizeLegacyItem(item) {
+  if (item.kind) return item;
+  const kind = LEGACY_KIND_MAP[item.questionType] || "shortAnswer";
+  const { questionType, mediaType, ...rest } = item;
+  return { kind, sectionId: null, ...rest };
+}

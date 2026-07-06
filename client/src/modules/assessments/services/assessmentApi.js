@@ -28,16 +28,4 @@ export const assessmentApi = {
 
   unlinkLearningArea: (assessmentId, learningAreaId) =>
     api.delete(`${ENDPOINT}/${assessmentId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
-
-  addItem: (assessmentId, data) => api.post(`${ENDPOINT}/${assessmentId}/items`, data).then((r) => r.data.data),
-  updateItem: (assessmentId, itemId, data) => api.put(`${ENDPOINT}/${assessmentId}/items/${itemId}`, data).then((r) => r.data.data),
-  removeItem: (assessmentId, itemId) => api.delete(`${ENDPOINT}/${assessmentId}/items/${itemId}`).then((r) => r.data),
-
-  addRubricCriterion: (assessmentId, data) => api.post(`${ENDPOINT}/${assessmentId}/rubric`, data).then((r) => r.data.data),
-  updateRubricCriterion: (assessmentId, criterionId, data) => api.put(`${ENDPOINT}/${assessmentId}/rubric/${criterionId}`, data).then((r) => r.data.data),
-  removeRubricCriterion: (assessmentId, criterionId) => api.delete(`${ENDPOINT}/${assessmentId}/rubric/${criterionId}`).then((r) => r.data),
-
-  addIndicator: (assessmentId, data) => api.post(`${ENDPOINT}/${assessmentId}/indicators`, data).then((r) => r.data.data),
-  updateIndicator: (assessmentId, indicatorId, data) => api.put(`${ENDPOINT}/${assessmentId}/indicators/${indicatorId}`, data).then((r) => r.data.data),
-  removeIndicator: (assessmentId, indicatorId) => api.delete(`${ENDPOINT}/${assessmentId}/indicators/${indicatorId}`).then((r) => r.data),
 };

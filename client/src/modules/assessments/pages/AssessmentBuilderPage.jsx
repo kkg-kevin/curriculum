@@ -1,15 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTemplates, useCreateTemplate, useUpdateTemplate } from "../hooks/useTemplates";
+import {
+  useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
+  useAssessmentCompetencies, useAssessmentLearningAreas,
+} from "../hooks/useAssessment";
+import { assessmentApi } from "../services/assessmentApi";
+import { useCompetencies } from "../../settings/hooks/useCompetencies";
+import { useLearningAreas } from "../../settings/hooks/useLearningAreas";
+import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
+import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
   BUILDER_REGISTRY, normalizeLegacyItem,
-} from "../schemas/templateBuilder.schema";
+} from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
+const TAG_PALETTE = ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706", "#0891B2", "#BE185D"];
 
 function genId() {
   try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
@@ -135,6 +144,25 @@ const CSS = `
     width:44px; height:44px; border-radius:12px; background:#F3F4F6; display:flex; align-items:center;
     justify-content:center; margin:0 auto 10px; color:#D1D5DB;
   }
+
+  .tb-tag-chip {
+    display:inline-flex; align-items:center; gap:6px; padding:4px 6px 4px 10px; border-radius:20px;
+    font-size:12px; font-weight:700; font-family:Inter,sans-serif;
+  }
+  .tb-tag-chip-x {
+    width:15px; height:15px; border-radius:50%; border:none; background:rgba(0,0,0,0.08); color:inherit;
+    cursor:pointer; font-size:10px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; padding:0; flex-shrink:0;
+  }
+  .tb-tag-dropdown {
+    position:absolute; top:calc(100% + 6px); left:0; z-index:20; background:#fff; border:1px solid #E5E7EB;
+    border-radius:12px; box-shadow:0 10px 28px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06);
+    width:240px; max-height:260px; overflow-y:auto; padding:6px;
+  }
+  .tb-tag-dropdown-item {
+    display:block; width:100%; padding:8px 10px; border:none; border-radius:8px; background:transparent;
+    font-size:12.5px; font-weight:600; font-family:Inter,sans-serif; color:#374151; text-align:left; cursor:pointer;
+  }
+  .tb-tag-dropdown-item:hover { background:#F3F4F6; }
 `;
 
 /* ── small shared bits ─────────────────────────────────────────────────── */
@@ -173,6 +201,61 @@ function ChipList({ values, options, labels, onToggle }) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Competency / Learning Area tag picker ──────────────────────────────── */
+
+function TagPicker({ label, items, selectedIds, onChange, onCreateNew }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const selected = selectedIds.map((id) => items.find((i) => i.id === id)).filter(Boolean);
+  const available = items.filter((i) => !selectedIds.includes(i.id));
+
+  return (
+    <div>
+      {selected.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+          {selected.map((item, idx) => {
+            const color = item.color || TAG_PALETTE[idx % TAG_PALETTE.length];
+            return (
+              <span key={item.id} className="tb-tag-chip" style={{ background: `${color}12`, border: `1.5px solid ${color}30`, color }}>
+                {item.name}
+                <button type="button" className="tb-tag-chip-x" onClick={() => onChange(selectedIds.filter((x) => x !== item.id))}>×</button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+        <button type="button" className="tb-btn-secondary" onClick={() => setOpen((v) => !v)}>+ Add {label}</button>
+        {open && (
+          <div className="tb-tag-dropdown">
+            {available.length === 0 && <div style={{ padding: "14px", textAlign: "center", fontSize: "12px", color: "#9CA3AF" }}>All {label.toLowerCase()}s already added.</div>}
+            {available.map((item) => (
+              <button key={item.id} type="button" className="tb-tag-dropdown-item" onClick={() => { onChange([...selectedIds, item.id]); setOpen(false); }}>{item.name}</button>
+            ))}
+            {onCreateNew && (
+              <button
+                type="button" className="tb-tag-dropdown-item"
+                style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: available.length ? "4px" : 0 }}
+                onClick={() => { onCreateNew(); setOpen(false); }}
+              >
+                + Create new {label.toLowerCase()}…
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -484,8 +567,8 @@ function RightPanel({ form, selectedEntry, onUpdateEntry }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div className="tb-card">
-        <p className="tb-card-title">Template Information</p>
-        <p style={{ margin: "0 0 3px", fontSize: "13px", fontWeight: 700, color: "#111827" }}>{form.name || <em style={{ color: "#D1D5DB", fontWeight: 400 }}>Untitled template</em>}</p>
+        <p className="tb-card-title">Assessment Information</p>
+        <p style={{ margin: "0 0 3px", fontSize: "13px", fontWeight: 700, color: "#111827" }}>{form.name || <em style={{ color: "#D1D5DB", fontWeight: 400 }}>Untitled assessment</em>}</p>
         <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF" }}>{TYPE_LABELS[form.type]} · {STRUCTURE_MODE_LABELS[form.structureType]}</p>
       </div>
 
@@ -496,6 +579,35 @@ function RightPanel({ form, selectedEntry, onUpdateEntry }) {
         ) : (
           <PlaceholderPanel text="Select an item from the builder to configure its properties." />
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Grading Rubric tab (Assignment/Project) ────────────────────────────── */
+
+function GradingRubricTab({ rubric, onChange }) {
+  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10 }]);
+  const update = (id, patch) => onChange(rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const remove = (id) => onChange(rubric.filter((c) => c.id !== id));
+  const totalPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+
+  return (
+    <div className="tb-card" style={{ maxWidth: "620px" }}>
+      <p className="tb-card-title">Grading Rubric{rubric.length ? ` · ${totalPoints} pts` : ""}</p>
+      <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>Optional holistic grading criteria, separate from the item-level marks above.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {rubric.map((c) => (
+          <div key={c.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
+              <input className="tb-input" placeholder="Criterion" value={c.criterion} onChange={(e) => update(c.id, { criterion: e.target.value })} />
+              <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
+              <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}>✕</button>
+            </div>
+            <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={c.description} onChange={(e) => update(c.id, { description: e.target.value })} />
+          </div>
+        ))}
+        <button type="button" className="tb-add-item-btn" onClick={add}>+ Add Criterion</button>
       </div>
     </div>
   );
@@ -558,7 +670,7 @@ function PreviewModal({ form, entries, onClose }) {
       <div style={{ background: "#fff", borderRadius: "18px", width: "100%", maxWidth: "620px", boxShadow: "0 24px 64px rgba(0,0,0,0.25)", overflow: "hidden" }}>
         <div style={{ padding: "18px 22px", background: "linear-gradient(135deg,#1a3550 0%,#25476a 60%,#2e7db5 100%)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff" }}>{form.name || "Untitled template"}</h2>
+            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff" }}>{form.name || "Untitled assessment"}</h2>
             <p style={{ margin: "4px 0 0", fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>{TYPE_LABELS[form.type]} · {STRUCTURE_MODE_LABELS[form.structureType]}</p>
           </div>
           <button type="button" onClick={onClose} style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", cursor: "pointer", fontSize: "16px", width: "26px", height: "26px", borderRadius: "8px" }}>×</button>
@@ -596,59 +708,70 @@ function PreviewModal({ form, entries, onClose }) {
 function buildBlankForm(type) {
   return {
     type, name: "", description: "", instructions: "", structureType: "mixed", overview: "",
-    sections: [], items: [], indicators: [], deliverables: [], milestones: [],
+    sections: [], items: [], indicators: [], deliverables: [], milestones: [], rubric: [],
+    competencyIds: [], learningAreaIds: [],
   };
 }
 
-function buildFormFromTemplate(t) {
+function buildFormFromAssessment(a, competencyIds, learningAreaIds) {
   return {
-    type: t.type, name: t.name || "", description: t.description || "", instructions: t.instructions || "",
-    structureType: t.structureType || "mixed", overview: t.overview || "",
-    sections: t.sections || [],
-    items: (t.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId() })),
-    indicators: (t.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, ...ind })),
-    deliverables: (t.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
-    milestones: (t.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
+    type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
+    structureType: a.structureType || "mixed", overview: a.overview || "",
+    sections: a.sections || [],
+    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId() })),
+    indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, ...ind })),
+    deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
+    milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
+    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId() })),
+    competencyIds, learningAreaIds,
   };
 }
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
-export default function TemplateBuilderPage() {
+export default function AssessmentBuilderPage() {
   const { type: routeType, id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const { data: templates = [], isLoading: loadingTemplates } = useTemplates();
-  const { mutate: createTemplate, isPending: creating } = useCreateTemplate();
-  const { mutate: updateTemplate, isPending: updating } = useUpdateTemplate();
-
-  const editTarget = isEdit ? templates.find((t) => t.id === id) : null;
+  const { data: assessment, isLoading: loadingAssessment } = useAssessmentQuery(id);
+  const { data: linkedCompetencies, isLoading: loadingCompetencies } = useAssessmentCompetencies(id);
+  const { data: linkedLearningAreas, isLoading: loadingLearningAreas } = useAssessmentLearningAreas(id);
+  const { mutate: createAssessment, isPending: creating } = useCreateAssessment();
+  const { mutate: updateAssessment, isPending: updating } = useUpdateAssessment();
+  const { data: allCompetencies = [] } = useCompetencies();
+  const { data: allLearningAreas = [] } = useLearningAreas();
 
   const [form, setForm] = useState(null);
+  const [originalTags, setOriginalTags] = useState({ competencyIds: [], learningAreaIds: [] });
   const [activeTab, setActiveTab] = useState("info");
   const [focusedSectionId, setFocusedSectionId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [createCompetencyOpen, setCreateCompetencyOpen] = useState(false);
+  const [createLearningAreaOpen, setCreateLearningAreaOpen] = useState(false);
 
   useEffect(() => {
     if (form) return;
     if (isEdit) {
-      if (loadingTemplates || !editTarget) return;
-      setForm(buildFormFromTemplate(editTarget));
+      if (loadingAssessment || loadingCompetencies || loadingLearningAreas || !assessment) return;
+      const competencyIds = linkedCompetencies.map((c) => c.id);
+      const learningAreaIds = linkedLearningAreas.map((a) => a.id);
+      setForm(buildFormFromAssessment(assessment, competencyIds, learningAreaIds));
+      setOriginalTags({ competencyIds, learningAreaIds });
     } else {
       setForm(buildBlankForm(routeType));
     }
-  }, [form, isEdit, loadingTemplates, editTarget, routeType]);
+  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingLearningAreas, assessment, linkedCompetencies, linkedLearningAreas, routeType]);
 
-  useEffect(() => { document.title = "Assessment Template Builder"; }, []);
+  useEffect(() => { document.title = "Assessment Builder"; }, []);
 
   useEffect(() => {
     const el = document.createElement("style");
-    el.id = "tb-styles";
+    el.id = "ab-styles";
     el.textContent = CSS;
     document.head.appendChild(el);
-    return () => { document.getElementById("tb-styles")?.remove(); };
+    return () => { document.getElementById("ab-styles")?.remove(); };
   }, []);
 
   if (!form) {
@@ -729,32 +852,58 @@ export default function TemplateBuilderPage() {
   }
 
   function buildPayload() {
+    const registry = BUILDER_REGISTRY[type];
     const payload = {
       name: form.name.trim(), type, description: form.description.trim(), instructions: form.instructions.trim(),
       structureType: form.structureType,
       sections: form.sections.map((s, i) => ({ ...s, order: i })),
     };
-    if (BUILDER_REGISTRY[type]?.supportsDeliverables) payload.overview = form.overview.trim();
+    if (registry?.supportsDeliverables) payload.overview = form.overview.trim();
     payload.items = isObservation ? [] : form.items;
     payload.indicators = isObservation ? form.indicators : [];
-    if (BUILDER_REGISTRY[type]?.supportsDeliverables) payload.deliverables = form.deliverables;
-    if (BUILDER_REGISTRY[type]?.supportsMilestones) payload.milestones = form.milestones;
+    payload.rubric = registry?.supportsRubric ? form.rubric : [];
+    if (registry?.supportsDeliverables) payload.deliverables = form.deliverables;
+    if (registry?.supportsMilestones) payload.milestones = form.milestones;
     return payload;
+  }
+
+  async function reconcileTags(assessmentId) {
+    const { competencyIds, learningAreaIds } = form;
+    if (isEdit) {
+      const compToAdd = competencyIds.filter((cid) => !originalTags.competencyIds.includes(cid));
+      const compToRemove = originalTags.competencyIds.filter((cid) => !competencyIds.includes(cid));
+      const areaToAdd = learningAreaIds.filter((aid) => !originalTags.learningAreaIds.includes(aid));
+      const areaToRemove = originalTags.learningAreaIds.filter((aid) => !learningAreaIds.includes(aid));
+      await Promise.all([
+        ...compToAdd.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
+        ...compToRemove.map((cid) => assessmentApi.unlinkCompetency(assessmentId, cid)),
+        ...areaToAdd.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
+        ...areaToRemove.map((aid) => assessmentApi.unlinkLearningArea(assessmentId, aid)),
+      ]);
+    } else {
+      await Promise.all([
+        ...competencyIds.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
+        ...learningAreaIds.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
+      ]);
+    }
   }
 
   function handleSave() {
     if (!form.name.trim()) { setActiveTab("info"); return; }
     const data = buildPayload();
-    const onSuccess = () => navigate("/settings");
-    if (isEdit) updateTemplate({ id, data }, { onSuccess });
-    else createTemplate(data, { onSuccess });
+    if (isEdit) {
+      updateAssessment({ id, data }, { onSuccess: async () => { await reconcileTags(id); navigate("/assessments"); } });
+    } else {
+      createAssessment(data, { onSuccess: async (created) => { await reconcileTags(created.id); navigate("/assessments"); } });
+    }
   }
 
   const isPending = creating || updating;
   const color = TYPE_COLORS[type];
   const tabs = [
-    { key: "info", label: "Template Information" },
+    { key: "info", label: "Assessment Information" },
     { key: "structure", label: "Structure & Items" },
+    ...(BUILDER_REGISTRY[type]?.supportsRubric ? [{ key: "rubric", label: "Grading Rubric" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
   ];
 
@@ -762,33 +911,33 @@ export default function TemplateBuilderPage() {
     <div className="tb-page">
       <div className="tb-header">
         <div>
-          <p className="tb-crumb"><a onClick={() => navigate("/settings")}>Assessment Templates</a> / {isEdit ? "Edit Template" : "Create New Template"}</p>
+          <p className="tb-crumb"><a onClick={() => navigate("/assessments")}>Assessments</a> / {isEdit ? "Edit Assessment" : "Create New Assessment"}</p>
           <div className="tb-title-row">
             <div className="tb-title-icon" style={{ backgroundColor: `${color}15`, color }}>{TYPE_ICONS[type]}</div>
             <div>
-              <h1 className="tb-title">{TYPE_LABELS[type]} Template Builder</h1>
-              <p className="tb-subtitle">Build a reusable {TYPE_LABELS[type].toLowerCase()} template. Add sections and assessment items of any type.</p>
+              <h1 className="tb-title">{TYPE_LABELS[type]} Assessment</h1>
+              <p className="tb-subtitle">Build a {TYPE_LABELS[type].toLowerCase()} assessment. Add sections and items of any type.</p>
             </div>
           </div>
         </div>
         <div className="tb-actions">
-          <button type="button" className="tb-btn-secondary" onClick={() => setPreviewOpen(true)}>Preview Template</button>
-          <button type="button" className="tb-btn-primary" onClick={handleSave} disabled={isPending}>{isPending ? "Saving…" : "Save Template"}</button>
+          <button type="button" className="tb-btn-secondary" onClick={() => setPreviewOpen(true)}>Preview Assessment</button>
+          <button type="button" className="tb-btn-primary" onClick={handleSave} disabled={isPending}>{isPending ? "Saving…" : "Save Assessment"}</button>
         </div>
       </div>
 
       <div className="tb-body">
         <div className="tb-rail">
           <div>
-            <p className="tb-rail-section-title">Assessment Templates</p>
-            <button type="button" className="tb-rail-link active" onClick={() => navigate("/settings")}>
-              <span className="tb-rail-dot" style={{ backgroundColor: color }} /> All Templates
+            <p className="tb-rail-section-title">Assessments</p>
+            <button type="button" className="tb-rail-link active" onClick={() => navigate("/assessments")}>
+              <span className="tb-rail-dot" style={{ backgroundColor: color }} /> All Assessments
             </button>
           </div>
           <div>
-            <p className="tb-rail-section-title">Build New Template</p>
+            <p className="tb-rail-section-title">New Assessment</p>
             {Object.keys(TYPE_LABELS).filter((t) => t !== "exam").map((t) => (
-              <button key={t} type="button" className={`tb-rail-link${t === type && !isEdit ? " active" : ""}`} onClick={() => navigate(`/settings/templates/new/${t}`)}>
+              <button key={t} type="button" className={`tb-rail-link${t === type && !isEdit ? " active" : ""}`} onClick={() => navigate(`/assessments/new/${t}`)}>
                 <span className="tb-rail-dot" style={{ backgroundColor: TYPE_COLORS[t] }} /> {TYPE_LABELS[t]}
               </button>
             ))}
@@ -806,8 +955,8 @@ export default function TemplateBuilderPage() {
             <div className="tb-card" style={{ maxWidth: "620px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <div>
-                  <Label>Template Name *</Label>
-                  <input className="tb-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Basic Concepts Quiz Template" />
+                  <Label>Assessment Name *</Label>
+                  <input className="tb-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Mid-term Mathematics Exam" />
                 </div>
                 <div>
                   <Label>Description</Label>
@@ -827,6 +976,22 @@ export default function TemplateBuilderPage() {
                   <Label>Structure Type</Label>
                   <SegmentedControl options={STRUCTURE_MODES} value={form.structureType} onChange={(v) => setForm((f) => ({ ...f, structureType: v }))} />
                 </div>
+                <div>
+                  <Label>Competencies</Label>
+                  <TagPicker
+                    label="Competency" items={allCompetencies} selectedIds={form.competencyIds}
+                    onChange={(ids) => setForm((f) => ({ ...f, competencyIds: ids }))}
+                    onCreateNew={() => setCreateCompetencyOpen(true)}
+                  />
+                </div>
+                <div>
+                  <Label>Learning Areas</Label>
+                  <TagPicker
+                    label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
+                    onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
+                    onCreateNew={() => setCreateLearningAreaOpen(true)}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -845,6 +1010,10 @@ export default function TemplateBuilderPage() {
             </div>
           )}
 
+          {activeTab === "rubric" && (
+            <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} />
+          )}
+
           {activeTab === "deliverables" && (
             <DeliverablesMilestonesTab
               deliverables={form.deliverables} milestones={form.milestones}
@@ -856,6 +1025,18 @@ export default function TemplateBuilderPage() {
       </div>
 
       {previewOpen && <PreviewModal form={form} entries={entries} onClose={() => setPreviewOpen(false)} />}
+      {createCompetencyOpen && (
+        <CreateCompetencyModal
+          onClose={() => setCreateCompetencyOpen(false)}
+          onCreated={(id) => setForm((f) => ({ ...f, competencyIds: [...f.competencyIds, id] }))}
+        />
+      )}
+      {createLearningAreaOpen && (
+        <CreateLearningAreaModal
+          onClose={() => setCreateLearningAreaOpen(false)}
+          onCreated={(id) => setForm((f) => ({ ...f, learningAreaIds: [...f.learningAreaIds, id] }))}
+        />
+      )}
     </div>
   );
 }
