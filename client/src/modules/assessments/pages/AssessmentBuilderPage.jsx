@@ -9,6 +9,8 @@ import { useCompetencies } from "../../settings/hooks/useCompetencies";
 import { useLearningAreas } from "../../settings/hooks/useLearningAreas";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
+import RichTextEditor from "../components/RichTextEditor";
+import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
@@ -56,7 +58,7 @@ const CSS = `
   }
   .tb-btn-secondary:hover { background:#F3F4F6; }
 
-  .tb-body { display:grid; grid-template-columns:200px minmax(0,1fr); gap:20px; padding:0 24px 32px; max-width:100%; box-sizing:border-box; }
+  .tb-body { display:grid; grid-template-columns:158px minmax(0,1fr); gap:18px; padding:0 24px 32px; max-width:100%; box-sizing:border-box; }
   @media(max-width:900px){ .tb-body{ grid-template-columns:1fr; } }
   .tb-body-content { min-width:0; }
 
@@ -409,7 +411,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
         <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
           {ITEM_KIND_LABELS[entry.kind]}
         </span>
-        <span className="tb-entry-text">{entryLabel(entry) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
+        <span className="tb-entry-text">{stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
         {!OBSERVATION_ITEM_KINDS.includes(entry.kind) && <span className="tb-entry-points">{entry.points} pt{entry.points !== 1 ? "s" : ""}</span>}
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
@@ -447,7 +449,7 @@ function ItemConfigForm({ type, entry, onChange }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <div>
         <Label>{isObservation ? "Observation Text" : "Question / Prompt"}</Label>
-        <textarea className="tb-textarea" rows={3} value={entryLabel(entry)} onChange={(e) => set(isObservation ? "text" : "question", e.target.value)} />
+        <RichTextEditor value={entryLabel(entry)} onChange={(html) => set(isObservation ? "text" : "question", html)} minHeight={90} maxHeight={220} />
       </div>
 
       {!isObservation && (
@@ -689,13 +691,13 @@ function PreviewModal({ form, entries, onClose }) {
           <button type="button" onClick={onClose} style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", cursor: "pointer", fontSize: "16px", width: "26px", height: "26px", borderRadius: "8px" }}>×</button>
         </div>
         <div style={{ padding: "20px 22px", maxHeight: "60vh", overflowY: "auto" }}>
-          {form.description && <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#374151" }}>{form.description}</p>}
+          {!isEmptyHtml(form.description) && <div style={{ margin: "0 0 14px" }}><RichContent html={form.description} /></div>}
           {form.sections.map((section) => (
             <div key={section.id} style={{ marginBottom: "14px" }}>
               <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "#25476a" }}>{section.name}</p>
               {entries.filter((e) => e.sectionId === section.id).map((entry) => (
                 <div key={entry.id} style={{ padding: "8px 10px", fontSize: "12.5px", color: "#374151", background: "#F9FAFB", borderRadius: "8px", marginBottom: "5px" }}>
-                  {entryLabel(entry) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
+                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
                 </div>
               ))}
             </div>
@@ -705,7 +707,7 @@ function PreviewModal({ form, entries, onClose }) {
               <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "#9CA3AF" }}>Unsectioned</p>
               {entries.filter((e) => !e.sectionId).map((entry) => (
                 <div key={entry.id} style={{ padding: "8px 10px", fontSize: "12.5px", color: "#374151", background: "#F9FAFB", borderRadius: "8px", marginBottom: "5px" }}>
-                  {entryLabel(entry) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
+                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
                 </div>
               ))}
             </div>
@@ -942,12 +944,6 @@ export default function AssessmentBuilderPage() {
       <div className="tb-body">
         <div className="tb-rail">
           <div>
-            <p className="tb-rail-section-title">Assessments</p>
-            <button type="button" className="tb-rail-link active" onClick={() => navigate("/assessments")}>
-              <span className="tb-rail-dot" style={{ backgroundColor: color }} /> All Assessments
-            </button>
-          </div>
-          <div>
             <p className="tb-rail-section-title">New Assessment</p>
             {Object.keys(TYPE_LABELS).filter((t) => t !== "exam").map((t) => (
               <button key={t} type="button" className={`tb-rail-link${t === type && !isEdit ? " active" : ""}`} onClick={() => navigate(`/assessments/new/${t}`)}>
@@ -974,16 +970,16 @@ export default function AssessmentBuilderPage() {
                   </div>
                   <div>
                     <Label>Description</Label>
-                    <textarea className="tb-textarea" rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+                    <RichTextEditor value={form.description} onChange={(html) => setForm((f) => ({ ...f, description: html }))} />
                   </div>
                   <div>
                     <Label>Default Instructions</Label>
-                    <textarea className="tb-textarea" rows={3} value={form.instructions} onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))} />
+                    <RichTextEditor value={form.instructions} onChange={(html) => setForm((f) => ({ ...f, instructions: html }))} />
                   </div>
                   {BUILDER_REGISTRY[type]?.supportsDeliverables && (
                     <div>
                       <Label>Project Overview</Label>
-                      <textarea className="tb-textarea" rows={3} value={form.overview} onChange={(e) => setForm((f) => ({ ...f, overview: e.target.value }))} placeholder="What is this project about?" />
+                      <RichTextEditor value={form.overview} onChange={(html) => setForm((f) => ({ ...f, overview: html }))} />
                     </div>
                   )}
                   <div>

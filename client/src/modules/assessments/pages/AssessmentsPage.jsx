@@ -3,14 +3,14 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
 import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
+import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
 const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
-const MEDIA_TYPE_LABELS = { audio: "Audio", video: "Video", either: "Audio or Video" };
 
-/* ── content summary / preview (shared shape with the Builder) ─────────── */
+/* ── content summary (shared shape with the Builder) ─────────────────────── */
 
 function assessmentContentSummary(assessment) {
   if (assessment.type === "quiz" || assessment.type === "exam") {
@@ -41,92 +41,6 @@ function assessmentTotalPoints(assessment) {
     return itemsPoints + rubricPoints;
   }
   return null;
-}
-
-function itemDetailSuffix(item) {
-  switch (item.kind || item.questionType) {
-    case "mcq": case "mcqSingle": case "mcqMultiple":
-      return item.options?.length ? ` · ${item.options.length} options` : "";
-    case "matching": return ` · ${item.pairs?.length || 0} pairs`;
-    case "fillBlank": return ` · ${item.blanks?.length || 0} blank${item.blanks?.length !== 1 ? "s" : ""}`;
-    case "ordering": return ` · ${item.sequence?.length || 0} steps`;
-    case "fileUpload": case "documentUpload": case "imageUpload": case "videoUpload": case "audioUpload": case "codeUpload":
-      return item.acceptedFileTypes?.length ? ` · ${item.acceptedFileTypes.join(", ")}` : "";
-    case "mediaResponse": return ` · ${MEDIA_TYPE_LABELS[item.mediaType] || item.mediaType}`;
-    default: return "";
-  }
-}
-
-function AssessmentContentPreview({ assessment }) {
-  const row = { fontSize: "12px", color: "#4B5563", padding: "7px 10px", background: "#F9FAFB", borderRadius: "8px", border: "1px solid #F0F1F3" };
-  const label = { fontWeight: 600, color: "#111827" };
-  const meta = { marginLeft: "6px", color: "#9CA3AF", fontWeight: 400 };
-
-  if (assessment.type === "quiz" || assessment.type === "exam") {
-    if (!assessment.items?.length) return null;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {assessment.items.map((item, idx) => (
-          <div key={idx} style={row}>
-            <span style={label}>{idx + 1}. {item.question}</span>
-            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (assessment.type === "assignment" || assessment.type === "project") {
-    const hasAny = assessment.items?.length || assessment.rubric?.length || assessment.deliverables?.length || assessment.milestones?.length;
-    if (!hasAny) return null;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {assessment.items?.map((item, idx) => (
-          <div key={`item-${idx}`} style={row}>
-            <span style={label}>{item.question}</span>
-            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
-          </div>
-        ))}
-        {assessment.rubric?.map((c, idx) => (
-          <div key={`rubric-${idx}`} style={row}>
-            <span style={label}>{c.criterion}</span>
-            <span style={meta}>· {c.points} pt{c.points !== 1 ? "s" : ""}</span>
-            {c.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{c.description}</div>}
-          </div>
-        ))}
-        {assessment.deliverables?.map((d, idx) => (
-          <div key={`deliverable-${idx}`} style={row}>
-            <span style={label}>📦 {d.name}</span>
-            {d.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{d.description}</div>}
-          </div>
-        ))}
-        {assessment.milestones?.map((m, idx) => (
-          <div key={`milestone-${idx}`} style={row}>
-            <span style={label}>🚩 {m.name}</span>
-            {m.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{m.description}</div>}
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (!assessment.indicators?.length) return null;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      {assessment.indicators.map((ind, idx) => (
-        <div key={idx} style={row}>
-          <div style={{ ...label, marginBottom: ind.kind === "checklist" || ind.kind === "note" ? 0 : "5px" }}>{ind.text}</div>
-          {ind.kind === "checklist" && <span style={{ fontSize: "10.5px", color: "#9CA3AF" }}>Checklist item</span>}
-          {ind.kind === "note" && <span style={{ fontSize: "10.5px", color: "#9CA3AF", fontStyle: "italic" }}>Freeform note</span>}
-          {(!ind.kind || ["rating", "practicalSkill", "behaviour"].includes(ind.kind)) && (
-            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-              {(ind.ratingScale || []).map((r) => (
-                <span key={r} style={{ fontSize: "10px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 7px" }}>{r}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 /* ── New Assessment type-picker menu ─────────────────────────────────────── */
@@ -223,13 +137,11 @@ function AssessmentCard({ assessment }) {
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [hovered, setHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const summary = assessmentContentSummary(assessment);
   const totalPoints = assessmentTotalPoints(assessment);
-  const hasContent = !!(assessment.items?.length || assessment.rubric?.length || assessment.indicators?.length || assessment.deliverables?.length || assessment.milestones?.length);
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -295,23 +207,8 @@ function AssessmentCard({ assessment }) {
           margin: 0, fontSize: "13px", color: "#6B7280", lineHeight: "1.6",
           display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
         }}>
-          {assessment.description || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
+          {stripHtml(assessment.description) || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
         </p>
-
-        {hasContent && (
-          <div>
-            <button
-              type="button" onClick={() => setExpanded((v) => !v)}
-              style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", color: "#38aae1", fontSize: "11.5px", fontWeight: "700", padding: 0 }}
-            >
-              {expanded ? "Hide content" : "Preview content"}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            {expanded && <div style={{ marginTop: "8px" }}><AssessmentContentPreview assessment={assessment} /></div>}
-          </div>
-        )}
       </div>
 
       <div style={{ padding: "10px 20px", borderTop: "1px solid #F3F4F6", backgroundColor: "#FAFBFF", display: "flex", alignItems: "center", justifyContent: "space-between" }}>

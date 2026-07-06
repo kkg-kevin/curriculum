@@ -4,12 +4,11 @@ import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
   TASK_TYPE_LABELS, normalizeLegacyItem,
 } from "../schemas/assessment.schema";
+import RichContent, { isEmptyHtml } from "../components/RichContent";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
 const TAG_PALETTE = ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706", "#0891B2", "#BE185D"];
-
-const SUBMISSION_KIND_SET = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload"];
 
 function Section({ title, action, children }) {
   return (
@@ -49,10 +48,12 @@ function ItemDetail({ item }) {
   return (
     <>
       {(item.kind === "mcqSingle" || item.kind === "mcqMultiple") && item.options?.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px" }}>
-          {item.options.map((o) => (
-            <div key={o} style={{ display: "flex", alignItems: "center", gap: "7px", fontSize: "12.5px", color: o === item.correctAnswer ? "#059669" : "#374151", fontWeight: o === item.correctAnswer ? 700 : 400 }}>
-              <span>{o === item.correctAnswer ? "✓" : "○"}</span> {o}
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "8px" }}>
+          {item.options.map((o, i) => (
+            <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: o === item.correctAnswer ? "#059669" : "#374151", fontWeight: o === item.correctAnswer ? 700 : 400 }}>
+              <span style={{ color: "#9CA3AF", fontWeight: 700, width: "16px", flexShrink: 0 }}>{String.fromCharCode(65 + i)}.</span>
+              <span>{o}</span>
+              {o === item.correctAnswer && <span>✓</span>}
             </div>
           ))}
         </div>
@@ -76,9 +77,6 @@ function ItemDetail({ item }) {
       {item.kind === "shortAnswer" && item.correctAnswer && (
         <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#6B7280", fontStyle: "italic" }}>Model answer: {item.correctAnswer}</p>
       )}
-      {SUBMISSION_KIND_SET.includes(item.kind) && item.acceptedFileTypes?.length > 0 && (
-        <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#6B7280" }}>Accepted formats: {item.acceptedFileTypes.join(", ")}</p>
-      )}
       {isObservation && item.kind === "checklist" && (
         <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>Checklist item</p>
       )}
@@ -100,7 +98,7 @@ function ItemDetail({ item }) {
   );
 }
 
-function StructureSection({ sections, entries, isObservation }) {
+function StructureSection({ sections, entries }) {
   const sectionIds = new Set(sections.map((s) => s.id));
   const orphanEntries = entries.filter((e) => !e.sectionId || !sectionIds.has(e.sectionId));
   let counter = 0;
@@ -112,11 +110,11 @@ function StructureSection({ sections, entries, isObservation }) {
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: "#111827", flexShrink: 0 }}>{counter}.</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: "0 0 6px", fontSize: "13.5px", color: "#111827" }}>{entry.question ?? entry.text ?? <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <Badge>{ITEM_KIND_LABELS[entry.kind] || entry.kind}</Badge>
-              {!isObservation && <span style={{ fontSize: "12px", color: "#6B7280" }}>{entry.points} pts</span>}
-            </div>
+            {isEmptyHtml(entry.question ?? entry.text) ? (
+              <p style={{ margin: "0 0 6px", fontSize: "13.5px", color: "#D1D5DB", fontStyle: "italic" }}>Untitled item</p>
+            ) : (
+              <div style={{ marginBottom: "6px", fontSize: "13.5px" }}><RichContent html={entry.question ?? entry.text} /></div>
+            )}
             <ItemDetail item={entry} />
           </div>
         </div>
@@ -234,27 +232,23 @@ export default function AssessmentViewPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Section title="Description">
-            {assessment.description ? (
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65" }}>{assessment.description}</p>
-            ) : (
-              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No description added</p>
-            )}
+            <RichContent html={assessment.description} emptyText="No description added" />
           </Section>
 
-          {assessment.instructions && (
+          {!isEmptyHtml(assessment.instructions) && (
             <Section title="Instructions">
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65", whiteSpace: "pre-wrap" }}>{assessment.instructions}</p>
+              <RichContent html={assessment.instructions} />
             </Section>
           )}
 
-          {registry?.supportsDeliverables && assessment.overview && (
+          {registry?.supportsDeliverables && !isEmptyHtml(assessment.overview) && (
             <Section title="Project Overview">
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65", whiteSpace: "pre-wrap" }}>{assessment.overview}</p>
+              <RichContent html={assessment.overview} />
             </Section>
           )}
 
           <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length}${!isObservation ? ` · ${totalItemPoints} pts` : ""}` : ""}`}>
-            <StructureSection sections={sections} entries={entries} isObservation={isObservation} />
+            <StructureSection sections={sections} entries={entries} />
           </Section>
 
           {registry?.supportsRubric && (

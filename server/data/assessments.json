@@ -1638,5 +1638,44 @@
     "id": "bbd38efe-8ea9-40f5-a037-5412af4a46b5",
     "createdAt": "2026-07-06T12:22:14.513Z",
     "updatedAt": "2026-07-06T12:22:14.513Z"
+  },
+  {
+    "name": "Quiz sample",
+    "type": "quiz",
+    "description": "<p>wgbsuuivui</p>",
+    "instructions": "<p>wrbsafxvqwasc</p>",
+    "structureType": "unstructured",
+    "overview": "",
+    "sections": [
+      {
+        "id": "497e369a-ad7e-4623-862d-1c5ec9bef561",
+        "name": "Section 1",
+        "order": 0
+      }
+    ],
+    "items": [
+      {
+        "id": "b8cb33a5-76ff-4952-aa8e-9dde63990d5c",
+        "question": "<h4><strong>Assignment</strong></h4><p></p><p>Now that you're familiar with the PictoBlox interface and the basics of coding, let's create a fun animation. We'll add a dove, give it a beautiful forest background, and then code it to move across the screen!As you complete this assignment, you will learn important programming ideas like following steps in order, using loops to repeat actions, and starting your code with events. You’ll be using the PictoBlox program to do all of this!</p><p></p><p><strong>Steps to Complete the Project</strong></p><p>Open PictoBlox Software on the blocks Interface by clicking Blocks.</p><p></p><img src=\"https://lh7-rt.googleusercontent.com/docsz/AD_4nXdfJ4RIvOsMFMLxQpxtxas8RSHKhyUQ9l9tXomlcTTu_rcIp38ON7-ZIkr2MbtoetVDt6tqKN5jYEyKxafXiXM4CB7TSCKqlwfmceTANlbhHoQdnfBdDU4y-dk_bv9nFjkIJFbJzMFJ0lICq9ld32iDbvZE?key=A5DWk6V0vkcWULOY2L3AxXJQ\" width=\"624\" height=\"309\"><p></p><p><strong>Set Up The Environment</strong></p><p><strong>Delete Tobi</strong>&nbsp;by clicking the little 'x' on his picture.</p><p></p><p>Now,&nbsp;<strong>add a dove sprite</strong>&nbsp;to your project from the sprite library.</p><p></p><p>Next, you will click the 'Choose a Backdrop' button, then find the forest backdrop where your dove can move through.</p><p></p><p><strong><u>Lets Now code</u></strong></p><p></p><p>From the yellow Events blocks, drag the when flag clicked block into your coding area.</p><p></p><p>Next, from the orange Control blocks, snap the forever block right below when flag clicked. This makes sure your dove's actions happen again and again.</p><p></p><p>Find the blue Motion blocks. Drag the move (10) steps block and place it inside the forever block. This tells your dove to move forward.</p><p></p><p>Still in the Motion blocks, add the if on edge, bounce block right after move (10) steps, also inside forever. This makes your dove turn around when it hits the edge of the screen, so it doesn't just disappear!</p><p></p><p>Lastly from the blue motion blocks, drag the set rotation style (left-right) block from the Motion blocks. Put this block below when flag clicked, but outside the forever loop.This keeps your dove from moving upside down.</p><p></p><p>The project is done!</p><p></p><p>Click the green flag to see out dove moving!</p><p></p><p>Save the project as Dove moving</p><p></p><p>Upload the Assignment.</p><p></p>",
+        "kind": "longAnswer",
+        "sectionId": "497e369a-ad7e-4623-862d-1c5ec9bef561",
+        "points": 0,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "87aeff8c-1f29-4fc1-aa79-c09006d6043d",
+    "createdAt": "2026-07-06T12:56:23.526Z",
+    "updatedAt": "2026-07-06T12:56:23.526Z"
   }
 ]
