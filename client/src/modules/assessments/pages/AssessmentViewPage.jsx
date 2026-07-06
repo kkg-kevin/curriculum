@@ -4,6 +4,7 @@ import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
   TASK_TYPE_LABELS, normalizeLegacyItem,
 } from "../schemas/assessment.schema";
+import RichContent, { isEmptyHtml } from "../components/RichContent";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
@@ -112,7 +113,11 @@ function StructureSection({ sections, entries, isObservation }) {
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: "#111827", flexShrink: 0 }}>{counter}.</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: "0 0 6px", fontSize: "13.5px", color: "#111827" }}>{entry.question ?? entry.text ?? <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</p>
+            {isEmptyHtml(entry.question ?? entry.text) ? (
+              <p style={{ margin: "0 0 6px", fontSize: "13.5px", color: "#D1D5DB", fontStyle: "italic" }}>Untitled item</p>
+            ) : (
+              <div style={{ marginBottom: "6px", fontSize: "13.5px" }}><RichContent html={entry.question ?? entry.text} /></div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <Badge>{ITEM_KIND_LABELS[entry.kind] || entry.kind}</Badge>
               {!isObservation && <span style={{ fontSize: "12px", color: "#6B7280" }}>{entry.points} pts</span>}
@@ -234,22 +239,18 @@ export default function AssessmentViewPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Section title="Description">
-            {assessment.description ? (
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65" }}>{assessment.description}</p>
-            ) : (
-              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No description added</p>
-            )}
+            <RichContent html={assessment.description} emptyText="No description added" />
           </Section>
 
-          {assessment.instructions && (
+          {!isEmptyHtml(assessment.instructions) && (
             <Section title="Instructions">
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65", whiteSpace: "pre-wrap" }}>{assessment.instructions}</p>
+              <RichContent html={assessment.instructions} />
             </Section>
           )}
 
-          {registry?.supportsDeliverables && assessment.overview && (
+          {registry?.supportsDeliverables && !isEmptyHtml(assessment.overview) && (
             <Section title="Project Overview">
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: "1.65", whiteSpace: "pre-wrap" }}>{assessment.overview}</p>
+              <RichContent html={assessment.overview} />
             </Section>
           )}
 
