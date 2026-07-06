@@ -1,15 +1,24 @@
 const { z } = require("zod");
-const { ASSESSMENT_TYPES, QUESTION_TYPES, DEFAULT_RATING_SCALE } = require("../assessments/assessment.validation");
+const { ASSESSMENT_TYPES, QUESTION_TYPES, MEDIA_RESPONSE_TYPES, DEFAULT_RATING_SCALE } = require("../assessments/assessment.validation");
 
 // Mirrors the live assessment's item/rubric/indicator shapes (assessment.validation.js)
 // but without an "id" — ids are assigned fresh each time a template is applied.
 const templateItemSchema = z.object({
   question:      z.string().min(1, "Question text is required").max(5000),
   questionType:  z.enum(QUESTION_TYPES, { errorMap: () => ({ message: "Select a valid question type" }) }),
+  points:        z.number().min(0).optional().default(1),
   options:       z.array(z.string().min(1)).optional().default([]),
   correctAnswer: z.string().optional().default(""),
-  points:        z.number().min(0).optional().default(1),
-});
+  pairs:         z.array(z.object({ left: z.string().min(1), right: z.string().min(1) })).optional().default([]),
+  blanks:        z.array(z.string().min(1)).optional().default([]),
+  sequence:      z.array(z.string().min(1)).optional().default([]),
+  acceptedFileTypes: z.array(z.string().min(1)).optional().default([]),
+  mediaType:     z.enum(MEDIA_RESPONSE_TYPES).optional().default("either"),
+})
+  .refine((d) => d.questionType !== "mcq" || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
+  .refine((d) => d.questionType !== "matching" || d.pairs.length >= 2, { message: "Add at least 2 pairs", path: ["pairs"] })
+  .refine((d) => d.questionType !== "fillBlank" || d.blanks.length >= 1, { message: "Add at least 1 blank answer", path: ["blanks"] })
+  .refine((d) => d.questionType !== "ordering" || d.sequence.length >= 2, { message: "Add at least 2 steps", path: ["sequence"] });
 
 const templateRubricCriterionSchema = z.object({
   criterion:   z.string().min(1, "Criterion name is required").max(200),

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAssessmentQuery, useDeleteItem, useDeleteRubricCriterion, useDeleteIndicator, useAssessmentCompetencies, useAssessmentLearningAreas } from "../hooks/useAssessment";
 import { QUESTION_BASED_TYPES, TASK_BASED_TYPES, OBSERVATION_BASED_TYPES } from "../schemas/assessment.schema";
-import QuestionModal from "../components/QuestionModal";
+import QuestionModal, { QUESTION_TYPE_LABELS } from "../components/QuestionModal";
 import RubricCriterionModal from "../components/RubricCriterionModal";
 import IndicatorModal from "../components/IndicatorModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -10,7 +10,6 @@ import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
 const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
-const QUESTION_TYPE_LABELS = { mcq: "Multiple Choice", trueFalse: "True / False", shortAnswer: "Short Answer" };
 
 function Section({ title, action, children }) {
   return (

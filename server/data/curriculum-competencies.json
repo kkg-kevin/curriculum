@@ -46,13 +46,5 @@
     "minimumThreshold": 60,
     "weight": 0,
     "createdAt": "2026-07-05T08:14:03.083Z"
-  },
-  {
-    "id": "9863bdc7-e991-4eb5-898b-6d43a0690eba",
-    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
-    "competencyId": "361d484b-41ab-4960-b98e-5d9edf885464",
-    "minimumThreshold": 60,
-    "weight": 0,
-    "createdAt": "2026-07-05T08:14:17.544Z"
   }
 ]

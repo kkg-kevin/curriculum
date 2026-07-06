@@ -40,11 +40,5 @@
     "courseId": "e8658ada-1b15-4729-9f41-2204cdb25000",
     "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
     "createdAt": "2026-07-05T07:39:05.853Z"
-  },
-  {
-    "id": "ef723ca9-f839-49f1-a316-386c6b096a9c",
-    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
-    "competencyId": "07786bf5-b492-4a47-bf5b-cba2bdf4abc3",
-    "createdAt": "2026-07-05T08:10:46.201Z"
   }
 ]
