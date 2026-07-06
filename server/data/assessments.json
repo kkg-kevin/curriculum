@@ -1,228 +1,36 @@
 [
   {
-    "name": "Python assignment ",
-    "description": "erbvfdsvc",
-    "type": "assignment",
-    "instructions": "STEPS\nWhat is a Program?\n\n\n\nA program is a set of instructions that a computer follows to complete a task. The computer receives the information, handles it, utilizes it, and then gives an output based on it by following a program.We are surrounded by computers and computer programs; phones or tablets you can play or watch videos on. Other example are traffic lights and they follow different programs to carry out different tasks.\n\n\n\nLet's See How Programs Work!\n\nWhen you want to play your favorite game, like \"Minecraft\" or \"Roblox,\" you tap its picture, right? A special program inside the tablet quickly makes the game start for you! It's like the tablet knows exactly how to open the game because of those instructions.\n\n\n\nAnother example is that when you're in a car, you see traffic lights turn red, then yellow, then green. They don't just change randomly! A program inside the traffic light tells it exactly when to turn red (so cars stop) and when to turn green (so cars go).\n\n\n\nAccording to Linda Liukas, a Finnish computer programmer, children’s writer, and programming instructor, programming consists of three parts:Planning the programWriting the program in a programming language into a codeTesting and debugging the program\n\n\n\n\n\n\n\nThe second part is what everybody generally considers programming. Only this part requires coding skills; the first and third parts require additional skills like problem-solving, and decomposition (the ability to break down bigger problems into smaller, manageable tasks).\n\n\n\nProgramming AnalogyGetting Dressed\n\nOn days that you have to go to school, your mother and father are behind you in the morning, asking you to wake up, while you keep saying ‘5 more minutes!’ until you realize it is late and you don’t have time to take bath. So, you decide to just wash your face, brush your teeth, and get dressed. To get dressed, you follow a particular sequence of steps, like the one given below:\n\nTake off the pajamas",
-    "id": "62838a51-178a-491f-aad2-9842ffe50ff0",
-    "createdAt": "2026-07-03T06:48:38.394Z",
-    "updatedAt": "2026-07-03T06:48:38.394Z"
-  },
-  {
-    "name": "Introduction to Robotics Quiz (Kids Level)",
+    "name": "Computer Science Fundamentals — Structured Assessment",
     "type": "quiz",
-    "description": "This quiz helps learners understand the basics of robotics, including robot components, movement, sensors, and simple logic. It is designed for beginners to test their foundational knowledge in a fun and engaging way.",
-    "instructions": "Instructions:\n\nRead each question carefully.\nChoose the correct answer from the options provided.\nEach question has only one correct answer.\nSelect the best answer and proceed to the next question.\nTry your best and have fun!",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [],
-    "items": [
-      {
-        "question": "1. What is a robot?",
-        "questionType": "mcq",
-        "points": 1,
-        "options": [
-          "A. A type of animal",
-          "B. A machine that can perform tasks automatically",
-          "C. A toy only used for playing",
-          "D. A computer game"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "mediaType": "either"
-      }
-    ],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "ca671e58-8333-4a35-b086-b3b28563ef67",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "Robot Parts Labeling Assignment",
-    "type": "assignment",
-    "description": "Learners identify and describe the function of key robot components in a short written and diagram-based assignment.",
-    "instructions": "Instructions:\n\nLabel each part of the robot diagram provided.\nWrite one sentence explaining what each part does.\nSubmit your labeled diagram and written answers together.\nUse full sentences and correct spelling where possible.",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [
-      {
-        "criterion": "Accuracy of Labels",
-        "description": "All robot parts are correctly identified and labeled.",
-        "points": 30
-      },
-      {
-        "criterion": "Explanation of Function",
-        "description": "Each part's function is explained clearly and correctly.",
-        "points": 30
-      },
-      {
-        "criterion": "Neatness & Organization",
-        "description": "Diagram and answers are neat, organized, and easy to follow.",
-        "points": 20
-      },
-      {
-        "criterion": "Completion",
-        "description": "All required parts and questions are fully attempted.",
-        "points": 20
-      }
-    ],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "60b4e40b-07f3-4340-bf15-1a5ebc84378a",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "Build-a-Simple-Robot Project",
-    "type": "project",
-    "description": "A hands-on project where learners design, build, and test a simple robot using provided materials, applying concepts of movement, sensors, and basic logic.",
-    "instructions": "Instructions:\n\nWork individually or in small groups to design your robot.\nBuild your robot using the provided kit or materials.\nTest that your robot performs its intended task.\nPresent your robot and explain how it works to the class.",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [
-      {
-        "criterion": "Design & Planning",
-        "description": "Robot design is thoughtful and matches the stated goal.",
-        "points": 20
-      },
-      {
-        "criterion": "Construction Quality",
-        "description": "Robot is built securely and components are properly connected.",
-        "points": 25
-      },
-      {
-        "criterion": "Functionality",
-        "description": "Robot successfully performs its intended task.",
-        "points": 30
-      },
-      {
-        "criterion": "Presentation & Explanation",
-        "description": "Learner clearly explains how the robot works and the choices made.",
-        "points": 15
-      },
-      {
-        "criterion": "Teamwork & Effort",
-        "description": "Learner collaborates well and shows consistent effort throughout.",
-        "points": 10
-      }
-    ],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "64c76728-2161-4cfd-99ea-f75e5a23bfd8",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "Robotics Classroom Behavior Observation",
-    "type": "observation",
-    "description": "An observational checklist used by the teacher to assess a learner's engagement, collaboration, and problem-solving behavior during robotics activities.",
-    "instructions": "Instructions:\n\nObserve the learner during the robotics session.\nRate each indicator based on what you observe, not what the learner says.\nUse the rating scale consistently across all learners.\nAdd notes separately if needed for report comments.",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [],
-    "indicators": [
-      {
-        "text": "Follows multi-step building instructions",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ]
-      },
-      {
-        "text": "Collaborates respectfully with peers during group tasks",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ]
-      },
-      {
-        "text": "Attempts to troubleshoot problems before asking for help",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ]
-      },
-      {
-        "text": "Stays engaged and on-task throughout the session",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ]
-      }
-    ],
-    "deliverables": [],
-    "milestones": [],
-    "id": "125572d1-06a4-46c1-88b6-164c09247f2d",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "Assignment one",
-    "type": "assignment",
-    "description": "ijvuerunuvbufbnu",
-    "instructions": "unvuneruvnunu",
+    "description": "A fully structured, auto-gradable quiz covering hardware, logic, and sequencing using only fixed-shape question types.",
+    "instructions": "Instructions:\n\nAnswer every question — each has a single correct, verifiable answer.\nRead carefully before selecting, matching, or ordering your response.",
     "structureType": "structured",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "98c4512d-5023-46d3-9bbc-e52553c37fc8",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "Robotics Fundamentals Quiz",
-    "type": "quiz",
-    "description": "A mixed-format quiz checking core robotics vocabulary and asking learners to apply it.",
-    "instructions": "Instructions:\n\nAnswer every question in Section 1 before moving to Section 2.\nSection 2 has no single right answer — explain your thinking clearly.",
-    "structureType": "mixed",
     "overview": "",
     "sections": [
       {
-        "id": "sec-core-concepts",
-        "name": "Core Concepts",
+        "id": "sec-hardware",
+        "name": "Hardware & Components",
         "order": 0
       },
       {
-        "id": "sec-applying",
-        "name": "Applying What You Know",
+        "id": "sec-logic",
+        "name": "Logic & Sequences",
         "order": 1
       }
     ],
     "items": [
       {
-        "question": "Which part of a robot allows it to sense its environment?",
+        "question": "Which part of a computer is considered its 'brain'?",
         "kind": "mcqSingle",
-        "sectionId": "sec-core-concepts",
+        "sectionId": "sec-hardware",
         "points": 2,
         "options": [
-          "Sensor",
-          "Motor",
-          "Battery",
-          "Wire"
+          "CPU",
+          "Monitor",
+          "Keyboard",
+          "Mouse"
         ],
-        "correctAnswer": "Sensor",
+        "correctAnswer": "CPU",
         "pairs": [],
         "blanks": [],
         "sequence": [],
@@ -231,9 +39,61 @@
         "submissionKinds": []
       },
       {
-        "question": "A robot's motor is used to power its movement.",
+        "question": "Which sensor would you use to detect distance to an object?",
+        "kind": "mcqSingle",
+        "sectionId": "sec-hardware",
+        "points": 2,
+        "options": [
+          "Ultrasonic sensor",
+          "Microphone",
+          "Speaker",
+          "LED"
+        ],
+        "correctAnswer": "Ultrasonic sensor",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Which of these is an output device?",
+        "kind": "mcqMultiple",
+        "sectionId": "sec-hardware",
+        "points": 2,
+        "options": [
+          "Monitor",
+          "Speaker",
+          "Printer",
+          "Keyboard"
+        ],
+        "correctAnswer": "Monitor",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "RAM stores data permanently even when the power is off.",
         "kind": "trueFalse",
-        "sectionId": "sec-core-concepts",
+        "sectionId": "sec-hardware",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "False",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A motor converts electrical energy into motion.",
+        "kind": "trueFalse",
+        "sectionId": "sec-hardware",
         "points": 1,
         "options": [],
         "correctAnswer": "True",
@@ -245,15 +105,46 @@
         "submissionKinds": []
       },
       {
-        "question": "A robot uses a ___ to detect light levels.",
+        "question": "Match each component to its function.",
+        "kind": "matching",
+        "sectionId": "sec-hardware",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [
+          {
+            "left": "CPU",
+            "right": "Processes instructions"
+          },
+          {
+            "left": "RAM",
+            "right": "Temporary memory"
+          },
+          {
+            "left": "Sensor",
+            "right": "Detects the environment"
+          },
+          {
+            "left": "Motor",
+            "right": "Creates movement"
+          }
+        ],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A ___ converts a physical quantity like light or sound into an electrical signal.",
         "kind": "fillBlank",
-        "sectionId": "sec-core-concepts",
+        "sectionId": "sec-hardware",
         "points": 2,
         "options": [],
         "correctAnswer": "",
         "pairs": [],
         "blanks": [
-          "light sensor"
+          "sensor"
         ],
         "sequence": [],
         "acceptedFileTypes": [],
@@ -261,12 +152,12 @@
         "submissionKinds": []
       },
       {
-        "question": "Explain in your own words how a robot decides what action to take when its sensor detects an obstacle.",
-        "kind": "essay",
-        "sectionId": "sec-applying",
-        "points": 5,
+        "question": "In one sentence, explain the difference between RAM and storage (e.g. a hard drive).",
+        "kind": "shortAnswer",
+        "sectionId": "sec-hardware",
+        "points": 3,
         "options": [],
-        "correctAnswer": "",
+        "correctAnswer": "RAM is temporary, fast memory used while running programs; storage holds data permanently.",
         "pairs": [],
         "blanks": [],
         "sequence": [],
@@ -275,19 +166,130 @@
         "submissionKinds": []
       },
       {
-        "question": "Upload a diagram labeling the main parts of your robot.",
-        "kind": "documentUpload",
-        "sectionId": "sec-applying",
-        "points": 5,
+        "question": "Which of these is a valid loop structure in most programming languages?",
+        "kind": "mcqSingle",
+        "sectionId": "sec-logic",
+        "points": 2,
+        "options": [
+          "for loop",
+          "if statement",
+          "variable",
+          "function"
+        ],
+        "correctAnswer": "for loop",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Which of these represents conditional logic?",
+        "kind": "mcqMultiple",
+        "sectionId": "sec-logic",
+        "points": 2,
+        "options": [
+          "if/else",
+          "for loop",
+          "switch statement",
+          "print statement"
+        ],
+        "correctAnswer": "if/else",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A sequence in programming means the order in which instructions are executed.",
+        "kind": "trueFalse",
+        "sectionId": "sec-logic",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "True",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Put the steps of a simple decision-making program in the correct order.",
+        "kind": "ordering",
+        "sectionId": "sec-logic",
+        "points": 3,
         "options": [],
         "correctAnswer": "",
         "pairs": [],
         "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [
-          ".pdf",
-          ".png"
+        "sequence": [
+          "Check the condition",
+          "If true, run the first action",
+          "If false, run the alternative action",
+          "Continue to the next instruction"
         ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A loop that repeats a fixed number of times is called a ___ loop.",
+        "kind": "fillBlank",
+        "sectionId": "sec-logic",
+        "points": 2,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [
+          "for"
+        ],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Match each programming term to its meaning.",
+        "kind": "matching",
+        "sectionId": "sec-logic",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [
+          {
+            "left": "Variable",
+            "right": "Stores a value"
+          },
+          {
+            "left": "Function",
+            "right": "A reusable block of code"
+          },
+          {
+            "left": "Loop",
+            "right": "Repeats a set of instructions"
+          }
+        ],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Why is decomposition (breaking a problem into smaller parts) useful in programming?",
+        "kind": "shortAnswer",
+        "sectionId": "sec-logic",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "It makes complex problems easier to solve, test, and manage.",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": []
       }
@@ -296,34 +298,48 @@
     "indicators": [],
     "deliverables": [],
     "milestones": [],
-    "id": "549566c4-f9ea-4c13-b675-7b6af9d6e812",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
+    "id": "f1522da5-79ca-4637-ad75-f6a71db8c156",
+    "createdAt": "2026-07-06T12:11:55.973Z",
+    "updatedAt": "2026-07-06T12:11:55.974Z"
   },
   {
-    "name": "Robot Sensor Investigation Assignment",
-    "type": "assignment",
-    "description": "Learners research a sensor type, then attach and test one on their own robot kit.",
-    "instructions": "Instructions:\n\nComplete the research task first.\nThen complete the hands-on task using your robot kit.\nSubmit all files requested for each task.",
-    "structureType": "mixed",
+    "name": "Computer Science Fundamentals — Unstructured & Submission Assessment",
+    "type": "quiz",
+    "description": "An entirely open-ended, human-graded quiz — every item is either a written/reflective response or a real submission (document, image, video, audio, code, or link).",
+    "instructions": "Instructions:\n\nThere are no single 'correct' answers here — respond thoughtfully and completely.\nFor upload items, submit the file type requested; for the link item, include a short note on why you chose it.",
+    "structureType": "unstructured",
     "overview": "",
     "sections": [
       {
-        "id": "sec-research",
-        "name": "Research Task",
+        "id": "sec-reflect",
+        "name": "Reflection & Reasoning",
         "order": 0
       },
       {
-        "id": "sec-handson",
-        "name": "Hands-On Task",
+        "id": "sec-submit",
+        "name": "Show Your Work",
         "order": 1
       }
     ],
     "items": [
       {
-        "question": "Research two different types of sensors used in robotics and describe what each one does.",
+        "question": "Describe, in detail, how a simple traffic light system could be programmed using sequences and loops.",
         "kind": "longAnswer",
-        "sectionId": "sec-research",
+        "sectionId": "sec-reflect",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Write a short essay on how computers have changed the way we learn, referencing at least two examples.",
+        "kind": "essay",
+        "sectionId": "sec-reflect",
         "points": 10,
         "options": [],
         "correctAnswer": "",
@@ -331,44 +347,524 @@
         "blanks": [],
         "sequence": [],
         "acceptedFileTypes": [],
-        "taskType": "research",
-        "submissionKinds": [
-          "documentUpload"
-        ]
+        "taskType": null,
+        "submissionKinds": []
       },
       {
-        "question": "Attach a sensor to your robot kit and test that it responds correctly to changes in its environment.",
-        "kind": "practicalTask",
-        "sectionId": "sec-handson",
-        "points": 15,
+        "question": "Reflect on a time you solved a problem by breaking it into smaller steps. What did you learn?",
+        "kind": "reflection",
+        "sectionId": "sec-reflect",
+        "points": 5,
         "options": [],
         "correctAnswer": "",
         "pairs": [],
         "blanks": [],
         "sequence": [],
         "acceptedFileTypes": [],
-        "taskType": "practical",
-        "submissionKinds": [
-          "videoUpload",
-          "documentUpload"
-        ]
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A robot keeps bumping into walls even though it has a distance sensor. What could be going wrong, and how would you investigate it?",
+        "kind": "scenarioResponse",
+        "sectionId": "sec-reflect",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Using any materials available, build a simple structure that can hold a small weight, and describe your design choices.",
+        "kind": "practicalTask",
+        "sectionId": "sec-reflect",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "What excites you most about learning computer science, and why?",
+        "kind": "openEnded",
+        "sectionId": "sec-reflect",
+        "points": 4,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Explain the concept of 'debugging' in your own words, using an example.",
+        "kind": "longAnswer",
+        "sectionId": "sec-reflect",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a written plan describing how you would build a line-following robot.",
+        "kind": "documentUpload",
+        "sectionId": "sec-submit",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".docx"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Take a photo of a hand-drawn flowchart showing a simple decision-making process, and upload it.",
+        "kind": "imageUpload",
+        "sectionId": "sec-submit",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".png",
+          ".jpg"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record a short video (under 2 minutes) demonstrating and explaining a project you have built.",
+        "kind": "videoUpload",
+        "sectionId": "sec-submit",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp4"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record an audio clip explaining, in your own words, what an algorithm is.",
+        "kind": "audioUpload",
+        "sectionId": "sec-submit",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp3",
+          ".wav"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload the source code file for a simple program that prints your name.",
+        "kind": "codeUpload",
+        "sectionId": "sec-submit",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".py",
+          ".txt"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Share a link to an online resource (article or video) that helped you understand a computing concept, along with a short note on why it helped.",
+        "kind": "externalLink",
+        "sectionId": "sec-submit",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a document listing three real-world uses of robotics.",
+        "kind": "documentUpload",
+        "sectionId": "sec-submit",
+        "points": 4,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".docx"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a labeled diagram of the components inside a simple robot.",
+        "kind": "imageUpload",
+        "sectionId": "sec-submit",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".png",
+          ".jpg",
+          ".pdf"
+        ],
+        "taskType": null,
+        "submissionKinds": []
       }
     ],
     "rubric": [],
     "indicators": [],
     "deliverables": [],
     "milestones": [],
-    "id": "719b6efd-0064-4a60-8c46-527060b961c7",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
+    "id": "f91b068e-ea7b-430b-ac40-595381390ea1",
+    "createdAt": "2026-07-06T12:11:56.141Z",
+    "updatedAt": "2026-07-06T12:11:56.141Z"
   },
   {
-    "name": "Line-Following Robot Project",
-    "type": "project",
-    "description": "A multi-week build project where learners design, build, and program a robot that follows a line on the floor.",
-    "instructions": "Instructions:\n\nWork through Planning before you start building.\nUse the Build & Test tasks to guide your work sessions.\nSubmit each deliverable as you complete it.",
+    "name": "Computer Science Fundamentals — Mixed Assessment",
+    "type": "quiz",
+    "description": "A blended assessment that pairs auto-gradable structured questions with open-ended reasoning and real submissions, covering the full breadth of item kinds in one quiz.",
+    "instructions": "Instructions:\n\nSection 1 has single correct answers — be precise.\nSection 2 has no fixed answer — explain your thinking.\nSection 3 asks you to submit real work — follow each item's format requirement.",
     "structureType": "mixed",
-    "overview": "Design, build, and program a robot that can follow a line on the floor using sensors and motors. Learners will plan their approach, build the robot, and iteratively test it against a practice track.",
+    "overview": "",
+    "sections": [
+      {
+        "id": "sec-foundations",
+        "name": "Foundations",
+        "order": 0
+      },
+      {
+        "id": "sec-applying",
+        "name": "Applying Concepts",
+        "order": 1
+      },
+      {
+        "id": "sec-demonstrate",
+        "name": "Demonstrate & Submit",
+        "order": 2
+      }
+    ],
+    "items": [
+      {
+        "question": "Which of these best describes an algorithm?",
+        "kind": "mcqSingle",
+        "sectionId": "sec-foundations",
+        "points": 2,
+        "options": [
+          "A step-by-step set of instructions to solve a problem",
+          "A type of computer hardware",
+          "A programming language",
+          "A computer virus"
+        ],
+        "correctAnswer": "A step-by-step set of instructions to solve a problem",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Every algorithm must eventually stop (terminate).",
+        "kind": "trueFalse",
+        "sectionId": "sec-foundations",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "True",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Match each term to its definition.",
+        "kind": "matching",
+        "sectionId": "sec-foundations",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [
+          {
+            "left": "Input",
+            "right": "Data given to a program"
+          },
+          {
+            "left": "Output",
+            "right": "Result produced by a program"
+          },
+          {
+            "left": "Process",
+            "right": "Steps that transform input into output"
+          }
+        ],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A condition that is either true or false is called a ___ statement.",
+        "kind": "fillBlank",
+        "sectionId": "sec-foundations",
+        "points": 2,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [
+          "Boolean"
+        ],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Arrange the general problem-solving process in order.",
+        "kind": "ordering",
+        "sectionId": "sec-foundations",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [
+          "Understand the problem",
+          "Plan a solution",
+          "Write or build the solution",
+          "Test and improve it"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "What is the purpose of testing a program before using it?",
+        "kind": "shortAnswer",
+        "sectionId": "sec-foundations",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "To find and fix errors before the program is used for real.",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Your robot's motor works when tested alone, but stops working once attached to the chassis. Suggest two possible causes.",
+        "kind": "scenarioResponse",
+        "sectionId": "sec-applying",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Explain how sensors, a controller, and motors work together in a robot.",
+        "kind": "longAnswer",
+        "sectionId": "sec-applying",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "What was the most challenging part of a project you've worked on, and how did you overcome it?",
+        "kind": "reflection",
+        "sectionId": "sec-applying",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Discuss the impact of automation and robotics on everyday jobs, giving at least two examples.",
+        "kind": "essay",
+        "sectionId": "sec-applying",
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "If you could build any robot, what would it do and why?",
+        "kind": "openEnded",
+        "sectionId": "sec-applying",
+        "points": 4,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a photo or diagram of a system you designed (robot, flowchart, or circuit).",
+        "kind": "imageUpload",
+        "sectionId": "sec-demonstrate",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".png",
+          ".jpg",
+          ".pdf"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload the code for a simple program you wrote (any language).",
+        "kind": "codeUpload",
+        "sectionId": "sec-demonstrate",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".py",
+          ".js",
+          ".txt"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record a short video demo of your project in action.",
+        "kind": "videoUpload",
+        "sectionId": "sec-demonstrate",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp4"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a short written report (one page) describing your project and what you learned.",
+        "kind": "documentUpload",
+        "sectionId": "sec-demonstrate",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".docx"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Share a link to any online tool or tutorial you used while working on your project.",
+        "kind": "externalLink",
+        "sectionId": "sec-demonstrate",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "abd07396-50c8-4af5-9066-32624e6de42c",
+    "createdAt": "2026-07-06T12:11:56.256Z",
+    "updatedAt": "2026-07-06T12:11:56.256Z"
+  },
+  {
+    "name": "Computer Science Fundamentals — Capstone Project",
+    "type": "project",
+    "description": "A multi-week build project where learners plan, build, test, and present a computing or robotics project of their choice, covering every unstructured and submission-based task type.",
+    "instructions": "Instructions:\n\nComplete the Planning tasks before you begin building.\nUse the Build & Test tasks to guide your work sessions and submissions.\nCheck the Deliverables and Milestones tabs for what must be handed in and when.",
+    "structureType": "mixed",
+    "overview": "Design, build, and present a project of your choice that applies programming or robotics concepts to solve a real problem. You will plan your approach, document your build process, and demonstrate a working result.",
     "sections": [
       {
         "id": "sec-planning",
@@ -383,10 +879,10 @@
     ],
     "items": [
       {
-        "question": "Sketch and describe your planned robot design, including sensor placement.",
+        "question": "Describe your project idea and the problem it solves.",
         "kind": "longAnswer",
         "sectionId": "sec-planning",
-        "points": 10,
+        "points": 6,
         "options": [],
         "correctAnswer": "",
         "pairs": [],
@@ -394,15 +890,55 @@
         "sequence": [],
         "acceptedFileTypes": [],
         "taskType": "written",
-        "submissionKinds": [
-          "documentUpload"
-        ]
+        "submissionKinds": []
       },
       {
-        "question": "Build your robot and test it on the practice track.",
+        "question": "Write a project proposal explaining your goals, audience, and expected outcome.",
+        "kind": "essay",
+        "sectionId": "sec-planning",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Reflect on a similar project or system you've seen before starting. What would you do differently?",
+        "kind": "reflection",
+        "sectionId": "sec-planning",
+        "points": 4,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Imagine your project fails halfway through testing. Describe your plan B.",
+        "kind": "scenarioResponse",
+        "sectionId": "sec-planning",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Sketch your initial design on paper or in a drawing tool.",
         "kind": "practicalTask",
-        "sectionId": "sec-build",
-        "points": 20,
+        "sectionId": "sec-planning",
+        "points": 6,
         "options": [],
         "correctAnswer": "",
         "pairs": [],
@@ -411,52 +947,519 @@
         "acceptedFileTypes": [],
         "taskType": "practical",
         "submissionKinds": [
-          "videoUpload"
+          "imageUpload"
         ]
+      },
+      {
+        "question": "What is the most exciting part of this project for you?",
+        "kind": "openEnded",
+        "sectionId": "sec-planning",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload your detailed build plan.",
+        "kind": "documentUpload",
+        "sectionId": "sec-build",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".docx"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload photos of your project at each build stage.",
+        "kind": "imageUpload",
+        "sectionId": "sec-build",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".png",
+          ".jpg"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record a demo video of your finished project working.",
+        "kind": "videoUpload",
+        "sectionId": "sec-build",
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp4"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record an audio walkthrough explaining how your project works.",
+        "kind": "audioUpload",
+        "sectionId": "sec-build",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp3",
+          ".wav"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload all source code files for your project.",
+        "kind": "codeUpload",
+        "sectionId": "sec-build",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".py",
+          ".js",
+          ".zip"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Share a link to any external tool, library, or reference you used.",
+        "kind": "externalLink",
+        "sectionId": "sec-build",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
       }
     ],
-    "rubric": [],
+    "rubric": [
+      {
+        "criterion": "Design Quality",
+        "description": "How well thought-out and documented the design is.",
+        "points": 20,
+        "sectionId": null
+      },
+      {
+        "criterion": "Functionality",
+        "description": "Whether the project works as intended.",
+        "points": 25,
+        "sectionId": null
+      },
+      {
+        "criterion": "Code / Build Quality",
+        "description": "Cleanliness and organization of code or physical construction.",
+        "points": 20,
+        "sectionId": null
+      },
+      {
+        "criterion": "Presentation",
+        "description": "Clarity of the demo video and supporting documentation.",
+        "points": 15,
+        "sectionId": null
+      },
+      {
+        "criterion": "Reflection & Learning",
+        "description": "Depth of reflection on the process, challenges, and what was learned.",
+        "points": 10,
+        "sectionId": null
+      }
+    ],
     "indicators": [],
     "deliverables": [
       {
-        "name": "Design Sketch",
-        "description": "A labeled diagram of your robot design, including where each sensor is placed.",
+        "name": "Final Build Plan",
+        "description": "The completed, detailed plan used to guide construction.",
         "submissionKinds": [
-          "imageUpload",
           "documentUpload"
         ],
-        "sectionId": "sec-planning"
+        "sectionId": null
       },
       {
-        "name": "Working Robot Demo",
-        "description": "A short video demonstrating your robot following the line on the practice track.",
+        "name": "Working Demo Video",
+        "description": "A video showing the finished project in action.",
         "submissionKinds": [
           "videoUpload"
         ],
-        "sectionId": "sec-build"
+        "sectionId": null
+      },
+      {
+        "name": "Source Code Archive",
+        "description": "All source files, zipped or linked.",
+        "submissionKinds": [
+          "codeUpload",
+          "externalLink"
+        ],
+        "sectionId": null
       }
     ],
     "milestones": [
       {
-        "name": "Design Approved",
-        "description": "Teacher reviews and signs off on your design sketch before building starts.",
+        "name": "Proposal Approved",
+        "description": "Teacher reviews and signs off on the project proposal before building starts.",
         "order": 0
       },
       {
-        "name": "First Successful Test Run",
-        "description": "Robot completes the practice track without going off the line.",
+        "name": "Prototype Complete",
+        "description": "A first working version exists, even if incomplete.",
         "order": 1
+      },
+      {
+        "name": "Final Submission",
+        "description": "All deliverables submitted and project presented.",
+        "order": 2
       }
     ],
-    "id": "33be1f6f-08a5-431c-8129-e725fc967a56",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
+    "id": "a02d3152-005f-4b36-92b4-e1bccfae3f8f",
+    "createdAt": "2026-07-06T12:22:14.277Z",
+    "updatedAt": "2026-07-06T12:22:14.277Z"
   },
   {
-    "name": "Robotics Lab Skills Observation",
+    "name": "Computer Science Fundamentals — Take-Home Assignment",
+    "type": "assignment",
+    "description": "A blended take-home assignment combining quick concept checks, written reasoning tasks, and real submissions of working code.",
+    "instructions": "Instructions:\n\nComplete the Concept Check questions first.\nAnswer the Written Tasks in your own words.\nSubmit all files requested in the final section.",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "sec-concept",
+        "name": "Concept Check",
+        "order": 0
+      },
+      {
+        "id": "sec-written",
+        "name": "Written Tasks",
+        "order": 1
+      },
+      {
+        "id": "sec-submit",
+        "name": "Submit Your Work",
+        "order": 2
+      }
+    ],
+    "items": [
+      {
+        "question": "Which loop is best suited when you don't know in advance how many times to repeat?",
+        "kind": "mcqSingle",
+        "sectionId": "sec-concept",
+        "points": 2,
+        "options": [
+          "while loop",
+          "for loop",
+          "do-once",
+          "print loop"
+        ],
+        "correctAnswer": "while loop",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Functions help avoid repeating the same code multiple times.",
+        "kind": "trueFalse",
+        "sectionId": "sec-concept",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "True",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "A named container that stores a value which can change is called a ___.",
+        "kind": "fillBlank",
+        "sectionId": "sec-concept",
+        "points": 2,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [
+          "variable"
+        ],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Match each symbol to its meaning in pseudocode.",
+        "kind": "matching",
+        "sectionId": "sec-concept",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [
+          {
+            "left": "=",
+            "right": "Assignment"
+          },
+          {
+            "left": "==",
+            "right": "Equality check"
+          },
+          {
+            "left": "!=",
+            "right": "Not equal"
+          }
+        ],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Order the steps to write and run a simple program.",
+        "kind": "ordering",
+        "sectionId": "sec-concept",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [
+          "Write the code",
+          "Save the file",
+          "Run or compile the program",
+          "Check the output"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Explain, step by step, how you would design a program to calculate the average of a list of numbers.",
+        "kind": "longAnswer",
+        "sectionId": "sec-written",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Discuss why readable code (good variable names, comments) matters, with examples.",
+        "kind": "essay",
+        "sectionId": "sec-written",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "What part of programming do you still find confusing, and why?",
+        "kind": "reflection",
+        "sectionId": "sec-written",
+        "points": 4,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Your program crashes when a user enters text instead of a number. How would you handle this?",
+        "kind": "scenarioResponse",
+        "sectionId": "sec-written",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": []
+      },
+      {
+        "question": "Using pseudocode or a flowchart, plan a program that checks if a number is even or odd.",
+        "kind": "practicalTask",
+        "sectionId": "sec-written",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": [
+          "imageUpload",
+          "documentUpload"
+        ]
+      },
+      {
+        "question": "Upload the source code for a program that calculates the average of a list of numbers.",
+        "kind": "codeUpload",
+        "sectionId": "sec-submit",
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".py",
+          ".js",
+          ".txt"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a written explanation of your solution and any challenges you faced.",
+        "kind": "documentUpload",
+        "sectionId": "sec-submit",
+        "points": 6,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".pdf",
+          ".docx"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Upload a photo or screenshot of your flowchart or pseudocode plan.",
+        "kind": "imageUpload",
+        "sectionId": "sec-submit",
+        "points": 5,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".png",
+          ".jpg",
+          ".pdf"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Record a short video walking through your code and explaining how it works.",
+        "kind": "videoUpload",
+        "sectionId": "sec-submit",
+        "points": 8,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [
+          ".mp4"
+        ],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "Share a link to any reference or tutorial you used to complete this assignment.",
+        "kind": "externalLink",
+        "sectionId": "sec-submit",
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [
+      {
+        "criterion": "Correctness",
+        "description": "Does the logic or solution actually work as intended?",
+        "points": 30,
+        "sectionId": null
+      },
+      {
+        "criterion": "Clarity of Explanation",
+        "description": "How clearly the written tasks are explained.",
+        "points": 25,
+        "sectionId": null
+      },
+      {
+        "criterion": "Code Quality",
+        "description": "Readability and organization of submitted code.",
+        "points": 25,
+        "sectionId": null
+      },
+      {
+        "criterion": "Completeness",
+        "description": "All parts of the assignment were attempted.",
+        "points": 20,
+        "sectionId": null
+      }
+    ],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "32b39932-175d-4159-aa65-c67085b17fa4",
+    "createdAt": "2026-07-06T12:22:14.384Z",
+    "updatedAt": "2026-07-06T12:22:14.385Z"
+  },
+  {
+    "name": "Robotics & Programming Classroom Observation",
     "type": "observation",
-    "description": "An observation checklist used during robotics lab sessions to assess collaboration, communication, and hands-on build skills.",
-    "instructions": "Instructions:\n\nObserve the learner during a robotics lab session.\nRate each item based on what you directly observe.\nUse the notes item to record anything noteworthy that isn't covered above.",
+    "description": "A comprehensive observation checklist for robotics and programming lessons, covering collaboration, problem-solving, and practical/technical skills using every observation item kind.",
+    "instructions": "Instructions:\n\nObserve the learner during a robotics or programming session.\nRate each item based on what you directly observe, not what the learner says.\nUse the notes items to record anything noteworthy that isn't covered by the checklist or ratings.",
     "structureType": "mixed",
     "overview": "",
     "sections": [
@@ -466,16 +1469,21 @@
         "order": 0
       },
       {
-        "id": "sec-skills",
-        "name": "Practical Skills",
+        "id": "sec-problem",
+        "name": "Problem-Solving Skills",
         "order": 1
+      },
+      {
+        "id": "sec-practical",
+        "name": "Practical & Technical Skills",
+        "order": 2
       }
     ],
     "items": [],
     "rubric": [],
     "indicators": [
       {
-        "text": "Shares tools and materials with teammates",
+        "text": "Shares materials and tools with teammates without being asked",
         "kind": "checklist",
         "ratingScale": [
           "Not Yet",
@@ -485,7 +1493,7 @@
         "sectionId": "sec-collab"
       },
       {
-        "text": "Communicates ideas clearly during group work",
+        "text": "Communicates ideas clearly during group discussions",
         "kind": "rating",
         "ratingScale": [
           "Not Yet",
@@ -495,57 +1503,140 @@
         "sectionId": "sec-collab"
       },
       {
-        "text": "Assembles robot components correctly",
-        "kind": "practicalSkill",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ],
-        "sectionId": "sec-skills"
-      },
-      {
-        "text": "Stays focused and on-task during build time",
+        "text": "Listens to and considers others' ideas before responding",
         "kind": "behaviour",
         "ratingScale": [
           "Not Yet",
           "Developing",
           "Proficient"
         ],
-        "sectionId": "sec-skills"
+        "sectionId": "sec-collab"
       },
       {
-        "text": "Additional observations",
+        "text": "Collaboration notes",
         "kind": "note",
         "ratingScale": [
           "Not Yet",
           "Developing",
           "Proficient"
         ],
-        "sectionId": "sec-skills"
+        "sectionId": "sec-collab"
+      },
+      {
+        "text": "Takes turns and waits patiently during group activities",
+        "kind": "checklist",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-collab"
+      },
+      {
+        "text": "Attempts to troubleshoot problems independently before asking for help",
+        "kind": "rating",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-problem"
+      },
+      {
+        "text": "Breaks a complex problem into smaller, manageable steps",
+        "kind": "rating",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-problem"
+      },
+      {
+        "text": "Stays calm and persistent when a solution doesn't work on the first try",
+        "kind": "behaviour",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-problem"
+      },
+      {
+        "text": "Asks clarifying questions when instructions are unclear",
+        "kind": "checklist",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-problem"
+      },
+      {
+        "text": "Problem-solving notes",
+        "kind": "note",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-problem"
+      },
+      {
+        "text": "Assembles physical components (robot parts, circuits) correctly and securely",
+        "kind": "practicalSkill",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-practical"
+      },
+      {
+        "text": "Follows multi-step build or coding instructions accurately",
+        "kind": "practicalSkill",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-practical"
+      },
+      {
+        "text": "Uses tools and equipment safely and appropriately",
+        "kind": "rating",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-practical"
+      },
+      {
+        "text": "Stays engaged and on-task during hands-on activities",
+        "kind": "behaviour",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-practical"
+      },
+      {
+        "text": "Additional technical skill notes",
+        "kind": "note",
+        "ratingScale": [
+          "Not Yet",
+          "Developing",
+          "Proficient"
+        ],
+        "sectionId": "sec-practical"
       }
     ],
     "deliverables": [],
     "milestones": [],
-    "id": "9768efcf-0ea8-41c2-a0fe-73a463a561d4",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
-  },
-  {
-    "name": "assessment 0001",
-    "type": "quiz",
-    "description": "bygygw8hub\nassessment 001",
-    "instructions": "default istructions 001",
-    "structureType": "structured",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "891a0284-f8f7-472b-997d-2bd1ba6b9449",
-    "createdAt": "2026-07-06T10:06:25.650Z",
-    "updatedAt": "2026-07-06T10:06:25.650Z"
+    "id": "bbd38efe-8ea9-40f5-a037-5412af4a46b5",
+    "createdAt": "2026-07-06T12:22:14.513Z",
+    "updatedAt": "2026-07-06T12:22:14.513Z"
   }
 ]

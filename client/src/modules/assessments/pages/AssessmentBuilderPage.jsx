@@ -29,12 +29,14 @@ function genId() {
 const CSS = `
   .tb-page { font-family: Inter, sans-serif; }
   .tb-header {
-    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     padding:18px 24px; background:#fff; border-bottom:1.5px solid #E5E7EB; margin-bottom:18px;
   }
   .tb-crumb { font-size:12px; color:#9CA3AF; margin-bottom:4px; }
   .tb-crumb a { color:#38aae1; text-decoration:none; cursor:pointer; }
-  .tb-title-row { display:flex; align-items:center; gap:12px; }
+  .tb-title-row { display:flex; align-items:center; gap:12px; min-width:0; }
+  .tb-title-text { min-width:0; }
+  .tb-title, .tb-subtitle { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60vw; }
   .tb-title-icon {
     width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
     font-size:18px; flex-shrink:0;
@@ -54,8 +56,12 @@ const CSS = `
   }
   .tb-btn-secondary:hover { background:#F3F4F6; }
 
-  .tb-body { display:grid; grid-template-columns:200px 1fr; gap:20px; padding:0 24px 32px; }
+  .tb-body { display:grid; grid-template-columns:200px minmax(0,1fr); gap:20px; padding:0 24px 32px; max-width:100%; box-sizing:border-box; }
   @media(max-width:900px){ .tb-body{ grid-template-columns:1fr; } }
+  .tb-body-content { min-width:0; }
+
+  .tb-two-col { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:16px; align-items:start; }
+  @media(max-width:1000px){ .tb-two-col{ grid-template-columns:1fr; } }
 
   .tb-rail { display:flex; flex-direction:column; gap:18px; }
   .tb-rail-section-title { font-size:10.5px; font-weight:800; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px 4px; }
@@ -92,10 +98,11 @@ const CSS = `
   .tb-segmented button:first-child { border-left:none; }
   .tb-segmented button.active { background:#25476a; color:#fff; }
 
-  .tb-workspace { display:grid; grid-template-columns:230px 1fr 300px; gap:16px; align-items:start; }
-  @media(max-width:1200px){ .tb-workspace{ grid-template-columns:1fr; } }
+  .tb-workspace { display:grid; grid-template-columns:210px minmax(0,1fr) 270px; gap:14px; align-items:start; }
+  @media(max-width:1360px){ .tb-workspace{ grid-template-columns:190px minmax(0,1fr) 250px; } }
+  @media(max-width:1150px){ .tb-workspace{ grid-template-columns:1fr; } }
 
-  .tb-card { background:#fff; border-radius:14px; border:1.5px solid #E5E7EB; padding:16px; }
+  .tb-card { background:#fff; border-radius:14px; border:1.5px solid #E5E7EB; padding:16px; min-width:0; box-sizing:border-box; }
   .tb-card-title { margin:0 0 10px; font-size:12.5px; font-weight:800; color:#0F2645; text-transform:uppercase; letter-spacing:0.04em; }
 
   .tb-palette-group { margin-bottom:14px; }
@@ -122,8 +129,8 @@ const CSS = `
   .tb-icon-btn.danger:hover { background:#FEF2F2; color:#DC2626; }
 
   .tb-entry-row {
-    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; border:1.5px solid #EEF0F2;
-    background:#FAFBFF; cursor:pointer; transition:border-color 0.12s;
+    display:flex; align-items:center; flex-wrap:wrap; row-gap:6px; gap:8px 10px; padding:9px 10px; border-radius:9px; border:1.5px solid #EEF0F2;
+    background:#FAFBFF; cursor:pointer; transition:border-color 0.12s; min-width:0;
   }
   .tb-entry-row:hover { border-color:#b8d9ee; }
   .tb-entry-row.selected { border-color:#25476a; background:#F0F7FF; }
@@ -563,14 +570,20 @@ function PlaceholderPanel({ text }) {
   );
 }
 
+function SummaryCard({ form }) {
+  return (
+    <div className="tb-card">
+      <p className="tb-card-title">Assessment Information</p>
+      <p style={{ margin: "0 0 3px", fontSize: "13px", fontWeight: 700, color: "#111827", wordBreak: "break-word" }}>{form.name || <em style={{ color: "#D1D5DB", fontWeight: 400 }}>Untitled assessment</em>}</p>
+      <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF" }}>{TYPE_LABELS[form.type]} · {STRUCTURE_MODE_LABELS[form.structureType]}</p>
+    </div>
+  );
+}
+
 function RightPanel({ form, selectedEntry, onUpdateEntry }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div className="tb-card">
-        <p className="tb-card-title">Assessment Information</p>
-        <p style={{ margin: "0 0 3px", fontSize: "13px", fontWeight: 700, color: "#111827" }}>{form.name || <em style={{ color: "#D1D5DB", fontWeight: 400 }}>Untitled assessment</em>}</p>
-        <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF" }}>{TYPE_LABELS[form.type]} · {STRUCTURE_MODE_LABELS[form.structureType]}</p>
-      </div>
+      <SummaryCard form={form} />
 
       <div className="tb-card">
         <p className="tb-card-title">Item Configuration</p>
@@ -593,7 +606,7 @@ function GradingRubricTab({ rubric, onChange }) {
   const totalPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
 
   return (
-    <div className="tb-card" style={{ maxWidth: "620px" }}>
+    <div className="tb-card">
       <p className="tb-card-title">Grading Rubric{rubric.length ? ` · ${totalPoints} pts` : ""}</p>
       <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>Optional holistic grading criteria, separate from the item-level marks above.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -892,9 +905,9 @@ export default function AssessmentBuilderPage() {
     if (!form.name.trim()) { setActiveTab("info"); return; }
     const data = buildPayload();
     if (isEdit) {
-      updateAssessment({ id, data }, { onSuccess: async () => { await reconcileTags(id); navigate("/assessments"); } });
+      updateAssessment({ id, data }, { onSuccess: async () => { await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
     } else {
-      createAssessment(data, { onSuccess: async (created) => { await reconcileTags(created.id); navigate("/assessments"); } });
+      createAssessment(data, { onSuccess: async (created) => { await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
     }
   }
 
@@ -914,7 +927,7 @@ export default function AssessmentBuilderPage() {
           <p className="tb-crumb"><a onClick={() => navigate("/assessments")}>Assessments</a> / {isEdit ? "Edit Assessment" : "Create New Assessment"}</p>
           <div className="tb-title-row">
             <div className="tb-title-icon" style={{ backgroundColor: `${color}15`, color }}>{TYPE_ICONS[type]}</div>
-            <div>
+            <div className="tb-title-text">
               <h1 className="tb-title">{TYPE_LABELS[type]} Assessment</h1>
               <p className="tb-subtitle">Build a {TYPE_LABELS[type].toLowerCase()} assessment. Add sections and items of any type.</p>
             </div>
@@ -944,7 +957,7 @@ export default function AssessmentBuilderPage() {
           </div>
         </div>
 
-        <div>
+        <div className="tb-body-content">
           <div className="tb-tabs">
             {tabs.map((tab) => (
               <button key={tab.key} type="button" className={`tb-tab-btn${activeTab === tab.key ? " active" : ""}`} onClick={() => setActiveTab(tab.key)}>{tab.label}</button>
@@ -952,47 +965,50 @@ export default function AssessmentBuilderPage() {
           </div>
 
           {activeTab === "info" && (
-            <div className="tb-card" style={{ maxWidth: "620px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <div>
-                  <Label>Assessment Name *</Label>
-                  <input className="tb-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Mid-term Mathematics Exam" />
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <textarea className="tb-textarea" rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Default Instructions</Label>
-                  <textarea className="tb-textarea" rows={3} value={form.instructions} onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))} />
-                </div>
-                {BUILDER_REGISTRY[type]?.supportsDeliverables && (
+            <div className="tb-two-col">
+              <div className="tb-card">
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                   <div>
-                    <Label>Project Overview</Label>
-                    <textarea className="tb-textarea" rows={3} value={form.overview} onChange={(e) => setForm((f) => ({ ...f, overview: e.target.value }))} placeholder="What is this project about?" />
+                    <Label>Assessment Name *</Label>
+                    <input className="tb-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Mid-term Mathematics Exam" />
                   </div>
-                )}
-                <div>
-                  <Label>Structure Type</Label>
-                  <SegmentedControl options={STRUCTURE_MODES} value={form.structureType} onChange={(v) => setForm((f) => ({ ...f, structureType: v }))} />
-                </div>
-                <div>
-                  <Label>Competencies</Label>
-                  <TagPicker
-                    label="Competency" items={allCompetencies} selectedIds={form.competencyIds}
-                    onChange={(ids) => setForm((f) => ({ ...f, competencyIds: ids }))}
-                    onCreateNew={() => setCreateCompetencyOpen(true)}
-                  />
-                </div>
-                <div>
-                  <Label>Learning Areas</Label>
-                  <TagPicker
-                    label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
-                    onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
-                    onCreateNew={() => setCreateLearningAreaOpen(true)}
-                  />
+                  <div>
+                    <Label>Description</Label>
+                    <textarea className="tb-textarea" rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Default Instructions</Label>
+                    <textarea className="tb-textarea" rows={3} value={form.instructions} onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))} />
+                  </div>
+                  {BUILDER_REGISTRY[type]?.supportsDeliverables && (
+                    <div>
+                      <Label>Project Overview</Label>
+                      <textarea className="tb-textarea" rows={3} value={form.overview} onChange={(e) => setForm((f) => ({ ...f, overview: e.target.value }))} placeholder="What is this project about?" />
+                    </div>
+                  )}
+                  <div>
+                    <Label>Structure Type</Label>
+                    <SegmentedControl options={STRUCTURE_MODES} value={form.structureType} onChange={(v) => setForm((f) => ({ ...f, structureType: v }))} />
+                  </div>
+                  <div>
+                    <Label>Competencies</Label>
+                    <TagPicker
+                      label="Competency" items={allCompetencies} selectedIds={form.competencyIds}
+                      onChange={(ids) => setForm((f) => ({ ...f, competencyIds: ids }))}
+                      onCreateNew={() => setCreateCompetencyOpen(true)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Learning Areas</Label>
+                    <TagPicker
+                      label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
+                      onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
+                      onCreateNew={() => setCreateLearningAreaOpen(true)}
+                    />
+                  </div>
                 </div>
               </div>
+              <SummaryCard form={form} />
             </div>
           )}
 
@@ -1011,7 +1027,10 @@ export default function AssessmentBuilderPage() {
           )}
 
           {activeTab === "rubric" && (
-            <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} />
+            <div className="tb-two-col">
+              <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} />
+              <SummaryCard form={form} />
+            </div>
           )}
 
           {activeTab === "deliverables" && (

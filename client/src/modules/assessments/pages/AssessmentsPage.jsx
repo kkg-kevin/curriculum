@@ -267,7 +267,7 @@ function AssessmentCard({ assessment }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
               <h3
-                onClick={() => navigate(`/assessments/${assessment.id}/edit`)}
+                onClick={() => navigate(`/assessments/${assessment.id}/view`)}
                 style={{ margin: "0 0 3px 0", fontSize: "15px", fontWeight: "700", color: hovered ? "#25476a" : "#111827", cursor: "pointer", transition: "color 0.15s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
               >
                 {assessment.name}
@@ -317,10 +317,10 @@ function AssessmentCard({ assessment }) {
       <div style={{ padding: "10px 20px", borderTop: "1px solid #F3F4F6", backgroundColor: "#FAFBFF", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
           type="button"
-          onClick={() => navigate(`/assessments/${assessment.id}/edit`)}
+          onClick={() => navigate(`/assessments/${assessment.id}/view`)}
           style={{ background: "none", border: "none", fontSize: "13px", fontWeight: "600", color: "#38aae1", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
         >
-          Open
+          View
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
@@ -330,6 +330,11 @@ function AssessmentCard({ assessment }) {
           ref={dropdownRef}
           style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: "14px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", zIndex: 9999, minWidth: "180px", overflow: "hidden", padding: "6px" }}
         >
+          <MenuButton
+            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg>}
+            label="View"
+            onClick={() => { setMenuOpen(false); navigate(`/assessments/${assessment.id}/view`); }}
+          />
           <MenuButton
             icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             label="Edit"

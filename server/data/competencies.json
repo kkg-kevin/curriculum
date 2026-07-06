@@ -33,5 +33,12 @@
     "description": "The learner effectively collaborates with peers in shared tasks, clearly communicates ideas, processes, and outcomes, and engages constructively in discussions. They also demonstrate responsible digital behavior, including respect for others, safe use of technology, and adherence to ethical standards in online and collaborative environments.",
     "createdAt": "2026-06-25T10:20:10.642Z",
     "updatedAt": "2026-06-25T10:20:10.642Z"
+  },
+  {
+    "id": "0f9bdf94-42e3-4dbb-a2d6-dae18d7e383a",
+    "name": "dev",
+    "description": "dev 101",
+    "createdAt": "2026-07-06T11:42:19.969Z",
+    "updatedAt": "2026-07-06T11:42:19.969Z"
   }
 ]
