@@ -5,8 +5,186 @@ import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment
 import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment" };
-const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄" };
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
+const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
+const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
+const MEDIA_TYPE_LABELS = { audio: "Audio", video: "Video", either: "Audio or Video" };
+
+/* ── content summary / preview (shared shape with the Builder) ─────────── */
+
+function assessmentContentSummary(assessment) {
+  if (assessment.type === "quiz" || assessment.type === "exam") {
+    const n = assessment.items?.length || 0;
+    return `${n} question${n !== 1 ? "s" : ""}`;
+  }
+  if (assessment.type === "assignment" || assessment.type === "project") {
+    const parts = [];
+    const taskCount = assessment.items?.length || 0;
+    if (taskCount > 0) parts.push(`${taskCount} task${taskCount !== 1 ? "s" : ""}`);
+    const criteriaCount = assessment.rubric?.length || 0;
+    if (criteriaCount > 0) parts.push(`${criteriaCount} criteri${criteriaCount !== 1 ? "a" : "on"}`);
+    const deliverableCount = assessment.deliverables?.length || 0;
+    if (deliverableCount > 0) parts.push(`${deliverableCount} deliverable${deliverableCount !== 1 ? "s" : ""}`);
+    return parts.length ? parts.join(" · ") : "0 tasks";
+  }
+  const n = assessment.indicators?.length || 0;
+  return `${n} indicator${n !== 1 ? "s" : ""}`;
+}
+
+function assessmentTotalPoints(assessment) {
+  if (assessment.type === "quiz" || assessment.type === "exam") {
+    return assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) ?? 0;
+  }
+  if (assessment.type === "assignment" || assessment.type === "project") {
+    const itemsPoints = assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) || 0;
+    const rubricPoints = assessment.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) || 0;
+    return itemsPoints + rubricPoints;
+  }
+  return null;
+}
+
+function itemDetailSuffix(item) {
+  switch (item.kind || item.questionType) {
+    case "mcq": case "mcqSingle": case "mcqMultiple":
+      return item.options?.length ? ` · ${item.options.length} options` : "";
+    case "matching": return ` · ${item.pairs?.length || 0} pairs`;
+    case "fillBlank": return ` · ${item.blanks?.length || 0} blank${item.blanks?.length !== 1 ? "s" : ""}`;
+    case "ordering": return ` · ${item.sequence?.length || 0} steps`;
+    case "fileUpload": case "documentUpload": case "imageUpload": case "videoUpload": case "audioUpload": case "codeUpload":
+      return item.acceptedFileTypes?.length ? ` · ${item.acceptedFileTypes.join(", ")}` : "";
+    case "mediaResponse": return ` · ${MEDIA_TYPE_LABELS[item.mediaType] || item.mediaType}`;
+    default: return "";
+  }
+}
+
+function AssessmentContentPreview({ assessment }) {
+  const row = { fontSize: "12px", color: "#4B5563", padding: "7px 10px", background: "#F9FAFB", borderRadius: "8px", border: "1px solid #F0F1F3" };
+  const label = { fontWeight: 600, color: "#111827" };
+  const meta = { marginLeft: "6px", color: "#9CA3AF", fontWeight: 400 };
+
+  if (assessment.type === "quiz" || assessment.type === "exam") {
+    if (!assessment.items?.length) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {assessment.items.map((item, idx) => (
+          <div key={idx} style={row}>
+            <span style={label}>{idx + 1}. {item.question}</span>
+            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (assessment.type === "assignment" || assessment.type === "project") {
+    const hasAny = assessment.items?.length || assessment.rubric?.length || assessment.deliverables?.length || assessment.milestones?.length;
+    if (!hasAny) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {assessment.items?.map((item, idx) => (
+          <div key={`item-${idx}`} style={row}>
+            <span style={label}>{item.question}</span>
+            <span style={meta}>· {item.points} pt{item.points !== 1 ? "s" : ""}{itemDetailSuffix(item)}</span>
+          </div>
+        ))}
+        {assessment.rubric?.map((c, idx) => (
+          <div key={`rubric-${idx}`} style={row}>
+            <span style={label}>{c.criterion}</span>
+            <span style={meta}>· {c.points} pt{c.points !== 1 ? "s" : ""}</span>
+            {c.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{c.description}</div>}
+          </div>
+        ))}
+        {assessment.deliverables?.map((d, idx) => (
+          <div key={`deliverable-${idx}`} style={row}>
+            <span style={label}>📦 {d.name}</span>
+            {d.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{d.description}</div>}
+          </div>
+        ))}
+        {assessment.milestones?.map((m, idx) => (
+          <div key={`milestone-${idx}`} style={row}>
+            <span style={label}>🚩 {m.name}</span>
+            {m.description && <div style={{ marginTop: "3px", color: "#6B7280" }}>{m.description}</div>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (!assessment.indicators?.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {assessment.indicators.map((ind, idx) => (
+        <div key={idx} style={row}>
+          <div style={{ ...label, marginBottom: ind.kind === "checklist" || ind.kind === "note" ? 0 : "5px" }}>{ind.text}</div>
+          {ind.kind === "checklist" && <span style={{ fontSize: "10.5px", color: "#9CA3AF" }}>Checklist item</span>}
+          {ind.kind === "note" && <span style={{ fontSize: "10.5px", color: "#9CA3AF", fontStyle: "italic" }}>Freeform note</span>}
+          {(!ind.kind || ["rating", "practicalSkill", "behaviour"].includes(ind.kind)) && (
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+              {(ind.ratingScale || []).map((r) => (
+                <span key={r} style={{ fontSize: "10px", fontWeight: 700, color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 7px" }}>{r}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── New Assessment type-picker menu ─────────────────────────────────────── */
+
+function NewAssessmentMenu({ onPick }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const openMenu = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !dropdownRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
+      >
+        <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+        Add Assessment
+      </button>
+      {open && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9999, background: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", minWidth: "190px", padding: "6px" }}
+        >
+          {Object.entries(TYPE_LABELS).filter(([t]) => t !== "exam").map(([t, label]) => (
+            <button
+              key={t} type="button" onClick={() => { setOpen(false); onPick(t); }}
+              style={{ display: "flex", alignItems: "center", gap: "9px", width: "100%", padding: "9px 10px", border: "none", borderRadius: "8px", background: "transparent", fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif", color: "#374151", textAlign: "left", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#F3F4F6"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: TYPE_COLORS[t], flexShrink: 0 }} />
+              {label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 function TypeBadge({ type }) {
   return (
@@ -45,8 +223,13 @@ function AssessmentCard({ assessment }) {
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [hovered, setHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  const summary = assessmentContentSummary(assessment);
+  const totalPoints = assessmentTotalPoints(assessment);
+  const hasContent = !!(assessment.items?.length || assessment.rubric?.length || assessment.indicators?.length || assessment.deliverables?.length || assessment.milestones?.length);
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -84,7 +267,7 @@ function AssessmentCard({ assessment }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
               <h3
-                onClick={() => navigate(`/assessments/${assessment.id}/view`)}
+                onClick={() => navigate(`/assessments/${assessment.id}/edit`)}
                 style={{ margin: "0 0 3px 0", fontSize: "15px", fontWeight: "700", color: hovered ? "#25476a" : "#111827", cursor: "pointer", transition: "color 0.15s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
               >
                 {assessment.name}
@@ -103,6 +286,7 @@ function AssessmentCard({ assessment }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
               <TypeBadge type={assessment.type} />
+              <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>{summary}{totalPoints ? ` · ${totalPoints} pts` : ""}</span>
             </div>
           </div>
         </div>
@@ -113,15 +297,30 @@ function AssessmentCard({ assessment }) {
         }}>
           {assessment.description || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
         </p>
+
+        {hasContent && (
+          <div>
+            <button
+              type="button" onClick={() => setExpanded((v) => !v)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", color: "#38aae1", fontSize: "11.5px", fontWeight: "700", padding: 0 }}
+            >
+              {expanded ? "Hide content" : "Preview content"}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {expanded && <div style={{ marginTop: "8px" }}><AssessmentContentPreview assessment={assessment} /></div>}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: "10px 20px", borderTop: "1px solid #F3F4F6", backgroundColor: "#FAFBFF", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
           type="button"
-          onClick={() => navigate(`/assessments/${assessment.id}/view`)}
+          onClick={() => navigate(`/assessments/${assessment.id}/edit`)}
           style={{ background: "none", border: "none", fontSize: "13px", fontWeight: "600", color: "#38aae1", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
         >
-          View Details
+          Open
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
@@ -131,12 +330,11 @@ function AssessmentCard({ assessment }) {
           ref={dropdownRef}
           style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: "14px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", zIndex: 9999, minWidth: "180px", overflow: "hidden", padding: "6px" }}
         >
-          {[
-            { label: "View", path: `/assessments/${assessment.id}/view`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit", path: `/assessments/${assessment.id}/edit`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-          ].map(({ label, path, icon }) => (
-            <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
-          ))}
+          <MenuButton
+            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            label="Edit"
+            onClick={() => { setMenuOpen(false); navigate(`/assessments/${assessment.id}/edit`); }}
+          />
           <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
             icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -170,9 +368,7 @@ function EmptyState({ onCreateNew }) {
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>No assessments yet</h3>
       <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6" }}>Create your first assessment to get started.</p>
-      <button type="button" onClick={onCreateNew} style={{ padding: "10px 24px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 4px 12px rgba(254,177,57,0.35)" }}>
-        + Add Assessment
-      </button>
+      <NewAssessmentMenu onPick={onCreateNew} />
     </div>
   );
 }
@@ -205,17 +401,10 @@ export default function AssessmentsPage() {
               Assessments
             </h1>
             <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "480px" }}>
-              Create and manage assessments from scratch.
+              Create and manage assessments — quizzes, assignments, projects, and teacher observations.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/assessments/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
-          >
-            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
-            Add Assessment
-          </button>
+          <NewAssessmentMenu onPick={(t) => navigate(`/assessments/new/${t}`)} />
         </div>
       </div>
 
@@ -290,7 +479,7 @@ export default function AssessmentsPage() {
           ⚠ Failed to load assessments: {error?.message}
         </div>
       ) : assessments.length === 0 ? (
-        <EmptyState onCreateNew={() => navigate("/assessments/create")} />
+        <EmptyState onCreateNew={(t) => navigate(`/assessments/new/${t}`)} />
       ) : visibleAssessments.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB", color: "#9CA3AF", fontSize: "14px" }}>
           No assessments match your search{search ? ` "${search}"` : ""}{typeFilter ? ` in ${TYPE_LABELS[typeFilter]}` : ""}.

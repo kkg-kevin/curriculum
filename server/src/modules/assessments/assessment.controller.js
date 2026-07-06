@@ -3,12 +3,6 @@ const AssessmentService = require("./assessment.service");
 const {
   createAssessmentSchema,
   updateAssessmentSchema,
-  createItemSchema,
-  updateItemSchema,
-  createRubricCriterionSchema,
-  updateRubricCriterionSchema,
-  createIndicatorSchema,
-  updateIndicatorSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
 } = require("./assessment.validation");
@@ -73,57 +67,6 @@ const unlinkLearningArea = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-const addItem = asyncHandler(async (req, res) => {
-  const data = createItemSchema.parse(req.body);
-  const item = await AssessmentService.addItem(req.params.id, data);
-  res.status(201).json({ success: true, data: item });
-});
-
-const updateItem = asyncHandler(async (req, res) => {
-  const data = updateItemSchema.parse(req.body);
-  const item = await AssessmentService.updateItem(req.params.id, req.params.itemId, data);
-  res.json({ success: true, data: item });
-});
-
-const deleteItem = asyncHandler(async (req, res) => {
-  const result = await AssessmentService.deleteItem(req.params.id, req.params.itemId);
-  res.json({ success: true, ...result });
-});
-
-const addRubricCriterion = asyncHandler(async (req, res) => {
-  const data = createRubricCriterionSchema.parse(req.body);
-  const criterion = await AssessmentService.addRubricCriterion(req.params.id, data);
-  res.status(201).json({ success: true, data: criterion });
-});
-
-const updateRubricCriterion = asyncHandler(async (req, res) => {
-  const data = updateRubricCriterionSchema.parse(req.body);
-  const criterion = await AssessmentService.updateRubricCriterion(req.params.id, req.params.criterionId, data);
-  res.json({ success: true, data: criterion });
-});
-
-const deleteRubricCriterion = asyncHandler(async (req, res) => {
-  const result = await AssessmentService.deleteRubricCriterion(req.params.id, req.params.criterionId);
-  res.json({ success: true, ...result });
-});
-
-const addIndicator = asyncHandler(async (req, res) => {
-  const data = createIndicatorSchema.parse(req.body);
-  const indicator = await AssessmentService.addIndicator(req.params.id, data);
-  res.status(201).json({ success: true, data: indicator });
-});
-
-const updateIndicator = asyncHandler(async (req, res) => {
-  const data = updateIndicatorSchema.parse(req.body);
-  const indicator = await AssessmentService.updateIndicator(req.params.id, req.params.indicatorId, data);
-  res.json({ success: true, data: indicator });
-});
-
-const deleteIndicator = asyncHandler(async (req, res) => {
-  const result = await AssessmentService.deleteIndicator(req.params.id, req.params.indicatorId);
-  res.json({ success: true, ...result });
-});
-
 module.exports = {
   createAssessment,
   getAllAssessments,
@@ -136,13 +79,4 @@ module.exports = {
   getAssessmentLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
-  addItem,
-  updateItem,
-  deleteItem,
-  addRubricCriterion,
-  updateRubricCriterion,
-  deleteRubricCriterion,
-  addIndicator,
-  updateIndicator,
-  deleteIndicator,
 };

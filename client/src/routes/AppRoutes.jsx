@@ -31,11 +31,8 @@ import EditCoursePage from "../modules/courses/pages/EditCoursePage";
 import CourseViewPage from "../modules/courses/pages/CourseViewPage";
 import SectionViewPage from "../modules/courses/pages/SectionViewPage";
 import AssessmentsPage from "../modules/assessments/pages/AssessmentsPage";
-import CreateAssessmentPage from "../modules/assessments/pages/CreateAssessmentPage";
-import EditAssessmentPage from "../modules/assessments/pages/EditAssessmentPage";
-import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
+import AssessmentBuilderPage from "../modules/assessments/pages/AssessmentBuilderPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
-import TemplateBuilderPage from "../modules/assessments/pages/TemplateBuilderPage";
 
 function ComingSoon({ name }) {
   return (
@@ -96,14 +93,11 @@ export default function AppRoutes() {
         </Route>
         <Route path="assessments">
           <Route index element={<AssessmentsPage />} />
-          <Route path="create" element={<CreateAssessmentPage />} />
-          <Route path=":id/edit" element={<EditAssessmentPage />} />
-          <Route path=":id/view" element={<AssessmentViewPage />} />
+          <Route path="new/:type" element={<AssessmentBuilderPage />} />
+          <Route path=":id/edit" element={<AssessmentBuilderPage />} />
         </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="settings/templates/new/:type" element={<TemplateBuilderPage />} />
-        <Route path="settings/templates/:id/edit" element={<TemplateBuilderPage />} />
       </Route>
     </Routes>
   );

@@ -11,7 +11,6 @@ const classRoutes = require("./modules/classes/class.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
-const templateRoutes = require("./modules/templates/template.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 
@@ -38,7 +37,6 @@ app.use("/api/classes", classRoutes);
 app.use("/api/learners", learnerRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/assessments", assessmentRoutes);
-app.use("/api/assessment-templates", templateRoutes);
 app.use("/api/uploads", uploadRoutes);
 
 app.use(notFound);
