@@ -1,27 +1,27 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/competencies.json");
+const FILE = path.join(__dirname, "../../../../data/learning-areas-catalog.json");
 
-function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
+function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
 function genId() {
   try { return require("crypto").randomUUID(); }
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
-const CompetencyModel = {
+const LearningAreaModel = {
   findAll() {
     return read();
   },
 
-  findByIds(ids) {
-    const idSet = new Set(ids);
-    return read().filter((c) => idSet.has(c.id));
+  findById(id) {
+    return read().find((a) => a.id === id) || null;
   },
 
-  findById(id) {
-    return read().find((c) => c.id === id) || null;
+  findByIds(ids) {
+    const idSet = new Set(ids);
+    return read().filter((a) => idSet.has(a.id));
   },
 
   create(data) {
@@ -35,7 +35,7 @@ const CompetencyModel = {
 
   update(id, data) {
     const all = read();
-    const idx = all.findIndex((c) => c.id === id);
+    const idx = all.findIndex((a) => a.id === id);
     if (idx === -1) return null;
     all[idx] = { ...all[idx], ...data, id, updatedAt: new Date().toISOString() };
     write(all);
@@ -44,11 +44,11 @@ const CompetencyModel = {
 
   delete(id) {
     const all      = read();
-    const filtered = all.filter((c) => c.id !== id);
+    const filtered = all.filter((a) => a.id !== id);
     if (filtered.length === all.length) return false;
     write(filtered);
     return true;
   },
 };
 
-module.exports = CompetencyModel;
+module.exports = LearningAreaModel;

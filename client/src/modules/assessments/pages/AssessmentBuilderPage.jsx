@@ -5,8 +5,8 @@ import {
   useAssessmentCompetencies, useAssessmentLearningAreas,
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
-import { useCompetencies } from "../../settings/hooks/useCompetencies";
-import { useLearningAreas } from "../../settings/hooks/useLearningAreas";
+import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
+import { useLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
 import RichTextEditor from "../components/RichTextEditor";

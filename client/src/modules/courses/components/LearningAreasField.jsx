@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { useLearningAreas as useGlobalLearningAreas } from "../../settings/hooks/useLearningAreas";
+import { useLearningAreas as useGlobalLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
 import { Field } from "./formFields";
 import CreateLearningAreaModal from "./CreateLearningAreaModal";
 

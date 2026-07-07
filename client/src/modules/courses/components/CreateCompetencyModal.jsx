@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCreateCompetency } from "../../settings/hooks/useCompetencies";
+import { useCreateCompetency } from "../../settings/competencies/hooks/useCompetencies";
 
 // Shared by CompetenciesField (Courses/Assessments) and the curriculum module's
 // competency-adopt panel — creating here always writes to the global Settings

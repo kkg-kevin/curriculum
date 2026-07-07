@@ -2,9 +2,9 @@ const crypto = require("crypto");
 const CourseModel = require("./course.model");
 const SessionModel = require("./session.model");
 const CourseCompetencyLinkModel = require("./course-competency-link.model");
-const CompetencyModel = require("../competencies/competency.model");
+const CompetencyModel = require("../settings/competencies/competency.model");
 const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
-const LearningAreaModel = require("../learning-areas/learning-area.model");
+const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"

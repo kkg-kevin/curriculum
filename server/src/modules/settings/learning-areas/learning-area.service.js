@@ -1,6 +1,6 @@
 const LearningAreaModel = require("./learning-area.model");
-const CourseLearningAreaLinkModel = require("../courses/course-learning-area-link.model");
-const AssessmentLearningAreaLinkModel = require("../assessments/assessment-learning-area-link.model");
+const CourseLearningAreaLinkModel = require("../../courses/course-learning-area-link.model");
+const AssessmentLearningAreaLinkModel = require("../../assessments/assessment-learning-area-link.model");
 
 const LearningAreaService = {
   getLearningAreas() {
