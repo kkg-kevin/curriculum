@@ -261,7 +261,15 @@ export default function CourseViewPage() {
   const { data: assessmentsData } = useAssessmentsQuery();
   const allAssessments = assessmentsData?.data || [];
   const attachedAssessmentIds = [...new Set(sessions.flatMap((s) => s.assessmentIds || []))];
-  const attachedAssessments = attachedAssessmentIds.map((aid) => allAssessments.find((a) => a.id === aid)).filter(Boolean);
+  const attachedAssessments = attachedAssessmentIds
+    .map((aid) => {
+      const assessment = allAssessments.find((a) => a.id === aid);
+      if (!assessment) return null;
+      // An assessment can be attached to more than one session — link to wherever it first appears.
+      const owningSession = sessions.find((s) => (s.assessmentIds || []).includes(aid));
+      return { ...assessment, sessionId: owningSession?.id };
+    })
+    .filter(Boolean);
 
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [modalSessionId, setModalSessionId] = useState(null);
@@ -411,7 +419,7 @@ export default function CourseViewPage() {
                   return (
                     <Link
                       key={a.id}
-                      to={`/assessments/${a.id}/view`}
+                      to={a.sessionId ? `/courses/${id}/sessions/${a.sessionId}/sections/assessments/${a.id}` : `/assessments/${a.id}/view`}
                       style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", textDecoration: "none" }}
                     >
                       <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />

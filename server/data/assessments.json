@@ -1677,5 +1677,80 @@
     "id": "87aeff8c-1f29-4fc1-aa79-c09006d6043d",
     "createdAt": "2026-07-06T12:56:23.526Z",
     "updatedAt": "2026-07-06T12:56:23.526Z"
+  },
+  {
+    "name": "gwsdav",
+    "type": "quiz",
+    "description": "<p>gwsadvz</p>",
+    "instructions": "<p>wevsd</p>",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [
+      {
+        "id": "292e56e2-a574-4a41-aa30-7986446ed4cf",
+        "name": "Section 1",
+        "order": 0
+      }
+    ],
+    "items": [
+      {
+        "id": "77b4303b-4de5-4563-9764-aa21b4d82b61",
+        "question": "<p>feqacqacs</p>",
+        "kind": "mcqSingle",
+        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
+        "points": 1,
+        "options": [
+          "edc",
+          "efacz"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "id": "6f56d522-8f94-4604-8a60-f93671babea8",
+        "question": "<p>fqeac</p>",
+        "kind": "mcqSingle",
+        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
+        "points": 1,
+        "options": [
+          "fecsd",
+          "feqasc"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "id": "fb16ee0e-c624-4d29-9280-376920aa05f1",
+        "question": "<p>fewsadc</p>",
+        "kind": "shortAnswer",
+        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
+        "points": 1,
+        "options": [],
+        "correctAnswer": "feqacs",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "d2c9f6f7-1848-48a4-a157-8bafee3467ee",
+    "createdAt": "2026-07-07T05:54:06.989Z",
+    "updatedAt": "2026-07-07T05:54:06.989Z"
   }
 ]
