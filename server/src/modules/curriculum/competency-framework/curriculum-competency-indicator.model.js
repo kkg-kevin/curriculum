@@ -1,7 +1,7 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/curriculum-competency-indicators.json");
+const FILE = path.join(__dirname, "../../../../data/curriculum-competency-indicators.json");
 
 function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }

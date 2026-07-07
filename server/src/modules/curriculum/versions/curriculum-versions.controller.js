@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const CurriculumVersionService = require("./curriculum-versions.service");
-const CurriculumModel = require("./curriculum.model");
+const CurriculumModel = require("../curriculum.model");
 
 const getVersions = asyncHandler(async (req, res) => {
   const result = CurriculumVersionService.getAllForCurriculum(req.params.id);

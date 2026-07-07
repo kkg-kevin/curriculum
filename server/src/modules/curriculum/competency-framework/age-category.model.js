@@ -1,7 +1,7 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/age-categories.json");
+const FILE = path.join(__dirname, "../../../../data/age-categories.json");
 
 function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }

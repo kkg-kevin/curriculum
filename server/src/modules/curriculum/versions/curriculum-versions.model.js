@@ -2,7 +2,7 @@ const fs     = require("fs");
 const path   = require("path");
 const crypto = require("crypto");
 
-const FILE = path.join(__dirname, "../../../data/curriculum-versions.json");
+const FILE = path.join(__dirname, "../../../../data/curriculum-versions.json");
 
 const genId = () =>
   typeof crypto.randomUUID === "function"

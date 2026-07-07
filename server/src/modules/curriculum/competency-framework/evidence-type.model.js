@@ -1,7 +1,7 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/assessments.json");
+const FILE = path.join(__dirname, "../../../../data/evidence-types.json");
 
 function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
@@ -10,15 +10,15 @@ function genId() {
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
-const AssessmentModel = {
+const EvidenceTypeModel = {
   findByCurriculumId(curriculumId) {
     return read()
-      .filter((a) => a.curriculumId === curriculumId)
+      .filter((e) => e.curriculumId === curriculumId)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   },
 
   findById(id) {
-    return read().find((a) => a.id === id) || null;
+    return read().find((e) => e.id === id) || null;
   },
 
   create(data) {
@@ -32,7 +32,7 @@ const AssessmentModel = {
 
   update(id, data) {
     const all = read();
-    const idx = all.findIndex((a) => a.id === id);
+    const idx = all.findIndex((e) => e.id === id);
     if (idx === -1) return null;
     all[idx] = { ...all[idx], ...data, id, updatedAt: new Date().toISOString() };
     write(all);
@@ -41,11 +41,11 @@ const AssessmentModel = {
 
   delete(id) {
     const all      = read();
-    const filtered = all.filter((a) => a.id !== id);
+    const filtered = all.filter((e) => e.id !== id);
     if (filtered.length === all.length) return false;
     write(filtered);
     return true;
   },
 };
 
-module.exports = AssessmentModel;
+module.exports = EvidenceTypeModel;

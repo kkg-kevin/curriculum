@@ -1,7 +1,7 @@
 const fs   = require("fs");
 const path = require("path");
 
-const FILE = path.join(__dirname, "../../../data/learning-areas.json");
+const FILE = path.join(__dirname, "../../../../data/assessment-types.json");
 
 function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
@@ -10,19 +10,21 @@ function genId() {
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
-const LearningAreaModel = {
+const AssessmentTypeModel = {
   findByCurriculumId(curriculumId) {
-    return read().filter((a) => a.curriculumId === curriculumId);
+    return read()
+      .filter((t) => t.curriculumId === curriculumId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   },
 
   findById(id) {
-    return read().find((a) => a.id === id) || null;
+    return read().find((t) => t.id === id) || null;
   },
 
   create(data) {
-    const all  = read();
-    const now  = new Date().toISOString();
-    const item = { id: genId(), ...data, createdAt: now, updatedAt: now };
+    const all = read();
+    const now = new Date().toISOString();
+    const item = { id: genId(), ...data, evidenceWeights: [], createdAt: now, updatedAt: now };
     all.push(item);
     write(all);
     return item;
@@ -30,7 +32,7 @@ const LearningAreaModel = {
 
   update(id, data) {
     const all = read();
-    const idx = all.findIndex((a) => a.id === id);
+    const idx = all.findIndex((t) => t.id === id);
     if (idx === -1) return null;
     all[idx] = { ...all[idx], ...data, id, updatedAt: new Date().toISOString() };
     write(all);
@@ -39,11 +41,11 @@ const LearningAreaModel = {
 
   delete(id) {
     const all      = read();
-    const filtered = all.filter((a) => a.id !== id);
+    const filtered = all.filter((t) => t.id !== id);
     if (filtered.length === all.length) return false;
     write(filtered);
     return true;
   },
 };
 
-module.exports = LearningAreaModel;
+module.exports = AssessmentTypeModel;

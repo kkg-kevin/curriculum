@@ -1,7 +1,7 @@
 const CompetencyModel = require("./competency.model");
-const CurriculumCompetencyLinkModel = require("../../curriculum/curriculum-competency-link.model");
-const CurriculumCompetencyIndicatorModel = require("../../curriculum/curriculum-competency-indicator.model");
-const ProgressionLadderModel = require("../../curriculum/progression-ladder.model");
+const CurriculumCompetencyLinkModel = require("../../curriculum/competency-framework/curriculum-competency-link.model");
+const CurriculumCompetencyIndicatorModel = require("../../curriculum/competency-framework/curriculum-competency-indicator.model");
+const ProgressionLadderModel = require("../../curriculum/competency-framework/progression-ladder.model");
 const CourseCompetencyLinkModel = require("../../courses/course-competency-link.model");
 const AssessmentCompetencyLinkModel = require("../../assessments/assessment-competency-link.model");
 

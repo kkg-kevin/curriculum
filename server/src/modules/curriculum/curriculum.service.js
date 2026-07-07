@@ -1,6 +1,6 @@
 const CurriculumModel          = require("./curriculum.model");
-const AcademicYearGroupModel   = require("./academic-year-groups.model");
-const AcademicYearVersionModel = require("./academic-year-versions.model");
+const AcademicYearGroupModel   = require("./academic-years/academic-year-groups.model");
+const AcademicYearVersionModel = require("./academic-years/academic-year-versions.model");
 
 const CurriculumService = {
   async createCurriculum(data) {
