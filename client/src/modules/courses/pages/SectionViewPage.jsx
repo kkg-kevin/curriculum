@@ -274,18 +274,7 @@ function SectionBody({ sectionKey, session, allAssessments, courseId }) {
   }
 
   if (sectionKey === "introduction") {
-    return (
-      <>
-        <div style={{ marginBottom: "28px" }}>
-          <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Introduction</h3>
-          <RichContent html={session.introduction} emptyText="Nothing added yet" />
-        </div>
-        <div>
-          <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ice Breaker</h3>
-          <RichContent html={session.iceBreaker} emptyText="Nothing added yet" />
-        </div>
-      </>
-    );
+    return <RichContent html={session.introduction} emptyText="Nothing added yet" />;
   }
 
   if (sectionKey === "assessments") {
@@ -319,12 +308,16 @@ function SectionBody({ sectionKey, session, allAssessments, courseId }) {
       <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
         {resources.map((r) => (
           <li key={r.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", flexWrap: "wrap" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#38aae1", flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
+            {r.type === "link" ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#7C3AED", flexShrink: 0 }}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#38aae1", flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
+            )}
             <a href={r.url} target="_blank" rel="noreferrer" style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
               {r.filename}
             </a>
             <AudienceBadge audience={r.audience} />
-            <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{formatSize(r.size)}</span>
+            {r.type !== "link" && <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{formatSize(r.size)}</span>}
           </li>
         ))}
       </ul>
@@ -474,20 +467,7 @@ export default function SectionViewPage() {
 
             {isRepeatable ? (
               item ? (
-                sectionKey === "activities" ? (
-                  <>
-                    <div style={{ marginBottom: "28px" }}>
-                      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Class Activity</h3>
-                      <RichContent html={item.classActivity} emptyText="Nothing added yet" />
-                    </div>
-                    <div>
-                      <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Wrap Activity</h3>
-                      <RichContent html={item.wrapActivity} emptyText="Nothing added yet" />
-                    </div>
-                  </>
-                ) : (
-                  <RichContent html={item.content} emptyText="Nothing added yet" />
-                )
+                <RichContent html={item.content} emptyText="Nothing added yet" />
               ) : (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
                   Nothing added to {SECTION_LABELS[sectionKey]} yet.

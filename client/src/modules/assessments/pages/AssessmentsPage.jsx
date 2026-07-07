@@ -28,14 +28,17 @@ function assessmentContentSummary(assessment) {
     return parts.length ? parts.join(" · ") : "0 tasks";
   }
   const n = assessment.indicators?.length || 0;
-  return `${n} indicator${n !== 1 ? "s" : ""}`;
+  const parts = [`${n} indicator${n !== 1 ? "s" : ""}`];
+  const criteriaCount = assessment.rubric?.length || 0;
+  if (criteriaCount > 0) parts.push(`${criteriaCount} criteri${criteriaCount !== 1 ? "a" : "on"}`);
+  return parts.join(" · ");
 }
 
 function assessmentTotalPoints(assessment) {
   if (assessment.type === "quiz" || assessment.type === "exam") {
     return assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) ?? 0;
   }
-  if (assessment.type === "assignment" || assessment.type === "project") {
+  if (assessment.type === "assignment" || assessment.type === "project" || assessment.type === "observation") {
     const itemsPoints = assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) || 0;
     const rubricPoints = assessment.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) || 0;
     return itemsPoints + rubricPoints;

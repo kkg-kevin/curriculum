@@ -4,6 +4,7 @@ import { Input, SectionHeader, ListField } from "./formFields";
 import RichTextEditor from "./RichTextEditor";
 import ResourcesField from "./ResourcesField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
+import { NOTE_QUICK_PICKS } from "../sectionConfig";
 
 const cardStyle = { backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" };
 
@@ -101,9 +102,13 @@ function AssessmentsField() {
   );
 }
 
-// Shared by Main Concepts and Activities — both are a repeatable list of {id, title, content}
-// blocks with a custom heading per block, not a fixed pair of fields.
-function RepeatableContentField({ name, singular }) {
+// Shared by Main Concepts, Activity, and Notes — all three are a repeatable list of
+// {id, title, content} blocks with a custom heading per block, not a fixed pair of fields. Notes
+// additionally offers quick-pick heading presets (Ice Breaker / Wrap Activity) since those used to
+// be dedicated fields — clicking one just fills the heading; still freely editable after.
+// Renders its own section header (title/subtitle) rather than the caller wrapping a separate card
+// around it — a header-only card with no content of its own reads as an empty, broken section.
+function RepeatableContentField({ name, title, subtitle, singular, size, quickPicks }) {
   const { watch, setValue } = useFormContext();
   const items = watch(name) || [];
 
@@ -117,6 +122,7 @@ function RepeatableContentField({ name, singular }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <SectionHeader title={title} subtitle={subtitle} />
       {items.map((item, idx) => (
         <div key={item.id} style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
@@ -132,8 +138,28 @@ function RepeatableContentField({ name, singular }) {
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {quickPicks && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {quickPicks.map((pick) => (
+                  <button
+                    key={pick}
+                    type="button"
+                    onClick={() => setValue(`${name}.${idx}.title`, pick, { shouldDirty: true })}
+                    style={{
+                      padding: "5px 12px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "600",
+                      fontFamily: "Inter, sans-serif", cursor: "pointer",
+                      backgroundColor: item.title === pick ? "#25476a" : "#e8f5fb",
+                      color: item.title === pick ? "#fff" : "#25476a",
+                      border: `1.5px solid ${item.title === pick ? "#25476a" : "#a8d5ee"}`,
+                    }}
+                  >
+                    {pick}
+                  </button>
+                ))}
+              </div>
+            )}
             <Input name={`${name}.${idx}.title`} label="Heading" placeholder={`e.g. ${singular} name`} hint="Name this card however fits the content" />
-            <RichTextEditor name={`${name}.${idx}.content`} label="Content" />
+            <RichTextEditor name={`${name}.${idx}.content`} label="Content" size={size} />
           </div>
         </div>
       ))}
@@ -149,60 +175,6 @@ function RepeatableContentField({ name, singular }) {
         }}
       >
         <span style={{ fontSize: "15px", lineHeight: 1 }}>+</span> Add {singular}
-      </button>
-    </div>
-  );
-}
-
-// Activities is a repeatable list too, but each unit is one Activity holding two fixed
-// sub-parts (Class Activity + Wrap Activity) rather than a single content field.
-function ActivitiesField() {
-  const { watch, setValue } = useFormContext();
-  const items = watch("activities") || [];
-
-  const addItem = () => {
-    setValue("activities", [...items, { id: crypto.randomUUID(), title: "", classActivity: "", wrapActivity: "" }], { shouldDirty: true });
-  };
-
-  const removeItem = (idx) => {
-    setValue("activities", items.filter((_, i) => i !== idx), { shouldDirty: true });
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {items.map((item, idx) => (
-        <div key={item.id} style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Activity {idx + 1}</h3>
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeItem(idx)}
-                style={{ background: "none", border: "none", color: "#EF4444", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}
-              >
-                Remove
-              </button>
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <Input name={`activities.${idx}.title`} label="Heading" placeholder="e.g. Robot Walk Activity" hint="Name this activity however fits the content" />
-            <RichTextEditor name={`activities.${idx}.classActivity`} label="Class Activity" />
-            <RichTextEditor name={`activities.${idx}.wrapActivity`} label="Wrap Activity" />
-          </div>
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={addItem}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: "6px", alignSelf: "flex-start",
-          padding: "10px 18px", backgroundColor: "#e8f5fb", color: "#25476a",
-          border: "1.5px dashed #a8d5ee", borderRadius: "10px", fontSize: "13px", fontWeight: "700",
-          fontFamily: "Inter, sans-serif", cursor: "pointer",
-        }}
-      >
-        <span style={{ fontSize: "15px", lineHeight: 1 }}>+</span> Add Activity
       </button>
     </div>
   );
@@ -226,34 +198,29 @@ export default function SessionForm() {
         <RichTextEditor name="introduction" label="Introduction" />
       </div>
 
-      <div style={cardStyle}>
-        <SectionHeader title="Ice Breaker" />
-        <RichTextEditor name="iceBreaker" label="Ice Breaker" />
-      </div>
+      <RepeatableContentField
+        name="mainConcepts" singular="Main Concept" size="lg"
+        title="Main Concepts" subtitle="Add as many concept blocks as this session needs — each with its own heading."
+      />
 
-      <div style={cardStyle}>
-        <SectionHeader title="Main Concepts" subtitle="Add as many concept blocks as this session needs — each with its own heading." />
-      </div>
-      <RepeatableContentField name="mainConcepts" singular="Main Concept" />
-
-      <div style={cardStyle}>
-        <SectionHeader title="Activities" subtitle="Add as many activities as this session needs — each has a Class Activity and Wrap Activity." />
-      </div>
-      <ActivitiesField />
+      <RepeatableContentField
+        name="activities" singular="Activity" size="lg"
+        title="Activity" subtitle="Add as many activities as this session needs — each with its own heading."
+      />
 
       <div style={cardStyle}>
         <SectionHeader title="Assessments" subtitle="Attach existing quizzes, assignments, projects, or teacher observations to this session." />
         <AssessmentsField />
       </div>
 
-      <div style={cardStyle}>
-        <SectionHeader title="Teacher's Guide" subtitle="Add as many notes as this session needs — each with its own heading." />
-      </div>
-      <RepeatableContentField name="notes" singular="Note" />
+      <RepeatableContentField
+        name="notes" singular="Note" size="lg" quickPicks={NOTE_QUICK_PICKS}
+        title="Notes" subtitle="Add as many notes as this session needs — including Ice Breaker and Wrap Activity content — each with its own heading."
+      />
 
       <div style={cardStyle}>
         <SectionHeader title="Resources" />
-        <ResourcesField name="resources" label="Attached documents" hint="PDF, Word, Excel, or PowerPoint files." />
+        <ResourcesField name="resources" label="Attached resources" hint="Documents, images, audio, video, ZIP files, or external links." />
       </div>
     </div>
   );

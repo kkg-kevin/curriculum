@@ -7,6 +7,7 @@ export const ASSESSMENT_KEYS = {
   detail: (id) => ["assessments", "detail", id],
   competencies: (id) => ["assessments", "competencies", id],
   learningAreas: (id) => ["assessments", "learning-areas", id],
+  inventory: (id) => ["assessments", "inventory", id],
 };
 
 // Zod validation issues come back from the API as { path: ["items", 2, "options"], message }
@@ -102,6 +103,16 @@ export function useAssessmentLearningAreas(assessmentId) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId),
     queryFn: () => assessmentApi.getAssessmentLearningAreas(assessmentId),
+    enabled: !!assessmentId,
+  });
+}
+
+/* ── Inventory (authored globally in Settings, linked onto a project here with a quantity) ── */
+
+export function useAssessmentInventory(assessmentId) {
+  return useQuery({
+    queryKey: ASSESSMENT_KEYS.inventory(assessmentId),
+    queryFn: () => assessmentApi.getAssessmentInventory(assessmentId),
     enabled: !!assessmentId,
   });
 }

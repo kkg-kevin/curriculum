@@ -28,6 +28,14 @@ export default function RichContent({ html, emptyText }) {
         .asm-rich-content ul, .asm-rich-content ol { margin: 0 0 10px; padding-left: 22px; }
         .asm-rich-content img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
         .asm-rich-content strong { font-weight: 700; }
+        .asm-rich-content h2 { font-size: 1.25em; font-weight: 800; margin: 0 0 10px; color: #111827; }
+        .asm-rich-content h3 { font-size: 1.1em; font-weight: 700; margin: 0 0 8px; color: #111827; }
+        .asm-rich-content blockquote { margin: 0 0 10px; padding-left: 12px; border-left: 3px solid #a8d5ee; color: #6B7280; font-style: italic; }
+        .asm-rich-content code { background: #F3F4F6; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+        .asm-rich-content pre { background: #111827; color: #F9FAFB; padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 0 0 10px; }
+        .asm-rich-content pre code { background: none; padding: 0; color: inherit; }
+        .asm-rich-content a { color: #25476a; text-decoration: underline; }
+        .asm-rich-content hr { border: none; border-top: 1.5px solid #E5E7EB; margin: 14px 0; }
       `}</style>
       <div className="asm-rich-content" dangerouslySetInnerHTML={{ __html: html }} />
     </>

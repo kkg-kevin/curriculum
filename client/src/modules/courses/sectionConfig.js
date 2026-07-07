@@ -2,9 +2,9 @@ export const SECTIONS = [
   { key: "outcomes",     label: "Learning Outcomes" },
   { key: "introduction", label: "Introduction" },
   { key: "mainConcepts", label: "Main Concepts" },
-  { key: "activities",   label: "Activities" },
+  { key: "activities",   label: "Activity" },
   { key: "assessments",  label: "Assessments" },
-  { key: "notes",        label: "Teacher's Guide" },
+  { key: "notes",        label: "Notes" },
   { key: "resources",    label: "Resources" },
 ];
 
@@ -16,13 +16,18 @@ export function sessionLabel(session, index) {
   return session.title ? `Session ${index + 1}: ${session.title}` : `Session ${index + 1}`;
 }
 
-// Main Concepts, Activities, and Teacher's Guide are repeatable lists, not single fields — each
-// holds its own singular label (used both as the fallback item name and in "+ Add X" buttons).
+// Main Concepts, Activity, and Notes are repeatable lists, not single fields — each holds its own
+// singular label (used both as the fallback item name and in "+ Add X" buttons). Ice Breaker and
+// Wrap Activity live as Notes entries — see NOTE_QUICK_PICKS below.
 export const REPEATABLE_SECTIONS = {
   mainConcepts: { singular: "Main Concept" },
   activities:   { singular: "Activity" },
   notes:        { singular: "Note" },
 };
+
+// Quick-pick heading presets offered when adding a Note — covers what used to be the dedicated
+// Ice Breaker field and Wrap Activity. A note can still be given any custom heading instead.
+export const NOTE_QUICK_PICKS = ["Ice Breaker", "Wrap Activity"];
 
 export function isRepeatableSection(sectionKey) {
   return Object.prototype.hasOwnProperty.call(REPEATABLE_SECTIONS, sectionKey);

@@ -879,6 +879,7 @@
     ],
     "items": [
       {
+        "id": "5f20fc05-765b-4b07-a866-895cd48591ea",
         "question": "Describe your project idea and the problem it solves.",
         "kind": "longAnswer",
         "sectionId": "sec-planning",
@@ -893,6 +894,7 @@
         "submissionKinds": []
       },
       {
+        "id": "f538df07-7feb-4d1c-8824-a2deed572b62",
         "question": "Write a project proposal explaining your goals, audience, and expected outcome.",
         "kind": "essay",
         "sectionId": "sec-planning",
@@ -907,6 +909,7 @@
         "submissionKinds": []
       },
       {
+        "id": "616e4dae-2c36-4e11-af1c-ab4671ec7b9f",
         "question": "Reflect on a similar project or system you've seen before starting. What would you do differently?",
         "kind": "reflection",
         "sectionId": "sec-planning",
@@ -921,6 +924,7 @@
         "submissionKinds": []
       },
       {
+        "id": "1ea2632a-d00a-46d0-85ff-809f0dfc354d",
         "question": "Imagine your project fails halfway through testing. Describe your plan B.",
         "kind": "scenarioResponse",
         "sectionId": "sec-planning",
@@ -935,6 +939,7 @@
         "submissionKinds": []
       },
       {
+        "id": "8218b9c8-9af5-49f2-b684-ad10de62288b",
         "question": "Sketch your initial design on paper or in a drawing tool.",
         "kind": "practicalTask",
         "sectionId": "sec-planning",
@@ -951,6 +956,7 @@
         ]
       },
       {
+        "id": "b698254a-929d-48c6-b558-3b8fd9ad165d",
         "question": "What is the most exciting part of this project for you?",
         "kind": "openEnded",
         "sectionId": "sec-planning",
@@ -965,6 +971,7 @@
         "submissionKinds": []
       },
       {
+        "id": "b7f2d9fb-fa40-4691-96c0-5a1b52be478e",
         "question": "Upload your detailed build plan.",
         "kind": "documentUpload",
         "sectionId": "sec-build",
@@ -982,6 +989,7 @@
         "submissionKinds": []
       },
       {
+        "id": "a5153017-bfcb-4ab4-8688-6cd1697f99cd",
         "question": "Upload photos of your project at each build stage.",
         "kind": "imageUpload",
         "sectionId": "sec-build",
@@ -999,6 +1007,7 @@
         "submissionKinds": []
       },
       {
+        "id": "62ba2433-7b45-4161-8eb2-a20036cede10",
         "question": "Record a demo video of your finished project working.",
         "kind": "videoUpload",
         "sectionId": "sec-build",
@@ -1015,6 +1024,7 @@
         "submissionKinds": []
       },
       {
+        "id": "deeeb182-344b-41bb-a721-cbb56ba17197",
         "question": "Record an audio walkthrough explaining how your project works.",
         "kind": "audioUpload",
         "sectionId": "sec-build",
@@ -1032,6 +1042,7 @@
         "submissionKinds": []
       },
       {
+        "id": "0f09d3ad-d3a5-44a3-a6fb-0777b206721d",
         "question": "Upload all source code files for your project.",
         "kind": "codeUpload",
         "sectionId": "sec-build",
@@ -1050,6 +1061,7 @@
         "submissionKinds": []
       },
       {
+        "id": "c4eb81b1-2376-4ac2-9a9f-d9b7eb668a3f",
         "question": "Share a link to any external tool, library, or reference you used.",
         "kind": "externalLink",
         "sectionId": "sec-build",
@@ -1066,30 +1078,35 @@
     ],
     "rubric": [
       {
+        "id": "c578df13-9d65-46c2-99a7-6c0c297c9cb3",
         "criterion": "Design Quality",
         "description": "How well thought-out and documented the design is.",
         "points": 20,
         "sectionId": null
       },
       {
+        "id": "2fa4627e-cc91-43c5-b774-77c089bd1e5b",
         "criterion": "Functionality",
         "description": "Whether the project works as intended.",
         "points": 25,
         "sectionId": null
       },
       {
+        "id": "c604f873-0ce0-4604-b4e8-0179676917d8",
         "criterion": "Code / Build Quality",
         "description": "Cleanliness and organization of code or physical construction.",
         "points": 20,
         "sectionId": null
       },
       {
+        "id": "48445322-a474-4cc8-a947-3a41ce54859a",
         "criterion": "Presentation",
         "description": "Clarity of the demo video and supporting documentation.",
         "points": 15,
         "sectionId": null
       },
       {
+        "id": "be86bc34-82df-400d-a9c9-5c8a013eea95",
         "criterion": "Reflection & Learning",
         "description": "Depth of reflection on the process, challenges, and what was learned.",
         "points": 10,
@@ -1099,6 +1116,7 @@
     "indicators": [],
     "deliverables": [
       {
+        "id": "b026595e-f350-46b8-9205-3410053decea",
         "name": "Final Build Plan",
         "description": "The completed, detailed plan used to guide construction.",
         "submissionKinds": [
@@ -1107,6 +1125,7 @@
         "sectionId": null
       },
       {
+        "id": "987072a4-07bf-4088-b278-38ad2db9c9a8",
         "name": "Working Demo Video",
         "description": "A video showing the finished project in action.",
         "submissionKinds": [
@@ -1115,6 +1134,7 @@
         "sectionId": null
       },
       {
+        "id": "268c3338-acd3-4e94-a259-2ffd3e1fd212",
         "name": "Source Code Archive",
         "description": "All source files, zipped or linked.",
         "submissionKinds": [
@@ -1126,16 +1146,19 @@
     ],
     "milestones": [
       {
+        "id": "7ec4e45b-8747-486b-9a40-19be41d48ab5",
         "name": "Proposal Approved",
         "description": "Teacher reviews and signs off on the project proposal before building starts.",
         "order": 0
       },
       {
+        "id": "a0104634-0a95-4606-913a-bdc0bc8d0f22",
         "name": "Prototype Complete",
         "description": "A first working version exists, even if incomplete.",
         "order": 1
       },
       {
+        "id": "260886d8-86d1-4dee-b00a-9f6b8b65e10c",
         "name": "Final Submission",
         "description": "All deliverables submitted and project presented.",
         "order": 2
@@ -1143,7 +1166,7 @@
     ],
     "id": "a02d3152-005f-4b36-92b4-e1bccfae3f8f",
     "createdAt": "2026-07-06T12:22:14.277Z",
-    "updatedAt": "2026-07-06T12:22:14.277Z"
+    "updatedAt": "2026-07-07T13:39:30.838Z"
   },
   {
     "name": "Computer Science Fundamentals — Take-Home Assignment",
@@ -1638,325 +1661,5 @@
     "id": "bbd38efe-8ea9-40f5-a037-5412af4a46b5",
     "createdAt": "2026-07-06T12:22:14.513Z",
     "updatedAt": "2026-07-06T12:22:14.513Z"
-  },
-  {
-    "name": "Quiz sample",
-    "type": "quiz",
-    "description": "<p>wgbsuuivui</p>",
-    "instructions": "<p>wrbsafxvqwasc</p>",
-    "structureType": "unstructured",
-    "overview": "",
-    "sections": [
-      {
-        "id": "497e369a-ad7e-4623-862d-1c5ec9bef561",
-        "name": "Section 1",
-        "order": 0
-      }
-    ],
-    "items": [
-      {
-        "id": "b8cb33a5-76ff-4952-aa8e-9dde63990d5c",
-        "question": "<h4><strong>Assignment</strong></h4><p></p><p>Now that you're familiar with the PictoBlox interface and the basics of coding, let's create a fun animation. We'll add a dove, give it a beautiful forest background, and then code it to move across the screen!As you complete this assignment, you will learn important programming ideas like following steps in order, using loops to repeat actions, and starting your code with events. You’ll be using the PictoBlox program to do all of this!</p><p></p><p><strong>Steps to Complete the Project</strong></p><p>Open PictoBlox Software on the blocks Interface by clicking Blocks.</p><p></p><img src=\"https://lh7-rt.googleusercontent.com/docsz/AD_4nXdfJ4RIvOsMFMLxQpxtxas8RSHKhyUQ9l9tXomlcTTu_rcIp38ON7-ZIkr2MbtoetVDt6tqKN5jYEyKxafXiXM4CB7TSCKqlwfmceTANlbhHoQdnfBdDU4y-dk_bv9nFjkIJFbJzMFJ0lICq9ld32iDbvZE?key=A5DWk6V0vkcWULOY2L3AxXJQ\" width=\"624\" height=\"309\"><p></p><p><strong>Set Up The Environment</strong></p><p><strong>Delete Tobi</strong>&nbsp;by clicking the little 'x' on his picture.</p><p></p><p>Now,&nbsp;<strong>add a dove sprite</strong>&nbsp;to your project from the sprite library.</p><p></p><p>Next, you will click the 'Choose a Backdrop' button, then find the forest backdrop where your dove can move through.</p><p></p><p><strong><u>Lets Now code</u></strong></p><p></p><p>From the yellow Events blocks, drag the when flag clicked block into your coding area.</p><p></p><p>Next, from the orange Control blocks, snap the forever block right below when flag clicked. This makes sure your dove's actions happen again and again.</p><p></p><p>Find the blue Motion blocks. Drag the move (10) steps block and place it inside the forever block. This tells your dove to move forward.</p><p></p><p>Still in the Motion blocks, add the if on edge, bounce block right after move (10) steps, also inside forever. This makes your dove turn around when it hits the edge of the screen, so it doesn't just disappear!</p><p></p><p>Lastly from the blue motion blocks, drag the set rotation style (left-right) block from the Motion blocks. Put this block below when flag clicked, but outside the forever loop.This keeps your dove from moving upside down.</p><p></p><p>The project is done!</p><p></p><p>Click the green flag to see out dove moving!</p><p></p><p>Save the project as Dove moving</p><p></p><p>Upload the Assignment.</p><p></p>",
-        "kind": "longAnswer",
-        "sectionId": "497e369a-ad7e-4623-862d-1c5ec9bef561",
-        "points": 0,
-        "options": [],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      }
-    ],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "87aeff8c-1f29-4fc1-aa79-c09006d6043d",
-    "createdAt": "2026-07-06T12:56:23.526Z",
-    "updatedAt": "2026-07-06T12:56:23.526Z"
-  },
-  {
-    "name": "gwsdav",
-    "type": "quiz",
-    "description": "<p>gwsadvz</p>",
-    "instructions": "<p>wevsd</p>",
-    "structureType": "structured",
-    "overview": "",
-    "sections": [
-      {
-        "id": "292e56e2-a574-4a41-aa30-7986446ed4cf",
-        "name": "Section 1",
-        "order": 0
-      }
-    ],
-    "items": [
-      {
-        "id": "77b4303b-4de5-4563-9764-aa21b4d82b61",
-        "question": "<p>feqacqacs</p>",
-        "kind": "mcqSingle",
-        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
-        "points": 1,
-        "options": [
-          "edc",
-          "efacz"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      },
-      {
-        "id": "6f56d522-8f94-4604-8a60-f93671babea8",
-        "question": "<p>fqeac</p>",
-        "kind": "mcqSingle",
-        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
-        "points": 1,
-        "options": [
-          "fecsd",
-          "feqasc"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      },
-      {
-        "id": "fb16ee0e-c624-4d29-9280-376920aa05f1",
-        "question": "<p>fewsadc</p>",
-        "kind": "shortAnswer",
-        "sectionId": "292e56e2-a574-4a41-aa30-7986446ed4cf",
-        "points": 1,
-        "options": [],
-        "correctAnswer": "feqacs",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      }
-    ],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "d2c9f6f7-1848-48a4-a157-8bafee3467ee",
-    "createdAt": "2026-07-07T05:54:06.989Z",
-    "updatedAt": "2026-07-07T05:54:06.989Z"
-  },
-  {
-    "name": "rhmn mf",
-    "type": "observation",
-    "description": "<p>etnsdg</p>",
-    "instructions": "<p>rhwebaf</p>",
-    "structureType": "structured",
-    "overview": "",
-    "sections": [
-      {
-        "id": "2fcb719b-871e-4d35-8951-ca9785f1af07",
-        "name": "Section 1",
-        "order": 0
-      }
-    ],
-    "items": [],
-    "rubric": [],
-    "indicators": [
-      {
-        "id": "c38f2c21-285b-49f7-89b4-34e22c82016e",
-        "text": "<p>herqr</p>",
-        "kind": "checklist",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ],
-        "sectionId": "2fcb719b-871e-4d35-8951-ca9785f1af07"
-      },
-      {
-        "id": "c08722a5-7a14-439f-8648-f90bc59016e3",
-        "text": "<p>rwhaehhhhhh</p>",
-        "kind": "rating",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ],
-        "sectionId": "2fcb719b-871e-4d35-8951-ca9785f1af07"
-      },
-      {
-        "id": "2c28e95b-1311-438c-9c65-df5253ae8346",
-        "text": "<p>hhhhhqrb</p>",
-        "kind": "practicalSkill",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ],
-        "sectionId": "2fcb719b-871e-4d35-8951-ca9785f1af07"
-      },
-      {
-        "id": "754369fb-ab25-49fe-becf-95f311081cd2",
-        "text": "<p>hrwsfrgrg</p>",
-        "kind": "behaviour",
-        "ratingScale": [
-          "Not Yet",
-          "Developing",
-          "Proficient"
-        ],
-        "sectionId": "2fcb719b-871e-4d35-8951-ca9785f1af07"
-      }
-    ],
-    "deliverables": [],
-    "milestones": [],
-    "id": "379219f6-7093-4b5e-8cc1-e8ff7a1f679d",
-    "createdAt": "2026-07-07T08:27:02.025Z",
-    "updatedAt": "2026-07-07T08:27:02.025Z"
-  },
-  {
-    "name": "hgtr",
-    "type": "project",
-    "description": "<p>3tgbr</p>",
-    "instructions": "<p>h34th</p>",
-    "structureType": "mixed",
-    "overview": "<p>h5h</p>",
-    "sections": [
-      {
-        "id": "2656f303-2d4b-4534-a436-1bf430dac3b2",
-        "name": "Section 1",
-        "order": 0
-      },
-      {
-        "id": "eef63836-ecaa-47d7-89ad-4c2cb79bed09",
-        "name": "Section 2",
-        "order": 1
-      }
-    ],
-    "items": [
-      {
-        "id": "0ebe9685-ae73-440e-9f58-0e4cad595a4a",
-        "question": "<p>4t2gr</p>",
-        "kind": "reflection",
-        "sectionId": "2656f303-2d4b-4534-a436-1bf430dac3b2",
-        "points": 1,
-        "options": [],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      },
-      {
-        "id": "168406be-f8a9-4510-bb06-a8599c1e2f10",
-        "question": "<p>4g24ttghg42t2tr</p>",
-        "kind": "essay",
-        "sectionId": "2656f303-2d4b-4534-a436-1bf430dac3b2",
-        "points": 1,
-        "options": [],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      },
-      {
-        "id": "d0b9a015-e5b6-4d20-a8d2-8e4029f5e6b3",
-        "question": "<p>2tgt4gregw</p>",
-        "kind": "practicalTask",
-        "sectionId": "eef63836-ecaa-47d7-89ad-4c2cb79bed09",
-        "points": 1,
-        "options": [],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      }
-    ],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "336e7caf-fd83-44ac-88bc-d789927ea64d",
-    "createdAt": "2026-07-07T08:28:32.021Z",
-    "updatedAt": "2026-07-07T08:28:32.021Z"
-  },
-  {
-    "name": "dwqfnin",
-    "type": "project",
-    "description": "<p>vdAV</p>",
-    "instructions": "<p>VWDA</p>",
-    "structureType": "mixed",
-    "overview": "<p>VDa</p>",
-    "sections": [
-      {
-        "id": "8ddf1b25-66f6-4179-815e-94cd566a005f",
-        "name": "Section 1",
-        "order": 0
-      }
-    ],
-    "items": [
-      {
-        "id": "b5a4f3a8-12ce-4e2b-8fda-8f5836a8d345",
-        "question": "<p>egqAD</p>",
-        "kind": "longAnswer",
-        "sectionId": "8ddf1b25-66f6-4179-815e-94cd566a005f",
-        "points": 1,
-        "options": [],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": []
-      }
-    ],
-    "rubric": [
-      {
-        "id": "c6372ad9-a852-4d82-b84a-9ff1f52f0c41",
-        "criterion": "VWA",
-        "description": "ASBV",
-        "points": 10,
-        "sectionId": null
-      }
-    ],
-    "indicators": [],
-    "deliverables": [
-      {
-        "id": "3c3831fa-c1cb-4a50-8599-888527dd22af",
-        "name": "FVS",
-        "description": "",
-        "submissionKinds": [
-          "videoUpload"
-        ],
-        "sectionId": null
-      }
-    ],
-    "milestones": [
-      {
-        "id": "2f24278c-983b-42ae-bb4e-7909e166e776",
-        "name": "SDV",
-        "description": "SDVA",
-        "order": 0
-      }
-    ],
-    "id": "dd1aa6af-243d-4676-8255-7690b504236f",
-    "createdAt": "2026-07-07T08:52:23.418Z",
-    "updatedAt": "2026-07-07T08:52:23.418Z"
   }
 ]

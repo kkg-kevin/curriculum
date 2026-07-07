@@ -28,4 +28,14 @@ export const assessmentApi = {
 
   unlinkLearningArea: (assessmentId, learningAreaId) =>
     api.delete(`${ENDPOINT}/${assessmentId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
+
+  /* Inventory — this project's linked materials, each with a quantity (authored globally in Settings) */
+  getAssessmentInventory: (assessmentId) =>
+    api.get(`${ENDPOINT}/${assessmentId}/inventory/links`).then((r) => r.data.data),
+
+  linkInventoryItem: (assessmentId, inventoryItemId, quantity) =>
+    api.post(`${ENDPOINT}/${assessmentId}/inventory/links`, { inventoryItemId, quantity }).then((r) => r.data.data),
+
+  unlinkInventoryItem: (assessmentId, inventoryItemId) =>
+    api.delete(`${ENDPOINT}/${assessmentId}/inventory/links/${inventoryItemId}`).then((r) => r.data.data),
 };
