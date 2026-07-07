@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
+import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
 import { SECTIONS, SECTION_LABELS, sessionLabel, sectionLinkPath, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 
@@ -54,8 +55,8 @@ function SectionIcon() {
 function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
-  // Assessments isn't a repeatable section (its items link out to the Assessments module rather than
-  // an internal itemId route) but gets the same expand/collapse sidebar treatment.
+  // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
+  // session-owned content) but gets the same expand/collapse + per-item route treatment.
   const isExpandableSection = (key) => isRepeatableSection(key) || key === "assessments";
   const [expandedRepeatable, setExpandedRepeatable] = useState(
     () => new Set(isExpandableSection(activeSectionKey) ? [`${activeSectionKey}:${activeSessionId}`] : [])
@@ -204,15 +205,17 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                           ) : (
                             attached.map((a) => {
                               const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+                              const itemActive = isActive && a.id === activeItemId;
                               return (
                                 <Link
                                   key={a.id}
-                                  to={`/assessments/${a.id}/view`}
+                                  to={`/courses/${courseId}/sessions/${session.id}/sections/assessments/${a.id}`}
                                   title={a.name}
                                   style={{
                                     display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px 7px 54px",
                                     borderTop: "1px solid #F9FAFB", textDecoration: "none", fontSize: "11.5px",
-                                    color, fontWeight: "600",
+                                    backgroundColor: itemActive ? `${color}15` : "transparent",
+                                    color, fontWeight: itemActive ? "700" : "600",
                                   }}
                                 >
                                   <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
@@ -253,7 +256,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
 
 /* ── Section content by type ──────────────────────────────────────────── */
 
-function SectionBody({ sectionKey, session, allAssessments }) {
+function SectionBody({ sectionKey, session, allAssessments, courseId }) {
   if (sectionKey === "outcomes") {
     const outcomes = session.outcomes || [];
     return outcomes.length > 0 ? (
@@ -295,7 +298,7 @@ function SectionBody({ sectionKey, session, allAssessments }) {
           return (
             <li key={a.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", flexWrap: "wrap" }}>
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
-              <Link to={`/assessments/${a.id}/view`} style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
+              <Link to={`/courses/${courseId}/sessions/${session.id}/sections/assessments/${a.id}`} style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
                 {a.name}
               </Link>
               <span style={{ fontSize: "10.5px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 9px", borderRadius: "20px", whiteSpace: "nowrap" }}>
@@ -345,10 +348,12 @@ export default function SectionViewPage() {
 
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);
+  const isAssessmentsSection = sectionKey === "assessments";
   const items = session?.[sectionKey] || [];
-  const effectiveItemId = isRepeatable ? (itemId || items[0]?.id || null) : null;
+  const effectiveItemId = isRepeatable ? (itemId || items[0]?.id || null) : (isAssessmentsSection ? (itemId || null) : null);
   const itemIndex = isRepeatable ? items.findIndex((i) => i.id === effectiveItemId) : -1;
   const item = itemIndex !== -1 ? items[itemIndex] : null;
+  const activeAssessment = isAssessmentsSection && effectiveItemId ? allAssessments.find((a) => a.id === effectiveItemId) : null;
 
   // Flatten (session, section[, item]) triples across the whole course, in order, for Prev/Next.
   // Repeatable sections contribute one entry per item (or a single item-less placeholder if
@@ -393,9 +398,12 @@ export default function SectionViewPage() {
   }
 
   const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+  const showsSubItem = isRepeatable || (isAssessmentsSection && !!effectiveItemId);
   const pageTitle = isRepeatable
     ? (item ? repeatableItemLabel(sectionKey, item, itemIndex) : SECTION_LABELS[sectionKey])
-    : SECTION_LABELS[sectionKey];
+    : isAssessmentsSection && effectiveItemId
+      ? (activeAssessment ? activeAssessment.name : "Assessment")
+      : SECTION_LABELS[sectionKey];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -424,7 +432,7 @@ export default function SectionViewPage() {
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
               <span style={{ color: "#6B7280" }}>{sessionLabel(session, sessionIndex)}</span>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
-              {isRepeatable && (
+              {showsSubItem && (
                 <>
                   <span style={{ color: "#6B7280" }}>{SECTION_LABELS[sectionKey]}</span>
                   <span style={{ color: "#D1D5DB" }}>&gt;</span>
@@ -457,7 +465,7 @@ export default function SectionViewPage() {
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "32px" }}>
             <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Session {sessionIndex + 1}{isRepeatable ? `, ${SECTION_LABELS[sectionKey]}` : ""}
+              Session {sessionIndex + 1}{showsSubItem ? `, ${SECTION_LABELS[sectionKey]}` : ""}
             </p>
             <h1 style={{ margin: "0 0 12px", fontSize: "30px", fontWeight: "900", color: "#111827" }}>
               {pageTitle}
@@ -485,8 +493,16 @@ export default function SectionViewPage() {
                   Nothing added to {SECTION_LABELS[sectionKey]} yet.
                 </p>
               )
+            ) : isAssessmentsSection && effectiveItemId ? (
+              activeAssessment ? (
+                <AssessmentContent id={activeAssessment.id} />
+              ) : (
+                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
+                  This assessment is no longer attached to this session.
+                </p>
+              )
             ) : (
-              <SectionBody sectionKey={sectionKey} session={session} allAssessments={allAssessments} />
+              <SectionBody sectionKey={sectionKey} session={session} allAssessments={allAssessments} courseId={id} />
             )}
           </div>
         </div>
