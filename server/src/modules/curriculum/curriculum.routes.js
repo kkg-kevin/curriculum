@@ -11,13 +11,13 @@ const {
   createVersion,
   editVersion,
   changeVersionStatus,
-} = require("./curriculum-versions.controller");
+} = require("./versions/curriculum-versions.controller");
 const {
   getAcademicYears,
   createGroup,
   createVersion: createAYVersion,
   changeStatus,
-} = require("./academic-years.controller");
+} = require("./academic-years/academic-years.controller");
 const {
   getCurriculumCompetencies,
   linkCompetency,
@@ -63,7 +63,7 @@ const {
   updatePerformanceBand,
   deletePerformanceBand,
   reorderPerformanceBands,
-} = require("./competency.controller");
+} = require("./competency-framework/competency.controller");
 
 const router = express.Router();
 

@@ -9,6 +9,25 @@ export const ASSESSMENT_KEYS = {
   learningAreas: (id) => ["assessments", "learning-areas", id],
 };
 
+// Zod validation issues come back from the API as { path: ["items", 2, "options"], message }
+// (see server/src/modules/assessments/assessment.validation.js) — turn that into "Item 3: Add at
+// least 2 options" instead of the generic "Validation failed" the top-level message alone gives.
+const ARRAY_FIELD_LABELS = {
+  items: "Item", indicators: "Indicator", rubric: "Rubric criterion",
+  deliverables: "Deliverable", milestones: "Milestone", sections: "Section",
+};
+
+function describeAssessmentError(err, fallback) {
+  const issues = err.errors;
+  if (!Array.isArray(issues) || issues.length === 0) return err.message || fallback;
+  const described = issues.map((issue) => {
+    const [field, index] = issue.path || [];
+    const label = ARRAY_FIELD_LABELS[field];
+    return label && typeof index === "number" ? `${label} ${index + 1}: ${issue.message}` : issue.message;
+  });
+  return described.length > 1 ? `${described[0]} (+${described.length - 1} more)` : described[0];
+}
+
 export function useAssessmentsQuery() {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.all,
@@ -33,7 +52,7 @@ export function useCreateAssessment() {
       toast.success("Assessment created successfully!");
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to create assessment");
+      toast.error(describeAssessmentError(err, "Failed to create assessment"));
     },
   });
 }
@@ -48,7 +67,7 @@ export function useUpdateAssessment() {
       toast.success("Assessment updated successfully!");
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to update assessment");
+      toast.error(describeAssessmentError(err, "Failed to update assessment"));
     },
   });
 }

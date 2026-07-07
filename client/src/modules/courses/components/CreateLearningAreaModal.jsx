@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCreateLearningArea } from "../../settings/hooks/useLearningAreas";
+import { useCreateLearningArea } from "../../settings/learning-areas/hooks/useLearningAreas";
 
 const AREA_COLORS = [
   "#25476a", "#38aae1", "#059669", "#7C3AED",

@@ -42,7 +42,13 @@ JSON files (server/data/*.json)
 5. Frontend updates the UI
 
 ### The connection point
-`VITE_API_URL=https://nodeapp.digifunzi.com` in `client/.env` is what tells the frontend where to send all API requests. This value gets baked into the build — which is why rebuilding is required whenever it changes.
+`VITE_API_URL=https://nodeapp.digifunzi.com` in `client/.env.production` is what tells the frontend where to send all API requests. This value gets baked into the build — which is why rebuilding is required whenever it changes.
+
+`client/.env.production` is a separate file from `client/.env` (which holds `VITE_API_URL=http://localhost:5000` for local dev). Vite automatically picks `.env.production` over `.env` when running `npm run build` — so `client/.env` never needs to be edited or switched back afterward. If `client/.env.production` doesn't exist, create it before building:
+```
+VITE_API_URL=https://nodeapp.digifunzi.com
+```
+Without it, a production build silently falls back to `client/.env` and bakes `http://localhost:5000` into the live site.
 
 ---
 
@@ -104,10 +110,11 @@ If you genuinely want to replace the live `data/` and/or `uploads/` with your lo
 
 ### Steps to Deploy / Re-deploy Frontend
 
-1. **Update** `client/.env`:
+1. **Confirm `client/.env.production` exists** with:
    ```
    VITE_API_URL=https://nodeapp.digifunzi.com
    ```
+   (See "The connection point" above — create it if missing. `client/.env`, used for local dev, does not need to change.)
 
 2. **Build** the React app:
    ```bash

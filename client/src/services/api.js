@@ -12,7 +12,12 @@ api.interceptors.response.use(
   (error) => {
     const message =
       error.response?.data?.message || error.message || "Something went wrong";
-    return Promise.reject(new Error(message));
+    const wrapped = new Error(message);
+    // Field-level detail (e.g. Zod issues) — dropped otherwise, since only `message` above
+    // survives past this point. Callers that want specifics read `err.errors`.
+    wrapped.errors = error.response?.data?.errors;
+    wrapped.statusCode = error.response?.status;
+    return Promise.reject(wrapped);
   }
 );
 

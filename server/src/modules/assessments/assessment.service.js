@@ -1,8 +1,8 @@
 const AssessmentModel = require("./assessment.model");
 const AssessmentCompetencyLinkModel = require("./assessment-competency-link.model");
-const CompetencyModel = require("../competencies/competency.model");
+const CompetencyModel = require("../settings/competencies/competency.model");
 const AssessmentLearningAreaLinkModel = require("./assessment-learning-area-link.model");
-const LearningAreaModel = require("../learning-areas/learning-area.model");
+const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
 
 function requireAssessment(id) {
   const assessment = AssessmentModel.findById(id);

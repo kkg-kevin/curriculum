@@ -38,9 +38,9 @@ import {
   useDeletePerformanceBand,
   useReorderPerformanceBands,
 } from "../hooks/useCompetencies";
-import { useCompetencies as useGlobalCompetencies } from "../../settings/hooks/useCompetencies";
-import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/hooks/useLearningAreas";
-import { learningAreasApi as catalogLearningAreasApi } from "../../settings/services/learningAreasApi";
+import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
+import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
+import { learningAreasApi as catalogLearningAreasApi } from "../../settings/learning-areas/services/learningAreasApi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */

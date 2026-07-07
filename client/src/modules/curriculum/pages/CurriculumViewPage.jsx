@@ -4,6 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { useAcademicYears } from "../hooks/useAcademicYear";
+import {
+  useCompetencies, useLearningAreas, useLadder,
+  useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
+} from "../hooks/useCompetencies";
 import { schoolApi } from "../../schools/services/schoolApi";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
@@ -193,6 +197,38 @@ function Chip({ course, index }) {
   );
 }
 
+/* ── Competency Framework summary (Competencies wizard step) ──────────── */
+
+function FrameworkTag({ label, sub, color = "#25476a", bg = "#e8f5fb", border = "#a8d5ee" }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "5px", maxWidth: "100%",
+      padding: "4px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "600",
+      backgroundColor: bg, color, border: `1px solid ${border}`,
+    }} title={sub != null ? `${label} ${sub}` : label}>
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "150px" }}>{label}</span>
+      {sub != null && <span style={{ opacity: 0.65, fontWeight: "700", flexShrink: 0, whiteSpace: "nowrap" }}>{sub}</span>}
+    </span>
+  );
+}
+
+function FrameworkPanel({ icon, title, count, emptyText, children }) {
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: "1px solid #F0F2F5", borderRadius: "14px", display: "flex", flexDirection: "column", gap: "10px", minHeight: "120px", minWidth: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{ fontSize: "15px" }}>{icon}</span>
+        <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#111827", flex: 1 }}>{title}</span>
+        <span style={{ padding: "1px 8px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: "#F3F4F6", color: "#6B7280" }}>{count}</span>
+      </div>
+      {count === 0 ? (
+        <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>{emptyText}</p>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", minWidth: 0 }}>{children}</div>
+      )}
+    </div>
+  );
+}
+
 
 /* ── Loading state ────────────────────────────────────────────────────── */
 
@@ -217,6 +253,15 @@ export default function CurriculumViewPage() {
   const { data: curriculum, isLoading: currLoading, isError } = useCurriculumQuery(id);
   const { data: vData, isLoading: vLoading } = useCurriculumVersions(id);
   const { data: yearData } = useAcademicYears(id);
+
+  // Competency Framework (built in the Competencies wizard step) — fetched independently
+  // so it never blocks the page's initial paint; each panel below just shows "0" until ready.
+  const { data: fwCompetencies = [] }  = useCompetencies(id);
+  const { data: fwLearningAreas = [] } = useLearningAreas(id);
+  const { data: fwLadder = [] }        = useLadder(id);
+  const { data: fwAssessmentTypes = [] } = useAssessmentTypes(id);
+  const { data: fwEvidenceTypes = [] }   = useEvidenceTypes(id);
+  const { data: fwPerformanceBands = [] } = usePerformanceBands(id);
 
   const { data: schoolsData } = useQuery({
     queryKey: ["schools", "byCurriculum", id],
@@ -594,6 +639,70 @@ export default function CurriculumViewPage() {
               </div>
             )}
           </>
+        )}
+      </div>
+
+      {/* ── Competency Framework ─────────────────────────────────────────── */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Competency Framework</h2>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Competencies, learning areas, progress arc, and assessment design for this curriculum</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(`/curriculum/${id}/competencies`)}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#e8f5fb", color: "#25476a", border: "1.5px solid #a8d5ee", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}
+          >
+            Manage →
+          </button>
+        </div>
+
+        {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwLadder.length === 0 && fwAssessmentTypes.length === 0 ? (
+          <div style={{ padding: "32px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎯</div>
+            <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#374151" }}>No competency framework set up yet</p>
+            <p style={{ margin: "0 0 16px", fontSize: "12.5px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
+              Adopt competencies, group them into learning areas, build the progress arc, and design assessments for this curriculum.
+            </p>
+            <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)}
+              style={{ padding: "9px 20px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              Set Up Competency Framework →
+            </button>
+          </div>
+        ) : (
+          <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+            <FrameworkPanel icon="🎯" title="Competencies" count={fwCompetencies.length} emptyText="None adopted yet">
+              {fwCompetencies.slice(0, 6).map((c) => (
+                <FrameworkTag key={c.id} label={c.name} sub={c.minimumThreshold != null ? `≥${c.minimumThreshold}%` : null} />
+              ))}
+              {fwCompetencies.length > 6 && <FrameworkTag label={`+${fwCompetencies.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
+            </FrameworkPanel>
+
+            <FrameworkPanel icon="📂" title="Learning Areas" count={fwLearningAreas.length} emptyText="None added yet">
+              {fwLearningAreas.slice(0, 6).map((a) => (
+                <FrameworkTag key={a.id} label={a.name} color={a.color || "#25476a"} bg={`${a.color || "#25476a"}12`} border={`${a.color || "#25476a"}40`} />
+              ))}
+              {fwLearningAreas.length > 6 && <FrameworkTag label={`+${fwLearningAreas.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
+            </FrameworkPanel>
+
+            <FrameworkPanel icon="🪜" title="Progress Arc" count={fwLadder.length} emptyText="No ladder rungs yet">
+              {[...fwLadder].sort((x, y) => (x.order || 0) - (y.order || 0)).map((rung) => (
+                <FrameworkTag key={rung.id} label={rung.label} sub={rung.ageRange ? `(${rung.ageRange})` : null} color="#7C3AED" bg="#F5F3FF" border="#DDD6FE" />
+              ))}
+            </FrameworkPanel>
+
+            <FrameworkPanel icon="📊" title="Assessment Framework" count={fwAssessmentTypes.length} emptyText="No assessment types yet">
+              {fwAssessmentTypes.map((at) => (
+                <FrameworkTag key={at.id} label={at.name} sub={at.typeWeight != null ? `${at.typeWeight}%` : null} color="#059669" bg="#ECFDF5" border="#A7F3D0" />
+              ))}
+              {(fwEvidenceTypes.length > 0 || fwPerformanceBands.length > 0) && (
+                <p style={{ margin: "4px 0 0", width: "100%", fontSize: "11px", color: "#9CA3AF" }}>
+                  {fwEvidenceTypes.length} evidence type{fwEvidenceTypes.length !== 1 ? "s" : ""} · {fwPerformanceBands.length} performance band{fwPerformanceBands.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </FrameworkPanel>
+          </div>
         )}
       </div>
 

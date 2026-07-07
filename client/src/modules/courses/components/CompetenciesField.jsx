@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { useCompetencies as useGlobalCompetencies } from "../../settings/hooks/useCompetencies";
+import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { Field } from "./formFields";
 import CreateCompetencyModal from "./CreateCompetencyModal";
 
