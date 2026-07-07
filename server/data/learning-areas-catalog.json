@@ -96,5 +96,19 @@
     "courses": [],
     "createdAt": "2026-07-06T11:42:42.629Z",
     "updatedAt": "2026-07-06T11:42:42.629Z"
+  },
+  {
+    "id": "f229ea5a-b9fe-405b-ae9d-9f4835b10a70",
+    "name": "vnsduhuh",
+    "description": "vadkuhuigui",
+    "color": "#DC2626",
+    "courses": [
+      "wkrhhuhu",
+      "nbuefguag",
+      "fnuibayga",
+      "ugqygfy"
+    ],
+    "createdAt": "2026-07-07T06:21:26.861Z",
+    "updatedAt": "2026-07-07T06:21:26.861Z"
   }
 ]
