@@ -104,11 +104,17 @@ const linkLearningAreaSchema = z.object({
   learningAreaId: z.string().min(1, "learningAreaId is required"),
 });
 
+const linkInventoryItemSchema = z.object({
+  inventoryItemId: z.string().min(1, "inventoryItemId is required"),
+  quantity:        z.number().min(1, "Quantity must be at least 1").optional().default(1),
+});
+
 module.exports = {
   createAssessmentSchema,
   updateAssessmentSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
+  linkInventoryItemSchema,
   ASSESSMENT_TYPES,
   DEFAULT_RATING_SCALE,
 };

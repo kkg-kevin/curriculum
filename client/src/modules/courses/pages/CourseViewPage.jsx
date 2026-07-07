@@ -31,7 +31,6 @@ const SESSION_DEFAULT_VALUES = {
   title: "",
   outcomes: [],
   introduction: "",
-  iceBreaker: "",
   mainConcepts: [],
   activities: [],
   assessmentIds: [],
@@ -41,7 +40,7 @@ const SESSION_DEFAULT_VALUES = {
 
 // A blank session always has at least one editable block per repeatable section, even if none was saved yet.
 const defaultMainConcepts = () => [{ id: crypto.randomUUID(), title: "Introduction", content: "" }];
-const defaultActivities = () => [{ id: crypto.randomUUID(), title: "", classActivity: "", wrapActivity: "" }];
+const defaultActivities = () => [{ id: crypto.randomUUID(), title: "", content: "" }];
 const defaultNotes = () => [{ id: crypto.randomUUID(), title: "", content: "" }];
 
 function SectionIcon() {
@@ -95,7 +94,6 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
         title: current.title || "",
         outcomes: current.outcomes || [],
         introduction: current.introduction || "",
-        iceBreaker: current.iceBreaker || "",
         mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
         activities: current.activities?.length ? current.activities : defaultActivities(),
         assessmentIds: current.assessmentIds || [],

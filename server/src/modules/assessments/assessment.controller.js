@@ -5,6 +5,7 @@ const {
   updateAssessmentSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
+  linkInventoryItemSchema,
 } = require("./assessment.validation");
 
 const createAssessment = asyncHandler(async (req, res) => {
@@ -67,6 +68,22 @@ const unlinkLearningArea = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+const getAssessmentInventory = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.getAssessmentInventory(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkInventoryItem = asyncHandler(async (req, res) => {
+  const { inventoryItemId, quantity } = linkInventoryItemSchema.parse(req.body);
+  const data = await AssessmentService.linkInventoryItem(req.params.id, inventoryItemId, quantity);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkInventoryItem = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.unlinkInventoryItem(req.params.id, req.params.inventoryItemId);
+  res.json({ success: true, data });
+});
+
 module.exports = {
   createAssessment,
   getAllAssessments,
@@ -79,4 +96,7 @@ module.exports = {
   getAssessmentLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
+  getAssessmentInventory,
+  linkInventoryItem,
+  unlinkInventoryItem,
 };

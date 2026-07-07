@@ -164,9 +164,8 @@ const CourseService = {
       order: startOrder + i,
       outcomes: [],
       introduction: "",
-      iceBreaker: "",
       mainConcepts: [{ id: generateId(), title: "Introduction", content: "" }],
-      activities: [{ id: generateId(), title: "", classActivity: "", wrapActivity: "" }],
+      activities: [{ id: generateId(), title: "", content: "" }],
       notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));

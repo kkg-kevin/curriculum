@@ -53,5 +53,6 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 
-# Uploads (if multer stores files locally)
-uploads/
+# Uploaded file storage (runtime data, not the server/src/modules/uploads/ source module —
+# an unanchored "uploads/" would also match that source folder and hide it from git)
+/server/uploads/

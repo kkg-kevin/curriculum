@@ -41,8 +41,8 @@ export const BUILDER_REGISTRY = {
   quiz:        { label: "Quiz", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   exam:        { label: "Exam", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   assignment:  { label: "Assignment", itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true, supportsRubric: true },
-  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsSections: true, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true },
-  observation: { label: "Teacher Observation", itemGroups: ["observation"], supportsSections: true },
+  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsSections: true, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true },
+  observation: { label: "Teacher Observation", itemGroups: ["observation"], supportsSections: true, supportsRubric: true },
 };
 
 // Legacy items authored before the Builder existed used `questionType` with a smaller kind set.

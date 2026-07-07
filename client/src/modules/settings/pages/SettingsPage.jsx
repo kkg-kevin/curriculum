@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
+import InventoryPanel from "../inventory/components/InventoryPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -202,6 +203,7 @@ const CSS = `
 const TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "learning-areas", label: "Learning Areas" },
+  { key: "inventory", label: "Inventory" },
 ];
 
 export default function SettingsPage() {
@@ -240,6 +242,7 @@ export default function SettingsPage() {
       <div className="stg-card">
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
+        {activeTab === "inventory" && <InventoryPanel />}
       </div>
     </div>
   );

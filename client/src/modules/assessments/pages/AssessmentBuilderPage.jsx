@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
-  useAssessmentCompetencies, useAssessmentLearningAreas,
+  useAssessmentCompetencies, useAssessmentLearningAreas, useAssessmentInventory,
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
+import { useInventory } from "../../settings/inventory/hooks/useInventory";
+import { INVENTORY_CATEGORY_COLORS } from "../../settings/inventory/constants";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
+import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
 import RichTextEditor from "../components/RichTextEditor";
 import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
 import {
@@ -677,6 +680,77 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
   );
 }
 
+/* ── Inventory tab (Project only) ───────────────────────────────────────── */
+
+function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const linkedIds = inventory.map((l) => l.itemId);
+  const available = catalog.filter((i) => !linkedIds.includes(i.id));
+
+  const add = (itemId) => { onChange([...inventory, { itemId, quantity: 1 }]); setOpen(false); };
+  const setQuantity = (itemId, quantity) => onChange(inventory.map((l) => (l.itemId === itemId ? { ...l, quantity } : l)));
+  const remove = (itemId) => onChange(inventory.filter((l) => l.itemId !== itemId));
+
+  return (
+    <div className="tb-card">
+      <p className="tb-card-title">Inventory</p>
+      <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>Materials needed for this project, pulled from the shared Settings catalog — not just robots.</p>
+
+      {inventory.length === 0 && (
+        <p style={{ margin: "0 0 12px", fontSize: "12.5px", color: "#D1D5DB", fontStyle: "italic" }}>No materials added yet.</p>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+        {inventory.map((link) => {
+          const item = catalog.find((i) => i.id === link.itemId);
+          if (!item) return null;
+          const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
+          return (
+            <div key={link.itemId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
+              <span className="tb-entry-badge" style={{ color, backgroundColor: `${color}15`, border: `1px solid ${color}40` }}>{item.category}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: 600, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+              <input
+                type="number" min="1" className="tb-input" style={{ width: "80px", flexShrink: 0 }}
+                value={link.quantity} onChange={(e) => setQuantity(link.itemId, Math.max(1, Number(e.target.value) || 1))}
+              />
+              <span style={{ fontSize: "11.5px", color: "#9CA3AF", flexShrink: 0, width: "34px" }}>{item.unit}</span>
+              <button type="button" className="tb-icon-btn danger" onClick={() => remove(link.itemId)}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+        <button type="button" className="tb-btn-secondary" onClick={() => setOpen((v) => !v)}>+ Add Material</button>
+        {open && (
+          <div className="tb-tag-dropdown">
+            {available.length === 0 && <div style={{ padding: "14px", textAlign: "center", fontSize: "12px", color: "#9CA3AF" }}>All catalog items already added.</div>}
+            {available.map((item) => (
+              <button key={item.id} type="button" className="tb-tag-dropdown-item" onClick={() => add(item.id)}>{item.name} <span style={{ color: "#9CA3AF" }}>· {item.category}</span></button>
+            ))}
+            <button
+              type="button" className="tb-tag-dropdown-item"
+              style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: available.length ? "4px" : 0 }}
+              onClick={() => { onCreateNew(); setOpen(false); }}
+            >
+              + Create new item…
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Preview modal ──────────────────────────────────────────────────────── */
 
 function PreviewModal({ form, entries, onClose }) {
@@ -724,11 +798,11 @@ function buildBlankForm(type) {
   return {
     type, name: "", description: "", instructions: "", structureType: "mixed", overview: "",
     sections: [], items: [], indicators: [], deliverables: [], milestones: [], rubric: [],
-    competencyIds: [], learningAreaIds: [],
+    competencyIds: [], learningAreaIds: [], inventory: [],
   };
 }
 
-function buildFormFromAssessment(a, competencyIds, learningAreaIds) {
+function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
   return {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
     structureType: a.structureType || "mixed", overview: a.overview || "",
@@ -738,7 +812,7 @@ function buildFormFromAssessment(a, competencyIds, learningAreaIds) {
     deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
     rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId() })),
-    competencyIds, learningAreaIds,
+    competencyIds, learningAreaIds, inventory,
   };
 }
 
@@ -752,32 +826,36 @@ export default function AssessmentBuilderPage() {
   const { data: assessment, isLoading: loadingAssessment } = useAssessmentQuery(id);
   const { data: linkedCompetencies, isLoading: loadingCompetencies } = useAssessmentCompetencies(id);
   const { data: linkedLearningAreas, isLoading: loadingLearningAreas } = useAssessmentLearningAreas(id);
+  const { data: linkedInventory, isLoading: loadingInventory } = useAssessmentInventory(id);
   const { mutate: createAssessment, isPending: creating } = useCreateAssessment();
   const { mutate: updateAssessment, isPending: updating } = useUpdateAssessment();
   const { data: allCompetencies = [] } = useCompetencies();
   const { data: allLearningAreas = [] } = useLearningAreas();
+  const { data: allInventory = [] } = useInventory();
 
   const [form, setForm] = useState(null);
-  const [originalTags, setOriginalTags] = useState({ competencyIds: [], learningAreaIds: [] });
+  const [originalTags, setOriginalTags] = useState({ competencyIds: [], learningAreaIds: [], inventory: [] });
   const [activeTab, setActiveTab] = useState("info");
   const [focusedSectionId, setFocusedSectionId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createCompetencyOpen, setCreateCompetencyOpen] = useState(false);
   const [createLearningAreaOpen, setCreateLearningAreaOpen] = useState(false);
+  const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
 
   useEffect(() => {
     if (form) return;
     if (isEdit) {
-      if (loadingAssessment || loadingCompetencies || loadingLearningAreas || !assessment) return;
+      if (loadingAssessment || loadingCompetencies || loadingLearningAreas || loadingInventory || !assessment) return;
       const competencyIds = linkedCompetencies.map((c) => c.id);
       const learningAreaIds = linkedLearningAreas.map((a) => a.id);
-      setForm(buildFormFromAssessment(assessment, competencyIds, learningAreaIds));
-      setOriginalTags({ competencyIds, learningAreaIds });
+      const inventory = linkedInventory.map((i) => ({ itemId: i.id, quantity: i.quantity }));
+      setForm(buildFormFromAssessment(assessment, competencyIds, learningAreaIds, inventory));
+      setOriginalTags({ competencyIds, learningAreaIds, inventory });
     } else {
       setForm(buildBlankForm(routeType));
     }
-  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingLearningAreas, assessment, linkedCompetencies, linkedLearningAreas, routeType]);
+  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingLearningAreas, loadingInventory, assessment, linkedCompetencies, linkedLearningAreas, linkedInventory, routeType]);
 
   useEffect(() => { document.title = "Assessment Builder"; }, []);
 
@@ -883,22 +961,32 @@ export default function AssessmentBuilderPage() {
   }
 
   async function reconcileTags(assessmentId) {
-    const { competencyIds, learningAreaIds } = form;
+    const { competencyIds, learningAreaIds, inventory } = form;
     if (isEdit) {
       const compToAdd = competencyIds.filter((cid) => !originalTags.competencyIds.includes(cid));
       const compToRemove = originalTags.competencyIds.filter((cid) => !competencyIds.includes(cid));
       const areaToAdd = learningAreaIds.filter((aid) => !originalTags.learningAreaIds.includes(aid));
       const areaToRemove = originalTags.learningAreaIds.filter((aid) => !learningAreaIds.includes(aid));
+      const invIds = inventory.map((l) => l.itemId);
+      const origInvIds = originalTags.inventory.map((l) => l.itemId);
+      const invToRemove = origInvIds.filter((iid) => !invIds.includes(iid));
+      const invToUpsert = inventory.filter((l) => {
+        const original = originalTags.inventory.find((o) => o.itemId === l.itemId);
+        return !original || original.quantity !== l.quantity;
+      });
       await Promise.all([
         ...compToAdd.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
         ...compToRemove.map((cid) => assessmentApi.unlinkCompetency(assessmentId, cid)),
         ...areaToAdd.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
         ...areaToRemove.map((aid) => assessmentApi.unlinkLearningArea(assessmentId, aid)),
+        ...invToUpsert.map((l) => assessmentApi.linkInventoryItem(assessmentId, l.itemId, l.quantity)),
+        ...invToRemove.map((iid) => assessmentApi.unlinkInventoryItem(assessmentId, iid)),
       ]);
     } else {
       await Promise.all([
         ...competencyIds.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
         ...learningAreaIds.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
+        ...inventory.map((l) => assessmentApi.linkInventoryItem(assessmentId, l.itemId, l.quantity)),
       ]);
     }
   }
@@ -920,6 +1008,7 @@ export default function AssessmentBuilderPage() {
     { key: "structure", label: "Structure & Items" },
     ...(BUILDER_REGISTRY[type]?.supportsRubric ? [{ key: "rubric", label: "Grading Rubric" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
+    ...(BUILDER_REGISTRY[type]?.supportsInventory ? [{ key: "inventory", label: "Inventory" }] : []),
   ];
 
   return (
@@ -1036,6 +1125,14 @@ export default function AssessmentBuilderPage() {
               onChangeMilestones={(v) => setForm((f) => ({ ...f, milestones: v }))}
             />
           )}
+
+          {activeTab === "inventory" && (
+            <InventoryTab
+              inventory={form.inventory} catalog={allInventory}
+              onChange={(v) => setForm((f) => ({ ...f, inventory: v }))}
+              onCreateNew={() => setCreateInventoryOpen(true)}
+            />
+          )}
         </div>
       </div>
 
@@ -1050,6 +1147,12 @@ export default function AssessmentBuilderPage() {
         <CreateLearningAreaModal
           onClose={() => setCreateLearningAreaOpen(false)}
           onCreated={(id) => setForm((f) => ({ ...f, learningAreaIds: [...f.learningAreaIds, id] }))}
+        />
+      )}
+      {createInventoryOpen && (
+        <CreateInventoryItemModal
+          onClose={() => setCreateInventoryOpen(false)}
+          onCreated={(itemId) => setForm((f) => ({ ...f, inventory: [...f.inventory, { itemId, quantity: 1 }] }))}
         />
       )}
     </div>

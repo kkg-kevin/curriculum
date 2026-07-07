@@ -3,6 +3,8 @@ const AssessmentCompetencyLinkModel = require("./assessment-competency-link.mode
 const CompetencyModel = require("../settings/competencies/competency.model");
 const AssessmentLearningAreaLinkModel = require("./assessment-learning-area-link.model");
 const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
+const AssessmentInventoryLinkModel = require("./assessment-inventory-link.model");
+const InventoryModel = require("../settings/inventory/inventory.model");
 
 function requireAssessment(id) {
   const assessment = AssessmentModel.findById(id);
@@ -41,6 +43,7 @@ const AssessmentService = {
     }
     AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
     AssessmentLearningAreaLinkModel.deleteByAssessmentId(id);
+    AssessmentInventoryLinkModel.deleteByAssessmentId(id);
     return { message: "Assessment deleted successfully" };
   },
 
@@ -90,6 +93,36 @@ const AssessmentService = {
   async unlinkLearningArea(assessmentId, learningAreaId) {
     AssessmentLearningAreaLinkModel.unlink(assessmentId, learningAreaId);
     return this.getAssessmentLearningAreas(assessmentId);
+  },
+
+  /* ── Inventory (authored globally in Settings, linked onto a project with a quantity) ── */
+
+  async getAssessmentInventory(assessmentId) {
+    const links = AssessmentInventoryLinkModel.findByAssessmentId(assessmentId);
+    const items = InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
+    return links
+      .map((link) => {
+        const item = items.find((i) => i.id === link.inventoryItemId);
+        return item ? { ...item, quantity: link.quantity } : null;
+      })
+      .filter(Boolean);
+  },
+
+  async linkInventoryItem(assessmentId, inventoryItemId, quantity) {
+    requireAssessment(assessmentId);
+    const item = InventoryModel.findById(inventoryItemId);
+    if (!item) {
+      const err = new Error("Inventory item not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    AssessmentInventoryLinkModel.link(assessmentId, inventoryItemId, quantity);
+    return this.getAssessmentInventory(assessmentId);
+  },
+
+  async unlinkInventoryItem(assessmentId, inventoryItemId) {
+    AssessmentInventoryLinkModel.unlink(assessmentId, inventoryItemId);
+    return this.getAssessmentInventory(assessmentId);
   },
 };
 
