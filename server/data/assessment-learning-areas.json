@@ -4,5 +4,23 @@
     "assessmentId": "d2c9f6f7-1848-48a4-a157-8bafee3467ee",
     "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
     "createdAt": "2026-07-07T05:54:07.036Z"
+  },
+  {
+    "id": "9d6fc8f5-7358-4359-9a74-ec959eedd3c0",
+    "assessmentId": "379219f6-7093-4b5e-8cc1-e8ff7a1f679d",
+    "learningAreaId": "d530cdc6-be99-4dd6-b962-ccb1c08e9948",
+    "createdAt": "2026-07-07T08:27:02.104Z"
+  },
+  {
+    "id": "29c68cd0-7b22-448f-8a33-b1906f910172",
+    "assessmentId": "336e7caf-fd83-44ac-88bc-d789927ea64d",
+    "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
+    "createdAt": "2026-07-07T08:28:32.087Z"
+  },
+  {
+    "id": "b0305a4e-0356-48e1-b1c8-5fce5097de80",
+    "assessmentId": "dd1aa6af-243d-4676-8255-7690b504236f",
+    "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
+    "createdAt": "2026-07-07T08:52:23.477Z"
   }
 ]
