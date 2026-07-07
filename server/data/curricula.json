@@ -265,5 +265,35 @@
     "createdAt": "2026-06-25T09:29:38.606Z",
     "updatedAt": "2026-07-03T08:55:52.366Z",
     "competencyWeights": []
+  },
+  {
+    "name": "jetsdgn",
+    "code": "mfv",
+    "academicYear": "",
+    "description": "etjdngxc",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "class 1",
+      "class 2",
+      "class 3"
+    ],
+    "id": "71202f88-da66-4b8a-ba55-17e14be72815",
+    "createdAt": "2026-07-07T06:20:40.921Z",
+    "updatedAt": "2026-07-07T06:21:02.041Z"
   }
 ]

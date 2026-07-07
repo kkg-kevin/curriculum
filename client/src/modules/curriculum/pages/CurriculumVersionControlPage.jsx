@@ -7,6 +7,7 @@ import {
   useCreateCurriculumVersion,
   useChangeCurriculumVersionStatus,
 } from "../hooks/useCurriculumVersion";
+import { useCoursesQuery } from "../../courses/hooks/useCourse";
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -99,6 +100,26 @@ const CSS = `
   .vc-inline-input:focus { border-color:#25476a; box-shadow:0 0 0 3px rgba(37,71,106,0.08); }
   .vc-inline-input.iname { width:160px; }
   .vc-inline-input.icode { width:88px; }
+
+  .vc-course-dropdown {
+    position:absolute; top:calc(100% + 4px); left:0; z-index:20; width:260px;
+    background:#fff; border:1px solid #E5E7EB; border-radius:10px;
+    box-shadow:0 10px 24px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06);
+    padding:6px; max-height:220px; overflow-y:auto; animation:vc-fadein 0.12s ease;
+  }
+  .vc-course-dropdown-label {
+    padding:4px 8px 6px; font-size:10px; font-weight:700; color:#B0B8C4;
+    text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .vc-course-option {
+    display:block; width:100%; text-align:left; padding:7px 9px; border:none; border-radius:7px;
+    background:transparent; font-size:12.5px; font-weight:600; color:#374151;
+    font-family:Inter,sans-serif; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .vc-course-option:hover { background:#F3F4F6; color:#25476a; }
+  .vc-course-empty {
+    padding:10px 9px; font-size:11.5px; color:#D1D5DB; font-style:italic;
+  }
 
   .vc-empty-state {
     text-align:center; padding:72px 32px; background:#FAFAFA;
@@ -332,26 +353,79 @@ function PeriodTabs({ periods, ayPeriods, activeIdx, onChange }) {
 
 /* ── InlineAddForm ─────────────────────────────────────────────────────── */
 
-function InlineAddForm({ onAdd, onCancel }) {
+function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const wrapRef = useRef(null);
   useEffect(() => { ref.current?.focus(); }, []);
 
+  // Close the suggestions dropdown on outside click, but leave the form itself open
+  // (Cancel is the only way out of the form — this only dismisses the picker).
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const trimmed = name.trim();
+  const available = allCourses.filter((c) => !existingCourseIds.includes(c.id));
+  const matches = (trimmed
+    ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
+    : available
+  ).slice(0, 6);
+
+  // Picking a real course attaches it immediately — no separate "Add" click needed.
+  const pick = (course) => {
+    onAdd({ id: course.id, name: course.name, code: code.trim() });
+    setName(""); setCode(""); setOpen(false);
+  };
+
+  // Typing a name that isn't in the catalog and submitting still works, same as before —
+  // covers courses that don't exist in the system yet.
   const submit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    onAdd({ id: genId(), name: name.trim(), code: code.trim() });
-    setName(""); setCode("");
+    if (!trimmed) return;
+    onAdd({ id: genId(), name: trimmed, code: code.trim() });
+    setName(""); setCode(""); setOpen(false);
   };
 
   return (
-    <form className="vc-inline-form" onSubmit={submit}>
-      <input ref={ref} className="vc-inline-input iname" placeholder="Course name *" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} />
-      <button type="submit" disabled={!name.trim()} style={{ padding: "6px 12px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5 }}>Add</button>
-      <button type="button" onClick={onCancel} style={{ padding: "6px 10px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>Cancel</button>
-    </form>
+    <div ref={wrapRef} style={{ position: "relative", display: "inline-block" }}>
+      <form className="vc-inline-form" onSubmit={submit}>
+        <input
+          ref={ref}
+          className="vc-inline-input iname"
+          placeholder="Type or pick a course *"
+          value={name}
+          onChange={(e) => { setName(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          autoComplete="off"
+        />
+        <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} />
+        <button type="submit" disabled={!trimmed} style={{ padding: "6px 12px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: trimmed ? "pointer" : "not-allowed", opacity: trimmed ? 1 : 0.5 }}>Add</button>
+        <button type="button" onClick={onCancel} style={{ padding: "6px 10px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>Cancel</button>
+      </form>
+
+      {open && (
+        <div className="vc-course-dropdown">
+          <div className="vc-course-dropdown-label">Existing courses</div>
+          {matches.length === 0 ? (
+            <p className="vc-course-empty">
+              {available.length === 0 ? "All courses already added." : "No matches — press Add to use this as a custom name."}
+            </p>
+          ) : (
+            matches.map((c) => (
+              <button key={c.id} type="button" className="vc-course-option" onClick={() => pick(c)} title={c.name}>
+                {c.name}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -384,7 +458,7 @@ function CourseMatrixView({ content, activeTab }) {
 
 /* ── CourseMatrixEdit ──────────────────────────────────────────────────── */
 
-function CourseMatrixEdit({ content, activeTab, onUpdate }) {
+function CourseMatrixEdit({ content, activeTab, onUpdate, allCourses }) {
   const [addingFor, setAddingFor] = useState(null);
   useEffect(() => { setAddingFor(null); }, [activeTab]);
 
@@ -399,7 +473,11 @@ function CourseMatrixEdit({ content, activeTab, onUpdate }) {
   };
   const addCourse = (ci, course) => {
     const next = deepClone(content);
-    next[activeTab].classes[ci].courses.push(course);
+    const list = next[activeTab].classes[ci].courses;
+    // Only meaningful now that picking from the catalog reuses the real course id —
+    // typed custom names still get a fresh genId() each time, so they can never collide.
+    if (list.some((c) => c.id === course.id)) { setAddingFor(null); return; }
+    list.push(course);
     onUpdate(next);
     setAddingFor(null);
   };
@@ -427,7 +505,12 @@ function CourseMatrixEdit({ content, activeTab, onUpdate }) {
           </div>
           {addingFor === ci && (
             <div style={{ paddingLeft: "134px", paddingBottom: "8px" }}>
-              <InlineAddForm onAdd={(c) => addCourse(ci, c)} onCancel={() => setAddingFor(null)} />
+              <InlineAddForm
+                onAdd={(c) => addCourse(ci, c)}
+                onCancel={() => setAddingFor(null)}
+                allCourses={allCourses}
+                existingCourseIds={cls.courses.map((c) => c.id)}
+              />
             </div>
           )}
         </div>
@@ -614,6 +697,8 @@ function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionN
   const [content, setContent]     = useState(() =>
     type === "edit" ? scaffoldFromExisting(curriculum, initialContent) : scaffoldBlank(curriculum)
   );
+  const { data: coursesData } = useCoursesQuery();
+  const allCourses = coursesData?.data || [];
 
   const periods   = curriculum.periods || [];
   const hasGrades = (content[0]?.classes?.length || 0) > 0;
@@ -661,7 +746,7 @@ function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionN
       ) : (
         <div style={card}>
           <PeriodTabs periods={periods} ayPeriods={ayPeriods} activeIdx={activeTab} onChange={setActiveTab} />
-          <CourseMatrixEdit content={content} activeTab={activeTab} onUpdate={setContent} />
+          <CourseMatrixEdit content={content} activeTab={activeTab} onUpdate={setContent} allCourses={allCourses} />
         </div>
       )}
     </div>
