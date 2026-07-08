@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   useInventory, useCreateInventoryItem, useUpdateInventoryItem, useDeleteInventoryItem,
 } from "../hooks/useInventory";
-import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS } from "../constants";
+import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../constants";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 
@@ -113,13 +113,13 @@ function InventoryItemModal({ editTarget, onClose }) {
 
 function InventoryCard({ item, onEdit, onDelete }) {
   const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
-  const initial = item.name.charAt(0).toUpperCase();
+  const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
 
   return (
     <div className="stg-comp-card">
       <div className="stg-comp-card-top">
         <div className="stg-avatar" style={{ backgroundColor: `${color}15`, border: `2px solid ${color}30`, color }}>
-          {initial}
+          <Icon size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0, paddingTop: "2px" }}>
           <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, wordBreak: "break-word" }}>

@@ -4,7 +4,7 @@ import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
   TASK_TYPE_LABELS, normalizeLegacyItem,
 } from "../schemas/assessment.schema";
-import { INVENTORY_CATEGORY_COLORS } from "../../settings/inventory/constants";
+import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
 
 export const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
@@ -268,18 +268,28 @@ export default function AssessmentContent({ id }) {
         )}
 
         {registry?.supportsInventory && (
-          <Section title={`Inventory${inventory.length ? ` · ${inventory.length}` : ""}`}>
+          <Section title={`Materials${inventory.length ? ` · ${inventory.length}` : ""}`}>
             {inventory.length === 0 ? (
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>No materials added</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {inventory.map((it) => {
                   const color = INVENTORY_CATEGORY_COLORS[it.category] || INVENTORY_CATEGORY_COLORS.Other;
+                  const Icon = INVENTORY_CATEGORY_ICONS[it.category] || INVENTORY_CATEGORY_ICONS.Other;
                   return (
-                    <div key={it.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
-                      <Badge color={color}>{it.category}</Badge>
-                      <p style={{ margin: 0, flex: 1, minWidth: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>{it.name}</p>
-                      <span style={{ fontSize: "12.5px", color: "#6B7280", fontWeight: "600", flexShrink: 0 }}>{it.quantity} {it.unit}</span>
+                    <div key={it.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
+                      <span style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: `${color}15`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon size={16} />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {it.name}
+                        </p>
+                        <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>{it.category}</span>
+                      </div>
+                      <span style={{ fontSize: "12px", color, fontWeight: "700", flexShrink: 0, padding: "4px 10px", borderRadius: "999px", backgroundColor: `${color}12` }}>
+                        {it.quantity} {it.unit}
+                      </span>
                     </div>
                   );
                 })}
