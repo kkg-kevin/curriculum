@@ -1,5 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
+import AuthLayout from "../layouts/AuthLayout";
+import LoginPage from "../modules/auth/pages/LoginPage";
+import SignupPage from "../modules/auth/pages/SignupPage";
+import ForgotPasswordPage from "../modules/auth/pages/ForgotPasswordPage";
+import ProtectedRoute from "./ProtectedRoute";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
 import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPage";
@@ -48,6 +53,13 @@ function ComingSoon({ name }) {
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="schools">
@@ -100,6 +112,7 @@ export default function AppRoutes() {
         </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<SettingsPage />} />
+      </Route>
       </Route>
     </Routes>
   );

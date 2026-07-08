@@ -1,0 +1,36 @@
+const { z } = require("zod");
+
+// Kept in one place so scoping in more roles later (teacher/learner) is a one-line change.
+const USER_ROLES = ["admin", "teacher", "learner"];
+
+// Public self-signup is only ever allowed to create these roles — "admin" is never reachable
+// from this schema, so privilege escalation via the signup form isn't possible even if the
+// controller forgets to double-check. Admins are seeded/created by another admin only.
+const PUBLIC_SIGNUP_ROLES = ["teacher", "learner"];
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const signupSchema = z.object({
+  name: z.string().min(1, "Name is required").max(150),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(PUBLIC_SIGNUP_ROLES, { errorMap: () => ({ message: "Select a valid role" }) }),
+});
+
+const createUserSchema = z.object({
+  name: z.string().min(1, "Name is required").max(150),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(USER_ROLES).default("admin"),
+});
+
+module.exports = {
+  USER_ROLES,
+  PUBLIC_SIGNUP_ROLES,
+  loginSchema,
+  signupSchema,
+  createUserSchema,
+};
