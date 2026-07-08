@@ -20,6 +20,7 @@
     ],
     "items": [
       {
+        "id": "9e06a705-9fd2-4cc1-9e8c-473582ecaf6c",
         "question": "Which part of a computer is considered its 'brain'?",
         "kind": "mcqSingle",
         "sectionId": "sec-hardware",
@@ -39,6 +40,7 @@
         "submissionKinds": []
       },
       {
+        "id": "4c618c58-c927-4d99-9d4b-cbf936da8090",
         "question": "Which sensor would you use to detect distance to an object?",
         "kind": "mcqSingle",
         "sectionId": "sec-hardware",
@@ -58,6 +60,7 @@
         "submissionKinds": []
       },
       {
+        "id": "0a01e189-2c2b-4d3c-bf91-7b54cf8da4d9",
         "question": "Which of these is an output device?",
         "kind": "mcqMultiple",
         "sectionId": "sec-hardware",
@@ -77,6 +80,7 @@
         "submissionKinds": []
       },
       {
+        "id": "0395dbcb-37ca-41da-807e-740ad39fcd9b",
         "question": "RAM stores data permanently even when the power is off.",
         "kind": "trueFalse",
         "sectionId": "sec-hardware",
@@ -91,6 +95,7 @@
         "submissionKinds": []
       },
       {
+        "id": "f06589b5-a54f-4d8a-95e3-44ed2eec4100",
         "question": "A motor converts electrical energy into motion.",
         "kind": "trueFalse",
         "sectionId": "sec-hardware",
@@ -105,6 +110,7 @@
         "submissionKinds": []
       },
       {
+        "id": "160b4c52-e630-43c4-8136-e0d0836a70c4",
         "question": "Match each component to its function.",
         "kind": "matching",
         "sectionId": "sec-hardware",
@@ -136,6 +142,7 @@
         "submissionKinds": []
       },
       {
+        "id": "052ce613-5e11-4571-b162-faba3cd14308",
         "question": "A ___ converts a physical quantity like light or sound into an electrical signal.",
         "kind": "fillBlank",
         "sectionId": "sec-hardware",
@@ -152,6 +159,7 @@
         "submissionKinds": []
       },
       {
+        "id": "ce113e56-4f01-41c2-909d-24a5bf0baf92",
         "question": "In one sentence, explain the difference between RAM and storage (e.g. a hard drive).",
         "kind": "shortAnswer",
         "sectionId": "sec-hardware",
@@ -166,6 +174,7 @@
         "submissionKinds": []
       },
       {
+        "id": "5e496840-51f7-4234-bdf3-bfdd73c3fe36",
         "question": "Which of these is a valid loop structure in most programming languages?",
         "kind": "mcqSingle",
         "sectionId": "sec-logic",
@@ -185,6 +194,7 @@
         "submissionKinds": []
       },
       {
+        "id": "e732effc-edcd-4369-b9a5-53cb56502cab",
         "question": "Which of these represents conditional logic?",
         "kind": "mcqMultiple",
         "sectionId": "sec-logic",
@@ -204,6 +214,7 @@
         "submissionKinds": []
       },
       {
+        "id": "54bfb4dd-07fb-48c8-a506-88f56ad0917c",
         "question": "A sequence in programming means the order in which instructions are executed.",
         "kind": "trueFalse",
         "sectionId": "sec-logic",
@@ -218,6 +229,7 @@
         "submissionKinds": []
       },
       {
+        "id": "9c45891e-3ba3-4fa5-bc78-3ae793b3e6af",
         "question": "Put the steps of a simple decision-making program in the correct order.",
         "kind": "ordering",
         "sectionId": "sec-logic",
@@ -237,6 +249,7 @@
         "submissionKinds": []
       },
       {
+        "id": "d2bf5eb1-f9d2-4be9-a387-881bbbfbaf77",
         "question": "A loop that repeats a fixed number of times is called a ___ loop.",
         "kind": "fillBlank",
         "sectionId": "sec-logic",
@@ -253,6 +266,7 @@
         "submissionKinds": []
       },
       {
+        "id": "cf24e741-9c35-4013-b288-1a12a2c921a7",
         "question": "Match each programming term to its meaning.",
         "kind": "matching",
         "sectionId": "sec-logic",
@@ -280,6 +294,7 @@
         "submissionKinds": []
       },
       {
+        "id": "ad600b77-0ac9-4b03-bdf1-e9ec10f44a66",
         "question": "Why is decomposition (breaking a problem into smaller parts) useful in programming?",
         "kind": "shortAnswer",
         "sectionId": "sec-logic",
@@ -300,7 +315,7 @@
     "milestones": [],
     "id": "f1522da5-79ca-4637-ad75-f6a71db8c156",
     "createdAt": "2026-07-06T12:11:55.973Z",
-    "updatedAt": "2026-07-06T12:11:55.974Z"
+    "updatedAt": "2026-07-08T09:13:17.664Z"
   },
   {
     "name": "Computer Science Fundamentals — Unstructured & Submission Assessment",
@@ -1680,5 +1695,55 @@
     "id": "bbd38efe-8ea9-40f5-a037-5412af4a46b5",
     "createdAt": "2026-07-06T12:22:14.513Z",
     "updatedAt": "2026-07-06T12:22:14.513Z"
+  },
+  {
+    "name": "Sample Demo Quiz",
+    "type": "quiz",
+    "description": "Sample quiz for verifying Score Evidence wiring.",
+    "instructions": "",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [],
+    "items": [
+      {
+        "question": "<p>What is 2+2?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 50,
+        "options": [
+          "3",
+          "4",
+          "5"
+        ],
+        "correctAnswer": "4",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      },
+      {
+        "question": "<p>Explain your reasoning.</p>",
+        "kind": "shortAnswer",
+        "sectionId": null,
+        "points": 50,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "e5eeb6dd-6b49-438b-a5ba-f8369e230a3c",
+    "createdAt": "2026-07-08T08:26:36.419Z",
+    "updatedAt": "2026-07-08T08:26:36.419Z"
   }
 ]

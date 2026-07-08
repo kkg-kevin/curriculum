@@ -5,6 +5,9 @@ const {
   getCurriculumById,
   updateCurriculum,
   deleteCurriculum,
+  getCurriculumCourses,
+  linkCourse,
+  unlinkCourse,
 } = require("./curriculum.controller");
 const {
   getVersions,
@@ -70,6 +73,10 @@ const router = express.Router();
 // Curriculum CRUD
 router.route("/").get(getAllCurricula).post(createCurriculum);
 router.route("/:id").get(getCurriculumById).put(updateCurriculum).delete(deleteCurriculum);
+
+// Courses — added to this curriculum from here (a course stays independent otherwise)
+router.route("/:id/courses/links").get(getCurriculumCourses).post(linkCourse);
+router.route("/:id/courses/links/:courseId").delete(unlinkCourse);
 
 // Curriculum version control
 router.route("/:id/versions").get(getVersions).post(createVersion);

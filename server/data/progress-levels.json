@@ -53,5 +53,38 @@
     "order": 5,
     "createdAt": "2026-06-25T10:54:27.566Z",
     "updatedAt": "2026-06-25T10:54:27.566Z"
+  },
+  {
+    "id": "9436f513-c08b-41c9-95a2-09bd01eb7e20",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Emerging",
+    "description": "Just starting out",
+    "minScore": 0,
+    "maxScore": 40,
+    "order": 1,
+    "createdAt": "2026-07-08T08:32:36.365Z",
+    "updatedAt": "2026-07-08T08:32:36.365Z"
+  },
+  {
+    "id": "36a2646f-1393-41eb-bd6b-8c0d022566a4",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Developing",
+    "description": "Building consistency",
+    "minScore": 41,
+    "maxScore": 70,
+    "order": 2,
+    "createdAt": "2026-07-08T08:32:36.472Z",
+    "updatedAt": "2026-07-08T08:32:36.472Z"
+  },
+  {
+    "id": "450cad96-0763-4022-b830-54936649e04f",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Proficient",
+    "description": "Consistently meets expectations",
+    "minScore": 71,
+    "maxScore": 100,
+    "order": 3,
+    "createdAt": "2026-07-08T08:32:36.553Z",
+    "updatedAt": "2026-07-08T08:32:36.553Z"
   }
 ]

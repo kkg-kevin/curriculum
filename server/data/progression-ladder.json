@@ -98,5 +98,142 @@
     "assignments": [],
     "createdAt": "2026-07-07T07:59:56.916Z",
     "updatedAt": "2026-07-07T07:59:56.916Z"
+  },
+  {
+    "id": "9adae810-4963-401a-bbb7-7d27316aed33",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "Early Childhood",
+    "ageRange": "3–5",
+    "order": 1,
+    "assignments": [],
+    "createdAt": "2026-07-08T08:23:02.212Z",
+    "updatedAt": "2026-07-08T08:23:02.212Z"
+  },
+  {
+    "id": "b37eae21-6fb6-4261-bc54-813255477c2e",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "Lower Primary",
+    "ageRange": "6–8",
+    "order": 2,
+    "assignments": [],
+    "createdAt": "2026-07-08T08:23:02.220Z",
+    "updatedAt": "2026-07-08T08:23:02.220Z"
+  },
+  {
+    "id": "d0142593-0369-46c4-b27e-63687fe97c85",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "Upper Primary",
+    "ageRange": "9–11",
+    "order": 3,
+    "assignments": [],
+    "createdAt": "2026-07-08T08:23:02.227Z",
+    "updatedAt": "2026-07-08T08:23:02.227Z"
+  },
+  {
+    "id": "d23ff749-85c5-4914-88b3-e9e5e862515e",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "Lower Secondary",
+    "ageRange": "12–14",
+    "order": 4,
+    "assignments": [],
+    "createdAt": "2026-07-08T08:23:02.234Z",
+    "updatedAt": "2026-07-08T08:23:02.234Z"
+  },
+  {
+    "id": "6de73098-1636-44c9-9298-81f6a48e9873",
+    "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
+    "label": "Upper Secondary",
+    "ageRange": "15–18",
+    "order": 5,
+    "assignments": [],
+    "createdAt": "2026-07-08T08:23:02.238Z",
+    "updatedAt": "2026-07-08T08:23:02.238Z"
+  },
+  {
+    "id": "59f57eb3-4a71-4128-a31d-182d7d79cdab",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "label": "Early Childhood",
+    "ageRange": "3-5",
+    "order": 1,
+    "assignments": [
+      {
+        "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+        "descriptor": "Begins to interact and share with peers"
+      }
+    ],
+    "createdAt": "2026-07-08T08:29:44.383Z",
+    "updatedAt": "2026-07-08T08:34:50.642Z"
+  },
+  {
+    "id": "d2ecffef-3340-462b-b537-69c54e27d919",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "label": "Lower Primary",
+    "ageRange": "6-8",
+    "order": 2,
+    "assignments": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "descriptor": "Breaks simple problems into ordered steps"
+      }
+    ],
+    "createdAt": "2026-07-08T08:29:44.394Z",
+    "updatedAt": "2026-07-08T08:34:50.649Z"
+  },
+  {
+    "id": "b191f026-0ae8-4aa4-b78c-37bc51bbcd5d",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "label": "Upper Primary",
+    "ageRange": "9-11",
+    "order": 3,
+    "assignments": [
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "descriptor": "Writes basic programs using variables and loops"
+      },
+      {
+        "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+        "descriptor": "Builds simple creative digital projects"
+      }
+    ],
+    "createdAt": "2026-07-08T08:29:44.399Z",
+    "updatedAt": "2026-07-08T08:34:50.658Z"
+  },
+  {
+    "id": "127062a4-8be2-4295-838a-59c2da1cce10",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "label": "Lower Secondary",
+    "ageRange": "12-14",
+    "order": 4,
+    "assignments": [
+      {
+        "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+        "descriptor": "Understands basic AI concepts and data bias"
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "descriptor": "Debugs and refines multi-step programs"
+      }
+    ],
+    "createdAt": "2026-07-08T08:29:44.403Z",
+    "updatedAt": "2026-07-08T08:34:50.663Z"
+  },
+  {
+    "id": "1c845b30-98af-4d07-bb36-5a3cfb8b53ad",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "label": "Upper Secondary",
+    "ageRange": "15-18",
+    "order": 5,
+    "assignments": [
+      {
+        "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+        "descriptor": "Designs and ships a complete digital project"
+      },
+      {
+        "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+        "descriptor": "Leads collaborative technical work responsibly"
+      }
+    ],
+    "createdAt": "2026-07-08T08:29:44.409Z",
+    "updatedAt": "2026-07-08T08:34:50.668Z"
   }
 ]

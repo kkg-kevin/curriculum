@@ -348,5 +348,43 @@
     ],
     "createdAt": "2026-07-08T05:17:35.687Z",
     "updatedAt": "2026-07-08T05:17:37.250Z"
+  },
+  {
+    "id": "0eaef824-6ff4-4991-bd33-bd7c9ec6166c",
+    "yearGroupId": "19d58f9e-ed26-44f1-a9c1-c48070cbd941",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "versionNumber": 1,
+    "status": "inactive",
+    "isCurrent": false,
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "createdAt": "2026-07-08T08:40:04.881Z",
+    "updatedAt": "2026-07-08T08:41:16.381Z"
+  },
+  {
+    "id": "5180eb15-9aea-4513-a54f-3690ff9e96a1",
+    "yearGroupId": "19d58f9e-ed26-44f1-a9c1-c48070cbd941",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "versionNumber": 2,
+    "status": "published",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "createdAt": "2026-07-08T08:41:13.354Z",
+    "updatedAt": "2026-07-08T08:41:16.385Z"
   }
 ]

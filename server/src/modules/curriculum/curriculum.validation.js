@@ -76,4 +76,8 @@ const updateCurriculumSchema = z.object({
   classes: z.array(z.string()).optional(),
 });
 
-module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema };
+const linkCourseSchema = z.object({
+  courseId: z.string().min(1, "courseId is required"),
+});
+
+module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema, linkCourseSchema };

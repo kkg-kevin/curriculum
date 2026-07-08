@@ -7,6 +7,7 @@ export const CURRICULUM_KEYS = {
   all: ["curricula"],
   list: (filters) => ["curricula", "list", filters],
   detail: (id) => ["curricula", "detail", id],
+  courses: (id) => ["curricula", "courses", id],
 };
 
 export function useCurriculaQuery() {
@@ -65,5 +66,39 @@ export function useUpdateCurriculum() {
     onError: (err) => {
       toast.error(err.message || "Failed to update curriculum");
     },
+  });
+}
+
+/* ── Courses (added to this curriculum from here — a course stays independent otherwise) ── */
+
+export function useCurriculumCourses(curriculumId) {
+  return useQuery({
+    queryKey: CURRICULUM_KEYS.courses(curriculumId),
+    queryFn: () => curriculumApi.getCurriculumCourses(curriculumId),
+    enabled: !!curriculumId,
+  });
+}
+
+export function useLinkCourse(curriculumId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId) => curriculumApi.linkCourse(curriculumId, courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.courses(curriculumId) });
+      toast.success("Course added to this curriculum");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to add course"),
+  });
+}
+
+export function useUnlinkCourse(curriculumId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId) => curriculumApi.unlinkCourse(curriculumId, courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.courses(curriculumId) });
+      toast.success("Course removed from this curriculum");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to remove course"),
   });
 }

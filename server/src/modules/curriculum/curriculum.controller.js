@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const CurriculumService = require("./curriculum.service");
-const { createCurriculumSchema, updateCurriculumSchema } = require("./curriculum.validation");
+const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema } = require("./curriculum.validation");
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);
@@ -30,10 +30,31 @@ const deleteCurriculum = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+/* ── Courses (added to this curriculum from here) ─────────────────────────── */
+
+const getCurriculumCourses = asyncHandler(async (req, res) => {
+  const data = await CurriculumService.getCurriculumCourses(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkCourse = asyncHandler(async (req, res) => {
+  const { courseId } = linkCourseSchema.parse(req.body);
+  const data = await CurriculumService.linkCourse(req.params.id, courseId);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkCourse = asyncHandler(async (req, res) => {
+  const data = await CurriculumService.unlinkCourse(req.params.id, req.params.courseId);
+  res.json({ success: true, data });
+});
+
 module.exports = {
   createCurriculum,
   getAllCurricula,
   getCurriculumById,
   updateCurriculum,
   deleteCurriculum,
+  getCurriculumCourses,
+  linkCourse,
+  unlinkCourse,
 };

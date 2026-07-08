@@ -1,6 +1,8 @@
 const CurriculumModel          = require("./curriculum.model");
 const AcademicYearGroupModel   = require("./academic-years/academic-year-groups.model");
 const AcademicYearVersionModel = require("./academic-years/academic-year-versions.model");
+const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
+const CourseModel = require("../courses/course.model");
 
 const CurriculumService = {
   async createCurriculum(data) {
@@ -98,7 +100,39 @@ const CurriculumService = {
       err.statusCode = 404;
       throw err;
     }
+    CourseCurriculumLinkModel.deleteByCurriculumId(id);
     return { message: "Curriculum deleted successfully" };
+  },
+
+  /* ── Courses (added to this curriculum from here — a course stays independent
+   * and reusable otherwise, this just records where it's currently used) ── */
+
+  async getCurriculumCourses(curriculumId) {
+    return CourseCurriculumLinkModel.findByCurriculumId(curriculumId)
+      .map((l) => CourseModel.findById(l.courseId))
+      .filter(Boolean);
+  },
+
+  async linkCourse(curriculumId, courseId) {
+    const curriculum = CurriculumModel.findById(curriculumId);
+    if (!curriculum) {
+      const err = new Error("Curriculum not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CourseCurriculumLinkModel.link(courseId, curriculumId);
+    return this.getCurriculumCourses(curriculumId);
+  },
+
+  async unlinkCourse(curriculumId, courseId) {
+    CourseCurriculumLinkModel.unlink(courseId, curriculumId);
+    return this.getCurriculumCourses(curriculumId);
   },
 };
 

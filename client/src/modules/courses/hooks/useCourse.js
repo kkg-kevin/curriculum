@@ -8,6 +8,8 @@ export const COURSE_KEYS = {
   sessions: (courseId) => ["courses", "sessions", courseId],
   competencies: (courseId) => ["courses", "competencies", courseId],
   learningAreas: (courseId) => ["courses", "learning-areas", courseId],
+  curricula: (courseId) => ["courses", "curricula", courseId],
+  assessmentScoring: (courseId, assessmentId, curriculumId) => ["courses", "assessment-scoring", courseId, assessmentId, curriculumId],
 };
 
 export function useCoursesQuery() {
@@ -85,6 +87,26 @@ export function useCourseLearningAreas(courseId) {
     queryKey: COURSE_KEYS.learningAreas(courseId),
     queryFn: () => courseApi.getCourseLearningAreas(courseId),
     enabled: !!courseId,
+  });
+}
+
+/* ── Curricula (which curricula this course is currently used in) ──────── */
+
+export function useCourseCurricula(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.curricula(courseId),
+    queryFn: () => courseApi.getCourseCurricula(courseId),
+    enabled: !!courseId,
+  });
+}
+
+/* ── Score Evidence resolution (preview only — no learner score exists yet) ── */
+
+export function useAssessmentScoring(courseId, assessmentId, curriculumId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.assessmentScoring(courseId, assessmentId, curriculumId),
+    queryFn: () => courseApi.getAssessmentScoring(courseId, assessmentId, curriculumId),
+    enabled: !!courseId && !!assessmentId && !!curriculumId,
   });
 }
 

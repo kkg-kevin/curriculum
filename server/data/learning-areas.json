@@ -134,5 +134,25 @@
     ],
     "createdAt": "2026-07-08T05:16:26.345Z",
     "updatedAt": "2026-07-08T05:16:26.345Z"
+  },
+  {
+    "id": "f9495a4d-d356-4659-8110-c12e490927b4",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Computer Science Fundamentals",
+    "description": "Core programming and computational thinking",
+    "color": "#25476a",
+    "courses": [],
+    "createdAt": "2026-07-08T08:32:56.361Z",
+    "updatedAt": "2026-07-08T08:32:56.361Z"
+  },
+  {
+    "id": "53458ecc-f510-43e7-8805-025214781a25",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Digital Citizenship & Ethics",
+    "description": "Responsible, safe, and ethical technology use",
+    "color": "#059669",
+    "courses": [],
+    "createdAt": "2026-07-08T08:32:56.424Z",
+    "updatedAt": "2026-07-08T08:32:56.424Z"
   }
 ]
