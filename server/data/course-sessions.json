@@ -693,8 +693,11 @@
     ],
     "id": "013cfd89-1546-490f-a5f2-e0b2190cb513",
     "createdAt": "2026-07-07T12:08:59.627Z",
-    "updatedAt": "2026-07-07T14:24:20.750Z",
-    "assessmentIds": [],
+    "updatedAt": "2026-07-08T07:19:30.498Z",
+    "assessmentIds": [
+      "32b39932-175d-4159-aa65-c67085b17fa4",
+      "a02d3152-005f-4b36-92b4-e1bccfae3f8f"
+    ],
     "activities": [
       {
         "id": "c57b8120-64a3-4f14-b43f-1d5ad04401a0",
@@ -726,6 +729,52 @@
     "resources": [],
     "id": "4cb5e839-1849-4a7f-9704-854939700363",
     "createdAt": "2026-07-07T12:08:59.627Z",
-    "updatedAt": "2026-07-07T12:08:59.627Z"
+    "updatedAt": "2026-07-08T07:19:46.795Z",
+    "activities": [
+      {
+        "id": "b231b1e7-7688-4133-8d04-9431329c5b27",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "assessmentIds": [
+      "abd07396-50c8-4af5-9066-32624e6de42c",
+      "a02d3152-005f-4b36-92b4-e1bccfae3f8f"
+    ]
+  },
+  {
+    "courseId": "7f9351ba-ffbd-4c57-8477-225b5108e06d",
+    "title": "Sample Session",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "a752e446-9b66-4cae-8aea-727c71bdfa40",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "694ba5ea-d4e2-4c7a-b9ef-91c97b441227",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "assessmentIds": [
+      "e5eeb6dd-6b49-438b-a5ba-f8369e230a3c"
+    ],
+    "notes": [
+      {
+        "id": "e91f94ff-95ec-4807-9796-5e4a8d3169a8",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "order": 1,
+    "id": "99e21d3e-4f31-4cfd-a5b4-020a0eb39138",
+    "createdAt": "2026-07-08T08:26:49.364Z",
+    "updatedAt": "2026-07-08T09:08:56.513Z"
   }
 ]

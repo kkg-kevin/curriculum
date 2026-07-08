@@ -10,5 +10,11 @@
     "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
     "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
     "createdAt": "2026-07-07T12:08:59.587Z"
+  },
+  {
+    "id": "53e042c4-8880-4ade-9ab0-0432f6ff3c47",
+    "courseId": "7f9351ba-ffbd-4c57-8477-225b5108e06d",
+    "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
+    "createdAt": "2026-07-08T09:02:08.015Z"
   }
 ]

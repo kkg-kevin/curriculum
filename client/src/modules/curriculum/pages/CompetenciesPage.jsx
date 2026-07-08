@@ -1434,6 +1434,17 @@ function AssessmentTypesSubPanel({ curriculumId }) {
 
 const EVIDENCE_PALETTE = ["#25476a","#feb139","#38aae1"];
 
+// Mirrors the fixed type list on the real Assessment Builder (quiz/exam/project/assignment/observation)
+// so a course-attached assessment can be auto-matched to the evidence type that scores it.
+const EVIDENCE_CATEGORY_OPTIONS = [
+  { value: "",             label: "— No builder match (custom evidence) —" },
+  { value: "quiz",         label: "Quiz" },
+  { value: "exam",         label: "Exam" },
+  { value: "project",      label: "Project" },
+  { value: "assignment",   label: "Assignment" },
+  { value: "observation",  label: "Observation" },
+];
+
 function EvidenceTypesSubPanel({ curriculumId }) {
   const { data: evidences = [], isLoading } = useEvidenceTypes(curriculumId);
   const { data: types = [] }               = useAssessmentTypes(curriculumId);
@@ -1445,23 +1456,25 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   const [editTarget,  setEdit]       = useState(null);
   const [name,        setName]       = useState("");
   const [desc,        setDesc]       = useState("");
+  const [category,    setCategory]   = useState("");
   const [defContrib,  setDefContrib] = useState("0");
   const [minReq,      setMinReq]     = useState("0");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setDefContrib("0"); setMinReq("0"); setMode("add"); }
-  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMode("add"); }
+  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setCategory(e.category || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
     const data = {
       name: name.trim(), description: desc.trim(),
+      category: category || null,
       defaultContribution: Math.min(100, Math.max(0, Number(defContrib) || 0)),
       minRequirement:      Math.min(100, Math.max(0, Number(minReq) || 0)),
     };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); setDefContrib("0"); setMinReq("0"); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1480,6 +1493,17 @@ function EvidenceTypesSubPanel({ curriculumId }) {
             onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
           />
           <div className="cp-char-count">{name.length} / 150</div>
+        </div>
+        <div>
+          <label className="cp-field-label">Assessment Category</label>
+          <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>
+            Which builder assessment type does this evidence come from? Lets a course-attached assessment auto-match to this evidence type.
+          </p>
+          <select className="cp-select" style={{ width: "100%", boxSizing: "border-box" }} value={category} onChange={(e) => setCategory(e.target.value)}>
+            {EVIDENCE_CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
@@ -1536,6 +1560,11 @@ function EvidenceTypesSubPanel({ curriculumId }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{e.name}</p>
                 <div style={{ display: "flex", gap: "6px", marginTop: "5px", flexWrap: "wrap" }}>
+                  {e.category && (
+                    <span style={{ fontSize: "10px", fontWeight: "700", color: "#7C3AED", background: "#7C3AED15", padding: "2px 7px", borderRadius: "20px", textTransform: "capitalize" }}>
+                      {e.category}
+                    </span>
+                  )}
                   {e.defaultContribution > 0 && (
                     <span style={{ fontSize: "10px", fontWeight: "600", color: "#2563EB", background: "#2563EB15", padding: "2px 7px", borderRadius: "20px" }}>
                       {e.defaultContribution}% default

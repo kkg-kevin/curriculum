@@ -1,7 +1,7 @@
-﻿import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+﻿import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useCurriculumQuery } from "../hooks/useCurriculum";
+import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCourse } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { useAcademicYears } from "../hooks/useAcademicYear";
 import {
@@ -9,6 +9,7 @@ import {
   useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
 } from "../hooks/useCompetencies";
 import { schoolApi } from "../../schools/services/schoolApi";
+import { useCoursesQuery } from "../../courses/hooks/useCourse";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -220,6 +221,96 @@ function FrameworkPanel({ icon, title, count, emptyText, children }) {
 }
 
 
+/* ── Add-course dropdown (courses are created in the Courses module, not here) ── */
+
+function AddCourseDropdown({ available, onAdd }) {
+  const [open, setOpen]   = useState(false);
+  const [query, setQuery] = useState("");
+  const ref      = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => inputRef.current?.focus());
+    else setQuery("");
+  }, [open]);
+
+  const trimmed  = query.trim();
+  const filtered = trimmed
+    ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
+    : available;
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px",
+          backgroundColor: "#e8f5fb", color: "#25476a", border: "1.5px solid #a8d5ee",
+          borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+          cursor: "pointer",
+        }}
+      >
+        + Add Course
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 20,
+          background: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px",
+          boxShadow: "0 10px 28px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06)",
+          width: "280px", maxHeight: "320px", overflow: "hidden", display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ position: "relative", flexShrink: 0, borderBottom: "1px solid #F0F2F5" }}>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search courses…"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "10px 12px", border: "none",
+                fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", color: "#111827", background: "#fff",
+              }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", padding: "6px" }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: "22px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
+                  {available.length === 0 ? "Every course is already added." : "No matches found."}
+                </p>
+              </div>
+            )}
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onAdd(c.id); setOpen(false); }}
+                style={{
+                  display: "block", width: "100%", padding: "8px 10px", border: "none", borderRadius: "8px",
+                  background: "transparent", fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+                  color: "#374151", textAlign: "left", cursor: "pointer",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#F3F4F6"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Loading state ────────────────────────────────────────────────────── */
 
 function LoadingState() {
@@ -258,6 +349,14 @@ export default function CurriculumViewPage() {
     queryFn:  () => schoolApi.getAll({ curriculumId: id }),
     enabled:  !!id,
   });
+
+  // Courses attached to this curriculum — a course stays independent and reusable
+  // elsewhere, this just records which ones are currently used by this curriculum.
+  const { data: attachedCourses = [] } = useCurriculumCourses(id);
+  const { data: allCoursesData }       = useCoursesQuery();
+  const allCourses = allCoursesData?.data || [];
+  const { mutate: linkCourse }   = useLinkCourse(id);
+  const { mutate: unlinkCourse } = useUnlinkCourse(id);
 
   const [activePeriod, setActivePeriod] = useState(0);
 
@@ -693,6 +792,59 @@ export default function CurriculumViewPage() {
             </FrameworkPanel>
           </div>
         )}
+      </div>
+
+      {/* ── Attached Courses ─────────────────────────────────────────────
+         Courses are created independently in the Courses module — a course is
+         added to (or removed from) this curriculum here, not from the course itself. */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Attached Courses</h2>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Courses currently used by this curriculum — a course stays independent otherwise.</p>
+          </div>
+          <AddCourseDropdown
+            available={allCourses.filter((c) => !attachedCourses.some((a) => a.id === c.id))}
+            onAdd={(courseId) => linkCourse(courseId)}
+          />
+        </div>
+        <div style={{ padding: "16px 20px" }}>
+          {attachedCourses.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF" }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📚</div>
+              <p style={{ margin: 0, fontSize: "13px" }}>No courses added to this curriculum yet.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {attachedCourses.map((c) => (
+                <div
+                  key={c.id}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB" }}
+                >
+                  <Link
+                    to={`/courses/${c.id}/view`}
+                    style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", minWidth: 0, flex: 1 }}
+                  >
+                    <span style={{ fontSize: "18px", flexShrink: 0 }}>📘</span>
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => unlinkCourse(c.id)}
+                    title="Remove from this curriculum"
+                    style={{
+                      width: "22px", height: "22px", borderRadius: "50%", border: "none", flexShrink: 0,
+                      background: "#F3F4F6", color: "#6B7280", cursor: "pointer",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Schools Using This Curriculum ─────────────────────────────── */}

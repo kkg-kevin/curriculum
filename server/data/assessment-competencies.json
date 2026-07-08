@@ -4,5 +4,17 @@
     "assessmentId": "32b39932-175d-4159-aa65-c67085b17fa4",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "createdAt": "2026-07-07T14:24:59.712Z"
+  },
+  {
+    "id": "53778aa5-65de-4cc1-bd0f-3a912e02b2cd",
+    "assessmentId": "f1522da5-79ca-4637-ad75-f6a71db8c156",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "createdAt": "2026-07-08T09:13:04.952Z"
+  },
+  {
+    "id": "af316675-4d4c-401c-abb8-8895b5d88e42",
+    "assessmentId": "f1522da5-79ca-4637-ad75-f6a71db8c156",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-08T09:13:17.735Z"
   }
 ]

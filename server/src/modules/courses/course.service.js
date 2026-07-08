@@ -5,6 +5,10 @@ const CourseCompetencyLinkModel = require("./course-competency-link.model");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
 const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
+const CourseCurriculumLinkModel = require("./course-curriculum-link.model");
+const CurriculumModel = require("../curriculum/curriculum.model");
+const AssessmentModel = require("../assessments/assessment.model");
+const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -68,6 +72,7 @@ const CourseService = {
     SessionModel.deleteByCourseId(id);
     CourseCompetencyLinkModel.deleteByCourseId(id);
     CourseLearningAreaLinkModel.deleteByCourseId(id);
+    CourseCurriculumLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
   },
 
@@ -127,6 +132,87 @@ const CourseService = {
   async unlinkLearningArea(courseId, learningAreaId) {
     CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
     return this.getCourseLearningAreas(courseId);
+  },
+
+  /* ── Curricula (a course stays independent — this just records where it's currently used) ── */
+
+  async getCourseCurricula(courseId) {
+    const links = CourseCurriculumLinkModel.findByCourseId(courseId);
+    return links
+      .map((l) => CurriculumModel.findById(l.curriculumId))
+      .filter(Boolean);
+  },
+
+  /* ── Score Evidence resolution ──────────────────────────────────────────
+   * A course-attached assessment (referenced via a session's assessmentIds — an
+   * assessment is never owned by a course) is matched against a linked curriculum's
+   * Evidence Types by `category`, so its total marks can be previewed against that
+   * curriculum's Score Evidence weighting. No learner score exists yet — this is a
+   * preview using the assessment's max marks, not a real result. */
+
+  async getAssessmentScoring(courseId, assessmentId, curriculumId) {
+    if (!curriculumId) {
+      const err = new Error("curriculumId query parameter is required");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const attached = SessionModel.findByCourseId(courseId)
+      .some((s) => (s.assessmentIds || []).includes(assessmentId));
+    if (!attached) {
+      const err = new Error("This assessment is not attached to this course");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const curriculumLinked = CourseCurriculumLinkModel.findByCourseId(courseId)
+      .some((l) => l.curriculumId === curriculumId);
+    if (!curriculumLinked) {
+      const err = new Error("This course is not linked to that curriculum");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const assessment = AssessmentModel.findById(assessmentId);
+    if (!assessment) {
+      const err = new Error("Assessment not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const totalMarks =
+      (assessment.items  || []).reduce((sum, i) => sum + (i.points  || 0), 0) +
+      (assessment.rubric || []).reduce((sum, r) => sum + (r.points || 0), 0);
+
+    const evidenceType = EvidenceTypeModel.findByCurriculumId(curriculumId)
+      .find((e) => e.category === assessment.type);
+
+    if (!evidenceType) {
+      return {
+        assessmentType: assessment.type,
+        totalMarks,
+        matched: false,
+        message: `This curriculum has no Evidence Type configured for "${assessment.type}" yet.`,
+      };
+    }
+
+    const contribution   = evidenceType.defaultContribution || 0;
+    const narrowedMarks  = Math.round((totalMarks * contribution) / 100 * 10) / 10;
+
+    return {
+      assessmentType: assessment.type,
+      totalMarks,
+      matched: true,
+      evidenceType: { id: evidenceType.id, name: evidenceType.name, contribution, minRequirement: evidenceType.minRequirement || 0 },
+      narrowedMarks,
+    };
   },
 
   /* ── Sessions ────────────────────────────────────────────────────────── */

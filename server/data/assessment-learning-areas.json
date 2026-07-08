@@ -4,5 +4,17 @@
     "assessmentId": "32b39932-175d-4159-aa65-c67085b17fa4",
     "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
     "createdAt": "2026-07-07T14:25:18.869Z"
+  },
+  {
+    "id": "61a598fa-5fc1-404e-b515-7df2c75f78e5",
+    "assessmentId": "f1522da5-79ca-4637-ad75-f6a71db8c156",
+    "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
+    "createdAt": "2026-07-08T09:13:04.969Z"
+  },
+  {
+    "id": "2e7319c1-817f-4522-a761-cd078bc608ba",
+    "assessmentId": "f1522da5-79ca-4637-ad75-f6a71db8c156",
+    "learningAreaId": "d530cdc6-be99-4dd6-b962-ccb1c08e9948",
+    "createdAt": "2026-07-08T09:13:17.759Z"
   }
 ]

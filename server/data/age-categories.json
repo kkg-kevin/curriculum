@@ -38,5 +38,35 @@
     "order": 1,
     "createdAt": "2026-07-07T06:21:42.649Z",
     "updatedAt": "2026-07-07T06:21:42.649Z"
+  },
+  {
+    "id": "b82564d1-b54e-4eb8-a38f-8eb1446f56f8",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Lower Primary",
+    "ageRange": "6-8",
+    "description": "Foundational learners",
+    "order": 1,
+    "createdAt": "2026-07-08T08:32:36.026Z",
+    "updatedAt": "2026-07-08T08:32:36.026Z"
+  },
+  {
+    "id": "d9ac7555-ba55-428a-9f77-78a93c0b68af",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Upper Primary",
+    "ageRange": "9-11",
+    "description": "Building independence",
+    "order": 2,
+    "createdAt": "2026-07-08T08:32:36.111Z",
+    "updatedAt": "2026-07-08T08:32:36.111Z"
+  },
+  {
+    "id": "ff5a3939-9540-4204-b6d8-095e1ec63099",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "name": "Junior Secondary",
+    "ageRange": "12-14",
+    "description": "Applying skills to real projects",
+    "order": 3,
+    "createdAt": "2026-07-08T08:32:36.181Z",
+    "updatedAt": "2026-07-08T08:32:36.181Z"
   }
 ]

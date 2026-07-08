@@ -73,6 +73,21 @@ const unlinkLearningArea = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+/* ── Curricula (read-only here — a course is added to a curriculum from the
+   curriculum side, see curriculum.controller.js's getCurriculumCourses/linkCourse) ── */
+
+const getCourseCurricula = asyncHandler(async (req, res) => {
+  const data = await CourseService.getCourseCurricula(req.params.id);
+  res.json({ success: true, data });
+});
+
+/* ── Score Evidence resolution ──────────────────────────────────────────────── */
+
+const getAssessmentScoring = asyncHandler(async (req, res) => {
+  const data = await CourseService.getAssessmentScoring(req.params.id, req.params.assessmentId, req.query.curriculumId);
+  res.json({ success: true, data });
+});
+
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
 const getSessions = asyncHandler(async (req, res) => {
@@ -115,6 +130,8 @@ module.exports = {
   getCourseLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
+  getCourseCurricula,
+  getAssessmentScoring,
   getSessions,
   createSession,
   createSessionsBulk,

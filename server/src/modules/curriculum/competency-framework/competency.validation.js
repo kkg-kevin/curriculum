@@ -120,9 +120,15 @@ const updateGlobalScoringSchema = z.object({
   competencyWeights: z.array(competencyWeightSchema).optional().default([]),
 });
 
+// Mirrors the real Assessment Builder's fixed type list (server/src/modules/assessments/assessment.validation.js)
+// so a course-attached assessment can be auto-matched to the evidence type that scores it — a shared vocabulary
+// instead of a free-text name match. Null means this evidence type has no builder-assessment equivalent.
+const EVIDENCE_CATEGORIES = ["quiz", "exam", "project", "assignment", "observation"];
+
 const createEvidenceTypeSchema = z.object({
   name:                z.string().min(1, "Name is required").max(150),
   description:         z.string().max(500).optional().default(""),
+  category:            z.enum(EVIDENCE_CATEGORIES, { errorMap: () => ({ message: "Category must be one of: quiz, exam, project, assignment, observation" }) }).nullable().optional().default(null),
   defaultContribution: z.number().min(0).max(100).optional().default(0),
   minRequirement:      z.number().min(0).max(100).optional().default(0),
 });
@@ -173,6 +179,7 @@ module.exports = {
   updateGlobalScoringSchema,
   createEvidenceTypeSchema,
   updateEvidenceTypeSchema,
+  EVIDENCE_CATEGORIES,
   createPerformanceBandSchema,
   updatePerformanceBandSchema,
   reorderBandsSchema,
