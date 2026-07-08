@@ -9,6 +9,7 @@ const CourseCurriculumLinkModel = require("./course-curriculum-link.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
+const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -203,15 +204,44 @@ const CourseService = {
       };
     }
 
-    const contribution   = evidenceType.defaultContribution || 0;
-    const narrowedMarks  = Math.round((totalMarks * contribution) / 100 * 10) / 10;
+    // The Evidence Type's own defaultContribution is only a starting suggestion — the number
+    // that actually governs scoring is whatever a specific Assessment Type overrides it to in
+    // its own evidenceWeights. Resolve from there first; only fall back to the default if this
+    // evidence type hasn't been wired into any Assessment Type yet. An evidence type can be
+    // reused across multiple Assessment Types with different overrides, so return every match
+    // rather than silently picking one.
+    const usedIn = AssessmentTypeModel.findByCurriculumId(curriculumId)
+      .map((at) => {
+        const weight = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === evidenceType.id);
+        if (!weight) return null;
+        return {
+          assessmentTypeId:   at.id,
+          assessmentTypeName: at.name,
+          contribution:       weight.contribution,
+          minRequirement:     weight.minRequirement ?? 0,
+        };
+      })
+      .filter(Boolean);
+
+    const configs = usedIn.length > 0 ? usedIn : [{
+      assessmentTypeId:   null,
+      assessmentTypeName: null,
+      contribution:       evidenceType.defaultContribution || 0,
+      minRequirement:     evidenceType.minRequirement || 0,
+    }];
+
+    const results = configs.map((cfg) => ({
+      ...cfg,
+      source:       cfg.assessmentTypeId ? "assessmentType" : "default",
+      narrowedMarks: Math.round((totalMarks * cfg.contribution) / 100 * 10) / 10,
+    }));
 
     return {
       assessmentType: assessment.type,
       totalMarks,
       matched: true,
-      evidenceType: { id: evidenceType.id, name: evidenceType.name, contribution, minRequirement: evidenceType.minRequirement || 0 },
-      narrowedMarks,
+      evidenceType: { id: evidenceType.id, name: evidenceType.name },
+      results,
     };
   },
 
