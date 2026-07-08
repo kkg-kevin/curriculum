@@ -27,6 +27,15 @@ const AuthService = {
     return sanitize(user);
   },
 
+  // Public self-signup — role is already restricted to non-admin values by signupSchema,
+  // but createUser is the single write path either way. Auto-logs in like login() does,
+  // so a new account lands straight in the app instead of a second "now sign in" step.
+  async signup({ name, email, password, role }) {
+    const user = await this.createUser({ name, email, password, role });
+    const token = signToken(user);
+    return { user, token };
+  },
+
   async login(email, password) {
     const user = UserModel.findByEmail(email);
     if (!user) {

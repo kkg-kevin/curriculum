@@ -21,13 +21,19 @@ export function AuthProvider({ children }) {
     return loggedInUser;
   }, []);
 
+  const signup = useCallback(async (payload) => {
+    const newUser = await authApi.signup(payload);
+    setUser(newUser);
+    return newUser;
+  }, []);
+
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

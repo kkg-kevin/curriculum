@@ -1,36 +1,12 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
+import { FiMail, FiLock } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { loginSchema } from "../schemas/auth.schema";
-
-const inputStyle = {
-  width: "100%",
-  padding: "11px 14px",
-  borderRadius: "10px",
-  border: "1.5px solid #E5E7EB",
-  fontSize: "14px",
-  fontFamily: "Inter, sans-serif",
-  color: "#111827",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: "13px",
-  fontWeight: "600",
-  color: "#374151",
-  marginBottom: "6px",
-};
-
-const errorStyle = {
-  fontSize: "12px",
-  color: "#DC2626",
-  marginTop: "4px",
-};
+import { FieldWrap, IconInput, PasswordInput } from "../components/AuthFields";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -62,37 +38,52 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div style={{ marginBottom: "18px" }}>
-        <label style={labelStyle} htmlFor="email">Email</label>
-        <input id="email" type="email" autoComplete="username" style={inputStyle} {...register("email")} />
-        {errors.email && <p style={errorStyle}>{errors.email.message}</p>}
+    <>
+      <div style={{ textAlign: "center", marginBottom: "26px" }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "21px", fontWeight: "700", color: "#111827" }}>
+          Sign in to Digifunzii
+        </h2>
+        <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
+          Enter your details to access your dashboard.
+        </p>
       </div>
 
-      <div style={{ marginBottom: "22px" }}>
-        <label style={labelStyle} htmlFor="password">Password</label>
-        <input id="password" type="password" autoComplete="current-password" style={inputStyle} {...register("password")} />
-        {errors.password && <p style={errorStyle}>{errors.password.message}</p>}
-      </div>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <FieldWrap label="Email address" error={errors.email?.message}>
+            <IconInput
+              icon={FiMail}
+              type="email"
+              placeholder="you@school.ac.ke"
+              autoComplete="username"
+              error={errors.email}
+              {...register("email")}
+            />
+          </FieldWrap>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        style={{
-          width: "100%",
-          padding: "12px 20px",
-          backgroundColor: submitting ? "#fef3d0" : "#feb139",
-          color: "#25476a",
-          border: "none",
-          borderRadius: "10px",
-          fontSize: "14px",
-          fontWeight: "700",
-          fontFamily: "Inter, sans-serif",
-          cursor: submitting ? "not-allowed" : "pointer",
-        }}
-      >
-        {submitting ? "Signing in..." : "Sign in"}
-      </button>
-    </form>
+          <FieldWrap label="Password" error={errors.password?.message}>
+            <PasswordInput
+              icon={FiLock}
+              placeholder="Enter password"
+              autoComplete="current-password"
+              error={errors.password}
+              {...register("password")}
+            />
+          </FieldWrap>
+
+          <Link to="/forgot-password" className="df-link" style={{ alignSelf: "flex-end", fontSize: "12.5px", marginTop: "-6px" }}>
+            Forgot password?
+          </Link>
+        </div>
+
+        <button type="submit" className="df-btn-primary" disabled={submitting} style={{ marginTop: "22px" }}>
+          {submitting ? "Signing in..." : "Login"}
+        </button>
+      </form>
+
+      <p style={{ textAlign: "center", marginTop: "22px", fontSize: "13px", color: "#6B7280" }}>
+        Don't have an account? <Link to="/signup" className="df-link">Register</Link>
+      </p>
+    </>
   );
 }
