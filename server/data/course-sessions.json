@@ -693,8 +693,15 @@
     ],
     "id": "013cfd89-1546-490f-a5f2-e0b2190cb513",
     "createdAt": "2026-07-07T12:08:59.627Z",
-    "updatedAt": "2026-07-07T12:19:27.963Z",
-    "assessmentIds": []
+    "updatedAt": "2026-07-07T14:24:20.750Z",
+    "assessmentIds": [],
+    "activities": [
+      {
+        "id": "c57b8120-64a3-4f14-b43f-1d5ad04401a0",
+        "title": "",
+        "content": ""
+      }
+    ]
   },
   {
     "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",

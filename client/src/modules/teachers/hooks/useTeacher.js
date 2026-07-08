@@ -1,21 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { teacherApi } from "../services/teacherApi";
 
 export const TEACHER_KEYS = {
   all:    ["teachers"],
-  list:   (filters) => ["teachers", "list", filters],
   detail: (id)      => ["teachers", "detail", id],
 };
-
-export function useTeachersQuery() {
-  const filters = useSelector((state) => state.teachers.filters);
-  return useQuery({
-    queryKey: TEACHER_KEYS.list(filters),
-    queryFn:  () => teacherApi.getAll(filters),
-  });
-}
 
 export function useAllTeachersQuery() {
   return useQuery({
@@ -54,17 +44,5 @@ export function useUpdateTeacher() {
       toast.success("Teacher updated successfully!");
     },
     onError: (err) => toast.error(err.message || "Failed to update teacher"),
-  });
-}
-
-export function useDeleteTeacher() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: teacherApi.remove,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.all });
-      toast.success("Teacher removed");
-    },
-    onError: (err) => toast.error(err.message || "Failed to remove teacher"),
   });
 }

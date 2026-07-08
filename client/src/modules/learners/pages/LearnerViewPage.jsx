@@ -6,16 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT    = "#25476a";
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 
-const STATUS_STYLES = {
-  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-  transferred: { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  graduated:   { bg: "#fff8e6", color: "#b07800", border: "#fcd97a" },
-};
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
 
 function Avatar({ firstName, lastName, size = 64 }) {
@@ -40,7 +33,7 @@ export default function LearnerViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: learner, isLoading } = useLearnerQuery(id);
-  const { mutate: deleteLearner, isPending: isDeleting } = useDeleteLearner();
+  const { mutate: deleteLearner } = useDeleteLearner();
   const { data: schoolsData } = useSchoolsQuery();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -58,7 +51,6 @@ export default function LearnerViewPage() {
 
   const school = schoolsMap[learner.schoolId];
   const cls    = learner.classId ? classesMap[learner.classId] : null;
-  const ss     = STATUS_STYLES[learner.status] || STATUS_STYLES.inactive;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>

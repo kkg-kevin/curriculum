@@ -542,7 +542,7 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
 /* ── Sidebar ───────────────────────────────────────────────────────────── */
 
 function AcademicYearSidebar({
-  groups, publishedVersion, selectedVersionId,
+  groups, selectedVersionId,
   onSelectVersion, onAddYear, canAddYear, addYearDisabledReason,
 }) {
   const [openGroupIds, setOpenGroupIds] = useState(() => {
@@ -850,7 +850,6 @@ export default function AcademicYearPage() {
           {/* RIGHT: sidebar */}
           <AcademicYearSidebar
             groups={groups}
-            publishedVersion={publishedVersion}
             selectedVersionId={selectedVersion?.id}
             onSelectVersion={handleSelectVersion}
             onAddYear={() => setMode("create-group")}

@@ -17,10 +17,6 @@ const CurriculumVersionModel = {
     return readAll().filter((v) => v.curriculumId === curriculumId).sort((a, b) => b.versionNumber - a.versionNumber);
   },
 
-  findCurrent(curriculumId) {
-    return readAll().find((v) => v.curriculumId === curriculumId && v.isCurrent) || null;
-  },
-
   findById(id) {
     return readAll().find((v) => v.id === id) || null;
   },
@@ -41,21 +37,6 @@ const CurriculumVersionModel = {
     return all[idx];
   },
 
-  setAllNotCurrent(curriculumId) {
-    const all = readAll();
-    writeAll(all.map((v) => (v.curriculumId === curriculumId ? { ...v, isCurrent: false } : v)));
-  },
-
-  deactivateAllActive(curriculumId) {
-    const all = readAll();
-    writeAll(
-      all.map((v) =>
-        v.curriculumId === curriculumId && v.status === "active"
-          ? { ...v, status: "inactive", updatedAt: new Date().toISOString() }
-          : v
-      )
-    );
-  },
 };
 
 module.exports = CurriculumVersionModel;

@@ -46,6 +46,10 @@ const SessionModel = {
     return created;
   },
 
+  findAll() {
+    return readAll();
+  },
+
   findByCourseId(courseId) {
     return readAll()
       .filter((s) => s.courseId === courseId)

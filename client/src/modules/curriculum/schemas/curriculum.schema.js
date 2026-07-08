@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const FRAMEWORKS = ["CBC", "8-4-4", "British", "IB", "American", "French", "German", "Custom"];
-export const CYCLE_MODELS = ["terms", "semesters", "custom"];
 export const CURRICULUM_TYPES = ["Core", "Complementary", "Substitutional"];
 
 export const curriculumDetailsSchema = z.object({

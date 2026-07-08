@@ -30,8 +30,9 @@ const CompetencyService = {
   getCurriculumCompetencies(curriculumId) {
     const links = CurriculumCompetencyLinkModel.findByCurriculumId(curriculumId);
     const comps = CompetencyModel.findByIds(links.map((l) => l.competencyId));
+    const linksByCompetencyId = new Map(links.map((l) => [l.competencyId, l]));
     return comps.map((c) => {
-      const link = links.find((l) => l.competencyId === c.id);
+      const link = linksByCompetencyId.get(c.id);
       return {
         ...c,
         minimumThreshold: link?.minimumThreshold ?? 60,

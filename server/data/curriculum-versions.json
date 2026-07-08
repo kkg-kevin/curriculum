@@ -4294,5 +4294,96 @@
     ],
     "createdAt": "2026-07-07T06:39:38.618Z",
     "updatedAt": "2026-07-07T06:39:39.760Z"
+  },
+  {
+    "id": "429211a7-fb52-434d-9258-a62f013c031e",
+    "curriculumId": "71202f88-da66-4b8a-ba55-17e14be72815",
+    "academicYearId": "b0913db8-58aa-4e76-b002-c17344b2dbe3",
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "class 1",
+            "courses": [
+              {
+                "id": "e8658ada-1b15-4729-9f41-2204cdb25000",
+                "name": "jvnwuosnvubuow",
+                "code": ""
+              },
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "class 2",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": ""
+              },
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "class 3",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": ""
+              },
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-07T14:25:52.018Z",
+    "updatedAt": "2026-07-07T14:25:52.018Z"
+  },
+  {
+    "id": "9198c307-ed00-497d-ab9f-853b296e0690",
+    "curriculumId": "661b8e14-0c95-48de-92ec-ae8c7cf778e0",
+    "academicYearId": "05679858-8c76-401c-9f9e-0ce5921f7cbc",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "CLass 101",
+            "courses": [
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-08T05:17:51.540Z",
+    "updatedAt": "2026-07-08T05:17:54.130Z"
   }
 ]

@@ -53,21 +53,6 @@ function DetailRow({ icon, label, value }) {
   );
 }
 
-function ComingSoonSection({ title, icon, description }) {
-  return (
-    <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px dashed #E5E7EB", overflow: "hidden" }}>
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
-        <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#9CA3AF" }}>{title}</h2>
-      </div>
-      <div style={{ padding: "32px 20px", textAlign: "center" }}>
-        <div style={{ fontSize: "32px", marginBottom: "10px" }}>{icon}</div>
-        <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#6B7280" }}>Coming soon</p>
-        <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>{description}</p>
-      </div>
-    </div>
-  );
-}
-
 export default function TeacherViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();

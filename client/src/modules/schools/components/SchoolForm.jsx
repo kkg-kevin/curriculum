@@ -1,4 +1,4 @@
-﻿import { useFormContext, Controller } from "react-hook-form";
+﻿import { useFormContext } from "react-hook-form";
 import { KENYA_COUNTIES } from "../schemas/school.schema";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 
@@ -78,7 +78,7 @@ function Input({ name, placeholder, type = "text", ...rest }) {
 }
 
 export default function SchoolForm() {
-  const { register, control, formState: { errors } } = useFormContext();
+  const { register, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
 

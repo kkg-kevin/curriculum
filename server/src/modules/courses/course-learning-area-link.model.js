@@ -17,10 +17,6 @@ const CourseLearningAreaLinkModel = {
     return read().filter((l) => l.courseId === courseId);
   },
 
-  findOne(courseId, learningAreaId) {
-    return read().find((l) => l.courseId === courseId && l.learningAreaId === learningAreaId) || null;
-  },
-
   link(courseId, learningAreaId) {
     const all = read();
     const existing = all.find((l) => l.courseId === courseId && l.learningAreaId === learningAreaId);

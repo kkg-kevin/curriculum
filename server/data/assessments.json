@@ -1194,6 +1194,7 @@
     ],
     "items": [
       {
+        "id": "8b1b78cf-18bf-481b-87fd-ece2010445cd",
         "question": "Which loop is best suited when you don't know in advance how many times to repeat?",
         "kind": "mcqSingle",
         "sectionId": "sec-concept",
@@ -1213,6 +1214,7 @@
         "submissionKinds": []
       },
       {
+        "id": "63807d06-5c6d-45dd-a13f-302c7a4ebea5",
         "question": "Functions help avoid repeating the same code multiple times.",
         "kind": "trueFalse",
         "sectionId": "sec-concept",
@@ -1227,6 +1229,7 @@
         "submissionKinds": []
       },
       {
+        "id": "9495f9a0-fe4c-4325-83ad-28c02cca3d20",
         "question": "A named container that stores a value which can change is called a ___.",
         "kind": "fillBlank",
         "sectionId": "sec-concept",
@@ -1243,6 +1246,7 @@
         "submissionKinds": []
       },
       {
+        "id": "7c8c12aa-01dd-4fd4-a1d3-87380eee0cce",
         "question": "Match each symbol to its meaning in pseudocode.",
         "kind": "matching",
         "sectionId": "sec-concept",
@@ -1270,6 +1274,7 @@
         "submissionKinds": []
       },
       {
+        "id": "80df69c4-fc52-4a13-bda9-dce26412d707",
         "question": "Order the steps to write and run a simple program.",
         "kind": "ordering",
         "sectionId": "sec-concept",
@@ -1289,6 +1294,7 @@
         "submissionKinds": []
       },
       {
+        "id": "d405f96a-a90b-4fbe-9ce8-6129dc1f9d9d",
         "question": "Explain, step by step, how you would design a program to calculate the average of a list of numbers.",
         "kind": "longAnswer",
         "sectionId": "sec-written",
@@ -1303,6 +1309,7 @@
         "submissionKinds": []
       },
       {
+        "id": "e87f03fb-3466-4473-88b0-f2c742e4de24",
         "question": "Discuss why readable code (good variable names, comments) matters, with examples.",
         "kind": "essay",
         "sectionId": "sec-written",
@@ -1317,6 +1324,7 @@
         "submissionKinds": []
       },
       {
+        "id": "0dd3ee92-eac1-4568-b93e-f6b4a985a048",
         "question": "What part of programming do you still find confusing, and why?",
         "kind": "reflection",
         "sectionId": "sec-written",
@@ -1331,6 +1339,7 @@
         "submissionKinds": []
       },
       {
+        "id": "bf04ff48-c610-471c-93c0-15be29f799d6",
         "question": "Your program crashes when a user enters text instead of a number. How would you handle this?",
         "kind": "scenarioResponse",
         "sectionId": "sec-written",
@@ -1345,6 +1354,7 @@
         "submissionKinds": []
       },
       {
+        "id": "2a36bbfb-d665-4aab-a4eb-e96edec253d6",
         "question": "Using pseudocode or a flowchart, plan a program that checks if a number is even or odd.",
         "kind": "practicalTask",
         "sectionId": "sec-written",
@@ -1362,6 +1372,7 @@
         ]
       },
       {
+        "id": "ce5c2d26-a43f-4518-9f76-2bdefde3d4f9",
         "question": "Upload the source code for a program that calculates the average of a list of numbers.",
         "kind": "codeUpload",
         "sectionId": "sec-submit",
@@ -1380,6 +1391,7 @@
         "submissionKinds": []
       },
       {
+        "id": "dba883be-8663-42f1-9168-ea9656fdb095",
         "question": "Upload a written explanation of your solution and any challenges you faced.",
         "kind": "documentUpload",
         "sectionId": "sec-submit",
@@ -1397,6 +1409,7 @@
         "submissionKinds": []
       },
       {
+        "id": "bcf278b9-4cb9-4433-9f27-5b70693be73e",
         "question": "Upload a photo or screenshot of your flowchart or pseudocode plan.",
         "kind": "imageUpload",
         "sectionId": "sec-submit",
@@ -1415,6 +1428,7 @@
         "submissionKinds": []
       },
       {
+        "id": "070313f3-dad2-4eb4-a51a-907eaa73dc6d",
         "question": "Record a short video walking through your code and explaining how it works.",
         "kind": "videoUpload",
         "sectionId": "sec-submit",
@@ -1431,6 +1445,7 @@
         "submissionKinds": []
       },
       {
+        "id": "11ff6779-1ed0-4936-899c-139a1d18c86f",
         "question": "Share a link to any reference or tutorial you used to complete this assignment.",
         "kind": "externalLink",
         "sectionId": "sec-submit",
@@ -1447,24 +1462,28 @@
     ],
     "rubric": [
       {
+        "id": "0825c79f-200c-442f-9d64-f9ec63914fb2",
         "criterion": "Correctness",
         "description": "Does the logic or solution actually work as intended?",
         "points": 30,
         "sectionId": null
       },
       {
+        "id": "e96a8e0c-44a7-4e28-b89e-48b6e7090a31",
         "criterion": "Clarity of Explanation",
         "description": "How clearly the written tasks are explained.",
         "points": 25,
         "sectionId": null
       },
       {
+        "id": "89af8a40-2cc7-4ab3-a827-46c1cb7d9dc7",
         "criterion": "Code Quality",
         "description": "Readability and organization of submitted code.",
         "points": 25,
         "sectionId": null
       },
       {
+        "id": "32149583-41b0-478d-b26a-a3acfdb2ad60",
         "criterion": "Completeness",
         "description": "All parts of the assignment were attempted.",
         "points": 20,
@@ -1476,7 +1495,7 @@
     "milestones": [],
     "id": "32b39932-175d-4159-aa65-c67085b17fa4",
     "createdAt": "2026-07-06T12:22:14.384Z",
-    "updatedAt": "2026-07-06T12:22:14.385Z"
+    "updatedAt": "2026-07-07T14:25:26.099Z"
   },
   {
     "name": "Robotics & Programming Classroom Observation",

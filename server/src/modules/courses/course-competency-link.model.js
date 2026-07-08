@@ -17,10 +17,6 @@ const CourseCompetencyLinkModel = {
     return read().filter((l) => l.courseId === courseId);
   },
 
-  findOne(courseId, competencyId) {
-    return read().find((l) => l.courseId === courseId && l.competencyId === competencyId) || null;
-  },
-
   link(courseId, competencyId) {
     const all = read();
     const existing = all.find((l) => l.courseId === courseId && l.competencyId === competencyId);

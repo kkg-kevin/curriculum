@@ -1,4 +1,5 @@
-﻿import { useNavigate } from "react-router-dom";
+﻿import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
@@ -439,22 +440,22 @@ export default function DashboardPage() {
   const totalTeachers  = teachers.length;
   const totalClasses   = classes.length;
 
-  const activeSchools  = schools.filter((s) => s.status === "active").length;
-  const activeLearners = learners.filter((l) => l.status === "active").length;
-  const activeTeachers = teachers.filter((t) => t.status === "active").length;
-  const activeClasses  = classes.filter((c) => c.status === "active").length;
+  const activeSchools  = useMemo(() => schools.filter((s) => s.status === "active").length, [schools]);
+  const activeLearners = useMemo(() => learners.filter((l) => l.status === "active").length, [learners]);
+  const activeTeachers = useMemo(() => teachers.filter((t) => t.status === "active").length, [teachers]);
+  const activeClasses  = useMemo(() => classes.filter((c) => c.status === "active").length, [classes]);
 
   /* ── Curriculum-derived stats ── */
-  const totalCurriculumClasses = curricula.reduce((s, c) => s + (c.classes?.length   || 0), 0);
-  const totalCurriculumPeriods = curricula.reduce((s, c) => s + (c.periods?.length   || 0), 0);
-  const totalCourses           = curricula.reduce((s, c) => s + (c.coursesCount      || 0), 0);
-  const publishedCount         = curricula.filter((c) => c.effectiveStatus === "published").length;
-  const typesInUse             = [...new Set(curricula.map((c) => c.curriculumType).filter(Boolean))];
+  const totalCurriculumClasses = useMemo(() => curricula.reduce((s, c) => s + (c.classes?.length || 0), 0), [curricula]);
+  const totalCurriculumPeriods = useMemo(() => curricula.reduce((s, c) => s + (c.periods?.length || 0), 0), [curricula]);
+  const totalCourses           = useMemo(() => curricula.reduce((s, c) => s + (c.coursesCount    || 0), 0), [curricula]);
+  const publishedCount         = useMemo(() => curricula.filter((c) => c.effectiveStatus === "published").length, [curricula]);
+  const typesInUse             = useMemo(() => [...new Set(curricula.map((c) => c.curriculumType).filter(Boolean))], [curricula]);
 
   /* ── Recent items (last 4, sorted by creation date) ── */
-  const recentSchools  = [...schools].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4);
-  const recentLearners = [...learners].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4);
-  const recentCurricula = [...curricula].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)).slice(0, 5);
+  const recentSchools  = useMemo(() => [...schools].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4), [schools]);
+  const recentLearners = useMemo(() => [...learners].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 4), [learners]);
+  const recentCurricula = useMemo(() => [...curricula].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)).slice(0, 5), [curricula]);
 
   const isLoading = curriculaLoading;
 
