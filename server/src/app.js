@@ -2,6 +2,8 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+const authRoutes = require("./modules/auth/auth.routes");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
 const competencyRoutes = require("./modules/settings/competencies/competency.routes");
 const learningAreaRoutes = require("./modules/settings/learning-areas/learning-area.routes");
@@ -14,6 +16,7 @@ const courseRoutes = require("./modules/courses/course.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
+const { protect } = require("./shared/middleware/auth.middleware");
 
 const app = express();
 
@@ -22,6 +25,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
@@ -29,17 +33,22 @@ app.get("/", (req, res) => {
   res.json({ message: "API is running" });
 });
 
-app.use("/api/curricula", curriculumRoutes);
-app.use("/api/competencies", competencyRoutes);
-app.use("/api/learning-areas", learningAreaRoutes);
-app.use("/api/inventory", inventoryRoutes);
-app.use("/api/schools", schoolRoutes);
-app.use("/api/teachers", teacherRoutes);
-app.use("/api/classes", classRoutes);
-app.use("/api/learners", learnerRoutes);
-app.use("/api/courses", courseRoutes);
-app.use("/api/assessments", assessmentRoutes);
-app.use("/api/uploads", uploadRoutes);
+app.use("/api/auth", authRoutes);
+
+// Everything below requires a logged-in session. Only the "admin" role exists today (it can
+// see all of this); teacher/learner accounts will get their own scoped middleware per-route
+// once those roles are actually issued.
+app.use("/api/curricula", protect, curriculumRoutes);
+app.use("/api/competencies", protect, competencyRoutes);
+app.use("/api/learning-areas", protect, learningAreaRoutes);
+app.use("/api/inventory", protect, inventoryRoutes);
+app.use("/api/schools", protect, schoolRoutes);
+app.use("/api/teachers", protect, teacherRoutes);
+app.use("/api/classes", protect, classRoutes);
+app.use("/api/learners", protect, learnerRoutes);
+app.use("/api/courses", protect, courseRoutes);
+app.use("/api/assessments", protect, assessmentRoutes);
+app.use("/api/uploads", protect, uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
