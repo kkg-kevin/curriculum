@@ -78,28 +78,6 @@ export function useCourseCompetencies(courseId) {
   });
 }
 
-export function useLinkCourseCompetency(courseId) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (competencyId) => courseApi.linkCompetency(courseId, competencyId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(courseId) });
-    },
-    onError: (err) => toast.error(err.message || "Failed to add competency"),
-  });
-}
-
-export function useUnlinkCourseCompetency(courseId) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (competencyId) => courseApi.unlinkCompetency(courseId, competencyId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(courseId) });
-    },
-    onError: (err) => toast.error(err.message || "Failed to remove competency"),
-  });
-}
-
 /* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
 
 export function useCourseLearningAreas(courseId) {
@@ -107,28 +85,6 @@ export function useCourseLearningAreas(courseId) {
     queryKey: COURSE_KEYS.learningAreas(courseId),
     queryFn: () => courseApi.getCourseLearningAreas(courseId),
     enabled: !!courseId,
-  });
-}
-
-export function useLinkCourseLearningArea(courseId) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (learningAreaId) => courseApi.linkLearningArea(courseId, learningAreaId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(courseId) });
-    },
-    onError: (err) => toast.error(err.message || "Failed to add learning area"),
-  });
-}
-
-export function useUnlinkCourseLearningArea(courseId) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (learningAreaId) => courseApi.unlinkLearningArea(courseId, learningAreaId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(courseId) });
-    },
-    onError: (err) => toast.error(err.message || "Failed to remove learning area"),
   });
 }
 

@@ -1,21 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { classApi } from "../services/classApi";
 
 export const CLASS_KEYS = {
   all:    ["classes"],
-  list:   (filters) => ["classes", "list", filters],
   detail: (id)      => ["classes", "detail", id],
 };
-
-export function useClassesQuery() {
-  const filters = useSelector((state) => state.classes.filters);
-  return useQuery({
-    queryKey: CLASS_KEYS.list(filters),
-    queryFn:  () => classApi.getAll(filters),
-  });
-}
 
 export function useAllClassesQuery() {
   return useQuery({
@@ -29,18 +19,6 @@ export function useClassQuery(id) {
     queryKey: CLASS_KEYS.detail(id),
     queryFn:  () => classApi.getById(id),
     enabled:  !!id,
-  });
-}
-
-export function useCreateClass() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: classApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
-      toast.success("Class created successfully!");
-    },
-    onError: (err) => toast.error(err.message || "Failed to create class"),
   });
 }
 

@@ -100,9 +100,10 @@ const AssessmentService = {
   async getAssessmentInventory(assessmentId) {
     const links = AssessmentInventoryLinkModel.findByAssessmentId(assessmentId);
     const items = InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
+    const itemsById = new Map(items.map((i) => [i.id, i]));
     return links
       .map((link) => {
-        const item = items.find((i) => i.id === link.inventoryItemId);
+        const item = itemsById.get(link.inventoryItemId);
         return item ? { ...item, quantity: link.quantity } : null;
       })
       .filter(Boolean);

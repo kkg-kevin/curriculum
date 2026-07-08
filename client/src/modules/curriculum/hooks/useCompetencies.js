@@ -10,7 +10,6 @@ const KEYS = {
   areas:            (cid) => ["learning-areas", cid],
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
-  levels:           (cid) => ["progress-levels", cid],
   assessments:      (cid) => ["assessments", cid],
   assessmentTypes:  (cid) => ["assessment-types", cid],
   evidenceTypes:    (cid) => ["evidence-types", cid],
@@ -186,18 +185,6 @@ export function useLadder(curriculumId) {
   });
 }
 
-export function useUpdateLadder(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (rungs) => competenciesApi.updateLadder(curriculumId, rungs),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
-      toast.success("Progression ladder saved");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save ladder"),
-  });
-}
-
 /* ── Age Categories ─────────────────────────────────────────────────────── */
 
 export function useAgeCategories(curriculumId) {
@@ -245,63 +232,7 @@ export function useDeleteAgeCategory(curriculumId) {
   });
 }
 
-/* ── Progress Levels ────────────────────────────────────────────────────── */
-
-export function useProgressLevels(curriculumId) {
-  return useQuery({
-    queryKey:  KEYS.levels(curriculumId),
-    queryFn:   () => competenciesApi.getProgressLevels(curriculumId),
-    enabled:   !!curriculumId,
-    staleTime: STALE,
-  });
-}
-
-export function useCreateProgressLevel(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createProgressLevel(curriculumId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.levels(curriculumId) });
-      toast.success("Level created");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create level"),
-  });
-}
-
-export function useUpdateProgressLevel(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateProgressLevel(curriculumId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.levels(curriculumId) });
-      toast.success("Level updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update level"),
-  });
-}
-
-export function useDeleteProgressLevel(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteProgressLevel(curriculumId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.levels(curriculumId) });
-      toast.success("Level deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete level"),
-  });
-}
-
 /* ── Assessments ────────────────────────────────────────────────────────── */
-
-export function useAssessments(curriculumId) {
-  return useQuery({
-    queryKey:  KEYS.assessments(curriculumId),
-    queryFn:   () => competenciesApi.getAssessments(curriculumId),
-    enabled:   !!curriculumId,
-    staleTime: STALE,
-  });
-}
 
 export function useCreateAssessment(curriculumId) {
   const qc = useQueryClient();
@@ -386,27 +317,6 @@ export function useDeleteAssessmentType(curriculumId) {
   });
 }
 
-export function useUpdateScoring(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, evidenceWeights }) => competenciesApi.updateScoring(curriculumId, id, evidenceWeights),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.assessmentTypes(curriculumId) });
-      toast.success("Scoring saved");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save scoring"),
-  });
-}
-
-export function useCompetencyWeights(curriculumId) {
-  return useQuery({
-    queryKey:  KEYS.compWeights(curriculumId),
-    queryFn:   () => competenciesApi.getCompetencyWeights(curriculumId),
-    enabled:   !!curriculumId,
-    staleTime: STALE,
-  });
-}
-
 export function useUpdateGlobalScoring(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
@@ -422,13 +332,6 @@ export function useUpdateGlobalScoring(curriculumId) {
       toast.success("Scoring configuration saved");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to save scoring"),
-  });
-}
-
-export function useCalculateScore(curriculumId) {
-  return useMutation({
-    mutationFn: ({ id, evidenceScores }) => competenciesApi.calculateScore(curriculumId, id, evidenceScores),
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to calculate score"),
   });
 }
 

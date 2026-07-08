@@ -28,9 +28,11 @@ const CourseService = {
   },
 
   async getAllCourses() {
+    const countByCourseId = new Map();
+    SessionModel.findAll().forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
     return CourseModel.findAll().map((course) => ({
       ...course,
-      sessionCount: SessionModel.findByCourseId(course.id).length,
+      sessionCount: countByCourseId.get(course.id) || 0,
     }));
   },
 

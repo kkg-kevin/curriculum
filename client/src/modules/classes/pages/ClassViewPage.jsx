@@ -8,8 +8,6 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const ACCENT = "#25476a";
-
 function DetailRow({ label, value, empty = "—" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -23,7 +21,7 @@ export default function ClassViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: cls, isLoading } = useClassQuery(id);
-  const { mutate: deleteClass, isPending: isDeleting } = useDeleteClass();
+  const { mutate: deleteClass } = useDeleteClass();
   const { data: schoolsData } = useSchoolsQuery();
   const [confirmDelete, setConfirmDelete] = useState(false);
 

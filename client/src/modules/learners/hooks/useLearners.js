@@ -1,34 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { learnerApi } from "../services/learnerApi";
 
 export const LEARNER_KEYS = {
   all:    ["learners"],
-  list:   (filters) => ["learners", "list", filters],
   detail: (id)      => ["learners", "detail", id],
 };
-
-export function useLearnersQuery() {
-  const filters = useSelector((state) => state.learners.filters);
-  return useQuery({
-    queryKey: LEARNER_KEYS.list(filters),
-    queryFn:  () => learnerApi.getAll(filters),
-  });
-}
 
 export function useAllLearnersQuery() {
   return useQuery({
     queryKey: ["learners", "all"],
     queryFn:  () => learnerApi.getAll({}),
-  });
-}
-
-export function useSchoolLearnersQuery(schoolId) {
-  return useQuery({
-    queryKey: ["learners", "bySchool", schoolId],
-    queryFn:  () => learnerApi.getAll({ schoolId }),
-    enabled:  !!schoolId,
   });
 }
 

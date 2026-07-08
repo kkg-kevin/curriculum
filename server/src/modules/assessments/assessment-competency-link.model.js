@@ -17,10 +17,6 @@ const AssessmentCompetencyLinkModel = {
     return read().filter((l) => l.assessmentId === assessmentId);
   },
 
-  findOne(assessmentId, competencyId) {
-    return read().find((l) => l.assessmentId === assessmentId && l.competencyId === competencyId) || null;
-  },
-
   link(assessmentId, competencyId) {
     const all = read();
     const existing = all.find((l) => l.assessmentId === assessmentId && l.competencyId === competencyId);

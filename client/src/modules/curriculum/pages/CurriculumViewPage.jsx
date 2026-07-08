@@ -32,16 +32,6 @@ function resolvePeriodDates(periodName, activeYear, curriculumPeriods) {
   };
 }
 
-const FRAMEWORK_COLORS = {
-  CBC:       { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  IGCSE:     { bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
-  IB:        { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-  National:  { bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
-  Cambridge: { bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
-  American:  { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
-  Custom:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-};
-
 const STATUS_CONFIG = {
   published: { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", dot: "#feb139", label: "Published" },
   active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", dot: "#38aae1", label: "Active"    },
@@ -294,7 +284,6 @@ export default function CurriculumViewPage() {
   const periods          = curriculum.periods || [];
   const classes          = curriculum.classes || [];
   const model            = curriculum.academicCycleModel || "terms";
-  const fwColors         = FRAMEWORK_COLORS[curriculum.framework] || FRAMEWORK_COLORS.Custom;
   const curriculumType   = curriculum.curriculumType || null;
 
   // Resolve published academic year from new two-level API (groups → versions)

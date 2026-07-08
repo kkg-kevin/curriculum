@@ -25,18 +25,6 @@ export function useCreateCurriculumVersion(curriculumId) {
   });
 }
 
-export function useEditCurriculumVersion(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ vId, data }) => curriculumVersionApi.edit(curriculumId, vId, data),
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
-      toast.success(`Version ${data.versionNumber} saved!`);
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save version"),
-  });
-}
-
 export function useChangeCurriculumVersionStatus(curriculumId) {
   const qc = useQueryClient();
   return useMutation({

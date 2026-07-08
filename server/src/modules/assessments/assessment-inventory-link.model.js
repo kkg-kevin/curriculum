@@ -18,10 +18,6 @@ const AssessmentInventoryLinkModel = {
     return read().filter((l) => l.assessmentId === assessmentId);
   },
 
-  findOne(assessmentId, inventoryItemId) {
-    return read().find((l) => l.assessmentId === assessmentId && l.inventoryItemId === inventoryItemId) || null;
-  },
-
   // Upsert — re-linking an already-linked item just overwrites its quantity.
   link(assessmentId, inventoryItemId, quantity) {
     const all = read();

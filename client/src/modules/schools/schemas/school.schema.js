@@ -10,8 +10,6 @@ export const KENYA_COUNTIES = [
   "Uasin Gishu","Vihiga","Wajir","West Pokot",
 ];
 
-export const SCHOOL_STATUSES = ["active", "inactive"];
-
 export const schoolSchema = z.object({
   name: z.string().min(1, "School name is required").max(150, "Max 150 characters"),
   code: z
