@@ -4,42 +4,145 @@
     "name": "1. Computational Thinking & Problem Decomposition",
     "description": "",
     "createdAt": "2026-06-25T10:18:46.354Z",
-    "updatedAt": "2026-07-03T14:03:10.043Z"
+    "updatedAt": "2026-07-09T11:23:44.209Z",
+    "indicators": [
+      {
+        "name": "Breaks down problems",
+        "description": "Splits a complex problem into smaller, manageable sub-problems.",
+        "id": "f22ef693-0720-469c-9227-e74bac7464dd"
+      },
+      {
+        "name": "Identifies patterns",
+        "description": "Recognizes similarities or repeating structures across problems.",
+        "id": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a"
+      },
+      {
+        "name": "Designs step-by-step solutions",
+        "description": "Sequences logical steps (an algorithm) needed to reach a solution.",
+        "id": "9bb73790-dc33-4e8e-84a6-966f758d53b0"
+      },
+      {
+        "name": "Evaluates solution efficiency",
+        "description": "Considers whether a solution is clear, complete, and reasonably efficient.",
+        "id": "f0c20318-5f55-4b15-8303-7ea24092f191"
+      }
+    ]
   },
   {
     "id": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
     "name": "2. Programming & Implementation Skills",
     "description": "The learner can translate logical solutions into functional code using appropriate programming constructs such as variables, conditionals, loops, and functions. They demonstrate the ability to write clear, organized code, test outputs, identify errors, and apply basic debugging techniques to improve program correctness and efficiency.",
     "createdAt": "2026-06-25T10:19:17.027Z",
-    "updatedAt": "2026-06-25T10:19:17.027Z"
+    "updatedAt": "2026-07-09T11:24:03.496Z",
+    "indicators": [
+      {
+        "name": "Uses core programming constructs",
+        "description": "Applies variables, conditionals, loops, and functions correctly to build a working program.",
+        "id": "9d3880d3-ece0-40da-88de-9dd5019707f0"
+      },
+      {
+        "name": "Writes organized, readable code",
+        "description": "Structures code clearly with sensible naming and formatting.",
+        "id": "0431502c-8319-484f-910b-996422bee428"
+      },
+      {
+        "name": "Tests program output",
+        "description": "Runs the program and checks whether the output matches what was expected.",
+        "id": "bbe35b8e-df25-4106-abd5-429a9bc189d6"
+      },
+      {
+        "name": "Debugs errors",
+        "description": "Identifies the cause of an error and applies a fix to correct it.",
+        "id": "c8f1569f-8945-4c02-8a7d-a70bac24aea4"
+      }
+    ]
   },
   {
     "id": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
     "name": "3. Digital Creativity & Project Development",
     "description": "The learner applies acquired technical skills to design and develop complete digital projects such as games, animations, or simple applications. They demonstrate creativity in idea generation, effective use of tools and features, and the ability to integrate multiple concepts into a coherent and functional solution.",
     "createdAt": "2026-06-25T10:19:33.282Z",
-    "updatedAt": "2026-06-25T10:19:33.282Z"
+    "updatedAt": "2026-07-09T11:24:03.683Z",
+    "indicators": [
+      {
+        "name": "Generates original project ideas",
+        "description": "Proposes creative concepts for a game, animation, or application.",
+        "id": "ab3d2c5a-9a73-44c8-992f-65478e005309"
+      },
+      {
+        "name": "Uses tools and features effectively",
+        "description": "Applies the relevant software or platform features to build the project.",
+        "id": "1532d350-b895-4cac-b619-2d1eaf85e50a"
+      },
+      {
+        "name": "Integrates multiple concepts",
+        "description": "Combines several skills or components into one coherent, functional project.",
+        "id": "58e0dd6b-a78a-4029-a399-739eb3d77de0"
+      },
+      {
+        "name": "Completes a functional project",
+        "description": "Delivers a finished project that works as intended.",
+        "id": "bef9080f-d582-4251-a0f1-fe382605c4d3"
+      }
+    ]
   },
   {
     "id": "c3d95126-1121-4de8-bdab-14adbf00d218",
     "name": "4. AI & Data Literacy Awareness",
     "description": "The learner demonstrates an understanding of foundational concepts in artificial intelligence and data usage, including how systems process inputs and generate outputs. They can interact with basic AI tools, recognize the role of data in training systems, and show awareness of key issues such as bias, accuracy, and responsible use of AI technologies.",
     "createdAt": "2026-06-25T10:19:49.869Z",
-    "updatedAt": "2026-06-25T10:19:49.869Z"
+    "updatedAt": "2026-07-09T11:24:03.811Z",
+    "indicators": [
+      {
+        "name": "Explains how AI systems work",
+        "description": "Describes, in simple terms, how an AI system takes inputs and produces outputs.",
+        "id": "573eb2fa-d695-4063-8c62-ad886b12775a"
+      },
+      {
+        "name": "Interacts with AI tools",
+        "description": "Uses a basic AI tool appropriately to complete a task.",
+        "id": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7"
+      },
+      {
+        "name": "Recognizes the role of data",
+        "description": "Explains why data is needed to train an AI system.",
+        "id": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28"
+      },
+      {
+        "name": "Identifies bias and responsible use",
+        "description": "Points out potential bias, accuracy issues, or ethical concerns in AI use.",
+        "id": "4e1c27d6-465e-42d4-ae51-6854f9e63cfa"
+      }
+    ]
   },
   {
     "id": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
     "name": "5. Collaboration, Communication & Digital Citizenship",
     "description": "The learner effectively collaborates with peers in shared tasks, clearly communicates ideas, processes, and outcomes, and engages constructively in discussions. They also demonstrate responsible digital behavior, including respect for others, safe use of technology, and adherence to ethical standards in online and collaborative environments.",
     "createdAt": "2026-06-25T10:20:10.642Z",
-    "updatedAt": "2026-06-25T10:20:10.642Z"
-  },
-  {
-    "id": "0f9bdf94-42e3-4dbb-a2d6-dae18d7e383a",
-    "name": "dev",
-    "description": "dev 101",
-    "createdAt": "2026-07-06T11:42:19.969Z",
-    "updatedAt": "2026-07-06T11:42:19.969Z"
+    "updatedAt": "2026-07-09T11:24:03.939Z",
+    "indicators": [
+      {
+        "name": "Collaborates on shared tasks",
+        "description": "Works effectively with peers to complete a group task.",
+        "id": "325e3232-5bda-43de-a1fb-010f486181aa"
+      },
+      {
+        "name": "Communicates ideas clearly",
+        "description": "Explains ideas, processes, and outcomes so others can understand them.",
+        "id": "1c6e3d95-0c78-4cad-b0a8-78894f33e2fa"
+      },
+      {
+        "name": "Engages constructively in discussion",
+        "description": "Contributes to discussions respectfully and takes others input into account.",
+        "id": "bc446d61-efcf-4091-ba12-6320d11d45f1"
+      },
+      {
+        "name": "Practices responsible digital behavior",
+        "description": "Demonstrates safe, respectful, and ethical use of technology online.",
+        "id": "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba"
+      }
+    ]
   },
   {
     "id": "8efe0129-a518-4287-9b27-faba52553004",

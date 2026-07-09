@@ -4,10 +4,9 @@ const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
 });
 
-// Threshold/weight are how THIS curriculum evaluates an adopted competency.
+// Threshold is how THIS curriculum evaluates an adopted competency.
 const updateCompetencyLinkSchema = z.object({
   minimumThreshold: z.number().min(0).max(100).optional(),
-  weight:           z.number().min(0).max(100).optional(),
 });
 
 const createIndicatorSchema = z.object({
@@ -136,11 +135,14 @@ const createEvidenceTypeSchema = z.object({
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
 
 const createPerformanceBandSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(100),
-  description: z.string().max(1000).optional().default(""),
-  criteria:    z.array(z.string().min(1).max(500)).optional().default([]),
-  minScore:    z.number().min(0).max(100).optional().default(0),
-  maxScore:    z.number().min(0).max(100).optional().default(100),
+  name:          z.string().min(1, "Name is required").max(100),
+  description:   z.string().max(1000).optional().default(""),
+  criteria:      z.array(z.string().min(1).max(500)).optional().default([]),
+  minScore:      z.number().min(0).max(100).optional().default(0),
+  maxScore:      z.number().min(0).max(100).optional().default(100),
+  // Competencies (from the global catalog, adopted by this curriculum) that this band
+  // draws on — how they get used is decided elsewhere, this just records the link.
+  competencyIds: z.array(z.string().min(1)).optional().default([]),
 });
 
 const updatePerformanceBandSchema = createPerformanceBandSchema.partial();

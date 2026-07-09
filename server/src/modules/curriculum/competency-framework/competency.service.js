@@ -36,7 +36,6 @@ const CompetencyService = {
       return {
         ...c,
         minimumThreshold: link?.minimumThreshold ?? 60,
-        weight: link?.weight ?? 0,
       };
     });
   },
@@ -85,7 +84,27 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    return CurriculumCompetencyIndicatorModel.findByLink(curriculumId, competencyId);
+    const existing = CurriculumCompetencyIndicatorModel.findByLink(curriculumId, competencyId);
+    if (existing.length > 0) return existing;
+
+    // First time this curriculum's indicators are viewed for this competency — seed them
+    // from the global competency's base indicators (Settings), split evenly to 100% as a
+    // starting point. From here they're this curriculum's own copies: editing, reweighting,
+    // adding, or deleting them never touches the global catalog.
+    const globalIndicators = CompetencyModel.findById(competencyId)?.indicators || [];
+    if (globalIndicators.length === 0) return [];
+
+    const evenWeight = Math.floor(100 / globalIndicators.length);
+    const remainder  = 100 - evenWeight * globalIndicators.length;
+    return globalIndicators.map((gi, idx) =>
+      CurriculumCompetencyIndicatorModel.create({
+        curriculumId,
+        competencyId,
+        name:        gi.name,
+        description: gi.description || "",
+        weight:      evenWeight + (idx === globalIndicators.length - 1 ? remainder : 0),
+      })
+    );
   },
 
   createCompetencyIndicator(curriculumId, competencyId, data) {

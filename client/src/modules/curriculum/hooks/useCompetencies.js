@@ -53,7 +53,7 @@ export function useUnlinkCompetency(curriculumId) {
   });
 }
 
-// Threshold/weight are how THIS curriculum evaluates an adopted competency.
+// Threshold is how THIS curriculum evaluates an adopted competency.
 export function useUpdateCompetencyLink(curriculumId) {
   const qc = useQueryClient();
   return useMutation({

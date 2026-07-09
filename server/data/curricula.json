@@ -34,58 +34,7 @@
     ],
     "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "createdAt": "2026-06-25T09:29:38.606Z",
-    "updatedAt": "2026-07-08T08:15:38.488Z",
+    "updatedAt": "2026-07-09T12:40:20.358Z",
     "competencyWeights": []
-  },
-  {
-    "name": "Sample Demo Curriculum",
-    "code": "DEMO-CURR-01",
-    "academicYear": "",
-    "description": "Sample curriculum for verifying Score Evidence wiring.",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "Core",
-    "academicCycleModel": "custom",
-    "periods": [
-      {
-        "name": "Period 1",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      }
-    ],
-    "classes": [
-      "Class 1",
-      "Class 2"
-    ],
-    "id": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "createdAt": "2026-07-08T08:26:14.992Z",
-    "updatedAt": "2026-07-09T05:55:09.120Z",
-    "competencyWeights": [
-      {
-        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-        "weight": 25
-      },
-      {
-        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-        "weight": 25
-      },
-      {
-        "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-        "weight": 20
-      },
-      {
-        "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
-        "weight": 15
-      },
-      {
-        "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
-        "weight": 15
-      }
-    ]
   }
 ]

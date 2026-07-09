@@ -1,50 +1,9 @@
 [
   {
-    "id": "360da394-f8de-4db2-94cb-d8c8038c8cc3",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-    "createdAt": "2026-07-03T11:36:35.858Z",
-    "minimumThreshold": 60,
-    "weight": 0
-  },
-  {
-    "id": "3fc60442-90e7-4308-aee4-f795040aef9d",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-    "createdAt": "2026-07-03T11:36:35.858Z",
-    "minimumThreshold": 60,
-    "weight": 0
-  },
-  {
-    "id": "4aec9520-903a-4c5a-9256-263018cc2372",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
-    "createdAt": "2026-07-03T11:36:35.858Z",
-    "minimumThreshold": 60,
-    "weight": 0
-  },
-  {
-    "id": "ed380e5a-ce1c-4729-8bcd-f5c85fa249a4",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
-    "createdAt": "2026-07-03T11:36:35.858Z",
-    "minimumThreshold": 60,
-    "weight": 0
-  },
-  {
-    "id": "9826e62a-f68d-47c3-8713-0843e0972944",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-07-03T12:27:51.188Z",
-    "minimumThreshold": 60,
-    "weight": 0
-  },
-  {
     "id": "11b40fc1-5157-491d-a91d-2809c209b5e7",
     "curriculumId": "b395a914-fe67-4933-9d9e-9a7ebb17b586",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "minimumThreshold": 60,
-    "weight": 0,
     "createdAt": "2026-07-05T08:14:03.083Z"
   },
   {
@@ -52,7 +11,6 @@
     "curriculumId": "71202f88-da66-4b8a-ba55-17e14be72815",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "minimumThreshold": 60,
-    "weight": 0,
     "createdAt": "2026-07-07T06:21:06.042Z"
   },
   {
@@ -60,7 +18,6 @@
     "curriculumId": "661b8e14-0c95-48de-92ec-ae8c7cf778e0",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "minimumThreshold": 60,
-    "weight": 0,
     "createdAt": "2026-07-08T05:16:20.390Z"
   },
   {
@@ -68,7 +25,6 @@
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "minimumThreshold": 60,
-    "weight": 25,
     "createdAt": "2026-07-08T08:32:18.851Z"
   },
   {
@@ -76,7 +32,6 @@
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
     "minimumThreshold": 65,
-    "weight": 25,
     "createdAt": "2026-07-08T08:32:18.922Z"
   },
   {
@@ -84,7 +39,6 @@
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
     "minimumThreshold": 55,
-    "weight": 20,
     "createdAt": "2026-07-08T08:32:18.978Z"
   },
   {
@@ -92,7 +46,6 @@
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
     "minimumThreshold": 50,
-    "weight": 15,
     "createdAt": "2026-07-08T08:32:19.039Z"
   },
   {
@@ -100,7 +53,55 @@
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
     "minimumThreshold": 60,
-    "weight": 15,
     "createdAt": "2026-07-08T08:32:19.097Z"
+  },
+  {
+    "id": "5f32c168-90fa-4ed7-a749-ac07c2822742",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "competencyId": "8efe0129-a518-4287-9b27-faba52553004",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T11:21:02.808Z"
+  },
+  {
+    "id": "afbc9d3f-77fc-4c8f-a010-70e633999395",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:15.116Z"
+  },
+  {
+    "id": "0be0284f-7c86-47dc-98ad-22bc6e17223c",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:20.970Z"
+  },
+  {
+    "id": "05a34c2f-8538-4fe8-ab85-835373b45631",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:27.080Z"
+  },
+  {
+    "id": "cf80602c-b679-40bc-895f-f21c84f689b4",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:30.571Z"
+  },
+  {
+    "id": "50f2293c-abd4-4d67-b4b7-62f30d2b664f",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:33.255Z"
+  },
+  {
+    "id": "787c436b-4621-4f27-8f6c-5ab6e76c28c9",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "competencyId": "8efe0129-a518-4287-9b27-faba52553004",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-09T12:59:35.614Z"
   }
 ]

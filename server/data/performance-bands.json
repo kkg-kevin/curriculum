@@ -8,7 +8,14 @@
     "minScore": 0,
     "maxScore": 39,
     "order": 1,
-    "createdAt": "2026-06-25T12:18:02.591Z"
+    "createdAt": "2026-06-25T12:18:02.591Z",
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09",
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+      "c3d95126-1121-4de8-bdab-14adbf00d218",
+      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    ]
   },
   {
     "id": "6eb6e38b-8864-41d8-bf31-d3ca7041f944",
@@ -19,7 +26,14 @@
     "minScore": 40,
     "maxScore": 59,
     "order": 2,
-    "createdAt": "2026-06-25T12:18:31.606Z"
+    "createdAt": "2026-06-25T12:18:31.606Z",
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09",
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+      "c3d95126-1121-4de8-bdab-14adbf00d218",
+      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    ]
   },
   {
     "id": "dbed861d-978c-43db-bb8d-3c59eab7217d",
@@ -30,7 +44,14 @@
     "minScore": 60,
     "maxScore": 74,
     "order": 3,
-    "createdAt": "2026-06-25T12:18:47.606Z"
+    "createdAt": "2026-06-25T12:18:47.606Z",
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09",
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+      "c3d95126-1121-4de8-bdab-14adbf00d218",
+      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    ]
   },
   {
     "id": "286567bf-8c4a-4214-9c5a-b46769c9db9c",
@@ -41,7 +62,14 @@
     "minScore": 75,
     "maxScore": 89,
     "order": 4,
-    "createdAt": "2026-06-25T12:19:03.606Z"
+    "createdAt": "2026-06-25T12:19:03.606Z",
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09",
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+      "c3d95126-1121-4de8-bdab-14adbf00d218",
+      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    ]
   },
   {
     "id": "e4f9f25c-d25a-41af-9d6b-9197170adae0",
@@ -52,7 +80,14 @@
     "minScore": 90,
     "maxScore": 100,
     "order": 5,
-    "createdAt": "2026-06-25T12:19:29.606Z"
+    "createdAt": "2026-06-25T12:19:29.606Z",
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09",
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+      "c3d95126-1121-4de8-bdab-14adbf00d218",
+      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    ]
   },
   {
     "id": "73cee2eb-8b57-4944-9de9-c020983ca3c7",
@@ -68,57 +103,5 @@
     "maxScore": 30,
     "order": 1,
     "createdAt": "2026-07-07T06:22:12.738Z"
-  },
-  {
-    "id": "bece41d3-c005-42dc-869c-530f4e196282",
-    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "name": "Below Expectation",
-    "description": "",
-    "criteria": [
-      "Requires significant support"
-    ],
-    "minScore": 0,
-    "maxScore": 49,
-    "order": 1,
-    "createdAt": "2026-07-08T08:32:36.721Z"
-  },
-  {
-    "id": "1df94114-beab-40a8-855c-89f45f338224",
-    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "name": "Approaching Expectation",
-    "description": "",
-    "criteria": [
-      "Shows partial understanding"
-    ],
-    "minScore": 50,
-    "maxScore": 69,
-    "order": 2,
-    "createdAt": "2026-07-08T08:32:36.779Z"
-  },
-  {
-    "id": "09a4d1b1-e997-4e37-9a6a-fa2e0f626683",
-    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "name": "Meeting Expectation",
-    "description": "",
-    "criteria": [
-      "Demonstrates solid understanding"
-    ],
-    "minScore": 70,
-    "maxScore": 84,
-    "order": 3,
-    "createdAt": "2026-07-08T08:32:36.833Z"
-  },
-  {
-    "id": "974c0616-8127-49dc-ae3b-2bc2ef7769c5",
-    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "name": "Exceeding Expectation",
-    "description": "",
-    "criteria": [
-      "Applies skills beyond requirements"
-    ],
-    "minScore": 85,
-    "maxScore": 100,
-    "order": 4,
-    "createdAt": "2026-07-08T08:32:36.906Z"
   }
 ]
