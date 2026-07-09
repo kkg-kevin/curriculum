@@ -52,7 +52,7 @@ function SectionIcon() {
 
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments }) {
+function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments, onLeafSelect }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -81,6 +81,17 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+  };
+
+  // Collapse the session accordion once its content is actually being viewed, so the sidebar
+  // retracts to a compact header list instead of staying sprawled open next to the content.
+  const collapseSession = (id) => {
+    setExpandedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
       return next;
     });
   };
@@ -158,6 +169,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                                 <Link
                                   key={item.id}
                                   to={`/courses/${courseId}/sessions/${session.id}/sections/${section.key}/${item.id}`}
+                                  onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                                   style={{
                                     display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px 7px 54px",
                                     borderTop: "1px solid #F9FAFB", textDecoration: "none", fontSize: "11.5px",
@@ -211,6 +223,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                                   key={a.id}
                                   to={`/courses/${courseId}/sessions/${session.id}/sections/assessments/${a.id}`}
                                   title={a.name}
+                                  onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                                   style={{
                                     display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px 7px 54px",
                                     borderTop: "1px solid #F9FAFB", textDecoration: "none", fontSize: "11.5px",
@@ -233,6 +246,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                     <Link
                       key={section.key}
                       to={sectionLinkPath(courseId, session, section)}
+                      onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                       style={{
                         display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px 8px 32px",
                         borderTop: "1px solid #F3F4F6", textDecoration: "none",
@@ -334,6 +348,7 @@ function SectionBody({ sectionKey, session, allAssessments, courseId }) {
 export default function SectionViewPage() {
   const { id, sessionId, sectionKey, itemId } = useParams();
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
   const { data: assessmentsData } = useAssessmentsQuery();
@@ -400,23 +415,40 @@ export default function SectionViewPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <button
-        type="button"
-        onClick={() => navigate(`/courses/${id}/view`)}
-        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", marginBottom: "16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-      >
-        ← Back to Course
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+        <button
+          type="button"
+          onClick={() => navigate(`/courses/${id}/view`)}
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          ← Back to Course
+        </button>
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed((v) => !v)}
+          title={sidebarCollapsed ? "Show sessions" : "Hide sessions"}
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
+            <path d="M9 4v16" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+          {sidebarCollapsed ? "Show Sessions" : "Hide Sessions"}
+        </button>
+      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "20px", alignItems: "start" }}>
-        <SessionSidebar
-          courseId={id}
-          sessions={sessions}
-          activeSessionId={sessionId}
-          activeSectionKey={sectionKey}
-          activeItemId={effectiveItemId}
-          allAssessments={allAssessments}
-        />
+      <div style={{ display: "grid", gridTemplateColumns: sidebarCollapsed ? "1fr" : "300px 1fr", gap: sidebarCollapsed ? "0" : "20px", alignItems: "start" }}>
+        {!sidebarCollapsed && (
+          <SessionSidebar
+            courseId={id}
+            sessions={sessions}
+            activeSessionId={sessionId}
+            activeSectionKey={sectionKey}
+            activeItemId={effectiveItemId}
+            allAssessments={allAssessments}
+            onLeafSelect={() => setSidebarCollapsed(true)}
+          />
+        )}
 
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
