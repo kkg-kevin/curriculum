@@ -3,18 +3,19 @@
     "id": "3b104638-c37b-4557-8e01-c585dc7bf993",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Explorer",
-    "description": "The learner is beginning their journey by exploring new concepts, tools, and digital environments. They show curiosity, willingness to try, and basic recognition of ideas, but rely heavily on guidance and structured support to complete tasks.\n\n2. Builder (Practice)",
+    "description": "",
     "criteria": [],
     "minScore": 0,
-    "maxScore": 39,
+    "maxScore": 100,
     "order": 1,
     "createdAt": "2026-06-25T12:18:02.591Z",
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09",
-      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-      "c3d95126-1121-4de8-bdab-14adbf00d218",
-      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
+    "competencyIds": [],
+    "indicatorPoints": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "points": 1
+      }
     ]
   },
   {
@@ -33,7 +34,8 @@
       "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
       "c3d95126-1121-4de8-bdab-14adbf00d218",
       "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ]
+    ],
+    "indicatorPoints": []
   },
   {
     "id": "dbed861d-978c-43db-bb8d-3c59eab7217d",
@@ -51,7 +53,8 @@
       "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
       "c3d95126-1121-4de8-bdab-14adbf00d218",
       "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ]
+    ],
+    "indicatorPoints": []
   },
   {
     "id": "286567bf-8c4a-4214-9c5a-b46769c9db9c",
@@ -69,7 +72,8 @@
       "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
       "c3d95126-1121-4de8-bdab-14adbf00d218",
       "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ]
+    ],
+    "indicatorPoints": []
   },
   {
     "id": "e4f9f25c-d25a-41af-9d6b-9197170adae0",
@@ -87,7 +91,8 @@
       "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
       "c3d95126-1121-4de8-bdab-14adbf00d218",
       "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ]
+    ],
+    "indicatorPoints": []
   },
   {
     "id": "73cee2eb-8b57-4944-9de9-c020983ca3c7",
@@ -102,6 +107,46 @@
     "minScore": 20,
     "maxScore": 30,
     "order": 1,
-    "createdAt": "2026-07-07T06:22:12.738Z"
+    "createdAt": "2026-07-07T06:22:12.738Z",
+    "competencyIds": [],
+    "indicatorPoints": []
+  },
+  {
+    "id": "4c30d4a3-183d-42e3-a6c2-d42e15716b74",
+    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
+    "name": "Explorer",
+    "description": "",
+    "criteria": [],
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorPoints": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "points": 5
+      }
+    ],
+    "order": 1,
+    "createdAt": "2026-07-09T13:53:40.312Z"
+  },
+  {
+    "id": "00ac0c7d-c757-46f1-b8f4-a03a0d4e1c4f",
+    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
+    "name": "Builder",
+    "description": "",
+    "criteria": [],
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorPoints": [
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "points": 1
+      }
+    ],
+    "order": 2,
+    "createdAt": "2026-07-09T13:54:42.023Z"
   }
 ]

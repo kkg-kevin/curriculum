@@ -134,15 +134,24 @@ const createEvidenceTypeSchema = z.object({
 
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
 
+// Points a band awards a specific indicator of a specific competency — free-form,
+// no enforced sum, meant to represent that indicator's contribution toward the
+// competency's score within this band.
+const bandIndicatorPointSchema = z.object({
+  competencyId: z.string().min(1),
+  indicatorId:  z.string().min(1),
+  points:       z.number().min(0),
+});
+
 const createPerformanceBandSchema = z.object({
   name:          z.string().min(1, "Name is required").max(100),
   description:   z.string().max(1000).optional().default(""),
   criteria:      z.array(z.string().min(1).max(500)).optional().default([]),
   minScore:      z.number().min(0).max(100).optional().default(0),
   maxScore:      z.number().min(0).max(100).optional().default(100),
-  // Competencies (from the global catalog, adopted by this curriculum) that this band
-  // draws on — how they get used is decided elsewhere, this just records the link.
-  competencyIds: z.array(z.string().min(1)).optional().default([]),
+  // Competencies (from the ones this curriculum has adopted) that this band draws on.
+  competencyIds:   z.array(z.string().min(1)).optional().default([]),
+  indicatorPoints: z.array(bandIndicatorPointSchema).optional().default([]),
 });
 
 const updatePerformanceBandSchema = createPerformanceBandSchema.partial();
