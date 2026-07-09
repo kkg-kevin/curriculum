@@ -18,15 +18,5 @@
     "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
     "createdAt": "2026-07-07T12:08:59.480Z",
     "updatedAt": "2026-07-07T12:08:59.480Z"
-  },
-  {
-    "name": "Sample Demo Course",
-    "description": "<p>Sample course for verifying Score Evidence wiring.</p>",
-    "coverImage": "http://localhost:5000/uploads/8945892e-d33f-4b4d-b2c6-a2c3fc0f3934.jpg",
-    "ageMin": 4,
-    "ageMax": 9,
-    "id": "7f9351ba-ffbd-4c57-8477-225b5108e06d",
-    "createdAt": "2026-07-08T08:26:19.924Z",
-    "updatedAt": "2026-07-08T09:02:07.927Z"
   }
 ]

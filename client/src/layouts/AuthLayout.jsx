@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { FiCheck, FiLogIn, FiUserPlus, FiBookOpen } from "react-icons/fi";
+import { FiCheck, FiLogIn, FiUserPlus } from "react-icons/fi";
+import logo from "../assets/Logo-image.png";
 
 const HERO_CONTENT = {
   "/signup": {
@@ -135,16 +136,12 @@ function AuthLayout() {
           overflow-y: auto;
         }
         .df-auth-logo {
-          width: 60px;
-          height: 60px;
-          border-radius: 18px;
-          background-color: #EFF6FB;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 18px rgba(37,71,106,0.14);
-          margin-bottom: 20px;
+          margin-bottom: 26px;
         }
+        .df-auth-logo img { height: 34px; width: auto; }
         .df-auth-form-inner { width: 100%; max-width: 380px; }
 
         @media (max-width: 900px) {
@@ -298,7 +295,7 @@ function AuthLayout() {
         </div>
 
         <div className="df-auth-form-col">
-          <div className="df-auth-logo"><FiBookOpen size={26} color="#25476a" /></div>
+          <div className="df-auth-logo"><img src={logo} alt="Digifunzi" /></div>
           <div className="df-auth-form-inner">
             <Outlet />
           </div>

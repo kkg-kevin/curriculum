@@ -8,7 +8,8 @@ import { assessmentApi } from "../services/assessmentApi";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
 import { useInventory } from "../../settings/inventory/hooks/useInventory";
-import { INVENTORY_CATEGORY_COLORS } from "../../settings/inventory/constants";
+import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
+import { FiPlus, FiX, FiPackage } from "react-icons/fi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
@@ -175,6 +176,35 @@ const CSS = `
     font-size:12.5px; font-weight:600; font-family:Inter,sans-serif; color:#374151; text-align:left; cursor:pointer;
   }
   .tb-tag-dropdown-item:hover { background:#F3F4F6; }
+  .tb-tag-dropdown-item--material { display:flex; align-items:center; gap:8px; }
+
+  .tb-material-row {
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid #EEF0F2;
+    border-radius:10px; background:#FAFBFF;
+  }
+  .tb-material-icon {
+    width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .tb-material-empty {
+    display:flex; flex-direction:column; align-items:center; gap:8px; padding:22px 14px; margin-bottom:12px;
+    border:1.5px dashed #E5E7EB; border-radius:12px; background:#FAFBFF;
+  }
+  .tb-material-empty-icon {
+    width:36px; height:36px; border-radius:10px; background:#F3F4F6; color:#9CA3AF;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tb-qty-stepper { display:flex; align-items:center; border:1.5px solid #E5E7EB; border-radius:9px; overflow:hidden; flex-shrink:0; }
+  .tb-qty-btn {
+    width:24px; height:28px; border:none; background:#F9FAFB; color:#374151; font-size:14px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:Inter,sans-serif;
+  }
+  .tb-qty-btn:hover:not(:disabled) { background:#F3F4F6; }
+  .tb-qty-btn:disabled { color:#D1D5DB; cursor:not-allowed; }
+  .tb-qty-input {
+    width:36px; border:none; border-left:1.5px solid #E5E7EB; border-right:1.5px solid #E5E7EB; text-align:center;
+    font-size:12.5px; font-family:Inter,sans-serif; color:#111827; outline:none; padding:5px 2px;
+  }
+  .tb-qty-input::-webkit-outer-spin-button, .tb-qty-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 `;
 
 /* ── small shared bits ─────────────────────────────────────────────────── */
@@ -684,63 +714,109 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
 
 function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef(null);
 
   useEffect(() => {
     if (!open) return;
-    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const close = (e) => { if (!ref.current?.contains(e.target)) { setOpen(false); setQuery(""); } };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
   const linkedIds = inventory.map((l) => l.itemId);
   const available = catalog.filter((i) => !linkedIds.includes(i.id));
+  const q = query.trim().toLowerCase();
+  const filtered = q ? available.filter((i) => i.name.toLowerCase().includes(q)) : available;
 
-  const add = (itemId) => { onChange([...inventory, { itemId, quantity: 1 }]); setOpen(false); };
-  const setQuantity = (itemId, quantity) => onChange(inventory.map((l) => (l.itemId === itemId ? { ...l, quantity } : l)));
+  const add = (itemId) => { onChange([...inventory, { itemId, quantity: 1 }]); setOpen(false); setQuery(""); };
+  const setQuantity = (itemId, quantity) => onChange(inventory.map((l) => (l.itemId === itemId ? { ...l, quantity: Math.max(1, quantity) } : l)));
+  const step = (itemId, delta) => {
+    const link = inventory.find((l) => l.itemId === itemId);
+    if (link) setQuantity(itemId, link.quantity + delta);
+  };
   const remove = (itemId) => onChange(inventory.filter((l) => l.itemId !== itemId));
 
   return (
     <div className="tb-card">
-      <p className="tb-card-title">Inventory</p>
-      <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>Materials needed for this project, pulled from the shared Settings catalog — not just robots.</p>
+      <p className="tb-card-title" style={{ marginBottom: "2px" }}>Materials{inventory.length ? ` · ${inventory.length}` : ""}</p>
+      <p style={{ margin: "0 0 14px", fontSize: "11.5px", color: "#9CA3AF" }}>
+        Robots, boards, sensors, and other materials this project needs — pulled from the shared Settings catalog.
+      </p>
 
       {inventory.length === 0 && (
-        <p style={{ margin: "0 0 12px", fontSize: "12.5px", color: "#D1D5DB", fontStyle: "italic" }}>No materials added yet.</p>
+        <div className="tb-material-empty">
+          <span className="tb-material-empty-icon"><FiPackage size={18} /></span>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>No materials added yet.</p>
+        </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
         {inventory.map((link) => {
           const item = catalog.find((i) => i.id === link.itemId);
           if (!item) return null;
           const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
+          const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
           return (
-            <div key={link.itemId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
-              <span className="tb-entry-badge" style={{ color, backgroundColor: `${color}15`, border: `1px solid ${color}40` }}>{item.category}</span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: 600, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
-              <input
-                type="number" min="1" className="tb-input" style={{ width: "80px", flexShrink: 0 }}
-                value={link.quantity} onChange={(e) => setQuantity(link.itemId, Math.max(1, Number(e.target.value) || 1))}
-              />
-              <span style={{ fontSize: "11.5px", color: "#9CA3AF", flexShrink: 0, width: "34px" }}>{item.unit}</span>
-              <button type="button" className="tb-icon-btn danger" onClick={() => remove(link.itemId)}>✕</button>
+            <div key={link.itemId} className="tb-material-row">
+              <span className="tb-material-icon" style={{ backgroundColor: `${color}15`, color }}>
+                <Icon size={16} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.name}
+                </p>
+                <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{item.category}</span>
+              </div>
+              <div className="tb-qty-stepper">
+                <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, -1)} disabled={link.quantity <= 1}>−</button>
+                <input
+                  type="number" min="1" className="tb-qty-input"
+                  value={link.quantity} onChange={(e) => setQuantity(link.itemId, Number(e.target.value) || 1)}
+                />
+                <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, 1)}>+</button>
+              </div>
+              <span style={{ fontSize: "11px", color: "#9CA3AF", width: "30px", flexShrink: 0 }}>{item.unit}</span>
+              <button type="button" className="tb-icon-btn danger" onClick={() => remove(link.itemId)}><FiX size={14} /></button>
             </div>
           );
         })}
       </div>
 
       <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
-        <button type="button" className="tb-btn-secondary" onClick={() => setOpen((v) => !v)}>+ Add Material</button>
+        <button type="button" className="tb-btn-secondary" onClick={() => setOpen((v) => !v)}>
+          <FiPlus size={13} style={{ marginRight: "5px", verticalAlign: "-2px" }} />Add Material
+        </button>
         {open && (
-          <div className="tb-tag-dropdown">
-            {available.length === 0 && <div style={{ padding: "14px", textAlign: "center", fontSize: "12px", color: "#9CA3AF" }}>All catalog items already added.</div>}
-            {available.map((item) => (
-              <button key={item.id} type="button" className="tb-tag-dropdown-item" onClick={() => add(item.id)}>{item.name} <span style={{ color: "#9CA3AF" }}>· {item.category}</span></button>
-            ))}
+          <div className="tb-tag-dropdown" style={{ width: "270px" }}>
+            <div style={{ padding: "4px 4px 8px" }}>
+              <input
+                autoFocus className="tb-input" style={{ padding: "7px 10px", fontSize: "12.5px" }}
+                placeholder="Search catalog…" value={query} onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            {filtered.length === 0 && (
+              <div style={{ padding: "14px", textAlign: "center", fontSize: "12px", color: "#9CA3AF" }}>
+                {available.length === 0 ? "All catalog items already added." : "No matches."}
+              </div>
+            )}
+            {filtered.map((item) => {
+              const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
+              const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
+              return (
+                <button key={item.id} type="button" className="tb-tag-dropdown-item tb-tag-dropdown-item--material" onClick={() => add(item.id)}>
+                  <span className="tb-material-icon" style={{ width: "24px", height: "24px", backgroundColor: `${color}15`, color }}>
+                    <Icon size={12} />
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+                  <span style={{ color: "#9CA3AF", fontSize: "11px", flexShrink: 0 }}>{item.category}</span>
+                </button>
+              );
+            })}
             <button
               type="button" className="tb-tag-dropdown-item"
-              style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: available.length ? "4px" : 0 }}
-              onClick={() => { onCreateNew(); setOpen(false); }}
+              style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: "4px" }}
+              onClick={() => { onCreateNew(); setOpen(false); setQuery(""); }}
             >
               + Create new item…
             </button>

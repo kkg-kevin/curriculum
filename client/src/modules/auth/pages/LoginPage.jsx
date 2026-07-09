@@ -40,9 +40,6 @@ export default function LoginPage() {
   return (
     <>
       <div style={{ textAlign: "center", marginBottom: "26px" }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: "21px", fontWeight: "700", color: "#111827" }}>
-          Sign in to Digifunzii
-        </h2>
         <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
           Enter your details to access your dashboard.
         </p>

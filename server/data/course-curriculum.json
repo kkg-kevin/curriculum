@@ -1,11 +1,5 @@
 [
   {
-    "id": "737e2328-81d0-47da-ab63-549adfdbb45f",
-    "courseId": "7f9351ba-ffbd-4c57-8477-225b5108e06d",
-    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
-    "createdAt": "2026-07-08T08:26:49.460Z"
-  },
-  {
     "id": "1135ceb7-a82b-4bce-98ad-7b6eedc13f00",
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
