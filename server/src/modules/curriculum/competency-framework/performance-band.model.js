@@ -18,15 +18,16 @@ const PerformanceBandModel = {
     const all   = read();
     const count = all.filter((b) => b.curriculumId === curriculumId).length;
     const band  = {
-      id:           uuidv4(),
+      id:            uuidv4(),
       curriculumId,
-      name:         fields.name,
-      description:  fields.description || "",
-      criteria:     fields.criteria    || [],
-      minScore:     fields.minScore    ?? 0,
-      maxScore:     fields.maxScore    ?? 100,
-      order:        count + 1,
-      createdAt:    new Date().toISOString(),
+      name:          fields.name,
+      description:   fields.description || "",
+      criteria:      fields.criteria    || [],
+      minScore:      fields.minScore    ?? 0,
+      maxScore:      fields.maxScore    ?? 100,
+      competencyIds: fields.competencyIds || [],
+      order:         count + 1,
+      createdAt:     new Date().toISOString(),
     };
     all.push(band);
     write(all);
@@ -56,6 +57,20 @@ const PerformanceBandModel = {
     });
     write(all);
     return all.filter((b) => b.curriculumId === curriculumId).sort((a, b) => a.order - b.order);
+  },
+
+  // A competency was deleted from the global catalog — strip it out of every band's
+  // competencyIds, across every curriculum, so no band is left referencing a dead id.
+  removeCompetencyFromAllBands(competencyId) {
+    const all = read();
+    let changed = false;
+    all.forEach((b) => {
+      if ((b.competencyIds || []).includes(competencyId)) {
+        b.competencyIds = b.competencyIds.filter((id) => id !== competencyId);
+        changed = true;
+      }
+    });
+    if (changed) write(all);
   },
 };
 

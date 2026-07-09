@@ -10,5 +10,17 @@
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
     "createdAt": "2026-07-08T08:49:04.444Z"
+  },
+  {
+    "id": "761b1388-1dbb-43e2-922d-00c162436ff4",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-09T12:33:11.543Z"
+  },
+  {
+    "id": "b53949b9-497b-4871-8b5c-02153e852835",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-09T12:33:11.559Z"
   }
 ]

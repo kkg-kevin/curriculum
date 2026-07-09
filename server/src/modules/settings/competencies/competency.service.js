@@ -2,6 +2,7 @@ const CompetencyModel = require("./competency.model");
 const CurriculumCompetencyLinkModel = require("../../curriculum/competency-framework/curriculum-competency-link.model");
 const CurriculumCompetencyIndicatorModel = require("../../curriculum/competency-framework/curriculum-competency-indicator.model");
 const ProgressionLadderModel = require("../../curriculum/competency-framework/progression-ladder.model");
+const PerformanceBandModel = require("../../curriculum/competency-framework/performance-band.model");
 const CourseCompetencyLinkModel = require("../../courses/course-competency-link.model");
 const AssessmentCompetencyLinkModel = require("../../assessments/assessment-competency-link.model");
 
@@ -40,6 +41,7 @@ const CompetencyService = {
     CurriculumCompetencyIndicatorModel.deleteByCompetencyId(id);
     CurriculumCompetencyLinkModel.deleteByCompetencyId(id);
     ProgressionLadderModel.removeCompetencyFromAllRungs(id);
+    PerformanceBandModel.removeCompetencyFromAllBands(id);
     CourseCompetencyLinkModel.deleteByCompetencyId(id);
     AssessmentCompetencyLinkModel.deleteByCompetencyId(id);
   },

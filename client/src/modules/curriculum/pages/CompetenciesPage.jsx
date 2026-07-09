@@ -6,10 +6,6 @@ import {
   useCompetencies,
   useLinkCompetency,
   useUnlinkCompetency,
-  useUpdateCompetencyLink,
-  useCompetencyIndicators,
-  useCreateCompetencyIndicator,
-  useDeleteCompetencyIndicator,
   useLearningAreas,
   useCreateLearningArea,
   useUpdateLearningArea,
@@ -38,7 +34,6 @@ import {
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
 import { learningAreasApi as catalogLearningAreasApi } from "../../settings/learning-areas/services/learningAreasApi";
-import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -302,69 +297,28 @@ const CSS = `
   .cp-card-menu-item--danger { color:#DC2626; }
   .cp-card-menu-item--danger:hover { background:#FEF2F2; }
 
-  /* ── Per-curriculum competency config (threshold/weight/indicators) ── */
-  .cp-comp-eval {
-    display:grid; grid-template-columns:1fr 1fr; gap:10px;
-    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:11px;
-    padding:10px 12px;
+  .cp-comp-check-row {
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    border:1.5px solid #E5E7EB; border-radius:10px; cursor:pointer;
+    transition:border-color 0.15s, background 0.15s;
   }
-  .cp-comp-eval-field { min-width:0; }
-  .cp-comp-eval-label {
-    display:flex; align-items:center; gap:5px; margin-bottom:6px;
-    font-size:10.5px; font-weight:700; color:#6B7280; text-transform:uppercase; letter-spacing:0.03em;
-    white-space:nowrap;
-  }
-  .cp-comp-eval-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-  .cp-comp-eval-input-wrap { position:relative; }
-  .cp-comp-config-input {
-    width:100%; padding:7px 26px 7px 10px; border-radius:8px; border:1.5px solid #E5E7EB;
-    font-size:13px; font-weight:700; font-family:Inter,sans-serif; color:#111827; background:#fff; outline:none;
-    box-sizing:border-box; transition:border-color 0.15s, box-shadow 0.15s;
-    -moz-appearance:textfield;
-  }
-  .cp-comp-config-input::-webkit-outer-spin-button,
-  .cp-comp-config-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  .cp-comp-config-input:focus { border-color:#38aae1; box-shadow:0 0 0 3px rgba(56,170,225,0.12); }
-  .cp-comp-eval-suffix {
-    position:absolute; right:9px; top:50%; transform:translateY(-50%);
-    font-size:11.5px; font-weight:700; color:#9CA3AF; pointer-events:none;
-  }
+  .cp-comp-check-row input[type="checkbox"] { width:16px; height:16px; flex-shrink:0; accent-color:#25476a; cursor:pointer; }
 
-  .cp-indicators-toggle {
+  /* ── Read-only indicators mirror on a linked competency card (matches Settings' display) ── */
+  .cp-comp-ind-toggle {
     display:flex; align-items:center; justify-content:space-between; width:100%;
-    padding-top:10px; margin-top:10px; border-top:1px solid #F3F4F6; background:none;
-    border-left:none; border-right:none; border-bottom-width:0; cursor:pointer; font-family:Inter,sans-serif;
+    margin-top:10px; padding-top:10px; border-top:1px solid #F3F4F6; background:none;
+    border-left:none; border-right:none; border-bottom-width:0; cursor:pointer;
+    font-family:Inter,sans-serif; font-size:11px; font-weight:700; color:#25476a;
   }
-  .cp-indicators-toggle span:first-child { font-size:11px; font-weight:700; color:#374151; }
-  .cp-indicator-count {
-    font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:20px;
-    background:#F3F4F6; color:#6B7280;
+  .cp-comp-ind-chevron { transition:transform 0.15s; color:#9CA3AF; }
+  .cp-comp-ind-chevron.open { transform:rotate(180deg); }
+  .cp-comp-ind-list { margin-top:8px; }
+  .cp-comp-ind-item {
+    padding:7px 9px; background:#F9FAFB; border:1px solid #F3F4F6; border-radius:8px;
+    margin-bottom:5px;
   }
-  .cp-indicators-chevron { transition:transform 0.15s; color:#9CA3AF; }
-  .cp-indicators-chevron.open { transform:rotate(180deg); }
-  .cp-indicators-body { margin-top:8px; }
-  .cp-indicator-row {
-    display:flex; align-items:center; gap:8px; padding:5px 9px;
-    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:7px; margin-bottom:5px;
-  }
-  .cp-indicator-row span { flex:1; font-size:12px; color:#374151; }
-  .cp-indicator-x {
-    background:none; border:none; color:#9CA3AF; cursor:pointer; font-size:14px;
-    line-height:1; padding:0; transition:color 0.1s;
-  }
-  .cp-indicator-x:hover { color:#DC2626; }
-  .cp-indicator-add-row { display:flex; gap:6px; }
-  .cp-indicator-add-input {
-    padding:5px 8px; border-radius:7px; border:1.5px solid #E5E7EB;
-    font-size:12px; font-family:Inter,sans-serif; color:#374151; outline:none;
-    box-sizing:border-box; transition:border-color 0.15s;
-  }
-  .cp-indicator-add-input:focus { border-color:#38aae1; }
-  .cp-indicator-add-btn {
-    background:none; border:none; color:#38aae1; font-size:11.5px; font-weight:700;
-    cursor:pointer; padding:0; font-family:Inter,sans-serif;
-  }
-  .cp-indicator-add-btn:hover { color:#25476a; }
+  .cp-comp-ind-item:last-child { margin-bottom:0; }
 
   /* ── Add / Edit form card ── */
   .cp-comp-form-card {
@@ -739,6 +693,25 @@ function LearningAreasPanel({ curriculumId }) {
   );
 }
 
+/* ── Learning Journey (placeholder) ──────────────────────────────────────── */
+
+function LearningJourneyPanel() {
+  return (
+    <div className="cp-card">
+      <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Journey</h2>
+      <div className="cp-empty" style={{ marginTop: "20px" }}>
+        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧭</div>
+        <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>
+          Coming soon
+        </p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
+          This section is being designed.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ── CardKebab ──────────────────────────────────────────────────────────── */
 
 function CardKebab({ onEdit, onDelete, disabled }) {
@@ -800,9 +773,9 @@ function CardKebab({ onEdit, onDelete, disabled }) {
 
 /* ── CompetencyPickerPanel ───────────────────────────────────────────────
  * Competencies (name/description) are authored once in Settings and shared
- * across the whole app. This panel lets a curriculum adopt entries from that
- * catalog, then configure how IT evaluates each one — threshold, weight, and
- * indicators are per-curriculum-usage, not properties of the global competency. */
+ * across the whole app. This panel just lets a curriculum import entries
+ * from that catalog so it's on record which competencies it uses — nothing
+ * about how they're evaluated is configured here. */
 
 const COMP_PALETTE = [
   "#25476a","#38aae1","#059669","#7C3AED",
@@ -810,7 +783,7 @@ const COMP_PALETTE = [
   "#2e7db5","#0A3880",
 ];
 
-function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, isPending }) {
+function AddCompetencyDropdown({ available, onAdd, isPending }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -832,14 +805,6 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, is
   const filtered = trimmed
     ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
     : available;
-  // Only offer "create" when the name is genuinely new — otherwise we'd let this
-  // field silently mint duplicate catalog entries for something that already exists.
-  const canCreate = trimmed !== "" && !allComps.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
-
-  const handleCreate = () => {
-    onRequestCreate(trimmed);
-    setOpen(false);
-  };
 
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
@@ -857,8 +822,7 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, is
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search or create…"
-              onKeyDown={(e) => { if (e.key === "Enter" && canCreate && filtered.length === 0) { e.preventDefault(); handleCreate(); } }}
+              placeholder="Search…"
               style={{
                 width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", border: "none",
                 fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", color: "#111827", background: "#fff",
@@ -866,7 +830,7 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, is
             />
           </div>
           <div style={{ overflowY: "auto", padding: "6px" }}>
-            {filtered.length === 0 && !canCreate && (
+            {filtered.length === 0 && (
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
                 <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
@@ -885,35 +849,6 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate, is
                 {comp.name}
               </button>
             ))}
-            {canCreate && (
-              <>
-                {filtered.length > 0 && (
-                  <div style={{ margin: "6px 4px 4px", paddingTop: "6px", borderTop: "1px dashed #E5E7EB", fontSize: "10px", fontWeight: "700", color: "#B0B8C4", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Create new
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "9px", width: "100%", padding: "9px 10px",
-                    border: "none", borderRadius: "8px", background: "#F0F7FF", fontSize: "12.5px", fontWeight: "700",
-                    fontFamily: "Inter, sans-serif", color: "#25476a", textAlign: "left", cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#e0f0fb"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#F0F7FF"; }}
-                >
-                  <span style={{
-                    width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0,
-                    backgroundColor: "#25476a", color: "#fff", fontSize: "12px", fontWeight: "900",
-                    display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-                  }}>+</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    Create "{trimmed}"
-                  </span>
-                </button>
-              </>
-            )}
           </div>
         </div>
       )}
@@ -957,67 +892,11 @@ function CompetencyRemoveMenu({ onRemove }) {
   );
 }
 
-/* ── Per-curriculum indicators for an adopted competency ─────────────────── */
-
-function CompetencyIndicatorsSection({ curriculumId, competencyId, expanded, onToggle }) {
-  const { data: indicators = [] } = useCompetencyIndicators(curriculumId, competencyId, expanded);
-  const { mutate: createIndicator } = useCreateCompetencyIndicator(curriculumId, competencyId);
-  const { mutate: deleteIndicator } = useDeleteCompetencyIndicator(curriculumId, competencyId);
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-
-  const submit = () => {
-    if (!name.trim()) return;
-    createIndicator({ name: name.trim() }, { onSuccess: () => { setName(""); setAdding(false); } });
-  };
-
-  return (
-    <>
-      <button type="button" className="cp-indicators-toggle" onClick={onToggle}>
-        <span>Indicators</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span className="cp-indicator-count">{indicators.length || (expanded ? 0 : "…")}</span>
-          <svg className={`cp-indicators-chevron${expanded ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-      </button>
-      {expanded && (
-        <div className="cp-indicators-body">
-          {indicators.length === 0 && !adding && (
-            <p style={{ margin: "0 0 6px", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>No indicators added</p>
-          )}
-          {indicators.map((ind) => (
-            <div key={ind.id} className="cp-indicator-row">
-              <span>{ind.name}</span>
-              <button type="button" className="cp-indicator-x" onClick={() => deleteIndicator(ind.id)}>×</button>
-            </div>
-          ))}
-          {adding ? (
-            <div className="cp-indicator-add-row">
-              <input
-                autoFocus className="cp-indicator-add-input" style={{ flex: 1 }}
-                value={name} onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="Indicator name"
-              />
-              <button type="button" onClick={submit} style={{ padding: "0 10px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>Add</button>
-              <button type="button" onClick={() => { setAdding(false); setName(""); }} style={{ padding: "0 8px", background: "none", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "11px", color: "#6B7280", cursor: "pointer" }}>Cancel</button>
-            </div>
-          ) : (
-            <button type="button" className="cp-indicator-add-btn" onClick={() => setAdding(true)}>+ Add Indicator</button>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
 function CompetencyPickerPanel({ curriculumId }) {
   const { data: allComps = [], isLoading: loadingAll } = useGlobalCompetencies();
   const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
   const { mutate: link, isPending: linking } = useLinkCompetency(curriculumId);
   const { mutate: unlink } = useUnlinkCompetency(curriculumId);
-  const [createQuery, setCreateQuery] = useState(null);
 
   const linkedIds = new Set(linkedComps.map((c) => c.id));
   const availableComps = allComps.filter((c) => !linkedIds.has(c.id));
@@ -1038,7 +917,7 @@ function CompetencyPickerPanel({ curriculumId }) {
           <Link to="/settings" className="cp-btn-secondary" style={{ textDecoration: "none" }}>
             Manage in Settings →
           </Link>
-          <AddCompetencyDropdown available={availableComps} allComps={allComps} onAdd={link} onRequestCreate={setCreateQuery} isPending={linking} />
+          <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
         </div>
       </div>
 
@@ -1056,7 +935,7 @@ function CompetencyPickerPanel({ curriculumId }) {
           {allComps.length === 0 ? (
             <Link to="/settings" className="cp-btn-ghost">+ Define Competencies in Settings</Link>
           ) : (
-            <AddCompetencyDropdown available={availableComps} allComps={allComps} onAdd={link} onRequestCreate={setCreateQuery} isPending={linking} />
+            <AddCompetencyDropdown available={availableComps} onAdd={link} isPending={linking} />
           )}
         </div>
       ) : (
@@ -1064,7 +943,6 @@ function CompetencyPickerPanel({ curriculumId }) {
           {linkedComps.map((comp, idx) => (
             <LinkedCompetencyCard
               key={comp.id}
-              curriculumId={curriculumId}
               comp={comp}
               color={COMP_PALETTE[idx % COMP_PALETTE.length]}
               onRemove={() => unlink(comp.id)}
@@ -1072,38 +950,14 @@ function CompetencyPickerPanel({ curriculumId }) {
           ))}
         </div>
       )}
-
-      {createQuery !== null && (
-        <CreateCompetencyModal
-          initialName={createQuery}
-          onClose={() => setCreateQuery(null)}
-          onCreated={link}
-        />
-      )}
     </div>
   );
 }
 
-function LinkedCompetencyCard({ curriculumId, comp, color, onRemove }) {
-  const { mutate: updateLink } = useUpdateCompetencyLink(curriculumId);
-  const [threshold, setThreshold] = useState(comp.minimumThreshold ?? 60);
-  const [weight, setWeight] = useState(comp.weight ?? 0);
-  const [indicatorsOpen, setIndicatorsOpen] = useState(false);
+function LinkedCompetencyCard({ comp, color, onRemove }) {
   const initial = comp.name.charAt(0).toUpperCase();
-
-  useEffect(() => { setThreshold(comp.minimumThreshold ?? 60); }, [comp.minimumThreshold]);
-  useEffect(() => { setWeight(comp.weight ?? 0); }, [comp.weight]);
-
-  const saveThreshold = () => {
-    const v = Math.min(100, Math.max(0, Number(threshold) || 0));
-    setThreshold(v);
-    if (v !== comp.minimumThreshold) updateLink({ competencyId: comp.id, data: { minimumThreshold: v } });
-  };
-  const saveWeight = () => {
-    const v = Math.min(100, Math.max(0, Number(weight) || 0));
-    setWeight(v);
-    if (v !== comp.weight) updateLink({ competencyId: comp.id, data: { weight: v } });
-  };
+  const indicators = comp.indicators || [];
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="cp-comp-card">
@@ -1140,45 +994,29 @@ function LinkedCompetencyCard({ curriculumId, comp, color, onRemove }) {
         )}
       </div>
 
-      <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F3F4F6" }}>
-        <div className="cp-comp-eval">
-          <div className="cp-comp-eval-field">
-            <div className="cp-comp-eval-label">
-              <span className="cp-comp-eval-dot" style={{ background: "#38aae1" }} />
-              Min. threshold
+      {/* Read-only mirror of how this competency is authored in Settings — nothing here is editable or curriculum-specific. */}
+      {indicators.length > 0 && (
+        <div>
+          <button type="button" className="cp-comp-ind-toggle" onClick={() => setOpen((v) => !v)}>
+            <span>{indicators.length} indicator{indicators.length !== 1 ? "s" : ""}</span>
+            <svg className={`cp-comp-ind-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {open && (
+            <div className="cp-comp-ind-list">
+              {indicators.map((ind, idx) => (
+                <div key={ind.id || idx} className="cp-comp-ind-item">
+                  <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                  {ind.description && (
+                    <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="cp-comp-eval-input-wrap">
-              <input
-                type="number" min="0" max="100" className="cp-comp-config-input"
-                value={threshold} onChange={(e) => setThreshold(e.target.value)}
-                onBlur={saveThreshold}
-              />
-              <span className="cp-comp-eval-suffix">%</span>
-            </div>
-          </div>
-          <div className="cp-comp-eval-field">
-            <div className="cp-comp-eval-label">
-              <span className="cp-comp-eval-dot" style={{ background: "#feb139" }} />
-              Weight
-            </div>
-            <div className="cp-comp-eval-input-wrap">
-              <input
-                type="number" min="0" max="100" className="cp-comp-config-input"
-                value={weight} onChange={(e) => setWeight(e.target.value)}
-                onBlur={saveWeight}
-              />
-              <span className="cp-comp-eval-suffix">%</span>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
-
-      <CompetencyIndicatorsSection
-        curriculumId={curriculumId}
-        competencyId={comp.id}
-        expanded={indicatorsOpen}
-        onToggle={() => setIndicatorsOpen((v) => !v)}
-      />
+      )}
     </div>
   );
 }
@@ -2349,6 +2187,87 @@ function AgeCategoriesPanel({ curriculumId }) {
   );
 }
 
+/* ── CompetencyLinkDropdown ─────────────────────────────────────────────────
+ * Picks from the existing global competency catalog only — no inline "create
+ * new competency" shortcut here (unlike AddCompetencyDropdown above), since a
+ * band should only ever reference competencies already defined in Settings. */
+
+function CompetencyLinkDropdown({ available, onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => inputRef.current?.focus());
+    else setQuery("");
+  }, [open]);
+
+  const trimmed = query.trim();
+  const filtered = trimmed
+    ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
+    : available;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" className="cp-btn-secondary" onClick={() => setOpen((v) => !v)} style={{ width: "100%", justifyContent: "space-between", display: "flex", alignItems: "center" }}>
+        <span>Choose a competency…</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {open && (
+        <div className="cp-card-menu" style={{ width: "100%", maxHeight: "280px", overflow: "hidden", display: "flex", flexDirection: "column", left: 0, right: "auto", padding: 0 }}>
+          <div style={{ position: "relative", flexShrink: 0, borderBottom: "1px solid #F0F2F5" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}>
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search competencies…"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", border: "none",
+                fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", color: "#111827", background: "#fff",
+              }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", padding: "6px" }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: "22px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
+                  {available.length === 0 ? "All available competencies are already linked." : "No matches found."}
+                </p>
+              </div>
+            )}
+            {filtered.map((comp) => (
+              <button
+                key={comp.id}
+                type="button"
+                className="cp-card-menu-item"
+                onClick={() => { onAdd(comp.id); setOpen(false); }}
+              >
+                {comp.name}
+                <span style={{ marginLeft: "8px", fontSize: "10.5px", fontWeight: "700", color: "#9CA3AF" }}>
+                  {comp.indicators.length} indicator{comp.indicators.length !== 1 ? "s" : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
 
@@ -2358,22 +2277,30 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
+  const { data: allCompetencies = [] }             = useGlobalCompetencies();
 
-  const [mode,       setMode]       = useState("list");
-  const [editTarget, setEdit]       = useState(null);
-  const [name,       setName]       = useState("");
-  const [desc,       setDesc]       = useState("");
-  const [criteria,   setCriteria]   = useState([]);
-  const [newCrit,    setNewCrit]    = useState("");
-  const [minScore,   setMinScore]   = useState("0");
-  const [maxScore,   setMaxScore]   = useState("100");
+  // Every competency in the global catalog (Settings) that already has indicators
+  // defined is offered here — a band linking to a competency with no indicators
+  // wouldn't have anything usable to draw on yet.
+  const linkableCompetencies = allCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
+  const competencyById = new Map(allCompetencies.map((c) => [c.id, c]));
+
+  const [mode,          setMode]          = useState("list");
+  const [editTarget,    setEdit]          = useState(null);
+  const [name,          setName]          = useState("");
+  const [desc,          setDesc]          = useState("");
+  const [criteria,      setCriteria]      = useState([]);
+  const [newCrit,       setNewCrit]       = useState("");
+  const [minScore,      setMinScore]      = useState("0");
+  const [maxScore,      setMaxScore]      = useState("100");
+  const [competencyIds, setCompetencyIds] = useState([]);
   const nameRef    = useRef(null);
   const critRef    = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setMode("add"); }
-  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMinScore(String(b.minScore ?? 0)); setMaxScore(String(b.maxScore ?? 100)); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setCompetencyIds([]); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMinScore(String(b.minScore ?? 0)); setMaxScore(String(b.maxScore ?? 100)); setCompetencyIds([...(b.competencyIds || [])]); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
 
   function addCriterion() {
@@ -2388,17 +2315,21 @@ function PerformanceBandsPanel({ curriculumId }) {
     setCriteria((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function toggleCompetency(id) {
+    setCompetencyIds((prev) => prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]);
+  }
+
   function submit() {
     if (!name.trim()) return;
     const data = {
-      name: name.trim(), description: desc.trim(), criteria,
+      name: name.trim(), description: desc.trim(), criteria, competencyIds,
       minScore: Math.min(100, Math.max(0, Number(minScore) || 0)),
       maxScore: Math.min(100, Math.max(0, Number(maxScore) || 100)),
     };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setCompetencyIds([]); nameRef.current?.focus(); } });
     }
   }
 
@@ -2465,25 +2396,6 @@ function PerformanceBandsPanel({ curriculumId }) {
               <div className="cp-char-count">{name.length} / 100</div>
             </div>
 
-            {/* Score Range */}
-            <div>
-              <label className="cp-field-label">Score Range <span className="cp-required">*</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>The score range (0–100) that places a learner in this band.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "8px", alignItems: "center" }}>
-                <div style={{ position: "relative" }}>
-                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                    placeholder="0" value={minScore} onChange={(e) => setMinScore(e.target.value)} />
-                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>min</span>
-                </div>
-                <span style={{ fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>–</span>
-                <div style={{ position: "relative" }}>
-                  <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                    placeholder="100" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} />
-                  <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>max</span>
-                </div>
-              </div>
-            </div>
-
             {/* Description */}
             <div>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
@@ -2523,6 +2435,42 @@ function PerformanceBandsPanel({ curriculumId }) {
                 />
                 <button type="button" className="cp-btn-secondary" onClick={addCriterion} disabled={!newCrit.trim()}>Add</button>
               </div>
+            </div>
+
+            {/* Linked Competencies */}
+            <div>
+              <label className="cp-field-label">Linked Competencies <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                Pick from the competencies already defined (with indicators) in Settings.
+              </p>
+
+              {competencyIds.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                  {competencyIds.map((id) => {
+                    const comp = competencyById.get(id);
+                    if (!comp) return null;
+                    return (
+                      <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
+                        {comp.name}
+                        <button type="button" onClick={() => toggleCompetency(id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", border: "none", borderRadius: "50%", background: "rgba(37,71,106,0.12)", color: "#25476a", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>×</button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {linkableCompetencies.length === 0 ? (
+                <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
+                  {allCompetencies.length === 0
+                    ? "No competencies exist yet — add some in Settings → Competencies."
+                    : "None of the existing competencies have indicators yet — add indicators to one in Settings → Competencies."}
+                </div>
+              ) : (
+                <CompetencyLinkDropdown
+                  available={linkableCompetencies.filter((c) => !competencyIds.includes(c.id))}
+                  onAdd={toggleCompetency}
+                />
+              )}
             </div>
           </div>
 
@@ -2592,11 +2540,6 @@ function PerformanceBandsPanel({ curriculumId }) {
                         }}>
                           {band.name}
                         </span>
-                        {(band.minScore != null && band.maxScore != null) && (
-                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#6B7280", background: "#F3F4F6", padding: "2px 8px", borderRadius: "20px" }}>
-                            {band.minScore}–{band.maxScore}%
-                          </span>
-                        )}
                         {(band.criteria || []).length > 0 && (
                           <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
                             {band.criteria.length} indicator{band.criteria.length !== 1 ? "s" : ""}
@@ -2619,6 +2562,20 @@ function PerformanceBandsPanel({ curriculumId }) {
                           </li>
                         ))}
                       </ul>
+                    )}
+
+                    {(band.competencyIds || []).length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
+                        {band.competencyIds.map((cId) => {
+                          const comp = competencyById.get(cId);
+                          if (!comp) return null;
+                          return (
+                            <span key={cId} style={{ fontSize: "11px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "3px 10px" }}>
+                              {comp.name} · {comp.indicators?.length || 0} indicator{(comp.indicators?.length || 0) !== 1 ? "s" : ""}
+                            </span>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2845,6 +2802,14 @@ export default function CompetenciesPage() {
 
         <button
           type="button"
+          className={`cp-nav-btn${activeNav === "arc" ? " active" : ""}`}
+          onClick={() => setActiveNav("arc")}
+        >
+          Progress Arc
+        </button>
+
+        <button
+          type="button"
           className={`cp-nav-btn${activeNav === "areas" ? " active" : ""}`}
           onClick={() => setActiveNav("areas")}
         >
@@ -2853,10 +2818,10 @@ export default function CompetenciesPage() {
 
         <button
           type="button"
-          className={`cp-nav-btn${activeNav === "arc" ? " active" : ""}`}
-          onClick={() => setActiveNav("arc")}
+          className={`cp-nav-btn${activeNav === "journey" ? " active" : ""}`}
+          onClick={() => setActiveNav("journey")}
         >
-          Progress Arc
+          Learning Journey
         </button>
 
         <button
@@ -2870,8 +2835,9 @@ export default function CompetenciesPage() {
 
       {/* ── Panels ──────────────────────────────────────────────────── */}
       {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
-      {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
       {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
+      {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
+      {activeNav === "journey"      && <LearningJourneyPanel  curriculumId={id} />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>
   );
