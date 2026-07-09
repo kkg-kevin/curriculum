@@ -304,6 +304,40 @@ const CSS = `
   }
   .cp-comp-check-row input[type="checkbox"] { width:16px; height:16px; flex-shrink:0; accent-color:#25476a; cursor:pointer; }
 
+  /* ── Performance band indicator-points editor ── */
+  .cp-indicators-toggle {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding-top:10px; margin-top:10px; border-top:1px solid #F3F4F6; background:none;
+    border-left:none; border-right:none; border-bottom-width:0; cursor:pointer;
+    font-family:Inter,sans-serif; font-size:11px; font-weight:700; color:#374151;
+  }
+  .cp-indicator-count {
+    font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:20px;
+    background:#F3F4F6; color:#6B7280;
+  }
+  .cp-indicators-chevron { transition:transform 0.15s; color:#9CA3AF; }
+  .cp-indicators-chevron.open { transform:rotate(180deg); }
+  .cp-indicators-body { margin-top:8px; }
+  .cp-indicator-row {
+    display:flex; align-items:center; gap:8px; padding:5px 9px;
+    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:7px; margin-bottom:5px;
+  }
+  .cp-indicator-row span { flex:1; font-size:12px; color:#374151; }
+  .cp-comp-eval-input-wrap { position:relative; }
+  .cp-comp-config-input {
+    width:100%; padding:7px 26px 7px 10px; border-radius:8px; border:1.5px solid #E5E7EB;
+    font-size:13px; font-weight:700; font-family:Inter,sans-serif; color:#111827; background:#fff; outline:none;
+    box-sizing:border-box; transition:border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance:textfield;
+  }
+  .cp-comp-config-input::-webkit-outer-spin-button,
+  .cp-comp-config-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .cp-comp-config-input:focus { border-color:#38aae1; box-shadow:0 0 0 3px rgba(56,170,225,0.12); }
+  .cp-comp-eval-suffix {
+    position:absolute; right:9px; top:50%; transform:translateY(-50%);
+    font-size:11.5px; font-weight:700; color:#9CA3AF; pointer-events:none;
+  }
+
   /* ── Read-only indicators mirror on a linked competency card (matches Settings' display) ── */
   .cp-comp-ind-toggle {
     display:flex; align-items:center; justify-content:space-between; width:100%;
@@ -2270,6 +2304,79 @@ function CompetencyLinkDropdown({ available, onAdd }) {
 
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
+function BandIndicatorPointRow({ ind, points, onSave }) {
+  const [value, setValue] = useState(points ?? 0);
+
+  useEffect(() => { setValue(points ?? 0); }, [points]);
+
+  const save = () => {
+    const v = Math.max(0, Number(value) || 0);
+    setValue(v);
+    if (v !== (points ?? 0)) onSave(v);
+  };
+
+  return (
+    <div className="cp-indicator-row" style={{ alignItems: "flex-start" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block" }}>{ind.name}</span>
+        {ind.description && (
+          <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "#9CA3AF" }}>{ind.description}</span>
+        )}
+      </div>
+      <div className="cp-comp-eval-input-wrap" style={{ width: "60px", flexShrink: 0 }}>
+        <input
+          type="number" min="0" className="cp-comp-config-input"
+          style={{ padding: "5px 30px 5px 8px", fontSize: "11.5px" }}
+          value={value} onChange={(e) => setValue(e.target.value)}
+          onBlur={save}
+        />
+        <span className="cp-comp-eval-suffix" style={{ right: "6px", fontSize: "10px" }}>pts</span>
+      </div>
+    </div>
+  );
+}
+
+// One competency imported into a band — its indicators come straight from Settings
+// (via this curriculum's adopted competency), and each gets a point value scoped to
+// this band only. Points are informal by design: no enforced sum, just a running total
+// shown as a hint since they're meant to add up toward that competency's 100%.
+function BandCompetencyBlock({ comp, color, pointsByIndicator, onSavePoint }) {
+  const [open, setOpen] = useState(false);
+  const indicators = comp.indicators || [];
+  const total = indicators.reduce((sum, ind) => sum + (pointsByIndicator[ind.id] || 0), 0);
+
+  return (
+    <div style={{ marginTop: "10px" }}>
+      <button type="button" className="cp-indicators-toggle" onClick={() => setOpen((v) => !v)} style={{ marginTop: 0 }}>
+        <span style={{ color }}>{comp.name}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="cp-indicator-count">{total} pts</span>
+          <svg className={`cp-indicators-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+      {open && (
+        <div className="cp-indicators-body">
+          {indicators.length === 0 ? (
+            <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
+              This competency has no indicators defined in Settings.
+            </p>
+          ) : (
+            indicators.map((ind) => (
+              <BandIndicatorPointRow
+                key={ind.id}
+                ind={ind}
+                points={pointsByIndicator[ind.id]}
+                onSave={(points) => onSavePoint(ind.id, points)}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PerformanceBandsPanel({ curriculumId }) {
   const { data: bands = [], isLoading }            = usePerformanceBands(curriculumId);
@@ -2277,43 +2384,25 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
-  const { data: allCompetencies = [] }             = useGlobalCompetencies();
+  const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
 
-  // Every competency in the global catalog (Settings) that already has indicators
-  // defined is offered here — a band linking to a competency with no indicators
-  // wouldn't have anything usable to draw on yet.
-  const linkableCompetencies = allCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
-  const competencyById = new Map(allCompetencies.map((c) => [c.id, c]));
+  // Only competencies this curriculum has actually adopted (Competencies tab) — and that
+  // have indicators defined in Settings — are offered here; nothing to draw on otherwise.
+  const linkableCompetencies = adoptedCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
+  const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
 
   const [mode,          setMode]          = useState("list");
   const [editTarget,    setEdit]          = useState(null);
   const [name,          setName]          = useState("");
   const [desc,          setDesc]          = useState("");
-  const [criteria,      setCriteria]      = useState([]);
-  const [newCrit,       setNewCrit]       = useState("");
-  const [minScore,      setMinScore]      = useState("0");
-  const [maxScore,      setMaxScore]      = useState("100");
   const [competencyIds, setCompetencyIds] = useState([]);
   const nameRef    = useRef(null);
-  const critRef    = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setCompetencyIds([]); setMode("add"); }
-  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCriteria([...(b.criteria || [])]); setNewCrit(""); setMinScore(String(b.minScore ?? 0)); setMaxScore(String(b.maxScore ?? 100)); setCompetencyIds([...(b.competencyIds || [])]); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCompetencyIds([]); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCompetencyIds([...(b.competencyIds || [])]); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
-
-  function addCriterion() {
-    const v = newCrit.trim();
-    if (!v) return;
-    setCriteria((prev) => [...prev, v]);
-    setNewCrit("");
-    critRef.current?.focus();
-  }
-
-  function removeCriterion(idx) {
-    setCriteria((prev) => prev.filter((_, i) => i !== idx));
-  }
 
   function toggleCompetency(id) {
     setCompetencyIds((prev) => prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]);
@@ -2321,16 +2410,23 @@ function PerformanceBandsPanel({ curriculumId }) {
 
   function submit() {
     if (!name.trim()) return;
-    const data = {
-      name: name.trim(), description: desc.trim(), criteria, competencyIds,
-      minScore: Math.min(100, Math.max(0, Number(minScore) || 0)),
-      maxScore: Math.min(100, Math.max(0, Number(maxScore) || 100)),
-    };
+    const data = { name: name.trim(), description: desc.trim(), competencyIds };
     if (mode === "edit") {
+      // Dropping a competency from the band also drops any points already assigned
+      // to its indicators — nothing to score against a competency the band no longer uses.
+      data.indicatorPoints = (editTarget.indicatorPoints || []).filter((p) => competencyIds.includes(p.competencyId));
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setCriteria([]); setNewCrit(""); setMinScore("0"); setMaxScore("100"); setCompetencyIds([]); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setCompetencyIds([]); nameRef.current?.focus(); } });
     }
+  }
+
+  function saveIndicatorPoint(band, competencyId, indicatorId, points) {
+    const filtered = (band.indicatorPoints || []).filter(
+      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
+    );
+    const next = points > 0 ? [...filtered, { competencyId, indicatorId, points }] : filtered;
+    update({ id: band.id, data: { indicatorPoints: next } });
   }
 
   function moveUp(idx) {
@@ -2407,41 +2503,11 @@ function PerformanceBandsPanel({ curriculumId }) {
               <div className="cp-char-count">{desc.length} / 1000</div>
             </div>
 
-            {/* Criteria */}
-            <div>
-              <label className="cp-field-label">Performance Indicators <span className="cp-optional">(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Observable behaviours or checkpoints that place a learner in this band.
-              </p>
-              {criteria.length > 0 && (
-                <ul style={{ margin: "0 0 10px", padding: "0 0 0 4px", listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {criteria.map((c, i) => (
-                    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", padding: "7px 10px", background: "#F8FAFC", borderRadius: "8px", border: "1px solid #E5E7EB" }}>
-                      <span style={{ fontSize: "10px", color: "#9CA3AF", marginTop: "2px", flexShrink: 0, fontWeight: "700" }}>#{i + 1}</span>
-                      <span style={{ flex: 1, fontSize: "13px", color: "#374151", lineHeight: "1.5" }}>{c}</span>
-                      <button type="button" className="cp-icon-btn danger" style={{ flexShrink: 0 }} onClick={() => removeCriterion(i)}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input ref={critRef} className="cp-input" style={{ flex: 1 }}
-                  placeholder="Add a performance indicator…"
-                  value={newCrit} maxLength={500}
-                  onChange={(e) => setNewCrit(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCriterion(); } }}
-                />
-                <button type="button" className="cp-btn-secondary" onClick={addCriterion} disabled={!newCrit.trim()}>Add</button>
-              </div>
-            </div>
-
             {/* Linked Competencies */}
             <div>
-              <label className="cp-field-label">Linked Competencies <span className="cp-optional">(optional)</span></label>
+              <label className="cp-field-label">Competencies <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Pick from the competencies already defined (with indicators) in Settings.
+                Import from the competencies this curriculum already uses. Once added, you can set point values for each of their indicators from the band card.
               </p>
 
               {competencyIds.length > 0 && (
@@ -2461,9 +2527,9 @@ function PerformanceBandsPanel({ curriculumId }) {
 
               {linkableCompetencies.length === 0 ? (
                 <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
-                  {allCompetencies.length === 0
-                    ? "No competencies exist yet — add some in Settings → Competencies."
-                    : "None of the existing competencies have indicators yet — add indicators to one in Settings → Competencies."}
+                  {adoptedCompetencies.length === 0
+                    ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab."
+                    : "None of this curriculum's competencies have indicators yet — add indicators to one in Settings → Competencies."}
                 </div>
               ) : (
                 <CompetencyLinkDropdown
@@ -2532,20 +2598,13 @@ function PerformanceBandsPanel({ curriculumId }) {
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{
-                          display: "inline-block", padding: "3px 12px", borderRadius: "20px",
-                          background: `${color}18`, border: `1.5px solid ${color}35`,
-                          fontSize: "13px", fontWeight: "800", color,
-                        }}>
-                          {band.name}
-                        </span>
-                        {(band.criteria || []).length > 0 && (
-                          <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
-                            {band.criteria.length} indicator{band.criteria.length !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
+                      <span style={{
+                        display: "inline-block", padding: "3px 12px", borderRadius: "20px",
+                        background: `${color}18`, border: `1.5px solid ${color}35`,
+                        fontSize: "13px", fontWeight: "800", color,
+                      }}>
+                        {band.name}
+                      </span>
                       <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
                     </div>
 
@@ -2553,29 +2612,28 @@ function PerformanceBandsPanel({ curriculumId }) {
                       <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}>{band.description}</p>
                     )}
 
-                    {(band.criteria || []).length > 0 && (
-                      <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "5px" }}>
-                        {band.criteria.map((c, i) => (
-                          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#374151" }}>
-                            <span style={{ color, flexShrink: 0, marginTop: "1px", fontWeight: "700" }}>›</span>
-                            <span style={{ lineHeight: "1.55" }}>{c}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {(band.competencyIds || []).length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
-                        {band.competencyIds.map((cId) => {
-                          const comp = competencyById.get(cId);
-                          if (!comp) return null;
-                          return (
-                            <span key={cId} style={{ fontSize: "11px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "3px 10px" }}>
-                              {comp.name} · {comp.indicators?.length || 0} indicator{(comp.indicators?.length || 0) !== 1 ? "s" : ""}
-                            </span>
-                          );
-                        })}
-                      </div>
+                    {(band.competencyIds || []).length === 0 ? (
+                      <p style={{ margin: "10px 0 0", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
+                        No competencies imported yet — edit this band to add some.
+                      </p>
+                    ) : (
+                      band.competencyIds.map((cId) => {
+                        const comp = competencyById.get(cId);
+                        if (!comp) return null;
+                        const pointsByIndicator = {};
+                        (band.indicatorPoints || []).forEach((p) => {
+                          if (p.competencyId === cId) pointsByIndicator[p.indicatorId] = p.points;
+                        });
+                        return (
+                          <BandCompetencyBlock
+                            key={cId}
+                            comp={comp}
+                            color={color}
+                            pointsByIndicator={pointsByIndicator}
+                            onSavePoint={(indicatorId, points) => saveIndicatorPoint(band, cId, indicatorId, points)}
+                          />
+                        );
+                      })
                     )}
                   </div>
                 </div>

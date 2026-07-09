@@ -68,5 +68,35 @@
     "order": 3,
     "createdAt": "2026-07-08T08:32:36.181Z",
     "updatedAt": "2026-07-08T08:32:36.181Z"
+  },
+  {
+    "id": "48baa560-110c-4618-8a94-1f692b5cd286",
+    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
+    "name": "Lower Primary",
+    "ageRange": "6–8",
+    "description": "Foundational exposure to digital tools and logical thinking",
+    "order": 1,
+    "createdAt": "2026-07-09T13:50:33.836Z",
+    "updatedAt": "2026-07-09T13:50:33.836Z"
+  },
+  {
+    "id": "fd76e88d-412f-4a87-bd87-fb9a83d3a537",
+    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
+    "name": "Upper Primary",
+    "ageRange": "9–11",
+    "description": "Structured programming and collaborative projects",
+    "order": 2,
+    "createdAt": "2026-07-09T13:50:57.889Z",
+    "updatedAt": "2026-07-09T13:50:57.889Z"
+  },
+  {
+    "id": "68eb3a33-0f4c-4515-89f2-45caec3d7b89",
+    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
+    "name": "Lower Secondary",
+    "ageRange": "12–14",
+    "description": "Independent projects and AI literacy",
+    "order": 3,
+    "createdAt": "2026-07-09T13:51:22.157Z",
+    "updatedAt": "2026-07-09T13:51:22.157Z"
   }
 ]

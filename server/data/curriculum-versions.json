@@ -4621,5 +4621,75 @@
     ],
     "createdAt": "2026-07-08T08:40:33.578Z",
     "updatedAt": "2026-07-08T08:40:34.592Z"
+  },
+  {
+    "id": "1bd83e4e-2829-4041-8d7b-fa7052121ee3",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "academicYearId": "08bd4695-dcef-4c72-b853-1820f29ece53",
+    "versionNumber": 4,
+    "status": "draft",
+    "isCurrent": false,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              },
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          },
+          {
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+                "name": "Python Course - 101",
+                "code": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "className": "Grade 1",
+            "courses": []
+          },
+          {
+            "className": "Grade 2",
+            "courses": []
+          },
+          {
+            "className": "Grade 3",
+            "courses": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-09T13:36:20.670Z",
+    "updatedAt": "2026-07-09T13:36:20.670Z"
   }
 ]
