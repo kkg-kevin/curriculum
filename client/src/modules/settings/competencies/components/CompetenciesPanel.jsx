@@ -45,6 +45,63 @@ function CardKebab({ onEdit, onDelete }) {
   );
 }
 
+function IndicatorsEditor({ indicators, onChange }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const addIndicator = () => {
+    if (!name.trim()) return;
+    onChange([...indicators, { name: name.trim(), description: description.trim() }]);
+    setName("");
+    setDescription("");
+  };
+
+  const removeIndicator = (idx) => onChange(indicators.filter((_, i) => i !== idx));
+
+  return (
+    <div>
+      <Label>Indicators</Label>
+      <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#9CA3AF" }}>
+        How can this competency be recognized when a learner demonstrates it? Add as many as you need.
+      </p>
+
+      {indicators.length > 0 && (
+        <div style={{ marginBottom: "10px" }}>
+          {indicators.map((ind, idx) => (
+            <div key={ind.id || idx} className="stg-ind-row">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                {ind.description && (
+                  <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
+                )}
+              </div>
+              <button type="button" className="stg-ind-x" onClick={() => removeIndicator(idx)}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="stg-ind-add-card">
+        <input
+          className="stg-input stg-ind-add-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Indicator name (e.g. Breaks a problem into smaller steps)"
+        />
+        <input
+          className="stg-input stg-ind-add-input"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description (optional)"
+        />
+        <button type="button" className="stg-btn-secondary" onClick={addIndicator} disabled={!name.trim()}>
+          + Add Indicator
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CompetencyModal({ editTarget, onClose }) {
   const { mutate: create, isPending: creating } = useCreateCompetency();
   const { mutate: update, isPending: updating } = useUpdateCompetency();
@@ -54,6 +111,7 @@ function CompetencyModal({ editTarget, onClose }) {
     name: editTarget?.name || "",
     description: editTarget?.description || "",
   }));
+  const [indicators, setIndicators] = useState(() => editTarget?.indicators || []);
   const [error, setError] = useState("");
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -62,6 +120,7 @@ function CompetencyModal({ editTarget, onClose }) {
     const data = {
       name: form.name.trim(),
       description: form.description.trim(),
+      indicators,
     };
     const onSuccess = () => onClose();
     if (editTarget) update({ id: editTarget.id, data }, { onSuccess });
@@ -90,6 +149,7 @@ function CompetencyModal({ editTarget, onClose }) {
           <Label>Description</Label>
           <textarea rows={4} className="stg-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} />
         </div>
+        <IndicatorsEditor indicators={indicators} onChange={setIndicators} />
       </div>
     </Modal>
   );
@@ -97,6 +157,8 @@ function CompetencyModal({ editTarget, onClose }) {
 
 function CompetencyCard({ comp, color, onEdit, onDelete }) {
   const initial = comp.name.charAt(0).toUpperCase();
+  const indicators = comp.indicators || [];
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="stg-comp-card">
@@ -115,6 +177,29 @@ function CompetencyCard({ comp, color, onEdit, onDelete }) {
       <p className="stg-comp-desc">
         {comp.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
       </p>
+
+      {indicators.length > 0 && (
+        <div>
+          <button type="button" className="stg-comp-ind-toggle" onClick={() => setOpen((v) => !v)}>
+            <span>{indicators.length} indicator{indicators.length !== 1 ? "s" : ""}</span>
+            <svg className={`stg-comp-ind-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {open && (
+            <div className="stg-comp-ind-list">
+              {indicators.map((ind, idx) => (
+                <div key={ind.id || idx} className="stg-comp-ind-item">
+                  <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                  {ind.description && (
+                    <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

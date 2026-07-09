@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery } from "../hooks/useTeacher";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { classApi } from "../../classes/services/classApi";
+import { useAuth } from "../../../context/AuthContext";
+import { teachersListPath, teacherPath, classPath } from "../../../routes/portalPaths";
 
 const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -56,6 +58,7 @@ function DetailRow({ icon, label, value }) {
 export default function TeacherViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
   const { data: school } = useSchoolQuery(teacher?.schoolId);
   const { data: schoolClassesData } = useQuery({
@@ -92,7 +95,7 @@ export default function TeacherViewPage() {
         <div style={{ position: "relative" }}>
           {/* Breadcrumb */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
-            <button type="button" onClick={() => navigate("/teachers")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.65)", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+            <button type="button" onClick={() => navigate(teachersListPath(user?.role, teacher.schoolId))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.65)", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
               Teachers
             </button>
             <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px" }}>/</span>
@@ -121,7 +124,7 @@ export default function TeacherViewPage() {
 
             <button
               type="button"
-              onClick={() => navigate(`/teachers/${id}/edit`)}
+              onClick={() => navigate(teacherPath(user?.role, id, "edit"))}
               style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -148,7 +151,7 @@ export default function TeacherViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {myClasses.map((c) => (
-                  <div key={c.id} onClick={() => navigate(`/classes/${c.id}/view`)}
+                  <div key={c.id} onClick={() => navigate(classPath(user?.role, c.id, "view"))}
                     style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
@@ -189,7 +192,7 @@ export default function TeacherViewPage() {
             ) : (
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <p style={{ margin: "0 0 8px", fontSize: "13px", color: "#9CA3AF" }}>No school assigned.</p>
-                <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
+                <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
                   Assign school →
                 </button>
               </div>
@@ -210,7 +213,7 @@ export default function TeacherViewPage() {
               {!teacher.email && !teacher.phone && (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>
                   No contact details.{" "}
-                  <button type="button" onClick={() => navigate(`/teachers/${id}/edit`)} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
+                  <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
                     Add →
                   </button>
                 </p>

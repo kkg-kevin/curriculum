@@ -1,11 +1,23 @@
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
+import TeacherPortalLayout from "../layouts/TeacherPortalLayout";
+import SchoolPortalLayout from "../layouts/SchoolPortalLayout";
+import LearnerPortalLayout from "../layouts/LearnerPortalLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import LoginPage from "../modules/auth/pages/LoginPage";
 import SignupPage from "../modules/auth/pages/SignupPage";
 import ForgotPasswordPage from "../modules/auth/pages/ForgotPasswordPage";
 import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
+import ComingSoon from "../components/ui/ComingSoon";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
+import TeacherPortalDashboardPage from "../modules/teacher-portal/pages/DashboardPage";
+import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
+import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
+import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
+import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
+import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
+import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
 import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPage";
 import CurriculumStructurePage from "../modules/curriculum/pages/CurriculumStructurePage";
@@ -42,16 +54,6 @@ import AssessmentBuilderPage from "../modules/assessments/pages/AssessmentBuilde
 import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 
-function ComingSoon({ name }) {
-  return (
-    <div style={{ fontFamily: "Inter, sans-serif", padding: "40px 24px", textAlign: "center", color: "#9CA3AF" }}>
-      <p style={{ fontSize: "32px", margin: "0 0 12px" }}>🚧</p>
-      <p style={{ fontSize: "16px", fontWeight: "700", color: "#374151", margin: "0 0 6px" }}>{name}</p>
-      <p style={{ fontSize: "13px", margin: 0 }}>This module is coming soon.</p>
-    </div>
-  );
-}
-
 export default function AppRoutes() {
   return (
     <Routes>
@@ -62,6 +64,7 @@ export default function AppRoutes() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
+      <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="schools">
@@ -116,6 +119,50 @@ export default function AppRoutes() {
         </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
         <Route path="settings" element={<SettingsPage />} />
+      </Route>
+      </Route>
+
+      <Route element={<RoleRoute allow={["teacher"]} />}>
+        <Route path="/teacher-portal" element={<TeacherPortalLayout />}>
+          <Route index element={<TeacherPortalDashboardPage />} />
+          <Route path="classes/:classId" element={<MyClassPage />} />
+          <Route path="course-content" element={<TeacherCourseContentPage />} />
+          <Route path="course-content/:courseId" element={<CourseContentLandingPage />} />
+          <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
+          <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
+          <Route path="assessments" element={<ComingSoon name="Assessments" />} />
+          <Route path="attendance" element={<ComingSoon name="Attendance" />} />
+        </Route>
+      </Route>
+
+      <Route element={<RoleRoute allow={["school"]} />}>
+        <Route path="/school-portal" element={<SchoolPortalLayout />}>
+          <Route index element={<SchoolPortalDashboardPage />} />
+          <Route path="classes/:schoolId" element={<SchoolClassesPage />} />
+          <Route path="classes/:id/view" element={<ClassViewPage />} />
+          <Route path="classes/:id/edit" element={<EditClassPage />} />
+          <Route path="teachers/:schoolId" element={<SchoolTeachersPage />} />
+          <Route path="teachers/create" element={<CreateTeacherPage />} />
+          <Route path="teachers/:id/view" element={<TeacherViewPage />} />
+          <Route path="teachers/:id/edit" element={<EditTeacherPage />} />
+          <Route path="learners/:schoolId" element={<SchoolLearnersPage />} />
+          <Route path="learners/create" element={<CreateLearnerPage />} />
+          <Route path="learners/:id/view" element={<LearnerViewPage />} />
+          <Route path="learners/:id/edit" element={<EditLearnerPage />} />
+          <Route path="reports" element={<ComingSoon name="Reports" />} />
+        </Route>
+      </Route>
+
+      <Route element={<RoleRoute allow={["learner"]} />}>
+        <Route path="/learner-portal" element={<LearnerPortalLayout />}>
+          <Route index element={<LearnerPortalDashboardPage />} />
+          <Route path="courses" element={<LearnerMyCoursesPage />} />
+          <Route path="courses/:courseId" element={<CourseContentLandingPage />} />
+          <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
+          <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
+          <Route path="assessments" element={<ComingSoon name="Assessments" />} />
+          <Route path="progress" element={<ComingSoon name="Progress" />} />
+        </Route>
       </Route>
       </Route>
     </Routes>

@@ -10,6 +10,8 @@ import { classApi } from "../../classes/services/classApi";
 import { teacherApi } from "../services/teacherApi";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { teachersListPath, teacherPath } from "../../../routes/portalPaths";
 
 const ACCENT = "#25476a";
 
@@ -40,6 +42,7 @@ function ClassCheckbox({ cls, teachersMap, selected, onToggle }) {
 
 export default function CreateTeacherPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const lockedSchoolId = searchParams.get("schoolId") || "";
@@ -94,14 +97,14 @@ export default function CreateTeacherPage() {
           );
           qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
         }
-        navigate(`/teachers/${teacher.id}/view`);
+        navigate(teacherPath(user?.role, teacher.id, "view"));
       },
     });
   };
 
   const handleCancel = () => {
     if (isDirty || selectedClassIds.size > 0) setConfirmLeave(true);
-    else navigate("/teachers");
+    else navigate(teachersListPath(user?.role, lockedSchoolId));
   };
 
   return (
@@ -186,7 +189,7 @@ export default function CreateTeacherPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/teachers")}
+        onConfirm={() => navigate(teachersListPath(user?.role, lockedSchoolId))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

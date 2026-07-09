@@ -26,6 +26,16 @@ function Header() {
     "/assessments": "Assessments",
     "/reports": "Reports",
     "/settings": "Settings",
+    "/teacher-portal": "My Dashboard",
+    "/teacher-portal/course-content": "Course Content",
+    "/teacher-portal/assessments": "Assessments",
+    "/teacher-portal/attendance": "Attendance",
+    "/school-portal": "My Dashboard",
+    "/school-portal/reports": "Reports",
+    "/learner-portal": "My Dashboard",
+    "/learner-portal/courses": "My Courses",
+    "/learner-portal/assessments": "Assessments",
+    "/learner-portal/progress": "Progress",
   };
 
   const getPageTitle = (pathname) => {
@@ -36,6 +46,16 @@ function Header() {
       return "Edit Curriculum";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/view"))
       return "Curriculum View";
+    if (pathname.startsWith("/teacher-portal/classes/"))
+      return "My Class";
+    if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))
+      return "Course Content";
+    if (pathname.startsWith("/school-portal/classes/"))
+      return "Classes";
+    if (pathname.startsWith("/school-portal/teachers/"))
+      return "Teachers";
+    if (pathname.startsWith("/school-portal/learners/"))
+      return "Learners";
     return "Dashboard";
   };
 

@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../../context/AuthContext";
+import { learnerCreatePath } from "../../../routes/portalPaths";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { learnerApi } from "../services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
@@ -15,6 +17,9 @@ const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1p
 export default function SchoolLearnersPage() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const backPath  = user?.role === "school" ? "/school-portal" : "/learners";
+  const backLabel = user?.role === "school" ? "Dashboard" : "Learners";
   const [statusFilter, setStatusFilter] = useState("");
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
@@ -46,9 +51,9 @@ export default function SchoolLearnersPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <button type="button" onClick={() => navigate("/learners")}
+        <button type="button" onClick={() => navigate(backPath)}
           style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-          ← Learners
+          ← {backLabel}
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{school?.name || "School"}</span>
@@ -71,7 +76,7 @@ export default function SchoolLearnersPage() {
           </div>
           <button
             type="button"
-            onClick={() => navigate(`/learners/create?schoolId=${schoolId}`)}
+            onClick={() => navigate(learnerCreatePath(user?.role, schoolId))}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
           >
             + Enrol Learner
@@ -145,7 +150,7 @@ export default function SchoolLearnersPage() {
           </p>
           {statusFilter
             ? <button type="button" onClick={() => setStatusFilter("")} style={{ padding: "10px 24px", backgroundColor: "transparent", color: ACCENT, border: `1.5px solid ${ACCENT}`, borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Clear Filter</button>
-            : <button type="button" onClick={() => navigate(`/learners/create?schoolId=${schoolId}`)} style={{ padding: "10px 24px", backgroundColor: ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>+ Enrol Learner</button>
+            : <button type="button" onClick={() => navigate(learnerCreatePath(user?.role, schoolId))} style={{ padding: "10px 24px", backgroundColor: ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>+ Enrol Learner</button>
           }
         </div>
       ) : (

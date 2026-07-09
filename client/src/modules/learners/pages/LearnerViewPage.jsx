@@ -5,6 +5,8 @@ import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -32,6 +34,7 @@ function DetailRow({ label, value, empty = "—" }) {
 export default function LearnerViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { mutate: deleteLearner } = useDeleteLearner();
   const { data: schoolsData } = useSchoolsQuery();
@@ -56,7 +59,7 @@ export default function LearnerViewPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <button type="button" onClick={() => navigate("/learners")} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+        <button type="button" onClick={() => navigate(learnersListPath(user?.role, learner.schoolId))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           ← Learners
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
@@ -80,7 +83,7 @@ export default function LearnerViewPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" onClick={() => navigate(`/learners/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={() => navigate(learnerPath(user?.role, id, "edit"))} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
             </button>
             <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -127,7 +130,7 @@ export default function LearnerViewPage() {
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          deleteLearner(id, { onSuccess: () => navigate("/learners") });
+          deleteLearner(id, { onSuccess: () => navigate(learnersListPath(user?.role, learner.schoolId)) });
         }}
         onCancel={() => setConfirmDelete(false)}
       />

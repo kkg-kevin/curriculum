@@ -9,8 +9,8 @@ const createTeacher = asyncHandler(async (req, res) => {
 });
 
 const getAllTeachers = asyncHandler(async (req, res) => {
-  const { schoolId, status, subject } = req.query;
-  const teachers = await TeacherService.getAllTeachers({ schoolId, status, subject });
+  const { schoolId, status, subject, email } = req.query;
+  const teachers = await TeacherService.getAllTeachers({ schoolId, status, subject, email });
   res.json({ success: true, data: teachers, count: teachers.length });
 });
 

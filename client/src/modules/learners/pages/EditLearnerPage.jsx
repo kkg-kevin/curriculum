@@ -6,12 +6,15 @@ import { useLearnerQuery, useUpdateLearner } from "../hooks/useLearners";
 import { updateLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
 
 const ACCENT = "#25476a";
 
 export default function EditLearnerPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { mutate: updateLearner, isPending } = useUpdateLearner();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -47,13 +50,13 @@ export default function EditLearnerPage() {
 
   const onSubmit = (data) => {
     updateLearner({ id, data }, {
-      onSuccess: () => navigate(`/learners/${id}/view`),
+      onSuccess: () => navigate(learnerPath(user?.role, id, "view")),
     });
   };
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate(`/learners/${id}/view`);
+    else navigate(learnerPath(user?.role, id, "view"));
   };
 
   if (isLoading) return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -108,7 +111,7 @@ export default function EditLearnerPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/learners")}
+        onConfirm={() => navigate(learnersListPath(user?.role, learner.schoolId))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

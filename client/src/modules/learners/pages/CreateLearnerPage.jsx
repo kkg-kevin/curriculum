@@ -6,11 +6,14 @@ import { useCreateLearner } from "../hooks/useLearners";
 import { createLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
 
 const ACCENT = "#25476a";
 
 export default function CreateLearnerPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const lockedSchoolId = searchParams.get("schoolId") || "";
 
@@ -32,13 +35,13 @@ export default function CreateLearnerPage() {
 
   const onSubmit = (data) => {
     createLearner(data, {
-      onSuccess: (learner) => navigate(`/learners/${learner.id}/view`),
+      onSuccess: (learner) => navigate(learnerPath(user?.role, learner.id, "view")),
     });
   };
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate("/learners");
+    else navigate(learnersListPath(user?.role, lockedSchoolId));
   };
 
   return (
@@ -90,7 +93,7 @@ export default function CreateLearnerPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/learners")}
+        onConfirm={() => navigate(learnersListPath(user?.role, lockedSchoolId))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>
