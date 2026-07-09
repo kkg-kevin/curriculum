@@ -6,6 +6,8 @@ import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useQuery } from "@tanstack/react-query";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
+import { useAuth } from "../../../context/AuthContext";
+import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 function DetailRow({ label, value, empty = "—" }) {
@@ -40,6 +42,7 @@ function CapacityRow({ enrolled, capacity }) {
 export default function ClassViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: cls, isLoading } = useClassQuery(id);
   const { mutate: deleteClass } = useDeleteClass();
   const { data: schoolsData } = useSchoolsQuery();
@@ -77,13 +80,13 @@ export default function ClassViewPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <button type="button" onClick={() => navigate("/classes")} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+        <button type="button" onClick={() => navigate(classesListPath(user?.role, cls.schoolId))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           ← Classes
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
         {school && (
           <>
-            <button type="button" onClick={() => navigate(`/classes/school/${cls.schoolId}`)} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={() => navigate(classesListPath(user?.role, cls.schoolId))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               {school.name}
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
@@ -106,7 +109,7 @@ export default function ClassViewPage() {
           <div style={{ display: "flex", gap: 10 }}>
             <button
               type="button"
-              onClick={() => navigate(`/classes/${id}/edit`)}
+              onClick={() => navigate(classPath(user?.role, id, "edit"))}
               style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
             >
               Edit
@@ -147,12 +150,12 @@ export default function ClassViewPage() {
             <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>🎒</div>
               <p style={{ margin: "0 0 12px", fontSize: 13 }}>No learners enrolled in this class yet.</p>
-              <button type="button" onClick={() => navigate("/learners/create")} style={{ padding: "8px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Enroll Learner</button>
+              <button type="button" onClick={() => navigate(learnerCreatePath(user?.role, cls.schoolId))} style={{ padding: "8px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Enroll Learner</button>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {classLearners.slice(0, 8).map((l) => (
-                <div key={l.id} onClick={() => navigate(`/learners/${l.id}/view`)}
+                <div key={l.id} onClick={() => navigate(learnerPath(user?.role, l.id, "view"))}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 10, border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
@@ -185,7 +188,7 @@ export default function ClassViewPage() {
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          deleteClass(id, { onSuccess: () => navigate("/classes") });
+          deleteClass(id, { onSuccess: () => navigate(classesListPath(user?.role, cls.schoolId)) });
         }}
         onCancel={() => setConfirmDelete(false)}
       />

@@ -4,7 +4,9 @@ import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
-import { SECTIONS, SECTION_LABELS, sessionLabel, sectionLinkPath, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
+import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
+import { useAuth } from "../../../context/AuthContext";
+import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
@@ -52,7 +54,7 @@ function SectionIcon() {
 
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments, onLeafSelect }) {
+function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments, onLeafSelect }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -168,7 +170,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                               return (
                                 <Link
                                   key={item.id}
-                                  to={`/courses/${courseId}/sessions/${session.id}/sections/${section.key}/${item.id}`}
+                                  to={sectionPath(role, courseId, session.id, section.key, item.id)}
                                   onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                                   style={{
                                     display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px 7px 54px",
@@ -221,7 +223,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                               return (
                                 <Link
                                   key={a.id}
-                                  to={`/courses/${courseId}/sessions/${session.id}/sections/assessments/${a.id}`}
+                                  to={sectionPath(role, courseId, session.id, "assessments", a.id)}
                                   title={a.name}
                                   onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                                   style={{
@@ -245,7 +247,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
                   return (
                     <Link
                       key={section.key}
-                      to={sectionLinkPath(courseId, session, section)}
+                      to={sectionPath(role, courseId, session.id, section.key)}
                       onClick={() => { collapseSession(session.id); onLeafSelect?.(); }}
                       style={{
                         display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px 8px 32px",
@@ -270,7 +272,7 @@ function SessionSidebar({ courseId, sessions, activeSessionId, activeSectionKey,
 
 /* ── Section content by type ──────────────────────────────────────────── */
 
-function SectionBody({ sectionKey, session, allAssessments, courseId }) {
+function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
   if (sectionKey === "outcomes") {
     const outcomes = session.outcomes || [];
     return outcomes.length > 0 ? (
@@ -301,7 +303,7 @@ function SectionBody({ sectionKey, session, allAssessments, courseId }) {
           return (
             <li key={a.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", flexWrap: "wrap" }}>
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
-              <Link to={`/courses/${courseId}/sessions/${session.id}/sections/assessments/${a.id}`} style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
+              <Link to={sectionPath(role, courseId, session.id, "assessments", a.id)} style={{ flex: 1, minWidth: "140px", fontSize: "14px", color: "#25476a", fontWeight: "600", textDecoration: "none" }}>
                 {a.name}
               </Link>
               <span style={{ fontSize: "10.5px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 9px", borderRadius: "20px", whiteSpace: "nowrap" }}>
@@ -348,6 +350,8 @@ function SectionBody({ sectionKey, session, allAssessments, courseId }) {
 export default function SectionViewPage() {
   const { id, sessionId, sectionKey, itemId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
@@ -383,10 +387,7 @@ export default function SectionViewPage() {
 
   const goTo = (target) => {
     if (!target) return;
-    const path = target.itemId
-      ? `/courses/${id}/sessions/${target.sessionId}/sections/${target.sectionKey}/${target.itemId}`
-      : `/courses/${id}/sessions/${target.sessionId}/sections/${target.sectionKey}`;
-    navigate(path);
+    navigate(sectionPath(role, id, target.sessionId, target.sectionKey, target.itemId));
   };
 
   if (isLoading) {
@@ -418,7 +419,7 @@ export default function SectionViewPage() {
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
         <button
           type="button"
-          onClick={() => navigate(`/courses/${id}/view`)}
+          onClick={() => navigate(courseHomePath(role, id))}
           style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
         >
           ← Back to Course
@@ -440,6 +441,7 @@ export default function SectionViewPage() {
       <div style={{ display: "grid", gridTemplateColumns: sidebarCollapsed ? "1fr" : "300px 1fr", gap: sidebarCollapsed ? "0" : "20px", alignItems: "start" }}>
         {!sidebarCollapsed && (
           <SessionSidebar
+            role={role}
             courseId={id}
             sessions={sessions}
             activeSessionId={sessionId}
@@ -453,7 +455,7 @@ export default function SectionViewPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", flexWrap: "wrap" }}>
-              <Link to={`/courses/${id}/view`} style={{ color: "#38aae1", textDecoration: "none", fontWeight: "600" }}>{course.name}</Link>
+              <Link to={courseHomePath(role, id)} style={{ color: "#38aae1", textDecoration: "none", fontWeight: "600" }}>{course.name}</Link>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
               <span style={{ color: "#6B7280" }}>{sessionLabel(session, sessionIndex)}</span>
               <span style={{ color: "#D1D5DB" }}>&gt;</span>
@@ -514,7 +516,7 @@ export default function SectionViewPage() {
                 </p>
               )
             ) : (
-              <SectionBody sectionKey={sectionKey} session={session} allAssessments={allAssessments} courseId={id} />
+              <SectionBody role={role} sectionKey={sectionKey} session={session} allAssessments={allAssessments} courseId={id} />
             )}
           </div>
         </div>

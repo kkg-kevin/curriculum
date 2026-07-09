@@ -33,11 +33,12 @@ const SchoolModel = {
     return school;
   },
 
-  findAll({ status, county, curriculumId } = {}) {
+  findAll({ status, county, curriculumId, email } = {}) {
     let all = readAll();
     if (status)       all = all.filter((s) => s.status === status);
     if (county)       all = all.filter((s) => s.address?.county === county);
     if (curriculumId) all = all.filter((s) => s.curriculumId === curriculumId);
+    if (email)        all = all.filter((s) => s.email?.toLowerCase() === email.toLowerCase());
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 

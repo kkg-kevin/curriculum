@@ -78,6 +78,36 @@ const CSS = `
     flex:1;
   }
 
+  .stg-comp-ind-toggle {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    margin-top:10px; padding-top:10px; border-top:1px solid #F3F4F6; background:none;
+    border-left:none; border-right:none; border-bottom-width:0; cursor:pointer;
+    font-family:Inter,sans-serif; font-size:11px; font-weight:700; color:#25476a;
+  }
+  .stg-comp-ind-chevron { transition:transform 0.15s; color:#9CA3AF; }
+  .stg-comp-ind-chevron.open { transform:rotate(180deg); }
+  .stg-comp-ind-list { margin-top:8px; }
+  .stg-comp-ind-item {
+    padding:7px 9px; background:#F9FAFB; border:1px solid #F3F4F6; border-radius:8px;
+    margin-bottom:5px;
+  }
+  .stg-comp-ind-item:last-child { margin-bottom:0; }
+
+  .stg-ind-row {
+    display:flex; align-items:flex-start; gap:10px; padding:8px 10px;
+    background:#F9FAFB; border:1px solid #F3F4F6; border-radius:9px; margin-bottom:6px;
+  }
+  .stg-ind-x {
+    background:none; border:none; color:#9CA3AF; cursor:pointer; font-size:16px;
+    line-height:1; padding:0; transition:color 0.1s; flex-shrink:0;
+  }
+  .stg-ind-x:hover { color:#DC2626; }
+  .stg-ind-add-card {
+    display:flex; flex-direction:column; gap:8px; padding:12px;
+    background:#F9FAFB; border:1.5px dashed #E5E7EB; border-radius:12px;
+  }
+  .stg-ind-add-input { background:#fff; }
+
   .stg-kebab-btn {
     width:28px; height:28px; border-radius:8px; border:none; background:transparent;
     cursor:pointer; display:flex; align-items:center; justify-content:center;

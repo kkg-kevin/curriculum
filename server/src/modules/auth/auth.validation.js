@@ -1,12 +1,12 @@
 const { z } = require("zod");
 
-// Kept in one place so scoping in more roles later (teacher/learner) is a one-line change.
-const USER_ROLES = ["admin", "teacher", "learner"];
+// Kept in one place so scoping in more roles later is a one-line change.
+const USER_ROLES = ["admin", "school", "teacher", "learner"];
 
 // Public self-signup is only ever allowed to create these roles — "admin" is never reachable
 // from this schema, so privilege escalation via the signup form isn't possible even if the
 // controller forgets to double-check. Admins are seeded/created by another admin only.
-const PUBLIC_SIGNUP_ROLES = ["teacher", "learner"];
+const PUBLIC_SIGNUP_ROLES = ["school", "teacher", "learner"];
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),

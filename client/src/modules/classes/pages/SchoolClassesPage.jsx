@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../../context/AuthContext";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { curriculumApi } from "../../curriculum/services/curriculumApi";
 import { classApi } from "../services/classApi";
@@ -17,6 +18,9 @@ const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1p
 export default function SchoolClassesPage() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const backPath  = user?.role === "school" ? "/school-portal" : "/classes";
+  const backLabel = user?.role === "school" ? "Dashboard" : "Classes";
   const [statusFilter, setStatusFilter] = useState("");
 
   const [setupOpen, setSetupOpen] = useState(false);
@@ -54,9 +58,9 @@ export default function SchoolClassesPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <button type="button" onClick={() => navigate("/classes")}
+        <button type="button" onClick={() => navigate(backPath)}
           style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-          ← Classes
+          ← {backLabel}
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{school?.name || "School"}</span>

@@ -12,8 +12,7 @@ const cookieOptions = {
 
 const signup = asyncHandler(async (req, res) => {
   const data = signupSchema.parse(req.body);
-  const { user, token } = await AuthService.signup(data);
-  res.cookie(COOKIE_NAME, token, cookieOptions);
+  const user = await AuthService.signup(data);
   res.status(201).json({ success: true, data: user });
 });
 

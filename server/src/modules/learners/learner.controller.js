@@ -9,8 +9,8 @@ const createLearner = asyncHandler(async (req, res) => {
 });
 
 const getAllLearners = asyncHandler(async (req, res) => {
-  const { schoolId, classId, status } = req.query;
-  const records = await LearnerService.getAllLearners({ schoolId, classId, status });
+  const { schoolId, classId, status, guardianEmail } = req.query;
+  const records = await LearnerService.getAllLearners({ schoolId, classId, status, guardianEmail });
   res.json({ success: true, data: records, count: records.length });
 });
 

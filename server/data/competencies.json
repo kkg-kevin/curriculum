@@ -40,5 +40,39 @@
     "description": "dev 101",
     "createdAt": "2026-07-06T11:42:19.969Z",
     "updatedAt": "2026-07-06T11:42:19.969Z"
+  },
+  {
+    "id": "8efe0129-a518-4287-9b27-faba52553004",
+    "name": "Thinking",
+    "description": "Think",
+    "indicators": [
+      {
+        "id": "0e619faf-8e1d-4991-bae3-07bde5f5e42a",
+        "name": "bsfb",
+        "description": ""
+      },
+      {
+        "id": "619b9015-c29d-400c-8df6-b4ee4b38cac1",
+        "name": "afbf",
+        "description": ""
+      },
+      {
+        "id": "9681e690-0802-4bc1-a42d-27ec3001da62",
+        "name": "wrbgws",
+        "description": ""
+      },
+      {
+        "id": "cc7dd1ea-bd5f-40e7-9f01-3cbb2f23ec92",
+        "name": "rgRSETNBGEEA",
+        "description": ""
+      },
+      {
+        "name": "dvD",
+        "description": "",
+        "id": "1781218b-325d-4f4d-a05c-c413127625b2"
+      }
+    ],
+    "createdAt": "2026-07-09T10:10:29.598Z",
+    "updatedAt": "2026-07-09T10:13:10.685Z"
   }
 ]

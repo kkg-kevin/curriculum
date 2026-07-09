@@ -6,10 +6,13 @@ import { useTeacherQuery, useUpdateTeacher } from "../hooks/useTeacher";
 import { teacherSchema } from "../schemas/teacher.schema";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { teacherPath } from "../../../routes/portalPaths";
 
 export default function EditTeacherPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
   const { mutate: updateTeacher, isPending } = useUpdateTeacher();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -37,13 +40,13 @@ export default function EditTeacherPage() {
 
   const onSubmit = (data) => {
     updateTeacher({ id, data }, {
-      onSuccess: () => navigate(`/teachers/${id}/view`),
+      onSuccess: () => navigate(teacherPath(user?.role, id, "view")),
     });
   };
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate(`/teachers/${id}/view`);
+    else navigate(teacherPath(user?.role, id, "view"));
   };
 
   if (isLoading) {
@@ -67,7 +70,7 @@ export default function EditTeacherPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
-            <button type="button" onClick={() => navigate(`/teachers/${id}/view`)} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "view"))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               ← {teacher.firstName} {teacher.lastName}
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
@@ -110,7 +113,7 @@ export default function EditTeacherPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate(`/teachers/${id}/view`)}
+        onConfirm={() => navigate(teacherPath(user?.role, id, "view"))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

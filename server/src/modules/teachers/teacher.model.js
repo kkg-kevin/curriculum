@@ -33,11 +33,12 @@ const TeacherModel = {
     return teacher;
   },
 
-  findAll({ schoolId, status, subject } = {}) {
+  findAll({ schoolId, status, subject, email } = {}) {
     let all = readAll();
     if (schoolId) all = all.filter((t) => t.schoolId === schoolId);
     if (status)   all = all.filter((t) => t.status === status);
     if (subject)  all = all.filter((t) => t.subjects?.includes(subject));
+    if (email)    all = all.filter((t) => t.email?.toLowerCase() === email.toLowerCase());
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteLearner } from "../hooks/useLearners";
+import { useAuth } from "../../../context/AuthContext";
+import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
@@ -35,6 +37,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 
 export function LearnerCard({ learner, classMap }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { mutate: deleteLearner, isPending: isDeleting } = useDeleteLearner();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
@@ -87,7 +90,7 @@ export function LearnerCard({ learner, classMap }) {
             </div>
             <div style={{ minWidth: 0 }}>
               <h3
-                onClick={() => navigate(`/learners/${learner.id}/view`)}
+                onClick={() => navigate(learnerPath(user?.role, learner.id, "view"))}
                 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: hovered ? ACCENT : "#111827", cursor: "pointer", transition: "color 0.15s" }}
               >
                 {learner.firstName} {learner.lastName}
@@ -130,8 +133,8 @@ export function LearnerCard({ learner, classMap }) {
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{learner.admissionNumber}</p>
           </div>
           {[
-            { label: "View", path: `/learners/${learner.id}/view`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit", path: `/learners/${learner.id}/edit`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            { label: "View", path: learnerPath(user?.role, learner.id, "view"), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
+            { label: "Edit", path: learnerPath(user?.role, learner.id, "edit"), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}

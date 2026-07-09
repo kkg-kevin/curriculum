@@ -7,11 +7,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Every fresh app load must land on login, regardless of role or a still-valid session
+  // cookie from last time — so a mount clears any existing session instead of resuming it.
   useEffect(() => {
     authApi
-      .me()
-      .then(setUser)
-      .catch(() => setUser(null))
+      .logout()
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -22,9 +23,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signup = useCallback(async (payload) => {
-    const newUser = await authApi.signup(payload);
-    setUser(newUser);
-    return newUser;
+    return authApi.signup(payload);
   }, []);
 
   const logout = useCallback(async () => {

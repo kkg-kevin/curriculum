@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useClassQuery, useUpdateClass } from "../hooks/useClasses";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { teacherApi } from "../../teachers/services/teacherApi";
+import { useAuth } from "../../../context/AuthContext";
+import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
@@ -33,6 +35,7 @@ const S = {
 export default function EditClassPage() {
   const { id }     = useParams();
   const navigate   = useNavigate();
+  const { user }   = useAuth();
   const { data: cls, isLoading } = useClassQuery(id);
   const { mutate: updateClass, isPending } = useUpdateClass();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -63,12 +66,12 @@ export default function EditClassPage() {
   }, [cls, reset]);
 
   const onSubmit = (data) => {
-    updateClass({ id, data }, { onSuccess: () => navigate(`/classes/${id}/view`) });
+    updateClass({ id, data }, { onSuccess: () => navigate(classPath(user?.role, id, "view")) });
   };
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate(`/classes/${id}/view`);
+    else navigate(classPath(user?.role, id, "view"));
   };
 
   if (isLoading) {
@@ -196,7 +199,7 @@ export default function EditClassPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate(`/classes/${id}/view`)}
+        onConfirm={() => navigate(classPath(user?.role, id, "view"))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

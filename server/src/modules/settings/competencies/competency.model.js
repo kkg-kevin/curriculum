@@ -10,6 +10,10 @@ function genId() {
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
+function withIndicatorIds(indicators) {
+  return (indicators || []).map((ind) => ({ ...ind, id: ind.id || genId() }));
+}
+
 const CompetencyModel = {
   findAll() {
     return read();
@@ -27,7 +31,7 @@ const CompetencyModel = {
   create(data) {
     const all  = read();
     const now  = new Date().toISOString();
-    const item = { id: genId(), ...data, createdAt: now, updatedAt: now };
+    const item = { id: genId(), ...data, indicators: withIndicatorIds(data.indicators), createdAt: now, updatedAt: now };
     all.push(item);
     write(all);
     return item;
@@ -37,7 +41,8 @@ const CompetencyModel = {
     const all = read();
     const idx = all.findIndex((c) => c.id === id);
     if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...data, id, updatedAt: new Date().toISOString() };
+    const indicators = data.indicators ? withIndicatorIds(data.indicators) : all[idx].indicators;
+    all[idx] = { ...all[idx], ...data, indicators, id, updatedAt: new Date().toISOString() };
     write(all);
     return all[idx];
   },

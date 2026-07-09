@@ -3,12 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
-import { FiUser, FiMail, FiLock, FiUsers, FiBookOpen } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiHome, FiUsers, FiBookOpen } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { signupSchema } from "../schemas/auth.schema";
 import { FieldWrap, IconInput, PasswordInput, RoleTile } from "../components/AuthFields";
 
 const ROLE_TILES = [
+  {
+    value: "school",
+    label: "School",
+    icon: FiHome,
+    description: "Manage your school's classes, teachers, and learners for the academic year.",
+  },
   {
     value: "teacher",
     label: "Teacher",
@@ -53,7 +59,8 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       await signup(payload);
-      navigate("/", { replace: true });
+      toast.success("Account created! Please log in.");
+      navigate("/login", { replace: true });
     } catch (err) {
       toast.error(err.message || "Could not create your account");
     } finally {

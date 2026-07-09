@@ -32,11 +32,12 @@ const LearnerModel = {
     return record;
   },
 
-  findAll({ schoolId, classId, status } = {}) {
+  findAll({ schoolId, classId, status, guardianEmail } = {}) {
     let all = readAll();
-    if (schoolId) all = all.filter((l) => l.schoolId === schoolId);
-    if (classId)  all = all.filter((l) => l.classId === classId);
-    if (status)   all = all.filter((l) => l.status === status);
+    if (schoolId)      all = all.filter((l) => l.schoolId === schoolId);
+    if (classId)       all = all.filter((l) => l.classId === classId);
+    if (status)        all = all.filter((l) => l.status === status);
+    if (guardianEmail) all = all.filter((l) => l.guardianEmail?.toLowerCase() === guardianEmail.toLowerCase());
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 

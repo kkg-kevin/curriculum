@@ -7,5 +7,32 @@
     "id": "e8cc7387-d36b-4101-98d8-dcea02b885ac",
     "createdAt": "2026-07-08T11:20:18.637Z",
     "updatedAt": "2026-07-08T11:20:18.638Z"
+  },
+  {
+    "name": "Teacher ",
+    "email": "teacher@digifunzi.com",
+    "passwordHash": "$2b$10$oV.F7VPILijAhF.ItxX3POzUnv8YUmH1T54ZVWCTQJWNqE27uuz5K",
+    "role": "teacher",
+    "id": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-09T07:54:00.373Z",
+    "updatedAt": "2026-07-09T07:54:00.373Z"
+  },
+  {
+    "name": "School",
+    "email": "school@digifunzi.com",
+    "passwordHash": "$2b$10$KVlt0Qf6QVrx4f5fd66Xqe/cuD6BJFAsCmiAh8WcJadDtmqs9jNT6",
+    "role": "school",
+    "id": "4a3bcb82-123c-4102-a2b9-a730b5124d11",
+    "createdAt": "2026-07-09T08:19:34.545Z",
+    "updatedAt": "2026-07-09T08:19:34.546Z"
+  },
+  {
+    "name": "Learner ",
+    "email": "learner@digifunzi.com",
+    "passwordHash": "$2b$10$twu4gPC.7lWz1fFLkTPcvurNUa6PlawYNvHMc16bIMcBE..3lVvpm",
+    "role": "learner",
+    "id": "ee4ef989-0569-47ad-9496-d4cfd15c7440",
+    "createdAt": "2026-07-09T08:20:23.161Z",
+    "updatedAt": "2026-07-09T08:20:23.161Z"
   }
 ]

@@ -9,8 +9,8 @@ const createSchool = asyncHandler(async (req, res) => {
 });
 
 const getAllSchools = asyncHandler(async (req, res) => {
-  const { status, county, curriculumId } = req.query;
-  const schools = await SchoolService.getAllSchools({ status, county, curriculumId });
+  const { status, county, curriculumId, email } = req.query;
+  const schools = await SchoolService.getAllSchools({ status, county, curriculumId, email });
   res.json({ success: true, data: schools, count: schools.length });
 });
 
