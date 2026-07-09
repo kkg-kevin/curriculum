@@ -17,6 +17,26 @@ function DetailRow({ label, value, empty = "—" }) {
   );
 }
 
+function CapacityRow({ enrolled, capacity }) {
+  if (!capacity) {
+    return <DetailRow label="Capacity" value={`${enrolled} enrolled · Unlimited`} />;
+  }
+  const pct = Math.min(100, Math.round((enrolled / capacity) * 100));
+  const color = enrolled >= capacity ? "#EF4444" : pct >= 80 ? "#feb139" : "#38aae1";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Capacity</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{enrolled} / {capacity} enrolled</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color }}>{pct}%</span>
+      </div>
+      <div style={{ height: 6, borderRadius: 4, backgroundColor: "#F3F4F6", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 4, backgroundColor: color, transition: "width 0.2s" }} />
+      </div>
+    </div>
+  );
+}
+
 export default function ClassViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -112,7 +132,7 @@ export default function ClassViewPage() {
             <DetailRow label="Grade"         value={cls.gradeName} />
             <DetailRow label="Academic Year" value={cls.academicYear} />
             <DetailRow label="Class Teacher" value={teacher ? `${teacher.firstName} ${teacher.lastName}` : null} />
-            <DetailRow label="Capacity"      value={cls.capacity ? String(cls.capacity) : "Unlimited"} />
+            <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
             <DetailRow label="Status"        value={cls.status === "active" ? "Active" : "Inactive"} />
           </div>
         </div>

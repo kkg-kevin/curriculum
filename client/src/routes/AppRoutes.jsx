@@ -19,6 +19,7 @@ import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
 import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
 import SchoolViewPage from "../modules/schools/pages/SchoolViewPage";
 import TeachersPage from "../modules/teachers/pages/TeachersPage";
+import SchoolTeachersPage from "../modules/teachers/pages/SchoolTeachersPage";
 import CreateTeacherPage from "../modules/teachers/pages/CreateTeacherPage";
 import EditTeacherPage from "../modules/teachers/pages/EditTeacherPage";
 import TeacherViewPage from "../modules/teachers/pages/TeacherViewPage";
@@ -27,6 +28,7 @@ import SchoolClassesPage from "../modules/classes/pages/SchoolClassesPage";
 import EditClassPage from "../modules/classes/pages/EditClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
+import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
@@ -80,12 +82,14 @@ export default function AppRoutes() {
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />
+          <Route path="school/:schoolId" element={<SchoolLearnersPage />} />
           <Route path="create" element={<CreateLearnerPage />} />
           <Route path=":id/edit" element={<EditLearnerPage />} />
           <Route path=":id/view" element={<LearnerViewPage />} />
         </Route>
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
+          <Route path="school/:schoolId" element={<SchoolTeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
           <Route path=":id/edit" element={<EditTeacherPage />} />
           <Route path=":id/view" element={<TeacherViewPage />} />
