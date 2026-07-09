@@ -166,5 +166,17 @@
     "id": "b53f6cb3-3e96-4990-bf89-514d654a631f",
     "createdAt": "2026-06-22T09:06:31.815Z",
     "updatedAt": "2026-06-22T09:06:31.815Z"
+  },
+  {
+    "firstName": "Teacher jane ",
+    "lastName": "jane ",
+    "employeeId": "001",
+    "email": "teacher@digifunzi.com",
+    "phone": "+254727496461",
+    "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "status": "active",
+    "id": "2716cefb-87bf-471f-9139-344df6b5922e",
+    "createdAt": "2026-07-09T07:15:39.205Z",
+    "updatedAt": "2026-07-09T07:15:39.205Z"
   }
 ]

@@ -4,5 +4,11 @@
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
     "createdAt": "2026-07-08T08:49:04.467Z"
+  },
+  {
+    "id": "dbdf8a28-d950-4475-b5b1-e4d95a2d5a50",
+    "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+    "curriculumId": "2b736771-ac38-4465-91fb-8872c7a4f313",
+    "createdAt": "2026-07-09T07:11:48.447Z"
   }
 ]

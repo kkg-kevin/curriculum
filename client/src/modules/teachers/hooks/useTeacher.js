@@ -46,3 +46,15 @@ export function useUpdateTeacher() {
     onError: (err) => toast.error(err.message || "Failed to update teacher"),
   });
 }
+
+export function useDeleteTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: teacherApi.remove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.all });
+      toast.success("Teacher deleted");
+    },
+    onError: (err) => toast.error(err.message || "Failed to delete teacher"),
+  });
+}
