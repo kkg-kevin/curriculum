@@ -28,5 +28,35 @@
     "id": "e0d13192-747e-46a7-93fe-4b042a7438f1",
     "createdAt": "2026-07-10T09:38:26.934Z",
     "updatedAt": "2026-07-10T09:38:26.934Z"
+  },
+  {
+    "name": "awb",
+    "description": "<p>afda x</p>",
+    "coverImage": "http://localhost:5000/uploads/0a584b0e-4021-44dc-9f92-d8c2840acda2.jpeg",
+    "ageMin": 1,
+    "ageMax": 2,
+    "id": "3dc86999-4528-4be2-ae4e-32d6f7bcd459",
+    "createdAt": "2026-07-10T09:51:57.736Z",
+    "updatedAt": "2026-07-10T09:51:57.736Z"
+  },
+  {
+    "name": "Manual Module Test 1783677715481",
+    "description": "",
+    "coverImage": null,
+    "ageMin": null,
+    "ageMax": null,
+    "id": "c072f7e4-5d53-42da-9829-16aedd775eee",
+    "createdAt": "2026-07-10T10:01:56.680Z",
+    "updatedAt": "2026-07-10T10:01:56.680Z"
+  },
+  {
+    "name": "sample",
+    "description": "<p>efq</p>",
+    "coverImage": "http://localhost:5000/uploads/92426c6c-f98a-490f-a21c-12cf5fa1f7ae.jpeg",
+    "ageMin": 20,
+    "ageMax": 30,
+    "id": "0c243a12-2d7c-4381-8630-d98ee933a3bf",
+    "createdAt": "2026-07-10T10:05:27.726Z",
+    "updatedAt": "2026-07-10T10:05:27.726Z"
   }
 ]

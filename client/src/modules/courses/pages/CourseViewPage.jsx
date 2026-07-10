@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +6,7 @@ import {
   useCourseQuery,
   useSessions,
   useCreateSession,
+  useCreateSessionsBulk,
   useUpdateSession,
   useDeleteSession,
   useCourseCompetencies,
@@ -262,6 +263,59 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
 
 /* ── Module group (header + its sessions) ───────────────────────────────── */
 
+function AddSessionControl({ onAdd, adding }) {
+  const [open, setOpen] = useState(false);
+  const [count, setCount] = useState("1");
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const submit = () => {
+    const n = Math.max(1, Math.min(30, Number(count) || 1));
+    onAdd(n);
+    setOpen(false);
+    setCount("1");
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={adding}
+        style={{ padding: "5px 12px", backgroundColor: "#fff", border: "1.5px solid #a8d5ee", borderRadius: "8px", color: "#25476a", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: adding ? "not-allowed" : "pointer" }}
+      >
+        + Add Session
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 20, background: "#fff", border: "1px solid #E5E7EB", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", padding: "12px", width: "180px" }}>
+          <label style={{ display: "block", fontSize: "11.5px", fontWeight: "700", color: "#374151", marginBottom: "6px" }}>Number of sessions</label>
+          <input
+            autoFocus
+            type="number" min="1" max="30"
+            value={count}
+            onChange={(e) => setCount(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            style={{ width: "100%", boxSizing: "border-box", padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", marginBottom: "8px" }}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            style={{ width: "100%", padding: "7px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          >
+            Add
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ModuleGroup({
   courseId, courseModule, sessions, sessionIndex, expandedIds, onToggleSession, onEditSession,
   onAddSession, addingSession, expanded, onToggleExpand,
@@ -304,20 +358,13 @@ function ModuleGroup({
           </span>
         )}
         <span style={{ fontSize: "12px", color: "#25476a", fontWeight: "600" }}>{sessions.length} Session{sessions.length !== 1 ? "s" : ""}</span>
-        <button
-          type="button"
-          onClick={() => onAddSession(courseModule.id)}
-          disabled={addingSession}
-          style={{ padding: "5px 12px", backgroundColor: "#fff", border: "1.5px solid #a8d5ee", borderRadius: "8px", color: "#25476a", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: addingSession ? "not-allowed" : "pointer" }}
-        >
-          + Add Session
-        </button>
+        <AddSessionControl onAdd={(count) => onAddSession(courseModule.id, count)} adding={addingSession} />
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
-          disabled={deleting}
-          title="Delete module"
-          style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", padding: "4px" }}
+          disabled={deleting || sessions.length > 0}
+          title={sessions.length > 0 ? "Move or delete this module's sessions before deleting it" : "Delete module"}
+          style={{ background: "none", border: "none", color: sessions.length > 0 ? "#D1D5DB" : "#9CA3AF", cursor: sessions.length > 0 ? "not-allowed" : "pointer", padding: "4px" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -346,7 +393,7 @@ function ModuleGroup({
       <ConfirmDialog
         isOpen={confirmOpen}
         title="Delete Module"
-        message={`"${courseModule.name}" will be deleted. Its sessions are kept and become ungrouped, not deleted.`}
+        message={`"${courseModule.name}" will be permanently deleted.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
@@ -385,6 +432,7 @@ export default function CourseViewPage() {
   const [modalSessionId, setModalSessionId] = useState(null);
   const [addingSession, setAddingSession] = useState(false);
   const { mutateAsync: createSessionAsync } = useCreateSession(id);
+  const { mutateAsync: createSessionsBulkAsync } = useCreateSessionsBulk();
   const { mutateAsync: createModuleAsync } = useCreateModule(id);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
 
@@ -397,8 +445,9 @@ export default function CourseViewPage() {
 
   // Every session belongs to a module — no "ungrouped" sessions. A session added without an
   // explicit module (the page-level "+ Add Session" button) lands in the last module, or a
-  // freshly-created "Module 1" if this course has none yet.
-  const handleAddSession = async (moduleId = null) => {
+  // freshly-created "Module 1" if this course has none yet. count > 1 bulk-creates instead of
+  // opening the editor for a single new session (there'd be no single "the" one to open).
+  const handleAddSession = async (moduleId = null, count = 1) => {
     setAddingSession(true);
     try {
       let targetModuleId = moduleId;
@@ -406,6 +455,10 @@ export default function CourseViewPage() {
         targetModuleId = modules.length > 0
           ? modules[modules.length - 1].id
           : (await createModuleAsync({ name: "Module 1" })).id;
+      }
+      if (count > 1) {
+        await createSessionsBulkAsync({ courseId: id, count, moduleId: targetModuleId });
+        return;
       }
       const newSession = await createSessionAsync({ title: "", moduleId: targetModuleId });
       setModalSessionId(newSession.id);
