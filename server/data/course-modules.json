@@ -46,5 +46,77 @@
     "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
     "createdAt": "2026-07-10T09:49:00.223Z",
     "updatedAt": "2026-07-10T09:49:00.223Z"
+  },
+  {
+    "courseId": "3dc86999-4528-4be2-ae4e-32d6f7bcd459",
+    "name": "Module 1",
+    "order": 1,
+    "id": "b5a534dc-b798-4ce8-9727-aadd0defa91d",
+    "createdAt": "2026-07-10T09:51:57.837Z",
+    "updatedAt": "2026-07-10T09:51:57.837Z"
+  },
+  {
+    "courseId": "3dc86999-4528-4be2-ae4e-32d6f7bcd459",
+    "name": "Module 2",
+    "order": 2,
+    "id": "08009d35-49b0-4d1c-84ca-ea5e34be0122",
+    "createdAt": "2026-07-10T09:51:57.884Z",
+    "updatedAt": "2026-07-10T09:51:57.884Z"
+  },
+  {
+    "courseId": "3dc86999-4528-4be2-ae4e-32d6f7bcd459",
+    "name": "Module 3",
+    "order": 3,
+    "id": "f64bb3c1-bf8d-4cb3-abf9-778188f3d554",
+    "createdAt": "2026-07-10T09:51:57.934Z",
+    "updatedAt": "2026-07-10T09:51:57.934Z"
+  },
+  {
+    "courseId": "c072f7e4-5d53-42da-9829-16aedd775eee",
+    "name": "Intro",
+    "order": 1,
+    "id": "055485cc-b55d-4da5-bd65-699f46fdf7c0",
+    "createdAt": "2026-07-10T10:01:56.701Z",
+    "updatedAt": "2026-07-10T10:01:56.701Z"
+  },
+  {
+    "courseId": "c072f7e4-5d53-42da-9829-16aedd775eee",
+    "name": "Deep Dive",
+    "order": 2,
+    "id": "27d1c381-808e-4db2-9770-ed8874317a5c",
+    "createdAt": "2026-07-10T10:01:56.767Z",
+    "updatedAt": "2026-07-10T10:01:56.767Z"
+  },
+  {
+    "courseId": "c072f7e4-5d53-42da-9829-16aedd775eee",
+    "name": "Capstone",
+    "order": 3,
+    "id": "c926a927-cb82-44f5-86e2-37ca9082f9a0",
+    "createdAt": "2026-07-10T10:01:56.822Z",
+    "updatedAt": "2026-07-10T10:01:56.822Z"
+  },
+  {
+    "courseId": "0c243a12-2d7c-4381-8630-d98ee933a3bf",
+    "name": "Fundation code",
+    "order": 1,
+    "id": "c7316e42-9957-48c0-bfbc-7b5868fc134d",
+    "createdAt": "2026-07-10T10:05:27.854Z",
+    "updatedAt": "2026-07-10T10:05:27.854Z"
+  },
+  {
+    "courseId": "0c243a12-2d7c-4381-8630-d98ee933a3bf",
+    "name": "Module 2",
+    "order": 2,
+    "id": "3d7700a1-1d14-416d-b68a-837c0f9b0336",
+    "createdAt": "2026-07-10T10:05:27.936Z",
+    "updatedAt": "2026-07-10T10:05:27.936Z"
+  },
+  {
+    "courseId": "0c243a12-2d7c-4381-8630-d98ee933a3bf",
+    "name": "Module 3",
+    "order": 3,
+    "id": "f13fa4ba-d148-4a47-a3f5-d51cc2f7f26b",
+    "createdAt": "2026-07-10T10:05:27.977Z",
+    "updatedAt": "2026-07-10T10:05:27.977Z"
   }
 ]

@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateCourse } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
-import { Input } from "../components/formFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
 
@@ -17,16 +16,10 @@ const DEFAULT_VALUES = {
   ageMax: "",
   competencyIds: [],
   learningAreaIds: [],
-  sessionCount: "1",
-  moduleCount: "0",
 };
 
-// Spreads `sessionCount` sessions across `moduleCount` modules as evenly as possible,
-// putting any remainder in the earliest modules (e.g. 31 sessions / 3 modules -> 11/10/10).
-function distributeSessions(sessionCount, moduleCount) {
-  const base = Math.floor(sessionCount / moduleCount);
-  const remainder = sessionCount % moduleCount;
-  return Array.from({ length: moduleCount }, (_, i) => base + (i < remainder ? 1 : 0));
+function genRowId() {
+  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
 }
 
 export default function CreateCoursePage() {
@@ -34,6 +27,10 @@ export default function CreateCoursePage() {
   const { mutate: createCourse, isPending } = useCreateCourse();
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [creatingContent, setCreatingContent] = useState(false);
+  // Every session belongs to a module — no "ungrouped" sessions — so sessions are defined
+  // per-module here: each row is one module, with its own name and session count, created
+  // and filled manually rather than an even auto-split across a session/module count.
+  const [moduleRows, setModuleRows] = useState([]);
 
   const methods = useForm({
     resolver: zodResolver(courseSchema),
@@ -41,14 +38,20 @@ export default function CreateCoursePage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, getValues, formState: { isDirty } } = methods;
+  const { handleSubmit, formState: { isDirty } } = methods;
   const isBusy = isPending || creatingContent;
 
+  const addModuleRow = () => {
+    setModuleRows((rows) => [...rows, { id: genRowId(), name: `Module ${rows.length + 1}`, sessionCount: "0" }]);
+  };
+  const updateModuleRow = (rowId, patch) => {
+    setModuleRows((rows) => rows.map((r) => (r.id === rowId ? { ...r, ...patch } : r)));
+  };
+  const removeModuleRow = (rowId) => {
+    setModuleRows((rows) => rows.filter((r) => r.id !== rowId));
+  };
+
   const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
-    const sessionCount = Math.max(0, Number(getValues("sessionCount")) || 0);
-    // Every session belongs to a module — no "ungrouped" sessions — so any sessions being
-    // created here need at least 1 module; default to 1 (holding them all) if left blank.
-    const moduleCount = sessionCount > 0 ? Math.max(1, Number(getValues("moduleCount")) || 1) : 0;
     createCourse(data, {
       onSuccess: async (course) => {
         setCreatingContent(true);
@@ -58,15 +61,16 @@ export default function CreateCoursePage() {
         if (learningAreaIds.length > 0) {
           await Promise.all(learningAreaIds.map((aid) => courseApi.linkLearningArea(course.id, aid)));
         }
-        if (sessionCount > 0) {
-          // Create the modules first, then bulk-create each module's share of sessions in
-          // order — createSessionsBulk continues global session ordering across calls.
-          const counts = distributeSessions(sessionCount, moduleCount);
-          for (let i = 0; i < moduleCount; i++) {
-            const courseModule = await courseApi.createModule(course.id, { name: `Module ${i + 1}`, order: i + 1 });
-            if (counts[i] > 0) {
-              await courseApi.createSessionsBulk(course.id, { count: counts[i], moduleId: courseModule.id });
-            }
+        // Sequential, in row order — createModule/createSessionsBulk both auto-continue
+        // ordering across calls, so this naturally produces Module 1's sessions numbered
+        // first, then Module 2's, etc.
+        for (let i = 0; i < moduleRows.length; i++) {
+          const row = moduleRows[i];
+          const name = row.name.trim() || `Module ${i + 1}`;
+          const count = Math.max(0, Math.min(30, Number(row.sessionCount) || 0));
+          const courseModule = await courseApi.createModule(course.id, { name, order: i + 1 });
+          if (count > 0) {
+            await courseApi.createSessionsBulk(course.id, { count, moduleId: courseModule.id });
           }
         }
         navigate(`/courses/${course.id}/view`);
@@ -131,21 +135,55 @@ export default function CreateCoursePage() {
           <CourseForm />
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px", marginTop: "16px" }}>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Sessions</h3>
+            <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Modules & Sessions</h3>
             <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#9CA3AF" }}>
-              How many sessions will this course have? You can add more later.
+              Optionally define modules now, each with its own name and session count — every session belongs to a module. Leave empty to add modules and sessions later.
             </p>
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-              <div style={{ maxWidth: "160px" }}>
-                <Input name="sessionCount" type="number" min="0" label="Number of Sessions" />
+
+            {moduleRows.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                {moduleRows.map((row, idx) => (
+                  <div key={row.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <input
+                      value={row.name}
+                      onChange={(e) => updateModuleRow(row.id, { name: e.target.value })}
+                      placeholder={`Module ${idx + 1}`}
+                      style={{ flex: 1, boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
+                    />
+                    <input
+                      type="number" min="0" max="30"
+                      value={row.sessionCount}
+                      onChange={(e) => updateModuleRow(row.id, { sessionCount: e.target.value })}
+                      title="Number of sessions in this module"
+                      style={{ width: "110px", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
+                    />
+                    <span style={{ fontSize: "12px", color: "#9CA3AF", width: "56px", flexShrink: 0 }}>session{row.sessionCount === "1" ? "" : "s"}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeModuleRow(row.id)}
+                      title="Remove module"
+                      style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", padding: "4px", flexShrink: 0 }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+                ))}
               </div>
-              <div style={{ maxWidth: "160px" }}>
-                <Input name="moduleCount" type="number" min="0" label="Number of Modules" />
-              </div>
-            </div>
-            <p style={{ margin: "10px 0 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
-              Sessions are always split evenly across named modules (e.g. 30 sessions ÷ 3 modules = 10 each). Leave at 0 to use a single module holding all sessions; you can add more modules later too.
-            </p>
+            )}
+
+            <button
+              type="button"
+              onClick={addModuleRow}
+              style={{ padding: "9px 16px", background: "#fff", color: "#25476a", border: "1.5px dashed #a8d5ee", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              + Add Module
+            </button>
+
+            {moduleRows.length > 0 && (
+              <p style={{ margin: "10px 0 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+                {moduleRows.length} module{moduleRows.length !== 1 ? "s" : ""} · {moduleRows.reduce((sum, r) => sum + (Math.max(0, Number(r.sessionCount) || 0)), 0)} session{moduleRows.reduce((sum, r) => sum + (Math.max(0, Number(r.sessionCount) || 0)), 0) !== 1 ? "s" : ""} total
+              </p>
+            )}
           </div>
         </form>
       </FormProvider>
