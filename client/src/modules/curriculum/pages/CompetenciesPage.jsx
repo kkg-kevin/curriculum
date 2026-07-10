@@ -2304,15 +2304,15 @@ function CompetencyLinkDropdown({ available, onAdd }) {
 
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
-function BandIndicatorPointRow({ ind, points, onSave }) {
-  const [value, setValue] = useState(points ?? 0);
+function BandIndicatorContributionRow({ ind, percentage, onSave }) {
+  const [value, setValue] = useState(percentage ?? 0);
 
-  useEffect(() => { setValue(points ?? 0); }, [points]);
+  useEffect(() => { setValue(percentage ?? 0); }, [percentage]);
 
   const save = () => {
-    const v = Math.max(0, Number(value) || 0);
+    const v = Math.min(100, Math.max(0, Number(value) || 0));
     setValue(v);
-    if (v !== (points ?? 0)) onSave(v);
+    if (v !== (percentage ?? 0)) onSave(v);
   };
 
   return (
@@ -2325,36 +2325,34 @@ function BandIndicatorPointRow({ ind, points, onSave }) {
       </div>
       <div className="cp-comp-eval-input-wrap" style={{ width: "60px", flexShrink: 0 }}>
         <input
-          type="number" min="0" className="cp-comp-config-input"
-          style={{ padding: "5px 30px 5px 8px", fontSize: "11.5px" }}
+          type="number" min="0" max="100" className="cp-comp-config-input"
+          style={{ padding: "5px 24px 5px 8px", fontSize: "11.5px" }}
           value={value} onChange={(e) => setValue(e.target.value)}
           onBlur={save}
         />
-        <span className="cp-comp-eval-suffix" style={{ right: "6px", fontSize: "10px" }}>pts</span>
+        <span className="cp-comp-eval-suffix" style={{ right: "6px", fontSize: "10px" }}>%</span>
       </div>
     </div>
   );
 }
 
 // One competency imported into a band — its indicators come straight from Settings
-// (via this curriculum's adopted competency), and each gets a point value scoped to
-// this band only. Points are informal by design: no enforced sum, just a running total
-// shown as a hint since they're meant to add up toward that competency's 100%.
-function BandCompetencyBlock({ comp, color, pointsByIndicator, onSavePoint }) {
+// (via this curriculum's adopted competency), and each gets a % contribution scoped to
+// this band only. That % is how much of THIS competency's 100% (within this band) that
+// indicator is worth — the running total below is a hint, not enforced, since a band can
+// be saved mid-configuration.
+function BandCompetencyBlock({ comp, color, percentageByIndicator, onSaveContribution }) {
   const [open, setOpen] = useState(false);
   const indicators = comp.indicators || [];
-  const total = indicators.reduce((sum, ind) => sum + (pointsByIndicator[ind.id] || 0), 0);
+  const total = indicators.reduce((sum, ind) => sum + (percentageByIndicator[ind.id] || 0), 0);
 
   return (
     <div style={{ marginTop: "10px" }}>
       <button type="button" className="cp-indicators-toggle" onClick={() => setOpen((v) => !v)} style={{ marginTop: 0 }}>
         <span style={{ color }}>{comp.name}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span className="cp-indicator-count">{total} pts</span>
-          <svg className={`cp-indicators-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
+        <svg className={`cp-indicators-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
       {open && (
         <div className="cp-indicators-body">
@@ -2363,14 +2361,21 @@ function BandCompetencyBlock({ comp, color, pointsByIndicator, onSavePoint }) {
               This competency has no indicators defined in Settings.
             </p>
           ) : (
-            indicators.map((ind) => (
-              <BandIndicatorPointRow
-                key={ind.id}
-                ind={ind}
-                points={pointsByIndicator[ind.id]}
-                onSave={(points) => onSavePoint(ind.id, points)}
-              />
-            ))
+            <>
+              {indicators.map((ind) => (
+                <BandIndicatorContributionRow
+                  key={ind.id}
+                  ind={ind}
+                  percentage={percentageByIndicator[ind.id]}
+                  onSave={(percentage) => onSaveContribution(ind.id, percentage)}
+                />
+              ))}
+              {total !== 100 && (
+                <p style={{ margin: "6px 0 0", fontSize: "10.5px", color: "#D97706" }}>
+                  {total > 100 ? `${total - 100}% over 100% — trim an indicator's share.` : `${100 - total}% left to assign to reach 100%.`}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
@@ -2396,12 +2401,13 @@ function PerformanceBandsPanel({ curriculumId }) {
   const [name,          setName]          = useState("");
   const [desc,          setDesc]          = useState("");
   const [competencyIds, setCompetencyIds] = useState([]);
+  const [threshold,     setThreshold]     = useState(0);
   const nameRef    = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCompetencyIds([]); setMode("add"); }
-  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCompetencyIds([...(b.competencyIds || [])]); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCompetencyIds([]); setThreshold(0); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCompetencyIds([...(b.competencyIds || [])]); setThreshold(b.advancementThreshold ?? 0); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
 
   function toggleCompetency(id) {
@@ -2410,23 +2416,45 @@ function PerformanceBandsPanel({ curriculumId }) {
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), competencyIds };
+    const data = { name: name.trim(), description: desc.trim(), competencyIds, advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)) };
     if (mode === "edit") {
-      // Dropping a competency from the band also drops any points already assigned
-      // to its indicators — nothing to score against a competency the band no longer uses.
-      data.indicatorPoints = (editTarget.indicatorPoints || []).filter((p) => competencyIds.includes(p.competencyId));
+      // The update endpoint's Zod schema defaults any field missing from the request body
+      // (e.g. minScore/maxScore/criteria aren't edited by this form) rather than leaving it
+      // untouched — carry the rest of the band's current fields through so they survive.
+      data.criteria  = editTarget.criteria;
+      data.minScore  = editTarget.minScore;
+      data.maxScore  = editTarget.maxScore;
+      // Dropping a competency from the band also drops any % already assigned to its
+      // indicators — nothing to score against a competency the band no longer uses.
+      data.indicatorContributions = (editTarget.indicatorContributions || []).filter((p) => competencyIds.includes(p.competencyId));
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setCompetencyIds([]); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); setCompetencyIds([]); setThreshold(0); nameRef.current?.focus(); } });
     }
   }
 
-  function saveIndicatorPoint(band, competencyId, indicatorId, points) {
-    const filtered = (band.indicatorPoints || []).filter(
+  function saveIndicatorContribution(band, competencyId, indicatorId, percentage) {
+    const filtered = (band.indicatorContributions || []).filter(
       (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
     );
-    const next = points > 0 ? [...filtered, { competencyId, indicatorId, points }] : filtered;
-    update({ id: band.id, data: { indicatorPoints: next } });
+    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
+    // The update endpoint validates with a Zod .partial() schema whose fields still carry
+    // .default(...) — a field entirely absent from the request body gets silently defaulted
+    // (e.g. competencyIds -> []) rather than left untouched, so a truly partial payload here
+    // would wipe every other field on this band. Send the full editable record back instead.
+    update({
+      id: band.id,
+      data: {
+        name: band.name,
+        description: band.description,
+        criteria: band.criteria,
+        minScore: band.minScore,
+        maxScore: band.maxScore,
+        competencyIds: band.competencyIds,
+        advancementThreshold: band.advancementThreshold,
+        indicatorContributions: next,
+      },
+    });
   }
 
   function moveUp(idx) {
@@ -2503,11 +2531,26 @@ function PerformanceBandsPanel({ curriculumId }) {
               <div className="cp-char-count">{desc.length} / 1000</div>
             </div>
 
+            {/* Advancement threshold */}
+            <div>
+              <label className="cp-field-label">Minimum Threshold to Advance <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                The % of this band's indicator contributions a learner must clear, per competency, to progress past this band to the next one. Different bands can require different thresholds.
+              </p>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
+                <input
+                  type="number" min="0" max="100" className="cp-comp-config-input"
+                  value={threshold} onChange={(e) => setThreshold(e.target.value)}
+                />
+                <span className="cp-comp-eval-suffix">%</span>
+              </div>
+            </div>
+
             {/* Linked Competencies */}
             <div>
               <label className="cp-field-label">Competencies <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Import from the competencies this curriculum already uses. Once added, you can set point values for each of their indicators from the band card.
+                Import from the competencies this curriculum already uses. Once added, you can set each indicator's % contribution toward that competency's 100% from the band card.
               </p>
 
               {competencyIds.length > 0 && (
@@ -2569,6 +2612,18 @@ function PerformanceBandsPanel({ curriculumId }) {
           {bands.map((band, idx) => {
             const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
+            // How many of this level's competencies have their indicators fully allocated
+            // to 100% — read at the level, not repeated on every competency row below.
+            const competenciesWithIndicators = (band.competencyIds || [])
+              .map((cId) => competencyById.get(cId))
+              .filter((comp) => (comp?.indicators?.length || 0) > 0);
+            const completeCount = competenciesWithIndicators.filter((comp) => {
+              const total = comp.indicators.reduce((sum, ind) => {
+                const match = (band.indicatorContributions || []).find((p) => p.competencyId === comp.id && p.indicatorId === ind.id);
+                return sum + (match?.percentage || 0);
+              }, 0);
+              return total === 100;
+            }).length;
             return (
               <div key={band.id} style={{
                 background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
@@ -2598,13 +2653,33 @@ function PerformanceBandsPanel({ curriculumId }) {
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-                      <span style={{
-                        display: "inline-block", padding: "3px 12px", borderRadius: "20px",
-                        background: `${color}18`, border: `1.5px solid ${color}35`,
-                        fontSize: "13px", fontWeight: "800", color,
-                      }}>
-                        {band.name}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{
+                          display: "inline-block", padding: "3px 12px", borderRadius: "20px",
+                          background: `${color}18`, border: `1.5px solid ${color}35`,
+                          fontSize: "13px", fontWeight: "800", color,
+                        }}>
+                          {band.name}
+                        </span>
+                        {band.advancementThreshold > 0 && (
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF" }} title="Minimum % to advance past this band">
+                            Advance at ≥{band.advancementThreshold}%
+                          </span>
+                        )}
+                        {competenciesWithIndicators.length > 0 && (
+                          <span
+                            style={{
+                              fontSize: "11px", fontWeight: "700", padding: "2px 9px", borderRadius: "20px",
+                              color: completeCount === competenciesWithIndicators.length ? "#059669" : "#D97706",
+                              background: completeCount === competenciesWithIndicators.length ? "#ECFDF5" : "#FFFBEB",
+                              border: `1px solid ${completeCount === competenciesWithIndicators.length ? "#A7F3D0" : "#FDE68A"}`,
+                            }}
+                            title="How many of this level's competencies have their indicators fully allocated to 100%"
+                          >
+                            {completeCount === competenciesWithIndicators.length ? "✓ " : ""}{completeCount} of {competenciesWithIndicators.length} complete
+                          </span>
+                        )}
+                      </div>
                       <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
                     </div>
 
@@ -2620,17 +2695,17 @@ function PerformanceBandsPanel({ curriculumId }) {
                       band.competencyIds.map((cId) => {
                         const comp = competencyById.get(cId);
                         if (!comp) return null;
-                        const pointsByIndicator = {};
-                        (band.indicatorPoints || []).forEach((p) => {
-                          if (p.competencyId === cId) pointsByIndicator[p.indicatorId] = p.points;
+                        const percentageByIndicator = {};
+                        (band.indicatorContributions || []).forEach((p) => {
+                          if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
                         });
                         return (
                           <BandCompetencyBlock
                             key={cId}
                             comp={comp}
                             color={color}
-                            pointsByIndicator={pointsByIndicator}
-                            onSavePoint={(indicatorId, points) => saveIndicatorPoint(band, cId, indicatorId, points)}
+                            percentageByIndicator={percentageByIndicator}
+                            onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
                           />
                         );
                       })

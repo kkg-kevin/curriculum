@@ -8,6 +8,7 @@ import {
   useChangeCurriculumVersionStatus,
 } from "../hooks/useCurriculumVersion";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
+import { courseApi } from "../../courses/services/courseApi";
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -357,6 +358,7 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [open, setOpen] = useState(false);
+  const [pickingId, setPickingId] = useState(null);
   const ref = useRef(null);
   const wrapRef = useRef(null);
   useEffect(() => { ref.current?.focus(); }, []);
@@ -377,10 +379,28 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
     : available
   ).slice(0, 6);
 
-  // Picking a real course attaches it immediately — no separate "Add" click needed.
-  const pick = (course) => {
-    onAdd({ id: course.id, name: course.name, code: code.trim() });
-    setName(""); setCode(""); setOpen(false);
+  // Picking a real course attaches it immediately — no separate "Add" click needed. Also
+  // captures a lightweight structural snapshot (module names/order, session titles/order) of
+  // that course as it exists right now, so this version stays historically meaningful even
+  // after the live course changes later — restoring this version later replays this snapshot,
+  // not whatever the course looks like at restore time.
+  const pick = async (course) => {
+    setPickingId(course.id);
+    try {
+      const [modules, sessions] = await Promise.all([
+        courseApi.getModules(course.id),
+        courseApi.getSessions(course.id),
+      ]);
+      onAdd({
+        id: course.id, name: course.name, code: code.trim(),
+        modulesSnapshot: modules.map((m) => ({ id: m.id, name: m.name, order: m.order })),
+        sessionsSnapshot: sessions.map((s) => ({ id: s.id, title: s.title, order: s.order, moduleId: s.moduleId })),
+        snapshotAt: new Date().toISOString(),
+      });
+      setName(""); setCode(""); setOpen(false);
+    } finally {
+      setPickingId(null);
+    }
   };
 
   // Typing a name that isn't in the catalog and submitting still works, same as before —
@@ -418,10 +438,76 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
             </p>
           ) : (
             matches.map((c) => (
-              <button key={c.id} type="button" className="vc-course-option" onClick={() => pick(c)} title={c.name}>
-                {c.name}
+              <button
+                key={c.id} type="button" className="vc-course-option"
+                onClick={() => pick(c)} disabled={pickingId === c.id} title={c.name}
+              >
+                {pickingId === c.id ? "Adding…" : c.name}
               </button>
             ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Course chip with a frozen structure snapshot (view mode only) ─────── */
+
+// Modules/sessions were captured once when this course was added to this version — reads
+// only the frozen snapshot fields, never live course data, so this stays historically accurate
+// even if the live course has changed (or been deleted) since.
+function CourseStructureChip({ course }) {
+  const [expanded, setExpanded] = useState(false);
+  const modulesSnapshot = course.modulesSnapshot || [];
+  const sessionsSnapshot = course.sessionsSnapshot || [];
+  const hasSnapshot = modulesSnapshot.length > 0 || sessionsSnapshot.length > 0;
+
+  const sortedModules = [...modulesSnapshot].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sessionsByModule = new Map();
+  const ungrouped = [];
+  [...sessionsSnapshot].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach((s) => {
+    if (s.moduleId && sortedModules.some((m) => m.id === s.moduleId)) {
+      if (!sessionsByModule.has(s.moduleId)) sessionsByModule.set(s.moduleId, []);
+      sessionsByModule.get(s.moduleId).push(s);
+    } else {
+      ungrouped.push(s);
+    }
+  });
+
+  return (
+    <div style={{ display: "inline-flex", flexDirection: "column", maxWidth: "100%" }}>
+      <span
+        className="vc-chip"
+        onClick={hasSnapshot ? () => setExpanded((v) => !v) : undefined}
+        style={{ cursor: hasSnapshot ? "pointer" : "default" }}
+        title={hasSnapshot ? "Click to view the course structure captured for this version" : undefined}
+      >
+        {course.name}
+        {course.code ? <span style={{ opacity: 0.55, fontWeight: "400" }}>&thinsp;{course.code}</span> : null}
+        {hasSnapshot && (
+          <span style={{ fontSize: "10px", fontWeight: "700", opacity: 0.65 }}>
+            · {modulesSnapshot.length} module{modulesSnapshot.length !== 1 ? "s" : ""} · {sessionsSnapshot.length} session{sessionsSnapshot.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </span>
+      {expanded && hasSnapshot && (
+        <div style={{ marginTop: "6px", padding: "10px 12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", fontSize: "11.5px", color: "#374151", maxWidth: "320px" }}>
+          {sortedModules.map((m) => (
+            <div key={m.id} style={{ marginBottom: "6px" }}>
+              <p style={{ margin: "0 0 3px", fontWeight: "700", color: "#25476a" }}>{m.name}</p>
+              {(sessionsByModule.get(m.id) || []).map((s, i) => (
+                <p key={s.id} style={{ margin: 0, paddingLeft: "10px", color: "#6B7280" }}>{i + 1}. {s.title || <em>Untitled session</em>}</p>
+              ))}
+            </div>
+          ))}
+          {ungrouped.length > 0 && (
+            <div>
+              <p style={{ margin: "0 0 3px", fontWeight: "700", color: "#9CA3AF" }}>Ungrouped</p>
+              {ungrouped.map((s, i) => (
+                <p key={s.id} style={{ margin: 0, paddingLeft: "10px", color: "#6B7280" }}>{i + 1}. {s.title || <em>Untitled session</em>}</p>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -443,12 +529,7 @@ function CourseMatrixView({ content, activeTab }) {
           <div className="vc-chips">
             {cls.courses.length === 0
               ? <span style={{ fontSize: "11px", color: "#D1D5DB", fontStyle: "italic" }}>No courses added</span>
-              : cls.courses.map((c) => (
-                  <span key={c.id} className="vc-chip">
-                    {c.name}
-                    {c.code ? <span style={{ opacity: 0.55, fontWeight: "400" }}>&thinsp;{c.code}</span> : null}
-                  </span>
-                ))}
+              : cls.courses.map((c) => <CourseStructureChip key={c.id} course={c} />)}
           </div>
         </div>
       ))}

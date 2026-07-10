@@ -18,17 +18,18 @@ const PerformanceBandModel = {
     const all   = read();
     const count = all.filter((b) => b.curriculumId === curriculumId).length;
     const band  = {
-      id:              uuidv4(),
+      id:                     uuidv4(),
       curriculumId,
-      name:            fields.name,
-      description:     fields.description || "",
-      criteria:        fields.criteria    || [],
-      minScore:        fields.minScore    ?? 0,
-      maxScore:        fields.maxScore    ?? 100,
-      competencyIds:   fields.competencyIds || [],
-      indicatorPoints: fields.indicatorPoints || [],
-      order:           count + 1,
-      createdAt:       new Date().toISOString(),
+      name:                   fields.name,
+      description:            fields.description || "",
+      criteria:               fields.criteria    || [],
+      minScore:               fields.minScore    ?? 0,
+      maxScore:               fields.maxScore    ?? 100,
+      competencyIds:          fields.competencyIds || [],
+      indicatorContributions: fields.indicatorContributions || [],
+      advancementThreshold:   fields.advancementThreshold ?? 0,
+      order:                  count + 1,
+      createdAt:              new Date().toISOString(),
     };
     all.push(band);
     write(all);
@@ -61,8 +62,8 @@ const PerformanceBandModel = {
   },
 
   // A competency was deleted from the global catalog — strip it out of every band's
-  // competencyIds (and any indicatorPoints scored against it), across every curriculum,
-  // so no band is left referencing a dead id.
+  // competencyIds (and any indicatorContributions scored against it), across every
+  // curriculum, so no band is left referencing a dead id.
   removeCompetencyFromAllBands(competencyId) {
     const all = read();
     let changed = false;
@@ -71,8 +72,8 @@ const PerformanceBandModel = {
         b.competencyIds = b.competencyIds.filter((id) => id !== competencyId);
         changed = true;
       }
-      if ((b.indicatorPoints || []).some((p) => p.competencyId === competencyId)) {
-        b.indicatorPoints = b.indicatorPoints.filter((p) => p.competencyId !== competencyId);
+      if ((b.indicatorContributions || []).some((p) => p.competencyId === competencyId)) {
+        b.indicatorContributions = b.indicatorContributions.filter((p) => p.competencyId !== competencyId);
         changed = true;
       }
     });
