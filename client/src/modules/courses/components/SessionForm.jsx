@@ -180,12 +180,33 @@ function RepeatableContentField({ name, title, subtitle, singular, size, quickPi
   );
 }
 
-export default function SessionForm() {
+function ModuleField({ modules }) {
+  const { watch, setValue } = useFormContext();
+  const moduleId = watch("moduleId");
+
+  if (!modules || modules.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: "14px" }}>
+      <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>Module</label>
+      <select
+        value={moduleId || ""}
+        onChange={(e) => setValue("moduleId", e.target.value, { shouldDirty: true })}
+        style={selectStyle}
+      >
+        {modules.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+      </select>
+    </div>
+  );
+}
+
+export default function SessionForm({ modules }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={cardStyle}>
         <SectionHeader title="Session Details" />
         <Input name="title" label="Session Title" placeholder="e.g. Introduction to Educational Robotics" />
+        <ModuleField modules={modules} />
       </div>
 
       <div style={cardStyle}>

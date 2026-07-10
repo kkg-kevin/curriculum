@@ -1,0 +1,50 @@
+[
+  {
+    "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+    "name": "Module 1",
+    "order": 1,
+    "id": "279cc84c-d5a9-412d-9b37-442826a0c39a",
+    "createdAt": "2026-07-10T09:37:40.738Z",
+    "updatedAt": "2026-07-10T09:37:40.738Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "name": "Module 1",
+    "order": 1,
+    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+    "createdAt": "2026-07-10T09:37:47.658Z",
+    "updatedAt": "2026-07-10T09:37:47.658Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "name": "Module 1",
+    "order": 1,
+    "id": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "createdAt": "2026-07-10T09:38:26.956Z",
+    "updatedAt": "2026-07-10T09:38:26.956Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "name": "Module 2",
+    "order": 2,
+    "id": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "createdAt": "2026-07-10T09:38:27.004Z",
+    "updatedAt": "2026-07-10T09:38:27.004Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "name": "Module 3",
+    "order": 3,
+    "id": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "createdAt": "2026-07-10T09:38:27.045Z",
+    "updatedAt": "2026-07-10T09:38:27.045Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "name": "Module 2",
+    "order": 2,
+    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+    "createdAt": "2026-07-10T09:49:00.223Z",
+    "updatedAt": "2026-07-10T09:49:00.223Z"
+  }
+]

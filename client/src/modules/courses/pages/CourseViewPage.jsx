@@ -10,10 +10,15 @@ import {
   useDeleteSession,
   useCourseCompetencies,
   useCourseLearningAreas,
+  useModules,
+  useCreateModule,
+  useUpdateModule,
+  useDeleteModule,
 } from "../hooks/useCourse";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
+import AddModuleModal from "../components/AddModuleModal";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
@@ -29,6 +34,7 @@ function formatAgeRange(min, max) {
 
 const SESSION_DEFAULT_VALUES = {
   title: "",
+  moduleId: null,
   outcomes: [],
   introduction: "",
   mainConcepts: [],
@@ -73,7 +79,7 @@ function NavArrow({ direction }) {
   );
 }
 
-function SessionModal({ courseId, sessions, startSessionId, onClose }) {
+function SessionModal({ courseId, sessions, modules, startSessionId, onClose }) {
   const { mutate: updateSession, isPending: saving } = useUpdateSession(courseId);
   const [currentId, setCurrentId] = useState(startSessionId);
 
@@ -92,6 +98,7 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
     if (current) {
       reset({
         title: current.title || "",
+        moduleId: current.moduleId || null,
         outcomes: current.outcomes || [],
         introduction: current.introduction || "",
         mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
@@ -101,8 +108,14 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
         resources: current.resources || [],
       });
     }
+    // `current` is looked up from the `sessions` prop, which can still be the pre-creation
+    // list on first render right after "+ Add Session" (query invalidation hasn't resolved
+    // yet) — `current` is then undefined and this effect's guard skips the reset entirely.
+    // Re-running once `current` flips from falsy to truthy for the same currentId (not on
+    // every later re-render) catches that late arrival without re-resetting on unrelated
+    // background refetches, which would otherwise wipe in-progress unsaved edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentId]);
+  }, [currentId, Boolean(current)]);
 
   const saveCurrent = () => {
     if (!current) return;
@@ -160,7 +173,7 @@ function SessionModal({ courseId, sessions, startSessionId, onClose }) {
         <div style={{ padding: "24px", maxHeight: "82vh", overflowY: "auto" }}>
           {current ? (
             <FormProvider {...methods}>
-              <SessionForm />
+              <SessionForm modules={modules} />
             </FormProvider>
           ) : (
             <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>Loading session…</div>
@@ -247,6 +260,103 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
   );
 }
 
+/* ── Module group (header + its sessions) ───────────────────────────────── */
+
+function ModuleGroup({
+  courseId, courseModule, sessions, sessionIndex, expandedIds, onToggleSession, onEditSession,
+  onAddSession, addingSession, expanded, onToggleExpand,
+}) {
+  const { mutate: updateModule } = useUpdateModule(courseId);
+  const { mutate: deleteModule, isPending: deleting } = useDeleteModule(courseId);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState(courseModule.name);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const saveRename = () => {
+    setRenaming(false);
+    const trimmed = nameDraft.trim();
+    if (trimmed && trimmed !== courseModule.name) updateModule({ id: courseModule.id, data: { name: trimmed } });
+    else setNameDraft(courseModule.name);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#EAF2FA", border: "1px solid #D6E7F5", borderRadius: "12px" }}>
+        <button type="button" onClick={onToggleExpand} style={{ background: "none", border: "none", cursor: "pointer", color: "#25476a", display: "flex" }}>
+          <ChevronDown open={expanded} />
+        </button>
+        {renaming ? (
+          <input
+            autoFocus
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={saveRename}
+            onKeyDown={(e) => { if (e.key === "Enter") saveRename(); if (e.key === "Escape") { setNameDraft(courseModule.name); setRenaming(false); } }}
+            style={{ flex: 1, fontSize: "14px", fontWeight: "700", color: "#0F2645", border: "1.5px solid #a8d5ee", borderRadius: "6px", padding: "3px 8px", fontFamily: "Inter, sans-serif" }}
+          />
+        ) : (
+          <span
+            onClick={() => setRenaming(true)}
+            title="Rename module"
+            style={{ flex: 1, fontSize: "14px", fontWeight: "700", color: "#0F2645", cursor: "text" }}
+          >
+            {courseModule.name}
+          </span>
+        )}
+        <span style={{ fontSize: "12px", color: "#25476a", fontWeight: "600" }}>{sessions.length} Session{sessions.length !== 1 ? "s" : ""}</span>
+        <button
+          type="button"
+          onClick={() => onAddSession(courseModule.id)}
+          disabled={addingSession}
+          style={{ padding: "5px 12px", backgroundColor: "#fff", border: "1.5px solid #a8d5ee", borderRadius: "8px", color: "#25476a", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: addingSession ? "not-allowed" : "pointer" }}
+        >
+          + Add Session
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          disabled={deleting}
+          title="Delete module"
+          style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", padding: "4px" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      </div>
+
+      {expanded && (
+        sessions.length === 0 ? (
+          <p style={{ margin: "0 0 0 24px", fontSize: "12.5px", color: "#9CA3AF", fontStyle: "italic" }}>No sessions in this module yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingLeft: "24px" }}>
+            {sessions.map((session) => (
+              <SessionRow
+                key={session.id}
+                courseId={courseId}
+                session={session}
+                index={sessionIndex.get(session.id)}
+                expanded={expandedIds.has(session.id)}
+                onToggle={() => onToggleSession(session.id)}
+                onEdit={onEditSession}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Delete Module"
+        message={`"${courseModule.name}" will be deleted. Its sessions are kept and become ungrouped, not deleted.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => { setConfirmOpen(false); deleteModule(courseModule.id); }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </div>
+  );
+}
+
 /* ── Main page ────────────────────────────────────────────────────────── */
 
 export default function CourseViewPage() {
@@ -254,6 +364,7 @@ export default function CourseViewPage() {
   const navigate = useNavigate();
   const { data: course, isLoading: courseLoading, isError: courseError } = useCourseQuery(id);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
+  const { data: modules = [] } = useModules(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
   const { data: learningAreas = [] } = useCourseLearningAreas(id);
   const { data: assessmentsData } = useAssessmentsQuery();
@@ -270,16 +381,41 @@ export default function CourseViewPage() {
     .filter(Boolean);
 
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [collapsedModuleIds, setCollapsedModuleIds] = useState(new Set());
   const [modalSessionId, setModalSessionId] = useState(null);
-  const { mutate: createSession, isPending: creatingSession } = useCreateSession(id);
+  const [addingSession, setAddingSession] = useState(false);
+  const { mutateAsync: createSessionAsync } = useCreateSession(id);
+  const { mutateAsync: createModuleAsync } = useCreateModule(id);
+  const [addModuleOpen, setAddModuleOpen] = useState(false);
 
-  const allExpanded = sessions.length > 0 && expandedIds.size === sessions.length;
+  const allExpanded = sessions.length > 0 && expandedIds.size === sessions.length && collapsedModuleIds.size === 0;
 
-  const handleAddSession = () => {
-    createSession(
-      { title: "" },
-      { onSuccess: (newSession) => setModalSessionId(newSession.id) }
-    );
+  // Sessions keep one continuous "Session 1..N" numbering across the whole course
+  // regardless of which module (if any) they're grouped under.
+  const sessionIndex = new Map(sessions.map((s, i) => [s.id, i]));
+  const ungroupedSessions = sessions.filter((s) => !s.moduleId || !modules.some((m) => m.id === s.moduleId));
+
+  // Every session belongs to a module — no "ungrouped" sessions. A session added without an
+  // explicit module (the page-level "+ Add Session" button) lands in the last module, or a
+  // freshly-created "Module 1" if this course has none yet.
+  const handleAddSession = async (moduleId = null) => {
+    setAddingSession(true);
+    try {
+      let targetModuleId = moduleId;
+      if (!targetModuleId) {
+        targetModuleId = modules.length > 0
+          ? modules[modules.length - 1].id
+          : (await createModuleAsync({ name: "Module 1" })).id;
+      }
+      const newSession = await createSessionAsync({ title: "", moduleId: targetModuleId });
+      setModalSessionId(newSession.id);
+    } finally {
+      setAddingSession(false);
+    }
+  };
+
+  const handleAddModule = () => {
+    setAddModuleOpen(true);
   };
 
   const toggleSession = (sessionId) => {
@@ -292,7 +428,22 @@ export default function CourseViewPage() {
   };
 
   const toggleExpandAll = () => {
-    setExpandedIds(allExpanded ? new Set() : new Set(sessions.map((s) => s.id)));
+    if (allExpanded) {
+      setExpandedIds(new Set());
+      setCollapsedModuleIds(new Set(modules.map((m) => m.id)));
+    } else {
+      setExpandedIds(new Set(sessions.map((s) => s.id)));
+      setCollapsedModuleIds(new Set());
+    }
+  };
+
+  const toggleModule = (moduleId) => {
+    setCollapsedModuleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
   };
 
   if (courseLoading) {
@@ -348,12 +499,19 @@ export default function CourseViewPage() {
             )}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "12px" }}>
             <button
               type="button"
-              onClick={handleAddSession}
-              disabled={creatingSession}
-              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 18px", backgroundColor: creatingSession ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: creatingSession ? "not-allowed" : "pointer" }}
+              onClick={handleAddModule}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 18px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "10px", color: "#374151", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              + Add Module
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddSession()}
+              disabled={addingSession}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 18px", backgroundColor: addingSession ? "#fef3d0" : "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: addingSession ? "not-allowed" : "pointer" }}
             >
               + Add Session
             </button>
@@ -366,7 +524,7 @@ export default function CourseViewPage() {
               <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sessions yet</p>
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Add your first session to start building this course.</p>
             </div>
-          ) : (
+          ) : modules.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {sessions.map((session, idx) => (
                 <SessionRow
@@ -379,6 +537,41 @@ export default function CourseViewPage() {
                   onEdit={(s) => setModalSessionId(s.id)}
                 />
               ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {modules.map((courseModule) => (
+                <ModuleGroup
+                  key={courseModule.id}
+                  courseId={id}
+                  courseModule={courseModule}
+                  sessions={sessions.filter((s) => s.moduleId === courseModule.id)}
+                  sessionIndex={sessionIndex}
+                  expandedIds={expandedIds}
+                  onToggleSession={toggleSession}
+                  onEditSession={(s) => setModalSessionId(s.id)}
+                  onAddSession={handleAddSession}
+                  addingSession={addingSession}
+                  expanded={!collapsedModuleIds.has(courseModule.id)}
+                  onToggleExpand={() => toggleModule(courseModule.id)}
+                />
+              ))}
+              {ungroupedSessions.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <p style={{ margin: "0 0 0 4px", fontSize: "12px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>Ungrouped</p>
+                  {ungroupedSessions.map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      courseId={id}
+                      session={session}
+                      index={sessionIndex.get(session.id)}
+                      expanded={expandedIds.has(session.id)}
+                      onToggle={() => toggleSession(session.id)}
+                      onEdit={(s) => setModalSessionId(s.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -492,8 +685,17 @@ export default function CourseViewPage() {
         <SessionModal
           courseId={id}
           sessions={sessions}
+          modules={modules}
           startSessionId={modalSessionId}
           onClose={() => setModalSessionId(null)}
+        />
+      )}
+
+      {addModuleOpen && (
+        <AddModuleModal
+          courseId={id}
+          defaultName={`Module ${modules.length + 1}`}
+          onClose={() => setAddModuleOpen(false)}
         />
       )}
     </div>

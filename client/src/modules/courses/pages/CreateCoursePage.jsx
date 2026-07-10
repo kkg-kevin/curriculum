@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateCourse, useCreateSessionsBulk } from "../hooks/useCourse";
+import { useCreateCourse } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import { Input } from "../components/formFields";
@@ -18,13 +18,22 @@ const DEFAULT_VALUES = {
   competencyIds: [],
   learningAreaIds: [],
   sessionCount: "1",
+  moduleCount: "0",
 };
+
+// Spreads `sessionCount` sessions across `moduleCount` modules as evenly as possible,
+// putting any remainder in the earliest modules (e.g. 31 sessions / 3 modules -> 11/10/10).
+function distributeSessions(sessionCount, moduleCount) {
+  const base = Math.floor(sessionCount / moduleCount);
+  const remainder = sessionCount % moduleCount;
+  return Array.from({ length: moduleCount }, (_, i) => base + (i < remainder ? 1 : 0));
+}
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
   const { mutate: createCourse, isPending } = useCreateCourse();
-  const { mutate: createSessionsBulk, isPending: creatingSessions } = useCreateSessionsBulk();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [creatingContent, setCreatingContent] = useState(false);
 
   const methods = useForm({
     resolver: zodResolver(courseSchema),
@@ -33,12 +42,16 @@ export default function CreateCoursePage() {
   });
 
   const { handleSubmit, getValues, formState: { isDirty } } = methods;
-  const isBusy = isPending || creatingSessions;
+  const isBusy = isPending || creatingContent;
 
   const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
     const sessionCount = Math.max(0, Number(getValues("sessionCount")) || 0);
+    // Every session belongs to a module — no "ungrouped" sessions — so any sessions being
+    // created here need at least 1 module; default to 1 (holding them all) if left blank.
+    const moduleCount = sessionCount > 0 ? Math.max(1, Number(getValues("moduleCount")) || 1) : 0;
     createCourse(data, {
       onSuccess: async (course) => {
+        setCreatingContent(true);
         if (competencyIds.length > 0) {
           await Promise.all(competencyIds.map((cid) => courseApi.linkCompetency(course.id, cid)));
         }
@@ -46,13 +59,17 @@ export default function CreateCoursePage() {
           await Promise.all(learningAreaIds.map((aid) => courseApi.linkLearningArea(course.id, aid)));
         }
         if (sessionCount > 0) {
-          createSessionsBulk(
-            { courseId: course.id, count: sessionCount },
-            { onSettled: () => navigate(`/courses/${course.id}/view`) }
-          );
-        } else {
-          navigate(`/courses/${course.id}/view`);
+          // Create the modules first, then bulk-create each module's share of sessions in
+          // order — createSessionsBulk continues global session ordering across calls.
+          const counts = distributeSessions(sessionCount, moduleCount);
+          for (let i = 0; i < moduleCount; i++) {
+            const courseModule = await courseApi.createModule(course.id, { name: `Module ${i + 1}`, order: i + 1 });
+            if (counts[i] > 0) {
+              await courseApi.createSessionsBulk(course.id, { count: counts[i], moduleId: courseModule.id });
+            }
+          }
         }
+        navigate(`/courses/${course.id}/view`);
       },
     });
   };
@@ -118,9 +135,17 @@ export default function CreateCoursePage() {
             <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#9CA3AF" }}>
               How many sessions will this course have? You can add more later.
             </p>
-            <div style={{ maxWidth: "160px" }}>
-              <Input name="sessionCount" type="number" min="0" label="Number of Sessions" />
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ maxWidth: "160px" }}>
+                <Input name="sessionCount" type="number" min="0" label="Number of Sessions" />
+              </div>
+              <div style={{ maxWidth: "160px" }}>
+                <Input name="moduleCount" type="number" min="0" label="Number of Modules" />
+              </div>
             </div>
+            <p style={{ margin: "10px 0 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+              Sessions are always split evenly across named modules (e.g. 30 sessions ÷ 3 modules = 10 each). Leave at 0 to use a single module holding all sessions; you can add more modules later too.
+            </p>
           </div>
         </form>
       </FormProvider>
