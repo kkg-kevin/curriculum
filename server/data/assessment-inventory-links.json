@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "3fc5ede8-e904-4afa-aa4e-77e0110cac3a",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "inventoryItemId": "f4500d0c-99d2-421a-8e6a-cdca4df4df8d",
+    "quantity": 1,
+    "createdAt": "2026-07-10T08:31:55.530Z"
+  },
+  {
+    "id": "6331ffac-bf8e-41f7-b845-566c8db60663",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "inventoryItemId": "b49267f8-33b0-4626-a1ba-f4c4d4e3191f",
+    "quantity": 1,
+    "createdAt": "2026-07-10T08:31:55.548Z"
+  },
+  {
+    "id": "7364b36e-809f-44d2-9008-e94ec6682d1d",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "inventoryItemId": "9809f94b-4259-4334-85a1-538a759136fd",
+    "quantity": 1,
+    "createdAt": "2026-07-10T08:31:55.554Z"
+  }
+]

@@ -746,5 +746,58 @@
       "abd07396-50c8-4af5-9066-32624e6de42c",
       "a02d3152-005f-4b36-92b4-e1bccfae3f8f"
     ]
+  },
+  {
+    "courseId": "37272c2c-3e5e-4dc6-aaea-2ef3155d8d73",
+    "title": "Verify Session",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "d95eb794-e515-476a-a422-90c923f64cfd",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "363b35b0-830b-441e-94f6-85a30807b546",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "assessmentIds": [
+      "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+      "85c3271a-85d1-446b-871b-9a75dade7d76",
+      "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+      "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
+    ],
+    "notes": [
+      {
+        "id": "14f19b65-d2f9-4f4f-8965-0e63445ba1ac",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "order": 1,
+    "id": "afeeba29-51e1-49e1-b11f-30c5c0bf99eb",
+    "createdAt": "2026-07-10T08:50:54.855Z",
+    "updatedAt": "2026-07-10T08:56:33.942Z"
+  },
+  {
+    "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
+    "title": "",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 3,
+    "id": "44f87128-282f-4ead-9e24-323db7da79b3",
+    "createdAt": "2026-07-10T08:55:04.450Z",
+    "updatedAt": "2026-07-10T08:55:25.539Z"
   }
 ]

@@ -209,9 +209,11 @@ export default function AssessmentContent({ id }) {
           </Section>
         )}
 
-        <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length}${!isObservation ? ` · ${totalItemPoints} pts` : ""}` : ""}`}>
-          <StructureSection sections={sections} entries={entries} />
-        </Section>
+        {registry?.supportsItems !== false && (
+          <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length}${!isObservation ? ` · ${totalItemPoints} pts` : ""}` : ""}`}>
+            <StructureSection sections={sections} entries={entries} />
+          </Section>
+        )}
 
         {registry?.supportsRubric && (
           <Section title={`Grading Rubric${rubric.length ? ` · ${totalRubricPoints} pts` : ""}`}>
@@ -278,9 +280,13 @@ export default function AssessmentContent({ id }) {
                   const Icon = INVENTORY_CATEGORY_ICONS[it.category] || INVENTORY_CATEGORY_ICONS.Other;
                   return (
                     <div key={it.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
-                      <span style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: `${color}15`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon size={16} />
-                      </span>
+                      {it.image ? (
+                        <img src={it.image} alt={it.name} style={{ width: "34px", height: "34px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <span style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: `${color}15`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={16} />
+                        </span>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {it.name}

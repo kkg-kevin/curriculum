@@ -18,5 +18,15 @@
     "id": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
     "createdAt": "2026-07-07T12:08:59.480Z",
     "updatedAt": "2026-07-07T12:08:59.480Z"
+  },
+  {
+    "name": "Scoring Verify Course 1783673454790",
+    "description": "<p>throwaway — verifying observation scoring fix</p>",
+    "coverImage": null,
+    "ageMin": null,
+    "ageMax": null,
+    "id": "37272c2c-3e5e-4dc6-aaea-2ef3155d8d73",
+    "createdAt": "2026-07-10T08:50:54.803Z",
+    "updatedAt": "2026-07-10T08:50:54.803Z"
   }
 ]

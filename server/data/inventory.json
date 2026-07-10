@@ -1,11 +1,32 @@
 [
   {
-    "id": "38ac0719-9911-49da-87d0-a1305f36b6f2",
-    "name": "knvidbub",
+    "id": "b49267f8-33b0-4626-a1ba-f4c4d4e3191f",
+    "name": "Logo",
     "category": "Robots",
-    "unit": "kit",
-    "description": "vlnwbu\nb\nrw\nb\n\nwb\n\nfb",
-    "createdAt": "2026-07-07T13:39:05.256Z",
-    "updatedAt": "2026-07-08T12:27:14.938Z"
+    "unit": "pcs",
+    "description": "Logo",
+    "image": "http://localhost:5000/uploads/e8515adc-5f55-4162-a980-05f3afc7f6d0.png",
+    "createdAt": "2026-07-10T08:24:44.126Z",
+    "updatedAt": "2026-07-10T08:26:50.785Z"
+  },
+  {
+    "id": "9809f94b-4259-4334-85a1-538a759136fd",
+    "name": "No Image Test Item 1783672192194",
+    "category": "Electronics",
+    "unit": "pcs",
+    "description": "",
+    "image": null,
+    "createdAt": "2026-07-10T08:29:52.309Z",
+    "updatedAt": "2026-07-10T08:29:52.309Z"
+  },
+  {
+    "id": "f4500d0c-99d2-421a-8e6a-cdca4df4df8d",
+    "name": "Quarky",
+    "category": "Robots",
+    "unit": "pcs",
+    "description": "Qaurky one",
+    "image": "http://localhost:5000/uploads/d7b412c4-d37e-4e6a-9b41-bd6fd609f1e9.jpeg",
+    "createdAt": "2026-07-10T08:31:34.259Z",
+    "updatedAt": "2026-07-10T08:31:34.259Z"
   }
 ]
