@@ -6,6 +6,8 @@ const {
   createSessionSchema,
   updateSessionSchema,
   bulkCreateSessionsSchema,
+  createModuleSchema,
+  updateModuleSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
 } = require("./course.validation");
@@ -102,8 +104,8 @@ const createSession = asyncHandler(async (req, res) => {
 });
 
 const createSessionsBulk = asyncHandler(async (req, res) => {
-  const { count } = bulkCreateSessionsSchema.parse(req.body);
-  const data = await CourseService.createSessionsBulk(req.params.id, count);
+  const { count, moduleId } = bulkCreateSessionsSchema.parse(req.body);
+  const data = await CourseService.createSessionsBulk(req.params.id, count, moduleId);
   res.status(201).json({ success: true, data });
 });
 
@@ -115,6 +117,30 @@ const updateSession = asyncHandler(async (req, res) => {
 
 const deleteSession = asyncHandler(async (req, res) => {
   await CourseService.deleteSession(req.params.id, req.params.sessionId);
+  res.json({ success: true });
+});
+
+/* ── Modules ─────────────────────────────────────────────────────────────── */
+
+const getModules = asyncHandler(async (req, res) => {
+  const data = await CourseService.getModules(req.params.id);
+  res.json({ success: true, data });
+});
+
+const createModule = asyncHandler(async (req, res) => {
+  const body = createModuleSchema.parse(req.body);
+  const data = await CourseService.createModule(req.params.id, body);
+  res.status(201).json({ success: true, data });
+});
+
+const updateModule = asyncHandler(async (req, res) => {
+  const body = updateModuleSchema.parse(req.body);
+  const data = await CourseService.updateModule(req.params.id, req.params.moduleId, body);
+  res.json({ success: true, data });
+});
+
+const deleteModule = asyncHandler(async (req, res) => {
+  await CourseService.deleteModule(req.params.id, req.params.moduleId);
   res.json({ success: true });
 });
 
@@ -137,4 +163,8 @@ module.exports = {
   createSessionsBulk,
   updateSession,
   deleteSession,
+  getModules,
+  createModule,
+  updateModule,
+  deleteModule,
 };

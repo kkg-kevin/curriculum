@@ -72,7 +72,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-09T12:32:59.426Z",
+    "updatedAt": "2026-07-10T09:37:47.665Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -95,7 +95,8 @@
         "title": "",
         "content": ""
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -144,7 +145,7 @@
     ],
     "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:29:42.308Z",
+    "updatedAt": "2026-07-10T09:37:47.679Z",
     "mainConcepts": [
       {
         "id": "ab0ab109-ed57-44c9-95c3-691593215a67",
@@ -156,7 +157,8 @@
         "title": "Drawing a sqaure ",
         "content": "<p>Another cool thing that you can do in PictoBlox other than creating animations is drawing shapes.</p><p></p><p>Let explore it in this lesson.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ezgif.com-video-to-gif-3.gif\" width=\"800\" height=\"432\"><p></p><p></p><p></p><h2><strong><em><u>What are Shapes?</u></em></strong></h2><p></p><p><strong>A&nbsp;shape</strong>&nbsp;is an external form, boundary, or outline of an object. Some of the common shapes are:</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/2D-Shapes-01.png\" alt=\"2D shapes\" width=\"450\" height=\"375\"><p></p><p></p><ul><li><p><strong>Circle:</strong>&nbsp;is a closed two-dimensional figure in which the set of all the points in the plane is equidistant from a given point called “centre”.</p></li><li><p></p></li><li><p><strong>Rectangle:</strong>&nbsp;s a closed 2-D shape, having 4 sides, 4 corners, and 4 right angles (90°). The opposite sides of a rectangle are equal and parallel.</p></li><li><p></p></li><li><p><strong>Square:</strong>&nbsp;is a two-dimensional plane figure with four equal sides and all the four angles are equal to 90 degrees.</p></li><li><p></p></li><li><p><strong>Triangle:</strong>&nbsp;is a three-sided polygon that consists of three edges and three vertices</p></li><li><p></p></li><li><p><strong>Pentagon:</strong>&nbsp;is a geometrical shape, which has five sides and five angles. Here, “Penta” denotes five and “gon” denotes angle.</p></li></ul><p></p><p></p><p><strong>Backdrops:&nbsp;</strong></p><p></p><p><strong>A backdrop is one of the many frames, or backgrounds, that a Stage can have.&nbsp;The Stage can change its look to any of its backdrops.</strong></p><p></p><p><strong>You can choose a backdrop from</strong></p><ul><li><p>The backdrop library</p></li><li><p>Uploading a file from the computer</p></li><li><p>Creating one using the paint editor</p></li></ul><p></p><p></p><p><strong>Costumes:&nbsp;</strong></p><p></p><p><strong>A costume is one out of possibly many “frames” or alternate appearances of a sprite. Sprites can change their look to any of its costumes. Every sprite has at least one costume.</strong></p><p></p><p><strong>The costumes available for the sprite are shown in the&nbsp;Costume</strong>&nbsp;tab, next to the&nbsp;<strong>Code</strong>&nbsp;tab in the extreme left. There are four ways of getting a costume for a sprite or stage.</p><p></p><ul><li><p>From the costume library</p></li><li><p>Drawing one yourself using the inbuilt paint editor</p></li><li><p>Getting an image or multiple images from your desktop</p></li><li><p>Taking an image using a webcam</p></li></ul><p></p><p></p><h2><strong><em><u>Let’s Code</u></em></strong></h2><p>Follow the steps below:</p><p></p><ol><li><p>Create a New file in PictoBlox:</p></li><li><p></p></li><li><p>Follow the step if you are working on&nbsp;<strong>Windows, macOS, or Linux</strong>:</p></li><li><p></p></li><li><p>Open&nbsp;<strong>PictoBlox</strong>&nbsp;and create a new file.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2020/03/PictoBLox-New-File.png\" width=\"616\" height=\"345\"></li><li><p></p></li><li><p>Select the coding environment as&nbsp;<strong>Block Coding.</strong></p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Environment-Type-Block-4-1024x635.png\" width=\"640\" height=\"397\"><ul><li><p></p></li><li><p>First, we will set the&nbsp;<strong><em>Backdrop.</em></strong><em>&nbsp;</em>Choose the&nbsp;<strong>Xy-grid</strong>&nbsp;backdrop from the Backdrop library.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Choose-Backdrop-1.png\" alt=\"Choose Backdrop\" width=\"289\" height=\"260\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Stage-with-backdrop.png\" alt=\"Stage with backdrop\" width=\"488\" height=\"406\"></li><li><p></p></li><li><p>Just like you need a pen (or a pencil) to draw on paper, you also need a pen to draw on the Stage. Therefore, let’s add a&nbsp;<strong>Pencil</strong>&nbsp;sprite from the sprite library.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/New-Sprite-1.png\" alt=\"New Sprite\" width=\"259\" height=\"264\"><ul><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Pencil-Sprite.png\" alt=\"Pencil Sprite\" width=\"171\" height=\"171\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Set-Stage.png\" alt=\"Set Stage\" width=\"489\" height=\"409\"><ul><li><p></p></li><li><p>In the&nbsp;<em>sprite</em>&nbsp;palette, you’ll see both Tobi and the pencil. Select Tobi and right-click on him. In doing so, a menu will drop down.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Deleting-Tobi.png\" alt=\"Deleting Tobi\" width=\"168\" height=\"162\"><ul><li><p></p></li><li><p><strong>Click on ‘delete’.</strong></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Pen-and-stage.png\" alt=\"Pen and stage\" width=\"488\" height=\"409\"><p></p><p></p><h2><strong><em><u>Pen Extension</u></em></strong></h2><p></p><p>To draw anything with the pen, we will need pen extension blocks.</p><p></p><p>Click on the&nbsp;<strong>Add Extension&nbsp;</strong>button.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/add-extension-button.png\" alt=\"add extension button\" width=\"75\" height=\"60\"><p></p><p><strong>Then, click on the&nbsp;Pen&nbsp;</strong>extension to add use the blocks.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Adding-pen-extension.png\" alt=\"Adding pen extension\" width=\"800\" height=\"578\"><p></p><p><em>The Pen</em>&nbsp;palette will appear.</p><p></p><p></p><h2><strong>Pen Extension Blocks</strong></h2><p></p><p>We will be using the following blocks from the pen extension in the next topic.</p><ol><li><p>When you run the&nbsp;<strong>pen down</strong>&nbsp;the block, you enable a mode where, whenever the sprite moves, it will draw lines on the stage.</p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/pen-down.png\" alt=\"pen down block\" width=\"160\" height=\"77\"><ul><li><p></p></li><li><p><strong>When you run the&nbsp;pen up</strong>&nbsp;block, you enable a mode where the sprite does not draw while moving.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/pen-up-block.png\" alt=\"pen up block\" width=\"132\" height=\"77\"></li><li><p><strong>To erase all the lines, we will use&nbsp;erase all</strong>&nbsp;blocks.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/erase-all-block.png\" alt=\"erase all block\" width=\"148\" height=\"76\"></li></ul><p></p><p>Now that you know the basics, let’s draw some real shapes in the next topic.</p><p></p><p></p><h2><strong><em><u>Making the Square Manually</u></em></strong></h2><p></p><p>To make a square, follow the steps below:</p><ol><li><p>Click the&nbsp;<strong>pen down</strong>&nbsp;the block.</p></li><li><p>Then, click the&nbsp;<strong>move 100 steps</strong>&nbsp;block.</p></li><li><p>Next, click the&nbsp;<strong>turn clockwise 90 degrees</strong>&nbsp;block.</p></li><li><p>Repeat steps 2 &amp; 3 three more times.</p></li></ol><p>&nbsp;</p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ezgif.com-video-to-gif-2.gif\" width=\"800\" height=\"432\"><p></p><p></p><p><strong>&nbsp;</strong></p><h2><strong><em><u>Editing the costume</u></em></strong></h2><p>&nbsp;</p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ezgif.com-video-to-gif-1-1.gif\" width=\"800\" height=\"432\"><ol><li><p></p></li><li><p>Click the&nbsp;<strong>Costumes</strong>&nbsp;tab, you’ll see the pencil in the costume area on the left.</p></li><li><p></p></li><li><p>Select the full costume by clicking on one end of the editor and dragging the mouse over and across the costume. The pencil will get highlighted. Now, we can move the pencil around.</p></li><li><p></p></li><li><p>Click on the pencil and drag it in such a way that the tip of the pencil overlaps the center dot on the editor. After aligning them release the pencil.</p></li><li><p></p></li></ol><p>Once you do it, you’ll observe that the line now is at the tip of the pencil on the stage. Success!</p><p></p><p></p><h2><strong><em><u>Making the Square using Script</u></em></strong></h2><p></p><ol><li><p>Now, let’s create the script to draw the square by stacking all the blocks together.</p></li><li><p></p></li><li><p>To draw the square, you had to click each of the 3 blocks 4 times. To make a script that does the same, you need to add all 3 blocks in the given sequence 4 times!</p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/drawing-a-square.png\" alt=\"drawing a square\" width=\"207\" height=\"601\"><ul><li><p></p></li><li><p><strong>Now when you click on the modified script, you’ll be able to see the pencil moving and drawing sides of the square one by one.</strong></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Drawing-Square-3.gif\" width=\"719\" height=\"392\"><ul><li><p></p></li><li><p><strong>You can simplify all this by using a&nbsp;repeat&nbsp;</strong>block. Just add it around the 3 blocks and write 4 in the space.</p></li><li><p></p></li><li><p>Place a&nbsp;<strong>pen down</strong>&nbsp;block above the repeat block to draw the square and place a&nbsp;<strong>when () key pressed&nbsp;</strong>block above the entire script. That’s it.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/drawing-a-square1-1.png\" alt=\"drawing a square1\" width=\"231\" height=\"361\"><ul><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ezgif.com-video-to-gif-3.gif\" width=\"800\" height=\"432\"><p></p><p>And your square is ready!</p><p></p><p>Save the project file as&nbsp;<strong>Drawing Square</strong>.</p><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -203,7 +205,7 @@
     ],
     "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:32:34.153Z",
+    "updatedAt": "2026-07-10T09:37:47.687Z",
     "mainConcepts": [
       {
         "id": "e52d24cb-11b7-45d0-a62f-26459a772f56",
@@ -215,7 +217,8 @@
         "title": "Working with conditions",
         "content": "<ul><li><p>Life is full of conditions:</p></li><li><p>if you complete your homework, your mum will let me play, if you don’t, she will scold you.</p></li><li><p></p></li><li><p>if you study, you will pass your exams, but if you don't, you will fail your exams.</p></li><li><p></p></li><li><p>In the real world, you luckily have your brain to check what the condition is, whether it is met or not, and respond accordingly.</p></li><li><p></p></li><li><p>But a computer isn’t that lucky, unfortunately (or fortunately?🤷🏼‍♀️).</p></li><li><p></p></li><li><p>Even though it can perform every task at lightning-fast speed, you still need to give instructions to perform those tasks; even checking the conditions.</p></li><li><p></p></li><li><p>This is where the conditional statements come in handy. These statements allow the program to check the conditions by testing a variable against a value and act accordingly.</p></li><li><p></p></li><li><p>A program that has conditional statements is called a Conditional Program, and the process is known as Conditional Programming.</p></li><li><p></p></li><li><p><strong><em><u>Conditional Blocks</u></em></strong></p></li><li><p>Conditions are expressions that evaluate to either true or false. They are used to define the criteria upon which certain actions or decisions within a program depend. Conditions often involve the comparison of variables, values, or the result of other logical operations.Conditional statements, also known as control structures or flow control statements, are programming constructs that dictate the execution of different code blocks based on the evaluation of specified conditions</p></li><li><p></p></li><li><p>The&nbsp;<strong>if () then&nbsp;</strong>block will check whether the specified condition is true or not. If it is true, the blocks inside it will run, and then the script involved will continue.</p></li><li><p></p></li><li><p>If the condition is false, the code inside the block will be ignored and the script will move on. The condition is checked only once.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/i-1.png\" width=\"178\" height=\"129\"><p><strong><em><u>&nbsp;</u></em></strong></p><ul><li><p><strong><em><u>if () then else&nbsp;</u></em></strong></p></li><li><p></p></li><li><p>This block will check whether the specified condition is true or not. If the condition is true, the code held inside the first C (below the if arm) will run.</p></li><li><p></p></li><li><p>Then, the script will continue; if the condition is false, the code inside the second C (below the else arm) will run. (Unlike the if () then block).</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ie.png\" width=\"177\" height=\"183\"></li><li><p></p></li><li><p></p></li><li><p>The block&nbsp;<strong>wait() seconds</strong>&nbsp;pauses its script for the specified amount of seconds — the wait can also be a decimal number.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/w-1.png\" width=\"218\" height=\"79\"><ul><li><p></p></li><li><p><strong><em><u>Activity</u></em></strong></p></li><li><p></p></li><li><p>Let’s make a script to see it in action. We’re going to make a script that will make Tobi glide to a random position on the Stage whenever we press the space key.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Moving-tobi-to-random-position.gif\" alt=\"Moving tobi to random position\" width=\"414\" height=\"335\"><ul><li><p></p></li><li><p><strong>Let’s Code</strong></p></li><li><p></p></li><li><p>Follow the steps below:</p></li><li><p></p></li><li><p>Create a New file in PictoBlox:</p></li><li><p></p></li><li><p>Follow the step if you are working on&nbsp;<strong>Windows, macOS, or Linux</strong>:</p></li><li><p></p></li><li><p>Open&nbsp;<strong>PictoBlox</strong>&nbsp;and create a new file.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2020/03/PictoBLox-New-File.png\" width=\"616\" height=\"345\"></li><li><p></p></li><li><p></p></li><li><p>Select the coding environment as&nbsp;<strong>Block Coding</strong>.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Environment-Type-Block-4-1024x635.png\" width=\"640\" height=\"397\"><ul><li><p></p></li><li><p>Follow the steps below to make the script</p></li><li><p></p></li><li><p>Add an&nbsp;<strong>if () then</strong>&nbsp;block.</p></li><li><p></p></li><li><p>Place a&nbsp;<strong>key () pressed?</strong>&nbsp;block in the space of the&nbsp;<strong>if</strong>&nbsp;block.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Making-Tobi-Glide.png\" alt=\"Making Tobi Glide\" width=\"330\" height=\"238\"><ul><li><p></p></li><li><p>Place&nbsp;<strong>glide () secs to ()&nbsp;</strong>blocks under the if arm.</p></li><li><p></p></li><li><p>Place a&nbsp;<strong>forever</strong>&nbsp;block around the&nbsp;<strong>if () then&nbsp;</strong>block.</p></li><li><p></p></li><li><p>Add a&nbsp;<strong>when flag clicked</strong>&nbsp;block above to complete the script.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Making-Tobi-Glide1.png\" alt=\"Making Tobi Glide\" width=\"343\" height=\"276\"><p>Click the flag when done and press the space key.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Moving-tobi-to-random-position.gif\" alt=\"Moving tobi to random position\" width=\"414\" height=\"335\"><ul><li><p></p></li><li><p></p></li><li><p></p></li><li><p></p></li><li><p>if else condition mins</p></li><li><p></p></li><li><p>The&nbsp;<strong>if () then else&nbsp;</strong>block will check whether the specified condition is true or not.</p></li><li><p></p></li><li><p>If the condition is true, the code held inside the first C (below the&nbsp;<strong>if&nbsp;</strong>arm) will run.</p></li><li><p></p></li><li><p>Then, the script will continue; if the condition is false, the code inside the second C (below the&nbsp;<strong>else</strong>&nbsp;arm) will run. (unlike the if () then block).</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/if-then-else.png\" alt=\"if () then else\" width=\"116\" height=\"119\"></li><li><p></p></li><li><p><strong><em><u>Activity</u></em></strong></p></li><li><p>Let’s make a script to see it in action.</p></li><li><p></p></li><li><p>We’re going to make a script that will make Tobi move towards the mouse cursor whenever we click it. When we’re not clicking it, he should go back to his default position in the center.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Gliding-Tobi-towards-mouse-direction.gif\" alt=\"Gliding Tobi towards mouse direction\" width=\"416\" height=\"338\"><ul><li><p></p></li><li><p></p></li><li><p><strong><em><u>Let’s Code</u></em></strong></p></li><li><p></p></li><li><p>Follow the steps below to make the script:</p></li><li><p></p></li><li><p>Add an&nbsp;<strong>if-else</strong>&nbsp;block and place a&nbsp;<strong>mouse-down?</strong>&nbsp;block in the space of the&nbsp;<strong>if</strong>&nbsp;arm.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Making-Tobi-Glide-with-mouse-pointer.png\" alt=\"Making Tobi Glide with mouse pointer\" width=\"245\" height=\"293\"></li><li><p></p></li><li><p>If it is true, Tobi should glide towards the mouse.</p></li><li><p></p></li><li><p>Therefore, add a&nbsp;<strong>glide () secs to x: () y: ()</strong>&nbsp;block and place&nbsp;<strong>mouse x</strong>&nbsp;and&nbsp;<strong>mouse y</strong>&nbsp;in their respective white spaces.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Making-Tobi-Glide-with-mouse-pointer1.png\" alt=\"Making Tobi Glide with mouse pointer\" width=\"371\" height=\"67\"><ul><li><p></p></li><li><p>If the condition is false, it will stay at the center.</p></li><li><p></p></li><li><p>Thus, place another&nbsp;<strong>glide () secs to x: () y: ()</strong>&nbsp;block and write set x and y value to 0.</p></li><li><p></p></li><li><p>Add a&nbsp;<strong>foreve</strong>r block to run the script continuously.</p></li><li><p></p></li><li><p>Add a&nbsp;<strong>when flag clicked</strong>&nbsp;block to run the script.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Making-Tobi-Glide-with-mouse-pointer2.png\" alt=\"Making Tobi Glide with mouse pointer2\" width=\"396\" height=\"328\"></li><li><p></p></li><li><p></p></li><li><p>Click the flag when done and press the mouse.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Gliding-Tobi-towards-mouse-direction.gif\" alt=\"Gliding Tobi towards mouse direction\" width=\"416\" height=\"338\"><ul><li><p></p></li><li><p><em>﻿</em>Save the project file as&nbsp;<strong>Working with Conditions</strong>.</p></li></ul><h1></h1><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -262,7 +265,7 @@
     ],
     "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:34:49.338Z",
+    "updatedAt": "2026-07-10T09:37:47.697Z",
     "mainConcepts": [
       {
         "id": "37391c50-7237-4141-84a7-6601d72b92d3",
@@ -274,7 +277,8 @@
         "title": "Beetle and Taco",
         "content": "<p></p><h2><strong><em><u>Let’s Code!</u></em></strong></h2><p></p><ol><li><p>Open&nbsp;<strong>PictoBlox</strong>&nbsp;and create a new file. Select the coding environment as&nbsp;<strong><em>Block Coding</em></strong>.</p></li><li><p></p></li><li><p>First, we will change the background of our stage, from a white background to blue.</p></li><li><p></p></li><li><p>Click on<strong>&nbsp;Choose a Backdrop</strong>&nbsp;(bottom right corner).</p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Screenshot-2023-03-31-195629.png\" width=\"223\" height=\"194\"><ul><li><p></p></li><li><p><strong>Select the&nbsp;Blue Sky 2</strong>&nbsp;backdrop from the library.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Screenshot-2023-03-31-195745.png\" width=\"392\" height=\"415\"><ul><li><p></p></li><li><p><strong>Click the&nbsp;Choose a Sprite</strong>&nbsp;button (bottom right corner) and add the sprites&nbsp;<strong>Beetle</strong>&nbsp;and&nbsp;<strong>Taco</strong>&nbsp;one by one from the library.</p></li><li><p></p></li><li><p>Delete the Tobi sprite by right clicking on it and click on&nbsp;<strong>delete</strong>.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Screenshot-2023-03-31-200056.png\" width=\"425\" height=\"628\"><ul><li><p></p></li><li><p><strong>Select the&nbsp;Taco</strong>&nbsp;sprite. Drag and drop the&nbsp;<strong>when flag clicked</strong>&nbsp;block from&nbsp;<strong><em>Events</em></strong><em>&nbsp;</em>palette.</p></li><li><p></p></li><li><p>Now let’s reduce the size of the Taco using the block&nbsp;<strong>set size to ()</strong>&nbsp;from&nbsp;<strong><em>Looks</em></strong><em>&nbsp;</em>palette and set the size to&nbsp;<strong>50%.</strong>&nbsp;Add the block&nbsp;<strong>go to ()</strong>&nbsp;from&nbsp;<strong><em>Motion</em></strong><em>&nbsp;</em>palette and select&nbsp;<strong>mouse-pointer</strong>&nbsp;from the drop-down to make the Taco follow the mouse.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/06/image-removebg-preview-8.png\" width=\"285\" height=\"268\"></li><li><p></p></li><li><p><strong>To make the Taco follow the mouse continuously add a&nbsp;forever</strong>&nbsp;block from the&nbsp;<strong><em>Control</em></strong><em>&nbsp;</em>palette for the above block.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/06/image-removebg-preview-9.png\" width=\"225\" height=\"242\"><ul><li><p></p></li><li><p><strong>Click on the flag and check if the Taco is following your mouse-pointer.</strong></p></li><li><p></p></li><li><p><strong>Now, let’s make the script for the Beetle. Select the&nbsp;Beetle</strong>&nbsp;sprite.</p></li><li><p></p></li><li><p>Drag and drop&nbsp;<strong>when flag clicked</strong>&nbsp;block from&nbsp;<strong><em>Events</em></strong><em>&nbsp;</em>palette.</p></li><li><p></p></li><li><p>To make the Beetle appear in the front layer when it is moving on the Taco get the block<strong>&nbsp;go to () layer</strong>&nbsp;from the&nbsp;<strong><em>Looks</em></strong><em>&nbsp;</em>palette and&nbsp;<strong>front&nbsp;</strong>is the default option selected.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/06/image-removebg-preview-10.png\" width=\"202\" height=\"158\"><ul><li><p></p></li><li><p><strong>Set the size of the Beetle to&nbsp;50%</strong>&nbsp;using the block&nbsp;<strong>set size to ()</strong>&nbsp;from&nbsp;<strong><em>Looks</em></strong><em>&nbsp;</em>palette.</p></li><li><p></p></li><li><p>Now add the block&nbsp;<strong>point towards ()</strong>&nbsp;from&nbsp;<strong><em>Motion</em></strong><em>&nbsp;</em>palette and select&nbsp;<strong>Taco</strong>&nbsp;from the drop-down list to make it move in the same direction as Taco.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/06/image-removebg-preview-11.png\" width=\"237\" height=\"251\"><ul><li><p></p></li><li><p><strong>Drag and drop the&nbsp;move() steps</strong>&nbsp;block from&nbsp;<strong><em>Motion</em></strong><em>&nbsp;</em>palette and put&nbsp;<strong>4.</strong>&nbsp;This will make the Beetle move towards the mouse-pointer 4 steps.</p></li><li><p></p></li><li><p>Repeat the above 2 steps continuously throughout the project by adding a&nbsp;<strong>forever</strong>&nbsp;block from the&nbsp;<strong><em>Control</em></strong><em>&nbsp;</em>palette.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/06/image-removebg-preview-12.png\" width=\"215\" height=\"328\"><ul><li><p></p></li><li><p><strong>The project is now complete. Click on the green flag and enjoy playing! Save your Taco from the Beetle.</strong></p></li><li><p></p></li></ul><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Beetle-and-Taco.gif\" width=\"600\" height=\"327\"><p></p><p>Save the project file as&nbsp;<strong>Beetle and Taco</strong>.</p><p></p><p></p><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -321,7 +325,7 @@
     ],
     "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:37:26.229Z",
+    "updatedAt": "2026-07-10T09:37:47.703Z",
     "mainConcepts": [
       {
         "id": "76f90c42-8059-42bd-af84-0ab15470170e",
@@ -333,7 +337,8 @@
         "title": "Let’s Play",
         "content": "<p></p><p>Who doesn’t like playing games!</p><p></p><h3><strong>Events:</strong></h3><p>Events blocks are related to various triggers in a project, or when one part signals another to run.</p><p></p><p><strong>When()key pressed:</strong>&nbsp;Scripts placed underneath this block will activate when the specified key is pressed.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ws.png\" width=\"279\" height=\"81\"><p></p><p>In this activity, we will learn how to make a sprite move with the keys of a keyboard? And create a game to catch the falling apple.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-4.gif\" width=\"488\" height=\"408\"><h2></h2><h2><strong><em><u>Let’s Code</u></em></strong></h2><p></p><p>Follow the steps below:</p><ol><li><p>Create a New file in PictoBlox. Open&nbsp;<strong>PictoBlox&nbsp;</strong>and create a new file. Select the coding environment as&nbsp;<strong>Block Coding</strong>.</p></li><li><p></p></li><li><p>Click the&nbsp;<strong>Choose a Backdrop</strong>&nbsp;button. Select the&nbsp;<strong>Woods And Bench</strong>&nbsp;backdrop from the library.</p></li><li><p></p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Choose-Backdrop-1.png\" width=\"289\" height=\"260\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/play1.png\" alt=\"play1\" width=\"428\" height=\"318\"><ul><li><p></p></li><li><p><strong>Click the&nbsp;Choose a Sprite</strong>&nbsp;button. Select the&nbsp;<strong>Monkey and Apple&nbsp;</strong>sprite from the library.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/New-Sprite-1.png\" width=\"259\" height=\"264\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/game2.png\" alt=\"game2\" width=\"274\" height=\"174\"><ul><li><p></p></li><li><p><strong>Right-click on the&nbsp;Tobi</strong>&nbsp;icon in the sprite palette and&nbsp;<strong><em>delete it</em></strong>. Your stage is all set for coding.</p></li><li><p></p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/delete-tobi.png\" width=\"261\" height=\"174\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play.png\" width=\"490\" height=\"592\"><ul><li><p></p></li><li><p><strong>Select the&nbsp;Monkey&nbsp;</strong>sprite by clicking its icon.</p></li><li><p></p></li><li><p>Open the&nbsp;<strong><em>Events</em></strong><em>&nbsp;</em>palette and drag and drop the&nbsp;<strong>when flag clicked</strong>&nbsp;block into the scripting area.</p></li><li><p></p></li><li><p>Snap&nbsp;<strong>go to x () y ()</strong>&nbsp;block from&nbsp;<strong><em>Motion</em></strong><em>&nbsp;</em>palette, to make the initial position set at x to 0 and y to -100.</p></li><li><p></p></li><li><p>Snap&nbsp;<strong>set size to ()</strong>&nbsp;block from&nbsp;<strong><em>Looks</em>&nbsp;</strong>palette and set the size to&nbsp;<strong>80%</strong>.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-1.png\" width=\"235\" height=\"185\"><ul><li><p></p></li><li><p><strong>We will use a&nbsp;when () key pressed&nbsp;</strong>block from the&nbsp;<strong><em>Events&nbsp;</em></strong>palette to write a small script to make the&nbsp;<strong>Monkey&nbsp;</strong>sprite move left using&nbsp;the&nbsp;<strong>left arrow&nbsp;</strong>key. The&nbsp;<strong>‘-‘&nbsp;</strong>sign indicates that the sprite should move left.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-2.png\" width=\"279\" height=\"141\"><ul><li><p></p></li><li><p><strong>Similarly, we will use another&nbsp;when () key pressed&nbsp;</strong>block to write a small script to make the&nbsp;<strong>Monkey</strong>&nbsp;sprite move right using the&nbsp;<strong>right arrow&nbsp;</strong>key.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-3.png\" width=\"288\" height=\"143\"><p></p><p>Check the scripts till now:</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-1.gif\" width=\"490\" height=\"408\"><p></p><p><strong>Thats it for part 1. lets continue.</strong></p><h1></h1><h2></h2><p></p><h4><strong>Let’s Play! – Part 2</strong></h4><p></p><p>Let’s continue the last project. Till now, we have made the controls for the monkey.</p><p>&nbsp;</p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-1.gif\" width=\"490\" height=\"408\"><h3></h3><h3><strong>Sensing:</strong></h3><p>Sensing blocks are associate with sprites and stage detecting conditions.</p><p></p><p><strong>Touching()</strong>:The block checks if its sprite is touching the mouse-pointer, edge, or another sprite. If the sprite is touching the selected object, the block returns true; if it is not, it returns false.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/te.png\" width=\"303\" height=\"56\"><p></p><p><strong>Pick random() to ():</strong>&nbsp;The block picks a pseudorandom number ranging from the first given number to the second, including both endpoints. If both numbers have no decimals, it will report a whole number. For example, if a 1 and a 3 were inputted, the block could return a 1, 2 or 3. If one of the numbers has a decimal point, even .0, it reports a number with a decimal. For example, if 0.1 and 0.14 were given, the output will be 0.1, 0.11, 0.12, 0.13, or 0.14.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/pr.png\" width=\"323\" height=\"62\"><p></p><p><strong>We will continue from the last project. Open the project file in PictoBlox.</strong></p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-1.gif\"><p></p><p><strong>Till now, we have made the controls for the monkey.</strong></p><h2></h2><h2><strong>Making the Script for the Apple</strong></h2><ol><li><p>Select the&nbsp;<strong>Apple&nbsp;</strong>sprite by clicking its icon.</p></li><li><p></p></li><li><p>Set its initial position to&nbsp;<strong>0,140.</strong></p></li><li><p></p></li><li><p><strong>Now, when an apple falls, it falls vertically, i.e. along the&nbsp;Y-axis</strong>. Therefore, to make make the&nbsp;<strong>Apple&nbsp;</strong>sprite fall, we must change&nbsp;<em>only&nbsp;</em>the value of the y coordinate by some amount, say -5.</p></li><li><p></p></li><li><p>We will add a<strong>&nbsp;wait&nbsp;</strong>block to make it fall slowly.</p></li><li><p></p></li><li><p>Since it should keep falling, we will add a&nbsp;<strong>forever&nbsp;</strong>block to make it continuous.</p></li></ol><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-4.png\" width=\"209\" height=\"297\"><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-2.gif\" width=\"488\" height=\"410\"><h2><strong>Script for Sensing the Monkey</strong></h2><p>Now we want to check if the&nbsp;<strong>Apple</strong>&nbsp;sprite touched&nbsp;the&nbsp;<strong>Monkey</strong>&nbsp;sprite. We will write this script while keeping the&nbsp;<strong>Apple&nbsp;</strong>sprite selected.</p><ol><li><p>To check if the&nbsp;<strong>Apple</strong>&nbsp;sprite touched&nbsp;the&nbsp;<strong>Monkey</strong>&nbsp;sprite, we will use the&nbsp;<strong>touching ()?&nbsp;</strong>block from the&nbsp;<strong><em>Sensing&nbsp;</em></strong>palette&nbsp;and drop it inside the space of an&nbsp;<strong>if () then&nbsp;</strong>block from the&nbsp;<strong><em>Control</em></strong>&nbsp;palette.</p></li><li><p></p></li><li><p>Now, it touches the&nbsp;<strong>Monkey</strong>&nbsp;sprite, we want it to bounce off and glide to a random position. For that, we will use two&nbsp;<strong>pick random () to ()&nbsp;</strong>blocks from the&nbsp;<strong><em>Operators&nbsp;</em></strong>palette for both the x and y coordinates and drop them inside the&nbsp;<strong>glide () secs to x: () y: ()&nbsp;</strong>block<strong>.</strong></p></li><li><p></p></li></ol><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-5.png\" width=\"723\" height=\"280\"><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-3.gif\" width=\"490\" height=\"408\"><h2><strong>Script for Sensing the Edge</strong></h2><ol><li><p>To sense whether&nbsp;<strong>Apple</strong>&nbsp;sprite reaches the lower edge of the stage or not, we will again use the&nbsp;<strong>touching () ?&nbsp;</strong>block&nbsp;and drop it inside the space of another&nbsp;<strong>if () then&nbsp;</strong>block.</p></li><li><p></p></li><li><p>If the&nbsp;<strong>Apple</strong>&nbsp;sprite touches the&nbsp;<strong>edge</strong>, the game should stop. For that, we will use the&nbsp;<strong>stop(all)&nbsp;</strong>block from the&nbsp;<strong><em>Control&nbsp;</em></strong>palette to stop all the scripts.</p></li><li><p></p></li></ol><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-6.png\" width=\"341\" height=\"283\"><p></p><p><strong>And we are done. Maximize the stage and enjoy the game!</strong></p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Lets-Play-4.gif\" width=\"488\" height=\"408\"><p></p><p><strong>Save the project file as&nbsp;<em>Apple and Monkey</em>.</strong></p><p></p><h2></h2><p></p><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -380,7 +385,7 @@
     ],
     "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:40:03.584Z",
+    "updatedAt": "2026-07-10T09:37:47.709Z",
     "mainConcepts": [
       {
         "id": "b5546142-6af2-43af-bfea-f21f4d8d37db",
@@ -392,7 +397,8 @@
         "title": "Drawing a square",
         "content": "<h4><strong>Drawing a square</strong></h4><p></p><p><strong>Make Tobi Move – Overview</strong></p><p></p><p>Before we start making our game, we need to understand one very important part of the game – controlling Tobi’s movements. We’re going to do it using Quarky’s buttons.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Buttons.gif\" alt=\"Buttons\" width=\"600\" height=\"338\"><p></p><p>The logic is simple – if we press the left switch, L, Tobi to move left. If we press the right switch, R, he should move right.</p><p></p><p><strong>Quarky Buttons</strong></p><p>Quarky has&nbsp;<strong>2 tactile switches or buttons</strong>&nbsp;– L and R, which allow Quarky to take input from the user. You can get the state of the button in PictoBlox using&nbsp;<strong>is button () pressed?</strong>&nbsp;block. The block reports 1 when the switch is pressed and 0 when the switch is not pressed.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/is.png\" width=\"311\" height=\"73\"><p></p><p><strong>Let’s Code!</strong></p><p>Follow the steps below:</p><p>Let’s begin by first connecting Quarky to PictoBlox:</p><p></p><p>First, connect&nbsp;<strong>Quarky</strong>&nbsp;to your laptop using the&nbsp;<strong>USB cable</strong>.</p><p></p><p>Open&nbsp;<strong>PictoBlox&nbsp;</strong>and create a new file. Select the coding environment as&nbsp;<strong>Block Coding</strong>.</p><p></p><p>Select the Board as&nbsp;<strong>Quarky</strong>.</p><p></p><p>Next, select the&nbsp;<strong>Serial port</strong>&nbsp;to connect Quarky and press&nbsp;<strong>Connect</strong>.</p><p></p><p>Go to the&nbsp;<strong><em>Sensors</em></strong>&nbsp;palette and add a&nbsp;<strong>is button () pressed ?</strong>&nbsp;block into the scripting area. The button,&nbsp;<strong>L</strong>, is set as the default <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"http://option.To\">option.To</a> check if&nbsp;<strong>L</strong>&nbsp;is pressed, we’ll use an if block.</p><p></p><p>Go to the&nbsp;<strong><em>Control&nbsp;</em></strong>palette and drop an&nbsp;<strong><em>if&nbsp;</em></strong>block into the scripting area. Drop the&nbsp;<strong>is button () pressed ?</strong>&nbsp;block in the white space of the&nbsp;<strong><em>if&nbsp;</em></strong>block.If&nbsp;<strong>L</strong>&nbsp;is pressed, then, according to our logic, Tobi should move left.</p><p></p><p>Therefore, go to the&nbsp;<strong><em>Motion</em></strong>&nbsp;palette and drop a&nbsp;<strong>move () steps</strong>&nbsp;block inside the&nbsp;<strong>if</strong>&nbsp;block and write&nbsp;<em>-10</em>&nbsp;in the space. The “-” sign means that direction of movement is left.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/S15.png\" alt=\"S15\" width=\"396\" height=\"148\"><p></p><p>However, if&nbsp;<strong>R</strong>&nbsp;is pressed, then Tobi should move right. Therefore, add another&nbsp;<strong>if</strong>&nbsp;block below the first one and drop a i<strong>s button () pressed ?</strong>&nbsp;block in the white <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"http://space.Th\">space.Th</a></p><p></p><p>en, go to the&nbsp;<strong><em>Motion&nbsp;</em></strong>palette and drop&nbsp;<strong>a move () steps</strong>&nbsp;block inside the&nbsp;<strong>if</strong>&nbsp;block and write&nbsp;<strong><em>10</em></strong>&nbsp;in the space.</p><p></p><p>Add a&nbsp;<strong>forever</strong>&nbsp;block around the entire script.Add a&nbsp;<strong>when flag clicked</strong>&nbsp;block from the&nbsp;<strong><em>Events</em></strong><em>&nbsp;</em>palette above the forever block to add the finishing touch.</p><p></p><p>Finally, click the green flag to run the script.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/S15-2.png\" alt=\"S15 (2)\" width=\"400\" height=\"392\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Buttons.gif\" alt=\"Buttons\" width=\"600\" height=\"338\"><p></p><p><em>﻿</em>Save the project file as&nbsp;<strong>Tobi Control.</strong></p><p></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -437,7 +443,7 @@
     ],
     "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:43:19.538Z",
+    "updatedAt": "2026-07-10T09:37:47.721Z",
     "mainConcepts": [
       {
         "id": "17aa0d2b-925b-4826-99af-6a0dd3b983a4",
@@ -449,7 +455,8 @@
         "title": "Chatty sprite",
         "content": "<h4><strong>Chatty sprite</strong></h4><p></p><p>What if your sprite could talk to you or your friend? Let’s find out how!</p><p></p><h3><strong>Asking a question</strong></h3><p>To make the sprite ask a question, we will use an&nbsp;<strong>ask</strong>&nbsp;block from the Sensing palette. It will ask the user whatever you write inside it, wait for user input, and then store that input in the&nbsp;<strong>answer</strong>&nbsp;block.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ask-1-1.png\" width=\"301\" height=\"132\"><h3><strong>Switching costume</strong></h3><p><strong>Costume:&nbsp;</strong>A&nbsp;costume&nbsp;is one out of possibly many “frames” or alternate appearances of a sprite. Sprites can change their look to any of their costumes.</p><p>Every sprite has at least one costume.</p><p></p><p>One of the most common uses of costumes is to make an animation for a game.&nbsp;You can use a number of costumes to create one single animation. The costumes available for the sprite are shown in the&nbsp;Costume&nbsp;tab, next to the&nbsp;python tab on the extreme left.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/sw.png\" width=\"298\" height=\"71\"><p></p><p><strong>In this activity, we will learn how to ask a user to enter input and create a script where a friendly goblin has a small chat with the user.</strong></p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin.gif\" width=\"492\" height=\"408\"><h2></h2><h2><strong>Let’s Code</strong></h2><p>Follow the steps below:</p><ol><li><p>Open&nbsp;<strong>PictoBlox&nbsp;</strong>and create a new file. Select the coding environment as&nbsp;<strong>Block Coding</strong>.</p></li><li><p></p></li><li><p>Click the&nbsp;<strong>Choose a Backdrop</strong>&nbsp;button. Select the&nbsp;<strong>Castle 2</strong>&nbsp;backdrop from the library.</p></li><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/CHAT1.png\" alt=\"CHAT1\" width=\"368\" height=\"286\"><ul><li><p><strong>Click the&nbsp;Choose a Sprite</strong>&nbsp;button and Select the&nbsp;<strong>Goblin</strong>&nbsp;sprite from the library.</p></li><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/chat2.png\" alt=\"chat2\" width=\"139\" height=\"184\"><p></p><p><strong>Right-click on the Tobi icon in the sprite palette and&nbsp;<em>delete it</em></strong>. Your stage is all set for coding.</p><p></p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/delete-tobi.png\" width=\"261\" height=\"174\"><ul><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin-1.png\" width=\"489\" height=\"408\"><ul><li><p></p></li></ul><p><strong>Create the script to make the Goblin switch costume to&nbsp;goblin-a</strong>&nbsp;&amp;&nbsp;<strong>go to 130, 70</strong>&nbsp;on the stage when the&nbsp;<strong>green flag</strong>&nbsp;is clicked.</p><p></p><p>Add&nbsp;<strong>glide () secs to x () y ()</strong>&nbsp;block from&nbsp;<strong><em>Motion</em></strong><em>&nbsp;</em>palette. This will make Goblin glide to the front of the stage. Make x as -100 and y as -40.</p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin-1-1.png\" width=\"313\" height=\"236\"><p><strong>Next, we will use the&nbsp;switch costume to ()</strong>&nbsp;and&nbsp;<strong>say () for () seconds</strong>&nbsp;block from the&nbsp;<strong><em>Looks</em></strong><em>&nbsp;</em>palette to make the Goblin look like he’s talking.</p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin-2.png\" width=\"363\" height=\"326\"><p></p><p><strong>To make the Goblin ask a question, we will use an&nbsp;ask and wait</strong>&nbsp;block from the&nbsp;<strong><em>Sensing</em></strong><em>&nbsp;</em>It will ask the user whatever you write inside it, wait for user input, and then store that input in the&nbsp;<strong>answer</strong>&nbsp;block.</p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/ask-1.png\" width=\"301\" height=\"132\"><p></p><p><strong>First, we will use the&nbsp;answer</strong>&nbsp;block from the&nbsp;<strong><em>Sensing</em></strong><em>&nbsp;</em>palette to read the user input.</p><p></p><p>To combine our message with the user’s answer, we will use a&nbsp;<strong>join</strong>&nbsp;block from the&nbsp;<strong><em>Operator</em></strong><em>&nbsp;</em>palette.</p><p></p><p>Finally, to reply, we will use another&nbsp;<strong>say () for () seconds</strong>&nbsp;block from the&nbsp;<strong><em>Looks</em></strong><em>&nbsp;</em>palette.</p><p></p><p>Place a&nbsp;<strong>say</strong>&nbsp;block below the&nbsp;<strong>ask and wait</strong>&nbsp;block and then place a join block into the first space given.</p><p></p><p>Write&nbsp;<strong>“Nice to meet you ”</strong>&nbsp;in the first space of the join block and place the&nbsp;<strong>answer</strong>&nbsp;block into the second space of the join block.</p><p></p><p>The complete script looks like this:</p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin-3.png\" width=\"486\" height=\"423\"><p></p><p><strong>Maximize the stage and enjoy the animation!</strong></p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Goblin.gif\" width=\"492\" height=\"408\"><p></p><p><strong>Save the project file as&nbsp;Let Us Chat!</strong></p><h2></h2><p></p><p></p><p><strong>Activities</strong></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -491,7 +498,7 @@
     ],
     "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:45:24.318Z",
+    "updatedAt": "2026-07-10T09:37:47.727Z",
     "mainConcepts": [
       {
         "id": "5b24a116-3d5e-4c18-93ff-c8044ceb38c5",
@@ -503,7 +510,8 @@
         "title": "Chatty sprite",
         "content": "<h4><strong>Chatty sprite</strong></h4><p></p><p>Did you know that you could also tell a story in PictoBlox? Here’s how!</p><h3></h3><h3><strong>Events:</strong></h3><p>Events blocks are related to various triggers in a project, or when one-part signals another to run.</p><p></p><p><strong>Broadcast()</strong>: The block sends a broadcast throughout the whole Scratch program. Any scripts in any sprites that are hatted with the When I Receive () block that is set to a specified broadcast will activate. This broadcast block lets scripts send broadcasts without any waits in its script (unlike the Broadcast () and Wait block). Broadcasts are a good way to have sprites and scripts communicate.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/b.png\" width=\"329\" height=\"89\"><p></p><p><strong>Broadcast() and wait</strong>: The block sends a broadcast throughout the whole Scratch project — any scripts that are halted with the When I Receive () block and are set to the broadcast will activate. This broadcast block lets scripts send broadcasts, and have them wait until all scripts are activated by the broadcast ends.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/b2.png\" width=\"381\" height=\"74\"><p></p><p><strong>When I receive()</strong>: Scripts that begin with this block will be invoked once the specified broadcast has been sent by a calling script. If a Forever block is sending the broadcast faster than the attached script can finish running, the script will restart without reaching the blocks at the end. This can be avoided by using broadcast () and wait.</p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/b3.png\" width=\"342\" height=\"101\"><p></p><p><strong>In this activity, We learn how to make two sprites communicate and then use the concept to tell a story of a fox and lion in which they talk about the problems they are facing in the forest.</strong></p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-3.gif\" width=\"492\" height=\"408\"><p></p><p><strong>Let’s get started!</strong></p><h2><strong>Let’s Code</strong></h2><p>Follow the steps below:</p><ol><li><p>Create a New file in PictoBlox. Open&nbsp;<strong>PictoBlox&nbsp;</strong>and create a new file. Select the coding environment as&nbsp;<strong>Block Coding</strong>.</p></li></ol><p></p><ol><li><p>Click the&nbsp;<strong>Choose a Backdrop</strong>&nbsp;button. Select the&nbsp;<strong>Savanna</strong>&nbsp;backdrop from the library.</p></li></ol><p></p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/Choose-Backdrop-1.png\" width=\"289\" height=\"260\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/STORY1.png\" alt=\"STORY1\" width=\"454\" height=\"342\"><ul><li><p></p></li></ul><p><strong>Click the&nbsp;Choose a Sprite</strong>&nbsp;button. Select the&nbsp;<strong>Fox and Lion</strong>&nbsp;sprites from the library.</p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/02/New-Sprite-1.png\" width=\"259\" height=\"264\"><ul><li><p></p></li></ul><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/STORY2.png\" alt=\"STORY2\" width=\"270\" height=\"261\"><ul><li><p></p></li><li><p><strong>Right-click on the Tobi icon in the sprite palette and&nbsp;<em>delete it</em></strong>. Your stage is all set for coding.</p></li></ul><p></p><ol><li><p></p></li></ol><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/delete-tobi.png\" width=\"261\" height=\"174\"><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Stage-4.png\" width=\"491\" height=\"405\"><h2></h2><h2><strong>Making the First Script for the Fox</strong></h2><ol><li><p>Select the&nbsp;<strong>Fox&nbsp;</strong>sprite by clicking its icon.</p></li></ol><p></p><ol><li><p>Using the&nbsp;<strong>go to x:() y:()&nbsp;</strong>block, we will set the initial position of the&nbsp;<strong>Fox&nbsp;</strong>sprite.</p></li></ol><p></p><ol><li><p>Then using the&nbsp;<strong>say () for () seconds&nbsp;</strong>block, we will make the&nbsp;<strong>Fox&nbsp;</strong>sprite initiate a conversation with the&nbsp;<strong>Lion&nbsp;</strong>sprite.</p></li></ol><p></p><ol><li><p>Then we will use a<strong>&nbsp;broadcast&nbsp;</strong>block from the&nbsp;<strong><em>Events&nbsp;</em></strong>palette. It will broadcast a message to the&nbsp;<strong>Lion</strong>&nbsp;sprite so that the other sprite can act according to the script.</p></li></ol><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-3.png\" width=\"520\" height=\"230\"><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-1.gif\" width=\"492\" height=\"408\"><h2></h2><h2><strong>Making the Script for the Lion</strong></h2><ol><li><p>Select the&nbsp;<strong>Lion&nbsp;</strong>sprite by clicking its icon and set its initial position using another&nbsp;<strong>go to x:() y:()&nbsp;</strong>block.</p></li></ol><p></p><ol><li><p>Flip the sprite horizontally by using the&nbsp;<strong>Flip Horizontal</strong>&nbsp;command in the&nbsp;<strong>edit costume section</strong>.</p></li></ol><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-1.png\" width=\"212\" height=\"134\"><h2></h2><p><strong>Receiving the Message and Replying to the Fox</strong></p><ol><li><p>To make the&nbsp;<strong>Lion</strong>&nbsp;sprite sense the message broadcast by the&nbsp;<strong>Fox&nbsp;</strong>sprite, we will use a&nbsp;<strong>when I receive&nbsp;</strong>hat block from the&nbsp;<strong><em>Events</em>&nbsp;</strong>palette.</p></li></ol><p></p><ol><li><p>Then, we will make the&nbsp;<strong>Lion</strong>&nbsp;sprite answer the&nbsp;<strong>Fox&nbsp;</strong>sprite’s question using&nbsp;<strong>say () for () seconds&nbsp;</strong>blocks and use another&nbsp;<strong>broadcast&nbsp;</strong>block to broadcast&nbsp;<strong>message2</strong>&nbsp;for the&nbsp;<strong>Fox&nbsp;</strong>sprite.</p></li></ol><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-2.png\" width=\"609\" height=\"235\"><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-2.gif\" width=\"492\" height=\"408\"><h2></h2><h2>Save the project as once upon a time part 1</h2><p></p><p>Click the green flag and enjoy the animation!</p><p></p><h2></h2><p></p><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -549,7 +557,7 @@
     ],
     "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:48:07.384Z",
+    "updatedAt": "2026-07-10T09:37:47.735Z",
     "mainConcepts": [
       {
         "id": "15c4635b-c323-4fbc-8990-22518c4e0843",
@@ -561,7 +569,8 @@
         "title": "Story Making – Once Upon a Time PART II",
         "content": "<h4><strong>Story Making – Once Upon a Time PART II</strong></h4><p></p><p>We have already created such an animation! we will be making the conversation longer! Lets dive into it!</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-2.gif\"><p></p><p>Open your saved file&nbsp;<strong>once upon a time part 1</strong></p><p></p><p><strong><em><u>Making the Second Script for the Fox</u></em></strong></p><p></p><p>First, we will select the&nbsp;<strong>Fox&nbsp;</strong>sprite by clicking its icon.Then, just like we did for the&nbsp;<strong>Lion</strong>&nbsp;sprite, we will make the&nbsp;<strong>Fox&nbsp;</strong>sprite sense the message broadcast by the&nbsp;<strong>Lion&nbsp;</strong>sprite using the&nbsp;<strong>when I receive</strong>&nbsp;hat block and select&nbsp;<strong>message2</strong>&nbsp;in the drop-down.Then, we will make the&nbsp;<strong>Fox&nbsp;</strong>sprite reply to the&nbsp;<strong>Lion&nbsp;</strong>sprite using&nbsp;<strong>say () for () seconds&nbsp;</strong>blocks.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-4.png\" width=\"540\" height=\"231\"><p>Maximize the stage and enjoy the animation!</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Story-3.gif\" width=\"492\" height=\"408\"><p><em>﻿</em></p><p></p><p><strong>You can add these concepts to your current animation:</strong></p><p></p><p><strong>Sounds:</strong>&nbsp;Use blocks from the Sound palette to add sound effects or music to your animation.</p><p></p><p>Movement: Apply Motion blocks to make your sprites move, glide, or turn as part of the story. You can also use key presses or mouse clicks to control the movement.</p><p></p><p><strong>Costumes and Backdrops:&nbsp;</strong>Use switch costume to and switch backdrop to blocks to change your sprites' appearance or the scene.</p><p></p><p>This will make our animation more engaging and realistic just like the animations we watch on tv!</p><p></p><p></p><p><em>﻿</em>Save the project file as&nbsp;<strong>Once upon a time 2.</strong></p><h2></h2><p></p><p><br></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -606,7 +615,7 @@
     ],
     "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:50:48.451Z",
+    "updatedAt": "2026-07-10T09:37:47.740Z",
     "mainConcepts": [
       {
         "id": "09351df5-be12-4cc4-902f-4a6228ca627b",
@@ -618,7 +627,8 @@
         "title": "Dialogue ",
         "content": "<h4><strong>Dialogue</strong></h4><p></p><p>Create an animation using the knowledge of broadcast.</p><p></p><h2><strong>Rules.</strong></h2><p></p><p>Have 3 or more sprites.</p><p>Have some sounds in the project.</p><p>Have movement in the project.</p><p>Have hide and show in the animation.</p><p>Be creative.</p><p></p><p>Save the project as my animation 1.</p><p></p>"
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -630,14 +640,15 @@
     "resources": [],
     "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-03T08:03:21.533Z",
+    "updatedAt": "2026-07-10T09:37:47.745Z",
     "mainConcepts": [
       {
         "id": "b24b3b77-f896-41d8-9e82-c00ac6dc96a2",
         "title": "Introduction",
         "content": ""
       }
-    ]
+    ],
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -650,7 +661,8 @@
     "order": 12,
     "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
     "createdAt": "2026-07-06T05:07:59.620Z",
-    "updatedAt": "2026-07-06T05:09:04.668Z"
+    "updatedAt": "2026-07-10T09:37:47.753Z",
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
   },
   {
     "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
@@ -698,7 +710,7 @@
     ],
     "id": "013cfd89-1546-490f-a5f2-e0b2190cb513",
     "createdAt": "2026-07-07T12:08:59.627Z",
-    "updatedAt": "2026-07-08T07:19:30.498Z",
+    "updatedAt": "2026-07-10T09:37:40.745Z",
     "assessmentIds": [
       "32b39932-175d-4159-aa65-c67085b17fa4",
       "a02d3152-005f-4b36-92b4-e1bccfae3f8f"
@@ -709,7 +721,8 @@
         "title": "",
         "content": ""
       }
-    ]
+    ],
+    "moduleId": "279cc84c-d5a9-412d-9b37-442826a0c39a"
   },
   {
     "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
@@ -734,7 +747,7 @@
     "resources": [],
     "id": "4cb5e839-1849-4a7f-9704-854939700363",
     "createdAt": "2026-07-07T12:08:59.627Z",
-    "updatedAt": "2026-07-08T07:19:46.795Z",
+    "updatedAt": "2026-07-10T09:37:40.755Z",
     "activities": [
       {
         "id": "b231b1e7-7688-4133-8d04-9431329c5b27",
@@ -745,45 +758,8 @@
     "assessmentIds": [
       "abd07396-50c8-4af5-9066-32624e6de42c",
       "a02d3152-005f-4b36-92b4-e1bccfae3f8f"
-    ]
-  },
-  {
-    "courseId": "37272c2c-3e5e-4dc6-aaea-2ef3155d8d73",
-    "title": "Verify Session",
-    "outcomes": [],
-    "introduction": "",
-    "mainConcepts": [
-      {
-        "id": "d95eb794-e515-476a-a422-90c923f64cfd",
-        "title": "Introduction",
-        "content": ""
-      }
     ],
-    "activities": [
-      {
-        "id": "363b35b0-830b-441e-94f6-85a30807b546",
-        "title": "",
-        "content": ""
-      }
-    ],
-    "assessmentIds": [
-      "e25bb6fe-7042-42ff-83fc-3718331f9d69",
-      "85c3271a-85d1-446b-871b-9a75dade7d76",
-      "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
-      "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
-    ],
-    "notes": [
-      {
-        "id": "14f19b65-d2f9-4f4f-8965-0e63445ba1ac",
-        "title": "",
-        "content": ""
-      }
-    ],
-    "resources": [],
-    "order": 1,
-    "id": "afeeba29-51e1-49e1-b11f-30c5c0bf99eb",
-    "createdAt": "2026-07-10T08:50:54.855Z",
-    "updatedAt": "2026-07-10T08:56:33.942Z"
+    "moduleId": "279cc84c-d5a9-412d-9b37-442826a0c39a"
   },
   {
     "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
@@ -798,6 +774,1129 @@
     "order": 3,
     "id": "44f87128-282f-4ead-9e24-323db7da79b3",
     "createdAt": "2026-07-10T08:55:04.450Z",
-    "updatedAt": "2026-07-10T08:55:25.539Z"
+    "updatedAt": "2026-07-10T09:37:40.762Z",
+    "moduleId": "279cc84c-d5a9-412d-9b37-442826a0c39a"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 1,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "45fa43ac-70da-4ffb-81b3-1c8c8a22a526",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "50aff443-d937-449b-ba06-19fa059926ff",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "f6302056-88be-4ce2-9db4-8b47eba00388",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "1468605d-e97d-41bc-949a-37d9b7b41d05",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 2,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "852b3480-cd12-4c79-8dc2-1f2cf585e727",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ed0a838a-2163-4767-be21-748c33c1dfa6",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "1181660c-087f-4e35-b82b-4e00c9d3a885",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "2d244bf3-acc3-49ba-95a1-3871106a32f2",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 3,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "f615a3a1-04c1-4d51-b4ba-42d353ad9d55",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "d29df650-09ca-4c8e-a0e5-2f98d870086c",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "e5bcfdf3-c4e0-4834-ac59-5060778f1e4f",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "b90d9348-a53d-45fe-8db9-993660cea73b",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 4,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "54ae2531-de28-4a76-898a-107ee934af17",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "61d9076b-b4d1-4d11-b5fc-6931c06f8857",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "161218d1-7d37-4919-a737-67dcb516ea14",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "e12ad0d5-ac5c-440c-9001-01d78ae6e38d",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 5,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "e65cf587-3a5a-42ab-a347-c7563f49674b",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ace6faf6-05e6-4a56-ba1e-e900b78bd233",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "97856d3f-7132-455a-8092-e7369b7261b0",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "96b5f7fe-6d92-4337-ad21-4acb8fd04f8e",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 6,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "61b199fd-da04-463a-a3ed-9a6e947e3105",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "9db4693e-5364-48de-8876-b8c1f9923105",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "1e9f14bd-ef42-4779-87ec-5221bf1ad65a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "542c1b3b-f755-4022-babd-16d9d7820420",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 7,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "8a39040e-fc13-4839-93bc-d0486538a730",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "2ad2c74f-a604-48df-a878-b9aced9d1d92",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "ee278d8b-c268-4f5b-bcda-4e691844b88a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "2fa9b39f-94e2-41ed-abd4-3d79a933da77",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 8,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "c8265f95-d18f-45cd-8036-a35728d6237c",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "bd3dc545-8601-4ed5-900a-52a5db16d7fe",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "813e6476-7bbd-484a-b943-b0ef3a07ce9d",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "b2241f3b-e8dc-489c-8167-960ea75c114c",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 9,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "485f7657-2aed-4e28-87ba-a4d7ce9c93ad",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "25bb2970-3819-461a-8e08-f9e64ed2716d",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "9346b4b5-5417-4537-977d-e2be116260f0",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "77258ede-cebe-4a9a-afd9-1895b6d00ca8",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 10,
+    "moduleId": "f7aea46f-8158-4d17-9781-eafe7b084746",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "f0e8f569-3eae-4034-9ce3-34574523a497",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "283a3877-01da-497f-972f-3b19700ec2ec",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "ff52316a-3fa4-4a59-afcb-68286f9638b0",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "8dcc4933-980a-41d9-9b4e-aa5f68ece8be",
+    "createdAt": "2026-07-10T09:38:26.980Z",
+    "updatedAt": "2026-07-10T09:38:26.980Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 11,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "de81f6c1-d503-4778-89f6-02701c2c7504",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "b7ce8cc9-d40e-433d-aad4-654b24c7b3a4",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "94467cb6-208d-4f49-a35b-0f4a50046175",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "aa8ec95f-ea0b-4d89-8981-c53a2a71952c",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 12,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "0ef664f6-c592-4dc9-a5f1-94a8c550094b",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "5d448662-8cb6-45b2-a272-63aad6e086a4",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "524e40cf-8a1b-4e09-bbc4-25ca44b5cd50",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "f87bb8f3-27ef-4476-b8da-96338c703361",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 13,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "8f043755-3706-4fdb-9f0d-971122e7a816",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "96e84bac-773a-47c6-98f1-d26390427eb1",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "7d522e8b-965d-4259-9a22-9b999eba0512",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "73a2ec65-b845-4410-8dd9-22046b783721",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 14,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "a01c5ca1-181c-4785-86be-1b6d91b1ae6d",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "44be63fe-c549-4cc6-a23e-74902356eac2",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "2bcc785f-9bc1-42cb-848f-6efecef6cb1c",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "7981f8d8-84d0-42e2-b32f-c0f41391eb7f",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 15,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "6aa3e437-f5da-4fd1-9545-9a25e148945f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "4962daa2-8429-4874-ad04-e4382b7fa255",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "08836772-8778-4fa3-af32-ab998f347383",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "20f81442-d5e9-454e-a385-d01861fe7920",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 16,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "aa33e164-df84-43a1-ad8c-9b052d101fee",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "3e524c45-e407-4bdb-a4b3-c1b5eeef42e4",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "f329086e-824e-498b-9aaf-60601efe475b",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "077c997a-ccb5-4fa0-b69f-e52aaa070dae",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 17,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "d7fc1ca9-dac8-41fa-b9e9-a554e6ed242b",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "a4f462dd-ee5a-4ad4-a8f4-0f643509fbae",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "08131c6d-3f41-4333-8410-90726c9543d8",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "44c91354-64a8-4abd-933b-d95de960a2bd",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 18,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "b68e023e-c4d4-4159-985c-56a49edd42d9",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "70fec70e-e90b-45bb-ac51-0cfd76ca7dec",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "f23ca2ce-095a-4f67-8919-135c4778ab86",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "246d3cf9-3652-4df1-8643-13e869e474c8",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 19,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "393eb992-eeb3-41ec-a7d6-0b34e5a65a0d",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "8ca81087-5715-4cae-a46e-3495d11fd97e",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "892059be-b670-4f79-8340-5127b910b398",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "48b73bd4-3d51-4cec-ada6-9bd32de30850",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 20,
+    "moduleId": "21b32aee-609f-46c4-8a8e-08412865c230",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "340b142e-9093-46e3-b25a-33afde13ca89",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "12093b30-162d-41f7-ab0d-4d35c82f60d5",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "20f4469d-f86f-4c43-8024-ce13d9fe599a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "a502303b-8052-4808-bf9d-347b2258b704",
+    "createdAt": "2026-07-10T09:38:27.027Z",
+    "updatedAt": "2026-07-10T09:38:27.027Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 21,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "516c23a6-8c53-40d8-bceb-749577564c0d",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "36167b70-a28d-4f45-96f2-817633e79464",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "35ca45cf-5b1a-42ad-836b-6775664eaf9a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "aa80a323-d708-4b8a-8c33-e3df065bf65f",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 22,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "346e17d7-b663-412b-8756-a07eb060dfa1",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "158b2d39-2e24-4154-a6eb-bace9c942c54",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "5c660ffd-771a-43fe-b652-7bc88d9d5361",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "5b745702-1856-473f-a902-fe42248499d8",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 23,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "885f1339-1b53-4752-b824-3ea5eee5ad1a",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "43e61da9-2e15-4983-8083-ea5d6306f102",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "474281c3-204f-459c-a0b6-133274cc9b5a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "90c119f8-ed16-4cdb-ae29-8241338886f7",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 24,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "1c4d0787-6ffa-433a-9018-0c27f7beed6d",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "2962a5c6-83ab-41c3-b2a5-7df2da1ee642",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "d3227fd5-6ed6-4adb-9792-dd62c003adab",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "4a3f0c16-6f40-49b2-8846-ee2c98257679",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 25,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "cb47831b-2791-41fd-a174-977beee89320",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "88ce11b1-58b7-4954-86ca-ab80050a6752",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "06662afd-c981-432e-8c88-d18583de40d6",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "6b45db34-5f8a-48a6-b708-ee5bbc3d3c92",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 26,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "25a3b954-1af9-4d45-a241-848e3e3f1f4e",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ae8e113d-1624-4a81-93a2-508cb44410d3",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "fcaa60d4-6590-4600-8c9a-6dbeda52486f",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "fba3eaea-5955-4db3-94e8-f167b9e947f5",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 27,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "283637c9-5ca3-48e3-9b13-3e81022e34e0",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "8bb883d4-afb4-4cac-af9f-6e54b1d39bb4",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "52a73790-681c-4959-a58f-d1189cfe8bd2",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "58c171aa-164f-4664-8cc8-d427ee18d521",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 28,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "a75f5806-fc00-49e9-b8de-23573e4338f8",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "03e9cc99-e158-43c0-93a1-e75cd5f5e36f",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "29339ca6-cc1c-4fef-be46-75bb2890fc98",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "f5ce5a44-5de6-4c00-a325-b7211d6c50c5",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 29,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "762b6155-3285-4d7d-a4a4-840d83daf6c4",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "f8ffe660-0ce5-4720-b3eb-a33ecd971195",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "e1e6c87c-feff-492b-8d68-f947fe0a89b8",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "26b878c5-0d92-4e15-9abd-720be8c93eed",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "e0d13192-747e-46a7-93fe-4b042a7438f1",
+    "title": "",
+    "order": 30,
+    "moduleId": "16023b7e-f51f-4643-8b3f-4086c10805cf",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "5dc389c3-529c-48e4-9dfa-0ec239750ee2",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "634d1a82-2756-457c-8164-0c652a401c22",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "c834fbe9-dd52-4cf2-a739-2e3cf65c612b",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "7984d070-56fa-4a4f-85b7-b872604aef4a",
+    "createdAt": "2026-07-10T09:38:27.072Z",
+    "updatedAt": "2026-07-10T09:38:27.072Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "title": "",
+    "order": 13,
+    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "782e351d-948b-40d6-858b-97f2fbf6b865",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "3d5e3d27-5926-4a06-8bfa-faeeceaf51e6",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "fd52372b-d361-44c3-834e-77aecba39f05",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+    "createdAt": "2026-07-10T09:49:00.268Z",
+    "updatedAt": "2026-07-10T09:49:00.268Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "title": "",
+    "order": 14,
+    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "6dd2d02d-ffda-4c3b-9f20-24f30500e1b2",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "9cbc9d00-1d5a-4715-a611-a9735ac0606b",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "9d0affc3-adfd-4aa3-9fc5-3e4cf2aa2bc0",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+    "createdAt": "2026-07-10T09:49:00.268Z",
+    "updatedAt": "2026-07-10T09:49:00.268Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "title": "",
+    "order": 15,
+    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "323e1c4c-e657-4d8d-8c1d-e014f6c852eb",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "f1d67425-cef0-4550-b4b9-c587142665df",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "496cbe0d-cc39-4c7e-b067-62db5f06d0a5",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+    "createdAt": "2026-07-10T09:49:00.268Z",
+    "updatedAt": "2026-07-10T09:49:00.268Z"
+  },
+  {
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "title": "",
+    "order": 16,
+    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "e9b692d4-f804-4db4-bc10-8b1e4bb88baa",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "6cda85e2-4740-4745-86d8-d57fd7d444bb",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "notes": [
+      {
+        "id": "177e7860-5ebf-4b2c-a2fa-8c42488b4e31",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+    "createdAt": "2026-07-10T09:49:00.268Z",
+    "updatedAt": "2026-07-10T09:49:00.268Z"
   }
 ]

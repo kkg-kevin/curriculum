@@ -44,12 +44,25 @@ export const courseApi = {
   createSession: (courseId, data) =>
     api.post(`${ENDPOINT}/${courseId}/sessions`, data).then((r) => r.data.data),
 
-  createSessionsBulk: (courseId, count) =>
-    api.post(`${ENDPOINT}/${courseId}/sessions/bulk`, { count }).then((r) => r.data.data),
+  createSessionsBulk: (courseId, { count, moduleId = null }) =>
+    api.post(`${ENDPOINT}/${courseId}/sessions/bulk`, { count, moduleId }).then((r) => r.data.data),
 
   updateSession: (courseId, sessionId, data) =>
     api.put(`${ENDPOINT}/${courseId}/sessions/${sessionId}`, data).then((r) => r.data.data),
 
   deleteSession: (courseId, sessionId) =>
     api.delete(`${ENDPOINT}/${courseId}/sessions/${sessionId}`).then((r) => r.data),
+
+  /* Modules */
+  getModules: (courseId) =>
+    api.get(`${ENDPOINT}/${courseId}/modules`).then((r) => r.data.data),
+
+  createModule: (courseId, data) =>
+    api.post(`${ENDPOINT}/${courseId}/modules`, data).then((r) => r.data.data),
+
+  updateModule: (courseId, moduleId, data) =>
+    api.put(`${ENDPOINT}/${courseId}/modules/${moduleId}`, data).then((r) => r.data.data),
+
+  deleteModule: (courseId, moduleId) =>
+    api.delete(`${ENDPOINT}/${courseId}/modules/${moduleId}`).then((r) => r.data),
 };

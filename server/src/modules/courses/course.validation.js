@@ -35,6 +35,7 @@ const repeatableItemSchema = z.object({
 const createSessionSchema = z.object({
   title:        z.string().optional().default(""),
   order:        z.number().int().min(1).optional(),
+  moduleId:     z.string().nullable().optional().default(null),
   outcomes:     z.array(z.string().min(1)).optional().default([]),
   introduction: z.string().optional().default(""),
   mainConcepts: z.array(repeatableItemSchema).optional().default([]),
@@ -47,8 +48,19 @@ const createSessionSchema = z.object({
 const updateSessionSchema = createSessionSchema.partial();
 
 const bulkCreateSessionsSchema = z.object({
-  count: z.number().int().min(1, "At least 1 session").max(30, "Max 30 sessions at once"),
+  count:    z.number().int().min(1, "At least 1 session").max(30, "Max 30 sessions at once"),
+  moduleId: z.string().nullable().optional().default(null),
 });
+
+// A Module groups a course's Sessions under a named bucket (e.g. "Module 1" covering
+// Sessions 1-10 of 30) — sessions keep their own global order/numbering regardless of
+// which module they're in, or none at all (moduleId nullable — ungrouped is valid).
+const createModuleSchema = z.object({
+  name:  z.string().min(1, "Module name is required").max(150),
+  order: z.number().int().min(1).optional(),
+});
+
+const updateModuleSchema = createModuleSchema.partial();
 
 const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
@@ -64,6 +76,8 @@ module.exports = {
   createSessionSchema,
   updateSessionSchema,
   bulkCreateSessionsSchema,
+  createModuleSchema,
+  updateModuleSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
 };

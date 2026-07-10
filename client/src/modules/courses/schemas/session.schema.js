@@ -24,6 +24,7 @@ const repeatableItemSchema = z.object({
 
 export const sessionSchema = z.object({
   title:        z.string().optional().default(""),
+  moduleId:     z.string().nullable().optional().default(null),
   outcomes:     z.array(z.string().min(1)).optional().default([]),
   introduction: z.string().optional().default(""),
   mainConcepts: z.array(repeatableItemSchema).optional().default([]),

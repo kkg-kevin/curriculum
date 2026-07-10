@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const CourseModel = require("./course.model");
 const SessionModel = require("./session.model");
+const ModuleModel = require("./module.model");
 const CourseCompetencyLinkModel = require("./course-competency-link.model");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
@@ -24,6 +25,26 @@ function assertValidAgeRange(ageMin, ageMax) {
     err.statusCode = 400;
     throw err;
   }
+}
+
+// Every session must belong to a module — no "ungrouped" sessions. Self-healing rather than
+// a hard schema constraint: called from both getModules/getSessions so whichever resolves
+// first fixes up any orphans (a session with no moduleId, or one pointing at a module that no
+// longer exists) before either query returns, keeping both queries consistent on first load.
+// Legacy courses that never used modules land here too — a course with sessions always ends
+// up with at least a "Module 1" holding them.
+function ensureSessionsGrouped(courseId) {
+  const sessions = SessionModel.findByCourseId(courseId);
+  const modules = ModuleModel.findByCourseId(courseId);
+  const moduleIds = new Set(modules.map((m) => m.id));
+  const orphans = sessions.filter((s) => !s.moduleId || !moduleIds.has(s.moduleId));
+  if (orphans.length === 0) return;
+
+  const targetModuleId = modules.length > 0
+    ? modules[0].id
+    : ModuleModel.create({ courseId, name: "Module 1", order: 1 }).id;
+
+  orphans.forEach((s) => SessionModel.update(s.id, { moduleId: targetModuleId }));
 }
 
 const CourseService = {
@@ -71,6 +92,7 @@ const CourseService = {
       throw err;
     }
     SessionModel.deleteByCourseId(id);
+    ModuleModel.deleteByCourseId(id);
     CourseCompetencyLinkModel.deleteByCourseId(id);
     CourseLearningAreaLinkModel.deleteByCourseId(id);
     CourseCurriculumLinkModel.deleteByCourseId(id);
@@ -267,6 +289,7 @@ const CourseService = {
       err.statusCode = 404;
       throw err;
     }
+    ensureSessionsGrouped(courseId);
     return SessionModel.findByCourseId(courseId);
   },
 
@@ -281,7 +304,7 @@ const CourseService = {
     return SessionModel.create({ courseId, ...data, order });
   },
 
-  async createSessionsBulk(courseId, count) {
+  async createSessionsBulk(courseId, count, moduleId = null) {
     const course = CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
@@ -293,6 +316,7 @@ const CourseService = {
       courseId,
       title: "",
       order: startOrder + i,
+      moduleId,
       outcomes: [],
       introduction: "",
       mainConcepts: [{ id: generateId(), title: "Introduction", content: "" }],
@@ -333,6 +357,58 @@ const CourseService = {
       throw err;
     }
     SessionModel.delete(sessionId);
+  },
+
+  /* ── Modules (group this course's Sessions under a named bucket) ───────── */
+
+  async getModules(courseId) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    ensureSessionsGrouped(courseId);
+    return ModuleModel.findByCourseId(courseId);
+  },
+
+  async createModule(courseId, data) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const order = data.order ?? ModuleModel.findByCourseId(courseId).length + 1;
+    return ModuleModel.create({ courseId, ...data, order });
+  },
+
+  async updateModule(courseId, moduleId, data) {
+    const courseModule = ModuleModel.findById(moduleId);
+    if (!courseModule || courseModule.courseId !== courseId) {
+      const err = new Error("Module not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return ModuleModel.update(moduleId, data);
+  },
+
+  async deleteModule(courseId, moduleId) {
+    const courseModule = ModuleModel.findById(moduleId);
+    if (!courseModule || courseModule.courseId !== courseId) {
+      const err = new Error("Module not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    // Every session must belong to a module — no "ungrouped" fallback — so a module can
+    // only be deleted once it's empty. Move or delete its sessions first.
+    const hasSessions = SessionModel.findByCourseId(courseId).some((s) => s.moduleId === moduleId);
+    if (hasSessions) {
+      const err = new Error(`"${courseModule.name}" still has sessions in it. Move or delete them before deleting this module.`);
+      err.statusCode = 400;
+      throw err;
+    }
+    ModuleModel.delete(moduleId);
   },
 };
 

@@ -6,6 +6,7 @@ export const COURSE_KEYS = {
   all: ["courses"],
   detail: (id) => ["courses", "detail", id],
   sessions: (courseId) => ["courses", "sessions", courseId],
+  modules: (courseId) => ["courses", "modules", courseId],
   competencies: (courseId) => ["courses", "competencies", courseId],
   learningAreas: (courseId) => ["courses", "learning-areas", courseId],
   curricula: (courseId) => ["courses", "curricula", courseId],
@@ -135,7 +136,7 @@ export function useCreateSession(courseId) {
 export function useCreateSessionsBulk() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, count }) => courseApi.createSessionsBulk(courseId, count),
+    mutationFn: ({ courseId, count, moduleId }) => courseApi.createSessionsBulk(courseId, { count, moduleId }),
     onSuccess: (_data, { courseId }) => {
       queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
     },
@@ -164,5 +165,52 @@ export function useDeleteSession(courseId) {
       toast.success("Session deleted");
     },
     onError: (err) => toast.error(err.message || "Failed to delete session"),
+  });
+}
+
+/* ── Modules (group this course's Sessions under a named bucket) ────────── */
+
+export function useModules(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.modules(courseId),
+    queryFn: () => courseApi.getModules(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useCreateModule(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => courseApi.createModule(courseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.modules(courseId) });
+      toast.success("Module added");
+    },
+    onError: (err) => toast.error(err.message || "Failed to add module"),
+  });
+}
+
+export function useUpdateModule(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => courseApi.updateModule(courseId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.modules(courseId) });
+      toast.success("Module updated");
+    },
+    onError: (err) => toast.error(err.message || "Failed to update module"),
+  });
+}
+
+export function useDeleteModule(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => courseApi.deleteModule(courseId, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.modules(courseId) });
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.sessions(courseId) });
+      toast.success("Module deleted");
+    },
+    onError: (err) => toast.error(err.message || "Failed to delete module"),
   });
 }
