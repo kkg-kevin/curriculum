@@ -7,6 +7,7 @@ const createInventoryItemSchema = z.object({
   category:    z.enum(INVENTORY_CATEGORIES, { errorMap: () => ({ message: "Select a valid category" }) }).optional().default("Other"),
   unit:        z.string().min(1).max(30).optional().default("pcs"),
   description: z.string().max(500).optional().default(""),
+  image:       z.string().nullable().optional().default(null),
 });
 
 const updateInventoryItemSchema = createInventoryItemSchema.partial();

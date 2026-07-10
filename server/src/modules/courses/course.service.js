@@ -188,6 +188,19 @@ const CourseService = {
       throw err;
     }
 
+    // Teacher Observation assessments are rating-scale based (checklist/rating/behaviour
+    // indicators, no points field) — they have no items or rubric to sum, so a marks total
+    // isn't meaningful for this type. Say so explicitly rather than silently returning 0,
+    // which would look like a real (and wrong) max score once this preview is wired to a UI.
+    if (assessment.type === "observation") {
+      return {
+        assessmentType: assessment.type,
+        totalMarks: null,
+        matched: false,
+        message: "Teacher Observation assessments are rating-based, not marks-based — Score Evidence scoring isn't available for this type yet.",
+      };
+    }
+
     const totalMarks =
       (assessment.items  || []).reduce((sum, i) => sum + (i.points  || 0), 0) +
       (assessment.rubric || []).reduce((sum, r) => sum + (r.points || 0), 0);

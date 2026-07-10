@@ -5,6 +5,7 @@ import {
 import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../constants";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import ImageUploadField from "../../../../components/ImageUploadField";
 
 function CardKebab({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
@@ -55,6 +56,7 @@ function InventoryItemModal({ editTarget, onClose }) {
     category: editTarget?.category || "Robots",
     unit: editTarget?.unit || "pcs",
     description: editTarget?.description || "",
+    image: editTarget?.image || null,
   }));
   const [error, setError] = useState("");
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -66,6 +68,7 @@ function InventoryItemModal({ editTarget, onClose }) {
       category: form.category,
       unit: form.unit.trim() || "pcs",
       description: form.description.trim(),
+      image: form.image,
     };
     const onSuccess = () => onClose();
     if (editTarget) update({ id: editTarget.id, data }, { onSuccess });
@@ -86,6 +89,10 @@ function InventoryItemModal({ editTarget, onClose }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {error && <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "10px", color: "#EF4444", fontSize: "13px" }}>{error}</div>}
+        <div>
+          <Label>Image</Label>
+          <ImageUploadField value={form.image} onChange={(url) => setField("image", url)} />
+        </div>
         <div>
           <Label>Name *</Label>
           <input className="stg-input" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. LEGO Mindstorms Kit" />
@@ -116,24 +123,40 @@ function InventoryCard({ item, onEdit, onDelete }) {
   const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
 
   return (
-    <div className="stg-comp-card">
-      <div className="stg-comp-card-top">
-        <div className="stg-avatar" style={{ backgroundColor: `${color}15`, border: `2px solid ${color}30`, color }}>
-          <Icon size={18} />
+    <div
+      style={{
+        backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transition: "box-shadow 0.15s, transform 0.15s", animation: "stg-fadein 0.18s ease",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,71,106,0.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      <div style={{ height: "140px", flexShrink: 0, position: "relative" }}>
+        {item.image ? (
+          <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", backgroundColor: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center", color }}>
+            <Icon size={32} />
+          </div>
+        )}
+        <div style={{ position: "absolute", top: "8px", right: "8px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", backdropFilter: "blur(2px)" }}>
+          <CardKebab onEdit={onEdit} onDelete={onDelete} />
         </div>
-        <div style={{ flex: 1, minWidth: 0, paddingTop: "2px" }}>
-          <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, wordBreak: "break-word" }}>
-            {item.name}
-          </p>
-          <span className="stg-chip" style={{ borderColor: `${color}40`, color, marginTop: "4px" }}>{item.category}</span>
-          <span style={{ marginLeft: "6px", fontSize: "11.5px", color: "#9CA3AF" }}>· unit: {item.unit}</span>
-        </div>
-        <CardKebab onEdit={onEdit} onDelete={onDelete} />
       </div>
 
-      <p className="stg-comp-desc">
-        {item.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
-      </p>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+        <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {item.name}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="stg-chip" style={{ borderColor: `${color}40`, color }}>{item.category}</span>
+          <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>unit: {item.unit}</span>
+        </div>
+        <p className="stg-comp-desc" style={{ WebkitLineClamp: 2 }}>
+          {item.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
+        </p>
+      </div>
     </div>
   );
 }

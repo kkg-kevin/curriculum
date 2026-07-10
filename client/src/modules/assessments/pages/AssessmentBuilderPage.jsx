@@ -205,6 +205,20 @@ const CSS = `
     font-size:12.5px; font-family:Inter,sans-serif; color:#111827; outline:none; padding:5px 2px;
   }
   .tb-qty-input::-webkit-outer-spin-button, .tb-qty-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+  .tb-material-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
+  .tb-material-card {
+    border:1.5px solid #E5E7EB; border-radius:14px; overflow:hidden; background:#fff;
+    display:flex; flex-direction:column; transition:box-shadow 0.15s, transform 0.15s;
+  }
+  .tb-material-card:hover { box-shadow:0 6px 20px rgba(37,71,106,0.1); transform:translateY(-2px); }
+  .tb-material-card-img { height:100px; position:relative; flex-shrink:0; }
+  .tb-material-card-remove {
+    position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:8px;
+    background:rgba(255,255,255,0.92); border:none; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:#EF4444;
+  }
+  .tb-material-card-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:7px; }
 `;
 
 /* ── small shared bits ─────────────────────────────────────────────────── */
@@ -778,33 +792,41 @@ function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
+      <div className="tb-material-grid">
         {inventory.map((link) => {
           const item = catalog.find((i) => i.id === link.itemId);
           if (!item) return null;
           const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
           const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
           return (
-            <div key={link.itemId} className="tb-material-row">
-              <span className="tb-material-icon" style={{ backgroundColor: `${color}15`, color }}>
-                <Icon size={16} />
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div key={link.itemId} className="tb-material-card">
+              <div className="tb-material-card-img">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", backgroundColor: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center", color }}>
+                    <Icon size={26} />
+                  </div>
+                )}
+                <button type="button" className="tb-material-card-remove" onClick={() => remove(link.itemId)} title="Remove"><FiX size={13} /></button>
+              </div>
+              <div className="tb-material-card-body">
                 <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.name}
                 </p>
-                <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{item.category}</span>
+                <span style={{ alignSelf: "flex-start", display: "inline-flex", padding: "3px 9px", borderRadius: "20px", background: `${color}12`, border: `1.5px solid ${color}30`, color, fontSize: "11px", fontWeight: 700 }}>{item.category}</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <div className="tb-qty-stepper">
+                    <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, -1)} disabled={link.quantity <= 1}>−</button>
+                    <input
+                      type="number" min="1" className="tb-qty-input"
+                      value={link.quantity} onChange={(e) => setQuantity(link.itemId, Number(e.target.value) || 1)}
+                    />
+                    <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, 1)}>+</button>
+                  </div>
+                  <span style={{ fontSize: "11px", color: "#9CA3AF", flexShrink: 0 }}>{item.unit}</span>
+                </div>
               </div>
-              <div className="tb-qty-stepper">
-                <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, -1)} disabled={link.quantity <= 1}>−</button>
-                <input
-                  type="number" min="1" className="tb-qty-input"
-                  value={link.quantity} onChange={(e) => setQuantity(link.itemId, Number(e.target.value) || 1)}
-                />
-                <button type="button" className="tb-qty-btn" onClick={() => step(link.itemId, 1)}>+</button>
-              </div>
-              <span style={{ fontSize: "11px", color: "#9CA3AF", width: "30px", flexShrink: 0 }}>{item.unit}</span>
-              <button type="button" className="tb-icon-btn danger" onClick={() => remove(link.itemId)}><FiX size={14} /></button>
             </div>
           );
         })}
@@ -832,9 +854,13 @@ function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
               const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
               return (
                 <button key={item.id} type="button" className="tb-tag-dropdown-item tb-tag-dropdown-item--material" onClick={() => add(item.id)}>
-                  <span className="tb-material-icon" style={{ width: "24px", height: "24px", backgroundColor: `${color}15`, color }}>
-                    <Icon size={12} />
-                  </span>
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} style={{ width: "24px", height: "24px", borderRadius: "7px", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <span className="tb-material-icon" style={{ width: "24px", height: "24px", backgroundColor: `${color}15`, color }}>
+                      <Icon size={12} />
+                    </span>
+                  )}
                   <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
                   <span style={{ color: "#9CA3AF", fontSize: "11px", flexShrink: 0 }}>{item.category}</span>
                 </button>

@@ -8,8 +8,8 @@ import { NOTE_QUICK_PICKS } from "../sectionConfig";
 
 const cardStyle = { backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" };
 
-const ASM_TYPE_LABELS = { quiz: "Quiz", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
-const ASM_TYPE_COLORS = { quiz: "#25476a", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
+const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
+const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
 
 const selectStyle = {
   padding: "10px 12px", borderRadius: "10px", border: "1.5px solid #E5E7EB",
