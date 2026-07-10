@@ -39,6 +39,9 @@ const itemSchema = z.object({
   // Assignment/Project task fields
   taskType:      z.enum(TASK_TYPES).optional().nullable().default(null),
   submissionKinds: z.array(z.enum(SUBMISSION_ITEM_KINDS)).optional().default([]),
+  // Competency indicator(s) this question assesses — ids into a linked competency's
+  // nested `indicators` array (see assessment-competency-link.model.js).
+  competencyIndicatorIds: z.array(z.string()).optional().default([]),
 })
   .refine((d) => hasRichContent(d.question), { message: "Question text is required", path: ["question"] })
   .refine((d) => !["mcqSingle", "mcqMultiple"].includes(d.kind) || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
@@ -52,6 +55,7 @@ const rubricCriterionSchema = z.object({
   description: z.string().max(5000).optional().default(""),
   points:      z.number().min(0).optional().default(0),
   sectionId:   z.string().optional().nullable().default(null),
+  competencyIndicatorIds: z.array(z.string()).optional().default([]),
 });
 
 // Teacher Observation content — a checklist of observable items. `kind` defaults to
@@ -62,6 +66,7 @@ const indicatorSchema = z.object({
   kind:        z.enum(OBSERVATION_ITEM_KINDS).optional().default("rating"),
   ratingScale: z.array(z.string().min(1)).min(2).optional().default(DEFAULT_RATING_SCALE),
   sectionId:   z.string().optional().nullable().default(null),
+  competencyIndicatorIds: z.array(z.string()).optional().default([]),
 }).refine((d) => hasRichContent(d.text), { message: "Indicator text is required", path: ["text"] });
 
 const deliverableSchema = z.object({

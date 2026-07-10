@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
@@ -302,10 +302,24 @@ function TagPicker({ label, items, selectedIds, onChange, onCreateNew }) {
   );
 }
 
+/* ── Competency indicator picker (per question / criterion) ────────────── */
+
+function IndicatorPicker({ options, selectedIds, onChange }) {
+  if (!options || options.length === 0) {
+    return <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF", fontStyle: "italic" }}>Attach a competency to this assessment (Info tab) to link indicators here.</p>;
+  }
+  return (
+    <div>
+      <Label>Competency Indicator(s)</Label>
+      <TagPicker label="Indicator" items={options} selectedIds={selectedIds} onChange={onChange} />
+    </div>
+  );
+}
+
 /* ── entry factory ──────────────────────────────────────────────────────── */
 
 function defaultEntry(kind, sectionId) {
-  const base = { id: genId(), kind, sectionId };
+  const base = { id: genId(), kind, sectionId, competencyIndicatorIds: [] };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
     return { ...base, text: "", ratingScale: ["Not Yet", "Developing", "Proficient"] };
   }
@@ -473,7 +487,7 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
   );
 }
 
-function ItemConfigForm({ type, entry, onChange }) {
+function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
   const set = (key, val) => onChange({ ...entry, [key]: val });
   const isObservation = OBSERVATION_ITEM_KINDS.includes(entry.kind);
   const supportsTasks = BUILDER_REGISTRY[type]?.supportsTasks && !isObservation;
@@ -484,6 +498,12 @@ function ItemConfigForm({ type, entry, onChange }) {
         <Label>{isObservation ? "Observation Text" : "Question / Prompt"}</Label>
         <RichTextEditor value={entryLabel(entry)} onChange={(html) => set(isObservation ? "text" : "question", html)} minHeight={90} maxHeight={220} />
       </div>
+
+      <IndicatorPicker
+        options={indicatorOptions}
+        selectedIds={entry.competencyIndicatorIds || []}
+        onChange={(ids) => set("competencyIndicatorIds", ids)}
+      />
 
       {!isObservation && (
         <div>
@@ -615,7 +635,7 @@ function SummaryCard({ form }) {
   );
 }
 
-function RightPanel({ form, selectedEntry, onUpdateEntry }) {
+function RightPanel({ form, selectedEntry, onUpdateEntry, indicatorOptions }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <SummaryCard form={form} />
@@ -623,7 +643,7 @@ function RightPanel({ form, selectedEntry, onUpdateEntry }) {
       <div className="tb-card">
         <p className="tb-card-title">Item Configuration</p>
         {selectedEntry ? (
-          <ItemConfigForm type={form.type} entry={selectedEntry} onChange={onUpdateEntry} />
+          <ItemConfigForm type={form.type} entry={selectedEntry} onChange={onUpdateEntry} indicatorOptions={indicatorOptions} />
         ) : (
           <PlaceholderPanel text="Select an item from the builder to configure its properties." />
         )}
@@ -634,8 +654,8 @@ function RightPanel({ form, selectedEntry, onUpdateEntry }) {
 
 /* ── Grading Rubric tab (Assignment/Project) ────────────────────────────── */
 
-function GradingRubricTab({ rubric, onChange }) {
-  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10 }]);
+function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
+  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, competencyIndicatorIds: [] }]);
   const update = (id, patch) => onChange(rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id) => onChange(rubric.filter((c) => c.id !== id));
   const totalPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
@@ -653,6 +673,13 @@ function GradingRubricTab({ rubric, onChange }) {
               <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}>✕</button>
             </div>
             <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={c.description} onChange={(e) => update(c.id, { description: e.target.value })} />
+            <div style={{ marginTop: "8px" }}>
+              <IndicatorPicker
+                options={indicatorOptions}
+                selectedIds={c.competencyIndicatorIds || []}
+                onChange={(ids) => update(c.id, { competencyIndicatorIds: ids })}
+              />
+            </div>
           </div>
         ))}
         <button type="button" className="tb-add-item-btn" onClick={add}>+ Add Criterion</button>
@@ -883,11 +910,11 @@ function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
     structureType: a.structureType || "mixed", overview: a.overview || "",
     sections: a.sections || [],
-    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId() })),
-    indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, ...ind })),
+    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), competencyIndicatorIds: item.competencyIndicatorIds || [] })),
+    indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, competencyIndicatorIds: ind.competencyIndicatorIds || [], ...ind })),
     deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
-    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId() })),
+    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), competencyIndicatorIds: c.competencyIndicatorIds || [] })),
     competencyIds, learningAreaIds, inventory,
   };
 }
@@ -918,6 +945,13 @@ export default function AssessmentBuilderPage() {
   const [createCompetencyOpen, setCreateCompetencyOpen] = useState(false);
   const [createLearningAreaOpen, setCreateLearningAreaOpen] = useState(false);
   const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
+
+  const indicatorOptions = useMemo(() => {
+    if (!form) return [];
+    return allCompetencies
+      .filter((comp) => form.competencyIds.includes(comp.id))
+      .flatMap((comp) => (comp.indicators || []).map((ind) => ({ id: ind.id, name: `${comp.name} — ${ind.name}` })));
+  }, [allCompetencies, form]);
 
   useEffect(() => {
     if (form) return;
@@ -1028,7 +1062,7 @@ export default function AssessmentBuilderPage() {
       sections: form.sections.map((s, i) => ({ ...s, order: i })),
     };
     if (registry?.supportsDeliverables) payload.overview = form.overview.trim();
-    payload.items = isObservation ? [] : form.items;
+    payload.items = isObservation || registry?.supportsItems === false ? [] : form.items;
     payload.indicators = isObservation ? form.indicators : [];
     payload.rubric = registry?.supportsRubric ? form.rubric : [];
     if (registry?.supportsDeliverables) payload.deliverables = form.deliverables;
@@ -1081,7 +1115,7 @@ export default function AssessmentBuilderPage() {
   const color = TYPE_COLORS[type];
   const tabs = [
     { key: "info", label: "Assessment Information" },
-    { key: "structure", label: "Structure & Items" },
+    ...(BUILDER_REGISTRY[type]?.supportsItems !== false ? [{ key: "structure", label: "Structure & Items" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsRubric ? [{ key: "rubric", label: "Grading Rubric" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsInventory ? [{ key: "inventory", label: "Inventory" }] : []),
@@ -1183,13 +1217,13 @@ export default function AssessmentBuilderPage() {
                 onAddSection={addSection} onRenameSection={renameSection} onDeleteSection={deleteSection}
                 onDeleteEntry={deleteEntry} onMoveEntry={moveEntry} onMoveSection={moveSection}
               />
-              <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} />
+              <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} indicatorOptions={indicatorOptions} />
             </div>
           )}
 
           {activeTab === "rubric" && (
             <div className="tb-two-col">
-              <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} />
+              <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} indicatorOptions={indicatorOptions} />
               <SummaryCard form={form} />
             </div>
           )}

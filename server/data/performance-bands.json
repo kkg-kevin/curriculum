@@ -148,5 +148,20 @@
     ],
     "order": 2,
     "createdAt": "2026-07-09T13:54:42.023Z"
+  },
+  {
+    "id": "dd2ad8cf-0ed5-4178-a0d5-ba566f4963b0",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "ieunbubb",
+    "description": "fnubububuh",
+    "criteria": [],
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [
+      "8efe0129-a518-4287-9b27-faba52553004"
+    ],
+    "indicatorPoints": [],
+    "order": 6,
+    "createdAt": "2026-07-10T06:20:27.894Z"
   }
 ]

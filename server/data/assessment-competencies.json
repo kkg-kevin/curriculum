@@ -1,8 +1,62 @@
 [
   {
-    "id": "43ea1351-ccae-41b2-9345-14a198c7f9fc",
-    "assessmentId": "32b39932-175d-4159-aa65-c67085b17fa4",
+    "id": "84f1a3dd-5c91-4cf4-a7ad-8afcaa6186ad",
+    "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-07-07T14:24:59.712Z"
+    "createdAt": "2026-07-10T07:35:11.697Z"
+  },
+  {
+    "id": "dea86fff-6599-4450-8b4a-f8c50ed1fd18",
+    "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-10T07:35:11.719Z"
+  },
+  {
+    "id": "f9173f17-d858-4350-b371-88e1680e72fe",
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "createdAt": "2026-07-10T07:35:11.747Z"
+  },
+  {
+    "id": "32607168-75eb-4772-8b21-400a4ea99f7e",
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-10T07:35:11.759Z"
+  },
+  {
+    "id": "f6c44a64-cd69-41ab-9c6b-422c8a83a022",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "createdAt": "2026-07-10T07:35:11.796Z"
+  },
+  {
+    "id": "0aa44b1e-5731-48ae-9714-d218a7ca947c",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-10T07:35:11.811Z"
+  },
+  {
+    "id": "b3ed092f-4ee9-4cd3-9d1b-9593392832ad",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-10T07:35:11.828Z"
+  },
+  {
+    "id": "3cede28a-b437-47bc-921e-3b368fff71be",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-10T07:35:11.841Z"
+  },
+  {
+    "id": "185be2b1-9e3f-4a2b-b6ec-1c40168dfb3c",
+    "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-10T07:35:11.867Z"
+  },
+  {
+    "id": "8c20f0de-01cc-4288-a9b1-b4e054618c7d",
+    "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-10T07:35:11.880Z"
   }
 ]
