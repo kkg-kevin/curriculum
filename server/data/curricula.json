@@ -36,49 +36,5 @@
     "createdAt": "2026-06-25T09:29:38.606Z",
     "updatedAt": "2026-07-09T13:40:54.433Z",
     "competencyWeights": []
-  },
-  {
-    "name": " DigiFunzi Digital Skills Curriculum",
-    "code": "DF-DSC-26",
-    "academicYear": "",
-    "description": "A K-12 digital literacy and computer science curriculum covering computational thinking, programming, AI literacy, digital creativity, and responsible digital citizenship.",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "Core",
-    "academicCycleModel": "terms",
-    "periods": [
-      {
-        "name": "Term 1",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      },
-      {
-        "name": "Term 2",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      },
-      {
-        "name": "Term 3",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      }
-    ],
-    "classes": [
-      "Grade 4",
-      "Grade 5",
-      "Grade 6"
-    ],
-    "id": "81f80762-884a-4cb5-9865-035d4ef71c08",
-    "createdAt": "2026-07-09T13:48:54.857Z",
-    "updatedAt": "2026-07-09T13:49:26.632Z"
   }
 ]
