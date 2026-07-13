@@ -1,6 +1,19 @@
 const LearningAreaModel = require("./learning-area.model");
 const CourseLearningAreaLinkModel = require("../../courses/course-learning-area-link.model");
 const AssessmentLearningAreaLinkModel = require("../../assessments/assessment-learning-area-link.model");
+const CourseModel = require("../../courses/course.model");
+
+// A Learning Area's `courses` field stores course ids only — reject anything
+// that doesn't resolve to a real course so a dummy id can never sneak in.
+function assertCoursesExist(courseIds) {
+  if (!courseIds) return;
+  const missing = courseIds.filter((id) => !CourseModel.findById(id));
+  if (missing.length > 0) {
+    const err = new Error(`Course(s) not found: ${missing.join(", ")}`);
+    err.statusCode = 404;
+    throw err;
+  }
+}
 
 const LearningAreaService = {
   getLearningAreas() {
@@ -14,6 +27,7 @@ const LearningAreaService = {
       err.statusCode = 409;
       throw err;
     }
+    assertCoursesExist(data.courses);
     return LearningAreaModel.create(data);
   },
 
@@ -32,6 +46,7 @@ const LearningAreaService = {
         throw err;
       }
     }
+    assertCoursesExist(data.courses);
     return LearningAreaModel.update(id, data);
   },
 

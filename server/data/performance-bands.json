@@ -1,100 +1,5 @@
 [
   {
-    "id": "3b104638-c37b-4557-8e01-c585dc7bf993",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "Explorer",
-    "description": "",
-    "criteria": [],
-    "minScore": 0,
-    "maxScore": 100,
-    "order": 1,
-    "createdAt": "2026-06-25T12:18:02.591Z",
-    "competencyIds": [],
-    "indicatorPoints": [
-      {
-        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-        "points": 1
-      }
-    ]
-  },
-  {
-    "id": "6eb6e38b-8864-41d8-bf31-d3ca7041f944",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "Builder",
-    "description": "The learner actively develops foundational skills by engaging in guided activities and structured tasks. They can follow instructions, apply basic concepts, and start constructing simple solutions, demonstrating growing confidence and consistency.",
-    "criteria": [],
-    "minScore": 40,
-    "maxScore": 59,
-    "order": 2,
-    "createdAt": "2026-06-25T12:18:31.606Z",
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09",
-      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-      "c3d95126-1121-4de8-bdab-14adbf00d218",
-      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ],
-    "indicatorPoints": []
-  },
-  {
-    "id": "dbed861d-978c-43db-bb8d-3c59eab7217d",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "Creator",
-    "description": "The learner independently applies knowledge to design and develop functional solutions such as simple programs, games, or digital projects. They make decisions during implementation and show the ability to adapt learned concepts to new situations.",
-    "criteria": [],
-    "minScore": 60,
-    "maxScore": 74,
-    "order": 3,
-    "createdAt": "2026-06-25T12:18:47.606Z",
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09",
-      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-      "c3d95126-1121-4de8-bdab-14adbf00d218",
-      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ],
-    "indicatorPoints": []
-  },
-  {
-    "id": "286567bf-8c4a-4214-9c5a-b46769c9db9c",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "Innovator",
-    "description": "The learner demonstrates strong proficiency and can solve complex problems efficiently. They refine, optimize, and improve solutions, think critically, and can clearly explain their approach, showing depth of understanding and high-level competence.",
-    "criteria": [],
-    "minScore": 75,
-    "maxScore": 89,
-    "order": 4,
-    "createdAt": "2026-06-25T12:19:03.606Z",
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09",
-      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-      "c3d95126-1121-4de8-bdab-14adbf00d218",
-      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ],
-    "indicatorPoints": []
-  },
-  {
-    "id": "e4f9f25c-d25a-41af-9d6b-9197170adae0",
-    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "Pioneer",
-    "description": "The learner operates at an advanced level, exploring specialized areas such as AI, software development, or robotics. They create sophisticated, self-driven projects, demonstrate originality and innovation, and extend beyond standard expectations with minimal guidance.",
-    "criteria": [],
-    "minScore": 90,
-    "maxScore": 100,
-    "order": 5,
-    "createdAt": "2026-06-25T12:19:29.606Z",
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09",
-      "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-      "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-      "c3d95126-1121-4de8-bdab-14adbf00d218",
-      "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c"
-    ],
-    "indicatorPoints": []
-  },
-  {
     "id": "73cee2eb-8b57-4944-9de9-c020983ca3c7",
     "curriculumId": "71202f88-da66-4b8a-ba55-17e14be72815",
     "name": "arsf",
@@ -109,7 +14,8 @@
     "order": 1,
     "createdAt": "2026-07-07T06:22:12.738Z",
     "competencyIds": [],
-    "indicatorPoints": []
+    "indicatorContributions": [],
+    "advancementThreshold": 0
   },
   {
     "id": "4c30d4a3-183d-42e3-a6c2-d42e15716b74",
@@ -120,15 +26,10 @@
     "minScore": 0,
     "maxScore": 100,
     "competencyIds": [],
-    "indicatorPoints": [
-      {
-        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-        "points": 5
-      }
-    ],
     "order": 1,
-    "createdAt": "2026-07-09T13:53:40.312Z"
+    "createdAt": "2026-07-09T13:53:40.312Z",
+    "indicatorContributions": [],
+    "advancementThreshold": 0
   },
   {
     "id": "00ac0c7d-c757-46f1-b8f4-a03a0d4e1c4f",
@@ -139,29 +40,83 @@
     "minScore": 0,
     "maxScore": 100,
     "competencyIds": [],
-    "indicatorPoints": [
-      {
-        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
-        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
-        "points": 1
-      }
-    ],
     "order": 2,
-    "createdAt": "2026-07-09T13:54:42.023Z"
+    "createdAt": "2026-07-09T13:54:42.023Z",
+    "indicatorContributions": [],
+    "advancementThreshold": 0
   },
   {
-    "id": "dd2ad8cf-0ed5-4178-a0d5-ba566f4963b0",
+    "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "name": "ieunbubb",
-    "description": "fnubububuh",
+    "name": "Explorer",
+    "description": "explorer stage 2",
     "criteria": [],
     "minScore": 0,
     "maxScore": 100,
     "competencyIds": [
-      "8efe0129-a518-4287-9b27-faba52553004"
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
     ],
-    "indicatorPoints": [],
-    "order": 6,
-    "createdAt": "2026-07-10T06:20:27.894Z"
+    "indicatorContributions": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 10
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "percentage": 20
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "percentage": 30
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "percentage": 40
+      }
+    ],
+    "advancementThreshold": 90,
+    "order": 1,
+    "createdAt": "2026-07-10T12:16:34.454Z"
+  },
+  {
+    "id": "f260e75a-587f-4392-8e07-a79736943b78",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Builder",
+    "description": "Builder description",
+    "criteria": [],
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [
+      "01004522-fa4f-4068-aef8-bfe34c93cbb2"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "percentage": 30
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "percentage": 20
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "percentage": 20
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "percentage": 30
+      }
+    ],
+    "advancementThreshold": 80,
+    "order": 2,
+    "createdAt": "2026-07-10T12:40:59.072Z"
   }
 ]

@@ -666,6 +666,76 @@ function RightPanel({ form, selectedEntry, onUpdateEntry, indicatorOptions }) {
   );
 }
 
+/* ── Indicator statistics (marks contributed per competency indicator) ─── */
+
+function IndicatorStatsPanel({ stats }) {
+  if (stats.length === 0) {
+    return (
+      <div className="tb-card" style={{ marginTop: "16px" }}>
+        <p className="tb-card-title">Indicator Statistics</p>
+        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+          Attach a competency to this assessment (Info tab) to see how its indicators' marks add up here.
+        </p>
+      </div>
+    );
+  }
+
+  const used = stats.filter((s) => s.questionCount > 0);
+  if (used.length === 0) {
+    return (
+      <div className="tb-card" style={{ marginTop: "16px" }}>
+        <p className="tb-card-title">Indicator Statistics</p>
+        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+          No questions have been linked to an indicator yet — this fills in as you tag questions in the panel on the right.
+        </p>
+      </div>
+    );
+  }
+
+  const totalIndicatorMarks = used.reduce((sum, s) => sum + s.marks, 0);
+  const byCompetency = new Map();
+  used.forEach((s) => {
+    if (!byCompetency.has(s.competencyName)) byCompetency.set(s.competencyName, []);
+    byCompetency.get(s.competencyName).push(s);
+  });
+
+  return (
+    <div className="tb-card" style={{ marginTop: "16px" }}>
+      <p className="tb-card-title" style={{ marginBottom: "2px" }}>Indicator Statistics</p>
+      <p style={{ margin: "0 0 14px", fontSize: "11.5px", color: "#9CA3AF" }}>
+        How many marks each linked indicator is worth, based on the questions tagged to it. A question tagged to more than one indicator counts its full marks toward each — so this can add up to more than the assessment's total marks.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {[...byCompetency.entries()].map(([competencyName, indicators]) => (
+          <div key={competencyName}>
+            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: "700", color: indicators[0].color, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              {competencyName}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {indicators.map((ind) => (
+                <div key={ind.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "10px" }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", fontWeight: "600", color: "#111827" }}>
+                    {ind.name}
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#9CA3AF", flexShrink: 0 }}>
+                    {ind.questionCount} question{ind.questionCount !== 1 ? "s" : ""}
+                  </span>
+                  <span style={{ fontSize: "12.5px", fontWeight: "700", color: ind.color, flexShrink: 0, minWidth: "50px", textAlign: "right" }}>
+                    {ind.marks} pt{ind.marks !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: "14px 0 0", paddingTop: "12px", borderTop: "1px solid #F3F4F6", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
+        Sum across indicators: {totalIndicatorMarks} pt{totalIndicatorMarks !== 1 ? "s" : ""}
+      </p>
+    </div>
+  );
+}
+
 /* ── Grading Rubric tab (Assignment/Project) ────────────────────────────── */
 
 function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
@@ -979,6 +1049,33 @@ export default function AssessmentBuilderPage() {
       .flatMap((comp) => (comp.indicators || []).map((ind) => ({ id: ind.id, name: `${comp.name} — ${ind.name}` })));
   }, [allCompetencies, form]);
 
+  // Per-indicator mark totals across this assessment's questions — a question linked to more
+  // than one indicator contributes its full points to each (matches how linking was designed:
+  // "this question speaks to this indicator, worth this many marks", not a split).
+  const indicatorStats = useMemo(() => {
+    if (!form) return [];
+    const linked = allCompetencies.filter((comp) => form.competencyIds.includes(comp.id));
+    const byIndicator = new Map();
+    (form.items || []).forEach((item) => {
+      (item.competencyIndicatorIds || []).forEach((indId) => {
+        const cur = byIndicator.get(indId) || { marks: 0, questionCount: 0 };
+        cur.marks += Number(item.points) || 0;
+        cur.questionCount += 1;
+        byIndicator.set(indId, cur);
+      });
+    });
+    return linked.flatMap((comp, ci) =>
+      (comp.indicators || []).map((ind) => ({
+        id: ind.id,
+        name: ind.name,
+        competencyName: comp.name,
+        color: TAG_PALETTE[ci % TAG_PALETTE.length],
+        marks: byIndicator.get(ind.id)?.marks || 0,
+        questionCount: byIndicator.get(ind.id)?.questionCount || 0,
+      }))
+    );
+  }, [allCompetencies, form]);
+
   useEffect(() => {
     if (form) return;
     if (isEdit) {
@@ -1234,17 +1331,20 @@ export default function AssessmentBuilderPage() {
           )}
 
           {activeTab === "structure" && (
-            <div className="tb-workspace">
-              <ItemPalette type={type} structureType={form.structureType} onAdd={addEntry} />
-              <StructureCanvas
-                type={type} sections={form.sections} entries={entries}
-                focusedSectionId={focusedSectionId} selectedId={selectedId}
-                onFocusSection={setFocusedSectionId} onSelect={setSelectedId}
-                onAddSection={addSection} onRenameSection={renameSection} onDeleteSection={deleteSection}
-                onDeleteEntry={deleteEntry} onMoveEntry={moveEntry} onMoveSection={moveSection}
-              />
-              <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} indicatorOptions={indicatorOptions} />
-            </div>
+            <>
+              <div className="tb-workspace">
+                <ItemPalette type={type} structureType={form.structureType} onAdd={addEntry} />
+                <StructureCanvas
+                  type={type} sections={form.sections} entries={entries}
+                  focusedSectionId={focusedSectionId} selectedId={selectedId}
+                  onFocusSection={setFocusedSectionId} onSelect={setSelectedId}
+                  onAddSection={addSection} onRenameSection={renameSection} onDeleteSection={deleteSection}
+                  onDeleteEntry={deleteEntry} onMoveEntry={moveEntry} onMoveSection={moveSection}
+                />
+                <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} indicatorOptions={indicatorOptions} />
+              </div>
+              {!isObservation && <IndicatorStatsPanel stats={indicatorStats} />}
+            </>
           )}
 
           {activeTab === "rubric" && (

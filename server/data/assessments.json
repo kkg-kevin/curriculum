@@ -228,7 +228,7 @@
     "milestones": [],
     "id": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
     "createdAt": "2026-07-10T07:35:11.685Z",
-    "updatedAt": "2026-07-10T08:12:38.297Z"
+    "updatedAt": "2026-07-13T06:36:50.581Z"
   },
   {
     "name": "AI Tools & Digital Citizenship",
@@ -533,7 +533,7 @@
     ],
     "id": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
     "createdAt": "2026-07-10T07:35:11.778Z",
-    "updatedAt": "2026-07-10T08:35:35.335Z"
+    "updatedAt": "2026-07-13T06:16:02.600Z"
   },
   {
     "name": "Collaboration & Digital Citizenship — Classroom Observation",
@@ -563,7 +563,8 @@
         ],
         "sectionId": "sec-o",
         "competencyIndicatorIds": [
-          "325e3232-5bda-43de-a1fb-010f486181aa"
+          "325e3232-5bda-43de-a1fb-010f486181aa",
+          "ab3d2c5a-9a73-44c8-992f-65478e005309"
         ]
       },
       {
@@ -653,6 +654,6 @@
     "milestones": [],
     "id": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
     "createdAt": "2026-07-10T07:35:11.857Z",
-    "updatedAt": "2026-07-10T08:11:22.835Z"
+    "updatedAt": "2026-07-10T10:07:21.056Z"
   }
 ]

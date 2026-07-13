@@ -1,11 +1,5 @@
 [
   {
-    "id": "9255591f-8e87-4ea6-8993-8c312e66c880",
-    "courseId": "b346429b-5a52-45ad-bf3a-0a913d7dad00",
-    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-07-07T12:08:59.530Z"
-  },
-  {
     "id": "f180a008-75fe-488b-9aac-ccf146defba1",
     "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
@@ -24,15 +18,33 @@
     "createdAt": "2026-07-09T12:33:11.559Z"
   },
   {
-    "id": "d0a3782e-4126-498e-ae14-20daba3938a2",
-    "courseId": "3dc86999-4528-4be2-ae4e-32d6f7bcd459",
+    "id": "4227e4b3-4032-46d3-85ac-e4bbd25f575f",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
     "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-07-10T09:51:57.765Z"
+    "createdAt": "2026-07-10T12:19:32.478Z"
   },
   {
-    "id": "14c77121-76a9-4f7e-9f5c-a245057c5dd5",
-    "courseId": "0c243a12-2d7c-4381-8630-d98ee933a3bf",
-    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-07-10T10:05:27.756Z"
+    "id": "92dedc35-0bdf-4e77-8b2e-ff5090db4bd3",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-10T12:19:32.504Z"
+  },
+  {
+    "id": "44f26ef6-a96a-477e-9137-fee9b586f931",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "createdAt": "2026-07-10T12:19:32.519Z"
+  },
+  {
+    "id": "0f75183a-6198-4e48-8a16-c9a3b1ef490e",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-10T12:19:32.537Z"
+  },
+  {
+    "id": "a2747b4b-34fb-4f76-9c8f-ca3b52819da7",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-10T12:19:32.555Z"
   }
 ]

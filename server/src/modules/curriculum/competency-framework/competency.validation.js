@@ -21,7 +21,9 @@ const createLearningAreaSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
   color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
-  courses:     z.array(z.string().min(1).max(150)).optional().default([]),
+  // Course ids, not free-typed names — the service layer checks each id resolves
+  // to a real course before saving.
+  courses:     z.array(z.string().min(1)).optional().default([]),
 });
 
 const updateLearningAreaSchema = createLearningAreaSchema.partial();
@@ -134,13 +136,14 @@ const createEvidenceTypeSchema = z.object({
 
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
 
-// Points a band awards a specific indicator of a specific competency — free-form,
-// no enforced sum, meant to represent that indicator's contribution toward the
-// competency's score within this band.
-const bandIndicatorPointSchema = z.object({
+// What % of a specific competency's 100% this band assigns to one of its indicators.
+// Meant to sum to 100% across all of that competency's indicators within this band —
+// not enforced server-side (a band can be saved mid-configuration), the client shows
+// the running total as a hint.
+const bandIndicatorContributionSchema = z.object({
   competencyId: z.string().min(1),
   indicatorId:  z.string().min(1),
-  points:       z.number().min(0),
+  percentage:   z.number().min(0).max(100),
 });
 
 const createPerformanceBandSchema = z.object({
@@ -150,8 +153,11 @@ const createPerformanceBandSchema = z.object({
   minScore:      z.number().min(0).max(100).optional().default(0),
   maxScore:      z.number().min(0).max(100).optional().default(100),
   // Competencies (from the ones this curriculum has adopted) that this band draws on.
-  competencyIds:   z.array(z.string().min(1)).optional().default([]),
-  indicatorPoints: z.array(bandIndicatorPointSchema).optional().default([]),
+  competencyIds:          z.array(z.string().min(1)).optional().default([]),
+  indicatorContributions: z.array(bandIndicatorContributionSchema).optional().default([]),
+  // Minimum % of this band's indicator contributions a learner must clear to be
+  // considered as having progressed past this band to the next one in order.
+  advancementThreshold:   z.number().min(0).max(100).optional().default(0),
 });
 
 const updatePerformanceBandSchema = createPerformanceBandSchema.partial();

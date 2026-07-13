@@ -5,13 +5,7 @@
     "name": "Courses-high school",
     "description": "nvhuhuvhwruhvuwr",
     "color": "#25476a",
-    "courses": [
-      "hbvw8rv79",
-      "uhbugygr",
-      "jbvwryy8sd",
-      "ihcwbybvysb",
-      "cubydsbvy"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T07:18:25.025Z",
     "updatedAt": "2026-07-05T07:18:25.025Z"
   },
@@ -21,10 +15,7 @@
     "name": "Derriick",
     "description": "huhuugg",
     "color": "#25476a",
-    "courses": [
-      "khuehugh",
-      "gmwruigbhi"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T08:14:38.244Z",
     "updatedAt": "2026-07-05T08:14:38.244Z"
   },
@@ -34,11 +25,7 @@
     "name": "Githinji",
     "description": "fhgqeyggyf",
     "color": "#25476a",
-    "courses": [
-      "jghfyegyf",
-      "jufewhubfu",
-      "fmneubf"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T08:14:45.568Z",
     "updatedAt": "2026-07-05T08:14:45.568Z"
   },
@@ -48,12 +35,7 @@
     "name": "vnsduhuh",
     "description": "vadkuhuigui",
     "color": "#DC2626",
-    "courses": [
-      "wkrhhuhu",
-      "nbuefguag",
-      "fnuibayga",
-      "ugqygfy"
-    ],
+    "courses": [],
     "createdAt": "2026-07-07T06:21:26.837Z",
     "updatedAt": "2026-07-07T06:21:26.837Z"
   },
@@ -63,13 +45,7 @@
     "name": "Courses-high school",
     "description": "nvhuhuvhwruhvuwr",
     "color": "#25476a",
-    "courses": [
-      "hbvw8rv79",
-      "uhbugygr",
-      "jbvwryy8sd",
-      "ihcwbybvysb",
-      "cubydsbvy"
-    ],
+    "courses": [],
     "createdAt": "2026-07-08T05:16:26.345Z",
     "updatedAt": "2026-07-08T05:16:26.345Z"
   },
@@ -92,5 +68,18 @@
     "courses": [],
     "createdAt": "2026-07-08T08:32:56.424Z",
     "updatedAt": "2026-07-08T08:32:56.424Z"
+  },
+  {
+    "id": "c532c6fb-12c4-4119-9287-48c7f1cf0f5e",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Learning area one",
+    "description": "one areas",
+    "color": "#38aae1",
+    "courses": [
+      "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-13T08:14:51.231Z",
+    "updatedAt": "2026-07-13T08:14:51.231Z"
   }
 ]
