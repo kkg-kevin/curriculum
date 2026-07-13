@@ -1316,14 +1316,16 @@ export default function AssessmentBuilderPage() {
                       onCreateNew={() => setCreateCompetencyOpen(true)}
                     />
                   </div>
-                  <div>
-                    <Label>Learning Areas</Label>
-                    <TagPicker
-                      label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
-                      onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
-                      onCreateNew={() => setCreateLearningAreaOpen(true)}
-                    />
-                  </div>
+                  {isEdit && (
+                    <div>
+                      <Label>Learning Areas</Label>
+                      <TagPicker
+                        label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
+                        onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
+                        onCreateNew={() => setCreateLearningAreaOpen(true)}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <SummaryCard form={form} />
@@ -1379,7 +1381,7 @@ export default function AssessmentBuilderPage() {
           onCreated={(id) => setForm((f) => ({ ...f, competencyIds: [...f.competencyIds, id] }))}
         />
       )}
-      {createLearningAreaOpen && (
+      {isEdit && createLearningAreaOpen && (
         <CreateLearningAreaModal
           onClose={() => setCreateLearningAreaOpen(false)}
           onCreated={(id) => setForm((f) => ({ ...f, learningAreaIds: [...f.learningAreaIds, id] }))}
