@@ -12,7 +12,8 @@ const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
-const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine } = require("./scoring-engines");
+const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine } = require("./scoring-engines");
+const { roundTo1Decimal } = require("../../../shared/utils/helpers");
 
 // A Learning Area's `courses` field stores course ids only — reject anything
 // that doesn't resolve to a real course so a dummy id can never sneak in.
@@ -523,6 +524,16 @@ const CompetencyService = {
     };
   },
 
+  // Progress Arc — how much of each Performance Band a learner has completed, driven by
+  // indicator-level achievement rather than the overall competency score (see
+  // runIndicatorProgressEngine). `indicatorAchievements` is the learner's 0-100 achievement
+  // per indicator (marks earned / marks possible across graded work); passed in manually for
+  // now, same shape `calculateScore`'s `evidenceScores` takes for the evidence pipeline.
+  calculateIndicatorProgress(curriculumId, indicatorAchievements) {
+    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId);
+    return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
+  },
+
   /* ── Evidence Types ─────────────────────────────────────────────────── */
 
   getEvidenceTypes(curriculumId) {
@@ -579,6 +590,36 @@ const CompetencyService = {
 
   deletePerformanceBand(curriculumId, id) {
     PerformanceBandModel.delete(curriculumId, id);
+  },
+
+  // Rescales every indicator contribution in this band — across all of its competencies —
+  // proportionally so they sum to exactly 100%, preserving each indicator's relative share.
+  // e.g. three competencies each independently allocated to 100% (300% total) come back
+  // down to each keeping a third of the band's 100% budget.
+  normalizeBandIndicatorContributions(curriculumId, id) {
+    const band = PerformanceBandModel.findByCurriculum(curriculumId).find((b) => b.id === id);
+    if (!band) {
+      const err = new Error("Performance band not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const contributions = band.indicatorContributions || [];
+    const total = contributions.reduce((sum, c) => sum + (c.percentage || 0), 0);
+    if (contributions.length === 0 || total === 0) return band;
+
+    const scaled = contributions.map((c) => ({
+      ...c,
+      percentage: roundTo1Decimal((c.percentage / total) * 100),
+    }));
+    // Rounding can leave the total a hair off 100 — absorb the drift into the largest share
+    // so the sum is exactly 100, not 99.9 or 100.1.
+    const drift = roundTo1Decimal(100 - scaled.reduce((sum, c) => sum + c.percentage, 0));
+    if (drift !== 0) {
+      const largest = scaled.reduce((max, c) => (c.percentage > max.percentage ? c : max), scaled[0]);
+      largest.percentage = roundTo1Decimal(largest.percentage + drift);
+    }
+
+    return PerformanceBandModel.update(curriculumId, id, { indicatorContributions: scaled });
   },
 
   reorderPerformanceBands(curriculumId, orderedIds) {

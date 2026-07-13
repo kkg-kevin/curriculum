@@ -386,5 +386,24 @@
     ],
     "createdAt": "2026-07-08T08:41:13.354Z",
     "updatedAt": "2026-07-08T08:41:16.385Z"
+  },
+  {
+    "id": "f15cbaa8-da53-4006-a4c9-330cbb914ef8",
+    "yearGroupId": "7c0c34a3-a2b2-4192-85bc-1bcbb736b954",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      }
+    ],
+    "createdAt": "2026-07-13T12:52:01.207Z",
+    "updatedAt": "2026-07-13T12:52:03.101Z"
   }
 ]

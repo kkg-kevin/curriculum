@@ -655,5 +655,89 @@
     "id": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
     "createdAt": "2026-07-10T07:35:11.857Z",
     "updatedAt": "2026-07-10T10:07:21.056Z"
+  },
+  {
+    "name": "Computational Thinking Quiz 1",
+    "type": "quiz",
+    "description": "<p>Checks understanding of sequencing and pattern recognition.</p>",
+    "instructions": "<p>Answer all questions. Choose the single best answer.</p>",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [],
+    "items": [
+      {
+        "question": "<p>Put these steps in the correct order to make a sandwich: (1) Eat it (2) Add filling (3) Get bread (4) Close sandwich</p>",
+        "kind": "ordering",
+        "sectionId": null,
+        "points": 2,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [
+          "Get bread",
+          "Add filling",
+          "Close sandwich",
+          "Eat it"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "competencyIndicatorIds": [
+          "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f"
+        ]
+      },
+      {
+        "question": "<p>Which of these is an example of a repeating pattern?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 2,
+        "options": [
+          "Red, Blue, Red, Blue, Red",
+          "Cat, Dog, Sun, Chair",
+          "1, 7, 3, 9, 2",
+          "Monday only"
+        ],
+        "correctAnswer": "Red, Blue, Red, Blue, Red",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "competencyIndicatorIds": [
+          "d377c271-fad3-4bbd-8fb5-b05199d7d273"
+        ]
+      },
+      {
+        "question": "<p>Breaking a big problem into smaller, easier problems is called:</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 2,
+        "options": [
+          "Decomposition",
+          "Abstraction",
+          "Debugging",
+          "Looping"
+        ],
+        "correctAnswer": "Decomposition",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "competencyIndicatorIds": [
+          "90904770-79cb-49a8-b4f6-fca16dd5c51e"
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "48d9ab2d-22ec-4e84-b9f8-b3dec12b9c1a",
+    "createdAt": "2026-07-13T10:07:00.556Z",
+    "updatedAt": "2026-07-13T10:07:00.556Z"
   }
 ]

@@ -169,5 +169,49 @@
     "minRequirement": 0,
     "createdAt": "2026-07-08T08:35:09.695Z",
     "updatedAt": "2026-07-08T08:35:09.695Z"
+  },
+  {
+    "id": "76b08914-856d-4521-9ba5-29d10d12dd1a",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Class Quizzes",
+    "description": "Short in-class quizzes.",
+    "category": "quiz",
+    "defaultContribution": 30,
+    "minRequirement": 0,
+    "createdAt": "2026-07-13T10:07:00.310Z",
+    "updatedAt": "2026-07-13T10:07:00.310Z"
+  },
+  {
+    "id": "85470320-d075-4422-acde-eae8e3b2bcf5",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Coding Projects",
+    "description": "Hands-on coding/building projects.",
+    "category": "project",
+    "defaultContribution": 40,
+    "minRequirement": 0,
+    "createdAt": "2026-07-13T10:07:00.323Z",
+    "updatedAt": "2026-07-13T10:07:00.323Z"
+  },
+  {
+    "id": "4025feb6-c3e0-41fd-94cd-b837a90cb7bb",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Teacher Observations",
+    "description": "In-class observation checklists.",
+    "category": "observation",
+    "defaultContribution": 30,
+    "minRequirement": 0,
+    "createdAt": "2026-07-13T10:07:00.332Z",
+    "updatedAt": "2026-07-13T10:07:00.332Z"
+  },
+  {
+    "id": "02ebc2e5-c835-4836-9233-40ffa61668f7",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "name": "FBD",
+    "description": "FGNB",
+    "category": "quiz",
+    "defaultContribution": 12,
+    "minRequirement": 34,
+    "createdAt": "2026-07-13T12:50:56.343Z",
+    "updatedAt": "2026-07-13T12:50:56.343Z"
   }
 ]

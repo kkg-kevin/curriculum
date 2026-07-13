@@ -115,5 +115,14 @@
     "endDate": "2026-12-31",
     "createdAt": "2026-07-08T08:40:04.873Z",
     "updatedAt": "2026-07-08T08:40:04.873Z"
+  },
+  {
+    "id": "7c0c34a3-a2b2-4192-85bc-1bcbb736b954",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "label": "RWSFDBXV",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-07-13T12:52:01.203Z",
+    "updatedAt": "2026-07-13T12:52:01.203Z"
   }
 ]

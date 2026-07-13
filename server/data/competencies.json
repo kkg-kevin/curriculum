@@ -177,5 +177,77 @@
     ],
     "createdAt": "2026-07-09T10:10:29.598Z",
     "updatedAt": "2026-07-09T10:13:10.685Z"
+  },
+  {
+    "id": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "name": "Computational Thinking",
+    "description": "The ability to break down problems and design step-by-step digital solutions.",
+    "indicators": [
+      {
+        "name": "Sequencing",
+        "description": "Orders steps logically to complete a task.",
+        "id": "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f"
+      },
+      {
+        "name": "Pattern Recognition",
+        "description": "Identifies similarities/repetition to simplify problems.",
+        "id": "d377c271-fad3-4bbd-8fb5-b05199d7d273"
+      },
+      {
+        "name": "Decomposition",
+        "description": "Breaks a complex problem into smaller parts.",
+        "id": "90904770-79cb-49a8-b4f6-fca16dd5c51e"
+      },
+      {
+        "name": "Abstraction",
+        "description": "Filters out unnecessary detail to focus on what matters.",
+        "id": "f8593068-7181-4eb0-9726-9f8829e31f90"
+      }
+    ],
+    "createdAt": "2026-07-13T10:06:59.938Z",
+    "updatedAt": "2026-07-13T10:06:59.938Z"
+  },
+  {
+    "id": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+    "name": "Digital Citizenship",
+    "description": "Safe, ethical, and responsible use of technology.",
+    "indicators": [
+      {
+        "name": "Online Safety",
+        "description": "Recognizes and avoids online risks.",
+        "id": "0c18f7ba-387f-440a-aaf7-d030b1cc4e5b"
+      },
+      {
+        "name": "Ethical Use of Technology",
+        "description": "Uses digital tools and content responsibly.",
+        "id": "260bf238-9eb2-4da5-9592-510c9f61f234"
+      },
+      {
+        "name": "Digital Communication",
+        "description": "Communicates respectfully and clearly online.",
+        "id": "d143ef08-d719-4570-88f5-4aa699213241"
+      }
+    ],
+    "createdAt": "2026-07-13T10:06:59.952Z",
+    "updatedAt": "2026-07-13T10:06:59.952Z"
+  },
+  {
+    "id": "97978611-be56-4b81-b870-af49fad7a4d4",
+    "name": "Creativity & Problem Solving",
+    "description": "Generating and refining original ideas to solve real problems.",
+    "indicators": [
+      {
+        "name": "Idea Generation",
+        "description": "Produces multiple possible solutions to a problem.",
+        "id": "7b4db0f8-55e6-440d-95ca-34f7b2fec5fe"
+      },
+      {
+        "name": "Prototyping & Iteration",
+        "description": "Builds, tests, and improves a solution.",
+        "id": "a4937d5e-af25-4fdb-ac4d-18f4b08f5fe4"
+      }
+    ],
+    "createdAt": "2026-07-13T10:06:59.963Z",
+    "updatedAt": "2026-07-13T10:06:59.963Z"
   }
 ]

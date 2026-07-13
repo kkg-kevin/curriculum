@@ -5396,5 +5396,221 @@
     ],
     "createdAt": "2026-07-10T12:32:20.171Z",
     "updatedAt": "2026-07-10T12:32:21.390Z"
+  },
+  {
+    "id": "020c58fe-1747-4c42-a2c9-7b4ae37285b3",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "academicYearId": "f15cbaa8-da53-4006-a4c9-330cbb914ef8",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Period 1",
+        "classes": [
+          {
+            "className": "aernd",
+            "courses": [
+              {
+                "id": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+                "name": "Code Foundations: Computational Thinking",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+                    "name": "Module 1: Thinking Like a Computer",
+                    "order": 1
+                  },
+                  {
+                    "id": "98d01d36-a8d0-4880-a792-7053b15d4609",
+                    "name": "Module 2: Digital Citizens",
+                    "order": 2
+                  },
+                  {
+                    "id": "e393a899-459b-4172-a184-0caaebfffb8c",
+                    "name": "Module 3: Build & Create",
+                    "order": 3
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "66ed53d5-3d9f-49a7-a6b3-a05e41daeec0",
+                    "title": "What is an Algorithm?",
+                    "order": 1,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "acd5709b-f8e6-4282-ba68-b7acad77ee48",
+                    "title": "Spotting Patterns",
+                    "order": 2,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "71677966-3d7d-4460-8ebc-3595c88f2f13",
+                    "title": "Staying Safe Online",
+                    "order": 3,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "8598d1c0-35d6-41cd-94d4-cd9100e214ea",
+                    "title": "Being Kind Online",
+                    "order": 4,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "fb04c1b0-45a1-49e2-bc89-a8ee27260552",
+                    "title": "From Idea to Prototype",
+                    "order": 5,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  },
+                  {
+                    "id": "d109676a-72e7-438a-8ae4-216207e27799",
+                    "title": "Testing & Improving",
+                    "order": 6,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  }
+                ],
+                "snapshotAt": "2026-07-13T12:52:09.583Z"
+              }
+            ]
+          },
+          {
+            "className": "4wrh",
+            "courses": [
+              {
+                "id": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+                "name": "Code Foundations: Computational Thinking",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+                    "name": "Module 1: Thinking Like a Computer",
+                    "order": 1
+                  },
+                  {
+                    "id": "98d01d36-a8d0-4880-a792-7053b15d4609",
+                    "name": "Module 2: Digital Citizens",
+                    "order": 2
+                  },
+                  {
+                    "id": "e393a899-459b-4172-a184-0caaebfffb8c",
+                    "name": "Module 3: Build & Create",
+                    "order": 3
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "66ed53d5-3d9f-49a7-a6b3-a05e41daeec0",
+                    "title": "What is an Algorithm?",
+                    "order": 1,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "acd5709b-f8e6-4282-ba68-b7acad77ee48",
+                    "title": "Spotting Patterns",
+                    "order": 2,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "71677966-3d7d-4460-8ebc-3595c88f2f13",
+                    "title": "Staying Safe Online",
+                    "order": 3,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "8598d1c0-35d6-41cd-94d4-cd9100e214ea",
+                    "title": "Being Kind Online",
+                    "order": 4,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "fb04c1b0-45a1-49e2-bc89-a8ee27260552",
+                    "title": "From Idea to Prototype",
+                    "order": 5,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  },
+                  {
+                    "id": "d109676a-72e7-438a-8ae4-216207e27799",
+                    "title": "Testing & Improving",
+                    "order": 6,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  }
+                ],
+                "snapshotAt": "2026-07-13T12:52:11.479Z"
+              }
+            ]
+          },
+          {
+            "className": "wrhsfd",
+            "courses": [
+              {
+                "id": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+                "name": "Code Foundations: Computational Thinking",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+                    "name": "Module 1: Thinking Like a Computer",
+                    "order": 1
+                  },
+                  {
+                    "id": "98d01d36-a8d0-4880-a792-7053b15d4609",
+                    "name": "Module 2: Digital Citizens",
+                    "order": 2
+                  },
+                  {
+                    "id": "e393a899-459b-4172-a184-0caaebfffb8c",
+                    "name": "Module 3: Build & Create",
+                    "order": 3
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "66ed53d5-3d9f-49a7-a6b3-a05e41daeec0",
+                    "title": "What is an Algorithm?",
+                    "order": 1,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "acd5709b-f8e6-4282-ba68-b7acad77ee48",
+                    "title": "Spotting Patterns",
+                    "order": 2,
+                    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a"
+                  },
+                  {
+                    "id": "71677966-3d7d-4460-8ebc-3595c88f2f13",
+                    "title": "Staying Safe Online",
+                    "order": 3,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "8598d1c0-35d6-41cd-94d4-cd9100e214ea",
+                    "title": "Being Kind Online",
+                    "order": 4,
+                    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609"
+                  },
+                  {
+                    "id": "fb04c1b0-45a1-49e2-bc89-a8ee27260552",
+                    "title": "From Idea to Prototype",
+                    "order": 5,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  },
+                  {
+                    "id": "d109676a-72e7-438a-8ae4-216207e27799",
+                    "title": "Testing & Improving",
+                    "order": 6,
+                    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c"
+                  }
+                ],
+                "snapshotAt": "2026-07-13T12:52:13.517Z"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-13T12:52:15.045Z",
+    "updatedAt": "2026-07-13T12:52:16.378Z"
   }
 ]
