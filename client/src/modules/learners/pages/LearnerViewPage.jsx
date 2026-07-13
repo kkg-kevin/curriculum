@@ -1,9 +1,10 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useLearnerQuery, useDeleteLearner } from "../hooks/useLearners";
+import { useLearnerQuery, useDeleteLearner, useUpdateLearner } from "../hooks/useLearners";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
+import { useLadder } from "../../curriculum/hooks/useCompetencies";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
@@ -18,6 +19,45 @@ function Avatar({ firstName, lastName, size = 64 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#ffffff", flexShrink: 0 }}>
       {initials || "?"}
+    </div>
+  );
+}
+
+// Where this learner currently sits on their curriculum's Learning Journey (Progression
+// Ladder) — set manually here, e.g. by age at enrollment or after a diagnostic assessment.
+// Only renders once the learner's class resolves to a curriculum with stages defined.
+function JourneyPlacementCard({ learnerId, currentRungId, curriculumId }) {
+  const { data: rungs = [], isLoading } = useLadder(curriculumId);
+  const { mutate: updateLearner, isPending: saving } = useUpdateLearner();
+
+  if (!curriculumId || isLoading) return null;
+  if (rungs.length === 0) return null;
+
+  const sorted = [...rungs].sort((a, b) => a.order - b.order);
+  const current = sorted.find((r) => r.id === currentRungId) || null;
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learning Journey Placement</h3>
+      <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
+        Which stage of this curriculum's Learning Journey this learner is starting from.
+      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <select
+          value={currentRungId || ""}
+          disabled={saving}
+          onChange={(e) => updateLearner({ id: learnerId, data: { currentRungId: e.target.value || null } })}
+          style={{ padding: "9px 12px", borderRadius: 10, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", color: "#111827", minWidth: 220 }}
+        >
+          <option value="">Not yet placed</option>
+          {sorted.map((r) => (
+            <option key={r.id} value={r.id}>{r.label}{r.ageRange ? ` (${r.ageRange} yrs)` : ""}</option>
+          ))}
+        </select>
+        {current
+          ? <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>Placed at "{current.label}"</span>
+          : <span style={{ fontSize: 12, color: "#9CA3AF" }}>No starting stage set yet</span>}
+      </div>
     </div>
   );
 }
@@ -119,6 +159,8 @@ export default function LearnerViewPage() {
             <DetailRow label="Last Updated" value={new Date(learner.updatedAt).toLocaleDateString()} />
           </div>
         </div>
+
+        <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={cls?.curriculumId} />
       </div>
 
       <ConfirmDialog
