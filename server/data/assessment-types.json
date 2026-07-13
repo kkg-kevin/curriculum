@@ -209,5 +209,74 @@
     "createdAt": "2026-07-08T08:35:22.188Z",
     "updatedAt": "2026-07-08T08:36:32.602Z",
     "typeWeight": 60
+  },
+  {
+    "id": "101d0c7d-c6ff-4a4a-a1fc-e03135d871ea",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Formative Check-in",
+    "description": "Ongoing low-stakes checks for understanding.",
+    "behaviorType": "formative",
+    "progressionWeight": 0.5,
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "4025feb6-c3e0-41fd-94cd-b837a90cb7bb",
+        "contribution": 100,
+        "minRequirement": 0,
+        "competencyMappings": []
+      }
+    ],
+    "createdAt": "2026-07-13T10:07:00.344Z",
+    "updatedAt": "2026-07-13T10:16:00.124Z",
+    "typeWeight": 0
+  },
+  {
+    "id": "b943ec78-1c67-46fb-9524-fe0bab571f97",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Summative Project Review",
+    "description": "End-of-module project evaluation.",
+    "behaviorType": "summative",
+    "progressionWeight": 1,
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "76b08914-856d-4521-9ba5-29d10d12dd1a",
+        "contribution": 30,
+        "minRequirement": 0,
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "85470320-d075-4422-acde-eae8e3b2bcf5",
+        "contribution": 40,
+        "minRequirement": 0,
+        "competencyMappings": []
+      },
+      {
+        "evidenceTypeId": "4025feb6-c3e0-41fd-94cd-b837a90cb7bb",
+        "contribution": 30,
+        "minRequirement": 0,
+        "competencyMappings": []
+      }
+    ],
+    "createdAt": "2026-07-13T10:07:00.358Z",
+    "updatedAt": "2026-07-13T10:16:00.131Z",
+    "typeWeight": 100
+  },
+  {
+    "id": "cb9d59d7-468d-441a-9efc-5517c55b8fd5",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "name": "BFSDX",
+    "description": "SFBX V",
+    "behaviorType": "summative",
+    "progressionWeight": 1,
+    "evidenceWeights": [
+      {
+        "evidenceTypeId": "02ebc2e5-c835-4836-9233-40ffa61668f7",
+        "contribution": 100,
+        "minRequirement": null,
+        "competencyMappings": []
+      }
+    ],
+    "createdAt": "2026-07-13T12:50:39.295Z",
+    "updatedAt": "2026-07-13T12:51:19.665Z",
+    "typeWeight": 100
   }
 ]

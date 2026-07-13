@@ -86,5 +86,38 @@
     "order": 3,
     "createdAt": "2026-07-08T08:32:36.553Z",
     "updatedAt": "2026-07-08T08:32:36.553Z"
+  },
+  {
+    "id": "2757cf9b-ccc5-46f7-b28d-7033c769d369",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Foundational",
+    "description": "Just starting out.",
+    "minScore": 0,
+    "maxScore": 40,
+    "order": 1,
+    "createdAt": "2026-07-13T10:07:00.233Z",
+    "updatedAt": "2026-07-13T10:07:00.233Z"
+  },
+  {
+    "id": "6f1a63bb-84de-4bee-b4b0-26dd9877d4aa",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Developing",
+    "description": "Building confidence.",
+    "minScore": 41,
+    "maxScore": 70,
+    "order": 2,
+    "createdAt": "2026-07-13T10:07:00.240Z",
+    "updatedAt": "2026-07-13T10:07:00.240Z"
+  },
+  {
+    "id": "3793331c-c44a-486c-9015-fa20f65f0582",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Mastery",
+    "description": "Consistently independent.",
+    "minScore": 71,
+    "maxScore": 100,
+    "order": 3,
+    "createdAt": "2026-07-13T10:07:00.251Z",
+    "updatedAt": "2026-07-13T10:07:00.251Z"
   }
 ]

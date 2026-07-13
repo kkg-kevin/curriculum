@@ -72,7 +72,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-13T07:32:43.274Z",
+    "updatedAt": "2026-07-13T09:25:52.898Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -87,7 +87,8 @@
     ],
     "assessmentIds": [
       "87aeff8c-1f29-4fc1-aa79-c09006d6043d",
-      "32b39932-175d-4159-aa65-c67085b17fa4"
+      "32b39932-175d-4159-aa65-c67085b17fa4",
+      "85c3271a-85d1-446b-871b-9a75dade7d76"
     ],
     "activities": [
       {
@@ -907,5 +908,118 @@
       "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
       "e25bb6fe-7042-42ff-83fc-3718331f9d69"
     ]
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "What is an Algorithm?",
+    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+    "outcomes": [
+      "Define an algorithm",
+      "Sequence everyday tasks into steps"
+    ],
+    "introduction": "<p>Introduction to: What is an Algorithm?</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [
+      "48d9ab2d-22ec-4e84-b9f8-b3dec12b9c1a"
+    ],
+    "notes": [],
+    "resources": [],
+    "order": 1,
+    "id": "66ed53d5-3d9f-49a7-a6b3-a05e41daeec0",
+    "createdAt": "2026-07-13T10:07:00.443Z",
+    "updatedAt": "2026-07-13T10:07:00.621Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "Spotting Patterns",
+    "moduleId": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+    "outcomes": [
+      "Recognize repeating patterns in problems"
+    ],
+    "introduction": "<p>Introduction to: Spotting Patterns</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 2,
+    "id": "acd5709b-f8e6-4282-ba68-b7acad77ee48",
+    "createdAt": "2026-07-13T10:07:00.459Z",
+    "updatedAt": "2026-07-13T10:07:00.459Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "Staying Safe Online",
+    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609",
+    "outcomes": [
+      "List common online risks",
+      "Apply safe browsing habits"
+    ],
+    "introduction": "<p>Introduction to: Staying Safe Online</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 3,
+    "id": "71677966-3d7d-4460-8ebc-3595c88f2f13",
+    "createdAt": "2026-07-13T10:07:00.474Z",
+    "updatedAt": "2026-07-13T10:07:00.474Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "Being Kind Online",
+    "moduleId": "98d01d36-a8d0-4880-a792-7053b15d4609",
+    "outcomes": [
+      "Explain respectful digital communication"
+    ],
+    "introduction": "<p>Introduction to: Being Kind Online</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 4,
+    "id": "8598d1c0-35d6-41cd-94d4-cd9100e214ea",
+    "createdAt": "2026-07-13T10:07:00.493Z",
+    "updatedAt": "2026-07-13T10:07:00.493Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "From Idea to Prototype",
+    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c",
+    "outcomes": [
+      "Generate solution ideas for a problem",
+      "Build a simple prototype"
+    ],
+    "introduction": "<p>Introduction to: From Idea to Prototype</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 5,
+    "id": "fb04c1b0-45a1-49e2-bc89-a8ee27260552",
+    "createdAt": "2026-07-13T10:07:00.508Z",
+    "updatedAt": "2026-07-13T10:07:00.508Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "title": "Testing & Improving",
+    "moduleId": "e393a899-459b-4172-a184-0caaebfffb8c",
+    "outcomes": [
+      "Test a prototype and identify improvements"
+    ],
+    "introduction": "<p>Introduction to: Testing & Improving</p>",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [],
+    "notes": [],
+    "resources": [],
+    "order": 6,
+    "id": "d109676a-72e7-438a-8ae4-216207e27799",
+    "createdAt": "2026-07-13T10:07:00.523Z",
+    "updatedAt": "2026-07-13T10:07:00.523Z"
   }
 ]

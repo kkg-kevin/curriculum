@@ -118,5 +118,319 @@
     "advancementThreshold": 80,
     "order": 2,
     "createdAt": "2026-07-10T12:40:59.072Z"
+  },
+  {
+    "id": "66274812-2fe2-40b5-9ec9-b594d32cd949",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Emerging",
+    "description": "Emerging band for Digital Innovators Curriculum",
+    "criteria": [
+      "Needs support to apply computational thinking steps",
+      "Requires guidance on digital safety practices"
+    ],
+    "minScore": 0,
+    "maxScore": 40,
+    "competencyIds": [
+      "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+      "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+      "97978611-be56-4b81-b870-af49fad7a4d4"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "b89f2bc2-b4c9-4c9a-88d2-226e019195a4",
+        "percentage": 7.1
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "24f27d09-865f-4e5d-a12f-48ba05259402",
+        "percentage": 7.1
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "044da67d-fa65-4de3-bae1-ad56ca8609e3",
+        "percentage": 7.1
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "c7bb63d1-b124-4615-a881-594fd33b2dd8",
+        "percentage": 7.1
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "e64bedcb-6d64-4eae-ae0d-19343aa08e25",
+        "percentage": 11.4
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "075ab781-7975-4e56-b392-57da84e8618f",
+        "percentage": 10
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "53aba3ef-4c4f-4830-b487-fbf1b46ceb03",
+        "percentage": 7.1
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "dce9f9db-ad4a-49f9-af85-17164a7c1c6c",
+        "percentage": 14.5
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "b72a65dd-f4c3-47d8-a2fb-7db81c24e657",
+        "percentage": 14.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f",
+        "percentage": 14.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "0c18f7ba-387f-440a-aaf7-d030b1cc4e5b",
+        "percentage": 10
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "260bf238-9eb2-4da5-9592-510c9f61f234",
+        "percentage": 10
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "d143ef08-d719-4570-88f5-4aa699213241",
+        "percentage": 10
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "7b4db0f8-55e6-440d-95ca-34f7b2fec5fe",
+        "percentage": 60
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "a4937d5e-af25-4fdb-ac4d-18f4b08f5fe4",
+        "percentage": 10
+      }
+    ],
+    "advancementThreshold": 40,
+    "order": 1,
+    "createdAt": "2026-07-13T10:07:00.268Z"
+  },
+  {
+    "id": "ef08aa95-c0c2-469b-9a0f-bc22a481c7ca",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Developing",
+    "description": "Developing band for Digital Innovators Curriculum",
+    "criteria": [
+      "Applies steps with some prompting",
+      "Follows safety practices most of the time"
+    ],
+    "minScore": 41,
+    "maxScore": 70,
+    "competencyIds": [
+      "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+      "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+      "97978611-be56-4b81-b870-af49fad7a4d4"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "b89f2bc2-b4c9-4c9a-88d2-226e019195a4",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "24f27d09-865f-4e5d-a12f-48ba05259402",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "044da67d-fa65-4de3-bae1-ad56ca8609e3",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "c7bb63d1-b124-4615-a881-594fd33b2dd8",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "e64bedcb-6d64-4eae-ae0d-19343aa08e25",
+        "percentage": 13.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "075ab781-7975-4e56-b392-57da84e8618f",
+        "percentage": 11.7
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "53aba3ef-4c4f-4830-b487-fbf1b46ceb03",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "dce9f9db-ad4a-49f9-af85-17164a7c1c6c",
+        "percentage": 16.8
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "b72a65dd-f4c3-47d8-a2fb-7db81c24e657",
+        "percentage": 16.7
+      }
+    ],
+    "advancementThreshold": 71,
+    "order": 2,
+    "createdAt": "2026-07-13T10:07:00.280Z"
+  },
+  {
+    "id": "1b4d0111-8eb4-4205-8e66-93e27370b2e9",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Proficient",
+    "description": "Proficient band for Digital Innovators Curriculum",
+    "criteria": [
+      "Applies computational thinking independently",
+      "Consistently safe and ethical online"
+    ],
+    "minScore": 71,
+    "maxScore": 90,
+    "competencyIds": [
+      "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+      "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+      "97978611-be56-4b81-b870-af49fad7a4d4"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "b89f2bc2-b4c9-4c9a-88d2-226e019195a4",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "24f27d09-865f-4e5d-a12f-48ba05259402",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "044da67d-fa65-4de3-bae1-ad56ca8609e3",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "c7bb63d1-b124-4615-a881-594fd33b2dd8",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "e64bedcb-6d64-4eae-ae0d-19343aa08e25",
+        "percentage": 13.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "075ab781-7975-4e56-b392-57da84e8618f",
+        "percentage": 11.7
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "53aba3ef-4c4f-4830-b487-fbf1b46ceb03",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "dce9f9db-ad4a-49f9-af85-17164a7c1c6c",
+        "percentage": 16.8
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "b72a65dd-f4c3-47d8-a2fb-7db81c24e657",
+        "percentage": 16.7
+      }
+    ],
+    "advancementThreshold": 91,
+    "order": 3,
+    "createdAt": "2026-07-13T10:07:00.289Z"
+  },
+  {
+    "id": "e02c8431-5e7a-4926-a192-1b6bdac26622",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Advanced",
+    "description": "Advanced band for Digital Innovators Curriculum",
+    "criteria": [
+      "Applies and teaches computational thinking to peers",
+      "Models excellent digital citizenship"
+    ],
+    "minScore": 91,
+    "maxScore": 100,
+    "competencyIds": [
+      "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+      "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+      "97978611-be56-4b81-b870-af49fad7a4d4"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "b89f2bc2-b4c9-4c9a-88d2-226e019195a4",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "24f27d09-865f-4e5d-a12f-48ba05259402",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "044da67d-fa65-4de3-bae1-ad56ca8609e3",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+        "indicatorId": "c7bb63d1-b124-4615-a881-594fd33b2dd8",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "e64bedcb-6d64-4eae-ae0d-19343aa08e25",
+        "percentage": 13.3
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "075ab781-7975-4e56-b392-57da84e8618f",
+        "percentage": 11.7
+      },
+      {
+        "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+        "indicatorId": "53aba3ef-4c4f-4830-b487-fbf1b46ceb03",
+        "percentage": 8.3
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "dce9f9db-ad4a-49f9-af85-17164a7c1c6c",
+        "percentage": 16.8
+      },
+      {
+        "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+        "indicatorId": "b72a65dd-f4c3-47d8-a2fb-7db81c24e657",
+        "percentage": 16.7
+      }
+    ],
+    "advancementThreshold": 100,
+    "order": 4,
+    "createdAt": "2026-07-13T10:07:00.300Z"
+  },
+  {
+    "id": "a7022e34-624f-4da7-bc80-c850ebc5e9c8",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "name": "WEG",
+    "description": "WGSB",
+    "criteria": [],
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
+    ],
+    "indicatorContributions": [],
+    "advancementThreshold": 90,
+    "order": 1,
+    "createdAt": "2026-07-13T12:50:06.250Z"
   }
 ]

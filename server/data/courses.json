@@ -18,5 +18,15 @@
     "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
     "createdAt": "2026-07-10T12:19:32.459Z",
     "updatedAt": "2026-07-10T12:19:32.459Z"
+  },
+  {
+    "name": "Code Foundations: Computational Thinking",
+    "description": "<p>An introductory course teaching learners to think like computer scientists through coding, digital citizenship, and creative problem-solving.</p>",
+    "coverImage": null,
+    "ageMin": 9,
+    "ageMax": 12,
+    "id": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "createdAt": "2026-07-13T10:07:00.389Z",
+    "updatedAt": "2026-07-13T10:07:00.389Z"
   }
 ]

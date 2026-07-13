@@ -51,7 +51,6 @@ const updateLadderSchema = z.object({
 
 const createAgeCategorySchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
-  ageRange:    z.string().max(50).optional().default(""),
   description: z.string().max(500).optional().default(""),
 });
 
@@ -136,10 +135,10 @@ const createEvidenceTypeSchema = z.object({
 
 const updateEvidenceTypeSchema = createEvidenceTypeSchema.partial();
 
-// What % of a specific competency's 100% this band assigns to one of its indicators.
-// Meant to sum to 100% across all of that competency's indicators within this band —
-// not enforced server-side (a band can be saved mid-configuration), the client shows
-// the running total as a hint.
+// What % of this band's 100% one of its indicators is worth. When a band draws on more
+// than one competency, every indicator across all of them shares that same 100% budget —
+// meant to sum to 100% band-wide, not per competency. Not enforced server-side (a band
+// can be saved mid-configuration); the client shows the running total as a hint.
 const bandIndicatorContributionSchema = z.object({
   competencyId: z.string().min(1),
   indicatorId:  z.string().min(1),
@@ -175,6 +174,16 @@ const calculateScoreSchema = z.object({
   evidenceScores: z.array(evidenceScoreSchema),
 });
 
+const indicatorAchievementSchema = z.object({
+  competencyId: z.string().min(1),
+  indicatorId:  z.string().min(1),
+  percent:      z.number().min(0).max(100),
+});
+
+const calculateIndicatorProgressSchema = z.object({
+  indicatorAchievements: z.array(indicatorAchievementSchema),
+});
+
 module.exports = {
   linkCompetencySchema,
   updateCompetencyLinkSchema,
@@ -201,4 +210,5 @@ module.exports = {
   updatePerformanceBandSchema,
   reorderBandsSchema,
   calculateScoreSchema,
+  calculateIndicatorProgressSchema,
 };

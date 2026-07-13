@@ -81,5 +81,45 @@
     ],
     "createdAt": "2026-07-13T08:14:51.231Z",
     "updatedAt": "2026-07-13T08:14:51.231Z"
+  },
+  {
+    "id": "2af854fc-06f9-4abc-8475-d107f160062a",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "STEM & Technology",
+    "description": "Science, technology, engineering, mathematics and computing.",
+    "color": "#38aae1",
+    "courses": [
+      "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+      "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-13T10:07:00.185Z",
+    "updatedAt": "2026-07-13T12:17:58.881Z"
+  },
+  {
+    "id": "94eecaf7-b09f-48d5-93e5-1c65fb2549c7",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Digital Citizenship & Ethics",
+    "description": "Responsible, safe, and ethical technology use.",
+    "color": "#059669",
+    "courses": [
+      "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+      "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-13T10:07:00.196Z",
+    "updatedAt": "2026-07-13T11:36:38.564Z"
+  },
+  {
+    "id": "5e6350c9-2ad6-4de7-91c1-e472152ce296",
+    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
+    "name": "ETNDG",
+    "description": "RWSBFX",
+    "color": "#25476a",
+    "courses": [
+      "5fd18d73-8c22-402d-8aa9-2a10bf72eb72"
+    ],
+    "createdAt": "2026-07-13T12:50:27.223Z",
+    "updatedAt": "2026-07-13T12:50:27.223Z"
   }
 ]

@@ -1,1 +1,92 @@
-[]
+[
+  {
+    "id": "b89f2bc2-b4c9-4c9a-88d2-226e019195a4",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "name": "Sequencing",
+    "description": "Orders steps logically to complete a task.",
+    "weight": 25,
+    "createdAt": "2026-07-13T10:07:00.086Z",
+    "updatedAt": "2026-07-13T10:07:00.086Z"
+  },
+  {
+    "id": "24f27d09-865f-4e5d-a12f-48ba05259402",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "name": "Pattern Recognition",
+    "description": "Identifies similarities/repetition to simplify problems.",
+    "weight": 25,
+    "createdAt": "2026-07-13T10:07:00.096Z",
+    "updatedAt": "2026-07-13T10:07:00.096Z"
+  },
+  {
+    "id": "044da67d-fa65-4de3-bae1-ad56ca8609e3",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "name": "Decomposition",
+    "description": "Breaks a complex problem into smaller parts.",
+    "weight": 25,
+    "createdAt": "2026-07-13T10:07:00.108Z",
+    "updatedAt": "2026-07-13T10:07:00.108Z"
+  },
+  {
+    "id": "c7bb63d1-b124-4615-a881-594fd33b2dd8",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "name": "Abstraction",
+    "description": "Filters out unnecessary detail to focus on what matters.",
+    "weight": 25,
+    "createdAt": "2026-07-13T10:07:00.120Z",
+    "updatedAt": "2026-07-13T10:07:00.120Z"
+  },
+  {
+    "id": "e64bedcb-6d64-4eae-ae0d-19343aa08e25",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+    "name": "Online Safety",
+    "description": "Recognizes and avoids online risks.",
+    "weight": 40,
+    "createdAt": "2026-07-13T10:07:00.128Z",
+    "updatedAt": "2026-07-13T10:07:00.128Z"
+  },
+  {
+    "id": "075ab781-7975-4e56-b392-57da84e8618f",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+    "name": "Ethical Use of Technology",
+    "description": "Uses digital tools and content responsibly.",
+    "weight": 35,
+    "createdAt": "2026-07-13T10:07:00.141Z",
+    "updatedAt": "2026-07-13T10:07:00.141Z"
+  },
+  {
+    "id": "53aba3ef-4c4f-4830-b487-fbf1b46ceb03",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
+    "name": "Digital Communication",
+    "description": "Communicates respectfully and clearly online.",
+    "weight": 25,
+    "createdAt": "2026-07-13T10:07:00.151Z",
+    "updatedAt": "2026-07-13T10:07:00.151Z"
+  },
+  {
+    "id": "dce9f9db-ad4a-49f9-af85-17164a7c1c6c",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+    "name": "Idea Generation",
+    "description": "Produces multiple possible solutions to a problem.",
+    "weight": 50,
+    "createdAt": "2026-07-13T10:07:00.161Z",
+    "updatedAt": "2026-07-13T10:07:00.161Z"
+  },
+  {
+    "id": "b72a65dd-f4c3-47d8-a2fb-7db81c24e657",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "97978611-be56-4b81-b870-af49fad7a4d4",
+    "name": "Prototyping & Iteration",
+    "description": "Builds, tests, and improves a solution.",
+    "weight": 50,
+    "createdAt": "2026-07-13T10:07:00.172Z",
+    "updatedAt": "2026-07-13T10:07:00.172Z"
+  }
+]

@@ -30,6 +30,7 @@ import {
   useUpdatePerformanceBand,
   useDeletePerformanceBand,
   useReorderPerformanceBands,
+  useNormalizeBandIndicators,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
@@ -1983,23 +1984,7 @@ function AssessmentsPanel({ curriculumId }) {
 
 /* ── AgeCategoriesPanel ─────────────────────────────────────────────────── */
 
-function parseAgeRange(str) {
-  if (!str) return { min: "", max: "" };
-  const rangeMatch = str.match(/^(\d+)\s*[–\-]\s*(\d+)$/);
-  if (rangeMatch) return { min: rangeMatch[1], max: rangeMatch[2] };
-  const singleMatch = str.match(/^(\d+)\+?$/);
-  if (singleMatch) return { min: singleMatch[1], max: "" };
-  return { min: "", max: "" };
-}
-
 const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
-
-function buildAgeRange(min, max) {
-  const a = min.toString().trim(), b = max.toString().trim();
-  if (a && b) return `${a}–${b}`;
-  if (a)      return `${a}+`;
-  return "";
-}
 
 function AgeCategoriesPanel({ curriculumId }) {
   const { data: cats = [], isLoading } = useAgeCategories(curriculumId);
@@ -2010,30 +1995,26 @@ function AgeCategoriesPanel({ curriculumId }) {
   const [mode,       setMode]       = useState("list");
   const [editTarget, setEditTarget] = useState(null);
   const [name,       setName]       = useState("");
-  const [minAge,     setMinAge]     = useState("");
-  const [maxAge,     setMaxAge]     = useState("");
   const [desc,       setDesc]       = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setMinAge(""); setMaxAge(""); setDesc(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setMode("add");
   }
   function openEdit(c) {
-    const { min, max } = parseAgeRange(c.ageRange || "");
-    setEditTarget(c); setName(c.name); setMinAge(min); setMaxAge(max); setDesc(c.description || ""); setMode("edit");
+    setEditTarget(c); setName(c.name); setDesc(c.description || ""); setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
 
   function submit() {
     if (!name.trim()) return;
-    if (minAge && maxAge && Number(maxAge) < Number(minAge)) return;
-    const data = { name: name.trim(), ageRange: buildAgeRange(minAge, maxAge), description: desc.trim() };
+    const data = { name: name.trim(), description: desc.trim() };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setMinAge(""); setMaxAge(""); setDesc(""); nameRef.current?.focus(); } });
+      create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
     }
   }
 
@@ -2068,8 +2049,8 @@ function AgeCategoriesPanel({ curriculumId }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <div style={{ gridColumn: "1 / -1" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+            <div>
               <label className="cp-field-label">Name <span className="cp-required">*</span></label>
               <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
                 placeholder="e.g. Early Childhood, Primary, Secondary…"
@@ -2080,47 +2061,9 @@ function AgeCategoriesPanel({ curriculumId }) {
               <div className="cp-char-count">{name.length} / 100</div>
             </div>
             <div>
-              <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", marginBottom: "3px" }}>FROM</div>
-                  <input
-                    className="cp-input"
-                    type="number"
-                    min="0"
-                    max="99"
-                    placeholder="e.g. 3"
-                    value={minAge}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                    onChange={(e) => setMinAge(e.target.value)}
-                  />
-                </div>
-                <div style={{ color: "#9CA3AF", fontWeight: "700", fontSize: "16px", paddingTop: "18px", flexShrink: 0 }}>–</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "10px", fontWeight: "600", color: "#9CA3AF", marginBottom: "3px" }}>TO</div>
-                  <input
-                    className="cp-input"
-                    type="number"
-                    min="0"
-                    max="99"
-                    placeholder="e.g. 5"
-                    value={maxAge}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                    onChange={(e) => setMaxAge(e.target.value)}
-                  />
-                </div>
-                <div style={{ color: "#9CA3AF", fontSize: "11px", fontWeight: "600", paddingTop: "18px", flexShrink: 0 }}>yrs</div>
-              </div>
-              {minAge && maxAge && Number(maxAge) < Number(minAge) && (
-                <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#DC2626" }}>
-                  "To" age must be greater than "From" age.
-                </p>
-              )}
-            </div>
-            <div style={{ gridColumn: "1 / -1" }}>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
               <textarea className="cp-textarea" rows={2}
-                placeholder="Describe the characteristics or focus of this age group…"
+                placeholder="Describe the characteristics or focus of this stage…"
                 value={desc} maxLength={500}
                 onChange={(e) => setDesc(e.target.value)}
               />
@@ -2165,14 +2108,6 @@ function AgeCategoriesPanel({ curriculumId }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{cat.name}</p>
-                    {cat.ageRange && (
-                      <span style={{
-                        display: "inline-block", marginTop: "5px", padding: "2px 8px", borderRadius: "20px",
-                        fontSize: "10px", fontWeight: "700", backgroundColor: `${color}12`, color, border: `1px solid ${color}28`,
-                      }}>
-                        {cat.ageRange}
-                      </span>
-                    )}
                   </div>
                   <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} />
                 </div>
@@ -2311,13 +2246,13 @@ function BandIndicatorContributionRow({ ind, percentage, onSave }) {
 
 // One competency imported into a band — its indicators come straight from Settings
 // (via this curriculum's adopted competency), and each gets a % contribution scoped to
-// this band only. That % is how much of THIS competency's 100% (within this band) that
-// indicator is worth — the running total below is a hint, not enforced, since a band can
-// be saved mid-configuration.
+// this band only. That % is a share of the BAND's 100% (not this competency's own 100%) —
+// when a band draws on more than one competency, all of their indicators' percentages
+// share that same 100% budget between them. See the band-level total below the list of
+// competency blocks for the running total across every competency attached to this band.
 function BandCompetencyBlock({ comp, color, percentageByIndicator, onSaveContribution }) {
   const [open, setOpen] = useState(false);
   const indicators = comp.indicators || [];
-  const total = indicators.reduce((sum, ind) => sum + (percentageByIndicator[ind.id] || 0), 0);
 
   return (
     <div style={{ marginTop: "10px" }}>
@@ -2343,11 +2278,6 @@ function BandCompetencyBlock({ comp, color, percentageByIndicator, onSaveContrib
                   onSave={(percentage) => onSaveContribution(ind.id, percentage)}
                 />
               ))}
-              {total !== 100 && (
-                <p style={{ margin: "6px 0 0", fontSize: "10.5px", color: "#D97706" }}>
-                  {total > 100 ? `${total - 100}% over 100% — trim an indicator's share.` : `${100 - total}% left to assign to reach 100%.`}
-                </p>
-              )}
             </>
           )}
         </div>
@@ -2362,6 +2292,7 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
+  const { mutate: normalize, isPending: normalizing, variables: normalizingId } = useNormalizeBandIndicators(curriculumId);
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
 
   // Only competencies this curriculum has actually adopted (Competencies tab) — and that
@@ -2585,18 +2516,16 @@ function PerformanceBandsPanel({ curriculumId }) {
           {bands.map((band, idx) => {
             const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
-            // How many of this level's competencies have their indicators fully allocated
-            // to 100% — read at the level, not repeated on every competency row below.
-            const competenciesWithIndicators = (band.competencyIds || [])
-              .map((cId) => competencyById.get(cId))
-              .filter((comp) => (comp?.indicators?.length || 0) > 0);
-            const completeCount = competenciesWithIndicators.filter((comp) => {
-              const total = comp.indicators.reduce((sum, ind) => {
-                const match = (band.indicatorContributions || []).find((p) => p.competencyId === comp.id && p.indicatorId === ind.id);
-                return sum + (match?.percentage || 0);
-              }, 0);
-              return total === 100;
-            }).length;
+            // This band's indicators — across every competency it draws on — share one
+            // 100% budget, not 100% each. E.g. with 3 competencies attached, their
+            // indicators' percentages should collectively total 100%, however that's
+            // split between them (not 100% per competency).
+            const hasIndicators = (band.competencyIds || []).some(
+              (cId) => (competencyById.get(cId)?.indicators?.length || 0) > 0
+            );
+            const indicatorTotal = (band.indicatorContributions || []).reduce((sum, p) => sum + (p.percentage || 0), 0);
+            const showIncomplete = hasIndicators && indicatorTotal !== 100;
+            const isNormalizingThisBand = normalizing && normalizingId === band.id;
             return (
               <div key={band.id} style={{
                 background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
@@ -2639,18 +2568,30 @@ function PerformanceBandsPanel({ curriculumId }) {
                             Advance at ≥{band.advancementThreshold}%
                           </span>
                         )}
-                        {competenciesWithIndicators.length > 0 && (
+                        {hasIndicators && (
                           <span
                             style={{
                               fontSize: "11px", fontWeight: "700", padding: "2px 9px", borderRadius: "20px",
-                              color: completeCount === competenciesWithIndicators.length ? "#059669" : "#D97706",
-                              background: completeCount === competenciesWithIndicators.length ? "#ECFDF5" : "#FFFBEB",
-                              border: `1px solid ${completeCount === competenciesWithIndicators.length ? "#A7F3D0" : "#FDE68A"}`,
+                              color: indicatorTotal === 100 ? "#059669" : "#D97706",
+                              background: indicatorTotal === 100 ? "#ECFDF5" : "#FFFBEB",
+                              border: `1px solid ${indicatorTotal === 100 ? "#A7F3D0" : "#FDE68A"}`,
                             }}
-                            title="How many of this level's competencies have their indicators fully allocated to 100%"
+                            title="Indicator contributions across every competency attached to this band, out of 100%"
                           >
-                            {completeCount === competenciesWithIndicators.length ? "✓ " : ""}{completeCount} of {competenciesWithIndicators.length} complete
+                            {indicatorTotal === 100 ? "✓ " : ""}{indicatorTotal}% of 100% allocated
                           </span>
+                        )}
+                        {showIncomplete && (
+                          <button
+                            type="button"
+                            className="cp-btn-ghost"
+                            style={{ padding: "2px 9px", fontSize: "11px" }}
+                            disabled={isNormalizingThisBand}
+                            onClick={() => normalize(band.id)}
+                            title="Proportionally rescale every indicator's % (across all of this band's competencies) so they sum to exactly 100%"
+                          >
+                            {isNormalizingThisBand ? "Normalizing…" : "Normalize to 100%"}
+                          </button>
                         )}
                       </div>
                       <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
@@ -2683,6 +2624,13 @@ function PerformanceBandsPanel({ curriculumId }) {
                         );
                       })
                     )}
+                    {showIncomplete && (
+                      <p style={{ margin: "10px 0 0", fontSize: "11px", color: "#D97706" }}>
+                        {indicatorTotal > 100
+                          ? `${indicatorTotal - 100}% over 100% across this band's competencies — trim an indicator's share.`
+                          : `${100 - indicatorTotal}% left to assign across this band's competencies to reach 100%.`}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2710,7 +2658,7 @@ function IdentityMatrix({ curriculumId }) {
         <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
           {isEmpty
             ? "Configure developmental stages and performance bands above to generate all possible learner identities."
-            : `${stages.length} stage${stages.length !== 1 ? "s" : ""} × ${bands.length} band${bands.length !== 1 ? "s" : ""} = ${stages.length * bands.length} learner identities · placed by age (stage) + score (band)`}
+            : `${stages.length} stage${stages.length !== 1 ? "s" : ""} × ${bands.length} band${bands.length !== 1 ? "s" : ""} = ${stages.length * bands.length} learner identities · placed by stage + score (band)`}
         </p>
       </div>
 
@@ -2759,11 +2707,6 @@ function IdentityMatrix({ curriculumId }) {
                       <div style={{ fontSize: "12px", fontWeight: "800", color: stageColor, lineHeight: 1.2 }}>
                         {stage.name}
                       </div>
-                      {stage.ageRange && (
-                        <div style={{ fontSize: "10px", color: "#9CA3AF", marginTop: "3px" }}>
-                          {stage.ageRange} yrs
-                        </div>
-                      )}
                     </div>
 
                     {/* Identity cells */}
@@ -2823,7 +2766,7 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Progress Arc</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Define stages (age-based) and bands (score-based) — together they form each learner's identity.
+            Define developmental stages and bands (score-based) — together they form each learner's identity.
           </p>
         </div>
         <div className="cp-arc-section-nav">

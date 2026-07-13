@@ -4,6 +4,8 @@
  * Can be tested independently and reused across service methods.
  */
 
+const { roundTo1Decimal } = require("../../../shared/utils/helpers");
+
 /**
  * Engine 1 — Assessment Engine
  * Computes weighted score per evidence and overall final score.
@@ -111,4 +113,40 @@ function runProgressArcEngine(competencyScores, progressLevels, performanceBands
   });
 }
 
-module.exports = { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine };
+/**
+ * Engine 4 — Indicator Progress Engine
+ * Computes, per Performance Band, how much of that band's 100% a learner has completed —
+ * driven entirely by indicator-level achievement, independent of the overall competency score.
+ *
+ * A band's `indicatorContributions` (set manually in Performance Bands) says how much each
+ * indicator is worth toward that band (meant to sum to 100%). This engine takes a learner's
+ * achievement per indicator (0-100, e.g. marks earned / marks possible across graded work)
+ * and multiplies it against each contribution's weight to get the band's overall completion.
+ *
+ * @param {Array<{competencyId, indicatorId, percent}>} indicatorAchievements  Learner's 0-100 achievement per indicator
+ * @param {Array} performanceBands  Band objects (must have indicatorContributions, advancementThreshold)
+ * @returns {Array<{bandId, name, completion, advancementThreshold, thresholdMet}>}
+ */
+function runIndicatorProgressEngine(indicatorAchievements, performanceBands) {
+  return performanceBands.map((band) => {
+    const contributions = band.indicatorContributions || [];
+    const completion = contributions.reduce((sum, c) => {
+      const achievement = indicatorAchievements.find(
+        (a) => a.competencyId === c.competencyId && a.indicatorId === c.indicatorId
+      );
+      const percent = achievement ? Math.min(100, Math.max(0, Number(achievement.percent) || 0)) : 0;
+      return sum + (percent * c.percentage) / 100;
+    }, 0);
+    const rounded = roundTo1Decimal(completion);
+    const threshold = band.advancementThreshold ?? 0;
+    return {
+      bandId: band.id,
+      name: band.name,
+      completion: rounded,
+      advancementThreshold: threshold,
+      thresholdMet: rounded >= threshold,
+    };
+  });
+}
+
+module.exports = { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine };

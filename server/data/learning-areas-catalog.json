@@ -91,5 +91,34 @@
     ],
     "createdAt": "2026-07-13T08:14:51.262Z",
     "updatedAt": "2026-07-13T08:14:51.262Z"
+  },
+  {
+    "id": "7557416e-95ad-4123-9cd0-14a58c12318a",
+    "name": "STEM & Technology",
+    "description": "Science, technology, engineering, mathematics and computing.",
+    "color": "#38aae1",
+    "courses": [],
+    "createdAt": "2026-07-13T10:06:59.978Z",
+    "updatedAt": "2026-07-13T10:06:59.978Z"
+  },
+  {
+    "id": "6c7d0dd0-a20a-4aeb-8647-b379b557bebf",
+    "name": "Digital Citizenship & Ethics",
+    "description": "Responsible, safe, and ethical technology use.",
+    "color": "#059669",
+    "courses": [],
+    "createdAt": "2026-07-13T10:06:59.995Z",
+    "updatedAt": "2026-07-13T10:06:59.995Z"
+  },
+  {
+    "id": "d56ff90b-ca9c-479f-8daf-a3e4766fa772",
+    "name": "ETNDG",
+    "description": "RWSBFX",
+    "color": "#25476a",
+    "courses": [
+      "5fd18d73-8c22-402d-8aa9-2a10bf72eb72"
+    ],
+    "createdAt": "2026-07-13T12:50:27.250Z",
+    "updatedAt": "2026-07-13T12:50:27.250Z"
   }
 ]

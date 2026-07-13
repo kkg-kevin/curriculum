@@ -30,5 +30,29 @@
     "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
     "createdAt": "2026-07-10T12:19:32.629Z",
     "updatedAt": "2026-07-10T12:19:32.629Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "name": "Module 1: Thinking Like a Computer",
+    "order": 1,
+    "id": "2567e102-7c06-44fe-9021-fd0720cbff9a",
+    "createdAt": "2026-07-13T10:07:00.403Z",
+    "updatedAt": "2026-07-13T10:07:00.403Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "name": "Module 2: Digital Citizens",
+    "order": 2,
+    "id": "98d01d36-a8d0-4880-a792-7053b15d4609",
+    "createdAt": "2026-07-13T10:07:00.416Z",
+    "updatedAt": "2026-07-13T10:07:00.416Z"
+  },
+  {
+    "courseId": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
+    "name": "Module 3: Build & Create",
+    "order": 3,
+    "id": "e393a899-459b-4172-a184-0caaebfffb8c",
+    "createdAt": "2026-07-13T10:07:00.427Z",
+    "updatedAt": "2026-07-13T10:07:00.428Z"
   }
 ]

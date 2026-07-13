@@ -66,6 +66,8 @@ const {
   updatePerformanceBand,
   deletePerformanceBand,
   reorderPerformanceBands,
+  calculateIndicatorProgress,
+  normalizeBandIndicatorContributions,
 } = require("./competency-framework/competency.controller");
 
 const router = express.Router();
@@ -132,6 +134,9 @@ router.route("/:id/assessments/evidence/:etId").put(updateEvidenceType).delete(d
 // Performance Bands
 router.route("/:id/competencies/bands").get(getPerformanceBands).post(createPerformanceBand);
 router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
+// Progress Arc — indicator-driven band completion (must come before the /:bandId wildcard below)
+router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicatorProgress);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
+router.route("/:id/competencies/bands/:bandId/normalize").post(normalizeBandIndicatorContributions);
 
 module.exports = router;
