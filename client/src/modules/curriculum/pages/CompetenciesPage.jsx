@@ -34,6 +34,8 @@ import {
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
 import { learningAreasApi as catalogLearningAreasApi } from "../../settings/learning-areas/services/learningAreasApi";
+import { useCoursesQuery } from "../../courses/hooks/useCourse";
+import CoursePickerField from "../../courses/components/CoursePickerField";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -516,6 +518,9 @@ function LearningAreasPanel({ curriculumId }) {
   const { mutate: remove, isPending: deleting } = useDeleteLearningArea(curriculumId);
   const { data: catalogAreas = [] } = useCatalogLearningAreas();
   const { mutate: importArea, isPending: importing } = useImportLearningArea(curriculumId);
+  const { data: coursesResponse } = useCoursesQuery();
+  const allCourses = coursesResponse?.data || [];
+  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
   const queryClient = useQueryClient();
   const availableToImport = catalogAreas.filter(
     (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
@@ -526,30 +531,19 @@ function LearningAreasPanel({ curriculumId }) {
   const [name,     setName]       = useState("");
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
-  const [courses,     setCourses]     = useState([]);
-  const [courseInput, setCourseInput] = useState("");
+  const [courses,  setCourses]    = useState([]);
   const nameRef = useRef(null);
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setCourseInput(""); setShowForm(true);
+    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
-    setCourses(area.courses || []); setCourseInput(""); setShowForm(true);
+    setCourses(area.courses || []); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
-
-  function addCourse() {
-    const value = courseInput.trim();
-    if (!value || courses.includes(value)) { setCourseInput(""); return; }
-    setCourses((prev) => [...prev, value]);
-    setCourseInput("");
-  }
-  function removeCourse(course) {
-    setCourses((prev) => prev.filter((c) => c !== course));
-  }
 
   function submit() {
     if (!name.trim()) return;
@@ -632,30 +626,9 @@ function LearningAreasPanel({ curriculumId }) {
                 <span style={{ fontWeight: 400, color: "#9CA3AF" }}> · {courses.length} added</span>
               )}
             </label>
-            <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
-              <input
-                className="cp-input"
-                placeholder="Course name (e.g. Phonics, Algebra I)"
-                value={courseInput}
-                onChange={(e) => setCourseInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-              />
-              <button type="button" className="cp-btn-secondary" onClick={addCourse} disabled={!courseInput.trim()}>
-                + Add
-              </button>
+            <div style={{ marginTop: "4px" }}>
+              <CoursePickerField value={courses} onChange={setCourses} color={color} />
             </div>
-            {courses.length > 0 ? (
-              <div className="cp-course-wrap" style={{ marginTop: "8px" }}>
-                {courses.map((c) => (
-                  <span key={c} className="cp-course-chip" style={{ backgroundColor: `${color}12`, borderColor: `${color}40`, color }}>
-                    {c}
-                    <button type="button" className="cp-course-chip-x" onClick={() => removeCourse(c)} title={`Remove ${c}`}>×</button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="cp-course-empty-hint">No courses added yet — type a name above and press Enter.</p>
-            )}
           </div>
 
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
@@ -709,10 +682,10 @@ function LearningAreasPanel({ curriculumId }) {
                       </span>
                     </div>
                     <div className="cp-course-list">
-                      {area.courses.map((c) => (
-                        <div key={c} className="cp-course-row">
+                      {area.courses.map((id) => (
+                        <div key={id} className="cp-course-row">
                           <span className="cp-course-dot" style={{ backgroundColor: areaColor }} />
-                          <span className="cp-course-name">{c}</span>
+                          <span className="cp-course-name">{courseNameById.get(id) || "Unknown course"}</span>
                         </div>
                       ))}
                     </div>

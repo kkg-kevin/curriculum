@@ -3,6 +3,7 @@ const CurriculumCompetencyLinkModel = require("./curriculum-competency-link.mode
 const CurriculumCompetencyIndicatorModel = require("./curriculum-competency-indicator.model");
 const LearningAreaModel      = require("./learning-area.model");
 const LearningAreaCatalogModel = require("../../settings/learning-areas/learning-area.model");
+const CourseModel            = require("../../courses/course.model");
 const CompetencyModel        = require("../../settings/competencies/competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
 const AgeCategoryModel       = require("./age-category.model");
@@ -12,6 +13,18 @@ const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
 const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine } = require("./scoring-engines");
+
+// A Learning Area's `courses` field stores course ids only — reject anything
+// that doesn't resolve to a real course so a dummy id can never sneak in.
+function assertCoursesExist(courseIds) {
+  if (!courseIds) return;
+  const missing = courseIds.filter((id) => !CourseModel.findById(id));
+  if (missing.length > 0) {
+    const err = new Error(`Course(s) not found: ${missing.join(", ")}`);
+    err.statusCode = 404;
+    throw err;
+  }
+}
 
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
@@ -149,6 +162,7 @@ const CompetencyService = {
       err.statusCode = 409;
       throw err;
     }
+    assertCoursesExist(data.courses);
     return LearningAreaModel.create({ curriculumId, ...data });
   },
 
@@ -167,6 +181,7 @@ const CompetencyService = {
         throw err;
       }
     }
+    assertCoursesExist(data.courses);
     return LearningAreaModel.update(id, data);
   },
 

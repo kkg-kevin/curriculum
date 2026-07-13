@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreateLearningArea } from "../../settings/learning-areas/hooks/useLearningAreas";
+import CoursePickerField from "./CoursePickerField";
 
 const AREA_COLORS = [
   "#25476a", "#38aae1", "#059669", "#7C3AED",
@@ -17,18 +18,7 @@ export default function CreateLearningAreaModal({ initialName = "", onClose, onC
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(AREA_COLORS[0]);
   const [courses, setCourses] = useState([]);
-  const [courseInput, setCourseInput] = useState("");
   const [error, setError] = useState("");
-
-  function addCourse() {
-    const value = courseInput.trim();
-    if (!value || courses.includes(value)) { setCourseInput(""); return; }
-    setCourses((prev) => [...prev, value]);
-    setCourseInput("");
-  }
-  function removeCourse(course) {
-    setCourses((prev) => prev.filter((c) => c !== course));
-  }
 
   const submit = () => {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -94,47 +84,7 @@ export default function CreateLearningAreaModal({ initialName = "", onClose, onC
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>
               Courses <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span>
             </label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <input
-                value={courseInput}
-                onChange={(e) => setCourseInput(e.target.value)}
-                placeholder="Course name (e.g. Phonics, Algebra I)"
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-                style={{ flex: 1, boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
-              />
-              <button
-                type="button"
-                onClick={addCourse}
-                disabled={!courseInput.trim()}
-                style={{ padding: "9px 16px", background: "#fff", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: courseInput.trim() ? "pointer" : "not-allowed" }}
-              >
-                + Add
-              </button>
-            </div>
-            {courses.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "7px", marginTop: "8px" }}>
-                {courses.map((c) => (
-                  <span
-                    key={c}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 8px 4px 12px",
-                      borderRadius: "20px", border: "1px solid", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif",
-                      backgroundColor: `${color}12`, borderColor: `${color}40`, color,
-                    }}
-                  >
-                    {c}
-                    <button
-                      type="button"
-                      onClick={() => removeCourse(c)}
-                      title={`Remove ${c}`}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", lineHeight: 1, padding: 0, color: "inherit" }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <CoursePickerField value={courses} onChange={setCourses} color={color} />
           </div>
         </div>
         <div style={{ padding: "14px 22px", display: "flex", gap: "10px", justifyContent: "flex-end", borderTop: "1px solid #F3F4F6" }}>

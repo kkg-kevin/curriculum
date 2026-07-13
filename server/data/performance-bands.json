@@ -93,7 +93,28 @@
     "competencyIds": [
       "01004522-fa4f-4068-aef8-bfe34c93cbb2"
     ],
-    "indicatorContributions": [],
+    "indicatorContributions": [
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "percentage": 30
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "percentage": 20
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "percentage": 20
+      },
+      {
+        "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "percentage": 30
+      }
+    ],
     "advancementThreshold": 80,
     "order": 2,
     "createdAt": "2026-07-10T12:40:59.072Z"

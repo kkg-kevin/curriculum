@@ -4,13 +4,7 @@
     "name": "Courses-high school",
     "description": "nvhuhuvhwruhvuwr",
     "color": "#25476a",
-    "courses": [
-      "hbvw8rv79",
-      "uhbugygr",
-      "jbvwryy8sd",
-      "ihcwbybvysb",
-      "cubydsbvy"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T06:57:13.592Z",
     "updatedAt": "2026-07-05T06:57:13.592Z"
   },
@@ -19,12 +13,7 @@
     "name": "kevin",
     "description": "kev",
     "color": "#25476a",
-    "courses": [
-      "vnuuer",
-      "jvnrwbvbw",
-      "hbrwvbs",
-      "vhrbwbv"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T07:53:47.117Z",
     "updatedAt": "2026-07-05T07:53:47.117Z"
   },
@@ -42,12 +31,7 @@
     "name": "Kihara",
     "description": "bUGFG",
     "color": "#25476a",
-    "courses": [
-      "JGQe7fg7",
-      "qieohfugue",
-      "mfuqeug",
-      "NUEBBV"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T08:11:35.020Z",
     "updatedAt": "2026-07-05T08:11:35.020Z"
   },
@@ -56,11 +40,7 @@
     "name": "Githinji",
     "description": "fhgqeyggyf",
     "color": "#25476a",
-    "courses": [
-      "jghfyegyf",
-      "jufewhubfu",
-      "fmneubf"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T08:13:17.168Z",
     "updatedAt": "2026-07-05T08:13:17.168Z"
   },
@@ -69,10 +49,7 @@
     "name": "Derriick",
     "description": "huhuugg",
     "color": "#25476a",
-    "courses": [
-      "khuehugh",
-      "gmwruigbhi"
-    ],
+    "courses": [],
     "createdAt": "2026-07-05T08:14:38.267Z",
     "updatedAt": "2026-07-05T08:14:38.267Z"
   },
@@ -81,10 +58,7 @@
     "name": "saas",
     "description": "etsgdxc",
     "color": "#25476a",
-    "courses": [
-      "ets",
-      "rzduxhn"
-    ],
+    "courses": [],
     "createdAt": "2026-07-06T05:16:32.538Z",
     "updatedAt": "2026-07-06T05:16:32.538Z"
   },
@@ -102,13 +76,20 @@
     "name": "vnsduhuh",
     "description": "vadkuhuigui",
     "color": "#DC2626",
-    "courses": [
-      "wkrhhuhu",
-      "nbuefguag",
-      "fnuibayga",
-      "ugqygfy"
-    ],
+    "courses": [],
     "createdAt": "2026-07-07T06:21:26.861Z",
     "updatedAt": "2026-07-07T06:21:26.861Z"
+  },
+  {
+    "id": "f2533443-f567-4526-9a1b-26eb65bcd75c",
+    "name": "Learning area one",
+    "description": "one areas",
+    "color": "#38aae1",
+    "courses": [
+      "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-13T08:14:51.262Z",
+    "updatedAt": "2026-07-13T08:14:51.262Z"
   }
 ]

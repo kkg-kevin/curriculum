@@ -5,6 +5,8 @@ import {
 import { Modal, Label } from "../../components/Modal";
 import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { useCoursesQuery } from "../../../courses/hooks/useCourse";
+import CoursePickerField from "../../../courses/components/CoursePickerField";
 
 const AREA_COLORS = PALETTE;
 
@@ -19,19 +21,8 @@ function LearningAreaModal({ editTarget, onClose }) {
     color: editTarget?.color || AREA_COLORS[0],
   }));
   const [courses, setCourses] = useState(editTarget?.courses || []);
-  const [courseInput, setCourseInput] = useState("");
   const [error, setError] = useState("");
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-
-  function addCourse() {
-    const value = courseInput.trim();
-    if (!value || courses.includes(value)) { setCourseInput(""); return; }
-    setCourses((prev) => [...prev, value]);
-    setCourseInput("");
-  }
-  function removeCourse(course) {
-    setCourses((prev) => prev.filter((c) => c !== course));
-  }
 
   const submit = () => {
     if (!form.name.trim()) { setError("Name is required"); return; }
@@ -81,33 +72,14 @@ function LearningAreaModal({ editTarget, onClose }) {
         </div>
         <div>
           <Label>Courses <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></Label>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              className="stg-input"
-              placeholder="Course name (e.g. Phonics, Algebra I)"
-              value={courseInput}
-              onChange={(e) => setCourseInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-            />
-            <button type="button" className="stg-btn-secondary" onClick={addCourse} disabled={!courseInput.trim()}>+ Add</button>
-          </div>
-          {courses.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "7px", marginTop: "8px" }}>
-              {courses.map((c) => (
-                <span key={c} className="stg-chip" style={{ backgroundColor: `${form.color}12`, borderColor: `${form.color}40`, color: form.color }}>
-                  {c}
-                  <button type="button" className="stg-chip-x" onClick={() => removeCourse(c)} title={`Remove ${c}`}>×</button>
-                </span>
-              ))}
-            </div>
-          )}
+          <CoursePickerField value={courses} onChange={setCourses} color={form.color} />
         </div>
       </div>
     </Modal>
   );
 }
 
-function LearningAreaCard({ area, onEdit, onDelete }) {
+function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
   const color = area.color || "#25476a";
   const hasDetails = !!area.description || area.courses?.length > 0;
   const [expanded, setExpanded] = useState(false);
@@ -167,10 +139,10 @@ function LearningAreaCard({ area, onEdit, onDelete }) {
                 </span>
               </div>
               <div className="stg-course-list">
-                {area.courses.map((c) => (
-                  <div key={c} className="stg-course-row">
+                {area.courses.map((id) => (
+                  <div key={id} className="stg-course-row">
                     <span className="stg-course-dot" style={{ backgroundColor: color }} />
-                    <span className="stg-course-name">{c}</span>
+                    <span className="stg-course-name">{courseNameById.get(id) || "Unknown course"}</span>
                   </div>
                 ))}
               </div>
@@ -185,6 +157,9 @@ function LearningAreaCard({ area, onEdit, onDelete }) {
 export default function LearningAreasPanel() {
   const { data: areas = [], isLoading } = useLearningAreas();
   const { mutate: deleteArea } = useDeleteLearningArea();
+  const { data: coursesResponse } = useCoursesQuery();
+  const allCourses = coursesResponse?.data || [];
+  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -248,6 +223,7 @@ export default function LearningAreasPanel() {
                   area={area}
                   onEdit={() => { setEditTarget(area); setModalOpen(true); }}
                   onDelete={() => setDeleteTarget(area)}
+                  courseNameById={courseNameById}
                 />
               ))}
             </div>

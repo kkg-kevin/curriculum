@@ -72,7 +72,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-10T09:37:47.665Z",
+    "updatedAt": "2026-07-13T07:32:43.274Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -807,7 +807,7 @@
       "Interact with the Pictoblox Interface",
       "Understand what is Programming"
     ],
-    "introduction": "<p><strong><u>Introduction one </u></strong></p><p>In this lesson, you will learn what a robot is and the key components that make up robotic systems. You will explore the Pictoblox interface, allowing you to interact with coding blocks to create a simple and fun program. Additionally, you will gain an understanding of programming fundamentals and learn about Quarky, a unique robot and its various parts. This hands-on approach will empower you to engage with robotics and coding creatively.</p><p></p><p></p><p></p>",
+    "introduction": "<p><strong><u>Introduction one</u></strong></p><p>In this lesson, you will learn what a robot is and the key components that make up robotic systems. You will explore the Pictoblox interface, allowing you to interact with coding blocks to create a simple and fun program. Additionally, you will gain an understanding of programming fundamentals and learn about Quarky, a unique robot and its various parts. This hands-on approach will empower you to engage with robotics and coding creatively.</p><p></p><p></p><p></p>",
     "mainConcepts": [
       {
         "id": "094867f9-2ea4-4126-b31a-3ca0e4e52b74",
@@ -852,7 +852,7 @@
     ],
     "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
     "createdAt": "2026-07-10T12:19:32.616Z",
-    "updatedAt": "2026-07-10T12:28:00.626Z",
+    "updatedAt": "2026-07-13T07:32:55.743Z",
     "assessmentIds": [
       "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
       "85c3271a-85d1-446b-871b-9a75dade7d76",
