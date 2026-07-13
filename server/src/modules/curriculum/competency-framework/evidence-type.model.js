@@ -3,7 +3,7 @@ const path = require("path");
 
 const FILE = path.join(__dirname, "../../../../data/evidence-types.json");
 
-function read()      { return JSON.parse(fs.readFileSync(FILE, "utf8")); }
+function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
 function genId() {
   try { return require("crypto").randomUUID(); }

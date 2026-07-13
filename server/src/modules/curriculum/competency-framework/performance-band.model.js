@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 
 const FILE = path.join(__dirname, "../../../../data/performance-bands.json");
 
-function read()      { return JSON.parse(fs.readFileSync(FILE, "utf-8")); }
+function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf-8")) : []; }
 function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
 
 const PerformanceBandModel = {
