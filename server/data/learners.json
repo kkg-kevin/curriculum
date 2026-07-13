@@ -237,6 +237,7 @@
     "admissionNumber": "SS-2026-002",
     "id": "c76f9488-1cd4-4c89-86ea-942ab7733030",
     "createdAt": "2026-07-09T06:57:54.742Z",
-    "updatedAt": "2026-07-09T06:57:54.742Z"
+    "updatedAt": "2026-07-13T13:51:36.229Z",
+    "currentRungId": null
   }
 ]

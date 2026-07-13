@@ -185,6 +185,17 @@ export function useLadder(curriculumId) {
   });
 }
 
+export function useUpdateLadder(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rungs) => competenciesApi.updateLadder(curriculumId, rungs),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update learning journey"),
+  });
+}
+
 /* ── Age Categories ─────────────────────────────────────────────────────── */
 
 export function useAgeCategories(curriculumId) {

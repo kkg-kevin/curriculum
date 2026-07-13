@@ -10,6 +10,9 @@ const createLearnerSchema = z.object({
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid guardian email").optional().or(z.literal("")),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
+  // Which Progression Ladder rung (Learning Journey) this learner is currently placed at —
+  // set manually by a teacher/admin, optionally informed by a diagnostic assessment result.
+  currentRungId: z.string().optional().nullable().default(null),
 });
 
 const updateLearnerSchema = createLearnerSchema.partial();
