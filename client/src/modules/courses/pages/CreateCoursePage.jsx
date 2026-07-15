@@ -14,7 +14,6 @@ const DEFAULT_VALUES = {
   coverImage: null,
   ageMin: "",
   ageMax: "",
-  competencyIds: [],
   learningAreaIds: [],
 };
 
@@ -51,13 +50,10 @@ export default function CreateCoursePage() {
     setModuleRows((rows) => rows.filter((r) => r.id !== rowId));
   };
 
-  const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
+  const onSubmit = ({ learningAreaIds, ...data }) => {
     createCourse(data, {
       onSuccess: async (course) => {
         setCreatingContent(true);
-        if (competencyIds.length > 0) {
-          await Promise.all(competencyIds.map((cid) => courseApi.linkCompetency(course.id, cid)));
-        }
         if (learningAreaIds.length > 0) {
           await Promise.all(learningAreaIds.map((aid) => courseApi.linkLearningArea(course.id, aid)));
         }

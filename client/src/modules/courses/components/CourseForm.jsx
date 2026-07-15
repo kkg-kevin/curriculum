@@ -1,7 +1,6 @@
 import { Input, SectionHeader, AgeRangeField } from "./formFields";
 import RichTextEditor from "./RichTextEditor";
 import CoverImageField from "./CoverImageField";
-import CompetenciesField from "./CompetenciesField";
 import LearningAreasField from "./LearningAreasField";
 
 export default function CourseForm() {
@@ -15,11 +14,6 @@ export default function CourseForm() {
           <RichTextEditor name="description" label="Description" />
           <CoverImageField name="coverImage" label="Cover Image" />
         </div>
-      </div>
-
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
-        <SectionHeader title="Competencies" subtitle="Tag which competencies this course builds toward." />
-        <CompetenciesField name="competencyIds" hint="Pick from the shared catalog defined in Settings." />
       </div>
 
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
