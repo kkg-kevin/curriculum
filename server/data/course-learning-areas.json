@@ -1,14 +1,1 @@
-[
-  {
-    "id": "65a98e7c-335e-477e-b4f8-2939f142da6e",
-    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
-    "learningAreaId": "8931ab6b-e0d8-4983-8514-1dbd7596eb5e",
-    "createdAt": "2026-07-06T05:16:35.952Z"
-  },
-  {
-    "id": "c42c98c8-7dee-4ce9-83e0-906af7a257c1",
-    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
-    "learningAreaId": "c6f11a06-8578-4d2a-9bdf-a70c74670b16",
-    "createdAt": "2026-07-10T12:19:32.569Z"
-  }
-]
+[]

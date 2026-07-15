@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCourseQuery, useUpdateCourse, useCourseCompetencies, useCourseLearningAreas, COURSE_KEYS } from "../hooks/useCourse";
+import { useCourseQuery, useUpdateCourse, useCourseLearningAreas, COURSE_KEYS } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -14,7 +14,6 @@ export default function EditCoursePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: course, isLoading, isError } = useCourseQuery(id);
-  const { data: linkedCompetencies, isLoading: competenciesLoading } = useCourseCompetencies(id);
   const { data: linkedLearningAreas, isLoading: learningAreasLoading } = useCourseLearningAreas(id);
   const { mutate: updateCourse, isPending } = useUpdateCourse();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -27,35 +26,28 @@ export default function EditCoursePage() {
   const { handleSubmit, reset, formState: { isDirty } } = methods;
 
   useEffect(() => {
-    if (course && linkedCompetencies && linkedLearningAreas) {
+    if (course && linkedLearningAreas) {
       reset({
         name: course.name || "",
         description: course.description || "",
         coverImage: course.coverImage || null,
         ageMin: course.ageMin ?? "",
         ageMax: course.ageMax ?? "",
-        competencyIds: linkedCompetencies.map((c) => c.id),
         learningAreaIds: linkedLearningAreas.map((a) => a.id),
       });
     }
-  }, [course, linkedCompetencies, linkedLearningAreas, reset]);
+  }, [course, linkedLearningAreas, reset]);
 
-  const onSubmit = ({ competencyIds, learningAreaIds, ...data }) => {
+  const onSubmit = ({ learningAreaIds, ...data }) => {
     updateCourse({ id, data }, {
       onSuccess: async () => {
-        const originalIds = (linkedCompetencies || []).map((c) => c.id);
-        const toAdd = competencyIds.filter((cid) => !originalIds.includes(cid));
-        const toRemove = originalIds.filter((cid) => !competencyIds.includes(cid));
         const originalAreaIds = (linkedLearningAreas || []).map((a) => a.id);
         const areasToAdd = learningAreaIds.filter((aid) => !originalAreaIds.includes(aid));
         const areasToRemove = originalAreaIds.filter((aid) => !learningAreaIds.includes(aid));
         await Promise.all([
-          ...toAdd.map((cid) => courseApi.linkCompetency(id, cid)),
-          ...toRemove.map((cid) => courseApi.unlinkCompetency(id, cid)),
           ...areasToAdd.map((aid) => courseApi.linkLearningArea(id, aid)),
           ...areasToRemove.map((aid) => courseApi.unlinkLearningArea(id, aid)),
         ]);
-        queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(id) });
         queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(id) });
         navigate(`/courses/${id}/view`);
       },
@@ -67,7 +59,7 @@ export default function EditCoursePage() {
     else navigate(`/courses/${id}/view`);
   };
 
-  if (isLoading || competenciesLoading || learningAreasLoading) {
+  if (isLoading || learningAreasLoading) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>
         Loading course…

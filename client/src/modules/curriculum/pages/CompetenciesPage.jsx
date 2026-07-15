@@ -30,8 +30,6 @@ import {
   useUpdatePerformanceBand,
   useDeletePerformanceBand,
   useReorderPerformanceBands,
-  useLadder,
-  useUpdateLadder,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
@@ -220,33 +218,6 @@ const CSS = `
   }
   .cp-swatch:hover  { transform:scale(1.15); }
   .cp-swatch.active { border-color:#111827; transform:scale(1.15); }
-
-  /* Ladder */
-  .cp-rung {
-    border:1.5px solid #E5E7EB; border-radius:14px; overflow:hidden; margin-bottom:12px;
-    transition:border-color 0.15s;
-  }
-  .cp-rung:hover { border-color:#b8d9ee; }
-  .cp-rung-head {
-    display:flex; align-items:center; gap:12px; padding:12px 16px;
-    background:linear-gradient(135deg,#0A3880,#25476a); cursor:pointer;
-  }
-  .cp-rung-body { padding:14px 16px; background:#fff; }
-
-  .cp-assign-chip {
-    display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
-    border-radius:20px; font-size:11px; font-weight:600;
-    background:#e8f5fb; border:1.5px solid #a8d5ee; color:#25476a;
-    font-family:Inter,sans-serif; margin:3px;
-  }
-  .cp-chip-x {
-    width:14px; height:14px; border-radius:50%; border:none;
-    background:rgba(29,58,138,0.1); color:#25476a; cursor:pointer;
-    display:inline-flex; align-items:center; justify-content:center;
-    font-size:10px; font-weight:900; padding:0; flex-shrink:0;
-    transition:background 0.1s, color 0.1s;
-  }
-  .cp-chip-x:hover { background:rgba(239,68,68,0.2); color:#DC2626; }
 
   .cp-spinner {
     width:20px; height:20px; border:2.5px solid #E5E7EB; border-top-color:#25476a;
@@ -703,206 +674,26 @@ function LearningAreasPanel({ curriculumId }) {
 }
 
 /* ── Learning Journey ──────────────────────────────────────────────────────
- * The ordered stages ("rungs") a learner moves through in this curriculum,
- * and which competencies apply at each — this is what a new learner's
- * starting point is placed against. Backed by the Progression Ladder API
- * (curricula/:id/competencies/ladder), which was already fully built server-
- * side but had no editor here until now. */
+ * Placeholder — the previous rung-based editor has been removed pending a
+ * new workflow design. The Progression Ladder API/model behind it is left
+ * untouched (still used by the Learner page's placement dropdown). */
 
-function journeyGenId() {
-  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
-}
-
-function RungAssignmentRow({ competency, descriptor, onSaveDescriptor, onRemove }) {
-  const [value, setValue] = useState(descriptor || "");
-  useEffect(() => { setValue(descriptor || ""); }, [descriptor]);
-
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", padding: "8px 0", borderBottom: "1px solid #F3F4F6" }}>
-      <span className="cp-assign-chip" style={{ marginTop: "2px", flexShrink: 0 }}>
-        {competency?.name || "Unknown competency"}
-        <button type="button" className="cp-chip-x" onClick={onRemove} title="Remove from this stage">×</button>
-      </span>
-      <input
-        className="cp-input"
-        style={{ flex: 1, fontSize: "12px" }}
-        placeholder="What does this competency look like at this stage? (optional)"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => { if (value !== (descriptor || "")) onSaveDescriptor(value); }}
-      />
-    </div>
-  );
-}
-
-function LearningJourneyPanel({ curriculumId }) {
-  const { data: rungs = [], isLoading } = useLadder(curriculumId);
-  const { mutate: saveLadder, isPending: saving } = useUpdateLadder(curriculumId);
-  const { data: adoptedCompetencies = [] } = useCompetencies(curriculumId);
-  const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
-
-  const [openRungId, setOpenRungId] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [editLabel, setEditLabel] = useState("");
-  const [editAgeRange, setEditAgeRange] = useState("");
-
-  function persist(nextRungs) {
-    saveLadder(nextRungs.map((r, i) => ({ ...r, order: i + 1 })));
-  }
-
-  function addRung() {
-    const rung = { id: journeyGenId(), label: "New Stage", ageRange: "", order: rungs.length + 1, assignments: [] };
-    persist([...rungs, rung]);
-    setOpenRungId(rung.id);
-    setEditingId(rung.id);
-    setEditLabel(rung.label);
-    setEditAgeRange("");
-  }
-
-  function startEdit(rung) {
-    setEditingId(rung.id); setEditLabel(rung.label); setEditAgeRange(rung.ageRange || "");
-  }
-  function saveEdit() {
-    if (!editLabel.trim()) return;
-    persist(rungs.map((r) => (r.id === editingId ? { ...r, label: editLabel.trim(), ageRange: editAgeRange.trim() } : r)));
-    setEditingId(null);
-  }
-  function cancelEdit() { setEditingId(null); }
-
-  function deleteRung(id) {
-    persist(rungs.filter((r) => r.id !== id));
-    if (openRungId === id) setOpenRungId(null);
-  }
-
-  function moveRung(id, dir) {
-    const idx = rungs.findIndex((r) => r.id === id);
-    const to = idx + dir;
-    if (to < 0 || to >= rungs.length) return;
-    const next = [...rungs];
-    [next[idx], next[to]] = [next[to], next[idx]];
-    persist(next);
-  }
-
-  function addAssignment(rungId, competencyId) {
-    persist(rungs.map((r) => (r.id === rungId ? { ...r, assignments: [...(r.assignments || []), { competencyId, descriptor: "" }] } : r)));
-  }
-  function removeAssignment(rungId, competencyId) {
-    persist(rungs.map((r) => (r.id === rungId ? { ...r, assignments: (r.assignments || []).filter((a) => a.competencyId !== competencyId) } : r)));
-  }
-  function saveDescriptor(rungId, competencyId, descriptor) {
-    persist(rungs.map((r) => (r.id === rungId
-      ? { ...r, assignments: (r.assignments || []).map((a) => (a.competencyId === competencyId ? { ...a, descriptor } : a)) }
-      : r)));
-  }
-
-  if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-
+function LearningJourneyPanel() {
   return (
     <div className="cp-card">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Journey</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF", maxWidth: "480px" }}>
-            The ordered stages a learner moves through in this curriculum, and which competencies apply at each. Used to place a new learner at their starting point before any assessment.
-          </p>
-        </div>
-        <button type="button" className="cp-btn-primary" onClick={addRung} disabled={saving}>+ Add Stage</button>
+      <div style={{ marginBottom: "20px" }}>
+        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Journey</h2>
+        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+          The path a learner follows through this curriculum.
+        </p>
       </div>
-
-      {rungs.length === 0 ? (
-        <div className="cp-empty">
-          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧭</div>
-          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No stages yet</p>
-          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
-            Add stages to define the path learners follow through this curriculum, then assign competencies to each one.
-          </p>
-          <button type="button" className="cp-btn-ghost" onClick={addRung}>+ Add First Stage</button>
-        </div>
-      ) : (
-        rungs.map((rung, idx) => {
-          const open = openRungId === rung.id;
-          const isEditing = editingId === rung.id;
-          const assignments = rung.assignments || [];
-          const availableCompetencies = adoptedCompetencies.filter((c) => !assignments.some((a) => a.competencyId === c.id));
-          return (
-            <div key={rung.id} className="cp-rung">
-              <div className="cp-rung-head" onClick={() => setOpenRungId(open ? null : rung.id)}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="cp-icon-btn" onClick={() => moveRung(rung.id, -1)} disabled={idx === 0} title="Move up" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                  <button type="button" className="cp-icon-btn" onClick={() => moveRung(rung.id, 1)} disabled={idx === rungs.length - 1} title="Move down" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                </div>
-                <div style={{
-                  width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0,
-                  background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "12px", fontWeight: "800", color: "#fff",
-                }}>
-                  {idx + 1}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "14px", fontWeight: "800", color: "#fff" }}>{rung.label}</div>
-                  {rung.ageRange && <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)", marginTop: "1px" }}>{rung.ageRange} yrs</div>}
-                </div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "rgba(255,255,255,0.75)", flexShrink: 0 }}>
-                  {assignments.length} competenc{assignments.length !== 1 ? "ies" : "y"}
-                </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: "#fff", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-
-              {open && (
-                <div className="cp-rung-body">
-                  {isEditing ? (
-                    <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "14px" }}>
-                      <div style={{ flex: 1 }}>
-                        <label className="cp-field-label">Stage Name</label>
-                        <input className="cp-input" style={{ width: "100%", boxSizing: "border-box" }} value={editLabel} onChange={(e) => setEditLabel(e.target.value)} maxLength={100} />
-                      </div>
-                      <div style={{ width: "140px" }}>
-                        <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
-                        <input className="cp-input" style={{ width: "100%", boxSizing: "border-box" }} placeholder="e.g. 6–8" value={editAgeRange} onChange={(e) => setEditAgeRange(e.target.value)} maxLength={30} />
-                      </div>
-                      <button type="button" className="cp-btn-primary" onClick={saveEdit} disabled={!editLabel.trim()}>Save</button>
-                      <button type="button" className="cp-btn-secondary" onClick={cancelEdit}>Cancel</button>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginBottom: "14px" }}>
-                      <button type="button" className="cp-btn-secondary" onClick={() => startEdit(rung)}>Edit Stage</button>
-                      <button type="button" className="cp-btn-secondary" style={{ color: "#DC2626" }} onClick={() => deleteRung(rung.id)}>Delete</button>
-                    </div>
-                  )}
-
-                  <p style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: "700", color: "#0F2645" }}>Assigned Competencies</p>
-                  <p style={{ margin: "0 0 10px", fontSize: "11px", color: "#9CA3AF" }}>
-                    What a learner at this stage is expected to work on.
-                  </p>
-                  {assignments.length === 0 ? (
-                    <p style={{ margin: "0 0 10px", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>No competencies assigned yet.</p>
-                  ) : (
-                    <div style={{ marginBottom: "10px" }}>
-                      {assignments.map((a) => (
-                        <RungAssignmentRow
-                          key={a.competencyId}
-                          competency={competencyById.get(a.competencyId)}
-                          descriptor={a.descriptor}
-                          onSaveDescriptor={(descriptor) => saveDescriptor(rung.id, a.competencyId, descriptor)}
-                          onRemove={() => removeAssignment(rung.id, a.competencyId)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  <CompetencyLinkDropdown available={availableCompetencies} onAdd={(competencyId) => addAssignment(rung.id, competencyId)} />
-                </div>
-              )}
-            </div>
-          );
-        })
-      )}
+      <div className="cp-empty">
+        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧭</div>
+        <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>Coming soon</p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
+          This workflow is being redesigned.
+        </p>
+      </div>
     </div>
   );
 }
@@ -2977,7 +2768,7 @@ export default function CompetenciesPage() {
       {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
       {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
       {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
-      {activeNav === "journey"      && <LearningJourneyPanel  curriculumId={id} />}
+      {activeNav === "journey"      && <LearningJourneyPanel />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>
   );

@@ -12,10 +12,8 @@ export const courseSchema = z.object({
   coverImage:    z.string().nullable().optional().default(null),
   ageMin:        optionalAge,
   ageMax:        optionalAge,
-  // Not part of the Course record itself — reconciled into course-competency
+  // Not part of the Course record itself — reconciled into course-learning-area
   // links after save. See CreateCoursePage/EditCoursePage onSubmit.
-  competencyIds: z.array(z.string()).optional().default([]),
-  // Same pattern as competencyIds, reconciled into course-learning-area links.
   learningAreaIds: z.array(z.string()).optional().default([]),
 }).refine(
   (data) => data.ageMin == null || data.ageMax == null || data.ageMax >= data.ageMin,
