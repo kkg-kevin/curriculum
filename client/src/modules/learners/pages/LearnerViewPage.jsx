@@ -4,7 +4,8 @@ import { useLearnerQuery, useDeleteLearner, useUpdateLearner } from "../hooks/us
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
-import { useLadder } from "../../curriculum/hooks/useCompetencies";
+import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
@@ -57,6 +58,91 @@ function JourneyPlacementCard({ learnerId, currentRungId, curriculumId }) {
         {current
           ? <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>Placed at "{current.label}"</span>
           : <span style={{ fontSize: 12, color: "#9CA3AF" }}>No starting stage set yet</span>}
+      </div>
+    </div>
+  );
+}
+
+// Per-Learning-Area course placement — where the learner currently sits in each
+// area's course sequence (Robotics 1 → 2 → 3 → 4, etc.), and which developmental
+// stage they're in (used to resolve a default placement when nothing else has
+// placed them yet — diagnostic assessment or manual override, set below).
+function LearningJourneyCard({ learnerId, currentStageId, curriculumId }) {
+  const { data: journey = [], isLoading: journeyLoading } = useLearningJourney(curriculumId, learnerId);
+  const { data: areas = [] } = useLearningAreas(curriculumId);
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const { data: coursesResponse } = useCoursesQuery();
+  const { mutate: place, isPending: placing } = usePlaceLearner(curriculumId, learnerId);
+  const { mutate: updateLearner, isPending: savingStage } = useUpdateLearner();
+
+  if (!curriculumId || journeyLoading) return null;
+  if (journey.length === 0) return null;
+
+  const allCourses = coursesResponse?.data || [];
+  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
+  const areaById = new Map(areas.map((a) => [a.id, a]));
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learning Journey — Course Placement</h3>
+      <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
+        Where this learner currently sits in each learning area's course sequence.
+      </p>
+
+      {stages.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>Developmental Stage:</span>
+          <select
+            value={currentStageId || ""}
+            disabled={savingStage}
+            onChange={(e) => updateLearner({ id: learnerId, data: { currentStageId: e.target.value || null } })}
+            style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#111827" }}
+          >
+            <option value="">Not set</option>
+            {stages.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {journey.map((j) => {
+          const area = areaById.get(j.learningAreaId);
+          const areaColor = area?.color || "#25476a";
+          const seq = [...(area?.courseSequence || [])].sort((a, b) => a.order - b.order).map((s) => s.courseId)
+            .filter((cid) => (area?.courses || []).includes(cid));
+          const options = [...seq, ...((area?.courses || []).filter((id) => !seq.includes(id)))];
+          return (
+            <div key={j.learningAreaId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 160 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.learningAreaName}</span>
+              </div>
+              <select
+                value={j.currentCourseId || ""}
+                disabled={placing}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  place({ areaId: j.learningAreaId, data: { courseId: e.target.value, reason: "manual" } });
+                }}
+                style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#111827", minWidth: 200 }}
+              >
+                <option value="">Not placed</option>
+                {options.map((cid) => (
+                  <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
+                ))}
+              </select>
+              {j.currentCourseId ? (
+                <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
+                  {j.isDefault ? "Default placement" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -160,6 +246,7 @@ export default function LearnerViewPage() {
           </div>
         </div>
 
+        <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={cls?.curriculumId} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={cls?.curriculumId} />
       </div>
 

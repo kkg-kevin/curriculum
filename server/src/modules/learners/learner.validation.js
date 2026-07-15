@@ -10,9 +10,14 @@ const createLearnerSchema = z.object({
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid guardian email").optional().or(z.literal("")),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
-  // Which Progression Ladder rung (Learning Journey) this learner is currently placed at —
-  // set manually by a teacher/admin, optionally informed by a diagnostic assessment result.
+  // Which Progression Ladder rung this learner is currently placed at — superseded by
+  // Learning Journey (see currentStageId + learner-journey.model.js) but left as-is since
+  // the old ladder UI/data still exists; not read by anything new.
   currentRungId: z.string().optional().nullable().default(null),
+  // Which Developmental Stage (Progress Arc age category) this learner is in — set
+  // manually by a teacher/admin. Used by Learning Journey to resolve a default starting
+  // course per Learning Area when no placement/diagnostic result exists yet.
+  currentStageId: z.string().optional().nullable().default(null),
 });
 
 const updateLearnerSchema = createLearnerSchema.partial();

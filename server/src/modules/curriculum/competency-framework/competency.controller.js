@@ -26,7 +26,19 @@ const {
   reorderBandsSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
+  placeLearnerSchema,
 } = require("./competency.validation");
+
+// A `.partial()` schema still applies each field's own `.default(...)` when that field is
+// entirely absent from the request body — so `schema.parse({})` on a partial schema comes
+// back with every defaulted field filled in (e.g. `courses: []`), not left untouched. Since
+// update handlers merge the parsed result over the existing record, that silently wipes
+// every field the caller didn't intend to touch. This keeps only the keys the caller
+// actually sent, so a genuinely partial PUT (e.g. just `{ courseSequence }`) can't erase
+// anything else on the record.
+function onlySentKeys(parsed, rawBody) {
+  return Object.fromEntries(Object.keys(rawBody).map((k) => [k, parsed[k]]));
+}
 
 /* ── Curriculum ↔ Competency links ─────────────────────────────────────── */
 
@@ -90,7 +102,7 @@ exports.createLearningArea = asyncHandler(async (req, res) => {
 });
 
 exports.updateLearningArea = asyncHandler(async (req, res) => {
-  const body = updateLearningAreaSchema.parse(req.body);
+  const body = onlySentKeys(updateLearningAreaSchema.parse(req.body), req.body);
   const data = CompetencyService.updateLearningArea(req.params.id, req.params.aId, body);
   res.json({ success: true, data });
 });
@@ -133,7 +145,7 @@ exports.createAgeCategory = asyncHandler(async (req, res) => {
 });
 
 exports.updateAgeCategory = asyncHandler(async (req, res) => {
-  const body = updateAgeCategorySchema.parse(req.body);
+  const body = onlySentKeys(updateAgeCategorySchema.parse(req.body), req.body);
   const data = CompetencyService.updateAgeCategory(req.params.id, req.params.acId, body);
   res.json({ success: true, data });
 });
@@ -222,8 +234,8 @@ exports.updateScoring = asyncHandler(async (req, res) => {
 });
 
 exports.calculateScore = asyncHandler(async (req, res) => {
-  const { evidenceScores } = calculateScoreSchema.parse(req.body);
-  const data = CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores);
+  const { evidenceScores, learnerId } = calculateScoreSchema.parse(req.body);
+  const data = CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores, learnerId);
   res.json({ success: true, data });
 });
 
@@ -301,4 +313,17 @@ exports.calculateIndicatorProgress = asyncHandler(async (req, res) => {
 exports.getPopulatedIndicators = asyncHandler(async (req, res) => {
   const data = CompetencyService.getPopulatedIndicators(req.params.id);
   res.json({ success: true, data });
+});
+
+/* ── Learning Journey ────────────────────────────────────────────────────── */
+
+exports.getLearningJourney = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getLearningJourney(req.params.id, req.params.learnerId);
+  res.json({ success: true, data });
+});
+
+exports.placeLearner = asyncHandler(async (req, res) => {
+  const body = placeLearnerSchema.parse(req.body);
+  const data = CompetencyService.placeLearner(req.params.id, req.params.learnerId, req.params.areaId, body);
+  res.status(201).json({ success: true, data });
 });

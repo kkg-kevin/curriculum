@@ -113,5 +113,35 @@
     "advancementThreshold": 12,
     "order": 3,
     "createdAt": "2026-07-15T07:50:03.665Z"
+  },
+  {
+    "id": "c00f8b79-48ac-4abd-b8d1-af2eb0c7389e",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Learning area one — Level 1: Code Foundations",
+    "description": "",
+    "minScore": 60,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorContributions": [],
+    "advancementThreshold": 0,
+    "learningAreaId": "c532c6fb-12c4-4119-9287-48c7f1cf0f5e",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "order": 3,
+    "createdAt": "2026-07-15T13:33:57.223Z"
+  },
+  {
+    "id": "caf3ef69-f4fd-4545-b6c8-84aed4335ce4",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Learning area one — sample course ",
+    "description": "",
+    "minScore": 60,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorContributions": [],
+    "advancementThreshold": 0,
+    "learningAreaId": "c532c6fb-12c4-4119-9287-48c7f1cf0f5e",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "order": 4,
+    "createdAt": "2026-07-15T13:40:19.563Z"
   }
 ]

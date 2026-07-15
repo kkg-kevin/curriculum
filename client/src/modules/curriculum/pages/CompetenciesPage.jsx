@@ -674,26 +674,274 @@ function LearningAreasPanel({ curriculumId }) {
 }
 
 /* ── Learning Journey ──────────────────────────────────────────────────────
- * Placeholder — the previous rung-based editor has been removed pending a
- * new workflow design. The Progression Ladder API/model behind it is left
- * untouched (still used by the Learner page's placement dropdown). */
+ * Two things are configured here: (1) the default course sequence within
+ * each Learning Area (e.g. Robotics 1 → 2 → 3 → 4), and (2) which course a
+ * Developmental Stage starts a learner at, by default, in each Learning
+ * Area — used until a diagnostic assessment or a manual override places
+ * them somewhere else. Per-learner placement lives on the learner's own
+ * profile page, not here. The old Progression Ladder API/model is left
+ * untouched (superseded, but still referenced by the Learner page's legacy
+ * placement dropdown). */
 
-function LearningJourneyPanel() {
+function LearningJourneyPanel({ curriculumId }) {
+  const { data: areas = [], isLoading: areasLoading } = useLearningAreas(curriculumId);
+  const { mutate: updateArea } = useUpdateLearningArea(curriculumId);
+  const { data: stages = [], isLoading: stagesLoading } = useAgeCategories(curriculumId);
+  const { mutate: updateStage } = useUpdateAgeCategory(curriculumId);
+  const { data: coursesResponse } = useCoursesQuery();
+  const { data: allBands = [], isLoading: bandsLoading } = usePerformanceBands(curriculumId);
+  const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
+  const { mutate: removeBand, isPending: deletingBand } = useDeletePerformanceBand(curriculumId);
+  const allCourses = coursesResponse?.data || [];
+  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
+
+  const areasWithCourses = areas.filter((a) => (a.courses || []).length > 0);
+
+  if (areasLoading || stagesLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
+
+  function sequenceFor(area) {
+    const seq = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
+    const seqIds = seq.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
+    const extras = (area.courses || []).filter((id) => !seqIds.includes(id));
+    return [...seqIds, ...extras];
+  }
+
+  function moveCourse(area, courseId, direction) {
+    const ids = sequenceFor(area);
+    const idx = ids.indexOf(courseId);
+    const swapWith = idx + direction;
+    if (swapWith < 0 || swapWith >= ids.length) return;
+    [ids[idx], ids[swapWith]] = [ids[swapWith], ids[idx]];
+    updateArea({ id: area.id, data: { courseSequence: ids.map((cid, i) => ({ courseId: cid, order: i + 1 })) } });
+  }
+
+  function setStageDefault(stage, learningAreaId, courseId) {
+    const assignments = (stage.assignments || []).filter((a) => a.learningAreaId !== learningAreaId);
+    if (courseId) assignments.push({ learningAreaId, courseId });
+    updateStage({ id: stage.id, data: { assignments } });
+  }
+
   return (
-    <div className="cp-card">
-      <div style={{ marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Journey</h2>
-        <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-          The path a learner follows through this curriculum.
-        </p>
+    <div>
+      <div className="cp-card" style={{ marginBottom: "20px" }}>
+        <div style={{ marginBottom: "18px" }}>
+          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Course Sequence</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            Order each learning area's courses into the progression a learner follows (e.g. Robotics 1 → 2 → 3 → 4).
+          </p>
+        </div>
+        {areasWithCourses.length === 0 ? (
+          <div className="cp-empty">
+            <div style={{ fontSize: "32px", marginBottom: "10px" }}>🧭</div>
+            <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced learning areas yet</p>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
+              Add courses to a Learning Area first, over on the Learning Areas tab.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {areasWithCourses.map((area) => {
+              const ids = sequenceFor(area);
+              const areaColor = area.color || "#25476a";
+              return (
+                <div key={area.id} style={{ border: "1px solid #EEF1F5", borderRadius: "12px", padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor }} />
+                    <span style={{ fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {ids.map((cid, i) => (
+                      <div key={cid} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", background: "#FAFCFF" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "800", color: areaColor, width: "18px", flexShrink: 0 }}>{i + 1}</span>
+                        <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#1F2937" }}>{courseNameById.get(cid) || "Unknown course"}</span>
+                        <button type="button" className="cp-icon-btn" disabled={i === 0} onClick={() => moveCourse(area, cid, -1)} title="Move up">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button type="button" className="cp-icon-btn" disabled={i === ids.length - 1} onClick={() => moveCourse(area, cid, 1)} title="Move down">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <div className="cp-empty">
-        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧭</div>
-        <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>Coming soon</p>
-        <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto", lineHeight: "1.6" }}>
-          This workflow is being redesigned.
-        </p>
+
+      <div className="cp-card">
+        <div style={{ marginBottom: "18px" }}>
+          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Default Starting Course by Stage</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            Where a learner starts in each learning area by default, based on their developmental stage — used until they're diagnosed or manually placed.
+          </p>
+        </div>
+        {stages.length === 0 || areasWithCourses.length === 0 ? (
+          <div className="cp-empty">
+            <div style={{ fontSize: "32px", marginBottom: "10px" }}>📋</div>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
+              Needs at least one Developmental Stage (Progress Arc tab) and one sequenced Learning Area above.
+            </p>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1.5px solid #EEF1F5", minWidth: "140px" }}>Stage</th>
+                  {areasWithCourses.map((area) => (
+                    <th key={area.id} style={{ textAlign: "left", padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1.5px solid #EEF1F5", minWidth: "200px" }}>
+                      {area.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stages.map((stage) => (
+                  <tr key={stage.id}>
+                    <td style={{ padding: "8px 10px", fontSize: "13px", fontWeight: "700", color: "#1F2937", borderBottom: "1px solid #F5F6F8" }}>{stage.name}</td>
+                    {areasWithCourses.map((area) => {
+                      const ids = sequenceFor(area);
+                      const current = (stage.assignments || []).find((a) => a.learningAreaId === area.id)?.courseId || "";
+                      return (
+                        <td key={area.id} style={{ padding: "6px 10px", borderBottom: "1px solid #F5F6F8" }}>
+                          <select
+                            value={current}
+                            onChange={(e) => setStageDefault(stage, area.id, e.target.value || null)}
+                            style={{ width: "100%", padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
+                          >
+                            <option value="">First in sequence</option>
+                            {ids.map((cid) => (
+                              <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
+                            ))}
+                          </select>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      <div className="cp-card" style={{ marginTop: "20px" }}>
+        <div style={{ marginBottom: "18px" }}>
+          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Placement Thresholds</h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+            The diagnostic score needed to be placed at each course — a learner scoring below every threshold is placed at the first course in the sequence instead of left unplaced.
+          </p>
+        </div>
+        {areasWithCourses.length === 0 ? (
+          <div className="cp-empty">
+            <div style={{ fontSize: "32px", marginBottom: "10px" }}>🎯</div>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
+              Sequence a Learning Area's courses above first.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {areasWithCourses.map((area) => (
+              <PlacementThresholdsForArea
+                key={area.id}
+                area={area}
+                ids={sequenceFor(area)}
+                courseNameById={courseNameById}
+                bands={allBands.filter((b) => b.learningAreaId === area.id)}
+                onCreate={createBand}
+                onDelete={removeBand}
+                saving={creatingBand}
+                deleting={deletingBand}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p style={{ margin: "16px 4px 0", fontSize: "12px", color: "#9CA3AF" }}>
+        Individual learner placement — including diagnostic-driven placement and manual overrides — happens on each learner's profile page.
+      </p>
+    </div>
+  );
+}
+
+function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate, onDelete, saving, deleting }) {
+  const [adding, setAdding]     = useState(false);
+  const [courseId, setCourseId] = useState(ids[0] || "");
+  const [minScore, setMinScore] = useState("");
+  const areaColor = area.color || "#25476a";
+  const sorted = [...bands].sort((a, b) => a.minScore - b.minScore);
+
+  function openAdd() { setCourseId(ids[0] || ""); setMinScore(""); setAdding(true); }
+  function submit() {
+    if (!courseId || minScore === "") return;
+    const course = courseNameById.get(courseId) || "Course";
+    onCreate(
+      { name: `${area.name} — ${course}`, minScore: Number(minScore), learningAreaId: area.id, courseId },
+      { onSuccess: () => setAdding(false) }
+    );
+  }
+
+  return (
+    <div style={{ border: "1px solid #EEF1F5", borderRadius: "12px", padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor }} />
+          <span style={{ fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
+        </div>
+        {!adding && (
+          <button type="button" className="cp-btn-secondary" style={{ padding: "5px 10px", fontSize: "11.5px" }} onClick={openAdd}>
+            + Add Threshold
+          </button>
+        )}
+      </div>
+
+      {sorted.length === 0 && !adding && (
+        <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
+          No thresholds set — a diagnostic for this area always places at the first course in the sequence.
+        </p>
+      )}
+
+      {sorted.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: adding ? "10px" : 0 }}>
+          {sorted.map((b) => (
+            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", background: "#FAFCFF" }}>
+              <span style={{ fontSize: "11px", fontWeight: "800", color: areaColor, minWidth: "56px" }}>{b.minScore}%+</span>
+              <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#1F2937" }}>{courseNameById.get(b.courseId) || "Unknown course"}</span>
+              <button type="button" className="cp-icon-btn danger" disabled={deleting} onClick={() => onDelete(b.id)} title="Remove threshold">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding && (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <select
+            value={courseId}
+            onChange={(e) => setCourseId(e.target.value)}
+            style={{ padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
+          >
+            {ids.map((cid) => (
+              <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
+            ))}
+          </select>
+          <span style={{ fontSize: "12px", color: "#9CA3AF" }}>at score ≥</span>
+          <input
+            type="number" min="0" max="100" value={minScore}
+            onChange={(e) => setMinScore(e.target.value)}
+            style={{ width: "70px", padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
+          />
+          <span style={{ fontSize: "12px", color: "#9CA3AF" }}>%</span>
+          <button type="button" className="cp-btn-primary" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={submit} disabled={saving || !courseId || minScore === ""}>
+            {saving ? "Saving…" : "Add"}
+          </button>
+          <button type="button" className="cp-btn-secondary" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={() => setAdding(false)}>Cancel</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1074,6 +1322,7 @@ const BEHAVIOR_COLORS = { diagnostic: "#feb139", formative: "#38aae1", summative
 function AssessmentTypesSubPanel({ curriculumId }) {
   const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
   const { data: evidences = [] }        = useEvidenceTypes(curriculumId);
+  const { data: areas = [] }            = useLearningAreas(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAssessmentType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAssessmentType(curriculumId);
@@ -1083,17 +1332,18 @@ function AssessmentTypesSubPanel({ curriculumId }) {
   const [name, setName]         = useState("");
   const [desc, setDesc]         = useState("");
   const [behavior, setBehavior] = useState("formative");
+  const [learningAreaId, setLearningAreaId] = useState("");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setBehavior("formative"); setMode("add"); }
-  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setBehavior(t.behaviorType || "formative"); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setBehavior("formative"); setLearningAreaId(""); setMode("add"); }
+  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setBehavior(t.behaviorType || "formative"); setLearningAreaId(t.learningAreaId || ""); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), behaviorType: behavior };
+    const data = { name: name.trim(), description: desc.trim(), behaviorType: behavior, learningAreaId: learningAreaId || null };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); setBehavior("formative"); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setBehavior("formative"); setLearningAreaId(""); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1143,6 +1393,24 @@ function AssessmentTypesSubPanel({ curriculumId }) {
           </div>
         </div>
         <div>
+          <label className="cp-field-label">Learning Area <span className="cp-optional">(optional)</span></label>
+          <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+            {behavior === "diagnostic"
+              ? "If set, scoring this assessment type places the learner onto a course in this learning area's sequence (Learning Journey tab)."
+              : "If set, scoring this assessment type can advance the learner forward in this learning area's course sequence, but never move them back."}
+          </p>
+          <select
+            value={learningAreaId}
+            onChange={(e) => setLearningAreaId(e.target.value)}
+            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#111827", boxSizing: "border-box" }}
+          >
+            <option value="">Not linked to a learning area</option>
+            {areas.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
           <textarea className="cp-textarea" rows={3} placeholder="What is this assessment type used for?" value={desc} maxLength={1000} onChange={(e) => setDesc(e.target.value)} />
           <div className="cp-char-count">{desc.length} / 1000</div>
@@ -1178,6 +1446,14 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                       {t.behaviorType}
                     </span>
                   )}
+                  {t.learningAreaId && (() => {
+                    const linkedArea = areas.find((a) => a.id === t.learningAreaId);
+                    return linkedArea ? (
+                      <span style={{ fontSize: "10px", fontWeight: "600", color: linkedArea.color || "#7C3AED", background: `${linkedArea.color || "#7C3AED"}15`, padding: "2px 7px", borderRadius: "20px" }}>
+                        🧭 {linkedArea.name}
+                      </span>
+                    ) : null;
+                  })()}
                   {(t.evidenceWeights || []).length > 0 && (
                     <span style={{ fontSize: "10px", fontWeight: "600", color: "#059669", background: "#05966915", padding: "2px 7px", borderRadius: "20px" }}>
                       {(t.evidenceWeights || []).length} evidence scored
@@ -2309,7 +2585,11 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
 }
 
 function PerformanceBandsPanel({ curriculumId }) {
-  const { data: bands = [], isLoading }            = usePerformanceBands(curriculumId);
+  // Learning Journey reuses this same model for per-Learning-Area placement thresholds
+  // (learningAreaId set) — exclude those here so this curriculum-wide Progress Arc view
+  // only ever shows its own bands.
+  const { data: allBands = [], isLoading }         = usePerformanceBands(curriculumId);
+  const bands = allBands.filter((b) => !b.learningAreaId);
   const { mutate: create, isPending: creating }    = useCreatePerformanceBand(curriculumId);
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
@@ -2811,7 +3091,7 @@ export default function CompetenciesPage() {
       {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
       {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
       {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
-      {activeNav === "journey"      && <LearningJourneyPanel />}
+      {activeNav === "journey"      && <LearningJourneyPanel curriculumId={id} />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>
   );

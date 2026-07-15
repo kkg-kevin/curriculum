@@ -3,14 +3,24 @@
     "id": "c532c6fb-12c4-4119-9287-48c7f1cf0f5e",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Learning area one",
-    "description": "one areas",
-    "color": "#38aae1",
+    "description": "",
+    "color": "#25476a",
     "courses": [
       "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-13T08:14:51.231Z",
-    "updatedAt": "2026-07-13T08:14:51.231Z"
+    "updatedAt": "2026-07-15T13:31:55.391Z",
+    "courseSequence": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "order": 1
+      },
+      {
+        "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+        "order": 2
+      }
+    ]
   },
   {
     "id": "470d8f45-afdf-4ba9-9049-a9c9cc30f869",

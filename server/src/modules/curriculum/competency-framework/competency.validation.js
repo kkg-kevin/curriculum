@@ -17,6 +17,16 @@ const createIndicatorSchema = z.object({
 
 const updateIndicatorSchema = createIndicatorSchema.partial();
 
+// This Learning Area's courses, in the order a learner progresses through them (e.g.
+// Robotics 1 -> 2 -> 3 -> 4) — for Learning Journey. Additive alongside `courses` (which
+// stays the plain "which courses belong here" list untouched by this); a courseId here
+// should also appear in `courses`, but isn't required to — the service doesn't enforce it,
+// same leniency as the rest of this file.
+const learningAreaCourseSequenceEntrySchema = z.object({
+  courseId: z.string().min(1),
+  order:    z.number().int().min(1),
+});
+
 const createLearningAreaSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -24,6 +34,7 @@ const createLearningAreaSchema = z.object({
   // Course ids, not free-typed names — the service layer checks each id resolves
   // to a real course before saving.
   courses:     z.array(z.string().min(1)).optional().default([]),
+  courseSequence: z.array(learningAreaCourseSequenceEntrySchema).optional().default([]),
 });
 
 const updateLearningAreaSchema = createLearningAreaSchema.partial();
@@ -49,11 +60,21 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
+// Which course a learner at this Developmental Stage starts at, per Learning Area — the
+// default placement Learning Journey falls back to when no diagnostic/journey record exists
+// yet for a learner. One entry per Learning Area at most (the service upserts by
+// learningAreaId rather than allowing duplicates).
+const stageAssignmentSchema = z.object({
+  learningAreaId: z.string().min(1),
+  courseId:       z.string().min(1),
+});
+
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  assignments: z.array(stageAssignmentSchema).optional().default([]),
 });
 
 const ageRangeRefinement = (data) =>
@@ -92,6 +113,10 @@ const createAssessmentTypeSchema = z.object({
   description:       z.string().max(1000).optional().default(""),
   behaviorType:      z.enum(BEHAVIOR_TYPES, { errorMap: () => ({ message: "Behavior type must be diagnostic, formative, or summative" }) }),
   progressionWeight: z.number().min(0).max(1).optional().default(1.0),
+  // Which Learning Area a diagnostic assessment type places a learner into — only
+  // meaningful when behaviorType is "diagnostic". Null means this type isn't tied to
+  // Learning Journey placement.
+  learningAreaId:    z.string().nullable().optional().default(null),
 });
 
 const updateAssessmentTypeSchema = createAssessmentTypeSchema.partial();
@@ -166,6 +191,12 @@ const createPerformanceBandSchema = z.object({
   // Minimum % of this band's indicator contributions a learner must clear to be
   // considered as having progressed past this band to the next one in order.
   advancementThreshold:   z.number().min(0).max(100).optional().default(0),
+  // Learning Journey reuses Performance Bands as a per-Learning-Area course ladder: when
+  // both of these are set, this band represents one rung in that Learning Area's course
+  // sequence (matched by score range via minScore/maxScore) rather than a curriculum-wide
+  // Progress Arc tier. Left null, a band behaves exactly as it always has.
+  learningAreaId:         z.string().nullable().optional().default(null),
+  courseId:               z.string().nullable().optional().default(null),
 });
 
 const updatePerformanceBandSchema = createPerformanceBandSchema.partial();
@@ -181,6 +212,10 @@ const evidenceScoreSchema = z.object({
 
 const calculateScoreSchema = z.object({
   evidenceScores: z.array(evidenceScoreSchema),
+  // Optional — when provided and this assessment type is a diagnostic tied to a Learning
+  // Area, the resulting score also resolves and records a Learning Journey placement for
+  // this learner.
+  learnerId: z.string().nullable().optional().default(null),
 });
 
 const indicatorAchievementSchema = z.object({
@@ -191,6 +226,14 @@ const indicatorAchievementSchema = z.object({
 
 const calculateIndicatorProgressSchema = z.object({
   indicatorAchievements: z.array(indicatorAchievementSchema),
+});
+
+const REASON_TYPES = ["default", "diagnostic", "advanced", "manual"];
+
+const placeLearnerSchema = z.object({
+  courseId:     z.string().min(1, "courseId is required"),
+  reason:       z.enum(REASON_TYPES).optional().default("manual"),
+  assessmentId: z.string().nullable().optional().default(null),
 });
 
 module.exports = {
@@ -220,4 +263,5 @@ module.exports = {
   reorderBandsSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
+  placeLearnerSchema,
 };

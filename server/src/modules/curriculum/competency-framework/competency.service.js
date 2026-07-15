@@ -18,6 +18,8 @@ const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-
 const BuilderAssessmentModel         = require("../../assessments/assessment.model");
 const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-competency-link.model");
 const CurriculumVersionModel         = require("../versions/curriculum-versions.model");
+const LearnerJourneyModel            = require("./learner-journey.model");
+const LearnerModel                   = require("../../learners/learner.model");
 
 // A Learning Area's `courses` field stores course ids only — reject anything
 // that doesn't resolve to a real course so a dummy id can never sneak in.
@@ -456,7 +458,7 @@ const CompetencyService = {
     return curriculum.competencyWeights || [];
   },
 
-  calculateScore(curriculumId, id, evidenceScores) {
+  calculateScore(curriculumId, id, evidenceScores, learnerId = null) {
     const assessmentType = AssessmentTypeModel.findById(id);
     if (!assessmentType || assessmentType.curriculumId !== curriculumId) {
       const err = new Error("Assessment type not found");
@@ -466,7 +468,9 @@ const CompetencyService = {
 
     const evidenceTypes    = EvidenceTypeModel.findByCurriculumId(curriculumId);
     const competencies     = this.getCurriculumCompetencies(curriculumId);
-    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId);
+    // Learning-Area-scoped bands (Learning Journey's course ladders) share this same model
+    // but shouldn't count toward the curriculum-wide Progress Arc band below.
+    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId).filter((b) => !b.learningAreaId);
     const progressLevels   = ProgressLevelModel.findByCurriculumId(curriculumId);
     const config           = assessmentType.evidenceWeights || [];
 
@@ -521,10 +525,33 @@ const CompetencyService = {
 
     const hasCompetencyMappings = config.some((c) => (c.competencyMappings || []).length > 0);
 
+    // Any assessment type tied to a Learning Area feeds the Learning Journey: a diagnostic
+    // resolves and records an initial (or re-)placement outright, while ongoing formative/
+    // summative work only ever advances a learner forward if this score clears the next
+    // threshold up — it never moves them backward.
+    let learningJourneyPlacement = null;
+    if (assessmentType.learningAreaId && learnerId) {
+      if (behaviorType === "diagnostic") {
+        const courseId = this.resolvePlacementFromScore(curriculumId, assessmentType.learningAreaId, finalScore);
+        if (courseId) {
+          const journey = this.placeLearner(curriculumId, learnerId, assessmentType.learningAreaId, {
+            courseId, reason: "diagnostic", assessmentId: id,
+          });
+          learningJourneyPlacement = { learningAreaId: assessmentType.learningAreaId, courseId, journey };
+        }
+      } else {
+        const journey = this.checkAdvancement(curriculumId, learnerId, assessmentType.learningAreaId, finalScore, id);
+        if (journey) {
+          learningJourneyPlacement = { learningAreaId: assessmentType.learningAreaId, courseId: journey.currentCourseId, journey };
+        }
+      }
+    }
+
     return {
       finalScore, breakdown, belowRequirement,
       band, behaviorType, outcome,
       competencyBreakdown, failedCompetencies, allCompetenciesMet, hasCompetencyMappings,
+      learningJourneyPlacement,
     };
   },
 
@@ -534,7 +561,10 @@ const CompetencyService = {
   // per indicator (marks earned / marks possible across graded work); passed in manually for
   // now, same shape `calculateScore`'s `evidenceScores` takes for the evidence pipeline.
   calculateIndicatorProgress(curriculumId, indicatorAchievements) {
-    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId);
+    // Same Learning-Journey-band exclusion as calculateScore above — a scoped band has no
+    // indicatorContributions of its own, so leaving it in would surface a bogus 100%-complete
+    // entry (0 completion >= its 0 default threshold) alongside real Progress Arc bands.
+    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId).filter((b) => !b.learningAreaId);
     return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
   },
 
@@ -661,6 +691,100 @@ const CompetencyService = {
       if (filtered.length !== (at.evidenceWeights || []).length) {
         AssessmentTypeModel.update(at.id, { evidenceWeights: filtered });
       }
+    });
+  },
+
+  /* ── Learning Journey ─────────────────────────────────────────────────
+   * A learner's placement timeline, per Learning Area: where they started, every time
+   * they've advanced, and wherever they currently stand. Nothing is persisted until a
+   * placement is actually made — until then, a default is computed on the fly (Developmental
+   * Stage's assignment for that area, falling back to the first course in its sequence). */
+
+  // One entry per Learning Area in this curriculum — either the learner's real journey
+  // record, or (if they've never been placed) a computed default that isn't saved until
+  // placeLearner is called.
+  getLearningJourney(curriculumId, learnerId) {
+    const learner = LearnerModel.findById(learnerId);
+    const stage = learner?.currentStageId ? AgeCategoryModel.findById(learner.currentStageId) : null;
+    const areas = LearningAreaModel.findByCurriculumId(curriculumId);
+
+    return areas.map((area) => {
+      const journey = LearnerJourneyModel.findOne(learnerId, area.id);
+      if (journey) {
+        return {
+          learningAreaId: area.id,
+          learningAreaName: area.name,
+          currentCourseId: journey.currentCourseId,
+          history: journey.history,
+          isDefault: false,
+        };
+      }
+
+      const stageAssignment = (stage?.assignments || []).find((a) => a.learningAreaId === area.id);
+      let defaultCourseId = stageAssignment?.courseId || null;
+      if (!defaultCourseId) {
+        const sequence = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
+        defaultCourseId = sequence[0]?.courseId || null;
+      }
+
+      return {
+        learningAreaId: area.id,
+        learningAreaName: area.name,
+        currentCourseId: defaultCourseId,
+        history: [],
+        isDefault: true,
+      };
+    });
+  },
+
+  // Records a placement/advancement for one learner in one Learning Area — always appends
+  // to history rather than overwriting it.
+  placeLearner(curriculumId, learnerId, learningAreaId, data) {
+    const area = LearningAreaModel.findById(learningAreaId);
+    if (!area || area.curriculumId !== curriculumId) {
+      const err = new Error("Learning area not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const learner = LearnerModel.findById(learnerId);
+    if (!learner) {
+      const err = new Error("Learner not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return LearnerJourneyModel.place(learnerId, curriculumId, learningAreaId, data.courseId, data.reason, data.assessmentId);
+  },
+
+  // Given a diagnostic score, which course in this Learning Area's ladder (its Performance
+  // Bands with learningAreaId+courseId set) the learner has earned. Walks bands by score
+  // range and takes the highest one cleared; if none are cleared, falls back to the lowest
+  // (a "prerequisite" placement rather than leaving the learner unplaced).
+  resolvePlacementFromScore(curriculumId, learningAreaId, score) {
+    const bands = PerformanceBandModel.findByLearningArea(curriculumId, learningAreaId);
+    if (bands.length === 0) return null;
+    const cleared = bands.filter((b) => score >= b.minScore);
+    const matched = cleared.length > 0 ? cleared[cleared.length - 1] : bands[0];
+    return matched.courseId;
+  },
+
+  // Ongoing (formative/summative) coursework can also move a learner forward: if this score
+  // clears a placement threshold beyond wherever they currently stand, advance them there.
+  // Never moves a learner backward — a dip in an ordinary assessment shouldn't undo a
+  // placement; only a fresh diagnostic (resolvePlacementFromScore, above) does that.
+  checkAdvancement(curriculumId, learnerId, learningAreaId, score, assessmentId = null) {
+    const bands = PerformanceBandModel.findByLearningArea(curriculumId, learningAreaId);
+    if (bands.length === 0) return null;
+
+    const resolvedCourseId = this.resolvePlacementFromScore(curriculumId, learningAreaId, score);
+    if (!resolvedCourseId) return null;
+
+    const journey = LearnerJourneyModel.findOne(learnerId, learningAreaId);
+    const currentIdx  = bands.findIndex((b) => b.courseId === journey?.currentCourseId);
+    const resolvedIdx = bands.findIndex((b) => b.courseId === resolvedCourseId);
+    if (resolvedIdx <= currentIdx) return null;
+
+    return this.placeLearner(curriculumId, learnerId, learningAreaId, {
+      courseId: resolvedCourseId, reason: "advanced", assessmentId,
     });
   },
 
