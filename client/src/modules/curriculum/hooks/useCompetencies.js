@@ -196,6 +196,17 @@ export function useUpdateLadder(curriculumId) {
   });
 }
 
+// Indicators actually tagged in this curriculum's attached assessments, grouped by
+// competency — feeds the Performance Bands indicator picker. Always live (no cache
+// staleTime override), since it reflects whatever's currently tagged on assessments.
+export function usePopulatedIndicators(curriculumId) {
+  return useQuery({
+    queryKey: ["populated-indicators", curriculumId],
+    queryFn:  () => competenciesApi.getPopulatedIndicators(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
 /* ── Age Categories ─────────────────────────────────────────────────────── */
 
 export function useAgeCategories(curriculumId) {

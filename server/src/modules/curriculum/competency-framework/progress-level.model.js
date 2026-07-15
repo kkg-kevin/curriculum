@@ -53,6 +53,12 @@ const ProgressLevelModel = {
     write(filtered);
     return true;
   },
+
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((l) => l.curriculumId !== curriculumId);
+    write(filtered);
+  },
 };
 
 module.exports = ProgressLevelModel;

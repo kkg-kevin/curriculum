@@ -249,5 +249,13 @@
     ],
     "createdAt": "2026-07-13T10:06:59.963Z",
     "updatedAt": "2026-07-13T10:06:59.963Z"
+  },
+  {
+    "id": "facf5f45-e447-461d-9356-d50960677908",
+    "name": "Computational Problem-Solving",
+    "description": "Applies logical, step-by-step thinking to break down and solve problems.",
+    "indicators": [],
+    "createdAt": "2026-07-15T09:16:06.228Z",
+    "updatedAt": "2026-07-15T09:16:06.228Z"
   }
 ]

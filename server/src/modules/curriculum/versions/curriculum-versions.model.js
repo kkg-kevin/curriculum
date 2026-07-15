@@ -37,6 +37,12 @@ const CurriculumVersionModel = {
     return all[idx];
   },
 
+  deleteByCurriculumId(curriculumId) {
+    const all      = readAll();
+    const filtered = all.filter((v) => v.curriculumId !== curriculumId);
+    writeAll(filtered);
+  },
+
 };
 
 module.exports = CurriculumVersionModel;

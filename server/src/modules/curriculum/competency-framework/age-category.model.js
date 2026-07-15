@@ -53,6 +53,12 @@ const AgeCategoryModel = {
     write(filtered);
     return true;
   },
+
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((c) => c.curriculumId !== curriculumId);
+    write(filtered);
+  },
 };
 
 module.exports = AgeCategoryModel;

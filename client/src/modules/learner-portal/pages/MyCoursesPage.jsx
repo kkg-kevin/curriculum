@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
-import { curriculumApi } from "../../curriculum/services/curriculumApi";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
 export default function MyCoursesPage() {
@@ -21,11 +21,7 @@ export default function MyCoursesPage() {
     enabled: !!learner?.classId,
   });
 
-  const { data: courses, isLoading: coursesLoading } = useQuery({
-    queryKey: ["curriculum", "courses", cls?.curriculumId],
-    queryFn: () => curriculumApi.getCurriculumCourses(cls.curriculumId),
-    enabled: !!cls?.curriculumId,
-  });
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
   const isLoading = learnerLoading || (!!learner && classLoading);
 

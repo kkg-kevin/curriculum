@@ -13,6 +13,11 @@ const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
 const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine } = require("./scoring-engines");
+const SessionModel                   = require("../../courses/session.model");
+const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-link.model");
+const BuilderAssessmentModel         = require("../../assessments/assessment.model");
+const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-competency-link.model");
+const CurriculumVersionModel         = require("../versions/curriculum-versions.model");
 
 // A Learning Area's `courses` field stores course ids only — reject anything
 // that doesn't resolve to a real course so a dummy id can never sneak in.
@@ -593,6 +598,53 @@ const CompetencyService = {
 
   reorderPerformanceBands(curriculumId, orderedIds) {
     return PerformanceBandModel.reorder(curriculumId, orderedIds);
+  },
+
+  // Indicators actually in use — tagged on at least one question/rubric criterion/
+  // observation item of an assessment reachable from this curriculum's attached courses
+  // (via both the flat "Attach Course" link and the current published Version Control
+  // content). Always computed live, not stored — reflects whatever's currently tagged, so
+  // a newly-tagged question shows up without re-attaching anything. Grouped by competency,
+  // for the Performance Bands indicator picker (which should only offer these, not every
+  // indicator a competency happens to define in Settings).
+  getPopulatedIndicators(curriculumId) {
+    const courseIds = new Set(CourseCurriculumLinkModel.findByCurriculumId(curriculumId).map((l) => l.courseId));
+    const currentVersion = CurriculumVersionModel.findAllByCurriculumId(curriculumId).find((v) => v.isCurrent);
+    (currentVersion?.content || []).forEach((period) => {
+      (period.classes || []).forEach((cls) => {
+        (cls.courses || []).forEach((c) => courseIds.add(c.id));
+      });
+    });
+
+    const assessmentIds = new Set();
+    courseIds.forEach((courseId) => {
+      SessionModel.findByCourseId(courseId).forEach((s) => {
+        (s.assessmentIds || []).forEach((aid) => assessmentIds.add(aid));
+      });
+    });
+
+    const usedIndicatorIds = new Set();
+    const relevantCompetencyIds = new Set();
+    assessmentIds.forEach((aid) => {
+      const assessment = BuilderAssessmentModel.findById(aid);
+      if (!assessment) return;
+      AssessmentCompetencyLinkModel.findByAssessmentId(aid).forEach((l) => relevantCompetencyIds.add(l.competencyId));
+      const entries = [...(assessment.items || []), ...(assessment.rubric || []), ...(assessment.indicators || [])];
+      entries.forEach((entry) => {
+        (entry.competencyIndicatorIds || []).forEach((indId) => usedIndicatorIds.add(indId));
+      });
+    });
+
+    const groups = [];
+    relevantCompetencyIds.forEach((competencyId) => {
+      const comp = CompetencyModel.findById(competencyId);
+      if (!comp) return;
+      const indicators = (comp.indicators || []).filter((ind) => usedIndicatorIds.has(ind.id));
+      if (indicators.length === 0) return;
+      groups.push({ competencyId, competencyName: comp.name, indicators });
+    });
+
+    return groups;
   },
 
   deleteEvidenceType(curriculumId, id) {

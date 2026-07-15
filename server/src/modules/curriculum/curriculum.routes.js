@@ -14,6 +14,7 @@ const {
   createVersion,
   editVersion,
   changeVersionStatus,
+  getCurrentCourses,
 } = require("./versions/curriculum-versions.controller");
 const {
   getAcademicYears,
@@ -67,6 +68,7 @@ const {
   deletePerformanceBand,
   reorderPerformanceBands,
   calculateIndicatorProgress,
+  getPopulatedIndicators,
 } = require("./competency-framework/competency.controller");
 
 const router = express.Router();
@@ -81,6 +83,9 @@ router.route("/:id/courses/links/:courseId").delete(unlinkCourse);
 
 // Curriculum version control
 router.route("/:id/versions").get(getVersions).post(createVersion);
+// The courses actually live for this curriculum right now (from the published version's
+// content, optionally scoped to one grade) — what learner/teacher portals should read.
+router.route("/:id/versions/current/courses").get(getCurrentCourses);
 router.route("/:id/versions/:vId").put(editVersion);
 router.route("/:id/versions/:vId/status").patch(changeVersionStatus);
 
@@ -104,6 +109,10 @@ router.route("/:id/competencies/learning-areas/:aId").put(updateLearningArea).de
 
 // Competencies — progression ladder
 router.route("/:id/competencies/ladder").get(getLadder).put(updateLadder);
+
+// Competencies — indicators actually tagged in this curriculum's attached assessments,
+// grouped by competency (computed live) — feeds the Performance Bands indicator picker.
+router.route("/:id/competencies/populated-indicators").get(getPopulatedIndicators);
 
 // Progress Arc — age categories
 router.route("/:id/competencies/age-categories").get(getAgeCategories).post(createAgeCategory);

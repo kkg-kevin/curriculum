@@ -53,6 +53,11 @@ export const competenciesApi = {
   updateLadder: (curriculumId, rungs) =>
     api.put(`${base(curriculumId)}/ladder`, { rungs }).then((r) => r.data.data),
 
+  // Indicators actually tagged in this curriculum's attached assessments, grouped by
+  // competency (computed live) — feeds the Performance Bands indicator picker.
+  getPopulatedIndicators: (curriculumId) =>
+    api.get(`${base(curriculumId)}/populated-indicators`).then((r) => r.data.data),
+
   /* Age Categories */
   getAgeCategories: (curriculumId) =>
     api.get(`${base(curriculumId)}/age-categories`).then((r) => r.data.data),

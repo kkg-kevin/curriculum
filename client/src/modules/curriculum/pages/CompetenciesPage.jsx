@@ -30,6 +30,7 @@ import {
   useUpdatePerformanceBand,
   useDeletePerformanceBand,
   useReorderPerformanceBands,
+  usePopulatedIndicators,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
@@ -2268,15 +2269,15 @@ function BandIndicatorContributionRow({ ind, percentage, onSave }) {
   );
 }
 
-// One competency imported into a band — its indicators come straight from Settings
-// (via this curriculum's adopted competency), and each gets a % contribution scoped to
-// this band only. That % is a share of the BAND's 100% (not this competency's own 100%) —
-// when a band draws on more than one competency, all of their indicators' percentages
-// share that same 100% budget between them. See the band-level total below the list of
-// competency blocks for the running total across every competency attached to this band.
-function BandCompetencyBlock({ comp, color, percentageByIndicator, onSaveContribution }) {
+// One competency imported into a band — its indicators are whichever ones are actually
+// tagged on a question/rubric criterion/observation item somewhere in this curriculum's
+// attached assessments (see CompetencyService.getPopulatedIndicators), listed automatically
+// as soon as they're populated — no manual add step. Each gets a % contribution scoped to
+// this band only — a share of the BAND's 100% (not this competency's own 100%) — when a
+// band draws on more than one competency, all of their indicators' percentages share that
+// same 100% budget between them.
+function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByIndicator, onSaveContribution }) {
   const [open, setOpen] = useState(false);
-  const indicators = comp.indicators || [];
 
   return (
     <div style={{ marginTop: "10px" }}>
@@ -2288,21 +2289,19 @@ function BandCompetencyBlock({ comp, color, percentageByIndicator, onSaveContrib
       </button>
       {open && (
         <div className="cp-indicators-body">
-          {indicators.length === 0 ? (
+          {populatedIndicators.length === 0 ? (
             <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
-              This competency has no indicators defined in Settings.
+              No indicators tagged yet in this curriculum's attached assessments for this competency.
             </p>
           ) : (
-            <>
-              {indicators.map((ind) => (
-                <BandIndicatorContributionRow
-                  key={ind.id}
-                  ind={ind}
-                  percentage={percentageByIndicator[ind.id]}
-                  onSave={(percentage) => onSaveContribution(ind.id, percentage)}
-                />
-              ))}
-            </>
+            populatedIndicators.map((ind) => (
+              <BandIndicatorContributionRow
+                key={ind.id}
+                ind={ind}
+                percentage={percentageByIndicator[ind.id]}
+                onSave={(percentage) => onSaveContribution(ind.id, percentage)}
+              />
+            ))
           )}
         </div>
       )}
@@ -2317,6 +2316,8 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
+  const { data: populatedIndicatorGroups = [] }    = usePopulatedIndicators(curriculumId);
+  const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
 
   // Only competencies this curriculum has actually adopted (Competencies tab) — and that
   // have indicators defined in Settings — are offered here; nothing to draw on otherwise.
@@ -2359,15 +2360,11 @@ function PerformanceBandsPanel({ curriculumId }) {
     }
   }
 
-  function saveIndicatorContribution(band, competencyId, indicatorId, percentage) {
-    const filtered = (band.indicatorContributions || []).filter(
-      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
-    );
-    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
-    // The update endpoint validates with a Zod .partial() schema whose fields still carry
-    // .default(...) — a field entirely absent from the request body gets silently defaulted
-    // (e.g. competencyIds -> []) rather than left untouched, so a truly partial payload here
-    // would wipe every other field on this band. Send the full editable record back instead.
+  // The update endpoint validates with a Zod .partial() schema whose fields still carry
+  // .default(...) — a field entirely absent from the request body gets silently defaulted
+  // (e.g. competencyIds -> []) rather than left untouched, so a truly partial payload here
+  // would wipe every other field on this band. Send the full editable record back instead.
+  function persistIndicatorContributions(band, next) {
     update({
       id: band.id,
       data: {
@@ -2378,6 +2375,31 @@ function PerformanceBandsPanel({ curriculumId }) {
         competencyIds: band.competencyIds,
         advancementThreshold: band.advancementThreshold,
         indicatorContributions: next,
+      },
+    });
+  }
+
+  function saveIndicatorContribution(band, competencyId, indicatorId, percentage) {
+    const filtered = (band.indicatorContributions || []).filter(
+      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
+    );
+    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
+    persistIndicatorContributions(band, next);
+  }
+
+  // A competencyId this band references was deleted from the global catalog since — strip
+  // it (and any indicator % it had) from this band rather than leaving a dead reference.
+  function removeDeadCompetency(band, competencyId) {
+    update({
+      id: band.id,
+      data: {
+        name: band.name,
+        description: band.description,
+        minScore: band.minScore,
+        maxScore: band.maxScore,
+        advancementThreshold: band.advancementThreshold,
+        competencyIds: (band.competencyIds || []).filter((id) => id !== competencyId),
+        indicatorContributions: (band.indicatorContributions || []).filter((p) => p.competencyId !== competencyId),
       },
     });
   }
@@ -2606,7 +2628,28 @@ function PerformanceBandsPanel({ curriculumId }) {
                     ) : (
                       band.competencyIds.map((cId) => {
                         const comp = competencyById.get(cId);
-                        if (!comp) return null;
+                        if (!comp) {
+                          return (
+                            <div
+                              key={cId}
+                              style={{
+                                marginTop: "10px", padding: "9px 12px", borderRadius: "8px",
+                                background: "#FFF7ED", border: "1px solid #FED7AA",
+                                display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
+                              }}
+                            >
+                              <span style={{ fontSize: "11.5px", color: "#C2410C" }}>
+                                A competency attached here was deleted from Settings — it can no longer be configured.
+                              </span>
+                              <button
+                                type="button" className="cp-icon-btn danger" style={{ width: "22px", height: "22px", flexShrink: 0 }}
+                                onClick={() => removeDeadCompetency(band, cId)} title="Remove from this level"
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                              </button>
+                            </div>
+                          );
+                        }
                         const percentageByIndicator = {};
                         (band.indicatorContributions || []).forEach((p) => {
                           if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
@@ -2616,6 +2659,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                             key={cId}
                             comp={comp}
                             color={color}
+                            populatedIndicators={populatedByCompetencyId.get(cId) || []}
                             percentageByIndicator={percentageByIndicator}
                             onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
                           />
