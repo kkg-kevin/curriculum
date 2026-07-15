@@ -657,48 +657,52 @@
     "updatedAt": "2026-07-10T10:07:21.056Z"
   },
   {
-    "name": "Computational Thinking Quiz 1",
+    "name": "sample",
     "type": "quiz",
-    "description": "<p>Checks understanding of sequencing and pattern recognition.</p>",
-    "instructions": "<p>Answer all questions. Choose the single best answer.</p>",
-    "structureType": "structured",
+    "description": "<p>sample </p>",
+    "instructions": "<p>sample</p>",
+    "structureType": "mixed",
     "overview": "",
-    "sections": [],
+    "sections": [
+      {
+        "id": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "name": "Section 1",
+        "order": 0
+      }
+    ],
     "items": [
       {
-        "question": "<p>Put these steps in the correct order to make a sandwich: (1) Eat it (2) Add filling (3) Get bread (4) Close sandwich</p>",
-        "kind": "ordering",
-        "sectionId": null,
-        "points": 2,
-        "options": [],
+        "id": "22564a3d-24c2-41aa-91fa-01aa30355031",
+        "question": "<p>jbAUHVUhuhvuh</p>",
+        "kind": "mcqSingle",
+        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "points": 1,
+        "options": [
+          "sdbvuuydsa",
+          "WBSYBYVBDV "
+        ],
         "correctAnswer": "",
         "pairs": [],
         "blanks": [],
-        "sequence": [
-          "Get bread",
-          "Add filling",
-          "Close sandwich",
-          "Eat it"
-        ],
+        "sequence": [],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
         "competencyIndicatorIds": [
-          "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f"
+          "f22ef693-0720-469c-9227-e74bac7464dd"
         ]
       },
       {
-        "question": "<p>Which of these is an example of a repeating pattern?</p>",
+        "id": "05b0eddd-61fa-474c-bbcf-ac74b1ff8be7",
+        "question": "<p>wgvYBYBYCH</p>",
         "kind": "mcqSingle",
-        "sectionId": null,
-        "points": 2,
+        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "points": 1,
         "options": [
-          "Red, Blue, Red, Blue, Red",
-          "Cat, Dog, Sun, Chair",
-          "1, 7, 3, 9, 2",
-          "Monday only"
+          "eabfbyqb",
+          "UH7G7gq7f"
         ],
-        "correctAnswer": "Red, Blue, Red, Blue, Red",
+        "correctAnswer": "",
         "pairs": [],
         "blanks": [],
         "sequence": [],
@@ -706,21 +710,20 @@
         "taskType": null,
         "submissionKinds": [],
         "competencyIndicatorIds": [
-          "d377c271-fad3-4bbd-8fb5-b05199d7d273"
+          "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a"
         ]
       },
       {
-        "question": "<p>Breaking a big problem into smaller, easier problems is called:</p>",
+        "id": "4b644383-73fe-4938-ad34-e379b11bb0ff",
+        "question": "<p>qea QVYB</p>",
         "kind": "mcqSingle",
-        "sectionId": null,
-        "points": 2,
+        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "points": 1,
         "options": [
-          "Decomposition",
-          "Abstraction",
-          "Debugging",
-          "Looping"
+          "AWRHB",
+          "WRB"
         ],
-        "correctAnswer": "Decomposition",
+        "correctAnswer": "",
         "pairs": [],
         "blanks": [],
         "sequence": [],
@@ -728,7 +731,49 @@
         "taskType": null,
         "submissionKinds": [],
         "competencyIndicatorIds": [
-          "90904770-79cb-49a8-b4f6-fca16dd5c51e"
+          "9bb73790-dc33-4e8e-84a6-966f758d53b0"
+        ]
+      },
+      {
+        "id": "0514a691-08cf-41c1-8a81-19dd8d825b6d",
+        "question": "<p>HWarb</p>",
+        "kind": "mcqSingle",
+        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "points": 1,
+        "options": [
+          "wSB",
+          "bS"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "competencyIndicatorIds": [
+          "ab3d2c5a-9a73-44c8-992f-65478e005309"
+        ]
+      },
+      {
+        "id": "c20525e7-43f7-4941-829f-bf2b71ec6970",
+        "question": "<p>WSRBw</p>",
+        "kind": "mcqSingle",
+        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "points": 1,
+        "options": [
+          "WB",
+          "bvvdz"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "competencyIndicatorIds": [
+          "bc446d61-efcf-4091-ba12-6320d11d45f1"
         ]
       }
     ],
@@ -736,8 +781,25 @@
     "indicators": [],
     "deliverables": [],
     "milestones": [],
-    "id": "48d9ab2d-22ec-4e84-b9f8-b3dec12b9c1a",
-    "createdAt": "2026-07-13T10:07:00.556Z",
-    "updatedAt": "2026-07-13T10:07:00.556Z"
+    "id": "c46c84dd-c0b6-4849-a1d1-51d817cede5d",
+    "createdAt": "2026-07-15T09:08:00.492Z",
+    "updatedAt": "2026-07-15T09:08:00.492Z"
+  },
+  {
+    "name": "Robotics Basics Quiz",
+    "type": "quiz",
+    "description": "A short quiz checking understanding of robot components and simple automation logic.",
+    "instructions": "",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [],
+    "items": [],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "718a568d-5c62-4049-990d-3a45e9d3f1ef",
+    "createdAt": "2026-07-15T09:16:24.836Z",
+    "updatedAt": "2026-07-15T09:16:24.836Z"
   }
 ]

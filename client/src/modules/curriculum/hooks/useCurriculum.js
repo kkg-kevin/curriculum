@@ -85,6 +85,11 @@ export function useLinkCourse(curriculumId) {
     mutationFn: (courseId) => curriculumApi.linkCourse(curriculumId, courseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.courses(curriculumId) });
+      // Attaching a course can auto-populate this curriculum's competencies/learning areas
+      // (see CurriculumService.autoPopulateFromCourse) — refresh those too so the
+      // Competencies page reflects it without a hard reload.
+      queryClient.invalidateQueries({ queryKey: ["curriculum-competencies", curriculumId] });
+      queryClient.invalidateQueries({ queryKey: ["learning-areas", curriculumId] });
       toast.success("Course added to this curriculum");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to add course"),

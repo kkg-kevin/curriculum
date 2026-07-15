@@ -124,5 +124,14 @@
     "endDate": "2026-12-31",
     "createdAt": "2026-07-13T12:52:01.203Z",
     "updatedAt": "2026-07-13T12:52:01.203Z"
+  },
+  {
+    "id": "9f2e985d-9e24-4382-83ed-44ea9bc18340",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "label": "Digital Innovators Curriculum 2026",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "createdAt": "2026-07-15T08:50:02.262Z",
+    "updatedAt": "2026-07-15T08:50:02.262Z"
   }
 ]

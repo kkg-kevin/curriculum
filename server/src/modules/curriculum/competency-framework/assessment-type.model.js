@@ -46,6 +46,12 @@ const AssessmentTypeModel = {
     write(filtered);
     return true;
   },
+
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((t) => t.curriculumId !== curriculumId);
+    write(filtered);
+  },
 };
 
 module.exports = AssessmentTypeModel;

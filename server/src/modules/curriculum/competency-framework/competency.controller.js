@@ -297,3 +297,8 @@ exports.calculateIndicatorProgress = asyncHandler(async (req, res) => {
   const data = CompetencyService.calculateIndicatorProgress(req.params.id, indicatorAchievements);
   res.json({ success: true, data });
 });
+
+exports.getPopulatedIndicators = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getPopulatedIndicators(req.params.id);
+  res.json({ success: true, data });
+});

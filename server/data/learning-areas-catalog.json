@@ -1,14 +1,24 @@
 [
   {
-    "id": "f2533443-f567-4526-9a1b-26eb65bcd75c",
-    "name": "Learning area one",
-    "description": "one areas",
-    "color": "#38aae1",
+    "id": "2b958b84-3463-4237-8e9e-4839f0f6732e",
+    "name": "sample",
+    "description": "sample learning areas 101",
+    "color": "#DC2626",
     "courses": [
-      "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
-      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+      "5664a280-859e-4beb-9f65-51ab4548a65e"
     ],
-    "createdAt": "2026-07-13T08:14:51.262Z",
-    "updatedAt": "2026-07-13T08:14:51.262Z"
+    "createdAt": "2026-07-15T09:09:02.483Z",
+    "updatedAt": "2026-07-15T09:09:02.483Z"
+  },
+  {
+    "id": "4f939fe5-7d76-4b09-afe8-5bd975ca7f2f",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "a978b111-1725-4fd5-9142-3f5b48c62990"
+    ],
+    "createdAt": "2026-07-15T09:16:06.816Z",
+    "updatedAt": "2026-07-15T10:19:29.598Z"
   }
 ]

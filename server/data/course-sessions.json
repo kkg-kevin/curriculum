@@ -1021,5 +1021,23 @@
     "id": "d109676a-72e7-438a-8ae4-216207e27799",
     "createdAt": "2026-07-13T10:07:00.523Z",
     "updatedAt": "2026-07-13T10:07:00.523Z"
+  },
+  {
+    "courseId": "a978b111-1725-4fd5-9142-3f5b48c62990",
+    "title": "Meet Your Robot",
+    "order": 1,
+    "moduleId": "86e96df8-ba92-44c1-a7ee-d4e7669c4d2b",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [],
+    "activities": [],
+    "assessmentIds": [
+      "718a568d-5c62-4049-990d-3a45e9d3f1ef"
+    ],
+    "notes": [],
+    "resources": [],
+    "id": "52abc1c6-1227-4efb-b876-d606bec19680",
+    "createdAt": "2026-07-15T09:16:25.445Z",
+    "updatedAt": "2026-07-15T09:16:25.445Z"
   }
 ]

@@ -46,6 +46,12 @@ const EvidenceTypeModel = {
     write(filtered);
     return true;
   },
+
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((e) => e.curriculumId !== curriculumId);
+    write(filtered);
+  },
 };
 
 module.exports = EvidenceTypeModel;

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { schoolApi } from "../../schools/services/schoolApi";
-import { curriculumApi } from "../../curriculum/services/curriculumApi";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
 export default function CourseContentPage() {
@@ -21,11 +21,7 @@ export default function CourseContentPage() {
     enabled: !!teacher?.schoolId,
   });
 
-  const { data: courses, isLoading: coursesLoading } = useQuery({
-    queryKey: ["curriculum", "courses", school?.curriculumId],
-    queryFn: () => curriculumApi.getCurriculumCourses(school.curriculumId),
-    enabled: !!school?.curriculumId,
-  });
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(school?.curriculumId);
 
   const isLoading = teacherLoading || (!!teacher && schoolLoading);
 

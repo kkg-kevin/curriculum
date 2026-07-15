@@ -25,4 +25,9 @@ const changeVersionStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: version });
 });
 
-module.exports = { getVersions, createVersion, editVersion, changeVersionStatus };
+const getCurrentCourses = asyncHandler(async (req, res) => {
+  const courses = CurriculumVersionService.getCurrentCourses(req.params.id, req.query.grade || null);
+  res.json({ success: true, data: courses });
+});
+
+module.exports = { getVersions, createVersion, editVersion, changeVersionStatus, getCurrentCourses };

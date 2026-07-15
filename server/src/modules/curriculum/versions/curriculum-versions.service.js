@@ -1,4 +1,17 @@
 const CurriculumVersionModel = require("./curriculum-versions.model");
+const CourseModel            = require("../../courses/course.model");
+const CurriculumService      = require("../curriculum.service");
+
+// Every course id assigned anywhere in a version's content (any period, any grade).
+function collectCourseIds(content) {
+  const ids = new Set();
+  (content || []).forEach((period) => {
+    (period.classes || []).forEach((cls) => {
+      (cls.courses || []).forEach((c) => ids.add(c.id));
+    });
+  });
+  return ids;
+}
 
 function buildContentScaffold(curriculum) {
   const periods = curriculum.periods || [];
@@ -45,7 +58,7 @@ const CurriculumVersionService = {
         })
       : scaffold;
 
-    return CurriculumVersionModel.create({
+    const version = CurriculumVersionModel.create({
       curriculumId,
       academicYearId: data.academicYearId || null,
       versionNumber:  nextVersion,
@@ -54,6 +67,14 @@ const CurriculumVersionService = {
       versionOf:      null,
       content,
     });
+
+    // Every course assigned anywhere in this new version — draft or not — adopts its
+    // competencies/learning areas into the curriculum too, same as attaching a course
+    // directly (see CurriculumService.autoPopulateFromCourse). Runs on creation rather
+    // than waiting for publish, so the curriculum reflects a version as soon as it's built.
+    collectCourseIds(content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+
+    return version;
   },
 
   edit(curriculumId, versionId, data) {
@@ -79,10 +100,36 @@ const CurriculumVersionService = {
           CurriculumVersionModel.update(v.id, { status: "inactive", isCurrent: false });
         }
       });
-      return CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
+      const published = CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
+
+      // Also re-run on publish (in addition to on create) — cheap and idempotent, and
+      // covers a version published a while after it was first drafted.
+      collectCourseIds(published.content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+
+      return published;
     }
     // draft / inactive — clear isCurrent; if this was the live version a new publish is needed
     return CurriculumVersionModel.update(versionId, { status, isCurrent: false });
+  },
+
+  // The courses actually visible to learners/teachers — read from the live (isCurrent)
+  // version's content, not the separate flat course-curriculum link. Optionally scoped to
+  // one grade (className), since the version matrix assigns courses per period+grade and a
+  // grade shouldn't see courses assigned only to a different one. Merges across every period
+  // (there's no reliable "current term" signal — period dates are optional/often unset).
+  getCurrentCourses(curriculumId, gradeName) {
+    const current = CurriculumVersionModel.findAllByCurriculumId(curriculumId).find((v) => v.isCurrent);
+    if (!current) return [];
+
+    let content = current.content || [];
+    if (gradeName) {
+      content = content.map((period) => ({
+        ...period,
+        classes: (period.classes || []).filter((cls) => cls.className === gradeName),
+      }));
+    }
+
+    return [...collectCourseIds(content)].map((id) => CourseModel.findById(id)).filter(Boolean);
   },
 };
 

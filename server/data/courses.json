@@ -5,7 +5,7 @@
     "coverImage": "http://localhost:5000/uploads/59083a4b-036e-4396-bda6-48242d61aa6a.png",
     "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "createdAt": "2026-07-03T08:03:21.515Z",
-    "updatedAt": "2026-07-09T12:33:11.497Z",
+    "updatedAt": "2026-07-15T08:46:06.794Z",
     "ageMin": 2,
     "ageMax": 3
   },
@@ -17,7 +17,7 @@
     "ageMax": 18,
     "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
     "createdAt": "2026-07-10T12:19:32.459Z",
-    "updatedAt": "2026-07-10T12:19:32.459Z"
+    "updatedAt": "2026-07-15T08:45:56.152Z"
   },
   {
     "name": "Code Foundations: Computational Thinking",
@@ -27,6 +27,16 @@
     "ageMax": 12,
     "id": "5fd18d73-8c22-402d-8aa9-2a10bf72eb72",
     "createdAt": "2026-07-13T10:07:00.389Z",
-    "updatedAt": "2026-07-13T10:07:00.389Z"
+    "updatedAt": "2026-07-15T08:45:48.065Z"
+  },
+  {
+    "name": "Introduction to Robotics",
+    "description": "<p>A hands-on introduction to building and programming simple robots, covering sensors, motors, and basic automation logic.</p>",
+    "coverImage": null,
+    "ageMin": 10,
+    "ageMax": 14,
+    "id": "a978b111-1725-4fd5-9142-3f5b48c62990",
+    "createdAt": "2026-07-15T09:16:07.035Z",
+    "updatedAt": "2026-07-15T09:16:07.035Z"
   }
 ]

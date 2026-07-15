@@ -50,6 +50,12 @@ const PerformanceBandModel = {
     write(filtered);
   },
 
+  deleteByCurriculumId(curriculumId) {
+    const all      = read();
+    const filtered = all.filter((b) => b.curriculumId !== curriculumId);
+    write(filtered);
+  },
+
   reorder(curriculumId, orderedIds) {
     const all = read();
     orderedIds.forEach((id, i) => {

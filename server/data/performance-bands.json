@@ -1,51 +1,5 @@
 [
   {
-    "id": "73cee2eb-8b57-4944-9de9-c020983ca3c7",
-    "curriculumId": "71202f88-da66-4b8a-ba55-17e14be72815",
-    "name": "arsf",
-    "description": "qFHAHUGVUIE",
-    "criteria": [
-      "WRSG",
-      "GWEASD",
-      "EQAD"
-    ],
-    "minScore": 20,
-    "maxScore": 30,
-    "order": 1,
-    "createdAt": "2026-07-07T06:22:12.738Z",
-    "competencyIds": [],
-    "indicatorContributions": [],
-    "advancementThreshold": 0
-  },
-  {
-    "id": "4c30d4a3-183d-42e3-a6c2-d42e15716b74",
-    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
-    "name": "Explorer",
-    "description": "",
-    "criteria": [],
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [],
-    "order": 1,
-    "createdAt": "2026-07-09T13:53:40.312Z",
-    "indicatorContributions": [],
-    "advancementThreshold": 0
-  },
-  {
-    "id": "00ac0c7d-c757-46f1-b8f4-a03a0d4e1c4f",
-    "curriculumId": "81f80762-884a-4cb5-9865-035d4ef71c08",
-    "name": "Builder",
-    "description": "",
-    "criteria": [],
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [],
-    "order": 2,
-    "createdAt": "2026-07-09T13:54:42.023Z",
-    "indicatorContributions": [],
-    "advancementThreshold": 0
-  },
-  {
     "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Explorer",
@@ -120,22 +74,6 @@
     "createdAt": "2026-07-10T12:40:59.072Z"
   },
   {
-    "id": "a7022e34-624f-4da7-bc80-c850ebc5e9c8",
-    "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
-    "name": "WEG",
-    "description": "WGSB",
-    "criteria": [],
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09"
-    ],
-    "indicatorContributions": [],
-    "advancementThreshold": 90,
-    "order": 1,
-    "createdAt": "2026-07-13T12:50:06.250Z"
-  },
-  {
     "id": "cf070ccc-1913-44ca-a29b-d3975bf8bf5b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "name": "whSR",
@@ -143,30 +81,9 @@
     "minScore": 0,
     "maxScore": 100,
     "competencyIds": [
-      "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5"
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
     ],
-    "indicatorContributions": [
-      {
-        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
-        "indicatorId": "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f",
-        "percentage": 10
-      },
-      {
-        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
-        "indicatorId": "d377c271-fad3-4bbd-8fb5-b05199d7d273",
-        "percentage": 20
-      },
-      {
-        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
-        "indicatorId": "90904770-79cb-49a8-b4f6-fca16dd5c51e",
-        "percentage": 30
-      },
-      {
-        "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
-        "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
-        "percentage": 40
-      }
-    ],
+    "indicatorContributions": [],
     "advancementThreshold": 90,
     "order": 1,
     "createdAt": "2026-07-15T07:28:23.239Z"
@@ -178,9 +95,7 @@
     "description": "hedb",
     "minScore": 0,
     "maxScore": 100,
-    "competencyIds": [
-      "e91765f0-ce37-4361-aee5-e2a19a06f2cc"
-    ],
+    "competencyIds": [],
     "indicatorContributions": [],
     "advancementThreshold": 90,
     "order": 2,
@@ -193,9 +108,7 @@
     "description": "RBSFZX",
     "minScore": 0,
     "maxScore": 100,
-    "competencyIds": [
-      "97978611-be56-4b81-b870-af49fad7a4d4"
-    ],
+    "competencyIds": [],
     "indicatorContributions": [],
     "advancementThreshold": 12,
     "order": 3,
