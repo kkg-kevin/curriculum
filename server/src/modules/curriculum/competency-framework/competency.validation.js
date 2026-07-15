@@ -49,12 +49,22 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
-const createAgeCategorySchema = z.object({
+const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
+  minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
 });
 
-const updateAgeCategorySchema = createAgeCategorySchema.partial();
+const ageRangeRefinement = (data) =>
+  data.minAge == null || data.maxAge == null || data.maxAge >= data.minAge;
+const ageRangeRefinementOptions = {
+  message: "Maximum age must be greater than or equal to minimum age",
+  path:    ["maxAge"],
+};
+
+const createAgeCategorySchema = ageCategoryFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
+const updateAgeCategorySchema = ageCategoryFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
 
 const createProgressLevelSchema = z.object({
   name:        z.string().min(1, "Name is required").max(100),
@@ -148,7 +158,6 @@ const bandIndicatorContributionSchema = z.object({
 const createPerformanceBandSchema = z.object({
   name:          z.string().min(1, "Name is required").max(100),
   description:   z.string().max(1000).optional().default(""),
-  criteria:      z.array(z.string().min(1).max(500)).optional().default([]),
   minScore:      z.number().min(0).max(100).optional().default(0),
   maxScore:      z.number().min(0).max(100).optional().default(100),
   // Competencies (from the ones this curriculum has adopted) that this band draws on.

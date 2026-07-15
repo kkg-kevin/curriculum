@@ -145,7 +145,4 @@ export const competenciesApi = {
 
   reorderPerformanceBands: (curriculumId, orderedIds) =>
     api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { orderedIds }).then((r) => r.data.data),
-
-  normalizeBandIndicators: (curriculumId, bandId) =>
-    api.post(`/api/curricula/${curriculumId}/competencies/bands/${bandId}/normalize`).then((r) => r.data.data),
 };

@@ -451,15 +451,3 @@ export function useReorderPerformanceBands(curriculumId) {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to reorder bands"),
   });
 }
-
-export function useNormalizeBandIndicators(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (bandId) => competenciesApi.normalizeBandIndicators(curriculumId, bandId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
-      toast.success("Indicator contributions rescaled to 100%");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to normalize indicator contributions"),
-  });
-}
