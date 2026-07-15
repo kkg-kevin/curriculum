@@ -44,8 +44,7 @@ const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
   { n: 3, label: "Competencies" },
-  { n: 4, label: "Academic Year" },
-  { n: 5, label: "Version Control" },
+  { n: 4, label: "Version Control" },
 ];
 
 const AREA_COLORS = [
@@ -2757,8 +2756,8 @@ export default function CompetenciesPage() {
           <button type="button" className="cp-btn-secondary" onClick={() => navigate(`/curriculum/${id}/structure`)}>
             ← Structure
           </button>
-          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/academic-year`)}>
-            Next: Academic Year →
+          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/versions`)}>
+            Next: Version Control →
           </button>
         </div>
       </div>

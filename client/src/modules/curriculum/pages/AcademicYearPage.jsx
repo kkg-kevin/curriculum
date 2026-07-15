@@ -10,14 +10,6 @@ import {
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
-const STEPS = [
-  { n: 1, label: "Basic Info" },
-  { n: 2, label: "Structure" },
-  { n: 3, label: "Competencies" },
-  { n: 4, label: "Academic Year" },
-  { n: 5, label: "Version Control" },
-];
-
 const STATUSES = [
   { value: "draft",     label: "Draft",     bg: "#FFFBEB", border: "#FCD34D", color: "#92400E", dot: "#F59E0B" },
   { value: "published", label: "Published", bg: "#fff8e6", border: "#fcd97a", color: "#b07800", dot: "#feb139" },
@@ -39,11 +31,6 @@ const CSS = `
     align-items: start;
   }
   @media(max-width:960px){ .ay-layout{ grid-template-columns:1fr; } }
-
-  /* Steps */
-  .ay-steps { display:flex; align-items:center; justify-content:center; margin-bottom:32px; }
-  .ay-connector { width:64px; height:2px; flex-shrink:0; margin:0 6px; margin-bottom:20px; }
-  @media(max-width:580px){ .ay-connector{width:24px;} }
 
   /* Inputs */
   .ay-input {
@@ -173,29 +160,6 @@ function StatusBadge({ status }) {
       <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: s.dot, flexShrink: 0 }} />
       {s.label}
     </span>
-  );
-}
-
-/* ── StepIndicator ─────────────────────────────────────────────────────── */
-
-function StepIndicator({ current }) {
-  return (
-    <div className="ay-steps">
-      {STEPS.map((step, i) => {
-        const done = step.n < current, active = step.n === current;
-        return (
-          <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#25476a" : "#F3F4F6", border: `2.5px solid ${done || active ? "#25476a" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(37,71,106,0.1)" : "none" }}>
-                {done ? "✓" : step.n}
-              </div>
-              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#25476a" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
-            </div>
-            {i < STEPS.length - 1 && <div className="ay-connector" style={{ backgroundColor: done ? "#25476a" : "#E5E7EB" }} />}
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -784,12 +748,9 @@ export default function AcademicYearPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>{subtitleText}</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} className="ay-btn-secondary">← Competencies</button>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)} className="ay-btn-primary">Next: Version Control →</button>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/view`)} className="ay-btn-secondary">← Back to Curriculum</button>
         </div>
       </div>
-
-      <StepIndicator current={4} />
 
       {/* Empty state (no groups) */}
       {groups.length === 0 && mode === "view" && (

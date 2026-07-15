@@ -21,8 +21,7 @@ const STEPS = [
   { n: 1, label: "Basic Info" },
   { n: 2, label: "Structure" },
   { n: 3, label: "Competencies" },
-  { n: 4, label: "Academic Year" },
-  { n: 5, label: "Version Control" },
+  { n: 4, label: "Version Control" },
 ];
 
 /* ── CSS ─────────────────────────────────────────────────────────────────── */
