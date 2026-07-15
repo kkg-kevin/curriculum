@@ -119,8 +119,8 @@ export const competenciesApi = {
   updateGlobalScoring: (curriculumId, assessmentTypes, competencyWeights = []) =>
     api.put(`/api/curricula/${curriculumId}/assessments/scoring`, { assessmentTypes, competencyWeights }).then((r) => r.data.data),
 
-  calculateScore: (curriculumId, atId, evidenceScores) =>
-    api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores }).then((r) => r.data.data),
+  calculateScore: (curriculumId, atId, evidenceScores, learnerId = null) =>
+    api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores, learnerId }).then((r) => r.data.data),
 
   /* Assessment Framework — Evidence Types */
   getEvidenceTypes: (curriculumId) =>
@@ -150,4 +150,11 @@ export const competenciesApi = {
 
   reorderPerformanceBands: (curriculumId, orderedIds) =>
     api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { orderedIds }).then((r) => r.data.data),
+
+  /* Learning Journey — per-learner, per-Learning-Area placement/history */
+  getLearningJourney: (curriculumId, learnerId) =>
+    api.get(`${base(curriculumId)}/learning-journey/${learnerId}`).then((r) => r.data.data),
+
+  placeLearner: (curriculumId, learnerId, areaId, data) =>
+    api.post(`${base(curriculumId)}/learning-journey/${learnerId}/${areaId}`, data).then((r) => r.data.data),
 };

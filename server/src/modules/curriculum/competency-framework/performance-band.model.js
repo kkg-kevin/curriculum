@@ -14,6 +14,14 @@ const PerformanceBandModel = {
       .sort((a, b) => a.order - b.order);
   },
 
+  // Bands that form one Learning Area's course ladder for Learning Journey (learningAreaId
+  // + courseId both set), ordered by score range — lowest first.
+  findByLearningArea(curriculumId, learningAreaId) {
+    return read()
+      .filter((b) => b.curriculumId === curriculumId && b.learningAreaId === learningAreaId && b.courseId)
+      .sort((a, b) => a.minScore - b.minScore);
+  },
+
   create(curriculumId, fields) {
     const all   = read();
     const count = all.filter((b) => b.curriculumId === curriculumId).length;
@@ -27,6 +35,8 @@ const PerformanceBandModel = {
       competencyIds:          fields.competencyIds || [],
       indicatorContributions: fields.indicatorContributions || [],
       advancementThreshold:   fields.advancementThreshold ?? 0,
+      learningAreaId:         fields.learningAreaId ?? null,
+      courseId:               fields.courseId ?? null,
       order:                  count + 1,
       createdAt:              new Date().toISOString(),
     };

@@ -69,6 +69,8 @@ const {
   reorderPerformanceBands,
   calculateIndicatorProgress,
   getPopulatedIndicators,
+  getLearningJourney,
+  placeLearner,
 } = require("./competency-framework/competency.controller");
 
 const router = express.Router();
@@ -145,5 +147,9 @@ router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
 // Progress Arc — indicator-driven band completion (must come before the /:bandId wildcard below)
 router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicatorProgress);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
+
+// Learning Journey — per-learner, per-Learning-Area placement/history
+router.route("/:id/competencies/learning-journey/:learnerId").get(getLearningJourney);
+router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(placeLearner);
 
 module.exports = router;

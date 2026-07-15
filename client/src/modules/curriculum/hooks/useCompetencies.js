@@ -15,6 +15,7 @@ const KEYS = {
   evidenceTypes:    (cid) => ["evidence-types", cid],
   performanceBands: (cid) => ["performance-bands", cid],
   compWeights:      (cid) => ["competency-weights", cid],
+  learningJourney:  (cid, learnerId) => ["learning-journey", cid, learnerId],
 };
 
 /* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
@@ -460,5 +461,27 @@ export function useReorderPerformanceBands(curriculumId) {
       qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to reorder bands"),
+  });
+}
+
+/* ── Learning Journey (per-learner, per-Learning-Area placement/history) ──── */
+
+export function useLearningJourney(curriculumId, learnerId) {
+  return useQuery({
+    queryKey: KEYS.learningJourney(curriculumId, learnerId),
+    queryFn:  () => competenciesApi.getLearningJourney(curriculumId, learnerId),
+    enabled:  !!curriculumId && !!learnerId,
+  });
+}
+
+export function usePlaceLearner(curriculumId, learnerId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ areaId, data }) => competenciesApi.placeLearner(curriculumId, learnerId, areaId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.learningJourney(curriculumId, learnerId) });
+      toast.success("Learner placed");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to place learner"),
   });
 }

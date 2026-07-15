@@ -16,6 +16,7 @@ const PerformanceBandModel  = require("./competency-framework/performance-band.m
 const ProgressionLadderModel = require("./competency-framework/progression-ladder.model");
 const CurriculumAssessmentModel = require("./competency-framework/assessment.model");
 const CurriculumVersionModel = require("./versions/curriculum-versions.model");
+const LearnerJourneyModel = require("./competency-framework/learner-journey.model");
 
 const CurriculumService = {
   async createCurriculum(data) {
@@ -129,6 +130,7 @@ const CurriculumService = {
     ProgressionLadderModel.deleteByCurriculumId(id);
     CurriculumAssessmentModel.deleteByCurriculumId(id);
     CurriculumVersionModel.deleteByCurriculumId(id);
+    LearnerJourneyModel.deleteByCurriculumId(id);
     return { message: "Curriculum deleted successfully" };
   },
 
