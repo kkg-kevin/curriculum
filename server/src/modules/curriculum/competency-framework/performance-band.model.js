@@ -22,7 +22,6 @@ const PerformanceBandModel = {
       curriculumId,
       name:                   fields.name,
       description:            fields.description || "",
-      criteria:               fields.criteria    || [],
       minScore:               fields.minScore    ?? 0,
       maxScore:               fields.maxScore    ?? 100,
       competencyIds:          fields.competencyIds || [],

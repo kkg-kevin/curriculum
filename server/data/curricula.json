@@ -81,36 +81,5 @@
     "createdAt": "2026-07-13T10:06:59.915Z",
     "updatedAt": "2026-07-13T10:16:00.133Z",
     "competencyWeights": []
-  },
-  {
-    "name": "aedn",
-    "code": "hetsdg",
-    "academicYear": "",
-    "description": "wragsbdf",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "Core",
-    "academicCycleModel": "custom",
-    "periods": [
-      {
-        "name": "Period 1",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      }
-    ],
-    "classes": [
-      "aernd",
-      "4wrh",
-      "wrhsfd"
-    ],
-    "id": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
-    "createdAt": "2026-07-13T12:49:22.880Z",
-    "updatedAt": "2026-07-13T12:52:57.397Z",
-    "competencyWeights": []
   }
 ]

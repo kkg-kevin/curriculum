@@ -100,26 +100,6 @@
     "updatedAt": "2026-07-09T13:51:22.157Z"
   },
   {
-    "id": "28b1670a-aa7e-4ec8-8dbd-8fbf9eb9af76",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "Grade 4-5",
-    "ageRange": "9-10",
-    "description": "Lower upper-primary learners.",
-    "order": 1,
-    "createdAt": "2026-07-13T10:07:00.210Z",
-    "updatedAt": "2026-07-13T10:07:00.210Z"
-  },
-  {
-    "id": "d01a3567-c4af-4fe7-9f14-e90517de3c1b",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "Grade 6",
-    "ageRange": "11-12",
-    "description": "Upper upper-primary learners.",
-    "order": 2,
-    "createdAt": "2026-07-13T10:07:00.222Z",
-    "updatedAt": "2026-07-13T10:07:00.222Z"
-  },
-  {
     "id": "e35a895d-6598-457b-a8e5-f7f859dbb66c",
     "curriculumId": "26b6bc74-a83c-4db4-893b-ff71d6dab50a",
     "name": "waseg",
@@ -127,5 +107,49 @@
     "order": 1,
     "createdAt": "2026-07-13T12:49:49.265Z",
     "updatedAt": "2026-07-13T12:49:49.265Z"
+  },
+  {
+    "id": "6805c454-20a6-4a2e-9843-aa67ba98fae8",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "ASC",
+    "description": "EADQVDZX",
+    "minAge": 1,
+    "maxAge": 2,
+    "order": 1,
+    "createdAt": "2026-07-15T07:27:41.591Z",
+    "updatedAt": "2026-07-15T07:27:41.591Z"
+  },
+  {
+    "id": "6481fd75-1da6-44ba-9be1-f40a67cbc88a",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "whqg78h7h",
+    "description": "hwvh7argsgvygy",
+    "minAge": 1,
+    "maxAge": 2,
+    "order": 2,
+    "createdAt": "2026-07-15T07:40:28.770Z",
+    "updatedAt": "2026-07-15T07:40:28.770Z"
+  },
+  {
+    "id": "6a93757a-0246-46e3-a788-68351415d518",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "35hyq5",
+    "description": "3qy5hwae",
+    "minAge": 1,
+    "maxAge": 2,
+    "order": 3,
+    "createdAt": "2026-07-15T07:46:36.395Z",
+    "updatedAt": "2026-07-15T07:46:36.395Z"
+  },
+  {
+    "id": "f56d59dc-19db-4573-ae3d-c62aae8b968d",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "sfbx",
+    "description": "wsbfx",
+    "minAge": 1,
+    "maxAge": 2,
+    "order": 4,
+    "createdAt": "2026-07-15T07:49:51.496Z",
+    "updatedAt": "2026-07-15T07:49:51.496Z"
   }
 ]

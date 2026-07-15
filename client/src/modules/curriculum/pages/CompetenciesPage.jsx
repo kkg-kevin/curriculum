@@ -30,7 +30,6 @@ import {
   useUpdatePerformanceBand,
   useDeletePerformanceBand,
   useReorderPerformanceBands,
-  useNormalizeBandIndicators,
   useLadder,
   useUpdateLadder,
 } from "../hooks/useCompetencies";
@@ -2184,25 +2183,35 @@ function AgeCategoriesPanel({ curriculumId }) {
   const [editTarget, setEditTarget] = useState(null);
   const [name,       setName]       = useState("");
   const [desc,       setDesc]       = useState("");
+  const [minAge,     setMinAge]     = useState("");
+  const [maxAge,     setMaxAge]     = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setMode("add");
   }
   function openEdit(c) {
-    setEditTarget(c); setName(c.name); setDesc(c.description || ""); setMode("edit");
+    setEditTarget(c); setName(c.name); setDesc(c.description || "");
+    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
 
+  const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
+
   function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim() };
+    if (!name.trim() || ageRangeInvalid) return;
+    const data = {
+      name: name.trim(),
+      description: desc.trim(),
+      minAge: minAge === "" ? null : Number(minAge),
+      maxAge: maxAge === "" ? null : Number(maxAge),
+    };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); nameRef.current?.focus(); } });
+      create(data, { onSuccess: cancel });
     }
   }
 
@@ -2257,9 +2266,36 @@ function AgeCategoriesPanel({ curriculumId }) {
               />
               <div className="cp-char-count">{desc.length} / 500</div>
             </div>
+            <div>
+              <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                The age range of learners in this stage — used to build the Identity Matrix below.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                  <input
+                    type="number" min="0" max="120" className="cp-comp-config-input"
+                    placeholder="Min" value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                  />
+                </div>
+                <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+                <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                  <input
+                    type="number" min="0" max="120" className="cp-comp-config-input"
+                    placeholder="Max" value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                  />
+                </div>
+                <span style={{ color: "#9CA3AF", fontSize: "12px" }}>years</span>
+              </div>
+              {ageRangeInvalid && (
+                <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
+              )}
+            </div>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim()}>
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim() || ageRangeInvalid}>
               {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Group"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
@@ -2269,7 +2305,7 @@ function AgeCategoriesPanel({ curriculumId }) {
         </div>
       )}
 
-      {cats.length === 0 && mode === "list" ? (
+      {mode === "list" && (cats.length === 0 ? (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", marginBottom: "10px" }}>👶</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No developmental stages yet</p>
@@ -2296,6 +2332,15 @@ function AgeCategoriesPanel({ curriculumId }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{cat.name}</p>
+                    {(cat.minAge != null || cat.maxAge != null) && (
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
+                        {cat.minAge != null && cat.maxAge != null
+                          ? `${cat.minAge}–${cat.maxAge} yrs`
+                          : cat.minAge != null
+                          ? `${cat.minAge}+ yrs`
+                          : `up to ${cat.maxAge} yrs`}
+                      </p>
+                    )}
                   </div>
                   <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} />
                 </div>
@@ -2312,7 +2357,7 @@ function AgeCategoriesPanel({ curriculumId }) {
             );
           })}
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -2480,7 +2525,6 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
-  const { mutate: normalize, isPending: normalizing, variables: normalizingId } = useNormalizeBandIndicators(curriculumId);
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
 
   // Only competencies this curriculum has actually adopted (Competencies tab) — and that
@@ -2511,9 +2555,8 @@ function PerformanceBandsPanel({ curriculumId }) {
     const data = { name: name.trim(), description: desc.trim(), competencyIds, advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)) };
     if (mode === "edit") {
       // The update endpoint's Zod schema defaults any field missing from the request body
-      // (e.g. minScore/maxScore/criteria aren't edited by this form) rather than leaving it
+      // (e.g. minScore/maxScore aren't edited by this form) rather than leaving it
       // untouched — carry the rest of the band's current fields through so they survive.
-      data.criteria  = editTarget.criteria;
       data.minScore  = editTarget.minScore;
       data.maxScore  = editTarget.maxScore;
       // Dropping a competency from the band also drops any % already assigned to its
@@ -2521,7 +2564,7 @@ function PerformanceBandsPanel({ curriculumId }) {
       data.indicatorContributions = (editTarget.indicatorContributions || []).filter((p) => competencyIds.includes(p.competencyId));
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
-      create(data, { onSuccess: () => { setName(""); setDesc(""); setCompetencyIds([]); setThreshold(0); nameRef.current?.focus(); } });
+      create(data, { onSuccess: cancel });
     }
   }
 
@@ -2539,7 +2582,6 @@ function PerformanceBandsPanel({ curriculumId }) {
       data: {
         name: band.name,
         description: band.description,
-        criteria: band.criteria,
         minScore: band.minScore,
         maxScore: band.maxScore,
         competencyIds: band.competencyIds,
@@ -2687,7 +2729,7 @@ function PerformanceBandsPanel({ curriculumId }) {
       )}
 
       {/* Empty state */}
-      {bands.length === 0 && mode === "list" && (
+      {mode === "list" && bands.length === 0 && (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", marginBottom: "10px" }}>🏅</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No performance bands yet</p>
@@ -2699,21 +2741,11 @@ function PerformanceBandsPanel({ curriculumId }) {
       )}
 
       {/* Band cards — ordered list with move arrows */}
-      {bands.length > 0 && (
+      {mode === "list" && bands.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {bands.map((band, idx) => {
             const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
-            // This band's indicators — across every competency it draws on — share one
-            // 100% budget, not 100% each. E.g. with 3 competencies attached, their
-            // indicators' percentages should collectively total 100%, however that's
-            // split between them (not 100% per competency).
-            const hasIndicators = (band.competencyIds || []).some(
-              (cId) => (competencyById.get(cId)?.indicators?.length || 0) > 0
-            );
-            const indicatorTotal = (band.indicatorContributions || []).reduce((sum, p) => sum + (p.percentage || 0), 0);
-            const showIncomplete = hasIndicators && indicatorTotal !== 100;
-            const isNormalizingThisBand = normalizing && normalizingId === band.id;
             return (
               <div key={band.id} style={{
                 background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
@@ -2752,34 +2784,21 @@ function PerformanceBandsPanel({ curriculumId }) {
                           {band.name}
                         </span>
                         {band.advancementThreshold > 0 && (
-                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF" }} title="Minimum % to advance past this band">
-                            Advance at ≥{band.advancementThreshold}%
-                          </span>
-                        )}
-                        {hasIndicators && (
                           <span
                             style={{
-                              fontSize: "11px", fontWeight: "700", padding: "2px 9px", borderRadius: "20px",
-                              color: indicatorTotal === 100 ? "#059669" : "#D97706",
-                              background: indicatorTotal === 100 ? "#ECFDF5" : "#FFFBEB",
-                              border: `1px solid ${indicatorTotal === 100 ? "#A7F3D0" : "#FDE68A"}`,
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "3px 11px 3px 9px", borderRadius: "20px",
+                              fontSize: "11px", fontWeight: "700",
+                              color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
                             }}
-                            title="Indicator contributions across every competency attached to this band, out of 100%"
+                            title="Minimum % of this band's indicators a learner must reach to advance to the next band"
                           >
-                            {indicatorTotal === 100 ? "✓ " : ""}{indicatorTotal}% of 100% allocated
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                              <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+                            </svg>
+                            {band.advancementThreshold}% to advance
                           </span>
-                        )}
-                        {showIncomplete && (
-                          <button
-                            type="button"
-                            className="cp-btn-ghost"
-                            style={{ padding: "2px 9px", fontSize: "11px" }}
-                            disabled={isNormalizingThisBand}
-                            onClick={() => normalize(band.id)}
-                            title="Proportionally rescale every indicator's % (across all of this band's competencies) so they sum to exactly 100%"
-                          >
-                            {isNormalizingThisBand ? "Normalizing…" : "Normalize to 100%"}
-                          </button>
                         )}
                       </div>
                       <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
@@ -2812,126 +2831,12 @@ function PerformanceBandsPanel({ curriculumId }) {
                         );
                       })
                     )}
-                    {showIncomplete && (
-                      <p style={{ margin: "10px 0 0", fontSize: "11px", color: "#D97706" }}>
-                        {indicatorTotal > 100
-                          ? `${indicatorTotal - 100}% over 100% across this band's competencies — trim an indicator's share.`
-                          : `${100 - indicatorTotal}% left to assign across this band's competencies to reach 100%.`}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
             );
           })}
 
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── IdentityMatrix ──────────────────────────────────────────────────────── */
-
-function IdentityMatrix({ curriculumId }) {
-  const { data: stages = [] } = useAgeCategories(curriculumId);
-  const { data: bands  = [] } = usePerformanceBands(curriculumId);
-
-  const isEmpty = stages.length === 0 || bands.length === 0;
-
-  return (
-    <div style={{ marginTop: "32px", borderTop: "1.5px solid #E5E7EB", paddingTop: "24px" }}>
-      <div style={{ marginBottom: "18px" }}>
-        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0F2645" }}>Identity Matrix</h3>
-        <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-          {isEmpty
-            ? "Configure developmental stages and performance bands above to generate all possible learner identities."
-            : `${stages.length} stage${stages.length !== 1 ? "s" : ""} × ${bands.length} band${bands.length !== 1 ? "s" : ""} = ${stages.length * bands.length} learner identities · placed by stage + score (band)`}
-        </p>
-      </div>
-
-      {!isEmpty && (
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ minWidth: `${116 + bands.length * 128}px` }}>
-
-            {/* ── Band column headers ── */}
-            <div style={{ display: "flex", gap: "6px", marginBottom: "8px", paddingLeft: "122px" }}>
-              {bands.map((band, idx) => {
-                const color = ARC_PALETTE[idx % ARC_PALETTE.length];
-                return (
-                  <div key={band.id} style={{
-                    flex: 1, textAlign: "center",
-                    padding: "7px 6px 6px",
-                    background: `${color}10`,
-                    borderRadius: "10px",
-                    border: `1.5px solid ${color}25`,
-                  }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color }}>{band.name}</div>
-                    {band.minScore != null && (
-                      <div style={{ fontSize: "9px", fontWeight: "600", color: "#9CA3AF", marginTop: "2px" }}>
-                        {band.minScore}–{band.maxScore}%
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ── Stage rows ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {stages.map((stage, sIdx) => {
-                const stageColor = ARC_PALETTE[sIdx % ARC_PALETTE.length];
-                return (
-                  <div key={stage.id} style={{ display: "flex", alignItems: "stretch", gap: "6px" }}>
-                    {/* Stage label */}
-                    <div style={{
-                      width: "116px", flexShrink: 0,
-                      padding: "10px 12px",
-                      background: `${stageColor}10`,
-                      borderRadius: "10px",
-                      border: `1.5px solid ${stageColor}28`,
-                      display: "flex", flexDirection: "column", justifyContent: "center",
-                    }}>
-                      <div style={{ fontSize: "12px", fontWeight: "800", color: stageColor, lineHeight: 1.2 }}>
-                        {stage.name}
-                      </div>
-                    </div>
-
-                    {/* Identity cells */}
-                    {bands.map((band, bIdx) => {
-                      const badgeColor = ARC_PALETTE[bIdx % ARC_PALETTE.length];
-                      return (
-                        <div key={band.id} style={{
-                          flex: 1,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          padding: "8px 6px",
-                          background: "#FAFAFA",
-                          borderRadius: "10px",
-                          border: "1px solid #F0F0F0",
-                        }}>
-                          <span style={{
-                            display: "inline-block",
-                            padding: "5px 10px",
-                            borderRadius: "20px",
-                            fontSize: "11px",
-                            fontWeight: "700",
-                            background: `${badgeColor}12`,
-                            color: badgeColor,
-                            border: `1px solid ${badgeColor}28`,
-                            whiteSpace: "nowrap",
-                            textAlign: "center",
-                          }}>
-                            {stage.name} {band.name}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
         </div>
       )}
     </div>
@@ -2973,8 +2878,6 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
 
       {arcSub === "age-categories" && <AgeCategoriesPanel    curriculumId={curriculumId} />}
       {arcSub === "bands"          && <PerformanceBandsPanel curriculumId={curriculumId} />}
-
-      <IdentityMatrix curriculumId={curriculumId} />
     </div>
   );
 }

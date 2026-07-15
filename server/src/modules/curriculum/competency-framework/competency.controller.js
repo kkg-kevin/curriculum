@@ -286,11 +286,6 @@ exports.deletePerformanceBand = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-exports.normalizeBandIndicatorContributions = asyncHandler(async (req, res) => {
-  const data = CompetencyService.normalizeBandIndicatorContributions(req.params.id, req.params.bandId);
-  res.json({ success: true, data });
-});
-
 exports.reorderPerformanceBands = asyncHandler(async (req, res) => {
   const { orderedIds } = reorderBandsSchema.parse(req.body);
   const data = CompetencyService.reorderPerformanceBands(req.params.id, orderedIds);
