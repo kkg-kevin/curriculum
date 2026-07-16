@@ -72,7 +72,7 @@
     ],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-07-13T09:25:52.898Z",
+    "updatedAt": "2026-07-16T11:29:58.663Z",
     "mainConcepts": [
       {
         "id": "3706d2d0-9e0e-4fea-be46-2c2d2b541a27",
@@ -853,12 +853,9 @@
     ],
     "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
     "createdAt": "2026-07-10T12:19:32.616Z",
-    "updatedAt": "2026-07-13T07:32:55.743Z",
+    "updatedAt": "2026-07-16T11:29:08.215Z",
     "assessmentIds": [
-      "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
-      "85c3271a-85d1-446b-871b-9a75dade7d76",
-      "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
-      "e25bb6fe-7042-42ff-83fc-3718331f9d69"
+      "fa98f60a-0e29-4d5d-b080-c4db39b55667"
     ]
   },
   {
@@ -901,12 +898,7 @@
     "resources": [],
     "id": "7d93612b-edf8-4236-b168-b20050de177a",
     "createdAt": "2026-07-10T12:19:32.648Z",
-    "updatedAt": "2026-07-10T12:31:09.705Z",
-    "assessmentIds": [
-      "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
-      "85c3271a-85d1-446b-871b-9a75dade7d76",
-      "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
-      "e25bb6fe-7042-42ff-83fc-3718331f9d69"
-    ]
+    "updatedAt": "2026-07-16T11:29:43.777Z",
+    "assessmentIds": []
   }
 ]

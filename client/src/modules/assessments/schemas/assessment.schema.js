@@ -58,3 +58,13 @@ export function normalizeLegacyItem(item) {
   const { questionType, mediaType, ...rest } = item;
   return { kind, sectionId: null, ...rest };
 }
+
+// A question/rubric-criterion's total is the sum of its per-indicator marks once any are
+// tagged; otherwise it falls back to the plain `points` field (untagged entries). Mirrors
+// server/src/modules/assessments/assessment.utils.js#computeEntryMarks.
+export function entryMarks(entry) {
+  if (entry?.indicatorMarks?.length) {
+    return entry.indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+  }
+  return Number(entry?.points) || 0;
+}

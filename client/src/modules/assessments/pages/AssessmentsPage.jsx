@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
-import { ASSESSMENT_TYPES } from "../schemas/assessment.schema";
+import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -36,11 +36,11 @@ function assessmentContentSummary(assessment) {
 
 function assessmentTotalPoints(assessment) {
   if (assessment.type === "quiz" || assessment.type === "exam") {
-    return assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) ?? 0;
+    return assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) ?? 0;
   }
   if (assessment.type === "assignment" || assessment.type === "project" || assessment.type === "observation") {
-    const itemsPoints = assessment.items?.reduce((sum, i) => sum + (Number(i.points) || 0), 0) || 0;
-    const rubricPoints = assessment.rubric?.reduce((sum, c) => sum + (Number(c.points) || 0), 0) || 0;
+    const itemsPoints = assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) || 0;
+    const rubricPoints = assessment.rubric?.reduce((sum, c) => sum + entryMarks(c), 0) || 0;
     return itemsPoints + rubricPoints;
   }
   return null;

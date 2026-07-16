@@ -1,5 +1,6 @@
 const AssessmentModel = require("./assessment.model");
 const AssessmentCompetencyLinkModel = require("./assessment-competency-link.model");
+const CurriculumService = require("../curriculum/curriculum.service");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const AssessmentLearningAreaLinkModel = require("./assessment-learning-area-link.model");
 const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
@@ -63,6 +64,9 @@ const AssessmentService = {
       throw err;
     }
     AssessmentCompetencyLinkModel.link(assessmentId, competencyId);
+    // Live-sync: any curriculum containing a course whose session already has this
+    // assessment attached picks up the new competency immediately, no re-attach needed.
+    CurriculumService.resyncCoursesForAssessment(assessmentId);
     return this.getAssessmentCompetencies(assessmentId);
   },
 

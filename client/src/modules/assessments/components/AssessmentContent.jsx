@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentLearningAreas, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
-  TASK_TYPE_LABELS, normalizeLegacyItem,
+  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks,
 } from "../schemas/assessment.schema";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
@@ -187,8 +187,8 @@ export default function AssessmentContent({ id }) {
   const milestones = assessment.milestones || [];
   const registry = BUILDER_REGISTRY[type];
 
-  const totalItemPoints = !isObservation ? entries.reduce((sum, e) => sum + (Number(e.points) || 0), 0) : 0;
-  const totalRubricPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+  const totalItemPoints = !isObservation ? entries.reduce((sum, e) => sum + entryMarks(e), 0) : 0;
+  const totalRubricPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
@@ -224,7 +224,7 @@ export default function AssessmentContent({ id }) {
                 {rubric.map((c, i) => (
                   <div key={c.id || i} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
                     <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#111827" }}>
-                      {c.criterion} <span style={{ fontWeight: "500", color: "#6B7280" }}>· {c.points} pts</span>
+                      {c.criterion} <span style={{ fontWeight: "500", color: "#6B7280" }}>· {entryMarks(c)} pts</span>
                     </p>
                     {c.description && <p style={{ margin: 0, fontSize: "12.5px", color: "#6B7280" }}>{c.description}</p>}
                   </div>
