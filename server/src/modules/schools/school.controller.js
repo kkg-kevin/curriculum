@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const SchoolService = require("./school.service");
 const { createSchoolSchema, updateSchoolSchema } = require("./school.validation");
+const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
 const createSchool = asyncHandler(async (req, res) => {
   const data = createSchoolSchema.parse(req.body);
@@ -10,12 +11,20 @@ const createSchool = asyncHandler(async (req, res) => {
 
 const getAllSchools = asyncHandler(async (req, res) => {
   const { status, county, curriculumId, email } = req.query;
-  const schools = await SchoolService.getAllSchools({ status, county, curriculumId, email });
+  const filters = { status, county, curriculumId, email };
+  if (req.user.role === "school") {
+    if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
+    filters.email = req.ownSchool.email;
+  }
+  const schools = await SchoolService.getAllSchools(filters);
   res.json({ success: true, data: schools, count: schools.length });
 });
 
 const getSchoolById = asyncHandler(async (req, res) => {
   const school = await SchoolService.getSchoolById(req.params.id);
+  if (req.user.role === "school")  assertOwn(school.id === req.ownSchool?.id);
+  if (req.user.role === "teacher") assertOwn(school.id === req.ownTeacher?.schoolId);
+  if (req.user.role === "learner") assertOwn(school.id === req.ownLearner?.schoolId);
   res.json({ success: true, data: school });
 });
 

@@ -4,7 +4,7 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   COOKIE_NAME: "token",
-  // Mirrors client/src/config/authConfig.js — flip both back to true together to
-  // re-enable login enforcement. While false, `protect` lets every request through.
-  AUTH_ENABLED: false,
+  // Mirrors client/src/config/authConfig.js — flip both back to false together to
+  // bypass login enforcement for local work. While false, `protect` lets every request through.
+  AUTH_ENABLED: true,
 };

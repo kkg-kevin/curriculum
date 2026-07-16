@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { schoolApi } from "../../schools/services/schoolApi";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { classApi } from "../../classes/services/classApi";
+import { useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
 export default function CourseContentPage() {
@@ -21,9 +22,20 @@ export default function CourseContentPage() {
     enabled: !!teacher?.schoolId,
   });
 
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(school?.curriculumId);
+  // A curriculum's courses are assigned per grade (see Curriculum Version Control) — so a
+  // teacher only ever sees the courses for the grade(s) of the class(es) they're the class
+  // teacher for, not every course in the school's curriculum.
+  const { data: classesData, isLoading: classesLoading } = useQuery({
+    queryKey: ["classes", "bySchool", teacher?.schoolId],
+    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
+    enabled: !!teacher?.schoolId,
+  });
+  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myGradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
 
-  const isLoading = teacherLoading || (!!teacher && schoolLoading);
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(school?.curriculumId, myGradeNames);
+
+  const isLoading = teacherLoading || (!!teacher && (schoolLoading || classesLoading));
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -50,6 +62,11 @@ export default function CourseContentPage() {
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Your school hasn't been assigned a curriculum yet.</p>
+        </div>
+      ) : myClasses.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
+          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No classes assigned yet</h3>
+          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Course content follows your assigned class's grade — ask your school admin to set you as a class teacher.</p>
         </div>
       ) : coursesLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useClassQuery, useDeleteClass } from "../hooks/useClasses";
 import { useSchoolsQuery } from "../../schools/hooks/useSchool";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useQuery } from "@tanstack/react-query";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -49,6 +50,10 @@ export default function ClassViewPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: curriculum }   = useCurriculumQuery(cls?.curriculumId);
+
+  // What this class inherited from the curriculum — courses currently assigned to its grade,
+  // across every period (there's no reliable "current term" signal, see getCurrentCourses).
+  const { data: classCourses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
   const { data: teachersData } = useQuery({
     queryKey: ["teachers", "bySchool", cls?.schoolId],
@@ -140,7 +145,37 @@ export default function ClassViewPage() {
           </div>
         </div>
 
-        {/* Learners in this class */}
+        {/* Courses this class inherited from the curriculum */}
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Courses</h3>
+            {!coursesLoading && (
+              <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>{classCourses?.length || 0}</span>
+            )}
+          </div>
+          {!cls.curriculumId ? (
+            <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>No curriculum assigned to this class's school yet.</p>
+          ) : coursesLoading ? (
+            <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Loading…</p>
+          ) : !classCourses?.length ? (
+            <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>📚</div>
+              <p style={{ margin: 0, fontSize: 13 }}>No courses assigned to {cls.gradeName} yet in this curriculum.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {classCourses.map((c) => (
+                <span key={c.id} style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: "#e8f5fb", border: "1.5px solid #a8d5ee", color: "#25476a" }}>
+                  {c.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Learners in this class */}
+      <div style={{ marginBottom: 16 }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learners</h3>

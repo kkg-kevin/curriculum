@@ -5,7 +5,7 @@ const { JWT_SECRET, COOKIE_NAME, AUTH_ENABLED } = require("../../config/env");
 // are trusted here — routes that need the full user record fetch it themselves.
 function protect(req, res, next) {
   if (!AUTH_ENABLED) {
-    req.user = { id: "dormant-auth", role: "admin" };
+    req.user = { id: "dormant-auth", role: "admin", email: "dormant@local" };
     return next();
   }
 
@@ -17,7 +17,7 @@ function protect(req, res, next) {
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = { id: payload.sub, role: payload.role };
+    req.user = { id: payload.sub, role: payload.role, email: payload.email };
     next();
   } catch {
     const err = new Error("Invalid or expired session");

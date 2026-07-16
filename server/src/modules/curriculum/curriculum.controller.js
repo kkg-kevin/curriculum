@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const CurriculumService = require("./curriculum.service");
 const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema } = require("./curriculum.validation");
+const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const SchoolModel = require("../schools/school.model");
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);
@@ -16,6 +18,14 @@ const getAllCurricula = asyncHandler(async (req, res) => {
 
 const getCurriculumById = asyncHandler(async (req, res) => {
   const curriculum = await CurriculumService.getCurriculumById(req.params.id);
+  // A school/teacher only ever reads the curriculum their own school is assigned — never
+  // another school's curriculum, even by guessing an id.
+  if (req.user.role === "school") {
+    assertOwn(req.ownSchool?.curriculumId === curriculum.id);
+  } else if (req.user.role === "teacher") {
+    const school = req.ownTeacher ? SchoolModel.findById(req.ownTeacher.schoolId) : null;
+    assertOwn(school?.curriculumId === curriculum.id);
+  }
   res.json({ success: true, data: curriculum });
 });
 

@@ -210,34 +210,20 @@
     "updatedAt": "2026-06-22T09:08:16.129Z"
   },
   {
-    "firstName": "Kevin",
-    "lastName": "Githinji",
-    "gender": "male",
+    "firstName": "Test",
+    "lastName": "Learner",
+    "gender": "female",
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
-    "guardianName": "Mama jane ",
-    "guardianPhone": "+254727496461",
-    "guardianEmail": "gaurdian@gmail.com",
+    "guardianName": "Test Guardian",
+    "guardianPhone": "+254700000000",
+    "guardianEmail": "learner@digifunzi.com",
     "status": "active",
+    "currentRungId": null,
+    "currentStageId": null,
     "admissionNumber": "SS-2026-001",
-    "id": "c41e6074-b431-4299-ac71-e7f2572234ff",
-    "createdAt": "2026-07-09T06:42:39.347Z",
-    "updatedAt": "2026-07-09T06:42:39.347Z"
-  },
-  {
-    "firstName": "John",
-    "lastName": "john",
-    "gender": "male",
-    "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
-    "classId": "25595068-3131-425b-9843-6267d37982e4",
-    "guardianName": "faith wanjiru",
-    "guardianPhone": "+254727496461",
-    "guardianEmail": "kiharakevin505@gmail.com",
-    "status": "active",
-    "admissionNumber": "SS-2026-002",
-    "id": "c76f9488-1cd4-4c89-86ea-942ab7733030",
-    "createdAt": "2026-07-09T06:57:54.742Z",
-    "updatedAt": "2026-07-13T13:51:36.229Z",
-    "currentRungId": null
+    "id": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "createdAt": "2026-07-16T07:43:57.452Z",
+    "updatedAt": "2026-07-16T07:43:57.452Z"
   }
 ]

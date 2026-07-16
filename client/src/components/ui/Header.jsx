@@ -30,6 +30,7 @@ function Header() {
     "/teacher-portal/course-content": "Course Content",
     "/teacher-portal/assessments": "Assessments",
     "/teacher-portal/attendance": "Attendance",
+    "/teacher-portal/profile": "My Profile",
     "/school-portal": "My Dashboard",
     "/school-portal/reports": "Reports",
     "/learner-portal": "My Dashboard",

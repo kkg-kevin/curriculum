@@ -7,7 +7,7 @@ import {
   useCreateCurriculumVersion,
   useChangeCurriculumVersionStatus,
 } from "../hooks/useCurriculumVersion";
-import { useCoursesQuery } from "../../courses/hooks/useCourse";
+import { useCoursesQuery, useCreateCourse } from "../../courses/hooks/useCourse";
 import { courseApi } from "../../courses/services/courseApi";
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -231,8 +231,6 @@ const card = {
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-const genId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
 function scaffoldBlank(curriculum) {
   const map = new Map();
   (curriculum.structure || []).forEach((t) => {
@@ -358,6 +356,7 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
   const [code, setCode] = useState("");
   const [open, setOpen] = useState(false);
   const [pickingId, setPickingId] = useState(null);
+  const { mutateAsync: createCourse, isPending: isCreating } = useCreateCourse();
   const ref = useRef(null);
   const wrapRef = useRef(null);
   useEffect(() => { ref.current?.focus(); }, []);
@@ -402,13 +401,20 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
     }
   };
 
-  // Typing a name that isn't in the catalog and submitting still works, same as before —
-  // covers courses that don't exist in the system yet.
-  const submit = (e) => {
+  // Typing a name that isn't in the catalog still works, same as before — but it now creates
+  // a real (empty) Course record on submit rather than a fake local id, so it behaves exactly
+  // like a catalog-picked course everywhere downstream (course catalog, course home page)
+  // instead of an entry that silently disappears or 404s there.
+  const submit = async (e) => {
     e.preventDefault();
-    if (!trimmed) return;
-    onAdd({ id: genId(), name: trimmed, code: code.trim() });
-    setName(""); setCode(""); setOpen(false);
+    if (!trimmed || isCreating) return;
+    try {
+      const course = await createCourse({ name: trimmed });
+      onAdd({ id: course.id, name: course.name, code: code.trim() });
+      setName(""); setCode(""); setOpen(false);
+    } catch {
+      // error toast already shown by useCreateCourse
+    }
   };
 
   return (
@@ -422,9 +428,12 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
           onChange={(e) => { setName(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           autoComplete="off"
+          disabled={isCreating}
         />
-        <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} />
-        <button type="submit" disabled={!trimmed} style={{ padding: "6px 12px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: trimmed ? "pointer" : "not-allowed", opacity: trimmed ? 1 : 0.5 }}>Add</button>
+        <input className="vc-inline-input icode" placeholder="Code (opt.)" value={code} onChange={(e) => setCode(e.target.value)} disabled={isCreating} />
+        <button type="submit" disabled={!trimmed || isCreating} style={{ padding: "6px 12px", background: "#25476a", color: "#fff", border: "none", borderRadius: "7px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter,sans-serif", cursor: (trimmed && !isCreating) ? "pointer" : "not-allowed", opacity: (trimmed && !isCreating) ? 1 : 0.5 }}>
+          {isCreating ? "Adding…" : "Add"}
+        </button>
         <button type="button" onClick={onCancel} style={{ padding: "6px 10px", background: "transparent", color: "#9CA3AF", border: "1.5px solid #E5E7EB", borderRadius: "7px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter,sans-serif", cursor: "pointer" }}>Cancel</button>
       </form>
 
@@ -554,8 +563,9 @@ function CourseMatrixEdit({ content, activeTab, onUpdate, allCourses }) {
   const addCourse = (ci, course) => {
     const next = deepClone(content);
     const list = next[activeTab].classes[ci].courses;
-    // Only meaningful now that picking from the catalog reuses the real course id —
-    // typed custom names still get a fresh genId() each time, so they can never collide.
+    // Both paths now attach a real course id — catalog picks reuse the existing course id,
+    // typed names create a brand-new one each submit, so this can only ever catch a genuine
+    // re-pick of a course already in this row's list.
     if (list.some((c) => c.id === course.id)) { setAddingFor(null); return; }
     list.push(course);
     onUpdate(next);
