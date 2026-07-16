@@ -13,11 +13,6 @@
     "indicatorContributions": [
       {
         "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-        "percentage": 10
-      },
-      {
-        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
         "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
         "percentage": 20
       },
@@ -34,7 +29,9 @@
     ],
     "advancementThreshold": 90,
     "order": 1,
-    "createdAt": "2026-07-10T12:16:34.454Z"
+    "createdAt": "2026-07-10T12:16:34.454Z",
+    "learningAreaId": null,
+    "courseId": null
   },
   {
     "id": "f260e75a-587f-4392-8e07-a79736943b78",

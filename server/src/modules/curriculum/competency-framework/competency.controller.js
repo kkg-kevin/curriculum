@@ -26,6 +26,7 @@ const {
   reorderBandsSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
+  setIndicatorAchievementSchema,
   placeLearnerSchema,
 } = require("./competency.validation");
 
@@ -312,6 +313,27 @@ exports.calculateIndicatorProgress = asyncHandler(async (req, res) => {
 
 exports.getPopulatedIndicators = asyncHandler(async (req, res) => {
   const data = CompetencyService.getPopulatedIndicators(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.getIndicatorAchievements = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getIndicatorAchievements(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.setIndicatorAchievement = asyncHandler(async (req, res) => {
+  const { competencyId, marksEarned } = setIndicatorAchievementSchema.parse(req.body);
+  const data = CompetencyService.setIndicatorAchievement(req.params.id, req.params.indicatorId, competencyId, marksEarned);
+  res.json({ success: true, data });
+});
+
+exports.getCompetencyScores = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getCompetencyScores(req.params.id);
+  res.json({ success: true, data });
+});
+
+exports.getBandProgress = asyncHandler(async (req, res) => {
+  const data = CompetencyService.getBandProgress(req.params.id);
   res.json({ success: true, data });
 });
 

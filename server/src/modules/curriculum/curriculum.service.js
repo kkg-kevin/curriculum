@@ -17,6 +17,7 @@ const ProgressionLadderModel = require("./competency-framework/progression-ladde
 const CurriculumAssessmentModel = require("./competency-framework/assessment.model");
 const CurriculumVersionModel = require("./versions/curriculum-versions.model");
 const LearnerJourneyModel = require("./competency-framework/learner-journey.model");
+const IndicatorAchievementModel = require("./competency-framework/indicator-achievement.model");
 const { collectCourseIds } = require("./versions/content.utils");
 
 const CurriculumService = {
@@ -132,6 +133,7 @@ const CurriculumService = {
     CurriculumAssessmentModel.deleteByCurriculumId(id);
     CurriculumVersionModel.deleteByCurriculumId(id);
     LearnerJourneyModel.deleteByCurriculumId(id);
+    IndicatorAchievementModel.deleteByCurriculumId(id);
     return { message: "Curriculum deleted successfully" };
   },
 

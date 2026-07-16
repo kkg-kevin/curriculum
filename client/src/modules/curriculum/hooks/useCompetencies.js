@@ -16,6 +16,9 @@ const KEYS = {
   performanceBands: (cid) => ["performance-bands", cid],
   compWeights:      (cid) => ["competency-weights", cid],
   learningJourney:  (cid, learnerId) => ["learning-journey", cid, learnerId],
+  indicatorAchievements: (cid) => ["indicator-achievements", cid],
+  competencyScores:      (cid) => ["competency-scores", cid],
+  bandProgress:          (cid) => ["band-progress", cid],
 };
 
 /* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
@@ -204,6 +207,50 @@ export function usePopulatedIndicators(curriculumId) {
   return useQuery({
     queryKey: ["populated-indicators", curriculumId],
     queryFn:  () => competenciesApi.getPopulatedIndicators(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
+// Persisted marks-earned per indicator (Engine 5 framework) — always live, same reasoning as
+// usePopulatedIndicators above.
+export function useIndicatorAchievements(curriculumId) {
+  return useQuery({
+    queryKey: KEYS.indicatorAchievements(curriculumId),
+    queryFn:  () => competenciesApi.getIndicatorAchievements(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
+// One write here feeds three reads — the achievement list itself, the computed competency
+// scores, and the indicator-driven band completion — so all three get invalidated together.
+export function useSetIndicatorAchievement(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ indicatorId, competencyId, marksEarned }) =>
+      competenciesApi.setIndicatorAchievement(curriculumId, indicatorId, competencyId, marksEarned),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.indicatorAchievements(curriculumId) });
+      qc.invalidateQueries({ queryKey: KEYS.competencyScores(curriculumId) });
+      qc.invalidateQueries({ queryKey: KEYS.bandProgress(curriculumId) });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to save score"),
+  });
+}
+
+// Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
+export function useCompetencyScores(curriculumId) {
+  return useQuery({
+    queryKey: KEYS.competencyScores(curriculumId),
+    queryFn:  () => competenciesApi.getCompetencyScores(curriculumId),
+    enabled:  !!curriculumId,
+  });
+}
+
+// Indicator-driven Performance Band completion, computed from persisted indicator-achievements.
+export function useBandProgress(curriculumId) {
+  return useQuery({
+    queryKey: KEYS.bandProgress(curriculumId),
+    queryFn:  () => competenciesApi.getBandProgress(curriculumId),
     enabled:  !!curriculumId,
   });
 }

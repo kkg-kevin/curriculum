@@ -12,7 +12,9 @@
     "admissionNumber": "DS-2026-001",
     "id": "54a57ad0-0ac1-4b06-b897-d5b7c6870736",
     "createdAt": "2026-06-20T14:13:16.226Z",
-    "updatedAt": "2026-06-20T14:13:16.226Z"
+    "updatedAt": "2026-07-16T13:29:09.653Z",
+    "currentRungId": null,
+    "currentStageId": null
   },
   {
     "firstName": "Ali",

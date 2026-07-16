@@ -10,15 +10,22 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-13T08:14:51.231Z",
-    "updatedAt": "2026-07-15T13:31:55.391Z",
+    "updatedAt": "2026-07-16T13:33:59.352Z",
     "courseSequence": [
       {
         "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
-        "order": 1
+        "order": 1,
+        "defaultForStages": [
+          "79e1f87e-0601-40a5-968d-106b0f1739fb",
+          "bb6e4f22-f357-44b3-9c69-f7a035f74d84"
+        ]
       },
       {
         "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
-        "order": 2
+        "order": 2,
+        "defaultForStages": [
+          "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930"
+        ]
       }
     ]
   },
@@ -33,6 +40,23 @@
       "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4"
     ],
     "createdAt": "2026-07-15T09:23:28.910Z",
-    "updatedAt": "2026-07-16T11:49:18.881Z"
+    "updatedAt": "2026-07-16T13:31:57.265Z",
+    "courseSequence": [
+      {
+        "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+        "order": 1,
+        "defaultForStages": []
+      },
+      {
+        "courseId": "a978b111-1725-4fd5-9142-3f5b48c62990",
+        "order": 2,
+        "defaultForStages": [
+          "6805c454-20a6-4a2e-9843-aa67ba98fae8",
+          "6481fd75-1da6-44ba-9be1-f40a67cbc88a",
+          "6a93757a-0246-46e3-a788-68351415d518",
+          "f56d59dc-19db-4573-ae3d-c62aae8b968d"
+        ]
+      }
+    ]
   }
 ]

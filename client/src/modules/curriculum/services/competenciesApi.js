@@ -58,6 +58,17 @@ export const competenciesApi = {
   getPopulatedIndicators: (curriculumId) =>
     api.get(`${base(curriculumId)}/populated-indicators`).then((r) => r.data.data),
 
+  // Persisted marks-earned per indicator (Engine 5 framework), joined against live marksPossible.
+  getIndicatorAchievements: (curriculumId) =>
+    api.get(`${base(curriculumId)}/indicator-achievements`).then((r) => r.data.data),
+
+  setIndicatorAchievement: (curriculumId, indicatorId, competencyId, marksEarned) =>
+    api.put(`${base(curriculumId)}/indicator-achievements/${indicatorId}`, { competencyId, marksEarned }).then((r) => r.data.data),
+
+  // Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
+  getCompetencyScores: (curriculumId) =>
+    api.get(`${base(curriculumId)}/scores`).then((r) => r.data.data),
+
   /* Age Categories */
   getAgeCategories: (curriculumId) =>
     api.get(`${base(curriculumId)}/age-categories`).then((r) => r.data.data),
@@ -150,6 +161,10 @@ export const competenciesApi = {
 
   reorderPerformanceBands: (curriculumId, orderedIds) =>
     api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { orderedIds }).then((r) => r.data.data),
+
+  // Indicator-driven band completion, computed from persisted indicator-achievements.
+  getBandProgress: (curriculumId) =>
+    api.get(`${base(curriculumId)}/bands/progress`).then((r) => r.data.data),
 
   /* Learning Journey — per-learner, per-Learning-Area placement/history */
   getLearningJourney: (curriculumId, learnerId) =>

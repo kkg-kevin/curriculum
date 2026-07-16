@@ -25,6 +25,9 @@ const updateIndicatorSchema = createIndicatorSchema.partial();
 const learningAreaCourseSequenceEntrySchema = z.object({
   courseId: z.string().min(1),
   order:    z.number().int().min(1),
+  // Developmental Stage ids that default a learner into this course when they have no
+  // Learning Journey record yet — see CompetencyService.getLearningJourney's fallback.
+  defaultForStages: z.array(z.string().min(1)).optional().default([]),
 });
 
 const createLearningAreaSchema = z.object({
@@ -60,21 +63,11 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
-// Which course a learner at this Developmental Stage starts at, per Learning Area — the
-// default placement Learning Journey falls back to when no diagnostic/journey record exists
-// yet for a learner. One entry per Learning Area at most (the service upserts by
-// learningAreaId rather than allowing duplicates).
-const stageAssignmentSchema = z.object({
-  learningAreaId: z.string().min(1),
-  courseId:       z.string().min(1),
-});
-
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
-  assignments: z.array(stageAssignmentSchema).optional().default([]),
 });
 
 const ageRangeRefinement = (data) =>
@@ -228,6 +221,11 @@ const calculateIndicatorProgressSchema = z.object({
   indicatorAchievements: z.array(indicatorAchievementSchema),
 });
 
+const setIndicatorAchievementSchema = z.object({
+  competencyId: z.string().min(1),
+  marksEarned:  z.number().min(0),
+});
+
 const REASON_TYPES = ["default", "diagnostic", "advanced", "manual"];
 
 const placeLearnerSchema = z.object({
@@ -263,5 +261,6 @@ module.exports = {
   reorderBandsSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
+  setIndicatorAchievementSchema,
   placeLearnerSchema,
 };

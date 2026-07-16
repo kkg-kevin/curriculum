@@ -69,6 +69,10 @@ const {
   reorderPerformanceBands,
   calculateIndicatorProgress,
   getPopulatedIndicators,
+  getIndicatorAchievements,
+  setIndicatorAchievement,
+  getCompetencyScores,
+  getBandProgress,
   getLearningJourney,
   placeLearner,
 } = require("./competency-framework/competency.controller");
@@ -143,6 +147,16 @@ router.route("/:id/competencies/ladder").put(updateLadder);
 // grouped by competency (computed live) — feeds the Performance Bands indicator picker.
 router.route("/:id/competencies/populated-indicators").get(getPopulatedIndicators);
 
+// Competencies — persisted marks-earned per indicator (Engine 5 framework), joined against
+// the live marksPossible above. Feeds the computed competency scores below and, converted to
+// percentages, the indicator-driven band completion further down.
+router.route("/:id/competencies/indicator-achievements").get(getIndicatorAchievements);
+router.route("/:id/competencies/indicator-achievements/:indicatorId").put(setIndicatorAchievement);
+
+// Competencies — computed score per adopted competency (Engine 5 → Engine 3), for display
+// alongside each competency in the Competencies tab.
+router.route("/:id/competencies/scores").get(getCompetencyScores);
+
 // Progress Arc — age categories (GET registered above — school needs it too)
 router.route("/:id/competencies/age-categories").post(createAgeCategory);
 router.route("/:id/competencies/age-categories/:acId").put(updateAgeCategory).delete(deleteAgeCategory);
@@ -173,6 +187,9 @@ router.route("/:id/competencies/bands").get(getPerformanceBands).post(createPerf
 router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
 // Progress Arc — indicator-driven band completion (must come before the /:bandId wildcard below)
 router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicatorProgress);
+// Progress Arc — same engine, but driven by persisted indicator-achievements instead of a
+// caller-supplied payload (see indicator-achievements routes above).
+router.route("/:id/competencies/bands/progress").get(getBandProgress);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
 
 // Learning Journey — per-learner, per-Learning-Area placement/history (both registered above —
