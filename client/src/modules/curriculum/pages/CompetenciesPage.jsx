@@ -31,6 +31,8 @@ import {
   useDeletePerformanceBand,
   useReorderPerformanceBands,
   usePopulatedIndicators,
+  useCompetencyScores,
+  useBandProgress,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
@@ -674,11 +676,12 @@ function LearningAreasPanel({ curriculumId }) {
 }
 
 /* ── Learning Journey ──────────────────────────────────────────────────────
- * Two things are configured here: (1) the default course sequence within
- * each Learning Area (e.g. Robotics 1 → 2 → 3 → 4), and (2) which course a
- * Developmental Stage starts a learner at, by default, in each Learning
- * Area — used until a diagnostic assessment or a manual override places
- * them somewhere else. Per-learner placement lives on the learner's own
+ * One thing is configured here: the course sequence within each Learning
+ * Area (e.g. Robotics 1 → 2 → 3 → 4). Each sequenced course can also be
+ * tagged as the default starting point for one or more Developmental
+ * Stages — used until a diagnostic assessment or a manual override places
+ * a learner somewhere else — right on its row, instead of a separate
+ * stage/area matrix. Per-learner placement lives on the learner's own
  * profile page, not here. The old Progression Ladder API/model is left
  * untouched (superseded, but still referenced by the Learner page's legacy
  * placement dropdown). */
@@ -687,7 +690,6 @@ function LearningJourneyPanel({ curriculumId }) {
   const { data: areas = [], isLoading: areasLoading } = useLearningAreas(curriculumId);
   const { mutate: updateArea } = useUpdateLearningArea(curriculumId);
   const { data: stages = [], isLoading: stagesLoading } = useAgeCategories(curriculumId);
-  const { mutate: updateStage } = useUpdateAgeCategory(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { data: allBands = [], isLoading: bandsLoading } = usePerformanceBands(curriculumId);
   const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
@@ -706,19 +708,40 @@ function LearningJourneyPanel({ curriculumId }) {
     return [...seqIds, ...extras];
   }
 
+  // Reused by moveCourse and setStageDefaultCourse — every rewrite of courseSequence must
+  // carry each entry's existing defaultForStages through, or reordering would silently wipe them.
+  function defaultForStagesOf(area, courseId) {
+    return (area.courseSequence || []).find((s) => s.courseId === courseId)?.defaultForStages || [];
+  }
+
+  // Which course (if any) a given stage currently defaults to in this area.
+  function stageDefaultCourseId(area, stageId) {
+    return (area.courseSequence || []).find((s) => (s.defaultForStages || []).includes(stageId))?.courseId || "";
+  }
+
   function moveCourse(area, courseId, direction) {
     const ids = sequenceFor(area);
     const idx = ids.indexOf(courseId);
     const swapWith = idx + direction;
     if (swapWith < 0 || swapWith >= ids.length) return;
     [ids[idx], ids[swapWith]] = [ids[swapWith], ids[idx]];
-    updateArea({ id: area.id, data: { courseSequence: ids.map((cid, i) => ({ courseId: cid, order: i + 1 })) } });
+    updateArea({
+      id: area.id,
+      data: { courseSequence: ids.map((cid, i) => ({ courseId: cid, order: i + 1, defaultForStages: defaultForStagesOf(area, cid) })) },
+    });
   }
 
-  function setStageDefault(stage, learningAreaId, courseId) {
-    const assignments = (stage.assignments || []).filter((a) => a.learningAreaId !== learningAreaId);
-    if (courseId) assignments.push({ learningAreaId, courseId });
-    updateStage({ id: stage.id, data: { assignments } });
+  // A stage can default into at most one course per Learning Area — picking a new one clears
+  // it from wherever else it was set in this same area first. Empty courseId just clears it
+  // (falls back to first-in-sequence).
+  function setStageDefaultCourse(area, stageId, courseId) {
+    const ids = sequenceFor(area);
+    const courseSequence = ids.map((cid, i) => {
+      const current = defaultForStagesOf(area, cid).filter((sId) => sId !== stageId);
+      if (cid === courseId) current.push(stageId);
+      return { courseId: cid, order: i + 1, defaultForStages: current };
+    });
+    updateArea({ id: area.id, data: { courseSequence } });
   }
 
   return (
@@ -763,66 +786,34 @@ function LearningJourneyPanel({ curriculumId }) {
                       </div>
                     ))}
                   </div>
+
+                  {stages.length > 0 && (
+                    <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed #E5E7EB" }}>
+                      <p style={{ margin: "0 0 8px", fontSize: "10.5px", fontWeight: "800", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        Default starting course, by stage
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {stages.map((stage) => (
+                          <div key={stage.id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ width: "90px", flexShrink: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{stage.name}</span>
+                            <select
+                              value={stageDefaultCourseId(area, stage.id)}
+                              onChange={(e) => setStageDefaultCourse(area, stage.id, e.target.value)}
+                              style={{ flex: 1, padding: "6px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12px", fontFamily: "Inter, sans-serif", color: "#111827" }}
+                            >
+                              <option value="">First in sequence ({courseNameById.get(ids[0]) || "none"})</option>
+                              {ids.map((cid) => (
+                                <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-
-      <div className="cp-card">
-        <div style={{ marginBottom: "18px" }}>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Default Starting Course by Stage</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Where a learner starts in each learning area by default, based on their developmental stage — used until they're diagnosed or manually placed.
-          </p>
-        </div>
-        {stages.length === 0 || areasWithCourses.length === 0 ? (
-          <div className="cp-empty">
-            <div style={{ fontSize: "32px", marginBottom: "10px" }}>📋</div>
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-              Needs at least one Developmental Stage (Progress Arc tab) and one sequenced Learning Area above.
-            </p>
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1.5px solid #EEF1F5", minWidth: "140px" }}>Stage</th>
-                  {areasWithCourses.map((area) => (
-                    <th key={area.id} style={{ textAlign: "left", padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1.5px solid #EEF1F5", minWidth: "200px" }}>
-                      {area.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stages.map((stage) => (
-                  <tr key={stage.id}>
-                    <td style={{ padding: "8px 10px", fontSize: "13px", fontWeight: "700", color: "#1F2937", borderBottom: "1px solid #F5F6F8" }}>{stage.name}</td>
-                    {areasWithCourses.map((area) => {
-                      const ids = sequenceFor(area);
-                      const current = (stage.assignments || []).find((a) => a.learningAreaId === area.id)?.courseId || "";
-                      return (
-                        <td key={area.id} style={{ padding: "6px 10px", borderBottom: "1px solid #F5F6F8" }}>
-                          <select
-                            value={current}
-                            onChange={(e) => setStageDefault(stage, area.id, e.target.value || null)}
-                            style={{ width: "100%", padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
-                          >
-                            <option value="">First in sequence</option>
-                            {ids.map((cid) => (
-                              <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
-                            ))}
-                          </select>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </div>
@@ -1131,6 +1122,8 @@ function CompetencyPickerPanel({ curriculumId }) {
   const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
   const { mutate: link, isPending: linking } = useLinkCompetency(curriculumId);
   const { mutate: unlink } = useUnlinkCompetency(curriculumId);
+  const { data: competencyScores = [] } = useCompetencyScores(curriculumId);
+  const scoreByCompetencyId = new Map(competencyScores.map((s) => [s.competencyId, s]));
 
   const linkedIds = new Set(linkedComps.map((c) => c.id));
   const availableComps = allComps.filter((c) => !linkedIds.has(c.id));
@@ -1180,6 +1173,7 @@ function CompetencyPickerPanel({ curriculumId }) {
               comp={comp}
               color={COMP_PALETTE[idx % COMP_PALETTE.length]}
               onRemove={() => unlink(comp.id)}
+              score={scoreByCompetencyId.get(comp.id)}
             />
           ))}
         </div>
@@ -1188,7 +1182,7 @@ function CompetencyPickerPanel({ curriculumId }) {
   );
 }
 
-function LinkedCompetencyCard({ comp, color, onRemove }) {
+function LinkedCompetencyCard({ comp, color, onRemove, score }) {
   const initial = comp.name.charAt(0).toUpperCase();
   const indicators = comp.indicators || [];
   const [open, setOpen] = useState(false);
@@ -1208,6 +1202,34 @@ function LinkedCompetencyCard({ comp, color, onRemove }) {
           <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
             {comp.name}
           </p>
+          {score ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginTop: "5px" }}>
+              <span style={{
+                display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: "20px",
+                fontSize: "11px", fontWeight: "800", color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
+              }}>
+                {score.score}%
+              </span>
+              {score.level && (
+                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>{score.level.name}</span>
+              )}
+              {score.band && (
+                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>· {score.band.name}</span>
+              )}
+            </div>
+          ) : (
+            <div style={{ marginTop: "5px" }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: "20px",
+                  fontSize: "11px", fontWeight: "800", color: "#9CA3AF", background: "#F3F4F6", border: "1.5px solid #E5E7EB",
+                }}
+                title="No score yet — set up this curriculum's Assessment Framework (Evidence Type categories + competency mappings) and enter indicator marks to compute one"
+              >
+                — %
+              </span>
+            </div>
+          )}
         </div>
         <CompetencyRemoveMenu onRemove={onRemove} />
       </div>
@@ -2604,6 +2626,8 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
   const { data: populatedIndicatorGroups = [] }    = usePopulatedIndicators(curriculumId);
   const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
+  const { data: bandProgressList = [] }            = useBandProgress(curriculumId);
+  const progressByBandId = new Map(bandProgressList.map((p) => [p.bandId, p]));
 
   // Only competencies this curriculum has actually adopted (Competencies tab) — and that
   // have indicators defined in Settings — are offered here; nothing to draw on otherwise.
@@ -2899,6 +2923,49 @@ function PerformanceBandsPanel({ curriculumId }) {
                             {band.advancementThreshold}% to advance
                           </span>
                         )}
+                        {(band.indicatorContributions || []).length > 0 && (() => {
+                          const progress = progressByBandId.get(band.id);
+                          if (!progress) return null;
+                          const met = progress.thresholdMet;
+                          return (
+                            <span
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: "5px",
+                                padding: "3px 11px", borderRadius: "20px",
+                                fontSize: "11px", fontWeight: "700",
+                                color: met ? "#059669" : "#D97706",
+                                background: met ? "#05966912" : "#D9770612",
+                                border: `1.5px solid ${met ? "#05966940" : "#D9770640"}`,
+                              }}
+                              title={met ? "Threshold met — ready to advance" : "Below this band's advancement threshold"}
+                            >
+                              {progress.completion}% complete{met ? " ✓" : ""}
+                            </span>
+                          );
+                        })()}
+                        {(() => {
+                          // Every indicator % contribution assigned anywhere in this band — across
+                          // all of its competencies, since they share one 100% budget (see
+                          // BandCompetencyBlock) — should sum to exactly 100.
+                          const total = (band.indicatorContributions || []).reduce((s, c) => s + (Number(c.percentage) || 0), 0);
+                          if (total === 0) return null;
+                          const ok = total === 100;
+                          const over = total > 100;
+                          const color = ok ? "#059669" : over ? "#DC2626" : "#D97706";
+                          return (
+                            <span
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: "5px",
+                                padding: "3px 11px", borderRadius: "20px",
+                                fontSize: "11px", fontWeight: "700",
+                                color, background: `${color}12`, border: `1.5px solid ${color}40`,
+                              }}
+                              title="Sum of every indicator's % contribution across this band's competencies — should total 100%"
+                            >
+                              Indicators: {total}%{ok ? " ✓" : ""}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
                     </div>

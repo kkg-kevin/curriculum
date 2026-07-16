@@ -149,4 +149,41 @@ function runIndicatorProgressEngine(indicatorAchievements, performanceBands) {
   });
 }
 
-module.exports = { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine };
+/**
+ * Engine 5 — Assessment Type Combination Engine
+ * Combines each Assessment Type's own competency scores (Engine 2 output, run once per
+ * Assessment Type against its own evidenceWeights/competencyMappings) into one overall score
+ * per competency — weighted-averaged by each Assessment Type's own typeWeight (tier-2 of Score
+ * Evidence). Normalized by the sum of *contributing* weights, not a flat 100, so a competency
+ * only covered by some Assessment Types isn't penalized for the ones that don't map to it.
+ *
+ * @param {Array<{typeWeight, competencyScores: Array<{competencyId, name, score}>}>} perTypeResults
+ * @returns {Array<{competencyId, name, score}>}
+ */
+function combineAssessmentTypeScores(perTypeResults) {
+  const weightedSum = {};
+  const weightTotal  = {};
+  const names        = {};
+
+  for (const { typeWeight, competencyScores } of perTypeResults) {
+    for (const cs of competencyScores) {
+      weightedSum[cs.competencyId] = (weightedSum[cs.competencyId] || 0) + cs.score * typeWeight;
+      weightTotal[cs.competencyId] = (weightTotal[cs.competencyId] || 0) + typeWeight;
+      names[cs.competencyId] = cs.name;
+    }
+  }
+
+  return Object.keys(weightedSum).map((competencyId) => {
+    const total = weightTotal[competencyId] || 0;
+    const score = total > 0 ? Math.min(100, Math.round((weightedSum[competencyId] / total) * 10) / 10) : 0;
+    return { competencyId, name: names[competencyId] || "Unknown", score };
+  });
+}
+
+module.exports = {
+  runAssessmentEngine,
+  runCompetencyEngine,
+  runProgressArcEngine,
+  runIndicatorProgressEngine,
+  combineAssessmentTypeScores,
+};

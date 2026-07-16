@@ -12,7 +12,8 @@ const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
-const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine } = require("./scoring-engines");
+const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine, combineAssessmentTypeScores } = require("./scoring-engines");
+const IndicatorAchievementModel = require("./indicator-achievement.model");
 const SessionModel                   = require("../../courses/session.model");
 const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-link.model");
 const BuilderAssessmentModel         = require("../../assessments/assessment.model");
@@ -74,6 +75,7 @@ const CompetencyService = {
   unlinkCompetency(curriculumId, competencyId) {
     CurriculumCompetencyLinkModel.unlink(curriculumId, competencyId);
     CurriculumCompetencyIndicatorModel.deleteByLink(curriculumId, competencyId);
+    IndicatorAchievementModel.deleteByLink(curriculumId, competencyId);
     // This curriculum no longer uses the competency — drop it from this curriculum's
     // own progression ladder too (other curricula's ladders are untouched).
     const rungs = ProgressionLadderModel.findByCurriculumId(curriculumId);
@@ -637,7 +639,10 @@ const CompetencyService = {
   // a newly-tagged question shows up without re-attaching anything. Grouped by competency,
   // for the Performance Bands indicator picker (which should only offer these, not every
   // indicator a competency happens to define in Settings).
-  getPopulatedIndicators(curriculumId) {
+  // Every assessment id reachable from this curriculum's attached courses — via both the flat
+  // "Attach Course" link and the current published Version Control content. Shared by
+  // getPopulatedIndicators and getEvidenceTypeScores below.
+  getAttachedAssessmentIds(curriculumId) {
     const courseIds = new Set(CourseCurriculumLinkModel.findByCurriculumId(curriculumId).map((l) => l.courseId));
     const currentVersion = CurriculumVersionModel.findAllByCurriculumId(curriculumId).find((v) => v.isCurrent);
     (currentVersion?.content || []).forEach((period) => {
@@ -652,6 +657,11 @@ const CompetencyService = {
         (s.assessmentIds || []).forEach((aid) => assessmentIds.add(aid));
       });
     });
+    return assessmentIds;
+  },
+
+  getPopulatedIndicators(curriculumId) {
+    const assessmentIds = this.getAttachedAssessmentIds(curriculumId);
 
     const usedIndicatorIds = new Set();
     const relevantCompetencyIds = new Set();
@@ -689,6 +699,114 @@ const CompetencyService = {
     });
 
     return groups;
+  },
+
+  // ── Indicator Achievements — persisted marks-earned per indicator, joined against the live
+  // marksPossible from getPopulatedIndicators above. Engine 5 aggregates these into
+  // per-competency scores (feeding the Competencies tab); the same achievements, converted to
+  // percentages, feed Engine 4 for Performance Band completion (feeding the Progress Arc tab).
+
+  getIndicatorAchievements(curriculumId) {
+    const groups = this.getPopulatedIndicators(curriculumId);
+    const achievements = IndicatorAchievementModel.findByCurriculumId(curriculumId);
+    const byIndicatorId = new Map(achievements.map((a) => [a.indicatorId, a]));
+    return groups.flatMap((g) =>
+      g.indicators.map((ind) => ({
+        competencyId:   g.competencyId,
+        competencyName: g.competencyName,
+        indicatorId:    ind.id,
+        indicatorName:  ind.name,
+        marksPossible:  ind.marksPossible,
+        marksEarned:    byIndicatorId.get(ind.id)?.marksEarned ?? 0,
+      }))
+    );
+  },
+
+  setIndicatorAchievement(curriculumId, indicatorId, competencyId, marksEarned) {
+    if (!CurriculumCompetencyLinkModel.findOne(curriculumId, competencyId)) {
+      const err = new Error("This curriculum hasn't adopted that competency yet");
+      err.statusCode = 404;
+      throw err;
+    }
+    const comp = CompetencyModel.findById(competencyId);
+    if (!comp || !(comp.indicators || []).some((i) => i.id === indicatorId)) {
+      const err = new Error("Indicator not found on that competency");
+      err.statusCode = 404;
+      throw err;
+    }
+    return IndicatorAchievementModel.upsert(curriculumId, competencyId, indicatorId, marksEarned);
+  },
+
+  // Auto-computed score per Evidence Type (0-100) — pools indicator marks (earned vs. possible)
+  // across every assessment attached to this curriculum whose type matches the Evidence Type's
+  // category. `possible` is recomputed here filtered to that category (NOT the same as
+  // getPopulatedIndicators' marksPossible, which pools every category together); `earned`
+  // reuses the same curriculum-wide, category-agnostic achievement value per indicator that
+  // also drives Progress Arc.
+  getEvidenceTypeScores(curriculumId) {
+    const evidenceTypes = EvidenceTypeModel.findByCurriculumId(curriculumId);
+    const assessmentIds = this.getAttachedAssessmentIds(curriculumId);
+    const earnedByIndicator = new Map(
+      IndicatorAchievementModel.findByCurriculumId(curriculumId).map((a) => [a.indicatorId, a.marksEarned])
+    );
+
+    return evidenceTypes.map((et) => {
+      if (!et.category) return { evidenceTypeId: et.id, score: 0 };
+
+      let possible = 0;
+      const seenIndicatorIds = new Set();
+      assessmentIds.forEach((aid) => {
+        const assessment = BuilderAssessmentModel.findById(aid);
+        if (!assessment || assessment.type !== et.category) return;
+        const scoredEntries = [...(assessment.items || []), ...(assessment.rubric || [])];
+        scoredEntries.forEach((entry) => {
+          (entry.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
+            possible += Number(marks) || 0;
+            seenIndicatorIds.add(indicatorId);
+          });
+        });
+      });
+
+      const earned = [...seenIndicatorIds].reduce((sum, indId) => sum + (earnedByIndicator.get(indId) || 0), 0);
+      const score = possible > 0 ? Math.min(100, Math.round((earned / possible) * 100 * 10) / 10) : 0;
+      return { evidenceTypeId: et.id, score };
+    });
+  },
+
+  // Real competency score pipeline: auto-computed Evidence Type scores (from real assessment
+  // marks, above) run through the curriculum's actual Assessment Framework config — Engine 1 →
+  // Engine 2 per Assessment Type, exactly as calculateScore does for a single type — combined
+  // across every Assessment Type by its own typeWeight (Engine 5), then resolved to a Progress
+  // Level + Performance Band (Engine 3). Score Evidence's weights stay manually configured;
+  // only the evidence score itself is automatic.
+  getCompetencyScores(curriculumId) {
+    const evidenceScores   = this.getEvidenceTypeScores(curriculumId);
+    const competencies     = this.getCurriculumCompetencies(curriculumId);
+    const assessmentTypes  = AssessmentTypeModel.findByCurriculumId(curriculumId);
+    const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId).filter((b) => !b.learningAreaId);
+    const progressLevels   = ProgressLevelModel.findByCurriculumId(curriculumId);
+
+    const perTypeResults = assessmentTypes.map((at) => {
+      const config = at.evidenceWeights || [];
+      const { breakdown } = runAssessmentEngine(evidenceScores, config);
+      const competencyScores = runCompetencyEngine(breakdown, config, competencies);
+      return { typeWeight: at.typeWeight || 0, competencyScores };
+    });
+
+    const overall = combineAssessmentTypeScores(perTypeResults);
+    return runProgressArcEngine(overall, progressLevels, performanceBands);
+  },
+
+  // Live-data sibling of calculateIndicatorProgress — driven by what's actually persisted
+  // instead of requiring the caller to construct the whole indicatorAchievements payload.
+  getBandProgress(curriculumId) {
+    const achievements = this.getIndicatorAchievements(curriculumId);
+    const indicatorAchievements = achievements.map((a) => ({
+      competencyId: a.competencyId,
+      indicatorId:  a.indicatorId,
+      percent:      a.marksPossible > 0 ? Math.min(100, (a.marksEarned / a.marksPossible) * 100) : 0,
+    }));
+    return this.calculateIndicatorProgress(curriculumId, indicatorAchievements);
   },
 
   deleteEvidenceType(curriculumId, id) {
@@ -734,12 +852,9 @@ const CompetencyService = {
         };
       }
 
-      const stageAssignment = (stage?.assignments || []).find((a) => a.learningAreaId === area.id);
-      let defaultCourseId = stageAssignment?.courseId || null;
-      if (!defaultCourseId) {
-        const sequence = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
-        defaultCourseId = sequence[0]?.courseId || null;
-      }
+      const sequence = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
+      const stageDefault = stage ? sequence.find((s) => (s.defaultForStages || []).includes(stage.id)) : null;
+      const defaultCourseId = stageDefault?.courseId || sequence[0]?.courseId || null;
 
       return {
         learningAreaId: area.id,
