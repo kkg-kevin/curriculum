@@ -20,5 +20,16 @@
     ],
     "createdAt": "2026-07-15T09:16:06.816Z",
     "updatedAt": "2026-07-15T10:19:29.598Z"
+  },
+  {
+    "id": "e7c8cab9-3e9d-408a-b217-1fdc3e601e20",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "a978b111-1725-4fd5-9142-3f5b48c62990"
+    ],
+    "createdAt": "2026-07-15T14:01:26.338Z",
+    "updatedAt": "2026-07-15T14:01:26.338Z"
   }
 ]
