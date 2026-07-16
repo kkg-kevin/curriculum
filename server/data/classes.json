@@ -628,12 +628,12 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "gradeId": "c47a17de-grade-3",
     "gradeName": "Grade 3",
-    "classTeacherId": "2716cefb-87bf-471f-9139-344df6b5922e",
+    "classTeacherId": "6c16db4a-37fd-4095-9fdc-9f3d698949a0",
     "academicYear": "2026",
-    "capacity": null,
+    "capacity": 12,
     "status": "active",
     "id": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
     "createdAt": "2026-07-09T06:40:04.933Z",
-    "updatedAt": "2026-07-09T07:15:39.264Z"
+    "updatedAt": "2026-07-16T09:36:39.339Z"
   }
 ]

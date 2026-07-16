@@ -16,7 +16,8 @@ const courseRoutes = require("./modules/courses/course.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
-const { protect } = require("./shared/middleware/auth.middleware");
+const { protect, authorize } = require("./shared/middleware/auth.middleware");
+const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 
 const app = express();
 
@@ -35,20 +36,25 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 
-// Everything below requires a logged-in session. Only the "admin" role exists today (it can
-// see all of this); teacher/learner accounts will get their own scoped middleware per-route
-// once those roles are actually issued.
-app.use("/api/curricula", protect, curriculumRoutes);
-app.use("/api/competencies", protect, competencyRoutes);
-app.use("/api/learning-areas", protect, learningAreaRoutes);
-app.use("/api/inventory", protect, inventoryRoutes);
-app.use("/api/schools", protect, schoolRoutes);
-app.use("/api/teachers", protect, teacherRoutes);
-app.use("/api/classes", protect, classRoutes);
-app.use("/api/learners", protect, learnerRoutes);
+// Everything below requires a logged-in session. Curriculum authoring, settings, assessments
+// (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
+// non-admin reads a school inherits (its curriculum, and that curriculum's current courses)
+// before the router-wide admin gate — attachOwnRecords is mounted here too so those routes can
+// verify the requested curriculum is actually the caller's own. Schools/teachers/classes/
+// learners are read (and, for "school", written) by more than one role, so their own routes
+// files apply per-method role checks plus attachOwnRecords-based ownership scoping — a school/
+// teacher/learner account can only ever touch its own school's data, never another's.
+app.use("/api/curricula", protect, attachOwnRecords, curriculumRoutes);
+app.use("/api/competencies", protect, authorize("admin"), competencyRoutes);
+app.use("/api/learning-areas", protect, authorize("admin"), learningAreaRoutes);
+app.use("/api/inventory", protect, authorize("admin"), inventoryRoutes);
+app.use("/api/schools", protect, attachOwnRecords, schoolRoutes);
+app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
+app.use("/api/classes", protect, attachOwnRecords, classRoutes);
+app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, courseRoutes);
-app.use("/api/assessments", protect, assessmentRoutes);
-app.use("/api/uploads", protect, uploadRoutes);
+app.use("/api/assessments", protect, authorize("admin"), assessmentRoutes);
+app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

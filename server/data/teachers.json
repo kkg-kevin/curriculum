@@ -168,15 +168,15 @@
     "updatedAt": "2026-06-22T09:06:31.815Z"
   },
   {
-    "firstName": "Teacher jane ",
-    "lastName": "jane ",
-    "employeeId": "001",
+    "firstName": "Test",
+    "lastName": "Teacher",
+    "employeeId": "TCH-TEST-01",
     "email": "teacher@digifunzi.com",
-    "phone": "+254727496461",
+    "phone": "+254799999999",
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "status": "active",
-    "id": "2716cefb-87bf-471f-9139-344df6b5922e",
-    "createdAt": "2026-07-09T07:15:39.205Z",
-    "updatedAt": "2026-07-09T07:15:39.205Z"
+    "id": "6c16db4a-37fd-4095-9fdc-9f3d698949a0",
+    "createdAt": "2026-07-16T07:38:37.627Z",
+    "updatedAt": "2026-07-16T09:44:09.861Z"
   }
 ]

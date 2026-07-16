@@ -6,6 +6,7 @@ const menuItems = [
   { name: "Course Content",  path: "/teacher-portal/course-content" },
   { name: "Assessments",     path: "/teacher-portal/assessments" },
   { name: "Attendance",      path: "/teacher-portal/attendance" },
+  { name: "My Profile",      path: "/teacher-portal/profile" },
 ];
 
 function TeacherSidebar() {
