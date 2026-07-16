@@ -18,7 +18,7 @@ import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem,
+  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -104,15 +104,21 @@ const CSS = `
   .tb-segmented button:first-child { border-left:none; }
   .tb-segmented button.active { background:#25476a; color:#fff; }
 
-  .tb-workspace { display:grid; grid-template-columns:210px minmax(0,1fr) 270px; gap:14px; align-items:start; }
-  @media(max-width:1360px){ .tb-workspace{ grid-template-columns:190px minmax(0,1fr) 250px; } }
-  @media(max-width:1150px){ .tb-workspace{ grid-template-columns:1fr; } }
+  .tb-workspace { display:grid; grid-template-columns:200px minmax(0,1fr) 360px; gap:14px; align-items:start; }
+  @media(max-width:1500px){ .tb-workspace{ grid-template-columns:190px minmax(0,1fr) 310px; } }
+  @media(max-width:1250px){ .tb-workspace{ grid-template-columns:1fr; } }
 
   .tb-card { background:#fff; border-radius:14px; border:1.5px solid #E5E7EB; padding:16px; min-width:0; box-sizing:border-box; }
   .tb-card-title { margin:0 0 10px; font-size:12.5px; font-weight:800; color:#0F2645; text-transform:uppercase; letter-spacing:0.04em; }
 
   .tb-palette-group { margin-bottom:14px; }
   .tb-palette-group-label { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 6px; }
+  .tb-palette-group-toggle {
+    display:flex; align-items:center; justify-content:space-between; width:100%; padding:2px 0 6px;
+    border:none; background:none; cursor:pointer; font-family:Inter,sans-serif;
+  }
+  .tb-palette-chevron { transition:transform 0.15s; flex-shrink:0; }
+  .tb-palette-chevron.open { transform:rotate(180deg); }
   .tb-palette-btn {
     display:flex; align-items:center; gap:8px; width:100%; padding:9px 10px; margin-bottom:6px;
     border-radius:9px; border:1.5px solid #E5E7EB; background:#fff; font-size:12.5px; font-weight:600;
@@ -159,8 +165,8 @@ const CSS = `
   }
 
   .tb-tag-chip {
-    display:inline-flex; align-items:center; gap:6px; padding:4px 6px 4px 10px; border-radius:20px;
-    font-size:12px; font-weight:700; font-family:Inter,sans-serif;
+    display:inline-flex; align-items:center; gap:6px; padding:5px 7px 5px 11px; border-radius:20px;
+    font-size:12px; font-weight:700; font-family:Inter,sans-serif; max-width:100%; line-height:1.3;
   }
   .tb-tag-chip-x {
     width:15px; height:15px; border-radius:50%; border:none; background:rgba(0,0,0,0.08); color:inherit;
@@ -285,7 +291,7 @@ function TagPicker({ label, items, selectedIds, onChange, onCreateNew }) {
             const color = item.color || TAG_PALETTE[idx % TAG_PALETTE.length];
             return (
               <span key={item.id} className="tb-tag-chip" style={{ background: `${color}12`, border: `1.5px solid ${color}30`, color }}>
-                {item.name}
+                {item.chipName || item.name}
                 <button type="button" className="tb-tag-chip-x" onClick={() => onChange(selectedIds.filter((x) => x !== item.id))}>×</button>
               </span>
             );
@@ -330,16 +336,22 @@ function IndicatorPicker({ options, selectedIds, onChange }) {
   );
 }
 
+// Reconciles an IndicatorPicker's selected-id list back onto an `indicatorMarks` array —
+// ids that remain keep their existing marks value, newly-added ids start at 0.
+function syncIndicatorMarks(indicatorMarks, newIds) {
+  return newIds.map((id) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: 0 });
+}
+
 /* ── entry factory ──────────────────────────────────────────────────────── */
 
 function defaultEntry(kind, sectionId) {
-  const base = { id: genId(), kind, sectionId, competencyIndicatorIds: [] };
+  const base = { id: genId(), kind, sectionId };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
-    return { ...base, text: "", ratingScale: ["Not Yet", "Developing", "Proficient"] };
+    return { ...base, text: "", ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
   }
   return {
     ...base,
-    question: "", points: 1,
+    question: "", points: 1, indicatorMarks: [],
     options: kind === "mcqSingle" || kind === "mcqMultiple" ? ["", ""] : [],
     correctAnswer: "",
     pairs: kind === "matching" ? [{ left: "", right: "" }, { left: "", right: "" }] : [],
@@ -366,21 +378,38 @@ function ItemPalette({ type, structureType, onAdd }) {
         ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
         : (BUILDER_REGISTRY[type]?.itemGroups || []);
 
+  // Groups always start collapsed on a fresh create/edit visit — opt-in (not opt-out) so any
+  // group that only appears after switching structure type also starts collapsed.
+  const [expanded, setExpanded] = useState(() => new Set());
+  const toggle = (group) => setExpanded((prev) => {
+    const next = new Set(prev);
+    if (next.has(group)) next.delete(group); else next.add(group);
+    return next;
+  });
+
   return (
     <div className="tb-card">
       <p className="tb-card-title">Add Item</p>
       <p style={{ margin: "-6px 0 12px", fontSize: "11px", color: "#9CA3AF" }}>Click to add an item to the focused section.</p>
-      {groups.map((group) => (
-        <div key={group} className="tb-palette-group">
-          <p className="tb-palette-group-label" style={{ color: ITEM_GROUP_COLORS[group] }}>{ITEM_GROUP_LABELS[group]}</p>
-          {ITEM_GROUPS[group].map((kind) => (
-            <button key={kind} type="button" className="tb-palette-btn" onClick={() => onAdd(kind)}>
-              <span className="tb-palette-dot" style={{ backgroundColor: ITEM_GROUP_COLORS[group] }} />
-              {ITEM_KIND_LABELS[kind]}
+      {groups.map((group) => {
+        const isOpen = expanded.has(group);
+        return (
+          <div key={group} className="tb-palette-group">
+            <button type="button" className="tb-palette-group-toggle" onClick={() => toggle(group)}>
+              <span className="tb-palette-group-label" style={{ color: ITEM_GROUP_COLORS[group], margin: 0 }}>{ITEM_GROUP_LABELS[group]}</span>
+              <svg className={`tb-palette-chevron${isOpen ? " open" : ""}`} width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M6 9l6 6 6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
-          ))}
-        </div>
-      ))}
+            {isOpen && ITEM_GROUPS[group].map((kind) => (
+              <button key={kind} type="button" className="tb-palette-btn" onClick={() => onAdd(kind)}>
+                <span className="tb-palette-dot" style={{ backgroundColor: ITEM_GROUP_COLORS[group] }} />
+                {ITEM_KIND_LABELS[kind]}
+              </button>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -473,7 +502,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
           {ITEM_KIND_LABELS[entry.kind]}
         </span>
         <span className="tb-entry-text">{stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
-        {!OBSERVATION_ITEM_KINDS.includes(entry.kind) && <span className="tb-entry-points">{entry.points} pt{entry.points !== 1 ? "s" : ""}</span>}
+        {!OBSERVATION_ITEM_KINDS.includes(entry.kind) && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
         <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete">✕</button>
@@ -505,25 +534,56 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
   const set = (key, val) => onChange({ ...entry, [key]: val });
   const isObservation = OBSERVATION_ITEM_KINDS.includes(entry.kind);
   const supportsTasks = BUILDER_REGISTRY[type]?.supportsTasks && !isObservation;
+  const indicatorMarks = entry.indicatorMarks || [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       <div>
         <Label>{isObservation ? "Observation Text" : "Question / Prompt"}</Label>
         <RichTextEditor value={entryLabel(entry)} onChange={(html) => set(isObservation ? "text" : "question", html)} minHeight={90} maxHeight={220} />
       </div>
 
-      <IndicatorPicker
-        options={indicatorOptions}
-        selectedIds={entry.competencyIndicatorIds || []}
-        onChange={(ids) => set("competencyIndicatorIds", ids)}
-      />
+      {isObservation ? (
+        <IndicatorPicker
+          options={indicatorOptions}
+          selectedIds={entry.competencyIndicatorIds || []}
+          onChange={(ids) => set("competencyIndicatorIds", ids)}
+        />
+      ) : (
+        <IndicatorPicker
+          options={indicatorOptions}
+          selectedIds={indicatorMarks.map((m) => m.indicatorId)}
+          onChange={(ids) => set("indicatorMarks", syncIndicatorMarks(indicatorMarks, ids))}
+        />
+      )}
 
       {!isObservation && (
-        <div>
-          <Label>Marks</Label>
-          <input type="number" min="0" className="tb-input" value={entry.points} onChange={(e) => set("points", Number(e.target.value) || 0)} />
-        </div>
+        indicatorMarks.length === 0 ? (
+          <div>
+            <Label>Marks</Label>
+            <input type="number" min="0" className="tb-input" value={entry.points} onChange={(e) => set("points", Number(e.target.value) || 0)} />
+          </div>
+        ) : (
+          <div>
+            <Label>Marks per Indicator</Label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {indicatorMarks.map((m) => {
+                const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
+                return (
+                  <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
+                    <input
+                      type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                      value={m.marks}
+                      onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Total: {entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</p>
+          </div>
+        )
       )}
 
       {(entry.kind === "mcqSingle" || entry.kind === "mcqMultiple") && (
@@ -703,7 +763,7 @@ function IndicatorStatsPanel({ stats }) {
     <div className="tb-card" style={{ marginTop: "16px" }}>
       <p className="tb-card-title" style={{ marginBottom: "2px" }}>Indicator Statistics</p>
       <p style={{ margin: "0 0 14px", fontSize: "11.5px", color: "#9CA3AF" }}>
-        How many marks each linked indicator is worth, based on the questions tagged to it. A question tagged to more than one indicator counts its full marks toward each — so this can add up to more than the assessment's total marks.
+        How many marks each linked indicator is worth, based on the per-indicator marks assigned on tagged questions.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {[...byCompetency.entries()].map(([competencyName, indicators]) => (
@@ -739,33 +799,59 @@ function IndicatorStatsPanel({ stats }) {
 /* ── Grading Rubric tab (Assignment/Project) ────────────────────────────── */
 
 function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
-  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, competencyIndicatorIds: [] }]);
+  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, indicatorMarks: [] }]);
   const update = (id, patch) => onChange(rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id) => onChange(rubric.filter((c) => c.id !== id));
-  const totalPoints = rubric.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+  const totalPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
 
   return (
     <div className="tb-card">
       <p className="tb-card-title">Grading Rubric{rubric.length ? ` · ${totalPoints} pts` : ""}</p>
       <p style={{ margin: "-4px 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>Optional holistic grading criteria, separate from the item-level marks above.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {rubric.map((c) => (
-          <div key={c.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
-              <input className="tb-input" placeholder="Criterion" value={c.criterion} onChange={(e) => update(c.id, { criterion: e.target.value })} />
-              <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
-              <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}>✕</button>
+        {rubric.map((c) => {
+          const indicatorMarks = c.indicatorMarks || [];
+          return (
+            <div key={c.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
+                <input className="tb-input" placeholder="Criterion" value={c.criterion} onChange={(e) => update(c.id, { criterion: e.target.value })} />
+                {indicatorMarks.length === 0 && (
+                  <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
+                )}
+                <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}>✕</button>
+              </div>
+              <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={c.description} onChange={(e) => update(c.id, { description: e.target.value })} />
+              <div style={{ marginTop: "8px" }}>
+                <IndicatorPicker
+                  options={indicatorOptions}
+                  selectedIds={indicatorMarks.map((m) => m.indicatorId)}
+                  onChange={(ids) => update(c.id, { indicatorMarks: syncIndicatorMarks(indicatorMarks, ids) })}
+                />
+              </div>
+              {indicatorMarks.length > 0 && (
+                <div style={{ marginTop: "10px" }}>
+                  <Label>Marks per Indicator</Label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {indicatorMarks.map((m) => {
+                      const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
+                      return (
+                        <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#fff", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
+                          <input
+                            type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                            value={m.marks}
+                            onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)) })}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Total: {entryMarks(c)} pt{entryMarks(c) !== 1 ? "s" : ""}</p>
+                </div>
+              )}
             </div>
-            <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={c.description} onChange={(e) => update(c.id, { description: e.target.value })} />
-            <div style={{ marginTop: "8px" }}>
-              <IndicatorPicker
-                options={indicatorOptions}
-                selectedIds={c.competencyIndicatorIds || []}
-                onChange={(ids) => update(c.id, { competencyIndicatorIds: ids })}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <button type="button" className="tb-add-item-btn" onClick={add}>+ Add Criterion</button>
       </div>
     </div>
@@ -1006,11 +1092,11 @@ function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
     structureType: a.structureType || "mixed", overview: a.overview || "",
     sections: a.sections || [],
-    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), competencyIndicatorIds: item.competencyIndicatorIds || [] })),
+    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), indicatorMarks: item.indicatorMarks || [] })),
     indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, competencyIndicatorIds: ind.competencyIndicatorIds || [], ...ind })),
     deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
-    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), competencyIndicatorIds: c.competencyIndicatorIds || [] })),
+    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), indicatorMarks: c.indicatorMarks || [] })),
     competencyIds, learningAreaIds, inventory,
   };
 }
@@ -1042,26 +1128,28 @@ export default function AssessmentBuilderPage() {
   const [createLearningAreaOpen, setCreateLearningAreaOpen] = useState(false);
   const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
 
+  // `name` (competency — indicator) disambiguates in the picker dropdown when more than one
+  // linked competency is in play; `chipName` (just the indicator) keeps the selected chip and
+  // the Marks-per-Indicator rows compact once it's already been picked.
   const indicatorOptions = useMemo(() => {
     if (!form) return [];
     return allCompetencies
       .filter((comp) => form.competencyIds.includes(comp.id))
-      .flatMap((comp) => (comp.indicators || []).map((ind) => ({ id: ind.id, name: `${comp.name} — ${ind.name}` })));
+      .flatMap((comp) => (comp.indicators || []).map((ind) => ({ id: ind.id, name: `${comp.name} — ${ind.name}`, chipName: ind.name })));
   }, [allCompetencies, form]);
 
-  // Per-indicator mark totals across this assessment's questions — a question linked to more
-  // than one indicator contributes its full points to each (matches how linking was designed:
-  // "this question speaks to this indicator, worth this many marks", not a split).
+  // Per-indicator mark totals across this assessment's questions — each indicator's marks
+  // come directly from its own row in the question's indicatorMarks split.
   const indicatorStats = useMemo(() => {
     if (!form) return [];
     const linked = allCompetencies.filter((comp) => form.competencyIds.includes(comp.id));
     const byIndicator = new Map();
     (form.items || []).forEach((item) => {
-      (item.competencyIndicatorIds || []).forEach((indId) => {
-        const cur = byIndicator.get(indId) || { marks: 0, questionCount: 0 };
-        cur.marks += Number(item.points) || 0;
+      (item.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
+        const cur = byIndicator.get(indicatorId) || { marks: 0, questionCount: 0 };
+        cur.marks += Number(marks) || 0;
         cur.questionCount += 1;
-        byIndicator.set(indId, cur);
+        byIndicator.set(indicatorId, cur);
       });
     });
     return linked.flatMap((comp, ci) =>

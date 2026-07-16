@@ -17,6 +17,7 @@ const ProgressionLadderModel = require("./competency-framework/progression-ladde
 const CurriculumAssessmentModel = require("./competency-framework/assessment.model");
 const CurriculumVersionModel = require("./versions/curriculum-versions.model");
 const LearnerJourneyModel = require("./competency-framework/learner-journey.model");
+const { collectCourseIds } = require("./versions/content.utils");
 
 const CurriculumService = {
   async createCurriculum(data) {
@@ -212,6 +213,39 @@ const CurriculumService = {
   async unlinkCourse(curriculumId, courseId) {
     CourseCurriculumLinkModel.unlink(courseId, curriculumId);
     return this.getCurriculumCourses(curriculumId);
+  },
+
+  // Every curriculum a course currently belongs to — via a direct link, or by appearing
+  // anywhere in any of its versions' content (draft or published, mirroring how
+  // autoPopulateFromCourse already treats "attached" at version create/publish time, not
+  // just the current/published version).
+  findCurriculaContainingCourse(courseId) {
+    const curriculumIds = new Set();
+    CourseCurriculumLinkModel.findByCourseId(courseId).forEach((l) => curriculumIds.add(l.curriculumId));
+    CurriculumVersionModel.findAll().forEach((v) => {
+      if (collectCourseIds(v.content).has(courseId)) curriculumIds.add(v.curriculumId);
+    });
+    return [...curriculumIds];
+  },
+
+  // Re-adopt this course's competencies/learning areas into every curriculum it currently
+  // belongs to. Called whenever something upstream changes that could newly qualify a
+  // competency/learning area for adoption (a competency tagged on one of its assessments, a
+  // learning area tagged on the course, an assessment attached to one of its sessions) — safe
+  // to call speculatively since autoPopulateFromCourse only ever adds, never removes.
+  resyncCourseIntoCurricula(courseId) {
+    this.findCurriculaContainingCourse(courseId).forEach((curriculumId) => this.autoPopulateFromCourse(curriculumId, courseId));
+  },
+
+  // Same, but starting from an assessment — resolves to every course that has a session
+  // referencing it, then resyncs each of those courses' curricula.
+  resyncCoursesForAssessment(assessmentId) {
+    const courseIds = new Set(
+      SessionModel.findAll()
+        .filter((s) => (s.assessmentIds || []).includes(assessmentId))
+        .map((s) => s.courseId)
+    );
+    courseIds.forEach((courseId) => this.resyncCourseIntoCurricula(courseId));
   },
 };
 

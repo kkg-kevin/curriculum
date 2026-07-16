@@ -13,6 +13,10 @@ const readAll  = () => { if (!fs.existsSync(FILE)) return []; const raw = fs.rea
 const writeAll = (data) => fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
 
 const CurriculumVersionModel = {
+  findAll() {
+    return readAll();
+  },
+
   findAllByCurriculumId(curriculumId) {
     return readAll().filter((v) => v.curriculumId === curriculumId).sort((a, b) => b.versionNumber - a.versionNumber);
   },

@@ -43,8 +43,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f22ef693-0720-469c-9227-e74bac7464dd"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 0
+          }
         ]
       },
       {
@@ -61,8 +64,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f0c20318-5f55-4b15-8303-7ea24092f191"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+            "marks": 0
+          }
         ]
       },
       {
@@ -92,8 +98,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 0
+          }
         ]
       },
       {
@@ -115,8 +124,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "9bb73790-dc33-4e8e-84a6-966f758d53b0"
+        "indicatorMarks": [
+          {
+            "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+            "marks": 0
+          }
         ]
       },
       {
@@ -138,8 +150,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "9d3880d3-ece0-40da-88de-9dd5019707f0"
+        "indicatorMarks": [
+          {
+            "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+            "marks": 0
+          }
         ]
       },
       {
@@ -159,8 +174,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "9d3880d3-ece0-40da-88de-9dd5019707f0"
+        "indicatorMarks": [
+          {
+            "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+            "marks": 0
+          }
         ]
       },
       {
@@ -177,8 +195,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "0431502c-8319-484f-910b-996422bee428"
+        "indicatorMarks": [
+          {
+            "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+            "marks": 0
+          }
         ]
       },
       {
@@ -195,9 +216,15 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
-          "bbe35b8e-df25-4106-abd5-429a9bc189d6"
+        "indicatorMarks": [
+          {
+            "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+            "marks": 0
+          },
+          {
+            "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+            "marks": 0
+          }
         ]
       },
       {
@@ -217,8 +244,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f22ef693-0720-469c-9227-e74bac7464dd"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 0
+          }
         ]
       }
     ],
@@ -228,7 +258,7 @@
     "milestones": [],
     "id": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
     "createdAt": "2026-07-10T07:35:11.685Z",
-    "updatedAt": "2026-07-13T06:36:50.581Z"
+    "updatedAt": "2026-07-16T10:32:05.444Z"
   },
   {
     "name": "AI Tools & Digital Citizenship",
@@ -259,8 +289,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "573eb2fa-d695-4063-8c62-ad886b12775a"
+        "indicatorMarks": [
+          {
+            "indicatorId": "573eb2fa-d695-4063-8c62-ad886b12775a",
+            "marks": 0
+          }
         ]
       },
       {
@@ -279,8 +312,11 @@
         "submissionKinds": [
           "documentUpload"
         ],
-        "competencyIndicatorIds": [
-          "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7"
+        "indicatorMarks": [
+          {
+            "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+            "marks": 0
+          }
         ]
       },
       {
@@ -297,8 +333,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28"
+        "indicatorMarks": [
+          {
+            "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+            "marks": 0
+          }
         ]
       },
       {
@@ -315,8 +354,11 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "4e1c27d6-465e-42d4-ae51-6854f9e63cfa"
+        "indicatorMarks": [
+          {
+            "indicatorId": "4e1c27d6-465e-42d4-ae51-6854f9e63cfa",
+            "marks": 0
+          }
         ]
       },
       {
@@ -335,8 +377,11 @@
         "submissionKinds": [
           "documentUpload"
         ],
-        "competencyIndicatorIds": [
-          "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba"
+        "indicatorMarks": [
+          {
+            "indicatorId": "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba",
+            "marks": 0
+          }
         ]
       }
     ],
@@ -347,8 +392,11 @@
         "description": "Ideas and reasoning are explained clearly and in the student's own words.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "1c6e3d95-0c78-4cad-b0a8-78894f33e2fa"
+        "indicatorMarks": [
+          {
+            "indicatorId": "1c6e3d95-0c78-4cad-b0a8-78894f33e2fa",
+            "marks": 0
+          }
         ]
       },
       {
@@ -357,8 +405,11 @@
         "description": "Shows awareness of AI limitations, bias, and the need to verify outputs.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "4e1c27d6-465e-42d4-ae51-6854f9e63cfa"
+        "indicatorMarks": [
+          {
+            "indicatorId": "4e1c27d6-465e-42d4-ae51-6854f9e63cfa",
+            "marks": 0
+          }
         ]
       },
       {
@@ -367,8 +418,11 @@
         "description": "Demonstrates safe, respectful, and ethical use of technology.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba"
+        "indicatorMarks": [
+          {
+            "indicatorId": "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba",
+            "marks": 0
+          }
         ]
       }
     ],
@@ -395,8 +449,11 @@
         "description": "Breaks the project idea into clear, manageable parts.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "f22ef693-0720-469c-9227-e74bac7464dd"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 0
+          }
         ]
       },
       {
@@ -405,8 +462,11 @@
         "description": "Plans a logical, step-by-step approach before building.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "9bb73790-dc33-4e8e-84a6-966f758d53b0"
+        "indicatorMarks": [
+          {
+            "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+            "marks": 0
+          }
         ]
       },
       {
@@ -415,9 +475,15 @@
         "description": "Applies variables, conditionals, loops, and functions correctly and clearly.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "9d3880d3-ece0-40da-88de-9dd5019707f0",
-          "0431502c-8319-484f-910b-996422bee428"
+        "indicatorMarks": [
+          {
+            "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+            "marks": 0
+          },
+          {
+            "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+            "marks": 0
+          }
         ]
       },
       {
@@ -426,9 +492,15 @@
         "description": "Tests the project and fixes issues found along the way.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
-          "bbe35b8e-df25-4106-abd5-429a9bc189d6"
+        "indicatorMarks": [
+          {
+            "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+            "marks": 0
+          },
+          {
+            "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+            "marks": 0
+          }
         ]
       },
       {
@@ -437,8 +509,11 @@
         "description": "Proposes and pursues an original, interesting project idea.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "ab3d2c5a-9a73-44c8-992f-65478e005309"
+        "indicatorMarks": [
+          {
+            "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+            "marks": 0
+          }
         ]
       },
       {
@@ -447,9 +522,15 @@
         "description": "Delivers a finished project that works as intended.",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "bef9080f-d582-4251-a0f1-fe382605c4d3",
-          "58e0dd6b-a78a-4029-a399-739eb3d77de0"
+        "indicatorMarks": [
+          {
+            "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+            "marks": 0
+          },
+          {
+            "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+            "marks": 0
+          }
         ]
       },
       {
@@ -458,8 +539,11 @@
         "description": "Works effectively with teammates throughout the project (if working in a group).",
         "points": 10,
         "sectionId": null,
-        "competencyIndicatorIds": [
-          "325e3232-5bda-43de-a1fb-010f486181aa"
+        "indicatorMarks": [
+          {
+            "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+            "marks": 0
+          }
         ]
       }
     ],
@@ -657,72 +741,91 @@
     "updatedAt": "2026-07-10T10:07:21.056Z"
   },
   {
-    "name": "sample",
+    "name": "Sample Quiz — Per-Indicator Marks Demo",
     "type": "quiz",
-    "description": "<p>sample </p>",
-    "instructions": "<p>sample</p>",
+    "description": "<p>Demonstrates marks split across multiple competency indicators on a single question.</p>",
+    "instructions": "",
     "structureType": "mixed",
     "overview": "",
     "sections": [
       {
-        "id": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "id": "sec-1",
         "name": "Section 1",
         "order": 0
       }
     ],
     "items": [
       {
-        "id": "22564a3d-24c2-41aa-91fa-01aa30355031",
-        "question": "<p>jbAUHVUhuhvuh</p>",
+        "id": "demo-q1",
+        "question": "<p>What is decomposition in computational thinking?</p>",
         "kind": "mcqSingle",
-        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "sectionId": "sec-1",
         "points": 1,
         "options": [
-          "sdbvuuydsa",
-          "WBSYBYVBDV "
+          "Breaking a problem into smaller parts",
+          "Writing code faster",
+          "Testing a program",
+          "Drawing a diagram"
         ],
-        "correctAnswer": "",
+        "correctAnswer": "Breaking a problem into smaller parts",
         "pairs": [],
         "blanks": [],
         "sequence": [],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f22ef693-0720-469c-9227-e74bac7464dd"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 3
+          },
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 12
+          },
+          {
+            "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+            "marks": 10
+          }
         ]
       },
       {
-        "id": "05b0eddd-61fa-474c-bbcf-ac74b1ff8be7",
-        "question": "<p>wgvYBYBYCH</p>",
-        "kind": "mcqSingle",
-        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
+        "id": "demo-q2",
+        "question": "<p>A student notices that every third step in a solution repeats the same logic, and reorganizes the solution into smaller reusable sub-problems as a result. Which two skills does this demonstrate?</p>",
+        "kind": "mcqMultiple",
+        "sectionId": "sec-1",
         "points": 1,
         "options": [
-          "eabfbyqb",
-          "UH7G7gq7f"
+          "Breaks down problems",
+          "Identifies patterns",
+          "Writes tests",
+          "Uses AI tools"
         ],
-        "correctAnswer": "",
+        "correctAnswer": "Breaks down problems, Identifies patterns",
         "pairs": [],
         "blanks": [],
         "sequence": [],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a"
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 2
+          },
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 3
+          }
         ]
       },
       {
-        "id": "4b644383-73fe-4938-ad34-e379b11bb0ff",
-        "question": "<p>qea QVYB</p>",
-        "kind": "mcqSingle",
-        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
-        "points": 1,
-        "options": [
-          "AWRHB",
-          "WRB"
-        ],
+        "id": "demo-q3",
+        "question": "<p>Name one benefit of writing pseudocode before writing real code.</p>",
+        "kind": "shortAnswer",
+        "sectionId": "sec-1",
+        "points": 4,
+        "options": [],
         "correctAnswer": "",
         "pairs": [],
         "blanks": [],
@@ -730,76 +833,15 @@
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "9bb73790-dc33-4e8e-84a6-966f758d53b0"
-        ]
-      },
-      {
-        "id": "0514a691-08cf-41c1-8a81-19dd8d825b6d",
-        "question": "<p>HWarb</p>",
-        "kind": "mcqSingle",
-        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
-        "points": 1,
-        "options": [
-          "wSB",
-          "bS"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "ab3d2c5a-9a73-44c8-992f-65478e005309"
-        ]
-      },
-      {
-        "id": "c20525e7-43f7-4941-829f-bf2b71ec6970",
-        "question": "<p>WSRBw</p>",
-        "kind": "mcqSingle",
-        "sectionId": "e86f2fd0-75ed-40cf-927b-8fe262cf5af6",
-        "points": 1,
-        "options": [
-          "WB",
-          "bvvdz"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": [],
-        "competencyIndicatorIds": [
-          "bc446d61-efcf-4091-ba12-6320d11d45f1"
-        ]
+        "indicatorMarks": []
       }
     ],
     "rubric": [],
     "indicators": [],
     "deliverables": [],
     "milestones": [],
-    "id": "c46c84dd-c0b6-4849-a1d1-51d817cede5d",
-    "createdAt": "2026-07-15T09:08:00.492Z",
-    "updatedAt": "2026-07-15T09:08:00.492Z"
-  },
-  {
-    "name": "Robotics Basics Quiz",
-    "type": "quiz",
-    "description": "A short quiz checking understanding of robot components and simple automation logic.",
-    "instructions": "",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [],
-    "items": [],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "718a568d-5c62-4049-990d-3a45e9d3f1ef",
-    "createdAt": "2026-07-15T09:16:24.836Z",
-    "updatedAt": "2026-07-15T09:16:24.836Z"
+    "id": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
+    "createdAt": "2026-07-16T11:08:20.733Z",
+    "updatedAt": "2026-07-16T11:20:50.926Z"
   }
 ]

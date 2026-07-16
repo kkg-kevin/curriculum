@@ -655,12 +655,24 @@ const CompetencyService = {
 
     const usedIndicatorIds = new Set();
     const relevantCompetencyIds = new Set();
+    // Marks possible per indicator — summed from `indicatorMarks` on items/rubric criteria
+    // across every assessment attached to this curriculum. This is "marks possible," not
+    // "marks earned" — there's no grading/submission data yet to compute actual achievement.
+    const marksByIndicator = new Map();
     assessmentIds.forEach((aid) => {
       const assessment = BuilderAssessmentModel.findById(aid);
       if (!assessment) return;
       AssessmentCompetencyLinkModel.findByAssessmentId(aid).forEach((l) => relevantCompetencyIds.add(l.competencyId));
-      const entries = [...(assessment.items || []), ...(assessment.rubric || []), ...(assessment.indicators || [])];
-      entries.forEach((entry) => {
+
+      const scoredEntries = [...(assessment.items || []), ...(assessment.rubric || [])];
+      scoredEntries.forEach((entry) => {
+        (entry.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
+          usedIndicatorIds.add(indicatorId);
+          marksByIndicator.set(indicatorId, (marksByIndicator.get(indicatorId) || 0) + (Number(marks) || 0));
+        });
+      });
+
+      (assessment.indicators || []).forEach((entry) => {
         (entry.competencyIndicatorIds || []).forEach((indId) => usedIndicatorIds.add(indId));
       });
     });
@@ -669,7 +681,9 @@ const CompetencyService = {
     relevantCompetencyIds.forEach((competencyId) => {
       const comp = CompetencyModel.findById(competencyId);
       if (!comp) return;
-      const indicators = (comp.indicators || []).filter((ind) => usedIndicatorIds.has(ind.id));
+      const indicators = (comp.indicators || [])
+        .filter((ind) => usedIndicatorIds.has(ind.id))
+        .map((ind) => ({ ...ind, marksPossible: marksByIndicator.get(ind.id) || 0 }));
       if (indicators.length === 0) return;
       groups.push({ competencyId, competencyName: comp.name, indicators });
     });

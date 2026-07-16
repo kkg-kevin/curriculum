@@ -2526,7 +2526,14 @@ function BandIndicatorContributionRow({ ind, percentage, onSave }) {
   return (
     <div className="cp-indicator-row" style={{ alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block" }}>{ind.name}</span>
+        <span style={{ display: "block" }}>
+          {ind.name}
+          {ind.marksPossible > 0 && (
+            <span style={{ marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>
+              {ind.marksPossible} pt{ind.marksPossible !== 1 ? "s" : ""} possible
+            </span>
+          )}
+        </span>
         {ind.description && (
           <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "#9CA3AF" }}>{ind.description}</span>
         )}

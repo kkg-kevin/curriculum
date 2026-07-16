@@ -1,17 +1,7 @@
 const CurriculumVersionModel = require("./curriculum-versions.model");
 const CourseModel            = require("../../courses/course.model");
 const CurriculumService      = require("../curriculum.service");
-
-// Every course id assigned anywhere in a version's content (any period, any grade).
-function collectCourseIds(content) {
-  const ids = new Set();
-  (content || []).forEach((period) => {
-    (period.classes || []).forEach((cls) => {
-      (cls.courses || []).forEach((c) => ids.add(c.id));
-    });
-  });
-  return ids;
-}
+const { collectCourseIds }   = require("./content.utils");
 
 function buildContentScaffold(curriculum) {
   const periods = curriculum.periods || [];
@@ -82,10 +72,18 @@ const CurriculumVersionService = {
     if (!version || version.curriculumId !== curriculumId) {
       throw Object.assign(new Error("Version not found"), { statusCode: 404 });
     }
-    return CurriculumVersionModel.update(versionId, {
+    const updated = CurriculumVersionModel.update(versionId, {
       status:  data.status  || version.status,
       content: data.content || version.content || [],
     });
+
+    // A course newly placed into this version's content (draft or otherwise) adopts its
+    // competencies/learning areas right away too — not just at create/publish time (see
+    // CurriculumService.autoPopulateFromCourse). Idempotent, so re-running for courses
+    // already adopted is a harmless no-op.
+    collectCourseIds(updated.content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+
+    return updated;
   },
 
   changeStatus(curriculumId, versionId, status) {

@@ -8,7 +8,9 @@ const CourseLearningAreaLinkModel = require("./course-learning-area-link.model")
 const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
 const CourseCurriculumLinkModel = require("./course-curriculum-link.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
+const CurriculumService = require("../curriculum/curriculum.service");
 const AssessmentModel = require("../assessments/assessment.model");
+const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
 
@@ -149,6 +151,9 @@ const CourseService = {
       throw err;
     }
     CourseLearningAreaLinkModel.link(courseId, learningAreaId);
+    // Live-sync: any curriculum this course is already in picks up the new learning area
+    // immediately, no re-attach/republish needed.
+    CurriculumService.resyncCourseIntoCurricula(courseId);
     return this.getCourseLearningAreas(courseId);
   },
 
@@ -224,8 +229,8 @@ const CourseService = {
     }
 
     const totalMarks =
-      (assessment.items  || []).reduce((sum, i) => sum + (i.points  || 0), 0) +
-      (assessment.rubric || []).reduce((sum, r) => sum + (r.points || 0), 0);
+      (assessment.items  || []).reduce((sum, i) => sum + computeEntryMarks(i), 0) +
+      (assessment.rubric || []).reduce((sum, r) => sum + computeEntryMarks(r), 0);
 
     const evidenceType = EvidenceTypeModel.findByCurriculumId(curriculumId)
       .find((e) => e.category === assessment.type);
@@ -301,7 +306,11 @@ const CourseService = {
       throw err;
     }
     const order = data.order ?? SessionModel.findByCourseId(courseId).length + 1;
-    return SessionModel.create({ courseId, ...data, order });
+    const session = SessionModel.create({ courseId, ...data, order });
+    // Live-sync: a session created with assessments already attached feeds this course's
+    // curricula immediately, same as attaching them via a later update.
+    if (data.assessmentIds?.length) CurriculumService.resyncCourseIntoCurricula(courseId);
+    return session;
   },
 
   async createSessionsBulk(courseId, count, moduleId = null) {
@@ -340,7 +349,12 @@ const CourseService = {
       err.statusCode = 404;
       throw err;
     }
-    return SessionModel.update(sessionId, data);
+    const updated = SessionModel.update(sessionId, data);
+    // Live-sync: an assessment newly attached to this session feeds this course's curricula
+    // immediately. No diffing needed — resync is idempotent, so this is a no-op if nothing
+    // about assessmentIds actually changed.
+    if (data.assessmentIds !== undefined) CurriculumService.resyncCourseIntoCurricula(courseId);
+    return updated;
   },
 
   async deleteSession(courseId, sessionId) {
