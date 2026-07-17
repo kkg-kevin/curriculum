@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLearnerQuery, useDeleteLearner, useUpdateLearner } from "../hooks/useLearners";
-import { useSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
@@ -163,7 +163,7 @@ export default function LearnerViewPage() {
   const { user } = useAuth();
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { mutate: deleteLearner } = useDeleteLearner();
-  const { data: schoolsData } = useSchoolsQuery();
+  const { data: schoolsData } = useAllLocationsQuery({ locationType: "school" });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: classesData } = useQuery({

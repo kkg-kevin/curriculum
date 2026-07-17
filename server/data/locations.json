@@ -1,0 +1,89 @@
+[
+  {
+    "name": "Sample school",
+    "locationType": "school",
+    "code": "SS",
+    "email": "school@digifunzi.com",
+    "phone": "+254727496461",
+    "contactPerson": "",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "status": "active",
+    "id": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "createdAt": "2026-07-09T06:39:37.766Z",
+    "updatedAt": "2026-07-17T07:50:38.163Z"
+  },
+  {
+    "name": "Digifunzii Innovation Academy",
+    "locationType": "school",
+    "code": "DIA-NRB",
+    "email": "",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "Waiyaki Way",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "id": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "createdAt": "2026-07-13T10:06:59.891Z",
+    "updatedAt": "2026-07-13T10:06:59.928Z"
+  },
+  {
+    "name": "Thika West",
+    "locationType": "learning_space",
+    "code": "",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "contactPerson": "Njambi njambi",
+    "email": "njambi@digifunzi.com",
+    "phone": "0727496461",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "id": "a75770d1-86d7-4931-a37f-6cb1e6b32e82",
+    "createdAt": "2026-07-17T09:20:28.432Z",
+    "updatedAt": "2026-07-17T09:20:28.432Z"
+  },
+  {
+    "name": "Kevin Githinji",
+    "locationType": "school",
+    "code": "KE-CBC-01",
+    "email": "",
+    "phone": "+254727496461",
+    "contactPerson": "Kevin Githinji",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Busia"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "description": "Add Location\nRegister a physical place and, optionally, assign it its own curriculum.",
+    "photos": [],
+    "amenities": [
+      "charging_ports",
+      "coffee_available",
+      "projector",
+      "whiteboard",
+      "wifi"
+    ],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "46e356d3-df2a-487d-a56a-8dac3ba1e079",
+    "createdAt": "2026-07-17T11:21:39.383Z",
+    "updatedAt": "2026-07-17T11:21:39.383Z"
+  }
+]

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
-import { schoolApi } from "../../schools/services/schoolApi";
+import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { classApi } from "../../classes/services/classApi";
 
 const ACCENT = "#25476a";

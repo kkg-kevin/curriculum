@@ -29,10 +29,10 @@ import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 import CurriculumVersionControlPage from "../modules/curriculum/pages/CurriculumVersionControlPage";
 import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
 import CompetenciesPage from "../modules/curriculum/pages/CompetenciesPage";
-import SchoolsPage from "../modules/schools/pages/SchoolsPage";
-import CreateSchoolPage from "../modules/schools/pages/CreateSchoolPage";
-import EditSchoolPage from "../modules/schools/pages/EditSchoolPage";
-import SchoolViewPage from "../modules/schools/pages/SchoolViewPage";
+import LocationsPage from "../modules/locations/pages/LocationsPage";
+import CreateLocationPage from "../modules/locations/pages/CreateLocationPage";
+import EditLocationPage from "../modules/locations/pages/EditLocationPage";
+import LocationViewPage from "../modules/locations/pages/LocationViewPage";
 import TeachersPage from "../modules/teachers/pages/TeachersPage";
 import SchoolTeachersPage from "../modules/teachers/pages/SchoolTeachersPage";
 import CreateTeacherPage from "../modules/teachers/pages/CreateTeacherPage";
@@ -71,14 +71,11 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="schools">
-          <Route index element={<SchoolsPage />} />
-          <Route path="create" element={<CreateSchoolPage />} />
-          <Route path=":id/edit" element={<EditSchoolPage />} />
-          <Route path=":id/view" element={<SchoolViewPage />} />
-        </Route>
         <Route path="locations">
-          <Route path="create" element={<ComingSoon name="Add Location" />} />
+          <Route index element={<LocationsPage />} />
+          <Route path="create" element={<CreateLocationPage />} />
+          <Route path=":id/edit" element={<EditLocationPage />} />
+          <Route path=":id/view" element={<LocationViewPage />} />
         </Route>
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />

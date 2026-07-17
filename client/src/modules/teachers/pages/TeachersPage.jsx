@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useAllTeachersQuery } from "../hooks/useTeacher";
-import SchoolPickerCard from "../../schools/components/SchoolPickerCard";
+import SchoolPickerCard from "../../locations/components/SchoolPickerCard";
 
 function SkeletonCard() {
   return (
@@ -21,7 +21,7 @@ function SkeletonCard() {
 
 export default function TeachersPage() {
   const navigate = useNavigate();
-  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllSchoolsQuery();
+  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllLocationsQuery({ locationType: "school" });
   const { data: teachersData, isLoading: teachersLoading } = useAllTeachersQuery();
 
   const schools  = schoolsData?.data  || [];

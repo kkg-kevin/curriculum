@@ -1,6 +1,6 @@
 ﻿import { useFormContext } from "react-hook-form";
 import { TEACHER_STATUSES } from "../schemas/teacher.schema";
-import { useSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -61,7 +61,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
 
 export default function TeacherForm({ lockedSchoolId = "" }) {
   const { register, formState: { errors } } = useFormContext();
-  const { data: schoolsData } = useSchoolsQuery();
+  const { data: schoolsData } = useAllLocationsQuery({ locationType: "school" });
   const schools = schoolsData?.data || [];
   const lockedSchool = lockedSchoolId ? schools.find((s) => s.id === lockedSchoolId) : null;
 

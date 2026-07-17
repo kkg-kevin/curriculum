@@ -1,7 +1,7 @@
 ﻿import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
-import { useAllSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
 import { useAllTeachersQuery } from "../../teachers/hooks/useTeacher";
 import { useAllClassesQuery } from "../../classes/hooks/useClasses";
@@ -422,7 +422,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const { data: curriculaData, isLoading: curriculaLoading } = useCurriculaQuery();
-  const { data: schoolsData,   isLoading: schoolsLoading }   = useAllSchoolsQuery();
+  const { data: schoolsData,   isLoading: schoolsLoading }   = useAllLocationsQuery({ locationType: "school" });
   const { data: learnersData,  isLoading: learnersLoading }  = useAllLearnersQuery();
   const { data: teachersData,  isLoading: teachersLoading }  = useAllTeachersQuery();
   const { data: classesData,   isLoading: classesLoading }   = useAllClassesQuery();
@@ -516,7 +516,7 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/schools/create")}
+              onClick={() => navigate("/locations/create")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -557,7 +557,7 @@ export default function DashboardPage() {
           sub={schoolsLoading ? null : totalSchools === 0 ? "None added yet" : `${activeSchools} active`}
           accent="#38aae1"
           actionLabel={totalSchools === 0 ? "Get started" : "View all"}
-          onAction={() => navigate("/schools")}
+          onAction={() => navigate("/locations")}
           loading={schoolsLoading}
         />
         <StatCard
@@ -709,7 +709,7 @@ export default function DashboardPage() {
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }}>
                 <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent Schools</h2>
-                <button type="button" onClick={() => navigate("/schools")} style={{ background: "none", border: "none", fontSize: "12px", color: "#38aae1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+                <button type="button" onClick={() => navigate("/locations")} style={{ background: "none", border: "none", fontSize: "12px", color: "#38aae1", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
                   View all →
                 </button>
               </div>
@@ -726,7 +726,7 @@ export default function DashboardPage() {
                       badgeColor={sc.color}
                       badgeBg={sc.bg}
                       badgeBorder={sc.border}
-                      onClick={() => navigate(`/schools/${s.id}/view`)}
+                      onClick={() => navigate(`/locations/${s.id}/view`)}
                     />
                   );
                 })}
@@ -801,7 +801,7 @@ export default function DashboardPage() {
                 icon="🏫"
                 label="Add School"
                 description="Register a school to the system"
-                onClick={() => navigate("/schools/create")}
+                onClick={() => navigate("/locations/create")}
               />
               <QuickAction
                 icon="🏛️"
@@ -857,7 +857,7 @@ export default function DashboardPage() {
                 description="Manage schools"
                 count={totalSchools}
                 accentColor="#38aae1"
-                path="/schools"
+                path="/locations"
                 navigate={navigate}
                 isLive={totalSchools > 0}
               />

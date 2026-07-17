@@ -4,7 +4,7 @@ import logo from "../../assets/Logo-image.png";
 function Sidebar() {
   const menuItems = [
     { name: "Dashboard", path: "/" },
-    { name: "Schools", path: "/schools" },
+    { name: "Locations", path: "/locations" },
     { name: "Curriculum", path: "/curriculum" },
     { name: "Learners", path: "/learners" },
     { name: "Teachers", path: "/teachers" },

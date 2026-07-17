@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
-import { schoolApi } from "../../schools/services/schoolApi";
+import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";

@@ -1,7 +1,7 @@
 ﻿import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery } from "../hooks/useTeacher";
-import { useSchoolQuery } from "../../schools/hooks/useSchool";
+import { useLocationQuery as useSchoolQuery } from "../../locations/hooks/useLocation";
 import { classApi } from "../../classes/services/classApi";
 import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";

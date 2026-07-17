@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
-import { schoolApi } from "../../schools/services/schoolApi";
+import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade, useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
 

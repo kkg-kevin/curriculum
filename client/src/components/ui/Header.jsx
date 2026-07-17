@@ -17,7 +17,7 @@ function Header() {
 
   const pageTitles = {
     "/": "Dashboard",
-    "/schools": "Schools",
+    "/locations": "Locations",
     "/locations/create": "Add Location",
     "/curriculum": "Curriculum",
     "/curriculum/create": "Create Curriculum",
@@ -62,6 +62,10 @@ function Header() {
       return "Learners";
     if (pathname.startsWith("/school-portal/curriculum/"))
       return "Curriculum";
+    if (pathname.startsWith("/locations/") && pathname.endsWith("/edit"))
+      return "Edit Location";
+    if (pathname.startsWith("/locations/") && pathname.endsWith("/view"))
+      return "Location View";
     return "Dashboard";
   };
 
