@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useCreateClass } from "../hooks/useClasses";
-import { useSchoolQuery } from "../../schools/hooks/useSchool";
-import { schoolApi } from "../../schools/services/schoolApi";
+import { useLocationQuery as useSchoolQuery } from "../../locations/hooks/useLocation";
+import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useAuth } from "../../../context/AuthContext";
@@ -48,8 +48,8 @@ export default function CreateClassPage() {
   // Only needed for the admin no-schoolId case (school picker dropdown below) — skip the
   // fetch entirely when a school is already locked in via the query string.
   const { data: allSchoolsData } = useQuery({
-    queryKey: ["schools", "all"],
-    queryFn: () => schoolApi.getAll({}),
+    queryKey: ["locations", "all", "school"],
+    queryFn: () => schoolApi.getAll({ locationType: "school" }),
     enabled: !lockedSchoolId,
   });
   const schools = allSchoolsData?.data || [];

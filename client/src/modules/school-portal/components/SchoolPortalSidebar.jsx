@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { schoolApi } from "../../schools/services/schoolApi";
+import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import logo from "../../../assets/Logo-image.png";
 
 function SchoolPortalSidebar() {

@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const schoolsSlice = createSlice({
-  name: "schools",
+const locationsSlice = createSlice({
+  name: "locations",
   initialState: {
     filters: {
       status: "",
@@ -9,14 +9,14 @@ const schoolsSlice = createSlice({
     },
   },
   reducers: {
-    setSchoolFilter(state, action) {
+    setLocationFilter(state, action) {
       state.filters = { ...state.filters, ...action.payload };
     },
-    clearSchoolFilters(state) {
+    clearLocationFilters(state) {
       state.filters = { status: "", county: "" };
     },
   },
 });
 
-export const { setSchoolFilter, clearSchoolFilters } = schoolsSlice.actions;
-export default schoolsSlice.reducer;
+export const { setLocationFilter, clearLocationFilters } = locationsSlice.actions;
+export default locationsSlice.reducer;

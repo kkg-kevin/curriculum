@@ -34,6 +34,25 @@ const AuthService = {
     return this.createUser({ name, email, password, role });
   },
 
+  // Used by location.controller.js when an admin sets/resets a school-type location's portal
+  // password from the location form itself. If an account with that email already exists, its
+  // password is reset (only when the role matches — never silently repurpose an unrelated
+  // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
+  // account is created, same as self-signup.
+  async setOrCreatePassword({ name, email, password, role }) {
+    const existing = UserModel.findByEmail(email);
+    if (existing) {
+      if (existing.role !== role) {
+        const err = new Error(`This email is already registered as a ${existing.role} account`);
+        err.statusCode = 409;
+        throw err;
+      }
+      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      return sanitize(UserModel.update(existing.id, { passwordHash }));
+    }
+    return this.createUser({ name, email, password, role });
+  },
+
   async login(email, password) {
     const user = UserModel.findByEmail(email);
     if (!user) {

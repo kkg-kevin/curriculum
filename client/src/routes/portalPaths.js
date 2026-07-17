@@ -45,7 +45,7 @@ export function classCreatePath(role, schoolId) {
 // A school views its own profile in-portal; admin views any school through the cross-school
 // directory.
 export function schoolViewPath(role, schoolId) {
-  return role === "school" ? "/school-portal/profile" : `/schools/${schoolId}/view`;
+  return role === "school" ? "/school-portal/profile" : `/locations/${schoolId}/view`;
 }
 
 // Course content is read-only for Teacher/Learner/School (their own routes never reach the

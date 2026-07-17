@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const CurriculumService = require("./curriculum.service");
 const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema } = require("./curriculum.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
-const SchoolModel = require("../schools/school.model");
+const SchoolModel = require("../locations/location.model");
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);

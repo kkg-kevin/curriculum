@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useClassQuery, useDeleteClass } from "../hooks/useClasses";
-import { useSchoolsQuery } from "../../schools/hooks/useSchool";
+import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useQuery } from "@tanstack/react-query";
@@ -46,7 +46,7 @@ export default function ClassViewPage() {
   const { user } = useAuth();
   const { data: cls, isLoading } = useClassQuery(id);
   const { mutate: deleteClass } = useDeleteClass();
-  const { data: schoolsData } = useSchoolsQuery();
+  const { data: schoolsData } = useAllLocationsQuery({ locationType: "school" });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: curriculum }   = useCurriculumQuery(cls?.curriculumId);

@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Sample school",
+    "locationType": "school",
+    "code": "SS",
+    "email": "school@digifunzi.com",
+    "phone": "+254727496461",
+    "contactPerson": "",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "status": "active",
+    "id": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "createdAt": "2026-07-09T06:39:37.766Z",
+    "updatedAt": "2026-07-17T07:50:38.163Z"
+  },
+  {
+    "name": "Digifunzii Innovation Academy",
+    "locationType": "school",
+    "code": "DIA-NRB",
+    "email": "",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "Waiyaki Way",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "id": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "createdAt": "2026-07-13T10:06:59.891Z",
+    "updatedAt": "2026-07-13T10:06:59.928Z"
+  },
+  {
+    "name": "Digifunzi school",
+    "locationType": "school",
+    "code": "DS",
+    "email": "kev@gmail.com",
+    "phone": "+254727496461",
+    "contactPerson": "Kevin Githinji",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Bomet"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "description": "Digifunzi is a well-structured school for coding AI and robotics.",
+    "photos": [],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "projector",
+      "charging_ports",
+      "desks"
+    ],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "createdAt": "2026-07-17T11:49:48.017Z",
+    "updatedAt": "2026-07-17T11:49:48.017Z"
+  },
+  {
+    "name": "Kevin Githinji",
+    "locationType": "campus",
+    "code": "",
+    "email": "kev@gmail.com",
+    "phone": "ETHD",
+    "contactPerson": "wQEASRDTFG",
+    "address": {
+      "street": "ETHDG",
+      "city": "5ERHDF",
+      "county": "Kisumu"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "description": "EURTHFGN",
+    "photos": [],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "charging_ports",
+      "projector",
+      "desks",
+      "chairs"
+    ],
+    "operatingHours": {
+      "opensAt": "08:00",
+      "closesAt": "17:00",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    "spaces": [],
+    "id": "febdbf8d-71ab-4694-b9a0-fd5785b991b6",
+    "createdAt": "2026-07-17T12:00:33.633Z",
+    "updatedAt": "2026-07-17T12:00:33.633Z"
+  },
+  {
+    "name": "KEVIN KIHARA",
+    "locationType": "school",
+    "code": "24gwqe",
+    "email": "kev@digifunzi.com",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "",
+      "city": "",
+      "county": "Kitui"
+    },
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "status": "active",
+    "description": "",
+    "photos": [],
+    "amenities": [
+      "charging_ports",
+      "projector"
+    ],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "1d03e2b1-2ac2-4fc0-83b2-ee2636ac1f43",
+    "createdAt": "2026-07-17T12:24:36.813Z",
+    "updatedAt": "2026-07-17T12:24:36.813Z"
+  }
+]

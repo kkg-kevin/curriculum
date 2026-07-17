@@ -2,7 +2,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { useSchoolQuery } from "../../schools/hooks/useSchool";
+import { useLocationQuery as useSchoolQuery } from "../../locations/hooks/useLocation";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
