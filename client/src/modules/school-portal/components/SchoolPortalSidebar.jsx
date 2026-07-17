@@ -15,11 +15,13 @@ function SchoolPortalSidebar() {
   const schoolId = schoolsData?.data?.[0]?.id || null;
 
   const menuItems = [
-    { name: "Dashboard", path: "/school-portal", end: true, enabled: true },
+    { name: "Dashboard",   path: "/school-portal", end: true, enabled: true },
+    { name: "Curriculum",  path: "/school-portal/curriculum", end: false, enabled: true },
     { name: "Classes",   path: `/school-portal/classes/${schoolId}`,  end: false, enabled: !!schoolId },
     { name: "Teachers",  path: `/school-portal/teachers/${schoolId}`, end: false, enabled: !!schoolId },
     { name: "Learners",  path: `/school-portal/learners/${schoolId}`, end: false, enabled: !!schoolId },
     { name: "Reports",   path: "/school-portal/reports", end: false, enabled: true },
+    { name: "Profile",   path: "/school-portal/profile", end: false, enabled: true },
   ];
 
   return (

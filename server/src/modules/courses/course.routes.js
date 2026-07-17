@@ -27,14 +27,14 @@ const { authorize } = require("../../shared/middleware/auth.middleware");
 
 const router = express.Router();
 
-// Course authoring (builder pages, links, sessions, modules) is admin-only. Teacher/learner
-// portals only ever open a specific course they already know the id of (reached via the
+// Course authoring (builder pages, links, sessions, modules) is admin-only. Teacher/learner/
+// school portals only ever open a specific course they already know the id of (reached via the
 // curriculum's current-courses list) to read its content — never the bare catalog list, which
-// spans every school's curriculum. "school" does need the bare list — LearnerViewPage's
+// spans every school's curriculum. "school" does need the bare list too — LearnerViewPage's
 // Learning Journey card resolves course names for a learner's placement options from it.
 router.route("/").get(authorize("admin", "school"), getAllCourses).post(authorize("admin"), createCourse);
 router.route("/:id")
-  .get(authorize("admin", "teacher", "learner"), getCourseById)
+  .get(authorize("admin", "teacher", "learner", "school"), getCourseById)
   .put(authorize("admin"), updateCourse)
   .delete(authorize("admin"), deleteCourse);
 
@@ -54,13 +54,13 @@ router.route("/:id/curricula/links").get(authorize("admin"), getCourseCurricula)
 // curriculum's Evidence Type, previewing how its marks narrow down under that curriculum's scoring.
 router.route("/:id/assessments/:assessmentId/scoring").get(authorize("admin"), getAssessmentScoring);
 
-router.route("/:id/sessions").get(authorize("admin", "teacher", "learner"), getSessions).post(authorize("admin"), createSession);
+router.route("/:id/sessions").get(authorize("admin", "teacher", "learner", "school"), getSessions).post(authorize("admin"), createSession);
 router.route("/:id/sessions/bulk").post(authorize("admin"), createSessionsBulk);
 router.route("/:id/sessions/:sessionId").put(authorize("admin"), updateSession).delete(authorize("admin"), deleteSession);
 
 // Modules — group this course's Sessions under a named bucket (e.g. "Module 1" of 3).
 // Deleting a module un-assigns its sessions (moduleId -> null) rather than deleting them.
-router.route("/:id/modules").get(authorize("admin", "teacher", "learner"), getModules).post(authorize("admin"), createModule);
+router.route("/:id/modules").get(authorize("admin", "teacher", "learner", "school"), getModules).post(authorize("admin"), createModule);
 router.route("/:id/modules/:moduleId").put(authorize("admin"), updateModule).delete(authorize("admin"), deleteModule);
 
 module.exports = router;

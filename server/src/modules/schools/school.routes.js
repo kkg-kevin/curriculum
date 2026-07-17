@@ -18,7 +18,7 @@ router.route("/")
   .post(authorize("admin"), createSchool);
 router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getSchoolById)
-  .put(authorize("admin"), updateSchool)
+  .put(authorize("admin", "school"), updateSchool)
   .delete(authorize("admin"), deleteSchool);
 
 module.exports = router;

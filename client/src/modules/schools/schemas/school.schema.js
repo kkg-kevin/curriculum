@@ -34,3 +34,19 @@ export const schoolSchema = z.object({
   curriculumId: z.string().or(z.literal("")).nullable().default(""),
   status: z.enum(["active", "inactive"]).default("active"),
 });
+
+// What a school account can edit about its own record — code/curriculumId/status stay
+// platform-admin-only governance fields (see school-portal/pages/ProfilePage.jsx).
+export const schoolProfileSchema = z.object({
+  name: z.string().min(1, "School name is required").max(150, "Max 150 characters"),
+  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
+  phone: z.string().max(20, "Max 20 characters").default(""),
+  address: z.object({
+    street: z.string().max(200).default(""),
+    city: z.string().max(100).default(""),
+    county: z.string().min(1, "County is required").refine(
+      (v) => KENYA_COUNTIES.includes(v),
+      { message: "Select a valid Kenyan county" }
+    ),
+  }),
+});

@@ -22,6 +22,18 @@ export function useClassQuery(id) {
   });
 }
 
+export function useCreateClass() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: classApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
+      toast.success("Class created successfully!");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to create class"),
+  });
+}
+
 export function useUpdateClass() {
   const qc = useQueryClient();
   return useMutation({

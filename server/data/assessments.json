@@ -843,5 +843,57 @@
     "id": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
     "createdAt": "2026-07-16T11:08:20.733Z",
     "updatedAt": "2026-07-16T11:20:50.926Z"
+  },
+  {
+    "name": "Quiz",
+    "type": "quiz",
+    "description": "<p>Quiz description </p>",
+    "instructions": "<p>default instructions </p>",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "feb3da3e-99dc-4998-b977-5fd88eccd3d0",
+        "name": "Section 1",
+        "order": 0
+      }
+    ],
+    "items": [
+      {
+        "id": "fa5faeaf-0377-4361-a3fe-e0fbe63183a4",
+        "question": "<p>Question one</p>",
+        "kind": "mcqSingle",
+        "sectionId": "feb3da3e-99dc-4998-b977-5fd88eccd3d0",
+        "points": 1,
+        "options": [
+          "Option a",
+          "Option b "
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 1
+          },
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 1
+          }
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "255edf1a-0e08-448a-b1b0-0737f9b6c6b6",
+    "createdAt": "2026-07-17T05:40:49.727Z",
+    "updatedAt": "2026-07-17T05:40:49.727Z"
   }
 ]

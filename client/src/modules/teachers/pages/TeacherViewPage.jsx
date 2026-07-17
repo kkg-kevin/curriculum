@@ -4,7 +4,7 @@ import { useTeacherQuery } from "../hooks/useTeacher";
 import { useSchoolQuery } from "../../schools/hooks/useSchool";
 import { classApi } from "../../classes/services/classApi";
 import { useAuth } from "../../../context/AuthContext";
-import { teachersListPath, teacherPath, classPath } from "../../../routes/portalPaths";
+import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";
 
 const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -146,7 +146,7 @@ export default function TeacherViewPage() {
             {myClasses.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned as class teacher to any class yet.</p>
-                <button type="button" onClick={() => navigate("/classes/create")} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
+                <button type="button" onClick={() => navigate(classCreatePath(user?.role, teacher.schoolId))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -177,7 +177,7 @@ export default function TeacherViewPage() {
           <Section title="School">
             {school ? (
               <div
-                onClick={() => navigate(`/schools/${school.id}/view`)}
+                onClick={() => navigate(schoolViewPath(user?.role, school.id))}
                 style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "10px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", cursor: "pointer" }}
               >
                 <span style={{ fontSize: "24px", flexShrink: 0 }}>🏫</span>

@@ -103,7 +103,7 @@ export default function EditTeacherPage() {
 
       <FormProvider {...methods}>
         <form id="edit-teacher-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <TeacherForm />
+          <TeacherForm lockedSchoolId={user?.role === "school" ? teacher.schoolId : ""} />
         </form>
       </FormProvider>
 

@@ -8,6 +8,7 @@ import { classApi } from "../services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { ClassCard } from "../components/ClassCard";
 import SetUpYearPanel from "../components/SetUpYearPanel";
+import { classCreatePath } from "../../../routes/portalPaths";
 
 const ACCENT    = "#25476a";
 const GRAD_FROM = "#1a3550";
@@ -78,13 +79,22 @@ export default function SchoolClassesPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setSetupOpen((v) => !v)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#feb139", color: setupOpen ? "#ffffff" : "#25476a", border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap", transition: "all 0.15s" }}
-          >
-            {setupOpen ? "✕ Close" : "Set Up Year"}
-          </button>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => navigate(classCreatePath(user?.role, schoolId))}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              + Add Class
+            </button>
+            <button
+              type="button"
+              onClick={() => setSetupOpen((v) => !v)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#feb139", color: setupOpen ? "#ffffff" : "#25476a", border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s" }}
+            >
+              {setupOpen ? "✕ Close" : "Set Up Year"}
+            </button>
+          </div>
         </div>
       </div>
 
