@@ -34,6 +34,7 @@ export default function EditLocationPage() {
         },
         contactPerson: location.contactPerson || "",
         email: location.email || "",
+        password: "",
         phone: location.phone || "",
         curriculumId: location.curriculumId || "",
         status: location.status || "active",
@@ -82,7 +83,21 @@ export default function EditLocationPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "24px",
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          backgroundColor: "#F5F7FA",
+          paddingTop: "2px",
+          paddingBottom: "14px",
+          borderBottom: "1px solid #E5E7EB",
+        }}
+      >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
             <button type="button" onClick={() => navigate(`/locations/${id}/view`)} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>

@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const LocationService = require("./location.service");
+const AuthService = require("../auth/auth.service");
 const { createLocationSchema, updateLocationSchema } = require("./location.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
@@ -21,7 +22,12 @@ function pickPresent(parsed, raw) {
 }
 
 const createLocation = asyncHandler(async (req, res) => {
-  const data = createLocationSchema.parse(req.body);
+  const { password, ...data } = createLocationSchema.parse(req.body);
+  // Create the login first — if it fails (e.g. the email is already someone else's account),
+  // nothing is written at all, rather than leaving an orphaned location with no matching login.
+  if (password) {
+    await AuthService.setOrCreatePassword({ name: data.name, email: data.email, password, role: "school" });
+  }
   const record = await LocationService.createLocation(data);
   res.status(201).json({ success: true, data: record });
 });
@@ -48,7 +54,8 @@ const getLocationById = asyncHandler(async (req, res) => {
 });
 
 const updateLocation = asyncHandler(async (req, res) => {
-  const data = pickPresent(updateLocationSchema.parse(req.body), req.body);
+  const parsed = pickPresent(updateLocationSchema.parse(req.body), req.body);
+  const { password, ...data } = parsed;
   if (req.user.role === "school") {
     const existing = await LocationService.getLocationById(req.params.id);
     assertOwn(existing.id === req.ownSchool?.id);
@@ -61,6 +68,14 @@ const updateLocation = asyncHandler(async (req, res) => {
     data.locationType = existing.locationType;
   }
   const record = await LocationService.updateLocation(req.params.id, data);
+  if (password) {
+    if (record.locationType !== "school" || !record.email) {
+      const err = new Error("A password can only be set for a school-type location with an email address");
+      err.statusCode = 400;
+      throw err;
+    }
+    await AuthService.setOrCreatePassword({ name: record.name, email: record.email, password, role: "school" });
+  }
   res.json({ success: true, data: record });
 });
 

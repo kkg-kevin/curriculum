@@ -103,6 +103,9 @@ export const locationSchema = z
       .regex(/^[A-Z0-9-]*$/i, "Only letters, numbers, and hyphens")
       .default(""),
     email: z.string().email("Invalid email address").or(z.literal("")).default(""),
+    // Transient — never stored on the location record itself. When present, it creates or resets
+    // the matching school-portal login for this location's email (see useLocation.js/locationApi).
+    password: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
     phone: z.string().max(20, "Max 20 characters").default(""),
     contactPerson: z.string().max(150).default(""),
     address: addressSchema,
@@ -117,6 +120,14 @@ export const locationSchema = z
   .superRefine((data, ctx) => {
     if (data.locationType === "school" && !data.code) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["code"], message: "School code is required" });
+    }
+    if (data.password) {
+      if (!data.email) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
+      }
+      if (data.locationType !== "school") {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["password"], message: "Password can only be set for the School type" });
+      }
     }
   });
 

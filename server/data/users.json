@@ -34,5 +34,14 @@
     "id": "ee4ef989-0569-47ad-9496-d4cfd15c7440",
     "createdAt": "2026-07-09T08:20:23.161Z",
     "updatedAt": "2026-07-09T08:20:23.161Z"
+  },
+  {
+    "name": "KEVIN KIHARA",
+    "email": "kev@digifunzi.com",
+    "passwordHash": "$2b$10$mJP55l092eHPWEyhKzvsvua5HsW3pyVB9vt1nnQNSS5fV3GZ5l.qe",
+    "role": "school",
+    "id": "9abf6b20-6383-464e-b7d0-ced868c1e6dd",
+    "createdAt": "2026-07-17T12:24:36.806Z",
+    "updatedAt": "2026-07-17T12:24:36.807Z"
   }
 ]

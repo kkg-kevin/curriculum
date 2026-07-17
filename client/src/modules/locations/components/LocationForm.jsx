@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
 import {
   KENYA_COUNTIES, LOCATION_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS,
@@ -37,6 +38,29 @@ const inputBaseStyle = (error) => ({
   boxSizing: "border-box",
 });
 
+function SectionCard({ icon, title, subtitle, badge, children }) {
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+      <div style={{ height: "3px", background: "linear-gradient(90deg, #25476a, #2e7db5, #38aae1)" }} />
+      <div style={{ padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: subtitle ? "4px" : "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+            <span style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>{title}</h3>
+          </div>
+          {badge && (
+            <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
+              {badge}
+            </span>
+          )}
+        </div>
+        {subtitle && <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>{subtitle}</p>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, error, required, children, hint }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -66,6 +90,40 @@ function Input({ name, placeholder, type = "text", ...rest }) {
         onFocus={(e) => { e.target.style.borderColor = "#b8d9ee"; e.target.style.backgroundColor = "#fff"; }}
         onBlur={(e) => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
       />
+    </Field>
+  );
+}
+
+// Sets up (or resets) the school-portal login password for this location's email, from the
+// location form itself — a shortcut for the admin instead of a separate signup. Left blank, the
+// location saves with no change to any existing login.
+function PasswordField() {
+  const { register, formState: { errors } } = useFormContext();
+  const [show, setShow] = useState(false);
+  const error = errors?.password?.message;
+
+  return (
+    <Field
+      label="Portal Password"
+      error={error}
+      hint="Optional — sets up or resets this location's school-portal login. Leave blank to make no change."
+    >
+      <div style={{ position: "relative" }}>
+        <input
+          type={show ? "text" : "password"}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          {...register("password")}
+          style={{ ...inputBaseStyle(error), paddingRight: "44px" }}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", padding: "4px" }}
+        >
+          {show ? "Hide" : "Show"}
+        </button>
+      </div>
     </Field>
   );
 }
@@ -283,156 +341,122 @@ export default function LocationForm() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          borderRadius: "16px",
-          border: "1.5px solid #E5E7EB",
-          overflow: "hidden",
-        }}
-      >
-        {/* Section: Basic info */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Basic Information
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <Input name="name" label="Location Name" placeholder="e.g. Nairobi Academy, Main Campus" required />
-              <Field label="Location Type" required error={errors?.locationType?.message}>
-                <select {...register("locationType")} style={selectStyle}>
-                  {LOCATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <Input
-                name="code"
-                label="Code"
-                placeholder="e.g. NA-001"
-                required={isSchool}
-                hint={isSchool ? "Required for the School type" : "Optional for this type"}
-              />
-              <Field label="Status" required>
-                <select {...register("status")} style={selectStyle}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </Field>
-            </div>
-
-            <Field label="Description">
-              <textarea
-                {...register("description")}
-                placeholder="Describe the location, its atmosphere, and what makes it suitable for learning sessions…"
-                rows={4}
-                style={{ ...inputBaseStyle(false), resize: "vertical", fontFamily: "Inter, sans-serif" }}
-              />
+      <SectionCard icon="🏢" title="Basic Information" subtitle="Enter the fundamental details about the location">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <Input name="name" label="Location Name" placeholder="e.g. Nairobi Academy, Main Campus" required />
+            <Field label="Location Type" required error={errors?.locationType?.message}>
+              <select {...register("locationType")} style={selectStyle}>
+                {LOCATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
             </Field>
-
-            <Controller
-              name="photos"
-              control={control}
-              render={({ field }) => (
-                <PhotoGalleryField value={field.value || []} onChange={field.onChange} label="Location Photos" />
-              )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <Input
+              name="code"
+              label="Code"
+              placeholder="e.g. NA-001"
+              required={isSchool}
+              hint={isSchool ? "Required for the School type" : "Optional for this type"}
             />
+            <Field label="Status" required>
+              <select {...register("status")} style={selectStyle}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </Field>
           </div>
-        </div>
 
-        {/* Section: Contact */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Contact Details
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <Input name="contactPerson" label="Contact Person" placeholder="e.g. Jane Mwangi" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <Input name="email" label="Email Address" placeholder="info@location.ac.ke" type="email" />
-              <Input name="phone" label="Phone Number" placeholder="+254 700 000 000" />
-            </div>
-          </div>
-        </div>
+          <Input
+            name="email"
+            label="Email Address"
+            placeholder="info@location.ac.ke"
+            type="email"
+            hint={isSchool ? "The school-portal login for this location is matched to this email." : undefined}
+          />
 
-        {/* Section: Address */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Address
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <Input name="address.street" label="Street / Area" placeholder="e.g. Ngong Road, Karen" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <Input name="address.city" label="City / Town" placeholder="e.g. Nairobi" />
-              <Field
-                label="County"
-                required
-                error={errors?.address?.county?.message}
-              >
-                <select
-                  {...register("address.county")}
-                  style={{
-                    ...selectStyle,
-                    borderColor: errors?.address?.county ? "#FCA5A5" : "#E5E7EB",
-                    backgroundColor: errors?.address?.county ? "#FFF5F5" : "#F9FAFB",
-                  }}
-                >
-                  <option value="">Select county…</option>
-                  {KENYA_COUNTIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-          </div>
-        </div>
+          {isSchool && <PasswordField />}
 
-        {/* Section: Curriculum */}
-        <div style={{ padding: "20px 24px" }}>
-          <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Assigned Curriculum
-          </h3>
-          <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#9CA3AF" }}>
-            The curriculum this location follows. Can be updated at any time.
-          </p>
-          <Field label="Curriculum" error={errors?.curriculumId?.message}>
-            <select {...register("curriculumId")} style={selectStyle}>
-              <option value="">No curriculum assigned</option>
-              {curricula.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.code}) — {c.framework} {c.academicYear}
-                </option>
-              ))}
-            </select>
+          <Field label="Description">
+            <textarea
+              {...register("description")}
+              placeholder="Describe the location, its atmosphere, and what makes it suitable for learning sessions…"
+              rows={4}
+              style={{ ...inputBaseStyle(false), resize: "vertical", fontFamily: "Inter, sans-serif" }}
+            />
           </Field>
-          {curricula.length === 0 && (
-            <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#F59E0B" }}>
-              No curricula found. Create a curriculum first to assign it here.
-            </p>
-          )}
+
+          <Controller
+            name="photos"
+            control={control}
+            render={({ field }) => (
+              <PhotoGalleryField value={field.value || []} onChange={field.onChange} label="Location Photos" />
+            )}
+          />
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Section: Amenities / Facilities */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
-        <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-          Amenities / Facilities
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
-          Select all available amenities and facilities.
-        </p>
-        <AmenitiesField />
-      </div>
+      <SectionCard icon="☎️" title="Contact Information" subtitle="Primary contact details for location coordination">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <Input name="contactPerson" label="Contact Person" placeholder="e.g. Jane Mwangi" />
+          <Input name="phone" label="Phone Number" placeholder="+254 700 000 000" />
+        </div>
+      </SectionCard>
 
-      {/* Section: Operational Information — not meaningful for a "School" (it runs on the
-          curriculum's term/session schedule instead of open/close hours) */}
-      {!isSchool && (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
-          <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Operational Information
-          </h3>
-          <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Working hours and availability schedule.
+      <SectionCard icon="📍" title="Address">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <Input name="address.street" label="Street / Area" placeholder="e.g. Ngong Road, Karen" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <Input name="address.city" label="City / Town" placeholder="e.g. Nairobi" />
+            <Field
+              label="County"
+              required
+              error={errors?.address?.county?.message}
+            >
+              <select
+                {...register("address.county")}
+                style={{
+                  ...selectStyle,
+                  borderColor: errors?.address?.county ? "#FCA5A5" : "#E5E7EB",
+                  backgroundColor: errors?.address?.county ? "#FFF5F5" : "#F9FAFB",
+                }}
+              >
+                <option value="">Select county…</option>
+                {KENYA_COUNTIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard icon="📘" title="Assigned Curriculum" subtitle="The curriculum this location follows. Can be updated at any time.">
+        <Field label="Curriculum" error={errors?.curriculumId?.message}>
+          <select {...register("curriculumId")} style={selectStyle}>
+            <option value="">No curriculum assigned</option>
+            {curricula.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.code}) — {c.framework} {c.academicYear}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {curricula.length === 0 && (
+          <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#F59E0B" }}>
+            No curricula found. Create a curriculum first to assign it here.
           </p>
+        )}
+      </SectionCard>
+
+      <SectionCard icon="✨" title="Amenities / Facilities" subtitle="Select all available amenities and facilities">
+        <AmenitiesField />
+      </SectionCard>
+
+      {/* Operational Information — not meaningful for a "School" (it runs on the curriculum's
+          term/session schedule instead of open/close hours) */}
+      {!isSchool && (
+        <SectionCard icon="⏰" title="Operational Information" subtitle="Working hours and availability schedule" badge="Non-school types">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <Input name="operatingHours.opensAt" label="Opening Time" type="time" required />
@@ -442,20 +466,19 @@ export default function LocationForm() {
               <OperatingDaysField />
             </Field>
           </div>
-        </div>
+        </SectionCard>
       )}
 
-      {/* Section: Spaces, Capacity & Pricing — data capture only; there is no learner-facing
+      {/* Spaces, Capacity & Pricing — data capture only; there is no learner-facing
           booking/reservation flow built yet, this just records what's on offer. Not applicable
           to "School", which enrolls learners rather than renting seats. */}
       {!isSchool && (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
-          <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
-            Spaces, Capacity & Pricing
-          </h3>
-          <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Define each bookable seating option, its capacity, reservation rules, and pricing model.
-          </p>
+        <SectionCard
+          icon="🪑"
+          title="Spaces, Capacity & Pricing"
+          subtitle="Define each bookable seating option, its capacity, reservation rules, and pricing model"
+          badge="Non-school types"
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {fields.map((field, index) => (
               <SpaceConfigCard key={field.id} index={index} onRemove={() => remove(index)} />
@@ -467,8 +490,13 @@ export default function LocationForm() {
             >
               + Add Configuration
             </button>
+            {fields.length === 0 && (
+              <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
+                No spaces added yet — click "+ Add Configuration" to define your first bookable option.
+              </p>
+            )}
           </div>
-        </div>
+        </SectionCard>
       )}
     </div>
   );
