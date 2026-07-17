@@ -69,8 +69,8 @@ export default function CreateTeacherPage() {
   const methods = useForm({
     resolver: zodResolver(teacherSchema),
     defaultValues: {
-      firstName: "", lastName: "", employeeId: "",
-      email: "", phone: "",
+      firstName: "", lastName: "",
+      email: "", password: "", phone: "",
       schoolId: lockedSchoolId, status: "active",
     },
     mode: "onTouched",

@@ -14,6 +14,7 @@ import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 import TeacherPortalDashboardPage from "../modules/teacher-portal/pages/DashboardPage";
 import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
 import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
+import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
@@ -136,7 +137,7 @@ export default function AppRoutes() {
           <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
           <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
           <Route path="assessments" element={<ComingSoon name="Assessments" />} />
-          <Route path="attendance" element={<ComingSoon name="Attendance" />} />
+          <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
       </Route>

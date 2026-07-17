@@ -13,6 +13,7 @@ const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
 const courseRoutes = require("./modules/courses/course.routes");
+const attendanceRoutes = require("./modules/attendance/attendance.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -53,6 +54,7 @@ app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, courseRoutes);
+app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
 app.use("/api/assessments", protect, authorize("admin"), assessmentRoutes);
 app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
 

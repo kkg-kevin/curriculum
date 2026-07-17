@@ -123,11 +123,14 @@ export default function DashboardPage() {
                     <span>📖 {courseCount} course{courseCount !== 1 ? "s" : ""}</span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-                    <button type="button" onClick={() => navigate(`/teacher-portal/classes/${c.id}`)} style={{ flex: 1, padding: "8px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 8, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                      View Roster
+                    <button type="button" onClick={() => navigate(`/teacher-portal/classes/${c.id}`)} style={{ flex: 1, padding: "8px 10px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                      Roster
                     </button>
-                    <button type="button" onClick={() => navigate("/teacher-portal/course-content")} style={{ flex: 1, padding: "8px 12px", backgroundColor: "transparent", color: T.inkMuted, border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                      Course Content
+                    <button type="button" onClick={() => navigate(`/teacher-portal/attendance?classId=${c.id}`)} style={{ flex: 1, padding: "8px 10px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                      Attendance
+                    </button>
+                    <button type="button" onClick={() => navigate("/teacher-portal/course-content")} style={{ flex: 1, padding: "8px 10px", backgroundColor: "transparent", color: T.inkMuted, border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                      Courses
                     </button>
                   </div>
                 </div>

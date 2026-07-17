@@ -92,7 +92,6 @@ export function TeacherCard({ teacher }) {
               >
                 {teacher.firstName} {teacher.lastName}
               </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{teacher.employeeId || "No ID"}</p>
             </div>
           </div>
           <button
@@ -129,7 +128,6 @@ export function TeacherCard({ teacher }) {
         <div ref={dropdownRef} style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,0.12)", zIndex: 9999, minWidth: 192, overflow: "hidden", padding: 6 }}>
           <div style={{ padding: "8px 10px 10px", borderBottom: "1px solid #F3F4F6", marginBottom: 4 }}>
             <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#111827" }}>{teacher.firstName} {teacher.lastName}</p>
-            <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{teacher.employeeId}</p>
           </div>
           {[
             { label: "View", path: teacherPath(user?.role, teacher.id, "view"), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },

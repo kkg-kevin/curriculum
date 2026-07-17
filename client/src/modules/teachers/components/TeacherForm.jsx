@@ -1,4 +1,5 @@
-﻿import { useFormContext } from "react-hook-form";
+﻿import { useState } from "react";
+import { useFormContext } from "react-hook-form";
 import { TEACHER_STATUSES } from "../schemas/teacher.schema";
 import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 
@@ -57,6 +58,36 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
   );
 }
 
+// Sets up (or resets) the teacher-portal login password for this teacher's email, right from
+// this form — a shortcut instead of a separate signup. Left blank, nothing about any existing
+// login changes.
+function PasswordField() {
+  const { register, formState: { errors } } = useFormContext();
+  const [show, setShow] = useState(false);
+  const error = errors?.password?.message;
+
+  return (
+    <Field label="Portal Password" error={error} hint="Optional — sets up or resets this teacher's portal login. Leave blank to make no change.">
+      <div style={{ position: "relative" }}>
+        <input
+          type={show ? "text" : "password"}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          {...register("password")}
+          style={{ ...inputStyle(!!error), paddingRight: "44px" }}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", padding: "4px" }}
+        >
+          {show ? "Hide" : "Show"}
+        </button>
+      </div>
+    </Field>
+  );
+}
+
 /* ── Main form ────────────────────────────────────────────────────────── */
 
 export default function TeacherForm({ lockedSchoolId = "" }) {
@@ -76,22 +107,18 @@ export default function TeacherForm({ lockedSchoolId = "" }) {
             <TextInput name="firstName" label="First Name" placeholder="e.g. Jane" required />
             <TextInput name="lastName"  label="Last Name"  placeholder="e.g. Mwangi" required />
           </div>
-          <TextInput
-            name="employeeId"
-            label="Employee ID"
-            placeholder="e.g. TCH-001"
-            required
-            hint="Letters, numbers, and hyphens only"
-          />
         </div>
       </div>
 
       {/* Contact */}
       <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Contact Details</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <TextInput name="email" label="Email Address" placeholder="jane@school.ac.ke" type="email" />
-          <TextInput name="phone" label="Phone Number"  placeholder="+254 700 000 000" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <TextInput name="email" label="Email Address" placeholder="jane@school.ac.ke" type="email" />
+            <TextInput name="phone" label="Phone Number"  placeholder="+254 700 000 000" />
+          </div>
+          <PasswordField />
         </div>
       </div>
 

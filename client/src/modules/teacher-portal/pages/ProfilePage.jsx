@@ -118,7 +118,7 @@ export default function ProfilePage() {
                 {STATUS_LABELS[teacher.status] ?? teacher.status}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{teacher.employeeId}{school ? ` · ${school.name}` : ""}</p>
+            {school && <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{school.name}</p>}
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function ProfilePage() {
                 <DetailRow icon={iconPhone} label="Phone" value={teacher.phone} />
               )}
               <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-                Name, email, employee ID, and school assignment are managed by your school admin.
+                Name, email, and school assignment are managed by your school admin.
               </p>
             </div>
           </Section>

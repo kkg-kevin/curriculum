@@ -1,13 +1,19 @@
 const asyncHandler = require("express-async-handler");
 const TeacherService = require("./teacher.service");
+const AuthService = require("../auth/auth.service");
 const { createTeacherSchema, updateTeacherSchema } = require("./teacher.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
 const createTeacher = asyncHandler(async (req, res) => {
-  const data = createTeacherSchema.parse(req.body);
+  const { password, ...data } = createTeacherSchema.parse(req.body);
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
     data.schoolId = req.ownSchool.id;
+  }
+  // Create the login first — if it fails (e.g. the email already belongs to a different-role
+  // account), nothing is written at all, rather than leaving a teacher record with no login.
+  if (password) {
+    await AuthService.setOrCreatePassword({ name: `${data.firstName} ${data.lastName}`, email: data.email, password, role: "teacher" });
   }
   const teacher = await TeacherService.createTeacher(data);
   res.status(201).json({ success: true, data: teacher });
@@ -35,13 +41,16 @@ const getTeacherById = asyncHandler(async (req, res) => {
 });
 
 // Self-service fields a teacher may change on their own record — deliberately excludes name,
-// email, employeeId, schoolId and status: email doubles as the login-matching key (changing it
+// email, schoolId and status: email doubles as the login-matching key (changing it
 // here would disconnect the account from this very record), and the rest are
-// admin/school-controlled identity/assignment fields, not "my profile" fields.
+// admin/school-controlled identity/assignment fields, not "my profile" fields. `password` is
+// handled separately below (not in this list) — a teacher resetting their own login password is
+// safe to allow since it can't touch email/role, unlike everything else this list guards against.
 const TEACHER_SELF_EDIT_FIELDS = ["phone"];
 
 const updateTeacher = asyncHandler(async (req, res) => {
-  const data = updateTeacherSchema.parse(req.body);
+  const parsed = updateTeacherSchema.parse(req.body);
+  const { password, ...data } = parsed;
   if (req.user.role === "school") {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(existing.schoolId === req.ownSchool?.id);
@@ -53,6 +62,14 @@ const updateTeacher = asyncHandler(async (req, res) => {
     });
   }
   const teacher = await TeacherService.updateTeacher(req.params.id, data);
+  if (password) {
+    if (!teacher.email) {
+      const err = new Error("This teacher needs an email address before a password can be set");
+      err.statusCode = 400;
+      throw err;
+    }
+    await AuthService.setOrCreatePassword({ name: `${teacher.firstName} ${teacher.lastName}`, email: teacher.email, password, role: "teacher" });
+  }
   res.json({ success: true, data: teacher });
 });
 

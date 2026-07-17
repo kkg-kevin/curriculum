@@ -29,8 +29,8 @@ export default function EditTeacherPage() {
       reset({
         firstName:  teacher.firstName  || "",
         lastName:   teacher.lastName   || "",
-        employeeId: teacher.employeeId || "",
         email:      teacher.email      || "",
+        password:   "",
         phone:      teacher.phone      || "",
         schoolId:   teacher.schoolId   || "",
         status:     teacher.status     || "active",

@@ -43,5 +43,23 @@
     "id": "9abf6b20-6383-464e-b7d0-ced868c1e6dd",
     "createdAt": "2026-07-17T12:24:36.806Z",
     "updatedAt": "2026-07-17T12:24:36.807Z"
+  },
+  {
+    "name": "faith wanjiru",
+    "email": "faith@faith.com",
+    "passwordHash": "$2b$10$xneV8GjHbQLh1WzI0eVYRuPuLqLsFLzLZKoEedcuZExcewEu33QkS",
+    "role": "learner",
+    "id": "12d44e3c-982d-4155-81d0-dc28ac8c81b9",
+    "createdAt": "2026-07-17T12:45:51.525Z",
+    "updatedAt": "2026-07-17T12:45:51.525Z"
+  },
+  {
+    "name": "Jane  Mwangi",
+    "email": "jane@digifunzi.com",
+    "passwordHash": "$2b$10$/MgDAM//r0sF5QJW6plpFuizHpwmGBZofbOvhplAl3I2QM3RDsXj6",
+    "role": "teacher",
+    "id": "74b50d90-d8f7-4761-9a38-dfb154ccd182",
+    "createdAt": "2026-07-17T12:47:10.539Z",
+    "updatedAt": "2026-07-17T12:47:10.539Z"
   }
 ]

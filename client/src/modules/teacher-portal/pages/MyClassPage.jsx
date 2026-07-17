@@ -5,6 +5,22 @@ import { useClassQuery } from "../../classes/hooks/useClasses";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 
+const LEARNER_STATUS_STYLES = {
+  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
+  inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive" },
+  transferred: { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Transferred" },
+  graduated:   { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", label: "Graduated" },
+};
+
+function LearnerStatusBadge({ status }) {
+  const s = LEARNER_STATUS_STYLES[status] || LEARNER_STATUS_STYLES.active;
+  return (
+    <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: "nowrap" }}>
+      {s.label}
+    </span>
+  );
+}
+
 function LearnerRow({ learner }) {
   const initials = `${learner.firstName?.[0] ?? ""}${learner.lastName?.[0] ?? ""}`.toUpperCase();
   return (
@@ -17,6 +33,7 @@ function LearnerRow({ learner }) {
         <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{learner.admissionNumber || "No ID"}</p>
       </div>
       <span style={{ fontSize: 12, color: "#6B7280" }}>{learner.guardianPhone || "No guardian phone"}</span>
+      <LearnerStatusBadge status={learner.status} />
     </div>
   );
 }
@@ -72,9 +89,18 @@ export default function MyClassPage() {
         ← Dashboard
       </button>
 
-      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20 }}>
-        <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
-        <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {learners.length} learner{learners.length !== 1 ? "s" : ""}</p>
+      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {learners.length} learner{learners.length !== 1 ? "s" : ""}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/teacher-portal/attendance?classId=${classId}`)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
+        >
+          📋 Take Attendance
+        </button>
       </div>
 
       <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden" }}>

@@ -57,7 +57,6 @@ function TeacherRow({ teacher, role }) {
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.firstName} {teacher.lastName}</p>
-        <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>{teacher.employeeId || "No ID"}</p>
       </div>
       <StatusBadge status={teacher.status} />
     </div>
