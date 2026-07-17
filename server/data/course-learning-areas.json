@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "53831aaa-57f9-4c2c-b097-da8e697ab7f8",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "learningAreaId": "2b958b84-3463-4237-8e9e-4839f0f6732e",
+    "createdAt": "2026-07-17T05:41:56.112Z"
+  },
+  {
+    "id": "fcaea42c-6000-477a-a897-b123aa77e712",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "learningAreaId": "4f939fe5-7d76-4b09-afe8-5bd975ca7f2f",
+    "createdAt": "2026-07-17T05:41:56.193Z"
+  },
+  {
+    "id": "035a0196-0473-40d1-9a91-9341be342154",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "learningAreaId": "e7c8cab9-3e9d-408a-b217-1fdc3e601e20",
+    "createdAt": "2026-07-17T05:41:56.249Z"
+  }
+]

@@ -348,7 +348,11 @@ function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
 /* ── Main page ────────────────────────────────────────────────────────── */
 
 export default function SectionViewPage() {
-  const { id, sessionId, sectionKey, itemId } = useParams();
+  // Admin's own route names this segment ":id"; Teacher/Learner/School portals name it
+  // ":courseId" (see AppRoutes.jsx) so CourseContentLandingPage's useParams().courseId lines up —
+  // accept either.
+  const { id: adminId, courseId, sessionId, sectionKey, itemId } = useParams();
+  const id = adminId || courseId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role;

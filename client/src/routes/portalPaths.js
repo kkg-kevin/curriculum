@@ -37,22 +37,37 @@ export function learnerCreatePath(role, schoolId) {
   return schoolId ? `${base}?schoolId=${schoolId}` : base;
 }
 
-// Course content is read-only for Teacher/Learner (their own routes never reach the admin
-// session editor) but shares the exact same viewer page (SectionViewPage) across all three roles.
+export function classCreatePath(role, schoolId) {
+  const base = role === "school" ? "/school-portal/classes/create" : "/classes/create";
+  return schoolId ? `${base}?schoolId=${schoolId}` : base;
+}
+
+// A school views its own profile in-portal; admin views any school through the cross-school
+// directory.
+export function schoolViewPath(role, schoolId) {
+  return role === "school" ? "/school-portal/profile" : `/schools/${schoolId}/view`;
+}
+
+// Course content is read-only for Teacher/Learner/School (their own routes never reach the
+// admin session editor) but shares the exact same viewer page (SectionViewPage) across all roles.
 
 export function courseCatalogPath(role) {
-  return role === "teacher" ? "/teacher-portal/course-content" : "/learner-portal/courses";
+  if (role === "teacher") return "/teacher-portal/course-content";
+  if (role === "school") return "/school-portal/curriculum";
+  return "/learner-portal/courses";
 }
 
 export function courseHomePath(role, courseId) {
   if (role === "teacher") return `/teacher-portal/course-content/${courseId}`;
   if (role === "learner") return `/learner-portal/courses/${courseId}`;
+  if (role === "school") return `/school-portal/curriculum/${courseId}`;
   return `/courses/${courseId}/view`;
 }
 
 export function sectionPath(role, courseId, sessionId, sectionKey, itemId) {
   const base = role === "teacher" ? `/teacher-portal/course-content/${courseId}`
     : role === "learner" ? `/learner-portal/courses/${courseId}`
+    : role === "school" ? `/school-portal/curriculum/${courseId}`
     : `/courses/${courseId}`;
   return `${base}/sessions/${sessionId}/sections/${sectionKey}${itemId ? `/${itemId}` : ""}`;
 }

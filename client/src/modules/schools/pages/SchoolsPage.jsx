@@ -408,14 +408,25 @@ export default function SchoolsPage() {
               Manage schools and their assigned curricula. Each school can be linked to learners and teachers.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/schools/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
-          >
-            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
-            Add School
-          </button>
+          <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => navigate("/locations/create")}
+              title="Location Types — coming soon"
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+              Add Location
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/schools/create")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
+            >
+              <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+              Add School
+            </button>
+          </div>
         </div>
       </div>
 

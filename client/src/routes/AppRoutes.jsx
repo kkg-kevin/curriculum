@@ -16,6 +16,8 @@ import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
 import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
+import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
+import SchoolProfilePage from "../modules/school-portal/pages/ProfilePage";
 import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
 import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
@@ -39,6 +41,7 @@ import TeacherViewPage from "../modules/teachers/pages/TeacherViewPage";
 import ClassesPage from "../modules/classes/pages/ClassesPage";
 import SchoolClassesPage from "../modules/classes/pages/SchoolClassesPage";
 import EditClassPage from "../modules/classes/pages/EditClassPage";
+import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
@@ -74,6 +77,9 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditSchoolPage />} />
           <Route path=":id/view" element={<SchoolViewPage />} />
         </Route>
+        <Route path="locations">
+          <Route path="create" element={<ComingSoon name="Add Location" />} />
+        </Route>
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />
           <Route path="create" element={<CreateCurriculumPage />} />
@@ -100,6 +106,7 @@ export default function AppRoutes() {
         </Route>
         <Route path="classes">
           <Route index element={<ClassesPage />} />
+          <Route path="create" element={<CreateClassPage />} />
           <Route path="school/:schoolId" element={<SchoolClassesPage />} />
           <Route path=":id/edit" element={<EditClassPage />} />
           <Route path=":id/view" element={<ClassViewPage />} />
@@ -140,7 +147,12 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["school"]} />}>
         <Route path="/school-portal" element={<SchoolPortalLayout />}>
           <Route index element={<SchoolPortalDashboardPage />} />
+          <Route path="curriculum" element={<SchoolCurriculumPage />} />
+          <Route path="curriculum/:courseId" element={<CourseContentLandingPage />} />
+          <Route path="curriculum/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
+          <Route path="curriculum/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
           <Route path="classes/:schoolId" element={<SchoolClassesPage />} />
+          <Route path="classes/create" element={<CreateClassPage />} />
           <Route path="classes/:id/view" element={<ClassViewPage />} />
           <Route path="classes/:id/edit" element={<EditClassPage />} />
           <Route path="teachers/:schoolId" element={<SchoolTeachersPage />} />
@@ -152,6 +164,7 @@ export default function AppRoutes() {
           <Route path="learners/:id/view" element={<LearnerViewPage />} />
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="reports" element={<ComingSoon name="Reports" />} />
+          <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
       </Route>
 

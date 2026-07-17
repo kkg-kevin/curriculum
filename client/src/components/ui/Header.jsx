@@ -18,6 +18,7 @@ function Header() {
   const pageTitles = {
     "/": "Dashboard",
     "/schools": "Schools",
+    "/locations/create": "Add Location",
     "/curriculum": "Curriculum",
     "/curriculum/create": "Create Curriculum",
     "/learners": "Learners",
@@ -32,7 +33,9 @@ function Header() {
     "/teacher-portal/attendance": "Attendance",
     "/teacher-portal/profile": "My Profile",
     "/school-portal": "My Dashboard",
+    "/school-portal/curriculum": "Curriculum",
     "/school-portal/reports": "Reports",
+    "/school-portal/profile": "My Profile",
     "/learner-portal": "My Dashboard",
     "/learner-portal/courses": "My Courses",
     "/learner-portal/assessments": "Assessments",
@@ -57,6 +60,8 @@ function Header() {
       return "Teachers";
     if (pathname.startsWith("/school-portal/learners/"))
       return "Learners";
+    if (pathname.startsWith("/school-portal/curriculum/"))
+      return "Curriculum";
     return "Dashboard";
   };
 

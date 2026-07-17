@@ -7,7 +7,7 @@ import { updateLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
-import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
+import { learnerPath } from "../../../routes/portalPaths";
 
 const ACCENT = "#25476a";
 
@@ -100,7 +100,7 @@ export default function EditLearnerPage() {
       <div style={{ maxWidth: 640 }}>
         <FormProvider {...methods}>
           <form id="edit-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <LearnerForm />
+            <LearnerForm lockedSchoolId={user?.role === "school" ? learner.schoolId : ""} />
           </form>
         </FormProvider>
       </div>
@@ -111,7 +111,7 @@ export default function EditLearnerPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate(learnersListPath(user?.role, learner.schoolId))}
+        onConfirm={() => navigate(learnerPath(user?.role, id, "view"))}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

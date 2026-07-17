@@ -2,6 +2,7 @@
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteClass } from "../hooks/useClasses";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -47,6 +48,8 @@ export function ClassCard({ cls, teachersMap }) {
   const dropdownRef = useRef(null);
 
   const teacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
+  const { data: courses } = useCurriculumCurrentCourses(cls.curriculumId, cls.gradeName);
+  const courseCount = courses?.length ?? 0;
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -123,6 +126,10 @@ export function ClassCard({ cls, teachersMap }) {
                 </span>
               ) : null}
             </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+            <span>📚</span>
+            <span>{courseCount} course{courseCount !== 1 ? "s" : ""}</span>
           </div>
         </div>
 

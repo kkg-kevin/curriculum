@@ -1,6 +1,7 @@
 ﻿import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBulkCreateClasses } from "../hooks/useClasses";
+import { useAuth } from "../../../context/AuthContext";
 
 const ACCENT = "#25476a";
 
@@ -12,6 +13,8 @@ function extractYear(publishedAcademicYear) {
 
 export default function SetUpYearPanel({ school, curriculum, existingClasses, onClose }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role !== "school";
   const { mutate: bulkCreate, isPending } = useBulkCreateClasses();
 
   const gradeNames  = curriculum?.classes || [];
@@ -73,25 +76,29 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
       {!school.curriculumId || !curriculum ? (
         <div style={{ padding: "14px 16px", backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, fontSize: 13, color: "#92400E" }}>
           No curriculum is assigned to this school.{" "}
-          <button
-            type="button"
-            onClick={() => navigate(`/schools/${school.id}/edit`)}
-            style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, padding: 0 }}
-          >
-            Assign one →
-          </button>
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/schools/${school.id}/edit`)}
+              style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, padding: 0 }}
+            >
+              Assign one →
+            </button>
+          ) : "Ask a platform admin to assign one."}
         </div>
 
       ) : !academicYear ? (
         <div style={{ padding: "14px 16px", backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, fontSize: 13, color: "#92400E" }}>
           <strong>{curriculum.name}</strong> has no published academic year yet.{" "}
-          <button
-            type="button"
-            onClick={() => navigate(`/curriculum/${school.curriculumId}/academic-year`)}
-            style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, padding: 0 }}
-          >
-            Set one up →
-          </button>
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/curriculum/${school.curriculumId}/academic-year`)}
+              style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, padding: 0 }}
+            >
+              Set one up →
+            </button>
+          ) : "Ask a platform admin to publish one."}
         </div>
 
       ) : gradeNames.length === 0 ? (
