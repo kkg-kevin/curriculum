@@ -227,5 +227,39 @@
     "id": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "createdAt": "2026-07-16T07:43:57.452Z",
     "updatedAt": "2026-07-16T07:43:57.452Z"
+  },
+  {
+    "firstName": "MARY",
+    "lastName": "James ",
+    "gender": "male",
+    "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "guardianName": "faith wanjiru",
+    "guardianPhone": "78965120",
+    "guardianEmail": "faith@faith.com",
+    "status": "active",
+    "currentRungId": null,
+    "currentStageId": null,
+    "admissionNumber": "SS-2026-002",
+    "id": "8e745b53-b69a-46cf-af4f-207fcbd0077e",
+    "createdAt": "2026-07-17T12:45:51.536Z",
+    "updatedAt": "2026-07-17T12:45:51.536Z"
+  },
+  {
+    "firstName": "wev",
+    "lastName": "fqw",
+    "gender": "female",
+    "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "guardianName": "wVSD",
+    "guardianPhone": "Vdaszx",
+    "guardianEmail": "acszx@gmail.com",
+    "status": "active",
+    "currentRungId": null,
+    "currentStageId": null,
+    "admissionNumber": "SS-2026-003",
+    "id": "237993bb-87c9-4f33-a500-4cdce3d735e9",
+    "createdAt": "2026-07-17T12:58:21.117Z",
+    "updatedAt": "2026-07-17T12:58:21.117Z"
   }
 ]
