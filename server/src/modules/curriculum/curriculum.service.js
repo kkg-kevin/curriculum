@@ -19,6 +19,91 @@ const CurriculumVersionModel = require("./versions/curriculum-versions.model");
 const LearnerJourneyModel = require("./competency-framework/learner-journey.model");
 const IndicatorAchievementModel = require("./competency-framework/indicator-achievement.model");
 const { collectCourseIds } = require("./versions/content.utils");
+const { getSessionAssessmentIds, sessionHasAssessment } = require("../courses/sessionAssessment.utils");
+
+function readJsonFile(filePath) {
+  try {
+    const fs = require("fs");
+    const raw = fs.readFileSync(filePath, "utf-8").trim();
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildCurriculumMeta() {
+  const path = require("path");
+
+  const ayGroups = readJsonFile(path.join(__dirname, "../../../data/academic-year-groups.json"));
+  const ayVersions = readJsonFile(path.join(__dirname, "../../../data/academic-year-versions.json"));
+  const cvVersions = readJsonFile(path.join(__dirname, "../../../data/curriculum-versions.json"));
+
+  const groupById = Object.fromEntries(ayGroups.map((g) => [g.id, g]));
+  const publishedYearByCurriculumId = {};
+  for (const version of ayVersions) {
+    if (version.status !== "published" || !version.curriculumId) continue;
+    const group = groupById[version.yearGroupId];
+    if (group) publishedYearByCurriculumId[version.curriculumId] = group.label;
+  }
+
+  const cvPublishedIds = new Set();
+  const cvActiveIds = new Set();
+  const ayPublishedIds = new Set();
+  const coursesCountByCurriculumId = new Map();
+
+  for (const version of cvVersions) {
+    if (!version.curriculumId) continue;
+    if (version.status === "published") cvPublishedIds.add(version.curriculumId);
+    if (version.status === "active") cvActiveIds.add(version.curriculumId);
+    if (version.isCurrent) {
+      let count = 0;
+      for (const period of (version.content || [])) {
+        for (const cls of (period.classes || [])) {
+          count += (cls.courses || []).length;
+        }
+      }
+      coursesCountByCurriculumId.set(version.curriculumId, count);
+    }
+  }
+
+  for (const version of ayVersions) {
+    if (version.curriculumId && version.status === "published") {
+      ayPublishedIds.add(version.curriculumId);
+    }
+  }
+
+  return {
+    getMeta(curriculum) {
+      if (!curriculum?.id) {
+        return {
+          publishedAcademicYear: null,
+          effectiveStatus: curriculum?.status || "draft",
+          coursesCount: 0,
+        };
+      }
+
+      let effectiveStatus;
+      if (cvPublishedIds.has(curriculum.id) && ayPublishedIds.has(curriculum.id)) {
+        effectiveStatus = "published";
+      } else if (cvActiveIds.has(curriculum.id)) {
+        effectiveStatus = "active";
+      } else {
+        effectiveStatus = curriculum.status || "draft";
+      }
+
+      return {
+        publishedAcademicYear: publishedYearByCurriculumId[curriculum.id] || null,
+        effectiveStatus,
+        coursesCount: coursesCountByCurriculumId.get(curriculum.id) || 0,
+      };
+    },
+  };
+}
+
+function enrichCurriculum(curriculum, meta) {
+  if (!curriculum) return curriculum;
+  return { ...curriculum, ...meta.getMeta(curriculum) };
+}
 
 const CurriculumService = {
   async createCurriculum(data) {
@@ -27,65 +112,9 @@ const CurriculumService = {
 
   async getAllCurricula(filters) {
     const curricula = CurriculumModel.findAll(filters);
-
-    const fs   = require("fs");
-    const path = require("path");
-    const readJ = (f) => { try { const r = fs.readFileSync(f, "utf-8").trim(); return r ? JSON.parse(r) : []; } catch { return []; } };
-
-    const ayGroups    = readJ(path.join(__dirname, "../../../data/academic-year-groups.json"));
-    const ayVersions  = readJ(path.join(__dirname, "../../../data/academic-year-versions.json"));
-    const cvVersions  = readJ(path.join(__dirname, "../../../data/curriculum-versions.json"));
-
-    // AY label lookup: curriculumId → published year label
-    const groupById = Object.fromEntries(ayGroups.map((g) => [g.id, g]));
-    const ayLabelByCurriculumId = {};
-    for (const v of ayVersions) {
-      if (v.status === "published" && v.curriculumId) {
-        const group = groupById[v.yearGroupId];
-        if (group) ayLabelByCurriculumId[v.curriculumId] = group.label;
-      }
-    }
-
-    // Effective status: "published" only when BOTH curriculum-version AND academic-year-version are published
-    const cvPublishedIds = new Set();
-    const cvActiveIds    = new Set();
-    // Courses count from the current (isCurrent) version's content
-    const coursesCountById = {};
-    for (const v of cvVersions) {
-      if (!v.curriculumId) continue;
-      if (v.status === "published") cvPublishedIds.add(v.curriculumId);
-      if (v.status === "active")    cvActiveIds.add(v.curriculumId);
-      if (v.isCurrent) {
-        let count = 0;
-        for (const period of (v.content || [])) {
-          for (const cls of (period.classes || [])) {
-            count += (cls.courses || []).length;
-          }
-        }
-        coursesCountById[v.curriculumId] = count;
-      }
-    }
-
-    const ayPublishedIds = new Set();
-    for (const v of ayVersions) {
-      if (v.curriculumId && v.status === "published") ayPublishedIds.add(v.curriculumId);
-    }
-
+    const meta = buildCurriculumMeta();
     return curricula.map((c) => {
-      let effectiveStatus;
-      if (cvPublishedIds.has(c.id) && ayPublishedIds.has(c.id)) {
-        effectiveStatus = "published";
-      } else if (cvActiveIds.has(c.id)) {
-        effectiveStatus = "active";
-      } else {
-        effectiveStatus = c.status || "draft";
-      }
-      return {
-        ...c,
-        publishedAcademicYear: ayLabelByCurriculumId[c.id] || null,
-        effectiveStatus,
-        coursesCount: coursesCountById[c.id] || 0,
-      };
+      return enrichCurriculum(c, meta);
     });
   },
 
@@ -96,7 +125,7 @@ const CurriculumService = {
       err.statusCode = 404;
       throw err;
     }
-    return curriculum;
+    return enrichCurriculum(curriculum, buildCurriculumMeta());
   },
 
   async updateCurriculum(id, data) {
@@ -173,7 +202,7 @@ const CurriculumService = {
     // Competencies — via every assessment attached to any of this course's sessions.
     const assessmentIds = new Set();
     SessionModel.findByCourseId(courseId).forEach((s) => {
-      (s.assessmentIds || []).forEach((aid) => assessmentIds.add(aid));
+      getSessionAssessmentIds(s).forEach((aid) => assessmentIds.add(aid));
     });
     const competencyIds = new Set();
     assessmentIds.forEach((aid) => {
@@ -244,7 +273,7 @@ const CurriculumService = {
   resyncCoursesForAssessment(assessmentId) {
     const courseIds = new Set(
       SessionModel.findAll()
-        .filter((s) => (s.assessmentIds || []).includes(assessmentId))
+        .filter((s) => sessionHasAssessment(s, assessmentId))
         .map((s) => s.courseId)
     );
     courseIds.forEach((courseId) => this.resyncCourseIntoCurricula(courseId));

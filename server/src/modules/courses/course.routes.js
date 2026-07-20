@@ -50,7 +50,8 @@ router.route("/:id/learning-areas/links/:learningAreaId").delete(authorize("admi
 // (see curriculum.routes.js's /:id/courses/links), not from the course itself.
 router.route("/:id/curricula/links").get(authorize("admin"), getCourseCurricula);
 
-// Score Evidence — matches a course-attached assessment (via session.assessmentIds) to a linked
+// Score Evidence — matches a course-attached assessment (via session.assessmentIds or
+// assessmentAttachments) to a linked
 // curriculum's Evidence Type, previewing how its marks narrow down under that curriculum's scoring.
 router.route("/:id/assessments/:assessmentId/scoring").get(authorize("admin"), getAssessmentScoring);
 

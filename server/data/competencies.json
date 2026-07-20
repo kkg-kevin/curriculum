@@ -339,5 +339,27 @@
     "code": "DC2",
     "createdAt": "2026-07-20T08:06:00.686Z",
     "updatedAt": "2026-07-20T08:06:00.686Z"
+  },
+  {
+    "name": "WRSFZB",
+    "description": "RSBFZX",
+    "indicators": [
+      {
+        "name": "SBF",
+        "description": "BSFXC",
+        "id": "33cccf8e-0334-4be3-af97-2ce61fad70cd",
+        "code": "WRSFZB-SBF"
+      },
+      {
+        "name": "WSRB",
+        "description": "WSBXC",
+        "id": "ac646d1a-4aab-4b6e-9e4d-7f8d41aa604a",
+        "code": "WRSFZB-WSRB"
+      }
+    ],
+    "id": "d7562a0f-3dcc-4480-a4a4-c35c93f6ca29",
+    "code": "WRSFZB",
+    "createdAt": "2026-07-20T12:17:00.813Z",
+    "updatedAt": "2026-07-20T12:17:00.813Z"
   }
 ]

@@ -13,6 +13,7 @@ const AssessmentModel = require("../assessments/assessment.model");
 const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
+const { sessionHasAssessment } = require("./sessionAssessment.utils");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -172,8 +173,9 @@ const CourseService = {
   },
 
   /* ── Score Evidence resolution ──────────────────────────────────────────
-   * A course-attached assessment (referenced via a session's assessmentIds — an
-   * assessment is never owned by a course) is matched against a linked curriculum's
+   * A course-attached assessment (referenced via a session's assessmentIds or
+   * assessmentAttachments — the session stores the link, not a copy of the assessment)
+   * is matched against a linked curriculum's
    * Evidence Types by `category`, so its total marks can be previewed against that
    * curriculum's Score Evidence weighting. No learner score exists yet — this is a
    * preview using the assessment's max marks, not a real result. */
@@ -193,7 +195,7 @@ const CourseService = {
     }
 
     const attached = SessionModel.findByCourseId(courseId)
-      .some((s) => (s.assessmentIds || []).includes(assessmentId));
+      .some((s) => sessionHasAssessment(s, assessmentId));
     if (!attached) {
       const err = new Error("This assessment is not attached to this course");
       err.statusCode = 404;
@@ -309,7 +311,7 @@ const CourseService = {
     const session = SessionModel.create({ courseId, ...data, order });
     // Live-sync: a session created with assessments already attached feeds this course's
     // curricula immediately, same as attaching them via a later update.
-    if (data.assessmentIds?.length) CurriculumService.resyncCourseIntoCurricula(courseId);
+    if (data.assessmentIds?.length || data.assessmentAttachments?.length) CurriculumService.resyncCourseIntoCurricula(courseId);
     return session;
   },
 
@@ -353,7 +355,7 @@ const CourseService = {
     // Live-sync: an assessment newly attached to this session feeds this course's curricula
     // immediately. No diffing needed — resync is idempotent, so this is a no-op if nothing
     // about assessmentIds actually changed.
-    if (data.assessmentIds !== undefined) CurriculumService.resyncCourseIntoCurricula(courseId);
+    if (data.assessmentIds !== undefined || data.assessmentAttachments !== undefined) CurriculumService.resyncCourseIntoCurricula(courseId);
     return updated;
   },
 
