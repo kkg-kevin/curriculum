@@ -5,11 +5,14 @@ import RichTextEditor from "./RichTextEditor";
 import ResourcesField from "./ResourcesField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { NOTE_QUICK_PICKS } from "../sectionConfig";
+import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 
 const cardStyle = { backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" };
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
+const ASSESSMENT_MODE_LABELS = { individual: "Individual", group: "Group" };
+const ASSESSMENT_MODE_COLORS = { individual: "#6B7280", group: "#7C3AED" };
 
 const selectStyle = {
   padding: "10px 12px", borderRadius: "10px", border: "1.5px solid #E5E7EB",
@@ -17,28 +20,60 @@ const selectStyle = {
   color: "#374151", outline: "none", boxSizing: "border-box",
 };
 
-// Attaches existing Assessment records (created in the Assessments module) to this session by
-// id — the session only stores assessmentIds, never a copy of the assessment content itself.
 function AssessmentsField() {
   const { watch, setValue } = useFormContext();
   const assessmentIds = watch("assessmentIds") || [];
+  const assessmentAttachments = watch("assessmentAttachments") || [];
   const { data, isLoading } = useAssessmentsQuery();
   const allAssessments = data?.data || [];
 
   const [type, setType] = useState("quiz");
   const [pickedId, setPickedId] = useState("");
+  const [pickedMode, setPickedMode] = useState("individual");
 
-  const availableOfType = allAssessments.filter((a) => a.type === type && !assessmentIds.includes(a.id));
-  const attached = assessmentIds.map((id) => allAssessments.find((a) => a.id === id)).filter(Boolean);
+  const normalizedAttachments = normalizeAssessmentAttachments({
+    assessmentIds,
+    assessmentAttachments,
+  });
+
+  const syncAttachments = (nextAttachments) => {
+    const normalized = nextAttachments
+      .map((attachment) => ({
+        assessmentId: attachment.assessmentId,
+        mode: attachment.mode === "group" ? "group" : "individual",
+      }))
+      .filter((attachment) => attachment.assessmentId);
+
+    setValue("assessmentAttachments", normalized, { shouldDirty: true, shouldValidate: true });
+    setValue("assessmentIds", normalized.map((attachment) => attachment.assessmentId), { shouldDirty: true, shouldValidate: true });
+  };
+
+  const availableOfType = allAssessments.filter((a) => a.type === type && !normalizedAttachments.some((attachment) => attachment.assessmentId === a.id));
+  const attached = normalizedAttachments
+    .map((attachment) => ({
+      ...allAssessments.find((a) => a.id === attachment.assessmentId),
+      mode: attachment.mode,
+    }))
+    .filter((a) => a.id);
 
   const addAssessment = () => {
     if (!pickedId) return;
-    setValue("assessmentIds", [...assessmentIds, pickedId], { shouldDirty: true });
+    syncAttachments([...normalizedAttachments, { assessmentId: pickedId, mode: pickedMode }]);
     setPickedId("");
   };
 
   const removeAssessment = (id) => {
-    setValue("assessmentIds", assessmentIds.filter((x) => x !== id), { shouldDirty: true });
+    syncAttachments(normalizedAttachments.filter((attachment) => attachment.assessmentId !== id));
+  };
+
+  const toggleMode = (id) => {
+    syncAttachments(
+      normalizedAttachments.map((attachment) =>
+        attachment.assessmentId === id
+          ? { ...attachment, mode: attachment.mode === "group" ? "individual" : "group" }
+          : attachment
+      )
+    );
   };
 
   return (
@@ -47,6 +82,9 @@ function AssessmentsField() {
         <select value={type} onChange={(e) => { setType(e.target.value); setPickedId(""); }} style={selectStyle}>
           {Object.entries(ASM_TYPE_LABELS).map(([t, label]) => <option key={t} value={t}>{label}</option>)}
         </select>
+        <select value={pickedMode} onChange={(e) => setPickedMode(e.target.value)} style={{ ...selectStyle, width: "140px" }}>
+          {Object.entries(ASSESSMENT_MODE_LABELS).map(([mode, label]) => <option key={mode} value={mode}>{label}</option>)}
+        </select>
         <select
           value={pickedId}
           onChange={(e) => setPickedId(e.target.value)}
@@ -54,7 +92,7 @@ function AssessmentsField() {
           style={{ ...selectStyle, flex: 1, minWidth: "220px" }}
         >
           <option value="">
-            {isLoading ? "Loading assessments…" : availableOfType.length ? "Select an assessment…" : `No ${ASM_TYPE_LABELS[type].toLowerCase()} assessments available`}
+            {isLoading ? "Loading assessments..." : availableOfType.length ? "Select an assessment..." : `No ${ASM_TYPE_LABELS[type].toLowerCase()} assessments available`}
           </option>
           {availableOfType.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
@@ -76,6 +114,7 @@ function AssessmentsField() {
         <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
           {attached.map((a) => {
             const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+            const modeColor = ASSESSMENT_MODE_COLORS[a.mode] || "#6B7280";
             return (
               <li key={a.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px" }}>
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
@@ -83,6 +122,24 @@ function AssessmentsField() {
                 <span style={{ fontSize: "11px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 9px", borderRadius: "20px", whiteSpace: "nowrap" }}>
                   {ASM_TYPE_LABELS[a.type] || a.type}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => toggleMode(a.id)}
+                  title={`Mark as ${a.mode === "group" ? "individual" : "group"} assessment`}
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    color: modeColor,
+                    backgroundColor: `${modeColor}12`,
+                    border: `1px solid ${modeColor}30`,
+                    padding: "2px 9px",
+                    borderRadius: "20px",
+                    whiteSpace: "nowrap",
+                    cursor: "pointer",
+                  }}
+                >
+                  {ASSESSMENT_MODE_LABELS[a.mode] || "Individual"}
+                </button>
                 <button
                   type="button"
                   onClick={() => removeAssessment(a.id)}
@@ -102,12 +159,6 @@ function AssessmentsField() {
   );
 }
 
-// Shared by Main Concepts, Activity, and Notes — all three are a repeatable list of
-// {id, title, content} blocks with a custom heading per block, not a fixed pair of fields. Notes
-// additionally offers quick-pick heading presets (Ice Breaker / Wrap Activity) since those used to
-// be dedicated fields — clicking one just fills the heading; still freely editable after.
-// Renders its own section header (title/subtitle) rather than the caller wrapping a separate card
-// around it — a header-only card with no content of its own reads as an empty, broken section.
 function RepeatableContentField({ name, title, subtitle, singular, size, quickPicks }) {
   const { watch, setValue } = useFormContext();
   const items = watch(name) || [];
@@ -221,12 +272,12 @@ export default function SessionForm({ modules }) {
 
       <RepeatableContentField
         name="mainConcepts" singular="Main Concept" size="lg"
-        title="Main Concepts" subtitle="Add as many concept blocks as this session needs — each with its own heading."
+        title="Main Concepts" subtitle="Add as many concept blocks as this session needs - each with its own heading."
       />
 
       <RepeatableContentField
         name="activities" singular="Activity" size="lg"
-        title="Activity" subtitle="Add as many activities as this session needs — each with its own heading."
+        title="Activity" subtitle="Add as many activities as this session needs - each with its own heading."
       />
 
       <div style={cardStyle}>
@@ -236,7 +287,7 @@ export default function SessionForm({ modules }) {
 
       <RepeatableContentField
         name="notes" singular="Note" size="lg" quickPicks={NOTE_QUICK_PICKS}
-        title="Notes" subtitle="Add as many notes as this session needs — including Ice Breaker and Wrap Activity content — each with its own heading."
+        title="Notes" subtitle="Add as many notes as this session needs - including Ice Breaker and Wrap Activity content - each with its own heading."
       />
 
       <div style={cardStyle}>

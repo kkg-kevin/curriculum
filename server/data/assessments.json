@@ -895,5 +895,78 @@
     "id": "255edf1a-0e08-448a-b1b0-0737f9b6c6b6",
     "createdAt": "2026-07-17T05:40:49.727Z",
     "updatedAt": "2026-07-17T05:40:49.727Z"
+  },
+  {
+    "name": "sample",
+    "type": "quiz",
+    "description": "<p>ssample description</p>",
+    "instructions": "<p>sampe default instructions </p>",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [
+      {
+        "id": "f3e80bc8-c57b-435b-a09e-02767149f8a1",
+        "name": "Section 1",
+        "order": 0
+      }
+    ],
+    "items": [
+      {
+        "id": "82570380-2b17-484c-b59e-759df0294ae6",
+        "question": "<p>wesrdgmfhvbmn</p>",
+        "kind": "mcqSingle",
+        "sectionId": "f3e80bc8-c57b-435b-a09e-02767149f8a1",
+        "points": 1,
+        "options": [
+          "3qGWE",
+          "WSB",
+          "GEAdsbvCX "
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "id": "29c8a885-785a-4aca-9542-b30c0af59754",
+        "question": "<p>WEGSBDZ</p>",
+        "kind": "mcqMultiple",
+        "sectionId": "f3e80bc8-c57b-435b-a09e-02767149f8a1",
+        "points": 1,
+        "options": [
+          "WGSV",
+          "GEADSV"
+        ],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+            "marks": 5
+          }
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "c7357aa2-1ab8-4cd9-9be7-83bb5714791b",
+    "createdAt": "2026-07-20T12:16:42.061Z",
+    "updatedAt": "2026-07-20T12:16:42.061Z"
   }
 ]

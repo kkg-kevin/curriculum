@@ -28,5 +28,15 @@
     "image": "http://localhost:5000/uploads/d7b412c4-d37e-4e6a-9b41-bd6fd609f1e9.jpeg",
     "createdAt": "2026-07-10T08:31:34.259Z",
     "updatedAt": "2026-07-10T08:31:34.259Z"
+  },
+  {
+    "id": "622a8a40-8ade-42fb-a8ef-8513835130e1",
+    "name": "Intro do Digifunzi",
+    "category": "Other",
+    "unit": "pcs",
+    "description": "2qEAHSNF",
+    "image": "http://localhost:5000/uploads/e3abdeec-9622-4926-8e70-7378f282dca9.png",
+    "createdAt": "2026-07-20T12:17:41.292Z",
+    "updatedAt": "2026-07-20T12:17:41.292Z"
   }
 ]

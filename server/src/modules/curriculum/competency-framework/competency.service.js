@@ -15,6 +15,7 @@ const PerformanceBandModel   = require("./performance-band.model");
 const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine, combineAssessmentTypeScores } = require("./scoring-engines");
 const IndicatorAchievementModel = require("./indicator-achievement.model");
 const SessionModel                   = require("../../courses/session.model");
+const { getSessionAssessmentIds } = require("../../courses/sessionAssessment.utils");
 const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-link.model");
 const BuilderAssessmentModel         = require("../../assessments/assessment.model");
 const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-competency-link.model");
@@ -654,7 +655,7 @@ const CompetencyService = {
     const assessmentIds = new Set();
     courseIds.forEach((courseId) => {
       SessionModel.findByCourseId(courseId).forEach((s) => {
-        (s.assessmentIds || []).forEach((aid) => assessmentIds.add(aid));
+        getSessionAssessmentIds(s).forEach((aid) => assessmentIds.add(aid));
       });
     });
     return assessmentIds;

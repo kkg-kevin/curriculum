@@ -7,9 +7,12 @@ import RichContent from "../components/RichContent";
 import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
+import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
+const ASSESSMENT_MODE_LABELS = { individual: "Individual", group: "Group" };
+const ASSESSMENT_MODE_COLORS = { individual: "#6B7280", group: "#7C3AED" };
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return "";
@@ -193,8 +196,12 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                   if (section.key === "assessments") {
                     const repeatKey = `assessments:${session.id}`;
                     const repExpanded = expandedRepeatable.has(repeatKey);
-                    const attached = (session.assessmentIds || [])
-                      .map((aid) => allAssessments.find((a) => a.id === aid))
+                    const attached = normalizeAssessmentAttachments(session)
+                      .map((attachment) => {
+                        const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
+                        if (!assessment) return null;
+                        return { ...assessment, mode: attachment.mode };
+                      })
                       .filter(Boolean);
                     return (
                       <div key={section.key}>
@@ -219,6 +226,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                           ) : (
                             attached.map((a) => {
                               const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+                              const modeColor = ASSESSMENT_MODE_COLORS[a.mode] || "#6B7280";
                               const itemActive = isActive && a.id === activeItemId;
                               return (
                                 <Link
@@ -232,12 +240,15 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                                     backgroundColor: itemActive ? `${color}15` : "transparent",
                                     color, fontWeight: itemActive ? "700" : "600",
                                   }}
-                                >
-                                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
-                                  <span>{ASM_TYPE_LABELS[a.type] || a.type}</span>
-                                </Link>
-                              );
-                            })
+                                  >
+                                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
+                                    <span>{ASM_TYPE_LABELS[a.type] || a.type}</span>
+                                    <span style={{ fontSize: "10px", fontWeight: "700", color: modeColor, backgroundColor: `${modeColor}12`, border: `1px solid ${modeColor}30`, padding: "2px 7px", borderRadius: "20px", whiteSpace: "nowrap" }}>
+                                      {ASSESSMENT_MODE_LABELS[a.mode] || "Individual"}
+                                    </span>
+                                  </Link>
+                                );
+                              })
                           )
                         )}
                       </div>
@@ -294,12 +305,18 @@ function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
   }
 
   if (sectionKey === "assessments") {
-    const assessmentIds = session.assessmentIds || [];
-    const attached = assessmentIds.map((id) => allAssessments.find((a) => a.id === id)).filter(Boolean);
+    const attached = normalizeAssessmentAttachments(session)
+      .map((attachment) => {
+        const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
+        if (!assessment) return null;
+        return { ...assessment, mode: attachment.mode };
+      })
+      .filter(Boolean);
     return attached.length > 0 ? (
       <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
         {attached.map((a) => {
           const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+          const modeColor = ASSESSMENT_MODE_COLORS[a.mode] || "#6B7280";
           return (
             <li key={a.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", flexWrap: "wrap" }}>
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
@@ -308,6 +325,9 @@ function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
               </Link>
               <span style={{ fontSize: "10.5px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 9px", borderRadius: "20px", whiteSpace: "nowrap" }}>
                 {ASM_TYPE_LABELS[a.type] || a.type}
+              </span>
+              <span style={{ fontSize: "10.5px", fontWeight: "700", color: modeColor, backgroundColor: `${modeColor}12`, border: `1px solid ${modeColor}30`, padding: "2px 9px", borderRadius: "20px", whiteSpace: "nowrap" }}>
+                {ASSESSMENT_MODE_LABELS[a.mode] || "Individual"}
               </span>
             </li>
           );

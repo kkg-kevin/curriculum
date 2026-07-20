@@ -23,9 +23,12 @@ import AddModuleModal from "../components/AddModuleModal";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
+import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
+const ASSESSMENT_MODE_LABELS = { individual: "Individual", group: "Group" };
+const ASSESSMENT_MODE_COLORS = { individual: "#6B7280", group: "#7C3AED" };
 
 function formatAgeRange(min, max) {
   if (min == null && max == null) return null;
@@ -41,6 +44,7 @@ const SESSION_DEFAULT_VALUES = {
   mainConcepts: [],
   activities: [],
   assessmentIds: [],
+  assessmentAttachments: [],
   notes: [],
   resources: [],
 };
@@ -104,7 +108,8 @@ function SessionModal({ courseId, sessions, modules, startSessionId, onClose }) 
         introduction: current.introduction || "",
         mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
         activities: current.activities?.length ? current.activities : defaultActivities(),
-        assessmentIds: current.assessmentIds || [],
+        assessmentIds: getSessionAssessmentIds(current),
+        assessmentAttachments: normalizeAssessmentAttachments(current),
         notes: current.notes?.length ? current.notes : defaultNotes(),
         resources: current.resources || [],
       });
@@ -416,14 +421,19 @@ export default function CourseViewPage() {
   const { data: learningAreas = [] } = useCourseLearningAreas(id);
   const { data: assessmentsData } = useAssessmentsQuery();
   const allAssessments = assessmentsData?.data || [];
-  const attachedAssessmentIds = [...new Set(sessions.flatMap((s) => s.assessmentIds || []))];
-  const attachedAssessments = attachedAssessmentIds
-    .map((aid) => {
-      const assessment = allAssessments.find((a) => a.id === aid);
+  const attachedAssessmentMap = new Map();
+  sessions.forEach((session) => {
+    normalizeAssessmentAttachments(session).forEach((attachment) => {
+      if (!attachedAssessmentMap.has(attachment.assessmentId)) {
+        attachedAssessmentMap.set(attachment.assessmentId, { ...attachment, sessionId: session.id });
+      }
+    });
+  });
+  const attachedAssessments = [...attachedAssessmentMap.values()]
+    .map((attachment) => {
+      const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
       if (!assessment) return null;
-      // An assessment can be attached to more than one session — link to wherever it first appears.
-      const owningSession = sessions.find((s) => (s.assessmentIds || []).includes(aid));
-      return { ...assessment, sessionId: owningSession?.id };
+      return { ...assessment, sessionId: attachment.sessionId, mode: attachment.mode };
     })
     .filter(Boolean);
 
@@ -660,6 +670,7 @@ export default function CourseViewPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {attachedAssessments.map((a) => {
                   const color = ASM_TYPE_COLORS[a.type] || "#9CA3AF";
+                  const modeColor = ASSESSMENT_MODE_COLORS[a.mode] || "#6B7280";
                   return (
                     <Link
                       key={a.id}
@@ -670,6 +681,9 @@ export default function CourseViewPage() {
                       <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", fontWeight: "600", color: "#25476a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
                       <span style={{ fontSize: "10px", fontWeight: "700", color, backgroundColor: `${color}15`, border: `1px solid ${color}35`, padding: "2px 8px", borderRadius: "20px", whiteSpace: "nowrap", flexShrink: 0 }}>
                         {ASM_TYPE_LABELS[a.type] || a.type}
+                      </span>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: modeColor, backgroundColor: `${modeColor}12`, border: `1px solid ${modeColor}30`, padding: "2px 8px", borderRadius: "20px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {ASSESSMENT_MODE_LABELS[a.mode] || "Individual"}
                       </span>
                     </Link>
                   );
