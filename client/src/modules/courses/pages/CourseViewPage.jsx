@@ -24,6 +24,7 @@ import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
+import { normalizeActivityItems } from "../utils/sessionActivity";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
@@ -51,7 +52,7 @@ const SESSION_DEFAULT_VALUES = {
 
 // A blank session always has at least one editable block per repeatable section, even if none was saved yet.
 const defaultMainConcepts = () => [{ id: crypto.randomUUID(), title: "Introduction", content: "" }];
-const defaultActivities = () => [{ id: crypto.randomUUID(), title: "", content: "" }];
+const defaultActivities = () => [{ id: crypto.randomUUID(), title: "", content: "", mode: "individual" }];
 const defaultNotes = () => [{ id: crypto.randomUUID(), title: "", content: "" }];
 
 function SectionIcon() {
@@ -107,7 +108,7 @@ function SessionModal({ courseId, sessions, modules, startSessionId, onClose }) 
         outcomes: current.outcomes || [],
         introduction: current.introduction || "",
         mainConcepts: current.mainConcepts?.length ? current.mainConcepts : defaultMainConcepts(),
-        activities: current.activities?.length ? current.activities : defaultActivities(),
+        activities: current.activities?.length ? normalizeActivityItems(current.activities) : defaultActivities(),
         assessmentIds: getSessionAssessmentIds(current),
         assessmentAttachments: normalizeAssessmentAttachments(current),
         notes: current.notes?.length ? current.notes : defaultNotes(),
