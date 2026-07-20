@@ -9,24 +9,29 @@
       {
         "name": "Breaks down problems",
         "description": "Splits a complex problem into smaller, manageable sub-problems.",
-        "id": "f22ef693-0720-469c-9227-e74bac7464dd"
+        "id": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "code": "CTPD-BDP"
       },
       {
         "name": "Identifies patterns",
         "description": "Recognizes similarities or repeating structures across problems.",
-        "id": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a"
+        "id": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "code": "CTPD-IP"
       },
       {
         "name": "Designs step-by-step solutions",
         "description": "Sequences logical steps (an algorithm) needed to reach a solution.",
-        "id": "9bb73790-dc33-4e8e-84a6-966f758d53b0"
+        "id": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "code": "CTPD-DSSS"
       },
       {
         "name": "Evaluates solution efficiency",
         "description": "Considers whether a solution is clear, complete, and reasonably efficient.",
-        "id": "f0c20318-5f55-4b15-8303-7ea24092f191"
+        "id": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "code": "CTPD-ESE"
       }
-    ]
+    ],
+    "code": "CTPD"
   },
   {
     "id": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
@@ -38,24 +43,29 @@
       {
         "name": "Uses core programming constructs",
         "description": "Applies variables, conditionals, loops, and functions correctly to build a working program.",
-        "id": "9d3880d3-ece0-40da-88de-9dd5019707f0"
+        "id": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "code": "PIS-UCPC"
       },
       {
         "name": "Writes organized, readable code",
         "description": "Structures code clearly with sensible naming and formatting.",
-        "id": "0431502c-8319-484f-910b-996422bee428"
+        "id": "0431502c-8319-484f-910b-996422bee428",
+        "code": "PIS-WORC"
       },
       {
         "name": "Tests program output",
         "description": "Runs the program and checks whether the output matches what was expected.",
-        "id": "bbe35b8e-df25-4106-abd5-429a9bc189d6"
+        "id": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "code": "PIS-TPO"
       },
       {
         "name": "Debugs errors",
         "description": "Identifies the cause of an error and applies a fix to correct it.",
-        "id": "c8f1569f-8945-4c02-8a7d-a70bac24aea4"
+        "id": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "code": "PIS-DE"
       }
-    ]
+    ],
+    "code": "PIS"
   },
   {
     "id": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
@@ -67,24 +77,29 @@
       {
         "name": "Generates original project ideas",
         "description": "Proposes creative concepts for a game, animation, or application.",
-        "id": "ab3d2c5a-9a73-44c8-992f-65478e005309"
+        "id": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+        "code": "DCPD-GOPI"
       },
       {
         "name": "Uses tools and features effectively",
         "description": "Applies the relevant software or platform features to build the project.",
-        "id": "1532d350-b895-4cac-b619-2d1eaf85e50a"
+        "id": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+        "code": "DCPD-UTFE"
       },
       {
         "name": "Integrates multiple concepts",
         "description": "Combines several skills or components into one coherent, functional project.",
-        "id": "58e0dd6b-a78a-4029-a399-739eb3d77de0"
+        "id": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+        "code": "DCPD-IMC"
       },
       {
         "name": "Completes a functional project",
         "description": "Delivers a finished project that works as intended.",
-        "id": "bef9080f-d582-4251-a0f1-fe382605c4d3"
+        "id": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+        "code": "DCPD-CFP"
       }
-    ]
+    ],
+    "code": "DCPD"
   },
   {
     "id": "c3d95126-1121-4de8-bdab-14adbf00d218",
@@ -96,24 +111,29 @@
       {
         "name": "Explains how AI systems work",
         "description": "Describes, in simple terms, how an AI system takes inputs and produces outputs.",
-        "id": "573eb2fa-d695-4063-8c62-ad886b12775a"
+        "id": "573eb2fa-d695-4063-8c62-ad886b12775a",
+        "code": "ADLA-EHASW"
       },
       {
         "name": "Interacts with AI tools",
         "description": "Uses a basic AI tool appropriately to complete a task.",
-        "id": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7"
+        "id": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+        "code": "ADLA-IAT"
       },
       {
         "name": "Recognizes the role of data",
         "description": "Explains why data is needed to train an AI system.",
-        "id": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28"
+        "id": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+        "code": "ADLA-RRD"
       },
       {
         "name": "Identifies bias and responsible use",
         "description": "Points out potential bias, accuracy issues, or ethical concerns in AI use.",
-        "id": "4e1c27d6-465e-42d4-ae51-6854f9e63cfa"
+        "id": "4e1c27d6-465e-42d4-ae51-6854f9e63cfa",
+        "code": "ADLA-IBRU"
       }
-    ]
+    ],
+    "code": "ADLA"
   },
   {
     "id": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
@@ -125,24 +145,29 @@
       {
         "name": "Collaborates on shared tasks",
         "description": "Works effectively with peers to complete a group task.",
-        "id": "325e3232-5bda-43de-a1fb-010f486181aa"
+        "id": "325e3232-5bda-43de-a1fb-010f486181aa",
+        "code": "CCDC-CST"
       },
       {
         "name": "Communicates ideas clearly",
         "description": "Explains ideas, processes, and outcomes so others can understand them.",
-        "id": "1c6e3d95-0c78-4cad-b0a8-78894f33e2fa"
+        "id": "1c6e3d95-0c78-4cad-b0a8-78894f33e2fa",
+        "code": "CCDC-CIC"
       },
       {
         "name": "Engages constructively in discussion",
         "description": "Contributes to discussions respectfully and takes others input into account.",
-        "id": "bc446d61-efcf-4091-ba12-6320d11d45f1"
+        "id": "bc446d61-efcf-4091-ba12-6320d11d45f1",
+        "code": "CCDC-ECD"
       },
       {
         "name": "Practices responsible digital behavior",
         "description": "Demonstrates safe, respectful, and ethical use of technology online.",
-        "id": "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba"
+        "id": "ec99b8d2-b265-43ae-a42a-f9ec41b6bfba",
+        "code": "CCDC-PRDB"
       }
-    ]
+    ],
+    "code": "CCDC"
   },
   {
     "id": "8efe0129-a518-4287-9b27-faba52553004",
@@ -152,31 +177,37 @@
       {
         "id": "0e619faf-8e1d-4991-bae3-07bde5f5e42a",
         "name": "bsfb",
-        "description": ""
+        "description": "",
+        "code": "THINKI-BSFB"
       },
       {
         "id": "619b9015-c29d-400c-8df6-b4ee4b38cac1",
         "name": "afbf",
-        "description": ""
+        "description": "",
+        "code": "THINKI-AFBF"
       },
       {
         "id": "9681e690-0802-4bc1-a42d-27ec3001da62",
         "name": "wrbgws",
-        "description": ""
+        "description": "",
+        "code": "THINKI-WRBGWS"
       },
       {
         "id": "cc7dd1ea-bd5f-40e7-9f01-3cbb2f23ec92",
         "name": "rgRSETNBGEEA",
-        "description": ""
+        "description": "",
+        "code": "THINKI-RGRSET"
       },
       {
         "name": "dvD",
         "description": "",
-        "id": "1781218b-325d-4f4d-a05c-c413127625b2"
+        "id": "1781218b-325d-4f4d-a05c-c413127625b2",
+        "code": "THINKI-DVD"
       }
     ],
     "createdAt": "2026-07-09T10:10:29.598Z",
-    "updatedAt": "2026-07-09T10:13:10.685Z"
+    "updatedAt": "2026-07-09T10:13:10.685Z",
+    "code": "THINKI"
   },
   {
     "id": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
@@ -186,26 +217,31 @@
       {
         "name": "Sequencing",
         "description": "Orders steps logically to complete a task.",
-        "id": "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f"
+        "id": "6d9a9dc1-fd0d-4e8b-b4d1-1cfce12ef98f",
+        "code": "CT-SEQUEN"
       },
       {
         "name": "Pattern Recognition",
         "description": "Identifies similarities/repetition to simplify problems.",
-        "id": "d377c271-fad3-4bbd-8fb5-b05199d7d273"
+        "id": "d377c271-fad3-4bbd-8fb5-b05199d7d273",
+        "code": "CT-PR"
       },
       {
         "name": "Decomposition",
         "description": "Breaks a complex problem into smaller parts.",
-        "id": "90904770-79cb-49a8-b4f6-fca16dd5c51e"
+        "id": "90904770-79cb-49a8-b4f6-fca16dd5c51e",
+        "code": "CT-DECOMP"
       },
       {
         "name": "Abstraction",
         "description": "Filters out unnecessary detail to focus on what matters.",
-        "id": "f8593068-7181-4eb0-9726-9f8829e31f90"
+        "id": "f8593068-7181-4eb0-9726-9f8829e31f90",
+        "code": "CT-ABSTRA"
       }
     ],
     "createdAt": "2026-07-13T10:06:59.938Z",
-    "updatedAt": "2026-07-13T10:06:59.938Z"
+    "updatedAt": "2026-07-13T10:06:59.938Z",
+    "code": "CT"
   },
   {
     "id": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
@@ -215,21 +251,25 @@
       {
         "name": "Online Safety",
         "description": "Recognizes and avoids online risks.",
-        "id": "0c18f7ba-387f-440a-aaf7-d030b1cc4e5b"
+        "id": "0c18f7ba-387f-440a-aaf7-d030b1cc4e5b",
+        "code": "DC-OS"
       },
       {
         "name": "Ethical Use of Technology",
         "description": "Uses digital tools and content responsibly.",
-        "id": "260bf238-9eb2-4da5-9592-510c9f61f234"
+        "id": "260bf238-9eb2-4da5-9592-510c9f61f234",
+        "code": "DC-EUT"
       },
       {
         "name": "Digital Communication",
         "description": "Communicates respectfully and clearly online.",
-        "id": "d143ef08-d719-4570-88f5-4aa699213241"
+        "id": "d143ef08-d719-4570-88f5-4aa699213241",
+        "code": "DC-DC"
       }
     ],
     "createdAt": "2026-07-13T10:06:59.952Z",
-    "updatedAt": "2026-07-13T10:06:59.952Z"
+    "updatedAt": "2026-07-13T10:06:59.952Z",
+    "code": "DC"
   },
   {
     "id": "97978611-be56-4b81-b870-af49fad7a4d4",
@@ -239,16 +279,19 @@
       {
         "name": "Idea Generation",
         "description": "Produces multiple possible solutions to a problem.",
-        "id": "7b4db0f8-55e6-440d-95ca-34f7b2fec5fe"
+        "id": "7b4db0f8-55e6-440d-95ca-34f7b2fec5fe",
+        "code": "CPS-IG"
       },
       {
         "name": "Prototyping & Iteration",
         "description": "Builds, tests, and improves a solution.",
-        "id": "a4937d5e-af25-4fdb-ac4d-18f4b08f5fe4"
+        "id": "a4937d5e-af25-4fdb-ac4d-18f4b08f5fe4",
+        "code": "CPS-PI"
       }
     ],
     "createdAt": "2026-07-13T10:06:59.963Z",
-    "updatedAt": "2026-07-13T10:06:59.963Z"
+    "updatedAt": "2026-07-13T10:06:59.963Z",
+    "code": "CPS"
   },
   {
     "id": "facf5f45-e447-461d-9356-d50960677908",
@@ -256,6 +299,45 @@
     "description": "Applies logical, step-by-step thinking to break down and solve problems.",
     "indicators": [],
     "createdAt": "2026-07-15T09:16:06.228Z",
-    "updatedAt": "2026-07-15T09:16:06.228Z"
+    "updatedAt": "2026-07-15T09:16:06.228Z",
+    "code": "CPS2"
+  },
+  {
+    "name": "Code",
+    "description": "code",
+    "indicators": [
+      {
+        "name": "code",
+        "description": "code 1",
+        "id": "2c5c2900-fde9-4454-84a5-8a0c48dff55b",
+        "code": "CODE-CODE"
+      },
+      {
+        "name": "code",
+        "description": "code 2",
+        "id": "447a29b8-2890-40b1-8cbb-e828d8827569",
+        "code": "CODE-CODE2"
+      }
+    ],
+    "id": "fe278d20-9313-4241-b870-6670ba9d9621",
+    "code": "CODE",
+    "createdAt": "2026-07-20T07:57:48.863Z",
+    "updatedAt": "2026-07-20T07:57:48.863Z"
+  },
+  {
+    "name": "Digital Codes",
+    "description": "WSDVGRWSDV",
+    "indicators": [
+      {
+        "name": "Code 101",
+        "description": "rbs",
+        "id": "050a6473-849b-4e5b-b422-b8982e68d1df",
+        "code": "DC2-C1"
+      }
+    ],
+    "id": "93516d87-eb02-4ac5-9e44-290c60196781",
+    "code": "DC2",
+    "createdAt": "2026-07-20T08:06:00.686Z",
+    "updatedAt": "2026-07-20T08:06:00.686Z"
   }
 ]

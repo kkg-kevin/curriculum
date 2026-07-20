@@ -72,6 +72,18 @@ const CSS = `
     display:flex; align-items:center; justify-content:center;
     font-size:18px; font-weight:800;
   }
+  .stg-code-pill {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:4px 8px; border-radius:999px;
+    background:#E8F5FB; border:1px solid #B8D9EE;
+    color:#25476a; font-size:11px; font-weight:800;
+    line-height:1; letter-spacing:0.04em;
+  }
+  .stg-code-pill--small { padding:3px 7px; font-size:10px; }
+  .stg-code-preview-row {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:10px 12px; border:1px solid #E5E7EB; border-radius:10px; background:#F9FAFB;
+  }
   .stg-comp-desc {
     margin:0; font-size:12.5px; color:#6B7280; line-height:1.6;
     display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
