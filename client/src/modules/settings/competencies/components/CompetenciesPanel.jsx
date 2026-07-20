@@ -6,6 +6,48 @@ import { Modal, Label } from "../../components/Modal";
 import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 
+const STOP_WORDS = new Set(["the", "and", "of", "for", "a", "an", "in", "on", "at", "to", "by", "with", "from", "or"]);
+
+function normalizeText(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function extractWords(name) {
+  const cleaned = normalizeText(name)
+    .replace(/^\d+(?:[.)-]\s*|\s+)/, "")
+    .replace(/^[ivxlcdm]+\.\s*/i, "");
+
+  return cleaned
+    .split(/[^a-zA-Z0-9]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !STOP_WORDS.has(part.toLowerCase()));
+}
+
+function codeFromName(name, fallback, maxLetters = 6) {
+  const words = extractWords(name);
+  if (words.length === 0) return fallback;
+
+  let code = words.map((word) => word[0].toUpperCase()).join("");
+  if (code.length < 2) {
+    code = words[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  }
+
+  code = code.slice(0, maxLetters).replace(/[^a-zA-Z0-9]/g, "");
+  return code || fallback;
+}
+
+function previewCompetencyCode(name) {
+  return codeFromName(name, "");
+}
+
+function previewIndicatorCode(competencyName, indicatorName) {
+  const compCode = previewCompetencyCode(competencyName);
+  const indCode = codeFromName(indicatorName, "");
+  if (!compCode || !indCode) return "";
+  return `${compCode}-${indCode}`;
+}
+
 function CardKebab({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -45,9 +87,10 @@ function CardKebab({ onEdit, onDelete }) {
   );
 }
 
-function IndicatorsEditor({ indicators, onChange }) {
+function IndicatorsEditor({ competencyName, indicators, onChange }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const previewCode = previewIndicatorCode(competencyName, name);
 
   const addIndicator = () => {
     if (!name.trim()) return;
@@ -70,7 +113,10 @@ function IndicatorsEditor({ indicators, onChange }) {
           {indicators.map((ind, idx) => (
             <div key={ind.id || idx} className="stg-ind-row">
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                  {ind.code && <span className="stg-code-pill stg-code-pill--small">{ind.code}</span>}
+                </div>
                 {ind.description && (
                   <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
                 )}
@@ -88,6 +134,11 @@ function IndicatorsEditor({ indicators, onChange }) {
           onChange={(e) => setName(e.target.value)}
           placeholder="Indicator name (e.g. Breaks a problem into smaller steps)"
         />
+        {previewCode && (
+          <p style={{ margin: "0", fontSize: "11.5px", color: "#6B7280" }}>
+            Code preview: <strong style={{ color: "#25476a" }}>{previewCode}</strong>
+          </p>
+        )}
         <input
           className="stg-input stg-ind-add-input"
           value={description}
@@ -114,6 +165,7 @@ function CompetencyModal({ editTarget, onClose }) {
   const [indicators, setIndicators] = useState(() => editTarget?.indicators || []);
   const [error, setError] = useState("");
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const codePreview = previewCompetencyCode(form.name);
 
   const submit = () => {
     if (!form.name.trim()) { setError("Name is required"); return; }
@@ -130,7 +182,7 @@ function CompetencyModal({ editTarget, onClose }) {
   return (
     <Modal
       title={editTarget ? "Edit Competency" : "Add Competency"}
-      subtitle="Shared across Curriculum, Courses, and Assessments"
+      subtitle="Shared across Curriculum, Courses, and Assessments. Codes are generated automatically."
       onClose={onClose}
       footer={<>
         <button type="button" className="stg-btn-secondary" onClick={onClose}>Cancel</button>
@@ -139,8 +191,17 @@ function CompetencyModal({ editTarget, onClose }) {
         </button>
       </>}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {error && <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "10px", color: "#EF4444", fontSize: "13px" }}>{error}</div>}
+        {codePreview && (
+          <div>
+            <Label>Code preview</Label>
+            <div className="stg-code-preview-row">
+              <span className="stg-code-pill">{codePreview}</span>
+              <span style={{ fontSize: "12px", color: "#9CA3AF" }}>Generated from the competency name and used to track it everywhere.</span>
+            </div>
+          </div>
+        )}
         <div>
           <Label>Name *</Label>
           <input className="stg-input" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Computational Thinking" />
@@ -149,7 +210,7 @@ function CompetencyModal({ editTarget, onClose }) {
           <Label>Description</Label>
           <textarea rows={4} className="stg-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} />
         </div>
-        <IndicatorsEditor indicators={indicators} onChange={setIndicators} />
+        <IndicatorsEditor competencyName={form.name} indicators={indicators} onChange={setIndicators} />
       </div>
     </Modal>
   );
@@ -162,15 +223,18 @@ function CompetencyCard({ comp, color, onEdit, onDelete }) {
 
   return (
     <div className="stg-comp-card">
-      <div className="stg-comp-card-top">
-        <div className="stg-avatar" style={{ backgroundColor: `${color}15`, border: `2px solid ${color}30`, color }}>
-          {initial}
-        </div>
-        <div style={{ flex: 1, minWidth: 0, paddingTop: "2px" }}>
-          <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, wordBreak: "break-word" }}>
-            {comp.name}
-          </p>
-        </div>
+        <div className="stg-comp-card-top">
+          <div className="stg-avatar" style={{ backgroundColor: `${color}15`, border: `2px solid ${color}30`, color }}>
+            {initial}
+          </div>
+          <div style={{ flex: 1, minWidth: 0, paddingTop: "2px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, wordBreak: "break-word" }}>
+                {comp.name}
+              </p>
+              {comp.code && <span className="stg-code-pill">{comp.code}</span>}
+            </div>
+          </div>
         <CardKebab onEdit={onEdit} onDelete={onDelete} />
       </div>
 
@@ -190,7 +254,10 @@ function CompetencyCard({ comp, color, onEdit, onDelete }) {
             <div className="stg-comp-ind-list">
               {indicators.map((ind, idx) => (
                 <div key={ind.id || idx} className="stg-comp-ind-item">
-                  <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+                    {ind.code && <span className="stg-code-pill stg-code-pill--small">{ind.code}</span>}
+                  </div>
                   {ind.description && (
                     <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
                   )}
