@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
-import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
 import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
-import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 import { normalizeActivityItems } from "../utils/sessionActivity";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -60,7 +58,7 @@ function SectionIcon() {
 
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, allAssessments, onLeafSelect }) {
+function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, onLeafSelect }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -207,13 +205,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                   if (section.key === "assessments") {
                     const repeatKey = `assessments:${session.id}`;
                     const repExpanded = expandedRepeatable.has(repeatKey);
-                    const attached = normalizeAssessmentAttachments(session)
-                      .map((attachment) => {
-                        const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
-                        if (!assessment) return null;
-                        return { ...assessment, mode: attachment.mode };
-                      })
-                      .filter(Boolean);
+                    const attached = session.attachedAssessments || [];
                     return (
                       <div key={section.key}>
                         <div
@@ -294,7 +286,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
 
 /* ── Section content by type ──────────────────────────────────────────── */
 
-function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
+function SectionBody({ role, sectionKey, session, courseId }) {
   if (sectionKey === "outcomes") {
     const outcomes = session.outcomes || [];
     return outcomes.length > 0 ? (
@@ -316,13 +308,7 @@ function SectionBody({ role, sectionKey, session, allAssessments, courseId }) {
   }
 
   if (sectionKey === "assessments") {
-    const attached = normalizeAssessmentAttachments(session)
-      .map((attachment) => {
-        const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
-        if (!assessment) return null;
-        return { ...assessment, mode: attachment.mode };
-      })
-      .filter(Boolean);
+    const attached = session.attachedAssessments || [];
     return attached.length > 0 ? (
       <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
         {attached.map((a) => {
@@ -390,8 +376,6 @@ export default function SectionViewPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
-  const { data: assessmentsData } = useAssessmentsQuery();
-  const allAssessments = assessmentsData?.data || [];
 
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);
@@ -402,7 +386,7 @@ export default function SectionViewPage() {
   const effectiveItemId = isRepeatable ? (itemId || items[0]?.id || null) : (isAssessmentsSection ? (itemId || null) : null);
   const itemIndex = isRepeatable ? items.findIndex((i) => i.id === effectiveItemId) : -1;
   const item = itemIndex !== -1 ? items[itemIndex] : null;
-  const activeAssessment = isAssessmentsSection && effectiveItemId ? allAssessments.find((a) => a.id === effectiveItemId) : null;
+  const activeAssessment = isAssessmentsSection && effectiveItemId ? (session?.attachedAssessments || []).find((a) => a.id === effectiveItemId) : null;
 
   // Flatten (session, section[, item]) triples across the whole course, in order, for Prev/Next.
   // Repeatable sections contribute one entry per item (or a single item-less placeholder if
@@ -484,7 +468,6 @@ export default function SectionViewPage() {
             activeSessionId={sessionId}
             activeSectionKey={sectionKey}
             activeItemId={effectiveItemId}
-            allAssessments={allAssessments}
             onLeafSelect={() => setSidebarCollapsed(true)}
           />
         )}
@@ -560,14 +543,14 @@ export default function SectionViewPage() {
               )
             ) : isAssessmentsSection && effectiveItemId ? (
               activeAssessment ? (
-                <AssessmentContent id={activeAssessment.id} />
+                <AssessmentContent assessment={activeAssessment} />
               ) : (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
                   This assessment is no longer attached to this session.
                 </p>
               )
             ) : (
-              <SectionBody role={role} sectionKey={sectionKey} session={session} allAssessments={allAssessments} courseId={id} />
+              <SectionBody role={role} sectionKey={sectionKey} session={session} courseId={id} />
             )}
           </div>
         </div>

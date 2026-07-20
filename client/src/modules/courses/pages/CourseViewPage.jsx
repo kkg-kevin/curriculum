@@ -16,7 +16,6 @@ import {
   useUpdateModule,
   useDeleteModule,
 } from "../hooks/useCourse";
-import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import AddModuleModal from "../components/AddModuleModal";
@@ -420,23 +419,15 @@ export default function CourseViewPage() {
   const { data: modules = [] } = useModules(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
   const { data: learningAreas = [] } = useCourseLearningAreas(id);
-  const { data: assessmentsData } = useAssessmentsQuery();
-  const allAssessments = assessmentsData?.data || [];
   const attachedAssessmentMap = new Map();
   sessions.forEach((session) => {
-    normalizeAssessmentAttachments(session).forEach((attachment) => {
-      if (!attachedAssessmentMap.has(attachment.assessmentId)) {
-        attachedAssessmentMap.set(attachment.assessmentId, { ...attachment, sessionId: session.id });
+    (session.attachedAssessments || []).forEach((assessment) => {
+      if (!attachedAssessmentMap.has(assessment.id)) {
+        attachedAssessmentMap.set(assessment.id, { ...assessment, sessionId: session.id });
       }
     });
   });
-  const attachedAssessments = [...attachedAssessmentMap.values()]
-    .map((attachment) => {
-      const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
-      if (!assessment) return null;
-      return { ...assessment, sessionId: attachment.sessionId, mode: attachment.mode };
-    })
-    .filter(Boolean);
+  const attachedAssessments = [...attachedAssessmentMap.values()];
 
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [collapsedModuleIds, setCollapsedModuleIds] = useState(new Set());

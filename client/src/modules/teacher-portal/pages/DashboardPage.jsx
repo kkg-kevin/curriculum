@@ -129,6 +129,9 @@ export default function DashboardPage() {
                     <button type="button" onClick={() => navigate(`/teacher-portal/attendance?classId=${c.id}`)} style={{ flex: 1, padding: "8px 10px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                       Attendance
                     </button>
+                    <button type="button" onClick={() => navigate("/teacher-portal/assessments")} style={{ flex: 1, padding: "8px 10px", backgroundColor: "#F5F3FF", color: "#6D28D9", border: "1.5px solid #DDD6FE", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                      Assessments
+                    </button>
                     <button type="button" onClick={() => navigate("/teacher-portal/course-content")} style={{ flex: 1, padding: "8px 10px", backgroundColor: "transparent", color: T.inkMuted, border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                       Courses
                     </button>

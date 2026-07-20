@@ -153,12 +153,18 @@ function StructureSection({ sections, entries }) {
  * Read-only assessment body (Description/Items/Rubric/… + Details/Competencies/Learning Areas sidebar),
  * shared between the standalone Assessments module view and any embedded context (e.g. a course session).
  */
-export default function AssessmentContent({ id }) {
+export default function AssessmentContent({ id, assessment: providedAssessment = null }) {
   const navigate = useNavigate();
-  const { data: assessment, isLoading, isError } = useAssessmentQuery(id);
-  const { data: competencies = [] } = useAssessmentCompetencies(id);
-  const { data: learningAreas = [] } = useAssessmentLearningAreas(id);
-  const { data: inventory = [] } = useAssessmentInventory(id);
+  const { data: fetchedAssessment, isLoading, isError } = useAssessmentQuery(id, { enabled: !providedAssessment && !!id });
+  const { data: fetchedCompetencies = [] } = useAssessmentCompetencies(id, { enabled: !providedAssessment && !!id });
+  const { data: fetchedLearningAreas = [] } = useAssessmentLearningAreas(id, { enabled: !providedAssessment && !!id });
+  const { data: fetchedInventory = [] } = useAssessmentInventory(id, { enabled: !providedAssessment && !!id });
+
+  const assessment = providedAssessment || fetchedAssessment;
+  const competencies = providedAssessment?.competencies || fetchedCompetencies;
+  const learningAreas = providedAssessment?.learningAreas || fetchedLearningAreas;
+  const inventory = providedAssessment?.inventory || fetchedInventory;
+  const readOnly = !!providedAssessment;
 
   if (isLoading) {
     return (
@@ -317,7 +323,9 @@ export default function AssessmentContent({ id }) {
           {competencies.length === 0 ? (
             <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
               No competencies tagged.{" "}
-              <button type="button" onClick={() => navigate(`/assessments/${id}/edit`)} style={{ background: "none", border: "none", padding: 0, color: "#38aae1", fontWeight: "600", cursor: "pointer", fontSize: "12.5px", fontFamily: "Inter, sans-serif" }}>Add some →</button>
+              {!readOnly && (
+                <button type="button" onClick={() => navigate(`/assessments/${id}/edit`)} style={{ background: "none", border: "none", padding: 0, color: "#38aae1", fontWeight: "600", cursor: "pointer", fontSize: "12.5px", fontFamily: "Inter, sans-serif" }}>Add some →</button>
+              )}
             </p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -332,7 +340,9 @@ export default function AssessmentContent({ id }) {
           {learningAreas.length === 0 ? (
             <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
               No learning areas tagged.{" "}
-              <button type="button" onClick={() => navigate(`/assessments/${id}/edit`)} style={{ background: "none", border: "none", padding: 0, color: "#38aae1", fontWeight: "600", cursor: "pointer", fontSize: "12.5px", fontFamily: "Inter, sans-serif" }}>Add some →</button>
+              {!readOnly && (
+                <button type="button" onClick={() => navigate(`/assessments/${id}/edit`)} style={{ background: "none", border: "none", padding: 0, color: "#38aae1", fontWeight: "600", cursor: "pointer", fontSize: "12.5px", fontFamily: "Inter, sans-serif" }}>Add some →</button>
+              )}
             </p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
