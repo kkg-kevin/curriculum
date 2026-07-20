@@ -88,10 +88,12 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 4. **Upload** `backend-deploy.zip` into `curriculum.digifunzi`
 
 5. **Extract** — right-click `backend-deploy.zip` → Extract
+   - After extraction, confirm `src/server.js` and `src/modules/auth/auth.routes.js` are directly inside `curriculum.digifunzi`
+   - If the zip extracted into an extra nested folder, move the contents up one level before restarting the app
 
 6. **In cPanel Node.js panel**:
-   - Click **Run NPM Install** — wait for it to complete
-   - Click **Restart**
+    - Click **Run NPM Install** — wait for it to complete
+    - Click **Restart**
 
 7. **Test** — visit `https://nodeapp.digifunzi.com`  
    Expected response: `{ "message": "API is running" }`
@@ -99,6 +101,19 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 ### Uploaded files (cover images, inline images, attached documents)
 
 Uploaded files are saved to `server/uploads/` and served directly at `https://nodeapp.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
+
+### Login data sync
+
+Auth is file-based in this project. User accounts and password hashes live in `server/data/users.json` on the backend host, so if localhost logins work but the live server says `Invalid email or password`, the live `data/users.json` is out of sync.
+
+To make the live site accept the same teacher/school/learner logins as localhost:
+
+1. Upload the login-only bundle: `login-users.zip`
+2. Extract it into `curriculum.digifunzi`
+3. Confirm it places `data/users.json` directly under the app root
+4. Click **Restart** in the cPanel Node.js panel
+
+This only syncs the login accounts. It does not touch curricula, uploads, or the rest of the live `data/` folder.
 
 ### Full data reset (rare — only when you mean to overwrite live data)
 
