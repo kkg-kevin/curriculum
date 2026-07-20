@@ -82,5 +82,12 @@
     "competencyId": "e91765f0-ce37-4361-aee5-e2a19a06f2cc",
     "minimumThreshold": 60,
     "createdAt": "2026-07-16T11:48:07.053Z"
+  },
+  {
+    "id": "cdca1196-82f3-4352-91dc-f507a0e5429b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "competencyId": "93516d87-eb02-4ac5-9e44-290c60196781",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-20T08:09:16.203Z"
   }
 ]

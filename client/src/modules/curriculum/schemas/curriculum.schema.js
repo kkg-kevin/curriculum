@@ -9,6 +9,6 @@ export const curriculumDetailsSchema = z.object({
     .string()
     .min(1, "Curriculum code is required")
     .max(20, "Max 20 characters")
-    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
+    .regex(/^[A-Z0-9-]+$/, "Only letters, numbers, and hyphens"),
   description: z.string().max(500, "Max 500 characters").default(""),
 });

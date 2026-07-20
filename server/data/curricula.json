@@ -81,5 +81,23 @@
     "createdAt": "2026-07-13T10:06:59.915Z",
     "updatedAt": "2026-07-15T11:30:23.828Z",
     "competencyWeights": []
+  },
+  {
+    "name": "Level 1: Code Foundations",
+    "code": "L1CF",
+    "academicYear": "",
+    "description": "",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "academicCycleModel": "terms",
+    "periods": [],
+    "classes": [],
+    "id": "6a5fe04a-4b22-4888-ac3b-a952e4b9a859",
+    "createdAt": "2026-07-20T08:23:56.460Z",
+    "updatedAt": "2026-07-20T08:23:56.460Z"
   }
 ]
