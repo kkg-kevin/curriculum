@@ -331,7 +331,7 @@ const CourseService = {
       outcomes: [],
       introduction: "",
       mainConcepts: [{ id: generateId(), title: "Introduction", content: "" }],
-      activities: [{ id: generateId(), title: "", content: "" }],
+      activities: [{ id: generateId(), title: "", content: "", mode: "individual" }],
       notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));

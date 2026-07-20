@@ -8,11 +8,14 @@ import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatable
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
+import { normalizeActivityItems } from "../utils/sessionActivity";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
 const ASSESSMENT_MODE_LABELS = { individual: "Individual", group: "Group" };
 const ASSESSMENT_MODE_COLORS = { individual: "#6B7280", group: "#7C3AED" };
+const ACTIVITY_MODE_LABELS = { individual: "Individual", group: "Group" };
+const ACTIVITY_MODE_COLORS = { individual: "#6B7280", group: "#7C3AED" };
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return "";
@@ -146,7 +149,9 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                   if (isRepeatableSection(section.key)) {
                     const repeatKey = `${section.key}:${session.id}`;
                     const repExpanded = expandedRepeatable.has(repeatKey);
-                    const items = session[section.key] || [];
+                    const items = section.key === "activities"
+                      ? normalizeActivityItems(session[section.key] || [])
+                      : (session[section.key] || []);
                     return (
                       <div key={section.key}>
                         <div
@@ -170,6 +175,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                           ) : (
                             items.map((item, i) => {
                               const itemActive = isActive && item.id === activeItemId;
+                              const modeColor = section.key === "activities" ? (ACTIVITY_MODE_COLORS[item.mode] || "#6B7280") : null;
                               return (
                                 <Link
                                   key={item.id}
@@ -184,6 +190,11 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                                   }}
                                 >
                                   {repeatableItemLabel(section.key, item, i)}
+                                  {section.key === "activities" && (
+                                    <span style={{ fontSize: "10px", fontWeight: "700", color: modeColor, backgroundColor: `${modeColor}12`, border: `1px solid ${modeColor}30`, padding: "2px 7px", borderRadius: "20px", whiteSpace: "nowrap" }}>
+                                      {ACTIVITY_MODE_LABELS[item.mode] || "Individual"}
+                                    </span>
+                                  )}
                                 </Link>
                               );
                             })
@@ -385,7 +396,9 @@ export default function SectionViewPage() {
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);
   const isAssessmentsSection = sectionKey === "assessments";
-  const items = session?.[sectionKey] || [];
+  const items = sectionKey === "activities"
+    ? normalizeActivityItems(session?.[sectionKey] || [])
+    : (session?.[sectionKey] || []);
   const effectiveItemId = isRepeatable ? (itemId || items[0]?.id || null) : (isAssessmentsSection ? (itemId || null) : null);
   const itemIndex = isRepeatable ? items.findIndex((i) => i.id === effectiveItemId) : -1;
   const item = itemIndex !== -1 ? items[itemIndex] : null;
@@ -525,7 +538,21 @@ export default function SectionViewPage() {
 
             {isRepeatable ? (
               item ? (
-                <RichContent html={item.content} emptyText="Nothing added yet" />
+                sectionKey === "activities" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "12px", fontWeight: "700", color: "#25476a", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", padding: "3px 10px", borderRadius: "20px" }}>
+                        {ACTIVITY_MODE_LABELS[item.mode] || "Individual"}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: "600" }}>
+                        {repeatableItemLabel(sectionKey, item, itemIndex)}
+                      </span>
+                    </div>
+                    <RichContent html={item.content} emptyText="Nothing added yet" />
+                  </div>
+                ) : (
+                  <RichContent html={item.content} emptyText="Nothing added yet" />
+                )
               ) : (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
                   Nothing added to {SECTION_LABELS[sectionKey]} yet.

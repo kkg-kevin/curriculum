@@ -6,6 +6,7 @@ import ResourcesField from "./ResourcesField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { NOTE_QUICK_PICKS } from "../sectionConfig";
 import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
+import { normalizeActivityItems } from "../utils/sessionActivity";
 
 const cardStyle = { backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" };
 
@@ -159,12 +160,12 @@ function AssessmentsField() {
   );
 }
 
-function RepeatableContentField({ name, title, subtitle, singular, size, quickPicks }) {
+function RepeatableContentField({ name, title, subtitle, singular, size, quickPicks, withMode = false }) {
   const { watch, setValue } = useFormContext();
-  const items = watch(name) || [];
+  const items = withMode ? normalizeActivityItems(watch(name) || []) : (watch(name) || []);
 
   const addItem = () => {
-    setValue(name, [...items, { id: crypto.randomUUID(), title: "", content: "" }], { shouldDirty: true });
+    setValue(name, [...items, { id: crypto.randomUUID(), title: "", content: "", ...(withMode ? { mode: "individual" } : {}) }], { shouldDirty: true });
   };
 
   const removeItem = (idx) => {
@@ -210,6 +211,19 @@ function RepeatableContentField({ name, title, subtitle, singular, size, quickPi
               </div>
             )}
             <Input name={`${name}.${idx}.title`} label="Heading" placeholder={`e.g. ${singular} name`} hint="Name this card however fits the content" />
+            {withMode && (
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>Mode</label>
+                <select
+                  value={item.mode || "individual"}
+                  onChange={(e) => setValue(`${name}.${idx}.mode`, e.target.value, { shouldDirty: true })}
+                  style={selectStyle}
+                >
+                  <option value="individual">Individual</option>
+                  <option value="group">Group</option>
+                </select>
+              </div>
+            )}
             <RichTextEditor name={`${name}.${idx}.content`} label="Content" size={size} />
           </div>
         </div>
@@ -278,6 +292,7 @@ export default function SessionForm({ modules }) {
       <RepeatableContentField
         name="activities" singular="Activity" size="lg"
         title="Activity" subtitle="Add as many activities as this session needs - each with its own heading."
+        withMode
       />
 
       <div style={cardStyle}>

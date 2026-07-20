@@ -22,6 +22,10 @@ const repeatableItemSchema = z.object({
   content: z.string().optional().default(""),
 });
 
+const activityItemSchema = repeatableItemSchema.extend({
+  mode: z.enum(["individual", "group"]).optional().default("individual"),
+});
+
 const assessmentAttachmentSchema = z.object({
   assessmentId: z.string().min(1),
   mode: z.enum(["individual", "group"]).optional().default("individual"),
@@ -33,7 +37,7 @@ export const sessionSchema = z.object({
   outcomes:     z.array(z.string().min(1)).optional().default([]),
   introduction: z.string().optional().default(""),
   mainConcepts: z.array(repeatableItemSchema).optional().default([]),
-  activities:   z.array(repeatableItemSchema).optional().default([]),
+  activities:   z.array(activityItemSchema).optional().default([]),
   assessmentIds: z.array(z.string().min(1)).optional().default([]),
   assessmentAttachments: z.array(assessmentAttachmentSchema).optional().default([]),
   notes:        z.array(repeatableItemSchema).optional().default([]),
