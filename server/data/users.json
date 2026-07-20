@@ -11,11 +11,11 @@
   {
     "name": "Teacher ",
     "email": "teacher@digifunzi.com",
-    "passwordHash": "$2b$10$oV.F7VPILijAhF.ItxX3POzUnv8YUmH1T54ZVWCTQJWNqE27uuz5K",
+    "passwordHash": "$2b$10$q/t5KTXYM.OR6z/f8yFtXeqjrn7cSMCdLmQ8hKBI8wN8X3q6kC4Sy",
     "role": "teacher",
     "id": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-09T07:54:00.373Z",
-    "updatedAt": "2026-07-09T07:54:00.373Z"
+    "updatedAt": "2026-07-20T13:31:57.218Z"
   },
   {
     "name": "School",

@@ -13,7 +13,7 @@ const AssessmentModel = require("../assessments/assessment.model");
 const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
-const { sessionHasAssessment } = require("./sessionAssessment.utils");
+const { normalizeAssessmentAttachments, sessionHasAssessment } = require("./sessionAssessment.utils");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -48,6 +48,23 @@ function ensureSessionsGrouped(courseId) {
     : ModuleModel.create({ courseId, name: "Module 1", order: 1 }).id;
 
   orphans.forEach((s) => SessionModel.update(s.id, { moduleId: targetModuleId }));
+}
+
+function buildAssessmentLookup() {
+  return new Map(AssessmentModel.findAll().map((assessment) => [assessment.id, assessment]));
+}
+
+function hydrateSessionAssessments(session, assessmentsById = null) {
+  const lookup = assessmentsById || buildAssessmentLookup();
+  const attachedAssessments = normalizeAssessmentAttachments(session)
+    .map((attachment) => {
+      const assessment = lookup.get(attachment.assessmentId);
+      if (!assessment) return null;
+      return { ...assessment, mode: attachment.mode };
+    })
+    .filter(Boolean);
+
+  return { ...session, attachedAssessments };
 }
 
 const CourseService = {
@@ -297,7 +314,8 @@ const CourseService = {
       throw err;
     }
     ensureSessionsGrouped(courseId);
-    return SessionModel.findByCourseId(courseId);
+    const assessmentsById = buildAssessmentLookup();
+    return SessionModel.findByCourseId(courseId).map((session) => hydrateSessionAssessments(session, assessmentsById));
   },
 
   async createSession(courseId, data) {
@@ -312,7 +330,7 @@ const CourseService = {
     // Live-sync: a session created with assessments already attached feeds this course's
     // curricula immediately, same as attaching them via a later update.
     if (data.assessmentIds?.length || data.assessmentAttachments?.length) CurriculumService.resyncCourseIntoCurricula(courseId);
-    return session;
+    return hydrateSessionAssessments(session);
   },
 
   async createSessionsBulk(courseId, count, moduleId = null) {
@@ -335,7 +353,8 @@ const CourseService = {
       notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));
-    return SessionModel.createMany(sessionsData);
+    const assessmentsById = buildAssessmentLookup();
+    return SessionModel.createMany(sessionsData).map((session) => hydrateSessionAssessments(session, assessmentsById));
   },
 
   async updateSession(courseId, sessionId, data) {
@@ -356,7 +375,7 @@ const CourseService = {
     // immediately. No diffing needed — resync is idempotent, so this is a no-op if nothing
     // about assessmentIds actually changed.
     if (data.assessmentIds !== undefined || data.assessmentAttachments !== undefined) CurriculumService.resyncCourseIntoCurricula(courseId);
-    return updated;
+    return hydrateSessionAssessments(updated);
   },
 
   async deleteSession(courseId, sessionId) {

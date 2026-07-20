@@ -29,18 +29,20 @@ function describeAssessmentError(err, fallback) {
   return described.length > 1 ? `${described[0]} (+${described.length - 1} more)` : described[0];
 }
 
-export function useAssessmentsQuery() {
+export function useAssessmentsQuery(options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.all,
     queryFn: () => assessmentApi.getAll(),
+    ...options,
   });
 }
 
-export function useAssessmentQuery(id) {
+export function useAssessmentQuery(id, options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.detail(id),
     queryFn: () => assessmentApi.getById(id),
-    enabled: !!id,
+    enabled: options.enabled ?? !!id,
+    ...options,
   });
 }
 
@@ -89,30 +91,33 @@ export function useDeleteAssessment() {
 
 /* ── Competencies (authored globally in Settings, tagged onto an assessment here) ── */
 
-export function useAssessmentCompetencies(assessmentId) {
+export function useAssessmentCompetencies(assessmentId, options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.competencies(assessmentId),
     queryFn: () => assessmentApi.getAssessmentCompetencies(assessmentId),
-    enabled: !!assessmentId,
+    enabled: options.enabled ?? !!assessmentId,
+    ...options,
   });
 }
 
 /* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
 
-export function useAssessmentLearningAreas(assessmentId) {
+export function useAssessmentLearningAreas(assessmentId, options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId),
     queryFn: () => assessmentApi.getAssessmentLearningAreas(assessmentId),
-    enabled: !!assessmentId,
+    enabled: options.enabled ?? !!assessmentId,
+    ...options,
   });
 }
 
 /* ── Inventory (authored globally in Settings, linked onto a project here with a quantity) ── */
 
-export function useAssessmentInventory(assessmentId) {
+export function useAssessmentInventory(assessmentId, options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.inventory(assessmentId),
     queryFn: () => assessmentApi.getAssessmentInventory(assessmentId),
-    enabled: !!assessmentId,
+    enabled: options.enabled ?? !!assessmentId,
+    ...options,
   });
 }

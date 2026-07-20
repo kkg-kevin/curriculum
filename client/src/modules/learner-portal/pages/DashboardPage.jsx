@@ -1,9 +1,12 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
 import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { getProgressSummary } from "../utils/progressStorage";
 
 const ACCENT = "#25476a";
 
@@ -36,6 +39,14 @@ export default function DashboardPage() {
     enabled: !!cls?.schoolId,
   });
 
+  const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const progressSummary = useMemo(() => getProgressSummary(user?.email), [user?.email]);
+
+  const continueCourse = useMemo(() => {
+    if (!courses.length) return null;
+    return courses[0];
+  }, [courses]);
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
@@ -62,18 +73,33 @@ export default function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
-          {TILES.map((t) => (
-            <div
-              key={t.label}
-              onClick={() => navigate(t.path)}
-              style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "20px 22px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
-            >
-              <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: "#e8f5fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{t.icon}</div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ACCENT }}>{t.label}</p>
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
+            <div style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "20px 22px" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Progress</p>
+              <p style={{ margin: "8px 0 4px", fontSize: 26, fontWeight: 800, color: ACCENT }}>{progressSummary.percent}%</p>
+              <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{progressSummary.completed} completed · {progressSummary.inProgress} in progress</p>
             </div>
-          ))}
-        </div>
+            <div style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "20px 22px" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Continue learning</p>
+              <p style={{ margin: "8px 0 4px", fontSize: 16, fontWeight: 800, color: ACCENT }}>{continueCourse?.name || "No course yet"}</p>
+              <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{continueCourse ? "Pick up where you left off in your current course." : "Your teacher will add courses once your class is assigned a curriculum."}</p>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+            {TILES.map((t) => (
+              <div
+                key={t.label}
+                onClick={() => navigate(t.path)}
+                style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "20px 22px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+              >
+                <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: "#e8f5fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{t.icon}</div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ACCENT }}>{t.label}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ const menuItems = [
   { name: "My Courses",   path: "/learner-portal/courses" },
   { name: "Assessments",  path: "/learner-portal/assessments" },
   { name: "Progress",     path: "/learner-portal/progress" },
+  { name: "Profile",      path: "/learner-portal/profile" },
 ];
 
 function LearnerSidebar() {
