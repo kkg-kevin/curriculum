@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon } from "@mui/icons-material";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
   useAcademicYears,
@@ -439,7 +440,7 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
       {/* Status banner */}
       {isPublished && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#fff8e6", border: "1.5px solid #fcd97a", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>✅</span>
+          <CheckCircleIcon sx={{ fontSize: 16, color: "#b07800" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#b07800", fontWeight: "500" }}>
             This is the <strong>active version</strong> — currently in use for {group.label}.
           </p>
@@ -447,7 +448,7 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
       )}
       {isDraft && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#FFFBEB", border: "1.5px solid #FCD34D", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>📋</span>
+          <FactCheckIcon sx={{ fontSize: 16, color: "#92400E" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#92400E", fontWeight: "500" }}>
             This draft is not yet in use. Publish it to make it the active version.
           </p>
@@ -455,7 +456,7 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
       )}
       {isInactive && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#F9FAFB", border: "1.5px solid #E5E7EB", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>🕐</span>
+          <ScheduleIcon sx={{ fontSize: 16, color: "#6B7280" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
             This is a historical version — no longer in use.
           </p>
@@ -480,12 +481,12 @@ function VersionView({ group, version, nextVersionNumber, onEdit, onPublish, isP
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
             {isDraft && (
               <button type="button" className="ay-btn-publish" onClick={onPublish} disabled={isPublishing}>
-                {isPublishing ? <><Spinner /> Publishing…</> : "🚀 Publish"}
+                {isPublishing ? <><Spinner /> Publishing…</> : <><RocketLaunchIcon fontSize="small" /> Publish</>}
               </button>
             )}
             {(isDraft || isPublished) && (
               <button type="button" className="ay-btn-ghost" onClick={onEdit}>
-                ✏ Edit → v{nextVersionNumber}
+                <><EditIcon fontSize="small" /> Edit → v{nextVersionNumber}</>
               </button>
             )}
           </div>

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { School as SchoolIcon } from "@mui/icons-material";
 import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useAllLearnersQuery } from "../hooks/useLearners";
 import SchoolPickerCard from "../../locations/components/SchoolPickerCard";
@@ -72,7 +73,7 @@ export default function LearnersPage() {
               <SchoolPickerCard
                 key={school.id}
                 school={school}
-                icon="🎓"
+                icon={<SchoolIcon fontSize="small" />}
                 count={schoolLearners.length}
                 countLabel={schoolLearners.length === 1 ? "learner" : "learners"}
                 subStat={schoolLearners.length > 0 ? `${activeCount} active` : null}

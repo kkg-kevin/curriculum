@@ -1,4 +1,14 @@
 import { useMemo } from "react";
+import {
+  Assignment as AssignmentIcon,
+  Description as DescriptionIcon,
+  Group as GroupIcon,
+  Person as PersonIcon,
+  Quiz as QuizIcon,
+  School as SchoolIcon,
+  TaskAlt as TaskAltIcon,
+  Visibility as VisibilityIcon,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -112,8 +122,8 @@ function AssessmentCard({ item, onOpen }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 20, color: "#fff" }}>
-          {item.type === "quiz" ? "📝" : item.type === "exam" ? "🎓" : item.type === "project" ? "🛠️" : item.type === "assignment" ? "📄" : "👁️"}
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
+          {item.type === "quiz" ? <QuizIcon fontSize="small" /> : item.type === "exam" ? <SchoolIcon fontSize="small" /> : item.type === "project" ? <AssignmentIcon fontSize="small" /> : item.type === "assignment" ? <DescriptionIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -236,9 +246,9 @@ export default function AssessmentsPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <KpiTile icon="📋" num={totalCount} label="Attachments" sub={`${courseCount} course${courseCount === 1 ? "" : "s"} involved`} />
-        <KpiTile icon="👤" num={individualCount} label="Individual" sub="Teacher-marked or learner work" />
-        <KpiTile icon="👥" num={groupCount} label="Group" sub="Shared activities or group tasks" />
+        <KpiTile icon={<DescriptionIcon fontSize="small" />} num={totalCount} label="Attachments" sub={`${courseCount} course${courseCount === 1 ? "" : "s"} involved`} />
+        <KpiTile icon={<PersonIcon fontSize="small" />} num={individualCount} label="Individual" sub="Teacher-marked or learner work" />
+        <KpiTile icon={<GroupIcon fontSize="small" />} num={groupCount} label="Group" sub="Shared activities or group tasks" />
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

@@ -282,7 +282,7 @@ function AddCourseDropdown({ available, onAdd }) {
           <div style={{ overflowY: "auto", padding: "6px" }}>
             {filtered.length === 0 && (
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? <CheckCircleOutlineIcon fontSize="medium" /> : <SearchIcon fontSize="medium" />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
                   {available.length === 0 ? "Every course is already added." : "No matches found."}
                 </p>
@@ -366,7 +366,7 @@ export default function CurriculumViewPage() {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", padding: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "14px" }}>
-          <span style={{ fontSize: "24px" }}>⚠️</span>
+          <WarningAmberIcon sx={{ fontSize: 24, color: "#DC2626" }} />
           <div>
             <p style={{ margin: "0 0 4px 0", fontWeight: "700", color: "#DC2626", fontSize: "14px" }}>Could not load curriculum</p>
             <p style={{ margin: 0, fontSize: "13px", color: "#EF4444" }}>The curriculum may not exist or there was a network error.</p>
@@ -475,7 +475,7 @@ export default function CurriculumViewPage() {
             <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/edit`)}
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                ✏ Edit Details
+                <><EditIcon fontSize="small" /> Edit Details</>
               </button>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)}
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -511,7 +511,7 @@ export default function CurriculumViewPage() {
           {[
             { label: cycleLabel(model), value: periods.length, icon: "📆", bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
             { label: "Classes",         value: classes.length,  icon: "🎓", bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
-            { label: "Total Courses",   value: totalCourses,    icon: "📚", bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+            { label: "Total Courses",   value: totalCourses,    icon: <MenuBookIcon />, bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
             { label: "Versions",        value: history.length + (current ? 1 : 0), icon: "🗂", bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
           ].map((stat) => (
             <div key={stat.label} style={{
@@ -610,7 +610,7 @@ export default function CurriculumViewPage() {
                     )}
                     {hasBreak && (
                       <span className="cvp-date-pill cvp-date-pill-break">
-                        ☕ Break: {fmtDate(sel.breakStartDate)} → {fmtDate(sel.breakEndDate)}
+                        <><CoffeeIcon fontSize="small" /> Break: {fmtDate(sel.breakStartDate)} → {fmtDate(sel.breakEndDate)}</>
                       </span>
                     )}
                   </div>
@@ -682,7 +682,7 @@ export default function CurriculumViewPage() {
                   )}
                   {hasBreak && (
                     <span className="cvp-date-pill cvp-date-pill-break">
-                      ☕ Break: {fmtDate(pDates.breakStartDate)} → {fmtDate(pDates.breakEndDate)}
+                      <><CoffeeIcon fontSize="small" /> Break: {fmtDate(pDates.breakStartDate)} → {fmtDate(pDates.breakEndDate)}</>
                     </span>
                   )}
                 </div>
@@ -815,7 +815,7 @@ export default function CurriculumViewPage() {
         <div style={{ padding: "16px 20px" }}>
           {attachedCourses.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF" }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📚</div>
+              <div style={{ marginBottom: "8px" }}><MenuBookIcon sx={{ fontSize: 28 }} /></div>
               <p style={{ margin: 0, fontSize: "13px" }}>No courses added to this curriculum yet.</p>
             </div>
           ) : (

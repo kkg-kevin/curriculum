@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { Groups as GroupsIcon, School as SchoolIcon } from "@mui/icons-material";
 import { useDeleteLearner } from "../hooks/useLearners";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
@@ -110,11 +111,11 @@ export function LearnerCard({ learner, classMap }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>🎓</span>
+            <SchoolIcon fontSize="small" sx={{ color: ACCENT }} />
             {gradeName}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>👪</span>
+            <GroupsIcon fontSize="small" sx={{ color: ACCENT }} />
             {learner.guardianName
               ? learner.guardianName
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No guardian on file</span>}

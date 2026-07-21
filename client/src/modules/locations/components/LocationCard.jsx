@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { Delete as DeleteIcon, Edit as EditIcon, EventSeat as EventSeatIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, MoreVert as MoreVertIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
 import { useDeleteLocation } from "../hooks/useLocation";
 import { LOCATION_TYPES } from "../schemas/location.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -86,8 +87,8 @@ export function LocationCard({ location, curriculaMap }) {
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #1a3550, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: location.locationType === "school" ? 20 : 19, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-              {location.locationType === "school" ? "🏫" : (location.name?.[0]?.toUpperCase() || "📍")}
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #1a3550, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
+              {location.locationType === "school" ? <SchoolIcon fontSize="small" /> : (location.name?.[0]?.toUpperCase() || <LocationOnIcon fontSize="small" />)}
             </div>
             <div style={{ minWidth: 0 }}>
               <h3
@@ -113,23 +114,23 @@ export function LocationCard({ location, curriculaMap }) {
             onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
             style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#e8f5fb" : "transparent", border: `1.5px solid ${menuOpen ? "#a8d5ee" : "transparent"}`, borderRadius: 8, cursor: "pointer", color: menuOpen ? ACCENT : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            <MoreVertIcon fontSize="small" />
           </button>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10, fontSize: 13, color: "#6B7280" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span>📍</span>
+            <LocationOnIcon fontSize="small" />
             <span>{[location.address?.city, location.address?.county].filter(Boolean).join(", ") || "No address"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span>📘</span>
+            <MenuBookIcon fontSize="small" />
             {curriculum ? <span>{curriculum.name}</span> : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No curriculum assigned</span>}
           </div>
           {(location.amenities?.length > 0 || location.spaces?.length > 0) && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#9CA3AF" }}>
-              {location.amenities?.length > 0 && <span>✨ {location.amenities.length} amenities</span>}
-              {location.spaces?.length > 0 && <span>🪑 {location.spaces.length} bookable space{location.spaces.length !== 1 ? "s" : ""}</span>}
+              {location.amenities?.length > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><StarBorderIcon fontSize="small" /> {location.amenities.length} amenities</span>}
+              {location.spaces?.length > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><EventSeatIcon fontSize="small" /> {location.spaces.length} bookable space{location.spaces.length !== 1 ? "s" : ""}</span>}
             </div>
           )}
         </div>
@@ -146,14 +147,14 @@ export function LocationCard({ location, curriculaMap }) {
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{typeLabel}</p>
           </div>
           {[
-            { label: "View", path: `/locations/${location.id}/view`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit", path: `/locations/${location.id}/edit`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            { label: "View", path: `/locations/${location.id}/view`, icon: <VisibilityIcon fontSize="small" /> },
+            { label: "Edit", path: `/locations/${location.id}/edit`, icon: <EditIcon fontSize="small" /> },
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
           <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            icon={<DeleteIcon fontSize="small" />}
             label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
           />
         </div>,

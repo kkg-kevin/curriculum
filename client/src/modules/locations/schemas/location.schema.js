@@ -27,18 +27,18 @@ export const LOCATION_TYPES = [
 ];
 
 export const AMENITY_OPTIONS = [
-  { value: "wifi",             label: "WiFi",             icon: "📶" },
-  { value: "charging_ports",   label: "Charging Ports",   icon: "🔌" },
-  { value: "desks",            label: "Desks",            icon: "🪑" },
-  { value: "chairs",           label: "Chairs",           icon: "💺" },
-  { value: "whiteboard",       label: "Whiteboard",       icon: "🖊️" },
-  { value: "projector",        label: "Projector",        icon: "📽️" },
-  { value: "parking",          label: "Parking",          icon: "🚗" },
-  { value: "washrooms",        label: "Washrooms",        icon: "🚻" },
-  { value: "food_available",   label: "Food Available",   icon: "🍽️" },
-  { value: "coffee_available", label: "Coffee Available", icon: "☕" },
-  { value: "private_rooms",    label: "Private Rooms",    icon: "🚪" },
-  { value: "outdoor_seating",  label: "Outdoor Seating",  icon: "🌳" },
+  { value: "wifi",             label: "WiFi",             icon: "wifi" },
+  { value: "charging_ports",   label: "Charging Ports",   icon: "power" },
+  { value: "desks",            label: "Desks",            icon: "eventSeat" },
+  { value: "chairs",           label: "Chairs",           icon: "chair" },
+  { value: "whiteboard",       label: "Whiteboard",       icon: "borderColor" },
+  { value: "projector",        label: "Projector",        icon: "videocam" },
+  { value: "parking",          label: "Parking",          icon: "localParking" },
+  { value: "washrooms",        label: "Washrooms",        icon: "wc" },
+  { value: "food_available",   label: "Food Available",   icon: "restaurant" },
+  { value: "coffee_available", label: "Coffee Available", icon: "coffee" },
+  { value: "private_rooms",    label: "Private Rooms",    icon: "meetingRoom" },
+  { value: "outdoor_seating",  label: "Outdoor Seating",  icon: "park" },
 ];
 
 export const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];

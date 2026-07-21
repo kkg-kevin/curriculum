@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
@@ -426,7 +427,7 @@ function StepIndicator({ current }) {
                 fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0,
                 boxShadow: active ? "0 0 0 4px rgba(37,71,106,0.1)" : "none",
               }}>
-                {done ? "✓" : step.n}
+                {done ? <CheckIcon fontSize="small" /> : step.n}
               </div>
               <span style={{
                 fontSize: "11px", fontWeight: active ? "700" : "400",
@@ -1057,7 +1058,7 @@ function AddCompetencyDropdown({ available, onAdd, isPending }) {
           <div style={{ overflowY: "auto", padding: "6px" }}>
             {filtered.length === 0 && (
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? <CheckCircleIcon fontSize="medium" /> : <SearchIcon fontSize="medium" />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
                   {available.length === 0 ? "All competencies are already added to this curriculum." : "No matches found."}
                 </p>
@@ -1526,7 +1527,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "7px", borderTop: "1px dashed #EBEBEB" }}>
                       <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Evidence total</span>
                       <span style={{ fontSize: "11px", fontWeight: "800", color: evOk ? "#059669" : "#D97706" }}>
-                        {evTotal}%{evOk ? " ✓" : " — incomplete"}
+                        {evTotal}%{evOk ? "" : " — incomplete"}
                       </span>
                     </div>
                     {t.typeWeight > 0 && (
@@ -1922,7 +1923,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                     background: active ? "#fff" : (ok ? "#05966914" : "#D9770614"),
                     border: `1px solid ${active ? "transparent" : (ok ? "#05966930" : "#D9770630")}`,
                   }}>
-                    {total}%{ok && count > 0 ? " ✓" : ""}
+                    {total}%{ok && count > 0 ? "" : ""}
                   </span>
                 )}
               </button>
@@ -2024,7 +2025,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                   <span style={{ fontSize: "11px", fontWeight: "600", color: "#6B7280" }}>Evidence total</span>
                   <span style={{ fontSize: "12px", fontWeight: "800", color: ok && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#9CA3AF" }}>
                     {total}% / 100%
-                    {ok && total > 0 ? "  ✓" : total > 100 ? `  (${total - 100} over)` : total > 0 ? `  (need ${100 - total} more)` : ""}
+                    {ok && total > 0 ? "" : total > 100 ? `  (${total - 100} over)` : total > 0 ? `  (need ${100 - total} more)` : ""}
                   </span>
                 </div>
                 <div style={{ height: "6px", borderRadius: "3px", background: "#E5E7EB", overflow: "hidden" }}>
@@ -2087,7 +2088,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
             <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>Total</span>
             <span style={{ fontSize: "14px", fontWeight: "800", color: twColor }}>
               {typeWeightRounded}% / 100%
-              {twOk ? "  ✓" : typeWeightRounded > 100 ? `  (${typeWeightRounded - 100} over)` : `  (need ${100 - typeWeightRounded} more)`}
+              {twOk ? "" : typeWeightRounded > 100 ? `  (${typeWeightRounded - 100} over)` : `  (need ${100 - typeWeightRounded} more)`}
             </span>
           </div>
         </div>
@@ -2174,7 +2175,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                   <div style={{ padding: "6px 12px", background: "#FAFAFA", borderTop: `1px solid ${col}10`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>Evidence total</span>
                     <span style={{ fontSize: "11px", fontWeight: "800", color: ok && total > 0 ? "#059669" : total > 0 ? "#D97706" : "#9CA3AF" }}>
-                      {total}%{ok && total > 0 ? " ✓" : total > 100 ? ` (${total - 100} over)` : total > 0 ? ` (${100 - total} short)` : ""}
+                      {total}%{ok && total > 0 ? "" : total > 100 ? ` (${total - 100} over)` : total > 0 ? ` (${100 - total} short)` : ""}
                     </span>
                   </div>
                 </div>
@@ -2506,7 +2507,7 @@ function CompetencyLinkDropdown({ available, onAdd }) {
           <div style={{ overflowY: "auto", padding: "6px" }}>
             {filtered.length === 0 && (
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? <CheckCircleIcon fontSize="medium" /> : <SearchIcon fontSize="medium" />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
                   {available.length === 0 ? "All available competencies are already linked." : "No matches found."}
                 </p>
@@ -2939,7 +2940,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                               }}
                               title={met ? "Threshold met — ready to advance" : "Below this band's advancement threshold"}
                             >
-                              {progress.completion}% complete{met ? " ✓" : ""}
+                              {progress.completion}% complete{met ? "" : ""}
                             </span>
                           );
                         })()}
@@ -2962,7 +2963,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                               }}
                               title="Sum of every indicator's % contribution across this band's competencies — should total 100%"
                             >
-                              Indicators: {total}%{ok ? " ✓" : ""}
+                              Indicators: {total}%{ok ? "" : ""}
                             </span>
                           );
                         })()}
