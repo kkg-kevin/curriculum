@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
+import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Coffee as CoffeeIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
 import {
   KENYA_COUNTIES, LOCATION_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS,
 } from "../schemas/location.schema";
@@ -45,7 +46,7 @@ function SectionCard({ icon, title, subtitle, badge, children }) {
       <div style={{ padding: "20px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: subtitle ? "4px" : "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <span style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+            <span style={{ display: "flex", alignItems: "center", color: "#25476a" }}>{icon}</span>
             <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>{title}</h3>
           </div>
           {badge && (
@@ -156,10 +157,29 @@ function Chip({ active, onClick, icon, label }) {
         cursor: "pointer", transition: "all 0.15s", textAlign: "left",
       }}
     >
-      {icon && <span style={{ fontSize: "15px" }}>{icon}</span>}
+      {icon && <span style={{ display: "inline-flex", alignItems: "center", color: active ? "#25476a" : "#6B7280" }}>{icon}</span>}
       {label}
     </button>
   );
+}
+
+function AmenityIcon({ name }) {
+  const iconMap = {
+    wifi: WifiIcon,
+    power: PowerIcon,
+    eventSeat: EventSeatIcon,
+    chair: ChairIcon,
+    borderColor: BorderColorIcon,
+    videocam: VideocamIcon,
+    localParking: LocalParkingIcon,
+    wc: WcIcon,
+    restaurant: RestaurantIcon,
+    coffee: CoffeeIcon,
+    meetingRoom: MeetingRoomIcon,
+    park: ParkIcon,
+  };
+  const Icon = iconMap[name];
+  return Icon ? <Icon fontSize="small" /> : null;
 }
 
 function AmenitiesField() {
@@ -179,7 +199,7 @@ function AmenitiesField() {
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
               {AMENITY_OPTIONS.map((a) => (
-                <Chip key={a.value} icon={a.icon} label={a.label} active={selected.includes(a.value)} onClick={() => toggle(a.value)} />
+                <Chip key={a.value} icon={<AmenityIcon name={a.icon} />} label={a.label} active={selected.includes(a.value)} onClick={() => toggle(a.value)} />
               ))}
             </div>
 
@@ -341,7 +361,7 @@ export default function LocationForm() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <SectionCard icon="🏢" title="Basic Information" subtitle="Enter the fundamental details about the location">
+      <SectionCard icon={<BusinessIcon fontSize="small" />} title="Basic Information" subtitle="Enter the fundamental details about the location">
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <Input name="name" label="Location Name" placeholder="e.g. Nairobi Academy, Main Campus" required />
@@ -396,14 +416,14 @@ export default function LocationForm() {
         </div>
       </SectionCard>
 
-      <SectionCard icon="☎️" title="Contact Information" subtitle="Primary contact details for location coordination">
+      <SectionCard icon={<PhoneIcon fontSize="small" />} title="Contact Information" subtitle="Primary contact details for location coordination">
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <Input name="contactPerson" label="Contact Person" placeholder="e.g. Jane Mwangi" />
           <Input name="phone" label="Phone Number" placeholder="+254 700 000 000" />
         </div>
       </SectionCard>
 
-      <SectionCard icon="📍" title="Address">
+      <SectionCard icon={<LocationOnIcon fontSize="small" />} title="Address">
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <Input name="address.street" label="Street / Area" placeholder="e.g. Ngong Road, Karen" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -431,7 +451,7 @@ export default function LocationForm() {
         </div>
       </SectionCard>
 
-      <SectionCard icon="📘" title="Assigned Curriculum" subtitle="The curriculum this location follows. Can be updated at any time.">
+      <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="The curriculum this location follows. Can be updated at any time.">
         <Field label="Curriculum" error={errors?.curriculumId?.message}>
           <select {...register("curriculumId")} style={selectStyle}>
             <option value="">No curriculum assigned</option>
@@ -449,14 +469,14 @@ export default function LocationForm() {
         )}
       </SectionCard>
 
-      <SectionCard icon="✨" title="Amenities / Facilities" subtitle="Select all available amenities and facilities">
+      <SectionCard icon={<AutoAwesomeIcon fontSize="small" />} title="Amenities / Facilities" subtitle="Select all available amenities and facilities">
         <AmenitiesField />
       </SectionCard>
 
       {/* Operational Information — not meaningful for a "School" (it runs on the curriculum's
           term/session schedule instead of open/close hours) */}
       {!isSchool && (
-        <SectionCard icon="⏰" title="Operational Information" subtitle="Working hours and availability schedule" badge="Non-school types">
+        <SectionCard icon={<AccessTimeIcon fontSize="small" />} title="Operational Information" subtitle="Working hours and availability schedule" badge="Non-school types">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <Input name="operatingHours.opensAt" label="Opening Time" type="time" required />

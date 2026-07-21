@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import { Check as CheckIcon } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
@@ -202,7 +203,7 @@ function StepIndicator({ current }) {
                 fontSize: done ? "15px" : "13px", fontWeight: "700",
                 transition: "all 0.2s", flexShrink: 0,
               }}>
-                {done ? "✓" : step.n}
+                {done ? <CheckIcon fontSize="small" /> : step.n}
               </div>
               <span style={{
                 fontSize: "11px",

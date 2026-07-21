@@ -1,3 +1,11 @@
+import {
+  AssignmentTurnedIn as AssignmentTurnedInIcon,
+  AutoStories as AutoStoriesIcon,
+  MenuBook as MenuBookIcon,
+  PeopleAlt as PeopleAltIcon,
+  School as SchoolIcon,
+  SchoolOutlined as SchoolOutlinedIcon,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -85,7 +93,7 @@ export default function DashboardPage() {
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
       ) : !teacher ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>👩‍🏫</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: T.accent }}><SchoolOutlinedIcon fontSize="large" /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No teacher profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
             Your account ({user?.email}) isn't linked to a teacher record yet. Ask your school admin to add you as a
@@ -94,16 +102,16 @@ export default function DashboardPage() {
         </div>
       ) : myClasses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>📚</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: T.accent }}><MenuBookIcon fontSize="large" /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No classes assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>You're not currently set as the class teacher for any class.</p>
         </div>
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-            <KpiTile icon="📚" num={myClasses.length} label={`Class${myClasses.length === 1 ? "" : "es"} taught`} />
-            <KpiTile icon="🎓" num={totalLearners} label="Learners" />
-            <KpiTile icon="🧩" num={allMyCourses?.length ?? 0} label={`Course${(allMyCourses?.length ?? 0) === 1 ? "" : "s"} to deliver`} />
+            <KpiTile icon={<AutoStoriesIcon fontSize="small" />} num={myClasses.length} label={`Class${myClasses.length === 1 ? "" : "es"} taught`} />
+            <KpiTile icon={<PeopleAltIcon fontSize="small" />} num={totalLearners} label="Learners" />
+            <KpiTile icon={<AssignmentTurnedInIcon fontSize="small" />} num={allMyCourses?.length ?? 0} label={`Course${(allMyCourses?.length ?? 0) === 1 ? "" : "s"} to deliver`} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
@@ -112,15 +120,15 @@ export default function DashboardPage() {
               return (
                 <div key={c.id} style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #feb139, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🎓</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #feb139, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><SchoolIcon fontSize="small" /></div>
                     <div style={{ minWidth: 0 }}>
                       <h3 style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: T.ink }}>{c.gradeName}</h3>
                       <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Academic Year {c.academicYear}</p>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 14, fontSize: 12.5, color: T.inkMuted, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
-                    <span>👥 {c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}</span>
-                    <span>📖 {courseCount} course{courseCount !== 1 ? "s" : ""}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><PeopleAltIcon fontSize="small" /> {c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><MenuBookIcon fontSize="small" /> {courseCount} course{courseCount !== 1 ? "s" : ""}</span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
                     <button type="button" onClick={() => navigate(`/teacher-portal/classes/${c.id}`)} style={{ flex: 1, padding: "8px 10px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>

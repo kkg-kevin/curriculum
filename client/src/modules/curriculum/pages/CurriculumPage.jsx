@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { CalendarMonth as CalendarMonthIcon, Clear as ClearIcon, MenuBook as MenuBookIcon, School as SchoolIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery, useDeleteCurriculum } from "../hooks/useCurriculum";
 import { useDispatch, useSelector } from "react-redux";
@@ -330,7 +331,7 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
           margin: "0 auto 20px",
         }}
       >
-        📚
+        <MenuBookIcon fontSize="large" />
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
         {hasFilters ? "No results found" : "No curricula yet"}
@@ -473,10 +474,10 @@ export default function CurriculumPage() {
         }}
       >
         {[
-          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length, icon: "📋", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-          { label: "Total Classes",   value: isLoading ? "—" : totalClasses,     icon: "🎓", bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
-          { label: "Total Periods",   value: isLoading ? "—" : totalPeriods,     icon: "📅", bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
-          { label: "Types in Use",      value: isLoading ? "—" : typesUsed,       icon: "🏫", bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
+          { label: "Total Curricula",  value: isLoading ? "—" : curricula.length, icon: <MenuBookIcon />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Total Classes",   value: isLoading ? "—" : totalClasses,     icon: <SchoolIcon />, bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+          { label: "Total Periods",   value: isLoading ? "—" : totalPeriods,     icon: <CalendarMonthIcon />, bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Types in Use",      value: isLoading ? "—" : typesUsed,       icon: <MenuBookIcon />, bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -590,7 +591,7 @@ export default function CurriculumPage() {
               cursor: "pointer",
             }}
           >
-            ✕ Clear
+            <><ClearIcon fontSize="small" /> Clear</>
           </button>
         )}
 
@@ -648,7 +649,10 @@ export default function CurriculumPage() {
             fontSize: "14px",
           }}
         >
-          ⚠ Failed to load curricula: {error?.message}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <WarningAmberIcon fontSize="small" />
+            Failed to load curricula: {error?.message}
+          </div>
         </div>
       ) : curricula.length === 0 ? (
         <EmptyState

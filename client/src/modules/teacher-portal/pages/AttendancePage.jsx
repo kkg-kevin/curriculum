@@ -1,4 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
+import {
+  AccessTime as AccessTimeOutlinedIcon,
+  Assignment as AssignmentOutlinedIcon,
+  BarChart as BarChartOutlinedIcon,
+  Cancel as CancelOutlinedIcon,
+  CheckCircle as CheckCircleOutlineIcon,
+  EventNote as EventNoteOutlinedIcon,
+  School as SchoolOutlinedIcon,
+} from "@mui/icons-material";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -15,10 +24,10 @@ const T = {
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
 const STATUS_CONFIG = {
-  present: { label: "Present", icon: "✅", color: "#25476a", bg: "#e8f5fb", border: "#a8d5ee" },
-  absent:  { label: "Absent",  icon: "❌", color: "#EF4444", bg: "#FFF5F5", border: "#FECACA" },
-  late:    { label: "Late",    icon: "⏰", color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" },
-  excused: { label: "Excused", icon: "📝", color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" },
+  present: { label: "Present", icon: <CheckCircleOutlineIcon fontSize="small" />, color: "#25476a", bg: "#e8f5fb", border: "#a8d5ee" },
+  absent:  { label: "Absent",  icon: <CancelOutlinedIcon fontSize="small" />, color: "#EF4444", bg: "#FFF5F5", border: "#FECACA" },
+  late:    { label: "Late",    icon: <AccessTimeOutlinedIcon fontSize="small" />, color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" },
+  excused: { label: "Excused", icon: <EventNoteOutlinedIcon fontSize="small" />, color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" },
 };
 const STATUS_ORDER = ["present", "absent", "late", "excused"];
 
@@ -233,13 +242,13 @@ export default function AttendancePage() {
         <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>
       ) : !teacher ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>👩‍🏫</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: T.accent }}><SchoolOutlinedIcon fontSize="large" /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No teacher profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Ask your school admin to add you as a teacher using this same email address.</p>
         </div>
       ) : myClasses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>📋</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: T.accent }}><AssignmentOutlinedIcon fontSize="large" /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No classes assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>You're not currently set as the class teacher for any class.</p>
         </div>
@@ -309,11 +318,11 @@ export default function AttendancePage() {
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-                <StatTile icon="✅" num={counts.present} label="Present" color={STATUS_CONFIG.present.color} />
-                <StatTile icon="❌" num={counts.absent} label="Absent" color={STATUS_CONFIG.absent.color} />
-                <StatTile icon="⏰" num={counts.late} label="Late" color={STATUS_CONFIG.late.color} />
-                <StatTile icon="📝" num={counts.excused} label="Excused" color={STATUS_CONFIG.excused.color} />
-                <StatTile icon="📊" num={`${rate}%`} label="Attendance Rate" />
+                <StatTile icon={<CheckCircleOutlineIcon fontSize="small" />} num={counts.present} label="Present" color={STATUS_CONFIG.present.color} />
+                <StatTile icon={<CancelOutlinedIcon fontSize="small" />} num={counts.absent} label="Absent" color={STATUS_CONFIG.absent.color} />
+                <StatTile icon={<AccessTimeOutlinedIcon fontSize="small" />} num={counts.late} label="Late" color={STATUS_CONFIG.late.color} />
+                <StatTile icon={<EventNoteOutlinedIcon fontSize="small" />} num={counts.excused} label="Excused" color={STATUS_CONFIG.excused.color} />
+                <StatTile icon={<BarChartOutlinedIcon fontSize="small" />} num={`${rate}%`} label="Attendance Rate" />
               </div>
 
               <div style={{ ...cardStyle, overflow: "hidden" }}>

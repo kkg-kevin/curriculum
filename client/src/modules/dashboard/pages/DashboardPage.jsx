@@ -1,4 +1,21 @@
 ﻿import { useMemo } from "react";
+import {
+  Apartment as ApartmentIcon,
+  Assessment as AssessmentIcon,
+  Assignment as AssignmentIcon,
+  AutoStories as AutoStoriesIcon,
+  BarChart as BarChartIcon,
+  Book as BookIcon,
+  Class as ClassIcon,
+  Dashboard as DashboardIcon,
+  Groups as GroupsIcon,
+  MenuBook as MenuBookIcon,
+  PeopleAlt as PeopleAltIcon,
+  Person as PersonIcon,
+  School as SchoolIcon,
+  SchoolOutlined as SchoolOutlinedIcon,
+  TableChart as TableChartIcon,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
@@ -65,7 +82,7 @@ function StatCard({ icon, label, value, sub, accent, actionLabel, onAction, load
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "20px",
+            color: accent,
             flexShrink: 0,
           }}
         >
@@ -541,7 +558,7 @@ export default function DashboardPage() {
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
         <StatCard
-          icon="📋"
+          icon={<MenuBookIcon fontSize="small" />}
           label="Curricula"
           value={curriculaLoading ? "—" : totalCurricula}
           sub={curriculaLoading ? null : publishedCount > 0 ? `${publishedCount} published` : typesInUse.length > 0 ? typesInUse.join(", ") : "None published yet"}
@@ -551,7 +568,7 @@ export default function DashboardPage() {
           loading={curriculaLoading}
         />
         <StatCard
-          icon="🏫"
+          icon={<SchoolIcon fontSize="small" />}
           label="Schools"
           value={schoolsLoading ? "—" : totalSchools}
           sub={schoolsLoading ? null : totalSchools === 0 ? "None added yet" : `${activeSchools} active`}
@@ -561,7 +578,7 @@ export default function DashboardPage() {
           loading={schoolsLoading}
         />
         <StatCard
-          icon="🏛️"
+          icon={<ApartmentIcon fontSize="small" />}
           label="Classes"
           value={classesLoading ? "—" : totalClasses}
           sub={classesLoading ? null : totalClasses === 0 ? "No classes yet" : `${activeClasses} active`}
@@ -571,7 +588,7 @@ export default function DashboardPage() {
           loading={classesLoading}
         />
         <StatCard
-          icon="🎓"
+          icon={<PeopleAltIcon fontSize="small" />}
           label="Learners"
           value={learnersLoading ? "—" : totalLearners}
           sub={learnersLoading ? null : totalLearners === 0 ? "Enrol learners to begin" : `${activeLearners} active`}
@@ -581,7 +598,7 @@ export default function DashboardPage() {
           loading={learnersLoading}
         />
         <StatCard
-          icon="👩‍🏫"
+          icon={<PersonIcon fontSize="small" />}
           label="Teachers"
           value={teachersLoading ? "—" : totalTeachers}
           sub={teachersLoading ? null : totalTeachers === 0 ? "Add teachers to classes" : `${activeTeachers} active`}
@@ -659,8 +676,8 @@ export default function DashboardPage() {
                 ))
               ) : recentCurricula.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "40px 20px", textAlign: "center" }}>
-                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>
-                    📋
+                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a" }}>
+                    <MenuBookIcon fontSize="medium" />
                   </div>
                   <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#374151" }}>No curricula yet</p>
                   <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Create your first curriculum to see it here.</p>
@@ -719,7 +736,7 @@ export default function DashboardPage() {
                   return (
                     <RecentRow
                       key={s.id}
-                      avatar={{ emoji: "🏫", gradient: "linear-gradient(135deg, #38aae1, #25476a)" }}
+                      avatar={{ icon: <SchoolIcon fontSize="small" />, gradient: "linear-gradient(135deg, #38aae1, #25476a)" }}
                       primary={s.name}
                       secondary={s.code + (s.address?.county ? ` · ${s.address.county}` : "")}
                       badge={s.status}
@@ -791,32 +808,32 @@ export default function DashboardPage() {
             </div>
             <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
               <QuickAction
-                icon="📋"
+                icon={<MenuBookIcon fontSize="small" />}
                 label="New Curriculum"
                 description="Create a new academic curriculum"
                 onClick={() => navigate("/curriculum/create")}
                 primary
               />
               <QuickAction
-                icon="🏫"
+                icon={<SchoolIcon fontSize="small" />}
                 label="Add School"
                 description="Register a school to the system"
                 onClick={() => navigate("/locations/create")}
               />
               <QuickAction
-                icon="🏛️"
+                icon={<ApartmentIcon fontSize="small" />}
                 label="Create Class"
                 description="Open a new class for a school"
                 onClick={() => navigate("/classes/create")}
               />
               <QuickAction
-                icon="🎓"
+                icon={<PeopleAltIcon fontSize="small" />}
                 label="Enrol Learner"
                 description="Add a new learner to a class"
                 onClick={() => navigate("/learners/create")}
               />
               <QuickAction
-                icon="👩‍🏫"
+                icon={<PersonIcon fontSize="small" />}
                 label="Add Teacher"
                 description="Register a teacher profile"
                 onClick={() => navigate("/teachers/create")}
@@ -842,7 +859,7 @@ export default function DashboardPage() {
             </div>
             <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               <ModuleTile
-                icon="📋"
+                icon={<MenuBookIcon fontSize="small" />}
                 label="Curriculum"
                 description="Framework & structure"
                 count={totalCurricula}
@@ -852,7 +869,7 @@ export default function DashboardPage() {
                 isLive={totalCurricula > 0}
               />
               <ModuleTile
-                icon="🏫"
+                icon={<SchoolIcon fontSize="small" />}
                 label="Schools"
                 description="Manage schools"
                 count={totalSchools}
@@ -862,7 +879,7 @@ export default function DashboardPage() {
                 isLive={totalSchools > 0}
               />
               <ModuleTile
-                icon="🏛️"
+                icon={<ApartmentIcon fontSize="small" />}
                 label="Classes"
                 description="School classes"
                 count={totalClasses}
@@ -872,7 +889,7 @@ export default function DashboardPage() {
                 isLive={totalClasses > 0}
               />
               <ModuleTile
-                icon="🎓"
+                icon={<PeopleAltIcon fontSize="small" />}
                 label="Learners"
                 description="Student enrolment"
                 count={totalLearners}
@@ -882,7 +899,7 @@ export default function DashboardPage() {
                 isLive={totalLearners > 0}
               />
               <ModuleTile
-                icon="👩‍🏫"
+                icon={<PersonIcon fontSize="small" />}
                 label="Teachers"
                 description="Staff profiles"
                 count={totalTeachers}
@@ -892,7 +909,7 @@ export default function DashboardPage() {
                 isLive={totalTeachers > 0}
               />
               <ModuleTile
-                icon="📊"
+                icon={<BarChartIcon fontSize="small" />}
                 label="Assessments"
                 description="Coming soon"
                 count={0}

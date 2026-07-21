@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useAcademicYears } from "../hooks/useAcademicYear";
@@ -317,7 +318,7 @@ function StepIndicator({ current }) {
           <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: done || active ? "#25476a" : "#F3F4F6", border: `2.5px solid ${done || active ? "#25476a" : "#E5E7EB"}`, display: "flex", alignItems: "center", justifyContent: "center", color: done || active ? "#fff" : "#9CA3AF", fontSize: done ? "15px" : "13px", fontWeight: "700", flexShrink: 0, boxShadow: active ? "0 0 0 4px rgba(37,71,106,0.1)" : "none" }}>
-                {done ? "✓" : step.n}
+                {done ? <CheckIcon fontSize="small" /> : step.n}
               </div>
               <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? "#25476a" : done ? "#374151" : "#9CA3AF", whiteSpace: "nowrap" }}>{step.label}</span>
             </div>
@@ -689,7 +690,7 @@ function BrowsePanel({
       {/* Banner for published */}
       {isPublished && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#fff8e6", border: "1.5px solid #fcd97a", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>✅</span>
+          <CheckCircleIcon sx={{ fontSize: 16, color: "#b07800" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#b07800", fontWeight: "500" }}>
             This is the <strong>live version</strong> currently in use.
           </p>
@@ -697,7 +698,7 @@ function BrowsePanel({
       )}
       {isDraft && !publishedId && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#FFFBEB", border: "1.5px solid #FCD34D", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>📋</span>
+          <FactCheckIcon sx={{ fontSize: 16, color: "#92400E" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#92400E", fontWeight: "500" }}>
             No version is live yet. Publish this draft to make it active.
           </p>
@@ -705,7 +706,7 @@ function BrowsePanel({
       )}
       {isInactive && (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", backgroundColor: "#F9FAFB", border: "1.5px solid #E5E7EB", borderRadius: "12px" }}>
-          <span style={{ fontSize: "16px" }}>🕐</span>
+          <ScheduleIcon sx={{ fontSize: 16, color: "#6B7280" }} />
           <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", fontWeight: "500" }}>
             Historical version — restore to create a new draft based on this content.
           </p>
@@ -742,10 +743,10 @@ function BrowsePanel({
             {isDraft && (
               <>
                 <button type="button" className="vc-btn-publish" onClick={onPublish} disabled={isPublishing}>
-                  {isPublishing ? <><Spinner /> Publishing…</> : "🚀 Publish"}
+                  {isPublishing ? <><Spinner /> Publishing…</> : <><RocketLaunchIcon fontSize="small" /> Publish</>}
                 </button>
                 <button type="button" className="vc-btn-ghost" onClick={onEdit}>
-                  ✏ Edit
+                  <><EditIcon fontSize="small" /> Edit</>
                 </button>
                 <button type="button" className="vc-btn-primary" onClick={onNew}>+ New Version</button>
               </>
@@ -754,7 +755,7 @@ function BrowsePanel({
             {isPublished && (
               <>
                 <button type="button" className="vc-btn-ghost" onClick={onEdit}>
-                  ✏ Edit → v{nextVersionNumber}
+                  <><EditIcon fontSize="small" /> Edit → v{nextVersionNumber}</>
                 </button>
                 <button type="button" className="vc-btn-primary" onClick={onNew}>+ New Version</button>
               </>
@@ -797,7 +798,7 @@ function EditorPanel({ type, curriculum, ayPeriods, initialContent, nextVersionN
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", animation: "vc-fadein 0.2s ease" }}>
       {/* Info banner */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 16px", backgroundColor: "#e8f5fb", border: "1.5px solid #a8d5ee", borderRadius: "12px" }}>
-        <span style={{ fontSize: "14px", flexShrink: 0 }}>{type === "edit" ? "✏️" : "📋"}</span>
+        <span style={{ fontSize: "14px", flexShrink: 0 }}>{type === "edit" ? <EditIcon fontSize="small" /> : <FactCheckIcon fontSize="small" />}</span>
         <p style={{ margin: 0, fontSize: "12px", color: "#25476a", fontWeight: "500" }}>
           {type === "edit"
             ? "Courses pre-filled from the selected version. Add or remove as needed."

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { Add as AddIcon, CheckCircle as CheckCircleIcon, Close as CloseIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, PauseCircle as PauseCircleIcon } from "@mui/icons-material";
 import { useLocationsQuery } from "../hooks/useLocation";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { setLocationFilter, clearLocationFilters } from "../../../store/locationsSlice";
@@ -82,22 +83,22 @@ export default function LocationsPage() {
             onClick={() => navigate("/locations/create")}
             style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
           >
-            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+            <AddIcon fontSize="small" />
             Add Location
           </button>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "16px" }}>
         {[
-          { label: "Total Locations",   value: isLoading ? "—" : locations.length,                    icon: "📍", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-          { label: "Active",            value: isLoading ? "—" : activeCount,                          icon: "✅", bg: "#dff2fb", color: "#38aae1", border: "#a8d5ee" },
-          { label: "Inactive",          value: isLoading ? "—" : locations.length - activeCount,       icon: "⏸️", bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-          { label: "With Curriculum",   value: isLoading ? "—" : withCurriculum,                       icon: "📋", bg: "#fff8e6", color: "#feb139", border: "#fcd97a" },
+          { label: "Total Locations",   value: isLoading ? "—" : locations.length,                    icon: <LocationOnIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Active",            value: isLoading ? "—" : activeCount,                          icon: <CheckCircleIcon fontSize="small" />, bg: "#dff2fb", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Inactive",          value: isLoading ? "—" : locations.length - activeCount,       icon: <PauseCircleIcon fontSize="small" />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+          { label: "With Curriculum",   value: isLoading ? "—" : withCurriculum,                       icon: <MenuBookIcon fontSize="small" />, bg: "#fff8e6", color: "#feb139", border: "#fcd97a" },
         ].map((stat) => (
           <div key={stat.label} style={{ backgroundColor: "#ffffff", borderRadius: "14px", border: `1.5px solid ${stat.border}`, padding: "16px 18px", display: "flex", alignItems: "center", gap: "14px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-            <div style={{ width: "42px", height: "42px", borderRadius: "11px", backgroundColor: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", flexShrink: 0 }}>
+            <div style={{ width: "42px", height: "42px", borderRadius: "11px", backgroundColor: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: stat.color }}>
               {stat.icon}
             </div>
             <div style={{ minWidth: 0 }}>
@@ -120,8 +121,9 @@ export default function LocationsPage() {
           {KENYA_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         {hasFilters && (
-          <button type="button" onClick={() => dispatch(clearLocationFilters())} style={{ padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-            ✕ Clear
+          <button type="button" onClick={() => dispatch(clearLocationFilters())} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <CloseIcon fontSize="small" />
+            Clear
           </button>
         )}
         <span style={{ marginLeft: "auto", fontSize: "13px", color: "#9CA3AF" }}>

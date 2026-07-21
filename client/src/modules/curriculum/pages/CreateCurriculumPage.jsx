@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { Check as CheckIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,7 +38,7 @@ function StepIndicator({ current }) {
                 transition: "all 0.2s",
                 flexShrink: 0,
               }}>
-                {done ? "✓" : step.n}
+                {done ? <CheckIcon fontSize="small" /> : step.n}
               </div>
               <span style={{
                 fontSize: "11px",
