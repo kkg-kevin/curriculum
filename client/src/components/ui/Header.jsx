@@ -1,8 +1,8 @@
-﻿import { FiBell, FiLogOut } from "react-icons/fi";
+﻿import { FiBell, FiLogOut, FiMenu } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-function Header() {
+function Header({ isMobile = false, onMenuClick = () => {} }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -80,16 +80,37 @@ function Header() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 24px",
+        padding: isMobile ? "0 14px 0 16px" : "0 24px",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      {/* Dynamic Page Title */}
-      <div>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 12 }}>
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open menu"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "38px",
+              height: "38px",
+              borderRadius: "10px",
+              border: "1px solid #E5E7EB",
+              background: "none",
+              color: "#374151",
+              cursor: "pointer",
+            }}
+          >
+            <FiMenu size={18} />
+          </button>
+        ) : null}
+
         <h2
           style={{
             margin: 0,
-            fontSize: "22px",
+            fontSize: isMobile ? "18px" : "22px",
             fontWeight: "600",
             color: "#111827",
           }}
@@ -98,22 +119,23 @@ function Header() {
         </h2>
       </div>
 
-      {/* Right Section */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "20px",
+          gap: isMobile ? "10px" : "20px",
         }}
       >
-        <div
-          style={{
-            cursor: "pointer",
-            color: "#374151",
-          }}
-        >
-          <FiBell size={22} />
-        </div>
+        {!isMobile ? (
+          <div
+            style={{
+              cursor: "pointer",
+              color: "#374151",
+            }}
+          >
+            <FiBell size={22} />
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -133,31 +155,18 @@ function Header() {
               alignItems: "center",
               justifyContent: "center",
               fontWeight: "600",
+              flexShrink: 0,
             }}
           >
             {initial}
           </div>
 
-          <div>
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#111827",
-              }}
-            >
-              {user?.name || "..."}
+          {!isMobile ? (
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{user?.name || "..."}</div>
+              <div style={{ fontSize: "12px", color: "#6B7280" }}>{roleLabel}</div>
             </div>
-
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#6B7280",
-              }}
-            >
-              {roleLabel}
-            </div>
-          </div>
+          ) : null}
         </div>
 
         <button

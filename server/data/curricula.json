@@ -81,5 +81,33 @@
     "createdAt": "2026-07-13T10:06:59.915Z",
     "updatedAt": "2026-07-15T11:30:23.828Z",
     "competencyWeights": []
+  },
+  {
+    "name": "Avd",
+    "code": "DAVZQE",
+    "academicYear": "",
+    "description": "ADSFD GNSWEGQ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "Core",
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "CLASS ONE"
+    ],
+    "id": "2c80c40a-2dc3-4fdf-acbe-dace52e3c977",
+    "createdAt": "2026-07-21T05:57:52.016Z",
+    "updatedAt": "2026-07-21T05:58:10.319Z"
   }
 ]

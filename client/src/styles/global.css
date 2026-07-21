@@ -8,10 +8,25 @@ html, body {
   height: 100%;
   font-family: 'Inter', sans-serif;
   background-color: #F5F7FA;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
 }
 
 #root {
   height: 100%;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
 }
 
 @keyframes spin {
