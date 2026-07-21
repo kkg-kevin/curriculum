@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen, FiEdit2, FiEye, FiMoreVertical, FiTrash2, FiUserCheck, FiUsers } from "react-icons/fi";
 import { useDeleteClass } from "../hooks/useClasses";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAuth } from "../../../context/AuthContext";
@@ -87,7 +88,9 @@ export function ClassCard({ cls, teachersMap }) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🎓</div>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
+              <FiBookOpen size={20} strokeWidth={1.8} />
+            </div>
             <div style={{ minWidth: 0 }}>
               <h3
                 onClick={() => navigate(classPath(user?.role, cls.id, "view"))}
@@ -104,20 +107,20 @@ export function ClassCard({ cls, teachersMap }) {
             onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
             style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#FFF7ED" : "transparent", border: `1.5px solid ${menuOpen ? "#FED7AA" : "transparent"}`, borderRadius: 8, cursor: "pointer", color: menuOpen ? ACCENT : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            <FiMoreVertical size={14} strokeWidth={2} />
           </button>
         </div>
 
         {/* Details */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>👩‍🏫</span>
+            <FiUserCheck size={14} strokeWidth={2} color="#6B7280" />
             {teacher
               ? `${teacher.firstName} ${teacher.lastName}`
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class teacher</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>👥</span>
+            <FiUsers size={14} strokeWidth={2} color="#6B7280" />
             <span>
               {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}
               {cls.capacity ? (
@@ -128,7 +131,7 @@ export function ClassCard({ cls, teachersMap }) {
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>📚</span>
+            <FiBookOpen size={14} strokeWidth={2} color="#6B7280" />
             <span>{courseCount} course{courseCount !== 1 ? "s" : ""}</span>
           </div>
         </div>
@@ -145,14 +148,14 @@ export function ClassCard({ cls, teachersMap }) {
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{cls.academicYear}</p>
           </div>
           {[
-            { label: "View", path: classPath(user?.role, cls.id, "view"), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit", path: classPath(user?.role, cls.id, "edit"), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            { label: "View", path: classPath(user?.role, cls.id, "view"), icon: <FiEye size={14} strokeWidth={2} /> },
+            { label: "Edit", path: classPath(user?.role, cls.id, "edit"), icon: <FiEdit2 size={14} strokeWidth={2} /> },
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
           <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            icon={<FiTrash2 size={14} strokeWidth={2} />}
             label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
           />
         </div>,

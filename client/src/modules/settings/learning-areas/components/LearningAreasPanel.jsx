@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiBookOpen, FiChevronDown, FiEdit2, FiFolder, FiMoreVertical, FiSearch, FiTrash2 } from "react-icons/fi";
 import {
   useLearningAreas, useCreateLearningArea, useUpdateLearningArea, useDeleteLearningArea,
 } from "../hooks/useLearningAreas";
@@ -97,26 +98,17 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
           <div className="stg-item-name">{area.name}</div>
         </div>
         {hasDetails && (
-          <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none"
+          <FiChevronDown
+            size={14}
+            strokeWidth={2}
             style={{ color: "#9CA3AF", flexShrink: 0, transition: "transform 0.15s", transform: isOpen ? "rotate(180deg)" : "none" }}
-          >
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          />
         )}
         <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <FiEdit2 size={14} strokeWidth={2} />
         </button>
         <button type="button" className="stg-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <FiTrash2 size={14} strokeWidth={2} />
         </button>
       </div>
 
@@ -128,10 +120,7 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
             <div className="stg-course-section">
               <div className="stg-course-header">
                 <div className="stg-course-header-left">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
-                    <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor" />
-                    <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <FiBookOpen size={13} strokeWidth={2} style={{ color, flexShrink: 0 }} />
                   <span className="stg-course-title">Courses</span>
                 </div>
                 <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
@@ -186,7 +175,9 @@ export default function LearningAreasPanel() {
 
       {areas.length === 0 ? (
         <div className="stg-empty">
-          <div style={{ fontSize: "40px", marginBottom: "12px" }}>📂</div>
+          <div style={{ marginBottom: "12px", color: "#25476a" }}>
+            <FiFolder size={40} strokeWidth={1.8} />
+          </div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No learning areas yet</p>
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
             Define learning areas here so other modules can import them as a starting point.
@@ -198,10 +189,7 @@ export default function LearningAreasPanel() {
       ) : (
         <>
           <div className="stg-search-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stg-search-icon">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <FiSearch size={14} className="stg-search-icon" />
             <input
               className="stg-search-input"
               value={search}
@@ -212,7 +200,9 @@ export default function LearningAreasPanel() {
 
           {filteredAreas.length === 0 ? (
             <div className="stg-empty" style={{ padding: "40px 24px" }}>
-              <div style={{ fontSize: "32px", marginBottom: "10px" }}>🔍</div>
+              <div style={{ marginBottom: "10px", color: "#25476a" }}>
+                <FiSearch size={32} strokeWidth={1.8} />
+              </div>
               <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#374151" }}>No matches for "{search}"</p>
             </div>
           ) : (
