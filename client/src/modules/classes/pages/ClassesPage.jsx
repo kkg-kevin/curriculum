@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen } from "react-icons/fi";
 import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
 import { useAllClassesQuery } from "../hooks/useClasses";
 import SchoolPickerCard from "../../locations/components/SchoolPickerCard";
@@ -71,7 +72,7 @@ export default function ClassesPage() {
               <SchoolPickerCard
                 key={school.id}
                 school={school}
-                icon="📚"
+                icon={<FiBookOpen size={22} strokeWidth={1.8} color="#25476a" />}
                 count={schoolClasses.length}
                 countLabel={schoolClasses.length === 1 ? "class" : "classes"}
                 subStat={schoolClasses.length > 0 ? `${activeCount} active` : null}

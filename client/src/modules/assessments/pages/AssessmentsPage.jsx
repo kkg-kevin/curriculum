@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
 import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
-const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
+const TYPE_ICONS = { quiz: FiFileText, exam: FiBookOpen, project: FiClipboard, assignment: FiFileText, observation: FiEye };
 const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
 
 /* ── content summary (shared shape with the Builder) ─────────────────────── */
@@ -77,7 +78,7 @@ function NewAssessmentMenu({ onPick }) {
         onClick={() => (open ? setOpen(false) : openMenu())}
         style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
       >
-        <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+        <FiPlus size={16} strokeWidth={2.2} />
         Add Assessment
       </button>
       {open && createPortal(
@@ -176,8 +177,11 @@ function AssessmentCard({ assessment }) {
     >
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "20px" }}>
-            {TYPE_ICONS[assessment.type] || "📋"}
+          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
+            {(() => {
+              const Icon = TYPE_ICONS[assessment.type] || FiClipboard;
+              return <Icon size={20} strokeWidth={1.9} />;
+            })()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
@@ -194,9 +198,7 @@ function AssessmentCard({ assessment }) {
                 title="More options"
                 style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#e8f5fb" : "transparent", border: `1.5px solid ${menuOpen ? "#b8d9ee" : "transparent"}`, borderRadius: "8px", cursor: "pointer", color: menuOpen ? "#25476a" : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-                </svg>
+                <FiMoreVertical size={14} strokeWidth={2} />
               </button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
@@ -221,7 +223,7 @@ function AssessmentCard({ assessment }) {
           style={{ background: "none", border: "none", fontSize: "13px", fontWeight: "600", color: "#38aae1", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
         >
           View
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <FiChevronRight size={12} strokeWidth={2.5} />
         </button>
       </div>
 
@@ -231,18 +233,18 @@ function AssessmentCard({ assessment }) {
           style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: "14px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", zIndex: 9999, minWidth: "180px", overflow: "hidden", padding: "6px" }}
         >
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg>}
+            icon={<FiEye size={14} strokeWidth={2} />}
             label="View"
             onClick={() => { setMenuOpen(false); navigate(`/assessments/${assessment.id}/view`); }}
           />
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            icon={<FiEdit2 size={14} strokeWidth={2} />}
             label="Edit"
             onClick={() => { setMenuOpen(false); navigate(`/assessments/${assessment.id}/edit`); }}
           />
           <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            icon={<FiTrash2 size={14} strokeWidth={2} />}
             label="Delete"
             onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}
             danger
@@ -268,8 +270,8 @@ function AssessmentCard({ assessment }) {
 function EmptyState({ onCreateNew }) {
   return (
     <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", margin: "0 auto 20px" }}>
-        📋
+      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 20px" }}>
+        <FiClipboard size={32} strokeWidth={1.8} />
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>No assessments yet</h3>
       <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6" }}>Create your first assessment to get started.</p>
@@ -315,9 +317,7 @@ export default function AssessmentsPage() {
 
       <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "14px", padding: "0 14px", marginBottom: "18px", maxWidth: "100%", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "220px", maxWidth: "100%" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#9CA3AF", flexShrink: 0 }}>
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <FiSearch size={14} style={{ color: "#9CA3AF", flexShrink: 0 }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}

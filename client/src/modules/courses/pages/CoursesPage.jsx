@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen, FiChevronRight, FiEdit2, FiEye, FiFilter, FiMoreVertical, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useCoursesQuery, useDeleteCourse } from "../hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -91,8 +92,8 @@ function CourseCard({ course }) {
         {course.coverImage ? (
           <img src={course.coverImage} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
-            📚
+          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+            <FiBookOpen size={32} strokeWidth={1.8} />
           </div>
         )}
         <button
@@ -102,9 +103,7 @@ function CourseCard({ course }) {
           title="More options"
           style={{ position: "absolute", top: "10px", right: "10px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.9)", border: "none", borderRadius: "8px", cursor: "pointer", color: "#25476a" }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-          </svg>
+          <FiMoreVertical size={14} strokeWidth={2} />
         </button>
       </div>
 
@@ -114,7 +113,7 @@ function CourseCard({ course }) {
         </h3>
 
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#38aae1", fontWeight: "600" }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <FiBookOpen size={13} strokeWidth={2} />
           {sessionCount} lesson{sessionCount !== 1 ? "s" : ""}
         </div>
 
@@ -132,14 +131,14 @@ function CourseCard({ course }) {
           style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: "14px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", zIndex: 9999, minWidth: "180px", overflow: "hidden", padding: "6px" }}
         >
           {[
-            { label: "View", path: `/courses/${course.id}/view`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg> },
-            { label: "Edit", path: `/courses/${course.id}/edit`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            { label: "View", path: `/courses/${course.id}/view`, icon: <FiEye size={14} strokeWidth={2} /> },
+            { label: "Edit", path: `/courses/${course.id}/edit`, icon: <FiEdit2 size={14} strokeWidth={2} /> },
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={(e) => { e?.stopPropagation?.(); setMenuOpen(false); navigate(path); }} />
           ))}
           <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            icon={<FiTrash2 size={14} strokeWidth={2} />}
             label="Delete"
             onClick={(e) => { e?.stopPropagation?.(); setMenuOpen(false); setConfirmOpen(true); }}
             danger
@@ -165,8 +164,8 @@ function CourseCard({ course }) {
 function EmptyState({ onCreateNew }) {
   return (
     <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", margin: "0 auto 20px" }}>
-        📚
+      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 20px" }}>
+        <FiBookOpen size={32} strokeWidth={1.8} />
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>No courses yet</h3>
       <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6" }}>Add your first course to get started.</p>
@@ -222,9 +221,7 @@ export default function CoursesPage() {
 
       <div style={{ display: "flex", gap: "12px", marginBottom: "18px", flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 240px", position: "relative" }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }}>
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <FiSearch size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -234,7 +231,7 @@ export default function CoursesPage() {
         </div>
 
         <div style={{ ...selectStyle, display: "flex", alignItems: "center", gap: "8px", color: "#374151" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4h16l-6 8v6l-4 2v-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <FiFilter size={14} strokeWidth={2} />
           All Courses
         </div>
 
