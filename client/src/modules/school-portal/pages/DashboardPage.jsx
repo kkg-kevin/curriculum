@@ -269,7 +269,7 @@ export default function DashboardPage() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Teacher</ActionButton>
         <ActionButton primary onClick={() => navigate(learnerCreatePath("school", school.id))}>＋ Enroll Learner</ActionButton>
-        <ActionButton onClick={() => navigate(classesListPath("school", school.id))}><FiCalendar size={14} strokeWidth={2} /> Set Up Year</ActionButton>
+        <ActionButton onClick={() => navigate(`${classesListPath("school", school.id)}?setup=1`)}><FiCalendar size={14} strokeWidth={2} /> Set Up Year</ActionButton>
         <ActionButton onClick={() => navigate(courseCatalogPath("school"))}><FiBook size={14} strokeWidth={2} /> Browse Curriculum</ActionButton>
       </div>
 

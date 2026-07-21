@@ -1,6 +1,14 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Edit as EditIcon,
+  MenuBook as MenuBookIcon,
+  WarningAmber as WarningAmberIcon,
+  CheckCircle as CheckCircleOutlineIcon,
+  Search as SearchIcon,
+  Coffee as CoffeeIcon,
+} from "@mui/icons-material";
 import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCourse } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { useAcademicYears } from "../hooks/useAcademicYear";

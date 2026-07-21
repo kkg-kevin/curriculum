@@ -19,6 +19,7 @@ import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePag
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
+import SchoolAttendancePage from "../modules/school-portal/pages/AttendancePage";
 import SchoolProfilePage from "../modules/school-portal/pages/ProfilePage";
 import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
@@ -165,6 +166,7 @@ export default function AppRoutes() {
           <Route path="learners/create" element={<CreateLearnerPage />} />
           <Route path="learners/:id/view" element={<LearnerViewPage />} />
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
+          <Route path="attendance" element={<SchoolAttendancePage />} />
           <Route path="reports" element={<ComingSoon name="Reports" />} />
           <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
