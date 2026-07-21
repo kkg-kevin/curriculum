@@ -15,6 +15,7 @@ const learnerRoutes = require("./modules/learners/learner.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
+const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect, authorize } = require("./shared/middleware/auth.middleware");
@@ -56,6 +57,9 @@ app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
 app.use("/api/assessments", protect, authorize("admin"), assessmentRoutes);
+// Issuing/taking/grading is not authoring — teacher/school/learner reach it here, scoped by
+// attachOwnRecords, while the assessment *builder* above stays admin-only.
+app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubmissionRoutes);
 app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
 
 app.use(notFound);

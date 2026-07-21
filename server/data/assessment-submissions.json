@@ -1,0 +1,25 @@
+[
+  {
+    "issueId": "3d865099-2e6e-4d95-a537-e0b1628d56a6",
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "status": "in_progress",
+    "answers": [],
+    "autoScore": null,
+    "autoMax": null,
+    "autoItemResults": [],
+    "manualScore": null,
+    "totalScore": null,
+    "maxScore": 0,
+    "requiresManualGrading": true,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": null,
+    "gradedAt": null,
+    "gradedBy": null,
+    "id": "efb588db-5104-490a-9c8f-7f636ecc0ea6",
+    "createdAt": "2026-07-21T11:11:12.379Z",
+    "updatedAt": "2026-07-21T11:11:12.379Z"
+  }
+]

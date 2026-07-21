@@ -6,7 +6,7 @@ import {
   Person as PersonIcon,
   Quiz as QuizIcon,
   School as SchoolIcon,
-  TaskAlt as TaskAltIcon,
+  Send as SendIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -15,9 +15,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { classApi } from "../../classes/services/classApi";
-import { useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
+import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
-import { sectionPath } from "../../../routes/portalPaths";
+import { useIssueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 
 const T = {
   accent: "#25476a",
@@ -101,27 +102,45 @@ function assessmentSummary(assessment) {
   return `${indicators} indicator${indicators === 1 ? "" : "s"}`;
 }
 
-function AssessmentCard({ item, onOpen }) {
+function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
+  const navigate = useNavigate();
+  if (issue) {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+      >
+        <VisibilityIcon sx={{ fontSize: 13 }} /> View {cls.gradeName} roster
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onIssue(cls); }}
+      disabled={isIssuing}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isIssuing ? "not-allowed" : "pointer" }}
+    >
+      <SendIcon sx={{ fontSize: 13 }} /> Issue to {cls.gradeName}
+    </button>
+  );
+}
+
+function AssessmentCard({ item, issuesByKey, onIssue, issuingKey }) {
   const color = TYPE_COLORS[item.type] || T.accentLight;
   const modeColor = MODE_COLORS[item.mode] || T.inkMuted;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <div
       style={{
         ...cardStyle,
         width: "100%",
-        minHeight: 250,
         padding: "18px 20px",
         border: "1px solid transparent",
-        textAlign: "left",
-        cursor: "pointer",
         display: "flex",
         flexDirection: "column",
         gap: 14,
-        alignItems: "stretch",
-        justifyContent: "space-between",
       }}
     >
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -147,7 +166,18 @@ function AssessmentCard({ item, onOpen }) {
         <span style={badgeStyle(modeColor)}>{MODE_LABELS[item.mode] || "Individual"}</span>
         <span style={badgeStyle(T.accent)}>{assessmentSummary(item)}</span>
       </div>
-    </button>
+
+      {item.eligibleClasses.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+          {item.eligibleClasses.map((cls) => {
+            const key = `${item.id}:${item.sessionId}:${cls.id}`;
+            return (
+              <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c)} isIssuing={issuingKey === key} />
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -177,6 +207,7 @@ export default function AssessmentsPage() {
   const gradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
 
   const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(school?.curriculumId, gradeNames);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
 
   const sessionsResults = useQueries({
     queries: courses.map((course) => ({
@@ -186,10 +217,29 @@ export default function AssessmentsPage() {
     })),
   });
 
+  // Every issue already recorded for each of the teacher's own classes — merged into one lookup
+  // keyed by "assessmentId:sessionId:classId" so a card's per-class button can check at a glance
+  // whether it's already been issued (and jump straight to that roster instead of re-issuing).
+  const issuesResults = useQueries({
+    queries: myClasses.map((cls) => ({
+      queryKey: ["assessment-issues", "byClass", cls.id],
+      queryFn: () => assessmentSubmissionApi.getIssuesForClass(cls.id),
+      enabled: !!cls.id,
+    })),
+  });
+  const issuesByKey = useMemo(() => {
+    const map = new Map();
+    issuesResults.forEach((r) => (r.data?.data || []).forEach((issue) => {
+      map.set(`${issue.assessmentId}:${issue.sessionId}:${issue.classId}`, issue);
+    }));
+    return map;
+  }, [issuesResults]);
+
   const attachments = useMemo(() => {
     const rows = [];
     sessionsResults.forEach((result, index) => {
       const course = courses[index];
+      const eligibleClasses = myClasses.filter((cls) => (coursesByGrade?.get(cls.gradeName) || []).some((c) => c.id === course.id));
       (result.data || []).forEach((session) => {
         (session.attachedAssessments || []).forEach((assessment) => {
           rows.push({
@@ -198,12 +248,20 @@ export default function AssessmentsPage() {
             courseName: course.name,
             sessionId: session.id,
             sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
+            eligibleClasses,
           });
         });
       });
     });
     return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }, [courses, sessionsResults]);
+  }, [courses, sessionsResults, myClasses, coursesByGrade]);
+
+  const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();
+  const issuingKey = issuing && issuingVariables ? `${issuingVariables.assessmentId}:${issuingVariables.sessionId}:${issuingVariables.classId}` : null;
+
+  const handleIssue = (item, cls) => {
+    issueAssessment({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id });
+  };
 
   const isLoading = teacherLoading || (!!teacher && (schoolLoading || classesLoading || coursesLoading || sessionsResults.some((r) => r.isLoading)));
 
@@ -211,6 +269,7 @@ export default function AssessmentsPage() {
   const individualCount = attachments.filter((a) => a.mode === "individual").length;
   const groupCount = attachments.filter((a) => a.mode === "group").length;
   const courseCount = new Set(attachments.map((a) => a.courseId)).size;
+  const issuedCount = [...issuesByKey.values()].length;
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading...</div>;
@@ -243,13 +302,14 @@ export default function AssessmentsPage() {
             My Assessments
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
-            Assessments attached to your assigned classes and course content. Open any item to jump straight to the session where it lives.
+            Assessments attached to your assigned classes and course content. Issue one to your class, then grade submissions from its roster.
           </p>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <KpiTile icon={<DescriptionIcon fontSize="small" />} num={totalCount} label="Attachments" sub={`${courseCount} course${courseCount === 1 ? "" : "s"} involved`} />
+        <KpiTile icon={<DescriptionIcon fontSize="small" />} num={totalCount} label="Available" sub={`${courseCount} course${courseCount === 1 ? "" : "s"} involved`} />
+        <KpiTile icon={<SendIcon fontSize="small" />} num={issuedCount} label="Issued" sub="Live for your class right now" />
         <KpiTile icon={<PersonIcon fontSize="small" />} num={individualCount} label="Individual" sub="Teacher-marked or learner work" />
         <KpiTile icon={<GroupIcon fontSize="small" />} num={groupCount} label="Group" sub="Shared activities or group tasks" />
       </div>
@@ -277,12 +337,14 @@ export default function AssessmentsPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Once your school adds assessments to your class courses, they will show up here automatically.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, alignItems: "stretch" }}>
           {attachments.map((item) => (
             <AssessmentCard
               key={`${item.courseId}:${item.sessionId}:${item.id}`}
               item={item}
-              onOpen={() => navigate(sectionPath("teacher", item.courseId, item.sessionId, "assessments", item.id))}
+              issuesByKey={issuesByKey}
+              onIssue={handleIssue}
+              issuingKey={issuingKey}
             />
           ))}
         </div>

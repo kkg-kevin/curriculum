@@ -1,13 +1,6 @@
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { FiCheckCircle, FiClipboard, FiClock } from "react-icons/fi";
-import { useAuth } from "../../../context/AuthContext";
-import { learnerApi } from "../../learners/services/learnerApi";
-import { classApi } from "../../classes/services/classApi";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { courseApi } from "../../courses/services/courseApi";
-import { getProgressSummary } from "../utils/progressStorage";
+import { FiCheckCircle, FiClipboard, FiClock, FiSend } from "react-icons/fi";
+import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 
 const T = {
   accent: "#25476a",
@@ -49,51 +42,26 @@ function KpiTile({ icon, value, label, sub }) {
   );
 }
 
+const STATUS_CONFIG = {
+  not_started: { label: "Not Started", bg: "#F9FAFB", color: T.inkMuted, border: T.border, cta: "Start" },
+  in_progress: { label: "In Progress", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", cta: "Continue" },
+  submitted:   { label: "Submitted",   bg: T.tintBg,  color: T.accent,  border: T.tintBorder, cta: "View" },
+  graded:      { label: "Graded",      bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", cta: "View Feedback" },
+};
+
 export default function LearnerAssessmentsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { data, isLoading } = useIssuedForLearner();
+  const rows = data?.data || [];
 
-  const { data: learnersData, isLoading: learnerLoading } = useQuery({
-    queryKey: ["learners", "byGuardianEmail", user?.email],
-    queryFn: () => learnerApi.getAll({ guardianEmail: user.email }),
-    enabled: !!user?.email,
-  });
-  const learner = learnersData?.data?.[0] || null;
-
-  const { data: cls, isLoading: classLoading } = useQuery({
-    queryKey: ["classes", "detail", learner?.classId],
-    queryFn: () => classApi.getById(learner.classId),
-    enabled: !!learner?.classId,
-  });
-
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
-
-  const courseProgress = useMemo(() => getProgressSummary(user?.email), [user?.email]);
-
-  const assessments = useMemo(() => {
-    return (courses || []).map((course) => ({
-      id: `${course.id}-assessment`,
-      title: `${course.name} practice check`,
-      courseName: course.name,
-      due: "Upcoming",
-      status: courseProgress.started > 0 ? "In progress" : "Assigned",
-      description: `Review the current lessons in ${course.name} and prepare for a short class check-in.`,
-    }));
-  }, [courses, courseProgress.started]);
-
-  const isLoading = learnerLoading || (!!learner && classLoading) || coursesLoading;
+  const pending = rows.filter((r) => r.submission.status === "not_started" || r.submission.status === "in_progress").length;
+  const gradedRows = rows.filter((r) => r.submission.status === "graded");
+  const avgScore = gradedRows.length
+    ? Math.round(gradedRows.reduce((sum, r) => sum + (r.submission.totalScore / (r.submission.maxScore || 1)) * 100, 0) / gradedRows.length)
+    : null;
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>;
-  }
-
-  if (!learner) {
-    return (
-      <div style={{ ...cardStyle(), textAlign: "center", padding: "60px 24px" }}>
-        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No learner profile linked yet</h3>
-        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Ask your school to connect your account to a learner record.</p>
-      </div>
-    );
   }
 
   return (
@@ -102,43 +70,46 @@ export default function LearnerAssessmentsPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>My Assessments</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>Review the assessments and checks that are linked to your current courses.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>Assessments your teacher has issued to your class.</p>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <KpiTile icon={<FiClipboard />} value={assessments.length} label="Assigned checks" sub={`${courseProgress.started} course${courseProgress.started === 1 ? "" : "s"} started`} />
-        <KpiTile icon={<FiCheckCircle />} value={courseProgress.completed} label="Completed" sub="Marked complete in your learning progress" />
-        <KpiTile icon={<FiClock />} value={Math.max(assessments.length - courseProgress.completed, 0)} label="Pending" sub="Ready to review" />
+        <KpiTile icon={<FiClipboard />} value={rows.length} label="Issued" />
+        <KpiTile icon={<FiClock />} value={pending} label="Pending" sub="Not started or in progress" />
+        <KpiTile icon={<FiCheckCircle />} value={gradedRows.length} label="Graded" sub={avgScore != null ? `Average ${avgScore}%` : undefined} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => navigate("/learner-portal/courses")} style={{ padding: "10px 18px", minWidth: 130, backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse courses</button>
-        <button type="button" onClick={() => navigate("/learner-portal/progress")} style={{ padding: "10px 18px", minWidth: 130, backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>View progress</button>
-      </div>
-
-      {assessments.length === 0 ? (
+      {rows.length === 0 ? (
         <div style={{ ...cardStyle(), textAlign: "center", padding: "60px 24px" }}>
-          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No assessments yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Your teacher will add assessments here once they’re linked to your courses.</p>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: T.accent, fontSize: 24 }}><FiSend /></div>
+          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>Nothing issued yet</h3>
+          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Your teacher hasn't issued any assessments to your class yet — check back later.</p>
         </div>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          {assessments.map((item) => (
-            <div key={item.id} style={{ ...cardStyle(), padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-                <div style={{ minWidth: 220, flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{item.title}</p>
-                  <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>{item.description}</p>
+          {rows.map(({ issue, assessment, submission }) => {
+            const cfg = STATUS_CONFIG[submission.status] || STATUS_CONFIG.not_started;
+            return (
+              <div key={issue.id} style={{ ...cardStyle(), padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 220, flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{assessment.name}</p>
+                    <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>{stripHtml(assessment.description) || "No description added"}</p>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, minWidth: 140 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: cfg.color, backgroundColor: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 999, padding: "6px 12px" }}>
+                      {cfg.label}{submission.status === "graded" ? ` · ${submission.totalScore}/${submission.maxScore}` : ""}
+                    </span>
+                    <button type="button" onClick={() => navigate(`/learner-portal/assessments/${issue.id}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      {cfg.cta}
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, minWidth: 140 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: item.status === "In progress" ? "#B45309" : T.accent, backgroundColor: item.status === "In progress" ? "#FEF3C7" : T.tintBg, borderRadius: 999, padding: "7px 12px" }}>{item.status}</span>
-                  <button type="button" onClick={() => navigate(`/learner-portal/courses/${courses.find((c) => c.name === item.courseName)?.id || ""}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open course</button>
-                </div>
+                {issue.dueDate && <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>Due {new Date(issue.dueDate).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}</p>}
               </div>
-              <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>{item.courseName} · Due {item.due}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
