@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen } from "react-icons/fi";
 import { courseHomePath } from "../../../routes/portalPaths";
 
 function stripHtml(html) {
@@ -29,8 +30,8 @@ function CatalogCard({ role, course }) {
         {course.coverImage ? (
           <img src={course.coverImage} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-            📚
+          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#fff" }}>
+            <FiBookOpen />
           </div>
         )}
       </div>
@@ -55,7 +56,7 @@ export default function CourseCatalogGrid({ role, courses }) {
   if (courses.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>📚</div>
+        <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px", color: "#25476a" }}><FiBookOpen /></div>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No courses yet</h3>
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>No courses have been added to this curriculum yet.</p>
       </div>

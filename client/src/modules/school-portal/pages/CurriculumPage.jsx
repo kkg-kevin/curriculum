@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiBookOpen, FiChevronDown, FiAward, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { classApi } from "../../classes/services/classApi";
@@ -22,11 +23,7 @@ function stripHtml(html) {
 }
 
 function ChevronDown({ open }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
-      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
+  return <FiChevronDown size={13} strokeWidth={2.2} style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />;
 }
 
 function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll }) {
@@ -71,11 +68,11 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid #F3F4F6`, paddingTop: 10, fontSize: 13, color: T.inkMuted }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span>🎓</span>
+            <FiAward size={14} strokeWidth={2} />
             <span>{totalLearners} learner{totalLearners !== 1 ? "s" : ""}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span>👩‍🏫</span>
+            <FiUserCheck size={14} strokeWidth={2} />
             {teacherNames.length ? (
               <span>{teacherNames.join(", ")}</span>
             ) : (
@@ -110,8 +107,8 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
               >
-                <div style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, overflow: "hidden", backgroundColor: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                  {c.coverImage ? <img src={c.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "📚"}
+                <div style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, overflow: "hidden", backgroundColor: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", color: T.accent }}>
+                  {c.coverImage ? <img src={c.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FiBookOpen size={13} strokeWidth={2} />}
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
