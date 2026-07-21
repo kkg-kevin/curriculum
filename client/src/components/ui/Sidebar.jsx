@@ -1,5 +1,6 @@
 ﻿import { NavLink } from "react-router-dom";
 import logo from "../../assets/Logo-image.png";
+import LogoutButton from "./LogoutButton";
 
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const menuItems = [
@@ -142,6 +143,15 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
           >
             Get Help
           </button>
+        </div>
+
+        <div
+          style={{
+            padding: "12px",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          <LogoutButton />
         </div>
 
         <div

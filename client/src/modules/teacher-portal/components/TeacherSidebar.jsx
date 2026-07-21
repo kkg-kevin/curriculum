@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import logo from "../../../assets/Logo-image.png";
+import LogoutButton from "../../../components/ui/LogoutButton";
 
 const menuItems = [
   { name: "Dashboard",       path: "/teacher-portal" },
@@ -52,6 +53,10 @@ function TeacherSidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <LogoutButton />
+      </div>
 
       <div style={{ padding: "18px", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
         © 2025 Digifunzi

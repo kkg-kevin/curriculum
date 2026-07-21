@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import logo from "../../../assets/Logo-image.png";
+import LogoutButton from "../../../components/ui/LogoutButton";
 
 function SchoolPortalSidebar() {
   const { user } = useAuth();
@@ -76,6 +77,10 @@ function SchoolPortalSidebar() {
           )
         )}
       </nav>
+
+      <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <LogoutButton />
+      </div>
 
       <div style={{ padding: "18px", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
         © 2025 Digifunzi

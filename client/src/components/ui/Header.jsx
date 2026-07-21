@@ -1,16 +1,10 @@
-﻿import { FiBell, FiLogOut, FiMenu } from "react-icons/fi";
-import { useLocation, useNavigate } from "react-router-dom";
+﻿import { FiBell, FiMenu } from "react-icons/fi";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 function Header({ isMobile = false, onMenuClick = () => {} }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
-  };
+  const { user } = useAuth();
 
   const initial = user?.name?.trim()?.[0]?.toUpperCase() || "?";
   const roleLabel = user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
@@ -168,26 +162,6 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
             </div>
           ) : null}
         </div>
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          title="Log out"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "36px",
-            height: "36px",
-            borderRadius: "8px",
-            border: "1px solid #E5E7EB",
-            background: "none",
-            color: "#374151",
-            cursor: "pointer",
-          }}
-        >
-          <FiLogOut size={18} />
-        </button>
       </div>
     </header>
   );
