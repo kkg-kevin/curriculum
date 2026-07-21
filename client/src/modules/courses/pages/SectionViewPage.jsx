@@ -7,6 +7,7 @@ import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatable
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
+import { markSectionComplete, getCourseSectionProgress, getSessionCompletion } from "../../learner-portal/utils/progressStorage";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
@@ -56,9 +57,27 @@ function SectionIcon() {
   );
 }
 
+// Green check = viewed/complete, hollow ring = not yet visited — only ever shown to the
+// learner role (progress is tracked per-browsing-learner, not meaningful for staff roles).
+function CompletionDot({ done }) {
+  return done ? (
+    <span style={{ width: 15, height: 15, borderRadius: "50%", backgroundColor: "#059669", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+    </span>
+  ) : (
+    <span style={{ width: 15, height: 15, borderRadius: "50%", border: "2px solid #D1D5DB", flexShrink: 0 }} />
+  );
+}
+
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, onLeafSelect }) {
+function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, onLeafSelect, sectionProgress }) {
+  const showProgress = role === "learner";
+  const isSessionDone = (sessionId) => {
+    const done = sectionProgress?.[sessionId];
+    return !!done && SECTIONS.every((s) => done[s.key]);
+  };
+  const isSectionDone = (sessionId, sectionKey) => !!sectionProgress?.[sessionId]?.[sectionKey];
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -137,6 +156,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                 {sessionLabel(session, idx)}
               </span>
               <span style={{ fontSize: "10.5px", color: "#9CA3AF", flexShrink: 0 }}>{SECTIONS.length} Sections</span>
+              {showProgress && <CompletionDot done={isSessionDone(session.id)} />}
             </div>
 
             {expanded && (
@@ -163,6 +183,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                         >
                           <SectionIcon />
                           <span style={{ flex: 1, fontSize: "12px", fontWeight: isActive ? "700" : "500" }}>{section.label}</span>
+                          {showProgress && <CompletionDot done={isSectionDone(session.id, section.key)} />}
                           <ChevronDown open={repExpanded} />
                         </div>
                         {repExpanded && (
@@ -219,6 +240,7 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                         >
                           <SectionIcon />
                           <span style={{ flex: 1, fontSize: "12px", fontWeight: isActive ? "700" : "500" }}>{section.label}</span>
+                          {showProgress && <CompletionDot done={isSectionDone(session.id, section.key)} />}
                           <ChevronDown open={repExpanded} />
                         </div>
                         {repExpanded && (
@@ -271,7 +293,8 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
                       }}
                     >
                       <SectionIcon />
-                      <span style={{ fontSize: "12px", fontWeight: isActive ? "700" : "500" }}>{section.label}</span>
+                      <span style={{ flex: 1, fontSize: "12px", fontWeight: isActive ? "700" : "500" }}>{section.label}</span>
+                      {showProgress && <CompletionDot done={isSectionDone(session.id, section.key)} />}
                     </Link>
                   );
                 })}
@@ -373,9 +396,24 @@ export default function SectionViewPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role;
+  const isLearner = role === "learner";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
+
+  // Auto-completion is passive: just opening a section is what marks it done for the
+  // learner, per the product decision behind this feature — no separate "Mark Complete" click.
+  // localStorage isn't reactive, so the write is followed by a forced re-render (the setState
+  // with no reader) to make the just-completed checkmark appear immediately, not on next nav.
+  const [, forceRerender] = useState(0);
+  useEffect(() => {
+    if (!isLearner || !user?.email || !id || !sessionId || !sectionKey) return;
+    markSectionComplete(user.email, id, sessionId, sectionKey);
+    forceRerender((v) => v + 1);
+  }, [isLearner, user?.email, id, sessionId, sectionKey]);
+
+  const sectionProgress = isLearner ? getCourseSectionProgress(user.email, id) : null;
+  const sessionCompletion = isLearner && sessionId ? getSessionCompletion(user.email, id, sessionId) : null;
 
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);
@@ -469,6 +507,7 @@ export default function SectionViewPage() {
             activeSectionKey={sectionKey}
             activeItemId={effectiveItemId}
             onLeafSelect={() => setSidebarCollapsed(true)}
+            sectionProgress={sectionProgress}
           />
         )}
 
@@ -518,6 +557,20 @@ export default function SectionViewPage() {
               {pageTitle}
             </h1>
             <div style={{ height: "3px", width: "80px", backgroundColor: "#EF4444", borderRadius: "2px", marginBottom: "28px" }} />
+
+            {isLearner && sessionCompletion && (
+              <div style={{ marginBottom: "28px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em" }}>Lesson Progress</span>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: sessionCompletion.percent >= 100 ? "#059669" : "#25476a" }}>
+                    {sessionCompletion.percent}% Complete
+                  </span>
+                </div>
+                <div style={{ height: "6px", borderRadius: "3px", backgroundColor: "#F3F4F6", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: "3px", width: `${sessionCompletion.percent}%`, backgroundColor: sessionCompletion.percent >= 100 ? "#059669" : "#38aae1", transition: "width 0.2s" }} />
+                </div>
+              </div>
+            )}
 
             {isRepeatable ? (
               item ? (

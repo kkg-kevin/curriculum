@@ -1,5 +1,6 @@
 const CurriculumVersionModel = require("./curriculum-versions.model");
 const CourseModel            = require("../../courses/course.model");
+const SessionModel           = require("../../courses/session.model");
 const CurriculumService      = require("../curriculum.service");
 const { collectCourseIds }   = require("./content.utils");
 
@@ -127,7 +128,13 @@ const CurriculumVersionService = {
       }));
     }
 
-    return [...collectCourseIds(content)].map((id) => CourseModel.findById(id)).filter(Boolean);
+    const countByCourseId = new Map();
+    SessionModel.findAll().forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
+
+    return [...collectCourseIds(content)]
+      .map((id) => CourseModel.findById(id))
+      .filter(Boolean)
+      .map((course) => ({ ...course, sessionCount: countByCourseId.get(course.id) || 0 }));
   },
 };
 

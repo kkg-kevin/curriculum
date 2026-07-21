@@ -2,16 +2,49 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBookOpen } from "react-icons/fi";
 import { courseHomePath } from "../../../routes/portalPaths";
+import { useAuth } from "../../../context/AuthContext";
+import { getCourseCompletionPercent } from "../../learner-portal/utils/progressStorage";
 
 function stripHtml(html) {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function EnrollmentBadge({ completed }) {
+  return (
+    <span
+      style={{
+        position: "absolute", top: 10, left: 10, padding: "3px 11px", borderRadius: 20,
+        fontSize: 10.5, fontWeight: 700, color: "#fff", letterSpacing: "0.03em",
+        backgroundColor: completed ? "#059669" : "#38aae1",
+      }}
+    >
+      {completed ? "COMPLETED" : "ENROLLED"}
+    </span>
+  );
+}
+
+function ProgressBar({ percent }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>
+        <span>Progress</span>
+        <span style={{ color: "#25476a", fontWeight: 700 }}>{percent}% Complete</span>
+      </div>
+      <div style={{ height: 6, borderRadius: 3, backgroundColor: "#F3F4F6", overflow: "hidden" }}>
+        <div style={{ height: "100%", borderRadius: 3, width: `${percent}%`, backgroundColor: percent >= 100 ? "#059669" : "#38aae1", transition: "width 0.2s" }} />
+      </div>
+    </div>
+  );
+}
+
 function CatalogCard({ role, course }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [hovered, setHovered] = useState(false);
   const sessionCount = course.sessionCount ?? 0;
+  const isLearner = role === "learner";
+  const percent = isLearner ? getCourseCompletionPercent(user?.email, course.id, sessionCount) : 0;
 
   return (
     <div
@@ -26,7 +59,7 @@ function CatalogCard({ role, course }) {
         transform: hovered ? "translateY(-2px)" : "translateY(0)",
       }}
     >
-      <div style={{ height: 140, flexShrink: 0 }}>
+      <div style={{ height: 140, flexShrink: 0, position: "relative" }}>
         {course.coverImage ? (
           <img src={course.coverImage} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
@@ -34,6 +67,7 @@ function CatalogCard({ role, course }) {
             <FiBookOpen />
           </div>
         )}
+        {isLearner && <EnrollmentBadge completed={percent >= 100} />}
       </div>
 
       <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
@@ -47,6 +81,7 @@ function CatalogCard({ role, course }) {
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {stripHtml(course.description) || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
         </p>
+        {isLearner && <ProgressBar percent={percent} />}
       </div>
     </div>
   );

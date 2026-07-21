@@ -1,0 +1,62 @@
+[
+  {
+    "assessmentId": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
+    "sessionId": "9e08ee96-486d-472c-9398-95db7dc355c7",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "classId": "25595068-3131-425b-9843-6267d37982e4",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "3fee193c-5105-48f5-a3ac-66eb01dd2bc1",
+    "issuedAt": "2026-07-21T11:10:00.510Z"
+  },
+  {
+    "assessmentId": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
+    "sessionId": "9e08ee96-486d-472c-9398-95db7dc355c7",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "64dcc779-1727-4e78-b22d-373450c8c3cd",
+    "issuedAt": "2026-07-21T11:10:03.034Z"
+  },
+  {
+    "assessmentId": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
+    "sessionId": "9e08ee96-486d-472c-9398-95db7dc355c7",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "53ca30e8-7a7f-409e-8304-121659ef95b4",
+    "issuedAt": "2026-07-21T11:10:04.070Z"
+  },
+  {
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "sessionId": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "3d865099-2e6e-4d95-a537-e0b1628d56a6",
+    "issuedAt": "2026-07-21T11:10:05.410Z"
+  },
+  {
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "sessionId": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "25595068-3131-425b-9843-6267d37982e4",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "3779aeeb-052a-4d96-a7fe-f8bb47d73f12",
+    "issuedAt": "2026-07-21T11:10:06.068Z"
+  },
+  {
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "sessionId": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "issuedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "dueDate": null,
+    "id": "32030c84-67e7-4450-a787-d1b72aa55546",
+    "issuedAt": "2026-07-21T11:10:06.910Z"
+  }
+]

@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { useLocationQuery as useSchoolQuery } from "../../locations/hooks/useLocation";
@@ -23,8 +23,9 @@ export default function SchoolClassesPage() {
   const backPath  = user?.role === "school" ? "/school-portal" : "/classes";
   const backLabel = user?.role === "school" ? "Dashboard" : "Classes";
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchParams] = useSearchParams();
 
-  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(() => searchParams.get("setup") === "1");
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
 
