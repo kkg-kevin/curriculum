@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon } from "@mui/icons-material";
+import { Check as CheckIcon, CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import { useAcademicYears } from "../hooks/useAcademicYear";

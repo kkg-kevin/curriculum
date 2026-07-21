@@ -50,7 +50,9 @@
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "status": "active",
     "description": "Digifunzi is a well-structured school for coding AI and robotics.",
-    "photos": [],
+    "photos": [
+      "http://localhost:5000/uploads/f15b9a6c-84d2-45a0-9782-201aa01b0f1e.png"
+    ],
     "amenities": [
       "wifi",
       "whiteboard",
@@ -66,6 +68,6 @@
     "spaces": [],
     "id": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "createdAt": "2026-07-17T11:49:48.017Z",
-    "updatedAt": "2026-07-17T11:49:48.017Z"
+    "updatedAt": "2026-07-21T13:05:14.417Z"
   }
 ]
