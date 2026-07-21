@@ -112,16 +112,19 @@ function AssessmentCard({ item, onOpen }) {
       style={{
         ...cardStyle,
         width: "100%",
+        minHeight: 250,
         padding: "18px 20px",
         border: "1px solid transparent",
         textAlign: "left",
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 14,
+        alignItems: "stretch",
+        justifyContent: "space-between",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, minWidth: 0 }}>
         <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
           {item.type === "quiz" ? <QuizIcon fontSize="small" /> : item.type === "exam" ? <SchoolIcon fontSize="small" /> : item.type === "project" ? <AssignmentIcon fontSize="small" /> : item.type === "assignment" ? <DescriptionIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
         </div>
@@ -255,14 +258,14 @@ export default function AssessmentsPage() {
         <button
           type="button"
           onClick={() => navigate("/teacher-portal/course-content")}
-          style={{ padding: "10px 18px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          style={{ flex: "1 1 180px", minWidth: 160, padding: "10px 18px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
         >
           Browse course content
         </button>
         <button
           type="button"
           onClick={() => navigate("/teacher-portal/attendance")}
-          style={{ padding: "10px 18px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          style={{ flex: "1 1 180px", minWidth: 160, padding: "10px 18px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
         >
           Attendance
         </button>
@@ -274,7 +277,7 @@ export default function AssessmentsPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Once your school adds assessments to your class courses, they will show up here automatically.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, alignItems: "stretch" }}>
           {attachments.map((item) => (
             <AssessmentCard
               key={`${item.courseId}:${item.sessionId}:${item.id}`}

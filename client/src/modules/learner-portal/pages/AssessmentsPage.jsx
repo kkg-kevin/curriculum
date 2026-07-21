@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiCheckCircle, FiClipboard, FiClock } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
@@ -106,14 +107,14 @@ export default function LearnerAssessmentsPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <KpiTile icon="📝" value={assessments.length} label="Assigned checks" sub={`${courseProgress.started} course${courseProgress.started === 1 ? "" : "s"} started`} />
-        <KpiTile icon="✅" value={courseProgress.completed} label="Completed" sub="Marked complete in your learning progress" />
-        <KpiTile icon="⏳" value={Math.max(assessments.length - courseProgress.completed, 0)} label="Pending" sub="Ready to review" />
+        <KpiTile icon={<FiClipboard />} value={assessments.length} label="Assigned checks" sub={`${courseProgress.started} course${courseProgress.started === 1 ? "" : "s"} started`} />
+        <KpiTile icon={<FiCheckCircle />} value={courseProgress.completed} label="Completed" sub="Marked complete in your learning progress" />
+        <KpiTile icon={<FiClock />} value={Math.max(assessments.length - courseProgress.completed, 0)} label="Pending" sub="Ready to review" />
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => navigate("/learner-portal/courses")} style={{ padding: "10px 18px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse courses</button>
-        <button type="button" onClick={() => navigate("/learner-portal/progress")} style={{ padding: "10px 18px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>View progress</button>
+        <button type="button" onClick={() => navigate("/learner-portal/courses")} style={{ padding: "10px 18px", minWidth: 130, backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse courses</button>
+        <button type="button" onClick={() => navigate("/learner-portal/progress")} style={{ padding: "10px 18px", minWidth: 130, backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>View progress</button>
       </div>
 
       {assessments.length === 0 ? (
@@ -122,18 +123,20 @@ export default function LearnerAssessmentsPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Your teacher will add assessments here once they’re linked to your courses.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           {assessments.map((item) => (
-            <div key={item.id} style={{ ...cardStyle(), padding: "18px 20px", display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink }}>{item.title}</p>
-                <p style={{ margin: "6px 0 0", fontSize: 13, color: T.inkMuted }}>{item.description}</p>
-                <p style={{ margin: "8px 0 0", fontSize: 12, color: T.accent, fontWeight: 600 }}>{item.courseName} · Due {item.due}</p>
+            <div key={item.id} style={{ ...cardStyle(), padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ minWidth: 220, flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{item.title}</p>
+                  <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>{item.description}</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, minWidth: 140 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: item.status === "In progress" ? "#B45309" : T.accent, backgroundColor: item.status === "In progress" ? "#FEF3C7" : T.tintBg, borderRadius: 999, padding: "7px 12px" }}>{item.status}</span>
+                  <button type="button" onClick={() => navigate(`/learner-portal/courses/${courses.find((c) => c.name === item.courseName)?.id || ""}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open course</button>
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: item.status === "In progress" ? "#B45309" : T.accent, backgroundColor: item.status === "In progress" ? "#FEF3C7" : T.tintBg, borderRadius: 999, padding: "6px 10px" }}>{item.status}</span>
-                <button type="button" onClick={() => navigate(`/learner-portal/courses/${courses.find((c) => c.name === item.courseName)?.id || ""}`)} style={{ padding: "8px 12px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open course</button>
-              </div>
+              <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>{item.courseName} · Due {item.due}</p>
             </div>
           ))}
         </div>

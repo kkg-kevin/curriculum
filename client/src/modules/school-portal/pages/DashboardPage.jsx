@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiAlertTriangle, FiBookOpen, FiCalendar, FiMail, FiBook, FiBriefcase, FiUsers, FiUserCheck, FiLayers, FiChevronRight, FiAward, FiHome, FiClipboard } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { locationApi as schoolApi } from "../../locations/services/locationApi";
 import { classApi } from "../../classes/services/classApi";
@@ -155,7 +156,7 @@ export default function DashboardPage() {
     return (
       <div style={{ fontFamily: "Inter, sans-serif" }}>
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>🏫</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 16px" }}><FiHome size={28} strokeWidth={1.8} /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No school profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
             Your account ({user?.email}) isn't linked to a school yet. Ask a platform admin to add this school using
@@ -200,13 +201,13 @@ export default function DashboardPage() {
       {(classesWithoutTeacher.length > 0 || gradesWithoutCourses.length > 0 || learnersMissingGuardianEmail.length > 0) && (
         <div style={{ ...cardStyle, border: `1.5px solid ${T.warnBorder}`, padding: "18px 20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 15 }}>⚠️</span>
+            <span style={{ fontSize: 15, color: T.warn }}><FiAlertTriangle size={15} strokeWidth={2} /></span>
             <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.warn }}>Needs Attention</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {classesWithoutTeacher.length > 0 && (
               <AttentionItem
-                icon="👩‍🏫"
+                icon={<FiUserCheck size={15} strokeWidth={2} />}
                 text={`${joinNatural(classesWithoutTeacher.map((c) => c.gradeName))} ${classesWithoutTeacher.length === 1 ? "has" : "have"} no class teacher assigned`}
                 actionLabel="Assign"
                 onAction={() => navigate(classesListPath("school", school.id))}
@@ -214,7 +215,7 @@ export default function DashboardPage() {
             )}
             {gradesWithoutCourses.length > 0 && (
               <AttentionItem
-                icon="📚"
+                icon={<FiBookOpen size={15} strokeWidth={2} />}
                 text={`${joinNatural(gradesWithoutCourses)} ${gradesWithoutCourses.length === 1 ? "has" : "have"} no courses from the curriculum yet`}
                 actionLabel="Review"
                 onAction={() => navigate(classesListPath("school", school.id))}
@@ -222,7 +223,7 @@ export default function DashboardPage() {
             )}
             {learnersMissingGuardianEmail.length > 0 && (
               <AttentionItem
-                icon="✉️"
+                icon={<FiMail size={15} strokeWidth={2} />}
                 text={`${learnersMissingGuardianEmail.length} learner${learnersMissingGuardianEmail.length === 1 ? "" : "s"} missing a guardian email — they won't be able to access the learner portal`}
                 actionLabel="Review"
                 onAction={() => navigate(learnersListPath("school", school.id))}
@@ -235,28 +236,28 @@ export default function DashboardPage() {
       {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <KpiCard
-          icon="📚" num={classes.length} label="Classes"
+          icon={<FiBookOpen size={18} strokeWidth={2} />} num={classes.length} label="Classes"
           sub={classes.length === 0 ? "None set up yet" : `${classesWithTeacher.length} of ${classes.length} has a teacher`}
           meterPct={classes.length ? (classesWithTeacher.length / classes.length) * 100 : null}
           warnMeter={classesWithTeacher.length < classes.length}
           onClick={() => navigate(classesListPath("school", school.id))}
         />
         <KpiCard
-          icon="👩‍🏫" num={teachers.length} label="Teachers"
+          icon={<FiUserCheck size={18} strokeWidth={2} />} num={teachers.length} label="Teachers"
           sub={teachers.length === 0 ? "None added yet" : `${activeTeachers.length} active`}
           meterPct={teachers.length ? (activeTeachers.length / teachers.length) * 100 : null}
           warnMeter={false}
           onClick={() => navigate(teachersListPath("school", school.id))}
         />
         <KpiCard
-          icon="🎓" num={learners.length} label="Learners"
+          icon={<FiAward size={18} strokeWidth={2} />} num={learners.length} label="Learners"
           sub={totalCapacity > 0 ? `${Math.min(100, Math.round((learners.length / totalCapacity) * 100))}% of total capacity` : `Enrolled across ${classes.length} class${classes.length === 1 ? "" : "es"}`}
           meterPct={totalCapacity > 0 ? Math.min(100, (learners.length / totalCapacity) * 100) : null}
           warnMeter={totalCapacity > 0 && learners.length >= totalCapacity}
           onClick={() => navigate(learnersListPath("school", school.id))}
         />
         <KpiCard
-          icon="🧩" num={`${classesWithCourseCount} / ${gradeNames.length || 0}`} label="Curriculum Coverage"
+          icon={<FiLayers size={18} strokeWidth={2} />} num={`${classesWithCourseCount} / ${gradeNames.length || 0}`} label="Curriculum Coverage"
           sub="Classes with courses assigned"
           meterPct={gradeNames.length ? (classesWithCourseCount / gradeNames.length) * 100 : null}
           warnMeter={classesWithCourseCount < gradeNames.length}
@@ -268,8 +269,8 @@ export default function DashboardPage() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Teacher</ActionButton>
         <ActionButton primary onClick={() => navigate(learnerCreatePath("school", school.id))}>＋ Enroll Learner</ActionButton>
-        <ActionButton onClick={() => navigate(classesListPath("school", school.id))}>📅 Set Up Year</ActionButton>
-        <ActionButton onClick={() => navigate(courseCatalogPath("school"))}>📘 Browse Curriculum</ActionButton>
+        <ActionButton onClick={() => navigate(classesListPath("school", school.id))}><FiCalendar size={14} strokeWidth={2} /> Set Up Year</ActionButton>
+        <ActionButton onClick={() => navigate(courseCatalogPath("school"))}><FiBook size={14} strokeWidth={2} /> Browse Curriculum</ActionButton>
       </div>
 
       {/* Two column: classes breakdown + recent activity */}

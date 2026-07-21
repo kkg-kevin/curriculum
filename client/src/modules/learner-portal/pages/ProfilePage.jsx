@@ -131,9 +131,9 @@ export default function LearnerProfilePage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 16 }}>
-        <form onSubmit={handleSubmit} style={{ ...cardStyle(), padding: "24px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+        <form onSubmit={handleSubmit} style={{ ...cardStyle(), padding: "24px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
             <div>
               <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>First name</label>
               <input name="firstName" value={formData.firstName} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.firstName ? "#ef4444" : T.border}`, fontSize: 14 }} />
@@ -163,7 +163,7 @@ export default function LearnerProfilePage() {
             {errors.guardianName && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianName}</p>}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
             <div>
               <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Guardian phone</label>
               <input name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.guardianPhone ? "#ef4444" : T.border}`, fontSize: 14 }} />

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiBookOpen, FiClipboard, FiTrendingUp, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
@@ -11,9 +12,9 @@ import { getProgressSummary } from "../utils/progressStorage";
 const ACCENT = "#25476a";
 
 const TILES = [
-  { label: "My Courses",  icon: "📚", path: "/learner-portal/courses" },
-  { label: "Assessments", icon: "📝", path: "/learner-portal/assessments" },
-  { label: "Progress",    icon: "📈", path: "/learner-portal/progress" },
+  { label: "My Courses",  icon: <FiBookOpen />, path: "/learner-portal/courses" },
+  { label: "Assessments", icon: <FiClipboard />, path: "/learner-portal/assessments" },
+  { label: "Progress",    icon: <FiTrendingUp />, path: "/learner-portal/progress" },
 ];
 
 export default function DashboardPage() {
@@ -65,7 +66,7 @@ export default function DashboardPage() {
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
       ) : !learner ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>🎓</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px", color: "#25476a" }}><FiUserCheck /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No learner profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
             Your account ({user?.email}) isn't linked to a learner profile yet. Ask your school to record this same
@@ -74,7 +75,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 16 }}>
             <div style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: "20px 22px" }}>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.06em" }}>Progress</p>
               <p style={{ margin: "8px 0 4px", fontSize: 26, fontWeight: 800, color: ACCENT }}>{progressSummary.percent}%</p>

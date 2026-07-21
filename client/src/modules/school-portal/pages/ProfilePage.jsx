@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers } from "react-icons/fi";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../context/AuthContext";
@@ -140,10 +141,10 @@ function EditForm({ school, onDone, onCancel }) {
   );
 }
 
-const iconMail = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2"/><polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2"/></svg>;
-const iconPhone = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.03z" stroke="currentColor" strokeWidth="2"/></svg>;
-const iconPin = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/></svg>;
-const iconCalendar = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/></svg>;
+const iconMail = <FiMail size={14} strokeWidth={2} />;
+const iconPhone = <FiPhone size={14} strokeWidth={2} />;
+const iconPin = <FiMapPin size={14} strokeWidth={2} />;
+const iconCalendar = <FiCalendar size={14} strokeWidth={2} />;
 
 function StatTile({ icon, num, label, onClick }) {
   return (
@@ -190,7 +191,7 @@ export default function ProfilePage() {
   if (!school) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>🏫</div>
+        <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 16px" }}><FiHome size={28} strokeWidth={1.8} /></div>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No school profile linked yet</h3>
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
           Your account ({user?.email}) isn't linked to a school yet. Ask a platform admin to add this school using
@@ -225,9 +226,9 @@ export default function ProfilePage() {
 
       {/* Stats */}
       <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
-        <StatTile icon="📚" num={classesCount} label="Classes" onClick={() => navigate(classesListPath("school", school.id))} />
-        <StatTile icon="👩‍🏫" num={teachersCount} label="Teachers" onClick={() => navigate(teachersListPath("school", school.id))} />
-        <StatTile icon="🎓" num={learnersCount} label="Learners" onClick={() => navigate(learnersListPath("school", school.id))} />
+        <StatTile icon={<FiBookOpen size={17} strokeWidth={2} />} num={classesCount} label="Classes" onClick={() => navigate(classesListPath("school", school.id))} />
+        <StatTile icon={<FiUserCheck size={17} strokeWidth={2} />} num={teachersCount} label="Teachers" onClick={() => navigate(teachersListPath("school", school.id))} />
+        <StatTile icon={<FiAward size={17} strokeWidth={2} />} num={learnersCount} label="Learners" onClick={() => navigate(learnersListPath("school", school.id))} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
@@ -265,8 +266,8 @@ export default function ProfilePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Section title="School Info">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <DetailRow icon={<span>🏷️</span>} label="Code" value={school.code} />
-              <DetailRow icon={<span>📘</span>} label="Curriculum" value={curriculum?.name} empty="Not assigned yet" />
+              <DetailRow icon={<FiBookOpen size={14} strokeWidth={2} />} label="Code" value={school.code} />
+              <DetailRow icon={<FiBookOpen size={14} strokeWidth={2} />} label="Curriculum" value={curriculum?.name} empty="Not assigned yet" />
               <DetailRow
                 icon={iconCalendar}
                 label="Member Since"

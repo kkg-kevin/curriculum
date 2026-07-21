@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FiCheckCircle, FiClipboard, FiTrendingUp } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
@@ -93,17 +94,26 @@ export default function LearnerProgressPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <div style={{ ...cardStyle(), padding: "18px 20px" }}>
-          <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.percent}%</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>Overall completion</p>
+        <div style={{ ...cardStyle(), padding: "18px 20px", display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.tintBg, display: "grid", placeItems: "center", color: T.accent }}><FiTrendingUp /></div>
+          <div>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.percent}%</p>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>Overall completion</p>
+          </div>
         </div>
-        <div style={{ ...cardStyle(), padding: "18px 20px" }}>
-          <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.completed}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>Completed courses</p>
+        <div style={{ ...cardStyle(), padding: "18px 20px", display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.tintBg, display: "grid", placeItems: "center", color: T.accent }}><FiCheckCircle /></div>
+          <div>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.completed}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>Completed courses</p>
+          </div>
         </div>
-        <div style={{ ...cardStyle(), padding: "18px 20px" }}>
-          <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.inProgress}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>In progress</p>
+        <div style={{ ...cardStyle(), padding: "18px 20px", display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.tintBg, display: "grid", placeItems: "center", color: T.accent }}><FiClipboard /></div>
+          <div>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: T.accent }}>{summary.inProgress}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>In progress</p>
+          </div>
         </div>
       </div>
 
@@ -118,18 +128,21 @@ export default function LearnerProgressPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Your courses will appear here once your class is assigned a curriculum.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           {courseRows.map((course) => (
-            <div key={course.id} style={{ ...cardStyle(), padding: "18px 20px", display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink }}>{course.name}</p>
-                <p style={{ margin: "6px 0 0", fontSize: 13, color: T.inkMuted }}>
-                  {course.status === "completed" ? "Completed" : course.status === "in-progress" ? "In progress" : "Not started"}
-                </p>
+            <div key={course.id} style={{ ...cardStyle(), padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ minWidth: 220, flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{course.name}</p>
+                  <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>
+                    {course.status === "completed" ? "Completed" : course.status === "in-progress" ? "In progress" : "Not started"}
+                  </p>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: course.status === "completed" ? "#047857" : course.status === "in-progress" ? "#B45309" : T.accent, backgroundColor: course.status === "completed" ? "#ECFDF5" : course.status === "in-progress" ? "#FEF3C7" : T.tintBg, borderRadius: 999, padding: "8px 12px" }}>{course.status === "completed" ? "Completed" : course.status === "in-progress" ? "In progress" : "Not started"}</span>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => handleStatusChange(course.id, course.name, "in-progress")} style={{ padding: "8px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Start</button>
-                <button type="button" onClick={() => handleStatusChange(course.id, course.name, "completed")} style={{ padding: "8px 12px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Complete</button>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => handleStatusChange(course.id, course.name, "in-progress")} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Start</button>
+                <button type="button" onClick={() => handleStatusChange(course.id, course.name, "completed")} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Complete</button>
               </div>
             </div>
           ))}
