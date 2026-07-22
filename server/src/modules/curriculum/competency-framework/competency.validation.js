@@ -122,7 +122,6 @@ const competencyMappingSchema = z.object({
 const evidenceWeightSchema = z.object({
   evidenceTypeId:     z.string().min(1),
   contribution:       z.number().min(0).max(100),
-  minRequirement:     z.number().min(0).max(100).nullable().optional().default(null),
   competencyMappings: z.array(competencyMappingSchema).optional().default([]),
 });
 
@@ -158,9 +157,6 @@ const createEvidenceTypeSchema = z.object({
   description:         z.string().max(500).optional().default(""),
   category:            z.enum(EVIDENCE_CATEGORIES, { errorMap: () => ({ message: "Category must be one of: quiz, exam, project, assignment, observation" }) }).nullable().optional().default(null),
   defaultContribution: z.number().min(0).max(100).optional().default(0),
-  // Score-based gate: flags/blocks a learner whose score on this evidence is below this % —
-  // actively read by the scoring engine (competency-framework/scoring-engines.js).
-  minRequirement:      z.number().min(0).max(100).optional().default(0),
   // Count-based reference: "at least N items of this evidence type are expected" (e.g. minimum
   // quizzes to complete). Data capture only for now — not read by the scoring engine, since a
   // single evidence type can be reused across courses with different item counts.

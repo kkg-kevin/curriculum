@@ -478,15 +478,13 @@ const CompetencyService = {
     const config           = assessmentType.evidenceWeights || [];
 
     // Engine 1 — weighted evidence scores
-    const { finalScore, breakdown: rawBreakdown, belowReq } = runAssessmentEngine(evidenceScores, config);
+    const { finalScore, breakdown: rawBreakdown } = runAssessmentEngine(evidenceScores, config);
 
-    // Enrich breakdown with evidence names and evidence-type min requirements
+    // Enrich breakdown with evidence names
     const breakdown = rawBreakdown.map((row) => {
-      const et     = evidenceTypes.find((e) => e.id === row.evidenceTypeId);
-      const minReq = row.minRequirement > 0 ? row.minRequirement : (et?.minRequirement ?? 0);
-      return { ...row, name: et?.name || "Unknown", minRequirement: minReq, belowMin: row.score < minReq };
+      const et = evidenceTypes.find((e) => e.id === row.evidenceTypeId);
+      return { ...row, name: et?.name || "Unknown" };
     });
-    const belowRequirement = breakdown.filter((r) => r.belowMin);
 
     // Engine 2 — competency distribution + normalization
     const competencyScores = runCompetencyEngine(breakdown, config, competencies);
@@ -516,10 +514,6 @@ const CompetencyService = {
       outcome = { type: "placement",        label: band ? `Placement: ${band.name} level` : "No band matched" };
     } else if (!allCompetenciesMet && failedCompetencies.length > 0 && behaviorType === "summative") {
       outcome = { type: "cannot_progress",  label: `Cannot progress — ${failedCompetencies.length} competenc${failedCompetencies.length !== 1 ? "ies" : "y"} below threshold` };
-    } else if (belowRequirement.length > 0 && behaviorType === "summative") {
-      outcome = { type: "cannot_progress",  label: "Cannot progress to next level" };
-    } else if (belowRequirement.length > 0) {
-      outcome = { type: "below_requirement", label: "Some evidence types below minimum requirement" };
     } else if (allCompetenciesMet) {
       outcome = { type: "passed",           label: "All competencies met — learner can progress" };
     } else {
@@ -551,7 +545,7 @@ const CompetencyService = {
     }
 
     return {
-      finalScore, breakdown, belowRequirement,
+      finalScore, breakdown,
       band, behaviorType, outcome,
       competencyBreakdown, failedCompetencies, allCompetenciesMet, hasCompetencyMappings,
       learningJourneyPlacement,

@@ -351,7 +351,6 @@ const CourseService = {
           assessmentTypeId:   at.id,
           assessmentTypeName: at.name,
           contribution:       weight.contribution,
-          minRequirement:     weight.minRequirement ?? 0,
         };
       })
       .filter(Boolean);
@@ -360,7 +359,6 @@ const CourseService = {
       assessmentTypeId:   null,
       assessmentTypeName: null,
       contribution:       evidenceType.defaultContribution || 0,
-      minRequirement:     evidenceType.minRequirement || 0,
     }];
 
     const results = configs.map((cfg) => ({

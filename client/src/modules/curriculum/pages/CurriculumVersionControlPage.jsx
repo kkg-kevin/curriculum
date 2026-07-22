@@ -372,7 +372,10 @@ function InlineAddForm({ onAdd, onCancel, allCourses, existingCourseIds }) {
   }, [open]);
 
   const trimmed = name.trim();
-  const available = allCourses.filter((c) => !existingCourseIds.includes(c.id));
+  // Only Active courses are offered here — Draft ones aren't ready and Archived ones are
+  // retired (courses saved before status existed count as Active, matching CoursePickerField's
+  // and CurriculumViewPage's AddCourseDropdown's same rule).
+  const available = allCourses.filter((c) => !existingCourseIds.includes(c.id) && (c.status || "active") === "active");
   const matches = (trimmed
     ? available.filter((c) => c.name.toLowerCase().includes(trimmed.toLowerCase()))
     : available

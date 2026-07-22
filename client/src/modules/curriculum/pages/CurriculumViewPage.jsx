@@ -13,7 +13,7 @@ import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCours
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { useAcademicYears } from "../hooks/useAcademicYear";
 import {
-  useCompetencies, useLearningAreas, useLadder,
+  useCompetencies, useLearningAreas, useAgeCategories, useProgressLevels,
   useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
 } from "../hooks/useCompetencies";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
@@ -46,6 +46,7 @@ const STATUS_CONFIG = {
   active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", dot: "#38aae1", label: "Active"    },
   draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"     },
   inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
+  archived:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Archived"  },
 };
 
 const COURSE_SHADES = [
@@ -347,10 +348,16 @@ export default function CurriculumViewPage() {
   // so it never blocks the page's initial paint; each panel below just shows "0" until ready.
   const { data: fwCompetencies = [] }  = useCompetencies(id);
   const { data: fwLearningAreas = [] } = useLearningAreas(id);
-  const { data: fwLadder = [] }        = useLadder(id);
+  const { data: fwAgeCategories = [] } = useAgeCategories(id);
+  const { data: fwProgressLevels = [] } = useProgressLevels(id);
   const { data: fwAssessmentTypes = [] } = useAssessmentTypes(id);
   const { data: fwEvidenceTypes = [] }   = useEvidenceTypes(id);
-  const { data: fwPerformanceBands = [] } = usePerformanceBands(id);
+  const { data: fwPerformanceBandsRaw = [] } = usePerformanceBands(id);
+  // Bands with a learningAreaId are repurposed as a Learning Area's course-sequence rung for
+  // Learning Journey placement, not a real curriculum-wide Progress Arc band — the server's
+  // own scoring engine excludes them the same way (competency.service.js calculateScore/
+  // calculateIndicatorProgress), so the summary below does too.
+  const fwPerformanceBands = fwPerformanceBandsRaw.filter((b) => !b.learningAreaId);
 
   const { data: schoolsData } = useQuery({
     queryKey: ["schools", "byCurriculum", id],
@@ -758,7 +765,7 @@ export default function CurriculumViewPage() {
           </button>
         </div>
 
-        {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwLadder.length === 0 && fwAssessmentTypes.length === 0 ? (
+        {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwPerformanceBands.length === 0 && fwProgressLevels.length === 0 && fwAssessmentTypes.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
             <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎯</div>
             <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#374151" }}>No competency framework set up yet</p>
@@ -786,10 +793,21 @@ export default function CurriculumViewPage() {
               {fwLearningAreas.length > 6 && <FrameworkTag label={`+${fwLearningAreas.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
             </FrameworkPanel>
 
-            <FrameworkPanel icon="🪜" title="Progress Arc" count={fwLadder.length} emptyText="No ladder rungs yet">
-              {[...fwLadder].sort((x, y) => (x.order || 0) - (y.order || 0)).map((rung) => (
-                <FrameworkTag key={rung.id} label={rung.label} sub={rung.ageRange ? `(${rung.ageRange})` : null} color="#7C3AED" bg="#F5F3FF" border="#DDD6FE" />
+            <FrameworkPanel icon="🪜" title="Progress Arc" count={fwPerformanceBands.length} emptyText="No performance bands yet">
+              {[...fwPerformanceBands].sort((x, y) => (x.order || 0) - (y.order || 0)).slice(0, 6).map((band) => (
+                <FrameworkTag
+                  key={band.id}
+                  label={band.name}
+                  sub={band.minScore != null && band.maxScore != null ? `${band.minScore}–${band.maxScore}%` : null}
+                  color="#7C3AED" bg="#F5F3FF" border="#DDD6FE"
+                />
               ))}
+              {fwPerformanceBands.length > 6 && <FrameworkTag label={`+${fwPerformanceBands.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
+              {(fwProgressLevels.length > 0 || fwAgeCategories.length > 0) && (
+                <p style={{ margin: "4px 0 0", width: "100%", fontSize: "11px", color: "#9CA3AF" }}>
+                  {fwProgressLevels.length} progress level{fwProgressLevels.length !== 1 ? "s" : ""} · {fwAgeCategories.length} developmental stage{fwAgeCategories.length !== 1 ? "s" : ""}
+                </p>
+              )}
             </FrameworkPanel>
 
             <FrameworkPanel icon="📊" title="Assessment Framework" count={fwAssessmentTypes.length} emptyText="No assessment types yet">
@@ -816,7 +834,11 @@ export default function CurriculumViewPage() {
             <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Courses currently used by this curriculum — a course stays independent otherwise.</p>
           </div>
           <AddCourseDropdown
-            available={allCourses.filter((c) => !attachedCourses.some((a) => a.id === c.id))}
+            // Only Active courses are offerable — Draft ones aren't ready and Archived ones are
+            // retired. Courses saved before status existed have no status field at all, which
+            // counts as Active (matches CoursePickerField's same rule). Already-attached courses
+            // stay visible below regardless of status — this only gates *new* attachments.
+            available={allCourses.filter((c) => !attachedCourses.some((a) => a.id === c.id) && (c.status || "active") === "active")}
             onAdd={(courseId) => linkCourse(courseId)}
           />
         </div>
@@ -828,32 +850,41 @@ export default function CurriculumViewPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {attachedCourses.map((c) => (
-                <div
-                  key={c.id}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB" }}
-                >
-                  <Link
-                    to={`/courses/${c.id}/view`}
-                    style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", minWidth: 0, flex: 1 }}
+              {attachedCourses.map((c) => {
+                const sc = STATUS_CONFIG[c.status] || STATUS_CONFIG.active;
+                return (
+                  <div
+                    key={c.id}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB" }}
                   >
-                    <span style={{ fontSize: "18px", flexShrink: 0 }}>📘</span>
-                    <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => unlinkCourse(c.id)}
-                    title="Remove from this curriculum"
-                    style={{
-                      width: "22px", height: "22px", borderRadius: "50%", border: "none", flexShrink: 0,
-                      background: "#F3F4F6", color: "#6B7280", cursor: "pointer",
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", padding: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <Link
+                      to={`/courses/${c.id}/view`}
+                      style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", minWidth: 0, flex: 1 }}
+                    >
+                      <span style={{ fontSize: "18px", flexShrink: 0 }}>📘</span>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
+                        {c.code && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{c.code}</p>}
+                      </div>
+                    </Link>
+                    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, flexShrink: 0, whiteSpace: "nowrap" }}>
+                      {sc.label}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => unlinkCourse(c.id)}
+                      title="Remove from this curriculum"
+                      style={{
+                        width: "22px", height: "22px", borderRadius: "50%", border: "none", flexShrink: 0,
+                        background: "#F3F4F6", color: "#6B7280", cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", padding: 0,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

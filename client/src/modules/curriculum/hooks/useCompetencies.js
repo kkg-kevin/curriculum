@@ -10,6 +10,7 @@ const KEYS = {
   areas:            (cid) => ["learning-areas", cid],
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
+  progressLevels:   (cid) => ["progress-levels", cid],
   assessments:      (cid) => ["assessments", cid],
   assessmentTypes:  (cid) => ["assessment-types", cid],
   evidenceTypes:    (cid) => ["evidence-types", cid],
@@ -299,6 +300,18 @@ export function useDeleteAgeCategory(curriculumId) {
       toast.success("Age category deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete age category"),
+  });
+}
+
+/* ── Progress Levels (Progress Arc — server-complete; no authoring UI yet, so only a read
+   hook exists here for now, used by CurriculumViewPage's framework summary) ──────────── */
+
+export function useProgressLevels(curriculumId) {
+  return useQuery({
+    queryKey:  KEYS.progressLevels(curriculumId),
+    queryFn:   () => competenciesApi.getProgressLevels(curriculumId),
+    enabled:   !!curriculumId,
+    staleTime: STALE,
   });
 }
 
