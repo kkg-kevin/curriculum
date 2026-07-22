@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
-import { useLocationQuery, useDeleteLocation } from "../hooks/useLocation";
+import { useLearningHubQuery, useDeleteLearningHub } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
-import { LOCATION_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/location.schema";
+import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
@@ -70,15 +70,15 @@ function AmenityIcon({ name }) {
   return Icon ? <Icon fontSize="small" /> : null;
 }
 
-export default function LocationViewPage() {
+export default function LearningHubViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: location, isLoading, isError } = useLocationQuery(id);
-  const { data: curriculum } = useCurriculumQuery(location?.curriculumId);
-  const { mutate: deleteLocation } = useDeleteLocation();
+  const { data: hub, isLoading, isError } = useLearningHubQuery(id);
+  const { data: curriculum } = useCurriculumQuery(hub?.curriculumId);
+  const { mutate: deleteLearningHub } = useDeleteLearningHub();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const isSchool = location?.locationType === "school";
+  const isSchool = hub?.hubType === "school";
 
   const { data: teachersData } = useQuery({
     queryKey: ["teachers", "bySchool", id],
@@ -100,28 +100,31 @@ export default function LocationViewPage() {
   const learners = learnersData?.data || [];
 
   if (isLoading) {
-    return <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>Loading location…</div>;
+    return <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>Loading learning hub…</div>;
   }
-  if (isError || !location) {
-    return <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>⚠ Location not found.</div>;
+  if (isError || !hub) {
+    return <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>⚠ Learning hub not found.</div>;
   }
 
-  const typeLabel = LOCATION_TYPES.find((t) => t.value === location.locationType)?.label || location.locationType;
-  const address = [location.address?.street, location.address?.city, location.address?.county ? `${location.address.county} County` : null]
+  const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
+  const address = [hub.address?.street, hub.address?.city, hub.address?.county ? `${hub.address.county} County` : null]
     .filter(Boolean).join(", ");
-  const statusStyle = location.status === "active"
+  const statusStyle = hub.status === "active"
     ? { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" }
+    : hub.status === "draft"
+    ? { bg: "#fff8e6", color: "#b8860b", border: "#fcd97a" }
     : { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
+  const statusLabel = hub.status === "active" ? "Active" : hub.status === "draft" ? "Draft" : "Inactive";
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-        <button type="button" onClick={() => navigate("/locations")} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
-          Locations
+        <button type="button" onClick={() => navigate("/learning-hubs")} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+          Learning Hubs
         </button>
         <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
-        <span style={{ color: "#111827", fontSize: "13px", fontWeight: "500" }}>{location.name}</span>
+        <span style={{ color: "#111827", fontSize: "13px", fontWeight: "500" }}>{hub.name}</span>
       </div>
 
       {/* Header */}
@@ -134,18 +137,18 @@ export default function LocationViewPage() {
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff" }}>{location.name}</h1>
+                <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff" }}>{hub.name}</h1>
                 <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
-                  {location.status === "active" ? "Active" : "Inactive"}
+                  {statusLabel}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)" }}>
-                {typeLabel}{location.code ? ` · ${location.code}` : ""}
+                {typeLabel}{hub.code ? ` · ${hub.code}` : ""}
               </p>
             </div>
           </div>
           <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
-            <button type="button" onClick={() => navigate(`/locations/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
             </button>
             <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -156,14 +159,14 @@ export default function LocationViewPage() {
       </div>
 
       {/* Photo gallery */}
-      {location.photos?.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: location.photos.length === 1 ? "1fr" : "2fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
-          {location.photos.slice(0, 3).map((url, i) => (
+      {hub.photos?.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: hub.photos.length === 1 ? "1fr" : "2fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+          {hub.photos.slice(0, 3).map((url, i) => (
             <div key={url + i} style={{ position: "relative", borderRadius: 14, overflow: "hidden", height: 180 }}>
-              <img src={url} alt={`${location.name} ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              {i === 2 && location.photos.length > 3 && (
+              <img src={url} alt={`${hub.name} ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {i === 2 && hub.photos.length > 3 && (
                 <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(17,24,39,0.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 16, fontWeight: 700 }}>
-                  +{location.photos.length - 3} more
+                  +{hub.photos.length - 3} more
                 </div>
               )}
             </div>
@@ -172,13 +175,13 @@ export default function LocationViewPage() {
       )}
 
       {/* Description */}
-      {location.description && (
+      {hub.description && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1.5px solid #E5E7EB", padding: "18px 20px", marginBottom: 20 }}>
-          <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{location.description}</p>
+          <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{hub.description}</p>
         </div>
       )}
 
-      {/* Stats row — only meaningful for school-type locations, which are the only ones Classes/
+      {/* Stats row — only meaningful for school-type hubs, which are the only ones Classes/
           Teachers/Learners currently attach to */}
       {isSchool && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
@@ -199,29 +202,40 @@ export default function LocationViewPage() {
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", marginBottom: isSchool ? "16px" : 0 }}>
-        <Section title="Location Details">
+        <Section title="Learning Hub Details">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <DetailRow icon={<LocalOfferIcon fontSize="small" />} label="Type" value={typeLabel} />
-            {location.code && <DetailRow icon={<span style={{ fontSize: 13, fontWeight: 700 }}>#</span>} label="Code" value={location.code} />}
+            {hub.code && <DetailRow icon={<span style={{ fontSize: 13, fontWeight: 700 }}>#</span>} label="Code" value={hub.code} />}
             <DetailRow
               icon={<LocationOnIcon fontSize="small" />}
               label="Address" value={address || "Not provided"}
             />
+            {hub.mapLink && (
+              <DetailRow
+                icon={<LocationOnIcon fontSize="small" />}
+                label="Google Maps"
+                value={
+                  <a href={hub.mapLink} target="_blank" rel="noopener noreferrer" style={{ color: "#38aae1", fontWeight: 600, textDecoration: "none" }}>
+                    View on Google Maps ↗
+                  </a>
+                }
+              />
+            )}
           </div>
         </Section>
 
         <Section title="Contact">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <DetailRow icon={<PersonIcon fontSize="small" />} label="Contact Person" value={location.contactPerson} />
+            <DetailRow icon={<PersonIcon fontSize="small" />} label="Contact Person" value={hub.contactPerson} />
             <DetailRow
               icon={<EmailIcon fontSize="small" />}
-              label="Email" value={location.email}
+              label="Email" value={hub.email}
             />
             <DetailRow
               icon={<PhoneIcon fontSize="small" />}
-              label="Phone" value={location.phone}
+              label="Phone" value={hub.phone}
             />
-            {!location.contactPerson && !location.email && !location.phone && (
+            {!hub.contactPerson && !hub.email && !hub.phone && (
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>No contact details on file.</p>
             )}
           </div>
@@ -241,8 +255,8 @@ export default function LocationViewPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No curriculum assigned to this location yet.</p>
-              <button type="button" onClick={() => navigate(`/locations/${id}/edit`)} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No curriculum assigned to this learning hub yet.</p>
+              <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 Assign Curriculum
               </button>
             </div>
@@ -253,23 +267,23 @@ export default function LocationViewPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <DetailRow
               icon={<CalendarTodayIcon fontSize="small" />}
-              label="Created" value={new Date(location.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
+              label="Created" value={new Date(hub.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
             />
             <DetailRow
               icon={<CalendarTodayIcon fontSize="small" />}
-              label="Last Updated" value={new Date(location.updatedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
+              label="Last Updated" value={new Date(hub.updatedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
             />
           </div>
         </Section>
       </div>
 
       {/* Amenities + Operating Hours */}
-      {(location.amenities?.length > 0 || !isSchool) && (
+      {(hub.amenities?.length > 0 || !isSchool) && (
         <div style={{ display: "grid", gridTemplateColumns: !isSchool ? "1fr 1fr" : "1fr", gap: "16px", marginBottom: "16px" }}>
-          {location.amenities?.length > 0 && (
+          {hub.amenities?.length > 0 && (
             <Section title="Amenities / Facilities">
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {location.amenities.map((a) => {
+                {hub.amenities.map((a) => {
                   const preset = AMENITY_OPTIONS.find((o) => o.value === a);
                   return (
                     <span key={a} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "20px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", fontSize: "12px", fontWeight: "600", color: "#25476a" }}>
@@ -282,17 +296,17 @@ export default function LocationViewPage() {
             </Section>
           )}
 
-          {!isSchool && (location.operatingHours?.opensAt || location.operatingHours?.days?.length > 0) && (
+          {!isSchool && (hub.operatingHours?.opensAt || hub.operatingHours?.days?.length > 0) && (
             <Section title="Operating Hours">
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <DetailRow
                   icon={<AccessTimeIcon fontSize="small" />}
                   label="Hours"
-                  value={location.operatingHours?.opensAt && location.operatingHours?.closesAt ? `${location.operatingHours.opensAt} – ${location.operatingHours.closesAt}` : null}
+                  value={hub.operatingHours?.opensAt && hub.operatingHours?.closesAt ? `${hub.operatingHours.opensAt} – ${hub.operatingHours.closesAt}` : null}
                 />
-                {location.operatingHours?.days?.length > 0 && (
+                {hub.operatingHours?.days?.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {location.operatingHours.days.map((d) => (
+                    {hub.operatingHours.days.map((d) => (
                       <span key={d} style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#F9FAFB", color: "#374151", border: "1px solid #E5E7EB" }}>{d}</span>
                     ))}
                   </div>
@@ -304,13 +318,13 @@ export default function LocationViewPage() {
       )}
 
       {/* Spaces, Capacity & Pricing — data capture only, no booking flow exists yet */}
-      {!isSchool && location.spaces?.length > 0 && (
+      {!isSchool && hub.spaces?.length > 0 && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "16px" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
             <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Spaces, Capacity & Pricing</h2>
           </div>
           <div style={{ padding: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "14px" }}>
-            {location.spaces.map((s, i) => (
+            {hub.spaces.map((s, i) => (
               <div key={i} style={{ padding: "14px 16px", borderRadius: "12px", border: "1.5px solid #E5E7EB", backgroundColor: "#FAFBFF" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "8px" }}>
                   <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>{s.name}</p>
@@ -318,6 +332,12 @@ export default function LocationViewPage() {
                     <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>Bookable</span>
                   )}
                 </div>
+                {(s.building || s.floor || s.room) && (
+                  <p style={{ margin: "0 0 6px", fontSize: "12px", color: "#9CA3AF", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <LocationOnIcon fontSize="small" />
+                    {[s.building, s.floor, s.room && `Room ${s.room}`].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 <p style={{ margin: "0 0 10px", fontSize: "12px", color: "#9CA3AF", display: "flex", alignItems: "center", gap: "6px" }}>
                   <EventSeatIcon fontSize="small" />
                   {s.minCapacity}-{s.maxCapacity} learners · {PRICING_MODELS.find((p) => p.value === s.pricingModel)?.label || s.pricingModel}
@@ -334,7 +354,7 @@ export default function LocationViewPage() {
       )}
 
       {/* Teachers/Classes/Learners are still keyed by schoolId, so they only make sense for
-          school-type locations */}
+          school-type hubs */}
       {isSchool && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
           <Section title="Teachers" count={teachers.length}>
@@ -396,14 +416,14 @@ export default function LocationViewPage() {
 
       <ConfirmDialog
         isOpen={confirmDelete}
-        title="Delete Location"
-        message={`"${location.name}" will be permanently deleted. This cannot be undone.`}
+        title="Delete Learning Hub"
+        message={`"${hub.name}" will be permanently deleted. This cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          deleteLocation(id, { onSuccess: () => navigate("/locations") });
+          deleteLearningHub(id, { onSuccess: () => navigate("/learning-hubs") });
         }}
         onCancel={() => setConfirmDelete(false)}
       />

@@ -61,5 +61,14 @@
     "id": "74b50d90-d8f7-4761-9a38-dfb154ccd182",
     "createdAt": "2026-07-17T12:47:10.539Z",
     "updatedAt": "2026-07-17T12:47:10.539Z"
+  },
+  {
+    "name": "Nairobi Academy Main Branch",
+    "email": "nairobi@digifunzi.com",
+    "passwordHash": "$2b$10$LJTH1SYmnixDzxu4BRK7w.weQkAZyBLiaHVkFbwDibHUqeO3MPF7y",
+    "role": "school",
+    "id": "b31e3cd4-5a26-4c42-9bbf-69130cadccd6",
+    "createdAt": "2026-07-22T08:06:40.482Z",
+    "updatedAt": "2026-07-22T08:06:40.483Z"
   }
 ]

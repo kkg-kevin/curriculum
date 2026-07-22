@@ -1,7 +1,7 @@
 [
   {
     "name": "Sample school",
-    "locationType": "school",
+    "hubType": "school",
     "code": "SS",
     "email": "school@digifunzi.com",
     "phone": "+254727496461",
@@ -19,7 +19,7 @@
   },
   {
     "name": "Digifunzii Innovation Academy",
-    "locationType": "school",
+    "hubType": "school",
     "code": "DIA-NRB",
     "email": "",
     "phone": "",
@@ -37,7 +37,7 @@
   },
   {
     "name": "Digifunzi school",
-    "locationType": "school",
+    "hubType": "school",
     "code": "DS",
     "email": "kev@gmail.com",
     "phone": "+254727496461",
@@ -69,5 +69,39 @@
     "id": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "createdAt": "2026-07-17T11:49:48.017Z",
     "updatedAt": "2026-07-21T13:05:14.417Z"
+  },
+  {
+    "name": "Nairobi Academy Main Branch",
+    "hubType": "school",
+    "code": "NAMB",
+    "email": "nairobi@digifunzi.com",
+    "phone": "+254727496461",
+    "contactPerson": "Kevin Githinji",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Kwale"
+    },
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "description": "Nairobi Academy is a well structure institution",
+    "photos": [
+      "http://localhost:5000/uploads/3b404d14-91ca-4692-80c7-7d43be330810.png",
+      "http://localhost:5000/uploads/fb31a41e-8c2d-488f-a602-5983b14b758f.png"
+    ],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "food_available"
+    ],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "createdAt": "2026-07-22T08:06:40.489Z",
+    "updatedAt": "2026-07-22T08:07:00.473Z"
   }
 ]

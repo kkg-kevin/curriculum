@@ -5,10 +5,10 @@ import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiU
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../context/AuthContext";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
-import { useUpdateLocation as useUpdateSchool } from "../../locations/hooks/useLocation";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useUpdateLearningHub as useUpdateSchool } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { locationProfileSchema as schoolProfileSchema, KENYA_COUNTIES } from "../../locations/schemas/location.schema";
+import { learningHubProfileSchema as schoolProfileSchema, KENYA_COUNTIES } from "../../learning-hubs/schemas/learningHub.schema";
 import { classApi } from "../../classes/services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";

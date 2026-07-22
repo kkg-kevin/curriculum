@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Close as CloseIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, PauseCircle as PauseCircleIcon } from "@mui/icons-material";
-import { useLocationsQuery } from "../hooks/useLocation";
+import { useLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
-import { setLocationFilter, clearLocationFilters } from "../../../store/locationsSlice";
-import { KENYA_COUNTIES } from "../schemas/location.schema";
-import { LocationCard } from "../components/LocationCard";
+import { setLearningHubFilter, clearLearningHubFilters } from "../../../store/learningHubsSlice";
+import { KENYA_COUNTIES } from "../schemas/learningHub.schema";
+import { LearningHubCard } from "../components/LearningHubCard";
 
 const selectStyle = {
   padding: "8px 32px 8px 12px",
@@ -30,10 +30,10 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
         📍
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
-        {hasFilters ? "No results found" : "No locations yet"}
+        {hasFilters ? "No results found" : "No learning hubs yet"}
       </h3>
       <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#6B7280", lineHeight: "1.6" }}>
-        {hasFilters ? "Try adjusting your filters." : "Add your first location to get started."}
+        {hasFilters ? "Try adjusting your filters." : "Learning hubs are added from Settings, then appear here once activated."}
       </p>
       {hasFilters ? (
         <button type="button" onClick={onClearFilters} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #25476a", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -41,27 +41,27 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
         </button>
       ) : (
         <button type="button" onClick={onCreateNew} style={{ padding: "10px 24px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 4px 12px rgba(254,177,57,0.35)" }}>
-          + Add Location
+          Go to Settings →
         </button>
       )}
     </div>
   );
 }
 
-export default function LocationsPage() {
+export default function LearningHubsPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const filters = useSelector((state) => state.locations.filters);
+  const filters = useSelector((state) => state.learningHubs.filters);
 
-  const { data, isLoading, isError, error } = useLocationsQuery();
+  const { data, isLoading, isError, error } = useLearningHubsQuery();
   const { data: curriculaData } = useCurriculaQuery();
 
-  const locations = data?.data || [];
+  const learningHubs = data?.data || [];
   const curriculaMap = (curriculaData?.data || []).reduce((m, c) => { m[c.id] = c; return m; }, {});
 
   const hasFilters = !!filters.status || !!filters.county;
-  const activeCount = locations.filter((l) => l.status === "active").length;
-  const withCurriculum = locations.filter((l) => l.curriculumId).length;
+  const activeCount = learningHubs.filter((l) => l.status === "active").length;
+  const withCurriculum = learningHubs.filter((l) => l.curriculumId).length;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -72,7 +72,7 @@ export default function LocationsPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
           <div>
             <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-              Locations
+              Learning Hubs
             </h1>
             <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "480px" }}>
               Manage every place a curriculum is used — schools, campuses, branches, and other learning spaces.
@@ -80,11 +80,12 @@ export default function LocationsPage() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/locations/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
+            onClick={() => navigate("/settings/learning-hubs/create")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+            title="Learning hubs are created and staged as drafts in Settings"
           >
             <AddIcon fontSize="small" />
-            Add Location
+            Add in Settings
           </button>
         </div>
       </div>
@@ -92,10 +93,10 @@ export default function LocationsPage() {
       {/* Stats bar */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "16px" }}>
         {[
-          { label: "Total Locations",   value: isLoading ? "—" : locations.length,                    icon: <LocationOnIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-          { label: "Active",            value: isLoading ? "—" : activeCount,                          icon: <CheckCircleIcon fontSize="small" />, bg: "#dff2fb", color: "#38aae1", border: "#a8d5ee" },
-          { label: "Inactive",          value: isLoading ? "—" : locations.length - activeCount,       icon: <PauseCircleIcon fontSize="small" />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-          { label: "With Curriculum",   value: isLoading ? "—" : withCurriculum,                       icon: <MenuBookIcon fontSize="small" />, bg: "#fff8e6", color: "#feb139", border: "#fcd97a" },
+          { label: "Total Learning Hubs", value: isLoading ? "—" : learningHubs.length,                    icon: <LocationOnIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Active",              value: isLoading ? "—" : activeCount,                             icon: <CheckCircleIcon fontSize="small" />, bg: "#dff2fb", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Inactive",            value: isLoading ? "—" : learningHubs.length - activeCount,       icon: <PauseCircleIcon fontSize="small" />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+          { label: "With Curriculum",     value: isLoading ? "—" : withCurriculum,                          icon: <MenuBookIcon fontSize="small" />, bg: "#fff8e6", color: "#feb139", border: "#fcd97a" },
         ].map((stat) => (
           <div key={stat.label} style={{ backgroundColor: "#ffffff", borderRadius: "14px", border: `1.5px solid ${stat.border}`, padding: "16px 18px", display: "flex", alignItems: "center", gap: "14px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ width: "42px", height: "42px", borderRadius: "11px", backgroundColor: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: stat.color }}>
@@ -111,23 +112,23 @@ export default function LocationsPage() {
 
       {/* Filter bar */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <select value={filters.status} onChange={(e) => dispatch(setLocationFilter({ status: e.target.value }))} style={selectStyle}>
+        <select value={filters.status} onChange={(e) => dispatch(setLearningHubFilter({ status: e.target.value }))} style={selectStyle}>
           <option value="">All Statuses</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-        <select value={filters.county} onChange={(e) => dispatch(setLocationFilter({ county: e.target.value }))} style={selectStyle}>
+        <select value={filters.county} onChange={(e) => dispatch(setLearningHubFilter({ county: e.target.value }))} style={selectStyle}>
           <option value="">All Counties</option>
           {KENYA_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         {hasFilters && (
-          <button type="button" onClick={() => dispatch(clearLocationFilters())} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          <button type="button" onClick={() => dispatch(clearLearningHubFilters())} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
             <CloseIcon fontSize="small" />
             Clear
           </button>
         )}
         <span style={{ marginLeft: "auto", fontSize: "13px", color: "#9CA3AF" }}>
-          {isLoading ? "Loading..." : `${locations.length} result${locations.length !== 1 ? "s" : ""}`}
+          {isLoading ? "Loading..." : `${learningHubs.length} result${learningHubs.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
@@ -152,18 +153,18 @@ export default function LocationsPage() {
         </div>
       ) : isError ? (
         <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-          ⚠ Failed to load locations: {error?.message}
+          ⚠ Failed to load learning hubs: {error?.message}
         </div>
-      ) : locations.length === 0 ? (
+      ) : learningHubs.length === 0 ? (
         <EmptyState
           hasFilters={hasFilters}
-          onClearFilters={() => dispatch(clearLocationFilters())}
-          onCreateNew={() => navigate("/locations/create")}
+          onClearFilters={() => dispatch(clearLearningHubFilters())}
+          onCreateNew={() => navigate("/settings/learning-hubs/create")}
         />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
-          {locations.map((location) => (
-            <LocationCard key={location.id} location={location} curriculaMap={curriculaMap} />
+          {learningHubs.map((hub) => (
+            <LearningHubCard key={hub.id} hub={hub} curriculaMap={curriculaMap} />
           ))}
         </div>
       )}

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle as CheckCircleIcon, Class as ClassIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherCreatePath, teacherPath, classPath } from "../../../routes/portalPaths";
-import { useLocationQuery as useSchoolQuery } from "../../locations/hooks/useLocation";
+import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { teacherApi } from "../services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 

@@ -1,8 +1,8 @@
 import api from "../../../services/api";
 
-const BASE = "/api/locations";
+const BASE = "/api/learning-hubs";
 
-export const locationApi = {
+export const learningHubApi = {
   create:  (data)     => api.post(BASE, data).then((r) => r.data.data),
   getAll:  (params)   => api.get(BASE, { params }).then((r) => r.data),
   getById: (id)        => api.get(`${BASE}/${id}`).then((r) => r.data.data),

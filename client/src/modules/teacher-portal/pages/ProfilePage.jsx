@@ -5,7 +5,7 @@ import { FiCalendar, FiClock, FiHome, FiMail, FiPhone, FiUserCheck } from "react
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 
 const ACCENT = "#25476a";

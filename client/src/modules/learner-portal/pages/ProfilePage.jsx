@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useUpdateLearner } from "../../learners/hooks/useLearners";
 
 const T = {

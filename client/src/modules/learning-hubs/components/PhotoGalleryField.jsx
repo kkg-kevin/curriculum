@@ -115,7 +115,7 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         </div>
       )}
 
-      <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Upload images of the location (JPG, PNG)</p>
+      <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Upload images of the learning hub (JPG, PNG)</p>
     </div>
   );
 }

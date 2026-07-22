@@ -10,10 +10,10 @@ function SchoolAvatar({ name, size = 46 }) {
   );
 }
 
-// A school-type-location card for the "pick a school first" entry point shared by
+// A school-type-hub card for the "pick a school first" entry point shared by
 // Classes/Teachers/Learners. Clicking anywhere on the card drills into that school's scoped
-// list for the module. Classes/Teachers/Learners still only attach to school-type locations, so
-// every caller of this component must already have filtered its list down to locationType
+// list for the module. Classes/Teachers/Learners still only attach to school-type hubs, so
+// every caller of this component must already have filtered its list down to hubType
 // "school" before rendering these cards.
 export default function SchoolPickerCard({ school, icon, count, countLabel, subStat, onClick }) {
   const [hovered, setHovered] = useState(false);

@@ -1,5 +1,5 @@
 const LearnerModel = require("./learner.model");
-const SchoolModel  = require("../locations/location.model");
+const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
 const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
 

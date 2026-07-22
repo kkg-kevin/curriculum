@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
 import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Coffee as CoffeeIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
 import {
-  KENYA_COUNTIES, LOCATION_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS,
-} from "../schemas/location.schema";
-import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
-import PhotoGalleryField from "./PhotoGalleryField";
+  KENYA_COUNTIES, LEARNING_HUB_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
+} from "../../../learning-hubs/schemas/learningHub.schema";
+import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
+import { useAllLearningHubsQuery } from "../../../learning-hubs/hooks/useLearningHub";
+import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 
 const ACCENT = "#25476a";
 
@@ -95,9 +96,44 @@ function Input({ name, placeholder, type = "text", ...rest }) {
   );
 }
 
-// Sets up (or resets) the school-portal login password for this location's email, from the
-// location form itself — a shortcut for the admin instead of a separate signup. Left blank, the
-// location saves with no change to any existing login.
+// The code is never typed in — it's derived live from the Name field (see generateHubCode) so
+// there's always exactly one way a hub gets its code. On create, it recomputes on every keystroke
+// of Name; on edit, autoGenerate is off so an already-assigned code stays stable even if the name
+// is later tweaked.
+function CodeField({ isSchool, autoGenerate, existingCodes }) {
+  const { register, watch, setValue, formState: { errors } } = useFormContext();
+  const name = watch("name");
+  const error = errors?.code?.message;
+
+  useEffect(() => {
+    if (!autoGenerate) return;
+    setValue("code", generateHubCode(name, existingCodes), { shouldValidate: true });
+    // existingCodes intentionally omitted — recomputing only on name changes avoids the
+    // generated code jittering every time the hub list itself refetches in the background.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerate, name, setValue]);
+
+  return (
+    <Field
+      label="Code"
+      error={error}
+      required={isSchool}
+      hint={autoGenerate ? "Auto-generated from the learning hub name." : "Assigned automatically when the hub was created."}
+    >
+      <input
+        type="text"
+        readOnly
+        placeholder="Enter a name above to generate a code"
+        {...register("code")}
+        style={{ ...inputBaseStyle(error), backgroundColor: "#F3F4F6", color: "#6B7280", cursor: "not-allowed" }}
+      />
+    </Field>
+  );
+}
+
+// Sets up (or resets) the school-portal login password for this learning hub's email, from the
+// hub form itself — a shortcut for the admin instead of a separate signup. Left blank, the
+// hub saves with no change to any existing login.
 function PasswordField() {
   const { register, formState: { errors } } = useFormContext();
   const [show, setShow] = useState(false);
@@ -107,7 +143,7 @@ function PasswordField() {
     <Field
       label="Portal Password"
       error={error}
-      hint="Optional — sets up or resets this location's school-portal login. Leave blank to make no change."
+      hint="Optional — sets up or resets this learning hub's school-portal login. Leave blank to make no change."
     >
       <div style={{ position: "relative" }}>
         <input
@@ -288,6 +324,10 @@ function SpaceConfigCard({ index, onRemove }) {
   const minCapacity = watch(`spaces.${index}.minCapacity`);
   const maxCapacity = watch(`spaces.${index}.maxCapacity`);
   const pricingModel = watch(`spaces.${index}.pricingModel`);
+  const building = watch(`spaces.${index}.building`);
+  const floor = watch(`spaces.${index}.floor`);
+  const room = watch(`spaces.${index}.room`);
+  const locationSummary = [building, floor, room && `Room ${room}`].filter(Boolean).join(" · ");
 
   return (
     <div style={{ padding: "18px 20px", borderRadius: "14px", border: "1.5px solid #E5E7EB", backgroundColor: "#FAFBFF", display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -296,11 +336,18 @@ function SpaceConfigCard({ index, onRemove }) {
           <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>{nameValue || `Space ${index + 1}`}</p>
           <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
             {minCapacity || 1}-{maxCapacity || 1} learners · {PRICING_MODELS.find((p) => p.value === pricingModel)?.label || "Hourly"} Rate
+            {locationSummary ? ` · ${locationSummary}` : ""}
           </p>
         </div>
         <button type="button" onClick={onRemove} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", padding: "4px 8px" }}>
           Remove
         </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+        <Input name={`spaces.${index}.building`} label="Building" placeholder="e.g. Main Building" required />
+        <Input name={`spaces.${index}.floor`} label="Floor" placeholder="e.g. Ground Floor, 2nd Floor" required />
+        <Input name={`spaces.${index}.room`} label="Room" placeholder="e.g. 204" hint="Optional" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -350,37 +397,34 @@ function SpaceConfigCard({ index, onRemove }) {
   );
 }
 
-export default function LocationForm() {
+export default function LearningHubForm({ autoGenerateCode = false }) {
   const { register, watch, control, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
-  const locationType = watch("locationType");
-  const isSchool = locationType === "school";
+  const { data: allHubsData } = useAllLearningHubsQuery({ includeDrafts: true });
+  const existingCodes = (allHubsData?.data || []).map((h) => h.code).filter(Boolean);
+  const hubType = watch("hubType");
+  const isSchool = hubType === "school";
 
   const { fields, append, remove } = useFieldArray({ control, name: "spaces" });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <SectionCard icon={<BusinessIcon fontSize="small" />} title="Basic Information" subtitle="Enter the fundamental details about the location">
+      <SectionCard icon={<BusinessIcon fontSize="small" />} title="Basic Information" subtitle="Enter the fundamental details about the learning hub">
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <Input name="name" label="Location Name" placeholder="e.g. Nairobi Academy, Main Campus" required />
-            <Field label="Location Type" required error={errors?.locationType?.message}>
-              <select {...register("locationType")} style={selectStyle}>
-                {LOCATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            <Input name="name" label="Learning Hub Name" placeholder="e.g. Nairobi Academy, Main Campus" required />
+            <Field label="Learning Hub Type" required error={errors?.hubType?.message}>
+              <select {...register("hubType")} style={selectStyle}>
+                {LEARNING_HUB_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <Input
-              name="code"
-              label="Code"
-              placeholder="e.g. NA-001"
-              required={isSchool}
-              hint={isSchool ? "Required for the School type" : "Optional for this type"}
-            />
-            <Field label="Status" required>
+            <CodeField isSchool={isSchool} autoGenerate={autoGenerateCode} existingCodes={existingCodes} />
+            <Field label="Status" required hint="New hubs start as Draft — only visible in Settings until activated.">
               <select {...register("status")} style={selectStyle}>
+                <option value="draft">Draft</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
@@ -390,9 +434,9 @@ export default function LocationForm() {
           <Input
             name="email"
             label="Email Address"
-            placeholder="info@location.ac.ke"
+            placeholder="info@hub.ac.ke"
             type="email"
-            hint={isSchool ? "The school-portal login for this location is matched to this email." : undefined}
+            hint={isSchool ? "The school-portal login for this learning hub is matched to this email." : undefined}
           />
 
           {isSchool && <PasswordField />}
@@ -400,7 +444,7 @@ export default function LocationForm() {
           <Field label="Description">
             <textarea
               {...register("description")}
-              placeholder="Describe the location, its atmosphere, and what makes it suitable for learning sessions…"
+              placeholder="Describe the learning hub, its atmosphere, and what makes it suitable for learning sessions…"
               rows={4}
               style={{ ...inputBaseStyle(false), resize: "vertical", fontFamily: "Inter, sans-serif" }}
             />
@@ -410,13 +454,13 @@ export default function LocationForm() {
             name="photos"
             control={control}
             render={({ field }) => (
-              <PhotoGalleryField value={field.value || []} onChange={field.onChange} label="Location Photos" />
+              <PhotoGalleryField value={field.value || []} onChange={field.onChange} label="Learning Hub Photos" />
             )}
           />
         </div>
       </SectionCard>
 
-      <SectionCard icon={<PhoneIcon fontSize="small" />} title="Contact Information" subtitle="Primary contact details for location coordination">
+      <SectionCard icon={<PhoneIcon fontSize="small" />} title="Contact Information" subtitle="Primary contact details for learning hub coordination">
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <Input name="contactPerson" label="Contact Person" placeholder="e.g. Jane Mwangi" />
           <Input name="phone" label="Phone Number" placeholder="+254 700 000 000" />
@@ -448,10 +492,16 @@ export default function LocationForm() {
               </select>
             </Field>
           </div>
+          <Input
+            name="mapLink"
+            label="Google Maps Link"
+            placeholder="https://maps.app.goo.gl/..."
+            hint="Paste a share link from Google Maps so visitors can find this location easily."
+          />
         </div>
       </SectionCard>
 
-      <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="The curriculum this location follows. Can be updated at any time.">
+      <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="The curriculum this learning hub follows. Can be updated at any time.">
         <Field label="Curriculum" error={errors?.curriculumId?.message}>
           <select {...register("curriculumId")} style={selectStyle}>
             <option value="">No curriculum assigned</option>
@@ -505,7 +555,7 @@ export default function LocationForm() {
             ))}
             <button
               type="button"
-              onClick={() => append({ name: "", spaceType: "desk", minCapacity: 1, maxCapacity: 1, pricingModel: "hourly", rate: 0, priceUnit: "per hour", reservable: true, notes: "" })}
+              onClick={() => append({ name: "", spaceType: "desk", building: "", floor: "", room: "", minCapacity: 1, maxCapacity: 1, pricingModel: "hourly", rate: 0, priceUnit: "per hour", reservable: true, notes: "" })}
               style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "10px", border: `1.5px dashed #a8d5ee`, backgroundColor: "#F8FBFE", color: ACCENT, fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
             >
               + Add Configuration

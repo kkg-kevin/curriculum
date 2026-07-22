@@ -10,12 +10,11 @@ const KENYA_COUNTIES = [
   "Uasin Gishu","Vihiga","Wajir","West Pokot",
 ];
 
-// "school" is the original, fully-built location type (its own required Code, login-matching
-// via email). The other 9 are places a curriculum can also be assigned to — differentiated
+// "school" is the original, fully-built hub type (its own required Code, login-matching
+// via email). The other 3 are places a curriculum can also be assigned to — differentiated
 // required fields/behavior per type is deferred; for now they all share this one schema.
-const LOCATION_TYPES = [
-  "school", "campus", "branch", "learning_space", "classroom",
-  "room", "hall", "lab", "library", "training_room",
+const LEARNING_HUB_TYPES = [
+  "school", "co_working_space", "innovation_lab", "makerspace",
 ];
 
 const addressSchema = z.object({
@@ -33,11 +32,14 @@ const operatingHoursSchema = z.object({
 });
 
 // Bookable seating/space configuration — data capture only. There is no reservation/booking
-// flow anywhere in the app yet; this just records what a location offers and at what price so
+// flow anywhere in the app yet; this just records what a hub offers and at what price so
 // that feature can be built against real data later.
 const spaceSchema = z.object({
   name: z.string().min(1, "Space name is required").max(100),
   spaceType: z.string().max(50).default("desk"),
+  building: z.string().min(1, "Building is required").max(100),
+  floor: z.string().min(1, "Floor is required").max(50),
+  room: z.string().max(50).default(""),
   minCapacity: z.coerce.number().int().positive().default(1),
   maxCapacity: z.coerce.number().int().positive().default(1),
   pricingModel: z.enum(["hourly", "daily", "fixed", "free"]).default("hourly"),
@@ -47,24 +49,28 @@ const spaceSchema = z.object({
   notes: z.string().max(500).default(""),
 });
 
-const baseLocationSchema = z.object({
-  name: z.string().min(1, "Location name is required").max(150, "Max 150 characters"),
-  locationType: z.enum(LOCATION_TYPES, { errorMap: () => ({ message: "Select a valid location type" }) }).default("school"),
+const baseLearningHubSchema = z.object({
+  name: z.string().min(1, "Learning hub name is required").max(150, "Max 150 characters"),
+  hubType: z.enum(LEARNING_HUB_TYPES, { errorMap: () => ({ message: "Select a valid learning hub type" }) }).default("school"),
   code: z
     .string()
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]*$/i, "Only letters, numbers, and hyphens")
     .default(""),
   email: z.string().email("Invalid email address").or(z.literal("")).default(""),
-  // Transient — never persisted onto the location record itself. When present, the controller
+  // Transient — never persisted onto the learning hub record itself. When present, the controller
   // uses it to create/reset the matching school-portal login (see auth.service.js's
-  // setOrCreatePassword) and then strips it before saving the location.
+  // setOrCreatePassword) and then strips it before saving the learning hub.
   password: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   phone: z.string().max(20, "Max 20 characters").default(""),
   contactPerson: z.string().max(150).default(""),
   address: addressSchema,
+  mapLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
   curriculumId: z.string().or(z.literal("")).nullable().default(null),
-  status: z.enum(["active", "inactive"]).default("active"),
+  // New hubs start as "draft" — invisible everywhere outside Settings until an admin promotes
+  // them to "active", at which point they appear in the Learning Hubs module and every other
+  // consumer (Teachers/Classes/Learners pickers, curriculum view, dashboard, etc).
+  status: z.enum(["draft", "active", "inactive"]).default("draft"),
   description: z.string().max(1000, "Max 1000 characters").default(""),
   photos: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
@@ -72,26 +78,26 @@ const baseLocationSchema = z.object({
   spaces: z.array(spaceSchema).default([]),
 });
 
-// Code stays required only for locationType "school" — this is what keeps the school-creation
-// flow behaving exactly as it did before the merge, without forcing every other location type
+// Code stays required only for hubType "school" — this is what keeps the school-creation
+// flow behaving exactly as it did before the merge, without forcing every other hub type
 // to carry a code too.
-const createLocationSchema = baseLocationSchema.superRefine((data, ctx) => {
-  if (data.locationType === "school" && !data.code) {
+const createLearningHubSchema = baseLearningHubSchema.superRefine((data, ctx) => {
+  if (data.hubType === "school" && !data.code) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["code"], message: "School code is required" });
   }
   if (data.password) {
     if (!data.email) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
     }
-    if (data.locationType !== "school") {
+    if (data.hubType !== "school") {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["password"], message: "Password can only be set for the School type" });
     }
   }
 });
 
-const updateLocationSchema = baseLocationSchema.partial().extend({
+const updateLearningHubSchema = baseLearningHubSchema.partial().extend({
   address: addressSchema.partial().optional(),
   operatingHours: operatingHoursSchema.partial().optional(),
 });
 
-module.exports = { createLocationSchema, updateLocationSchema, LOCATION_TYPES, KENYA_COUNTIES };
+module.exports = { createLearningHubSchema, updateLearningHubSchema, LEARNING_HUB_TYPES, KENYA_COUNTIES };

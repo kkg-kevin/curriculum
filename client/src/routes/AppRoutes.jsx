@@ -37,10 +37,10 @@ import CurriculumViewPage from "../modules/curriculum/pages/CurriculumViewPage";
 import CurriculumVersionControlPage from "../modules/curriculum/pages/CurriculumVersionControlPage";
 import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
 import CompetenciesPage from "../modules/curriculum/pages/CompetenciesPage";
-import LocationsPage from "../modules/locations/pages/LocationsPage";
-import CreateLocationPage from "../modules/locations/pages/CreateLocationPage";
-import EditLocationPage from "../modules/locations/pages/EditLocationPage";
-import LocationViewPage from "../modules/locations/pages/LocationViewPage";
+import LearningHubsPage from "../modules/learning-hubs/pages/LearningHubsPage";
+import LearningHubViewPage from "../modules/learning-hubs/pages/LearningHubViewPage";
+import CreateLearningHubPage from "../modules/settings/learning-hubs/pages/CreateLearningHubPage";
+import EditLearningHubPage from "../modules/settings/learning-hubs/pages/EditLearningHubPage";
 import TeachersPage from "../modules/teachers/pages/TeachersPage";
 import SchoolTeachersPage from "../modules/teachers/pages/SchoolTeachersPage";
 import CreateTeacherPage from "../modules/teachers/pages/CreateTeacherPage";
@@ -79,11 +79,9 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="locations">
-          <Route index element={<LocationsPage />} />
-          <Route path="create" element={<CreateLocationPage />} />
-          <Route path=":id/edit" element={<EditLocationPage />} />
-          <Route path=":id/view" element={<LocationViewPage />} />
+        <Route path="learning-hubs">
+          <Route index element={<LearningHubsPage />} />
+          <Route path=":id/view" element={<LearningHubViewPage />} />
         </Route>
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />
@@ -131,7 +129,11 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<AssessmentViewPage />} />
         </Route>
         <Route path="reports" element={<ComingSoon name="Reports" />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings">
+          <Route index element={<SettingsPage />} />
+          <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />
+          <Route path="learning-hubs/:id/edit" element={<EditLearningHubPage />} />
+        </Route>
       </Route>
       </Route>
 

@@ -16,7 +16,7 @@ import {
   useCompetencies, useLearningAreas, useLadder,
   useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
 } from "../hooks/useCompetencies";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
@@ -859,10 +859,10 @@ export default function CurriculumViewPage() {
         </div>
       </div>
 
-      {/* ── Locations Using This Curriculum ───────────────────────────── */}
+      {/* ── Learning Hubs Using This Curriculum ───────────────────────── */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Locations Using This Curriculum</h2>
+          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Learning Hubs Using This Curriculum</h2>
           <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
             {assignedSchools.length}
           </span>
@@ -871,14 +871,14 @@ export default function CurriculumViewPage() {
           {assignedSchools.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF" }}>
               <div style={{ fontSize: "24px", marginBottom: "8px" }}>📍</div>
-              <p style={{ margin: 0, fontSize: "13px" }}>No locations have been assigned this curriculum yet.</p>
+              <p style={{ margin: 0, fontSize: "13px" }}>No learning hubs have been assigned this curriculum yet.</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {assignedSchools.map((s) => (
                 <div
                   key={s.id}
-                  onClick={() => navigate(`/locations/${s.id}/view`)}
+                  onClick={() => navigate(`/learning-hubs/${s.id}/view`)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F9FAFB"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}

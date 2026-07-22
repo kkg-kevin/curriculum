@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const FILE = path.join(__dirname, "../../../data/locations.json");
+const FILE = path.join(__dirname, "../../../data/learning-hubs.json");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -18,7 +18,7 @@ const readAll = () => {
 const writeAll = (data) =>
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
 
-const LocationModel = {
+const LearningHubModel = {
   create(data) {
     const all = readAll();
     const record = {
@@ -32,13 +32,18 @@ const LocationModel = {
     return record;
   },
 
-  findAll({ status, county, curriculumId, email, locationType } = {}) {
+  findAll({ status, county, curriculumId, email, hubType, includeDrafts } = {}) {
     let all = readAll();
-    if (status)       all = all.filter((l) => l.status === status);
+    if (status)            all = all.filter((l) => l.status === status);
+    // Drafts are staged records still being set up in Settings — hidden from every listing by
+    // default so they don't leak into pickers/dashboards until an admin activates them. Callers
+    // that need to see them (Settings' own management view, a school viewing its own record)
+    // pass includeDrafts explicitly. An explicit `status` filter already implies this.
+    else if (!includeDrafts) all = all.filter((l) => l.status !== "draft");
     if (county)       all = all.filter((l) => l.address?.county === county);
     if (curriculumId) all = all.filter((l) => l.curriculumId === curriculumId);
     if (email)        all = all.filter((l) => l.email?.toLowerCase() === email.toLowerCase());
-    if (locationType) all = all.filter((l) => l.locationType === locationType);
+    if (hubType)      all = all.filter((l) => l.hubType === hubType);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
@@ -66,4 +71,4 @@ const LocationModel = {
   },
 };
 
-module.exports = LocationModel;
+module.exports = LearningHubModel;

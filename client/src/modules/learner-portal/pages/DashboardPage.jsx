@@ -5,7 +5,7 @@ import { FiBookOpen, FiClipboard, FiTrendingUp, FiUserCheck } from "react-icons/
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { getProgressSummary } from "../utils/progressStorage";
 

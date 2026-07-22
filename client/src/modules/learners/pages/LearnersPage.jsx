@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { School as SchoolIcon } from "@mui/icons-material";
-import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useAllLearnersQuery } from "../hooks/useLearners";
-import SchoolPickerCard from "../../locations/components/SchoolPickerCard";
+import SchoolPickerCard from "../../learning-hubs/components/SchoolPickerCard";
 
 function SkeletonCard() {
   return (
@@ -22,7 +22,7 @@ function SkeletonCard() {
 
 export default function LearnersPage() {
   const navigate = useNavigate();
-  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllLocationsQuery({ locationType: "school" });
+  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllLearningHubsQuery({ hubType: "school" });
   const { data: learnersData, isLoading: learnersLoading } = useAllLearnersQuery();
 
   const schools  = schoolsData?.data  || [];
