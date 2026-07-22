@@ -52,7 +52,8 @@ Evidence types are the raw assessment methods (Quizzes, Assignments, Projects, P
 | Field | Description |
 |---|---|
 | `defaultContribution` | Default % weight when added to an assessment type |
-| `minRequirement` | Default minimum score a learner must achieve on this evidence |
+| `minRequirement` | Default minimum score a learner must achieve on this evidence — actively read by the scoring engine (§4) |
+| `minItemCount` | Minimum number of this evidence type expected in a course (e.g. minimum quizzes to complete). Reference/data-capture only — **not** read by the scoring engine, since one evidence type can be reused across courses with different item counts |
 
 Each evidence type is assigned to an assessment type via an `evidenceWeights` entry. The `contribution` values across all included evidence types in one assessment type **must sum to exactly 100%**.
 
