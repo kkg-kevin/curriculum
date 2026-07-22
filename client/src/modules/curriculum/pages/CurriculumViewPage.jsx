@@ -5,7 +5,7 @@ import {
   Edit as EditIcon,
   MenuBook as MenuBookIcon,
   WarningAmber as WarningAmberIcon,
-  CheckCircle as CheckCircleOutlineIcon,
+  CheckCircleOutlined as CheckCircleOutlineIcon,
   Search as SearchIcon,
   Coffee as CoffeeIcon,
 } from "@mui/icons-material";
