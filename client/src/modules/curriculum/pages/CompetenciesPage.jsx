@@ -1501,8 +1501,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                     <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Evidence Breakdown</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                       {(t.evidenceWeights || []).map((ew) => {
-                        const ev   = evidences.find((e) => e.id === ew.evidenceTypeId);
-                        const minR = ew.minRequirement;
+                        const ev = evidences.find((e) => e.id === ew.evidenceTypeId);
                         return (
                           <div key={ew.evidenceTypeId}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
@@ -1510,9 +1509,6 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                                 {ev?.name || "Unknown evidence"}
                               </span>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, marginLeft: "8px" }}>
-                                {minR != null && minR > 0 && (
-                                  <span style={{ fontSize: "10px", color: "#9CA3AF" }}>min {minR}%</span>
-                                )}
                                 <span style={{ fontSize: "12px", fontWeight: "800", color: bCol }}>{ew.contribution}%</span>
                               </div>
                             </div>
@@ -1581,13 +1577,12 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   const [desc,        setDesc]       = useState("");
   const [category,    setCategory]   = useState("");
   const [defContrib,  setDefContrib] = useState("0");
-  const [minReq,      setMinReq]     = useState("0");
   const [minCount,    setMinCount]   = useState("0");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMinCount("0"); setMode("add"); }
-  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setCategory(e.category || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMinCount(String(e.minItemCount ?? 0)); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinCount("0"); setMode("add"); }
+  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setCategory(e.category || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinCount(String(e.minItemCount ?? 0)); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
@@ -1595,11 +1590,10 @@ function EvidenceTypesSubPanel({ curriculumId }) {
       name: name.trim(), description: desc.trim(),
       category: category || null,
       defaultContribution: Math.min(100, Math.max(0, Number(defContrib) || 0)),
-      minRequirement:      Math.min(100, Math.max(0, Number(minReq) || 0)),
       minItemCount:        Math.max(0, Math.floor(Number(minCount) || 0)),
     };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMinCount("0"); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinCount("0"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1630,28 +1624,15 @@ function EvidenceTypesSubPanel({ curriculumId }) {
             ))}
           </select>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <div>
-            <label className="cp-field-label">Default Contribution %</label>
-            <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>Auto-filled when attached to an assessment type.</p>
-            <div style={{ position: "relative" }}>
-              <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                value={defContrib}
-                onChange={(e) => setDefContrib(e.target.value)}
-              />
-              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
-            </div>
-          </div>
-          <div>
-            <label className="cp-field-label">Minimum Requirement %</label>
-            <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>Score below this flags the learner as below requirement.</p>
-            <div style={{ position: "relative" }}>
-              <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
-                value={minReq}
-                onChange={(e) => setMinReq(e.target.value)}
-              />
-              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
-            </div>
+        <div>
+          <label className="cp-field-label">Default Contribution %</label>
+          <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>Auto-filled when attached to an assessment type.</p>
+          <div style={{ position: "relative" }}>
+            <input className="cp-input" type="number" min="0" max="100" style={{ width: "100%", boxSizing: "border-box", paddingRight: "30px" }}
+              value={defContrib}
+              onChange={(e) => setDefContrib(e.target.value)}
+            />
+            <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
           </div>
         </div>
         <div>
@@ -1707,11 +1688,6 @@ function EvidenceTypesSubPanel({ curriculumId }) {
                       {e.defaultContribution}% default
                     </span>
                   )}
-                  {e.minRequirement > 0 && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", color: "#D97706", background: "#D9770615", padding: "2px 7px", borderRadius: "20px" }}>
-                      {e.minRequirement}% min
-                    </span>
-                  )}
                   {e.minItemCount > 0 && (
                     <span style={{ fontSize: "10px", fontWeight: "600", color: "#059669", background: "#05966915", padding: "2px 7px", borderRadius: "20px" }}>
                       min {e.minItemCount} item{e.minItemCount !== 1 ? "s" : ""}
@@ -1743,18 +1719,14 @@ function EvidenceTypesSubPanel({ curriculumId }) {
                     <p style={{ margin: "0 0 7px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>Used In</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                       {usedIn.map((at) => {
-                        const ew   = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === e.id);
-                        const col  = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
-                        const minR = ew?.minRequirement;
+                        const ew  = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === e.id);
+                        const col = BEHAVIOR_COLORS[at.behaviorType] || "#6B7280";
                         return (
                           <div key={at.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "8px", background: `${col}08`, border: `1px solid ${col}18` }}>
                             <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: col, flexShrink: 0 }} />
                             <span style={{ fontSize: "12px", fontWeight: "600", color: col, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {at.name}
                             </span>
-                            {minR != null && minR > 0 && (
-                              <span style={{ fontSize: "10px", color: "#9CA3AF", flexShrink: 0 }}>min {minR}%</span>
-                            )}
                             <span style={{ fontSize: "12px", fontWeight: "800", color: col, flexShrink: 0 }}>
                               {ew?.contribution ?? 0}%
                             </span>
@@ -1781,7 +1753,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
   const { data: evidences = [], isLoading: evLoading } = useEvidenceTypes(curriculumId);
   const { mutate: saveGlobal, isPending: saving }         = useUpdateGlobalScoring(curriculumId);
 
-  // typeConfigs: { [atId]: { [etId]: { selected: bool, contribution, minRequirement } } }
+  // typeConfigs: { [atId]: { [etId]: { selected: bool, contribution } } }
   const [typeConfigs,    setTypeConfigs]    = useState({});
   const [typeWeights,    setTypeWeights]    = useState({});
   const [isDirty,        setIsDirty]        = useState(false);
@@ -1797,14 +1769,13 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
     types.forEach((at) => {
       const slot = {};
       evidences.forEach((et) => {
-        slot[et.id] = { selected: false, contribution: et.defaultContribution ?? 0, minRequirement: null };
+        slot[et.id] = { selected: false, contribution: et.defaultContribution ?? 0 };
       });
       (at.evidenceWeights || []).forEach((ew) => {
         if (slot[ew.evidenceTypeId]) {
           slot[ew.evidenceTypeId] = {
-            selected:       true,
-            contribution:   ew.contribution,
-            minRequirement: ew.minRequirement,
+            selected:     true,
+            contribution: ew.contribution,
           };
         }
       });
@@ -1821,7 +1792,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
     const et = evidences.find((e) => e.id === etId);
     setTypeConfigs((prev) => {
       const slot = prev[atId] || {};
-      const cur  = slot[etId] || { selected: false, contribution: et?.defaultContribution ?? 0, minRequirement: null };
+      const cur  = slot[etId] || { selected: false, contribution: et?.defaultContribution ?? 0 };
       const nowOn = !cur.selected;
       return { ...prev, [atId]: { ...slot, [etId]: { ...cur, selected: nowOn, contribution: nowOn ? (cur.contribution || (et?.defaultContribution ?? 0)) : 0 } } };
     });
@@ -1832,14 +1803,6 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
     setTypeConfigs((prev) => {
       const slot = prev[atId] || {};
       return { ...prev, [atId]: { ...slot, [etId]: { ...slot[etId], contribution: Math.min(100, Math.max(0, Number(val) || 0)) } } };
-    });
-    setIsDirty(true);
-  }
-
-  function setMinReqOverride(atId, etId, val) {
-    setTypeConfigs((prev) => {
-      const slot = prev[atId] || {};
-      return { ...prev, [atId]: { ...slot, [etId]: { ...slot[etId], minRequirement: val === "" ? null : Math.min(100, Math.max(0, Number(val) || 0)) } } };
     });
     setIsDirty(true);
   }
@@ -1879,7 +1842,6 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
         .map(([etId, v]) => ({
           evidenceTypeId: etId,
           contribution:   v.contribution,
-          minRequirement: v.minRequirement,
         })),
     }));
     setIsDirty(false);
@@ -1973,9 +1935,8 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
               {/* Evidence rows */}
               <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "6px", background: "#fff" }}>
                 {evidences.map((et) => {
-                  const slot = typeConfigs[at.id]?.[et.id] || { selected: false, contribution: et.defaultContribution ?? 0, minRequirement: null };
+                  const slot = typeConfigs[at.id]?.[et.id] || { selected: false, contribution: et.defaultContribution ?? 0 };
                   const isOn = slot.selected;
-                  const minR = slot.minRequirement;
                   return (
                     <div key={et.id} style={{
                       borderRadius: "10px", overflow: "hidden",
@@ -2015,24 +1976,6 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                           <span style={{ fontSize: "11px", color: "#D1D5DB", fontWeight: "500" }}>not assigned</span>
                         )}
                       </div>
-                      {/* Min requirement row — only when selected */}
-                      {isOn && (
-                        <div style={{ padding: "0 14px 10px 43px", display: "flex", alignItems: "center", gap: "10px", borderTop: `1px solid ${col}12` }}>
-                          <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600" }}>Min passing score</span>
-                          <div style={{ position: "relative" }}>
-                            <input className="cp-input" type="number" min="0" max="100"
-                              placeholder={et.minRequirement != null ? `${et.minRequirement}` : "0"}
-                              style={{ width: "76px", boxSizing: "border-box", padding: "4px 24px 4px 10px", fontSize: "12px", borderColor: "#E5E7EB" }}
-                              value={minR == null ? "" : minR}
-                              onChange={(e) => setMinReqOverride(at.id, et.id, e.target.value)}
-                            />
-                            <span style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#9CA3AF", pointerEvents: "none" }}>%</span>
-                          </div>
-                          {et.minRequirement != null && (
-                            <span style={{ fontSize: "11px", color: "#C4C9D4" }}>default: {et.minRequirement}%</span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -2172,14 +2115,12 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
                   {/* Evidence rows */}
                   <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
                     {typeEvs.map(([etId, v]) => {
-                      const et   = evidences.find((e) => e.id === etId);
-                      const minR = v.minRequirement != null ? v.minRequirement : (et?.minRequirement ?? 0);
+                      const et = evidences.find((e) => e.id === etId);
                       return (
                         <div key={etId}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
                             <span style={{ fontSize: "11px", fontWeight: "600", color: "#374151" }}>{et?.name || etId}</span>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              {minR > 0 && <span style={{ fontSize: "10px", color: "#9CA3AF" }}>min {minR}%</span>}
                               <span style={{ fontSize: "12px", fontWeight: "800", color: col }}>{v.contribution}%</span>
                             </div>
                           </div>

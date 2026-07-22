@@ -11,6 +11,7 @@ import {
   useDeleteSession,
   useCourseCompetencies,
   useCourseLearningAreas,
+  useCourseCurricula,
   useModules,
   useCreateModule,
   useUpdateModule,
@@ -442,6 +443,7 @@ export default function CourseViewPage() {
   const { data: modules = [] } = useModules(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
   const { data: learningAreas = [] } = useCourseLearningAreas(id);
+  const { data: linkedCurricula = [] } = useCourseCurricula(id);
   const attachedAssessmentMap = new Map();
   sessions.forEach((session) => {
     (session.attachedAssessments || []).forEach((assessment) => {
@@ -772,6 +774,30 @@ export default function CourseViewPage() {
                     </span>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Curricula</h3>
+            {linkedCurricula.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                Not attached to any curriculum yet — attach it from the curriculum's own page.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {linkedCurricula.map((cur) => (
+                  <Link
+                    key={cur.id}
+                    to={`/curriculum/${cur.id}/view`}
+                    style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "8px 10px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", textDecoration: "none" }}
+                  >
+                    <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#25476a" }}>{cur.name}</span>
+                    {(cur.framework || cur.academicYear) && (
+                      <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{[cur.framework, cur.academicYear].filter(Boolean).join(" · ")}</span>
+                    )}
+                  </Link>
+                ))}
               </div>
             )}
           </div>

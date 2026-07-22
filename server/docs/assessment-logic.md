@@ -52,7 +52,6 @@ Evidence types are the raw assessment methods (Quizzes, Assignments, Projects, P
 | Field | Description |
 |---|---|
 | `defaultContribution` | Default % weight when added to an assessment type |
-| `minRequirement` | Default minimum score a learner must achieve on this evidence — actively read by the scoring engine (§4) |
 | `minItemCount` | Minimum number of this evidence type expected in a course (e.g. minimum quizzes to complete). Reference/data-capture only — **not** read by the scoring engine, since one evidence type can be reused across courses with different item counts |
 
 Each evidence type is assigned to an assessment type via an `evidenceWeights` entry. The `contribution` values across all included evidence types in one assessment type **must sum to exactly 100%**.
@@ -70,9 +69,7 @@ weighted_score = (learner_score × contribution) / 100
 final_score    = sum of all weighted_scores
 ```
 
-Also flags any evidence where the learner scored below `minRequirement`.
-
-**Returns:** `{ finalScore, breakdown[], belowReq[] }`
+**Returns:** `{ finalScore, breakdown[] }`
 
 ---
 
@@ -136,8 +133,6 @@ allCompetenciesMet  = every competency.thresholdMet === true
 |---|---|
 | `behaviorType === "diagnostic"` | Placement result only, no gate applied |
 | `allCompetenciesMet === false` AND `summative` | `cannot_progress` — learner cannot advance |
-| Evidence below `minRequirement` AND `summative` | `cannot_progress` |
-| Evidence below `minRequirement` AND `formative` | `below_requirement` warning |
 | `allCompetenciesMet === true` | `passed` — learner can progress |
 
 The gate enforces that a learner must demonstrate **all** defined competencies above threshold — not just an average score — before they are considered ready to progress.
@@ -166,9 +161,8 @@ Thresholds are set per-competency by curriculum designers and can be updated ind
 {
   "finalScore": 74.5,
   "breakdown": [
-    { "evidenceTypeId": "...", "name": "Quizzes", "score": 80, "contribution": 40, "weighted": 32, "minRequirement": 50, "belowMin": false }
+    { "evidenceTypeId": "...", "name": "Quizzes", "score": 80, "contribution": 40, "weighted": 32 }
   ],
-  "belowRequirement": [],
   "band": { "id": "...", "name": "Creator", "minScore": 60, "maxScore": 74 },
   "behaviorType": "summative",
   "outcome": { "type": "passed", "label": "All competencies met — learner can progress" },
@@ -205,7 +199,7 @@ Body: { "evidenceScores": [{ "evidenceTypeId": "uuid", "score": 80 }] }
 | File | Purpose |
 |---|---|
 | `server/data/assessment-types.json` | Assessment type definitions + evidenceWeights + competencyMappings |
-| `server/data/evidence-types.json` | Evidence type definitions + defaultContribution + minRequirement |
+| `server/data/evidence-types.json` | Evidence type definitions + defaultContribution + minItemCount |
 | `server/data/competencies.json` | Competency definitions + minimumThreshold |
 | `server/data/performance-bands.json` | Band definitions + minScore + maxScore |
 | `server/data/progress-levels.json` | Level definitions + minScore + maxScore |

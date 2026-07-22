@@ -12,34 +12,28 @@ const { roundTo1Decimal } = require("../../../shared/utils/helpers");
  *
  * @param {Array<{evidenceTypeId, score}>} evidenceScores  Learner scores per evidence
  * @param {Array}                          evidenceConfig   Assessment type's evidenceWeights array
- * @returns {{ finalScore, breakdown, belowReq }}
+ * @returns {{ finalScore, breakdown }}
  */
 function runAssessmentEngine(evidenceScores, evidenceConfig) {
   let finalScore = 0;
   const breakdown = [];
-  const belowReq  = [];
 
   for (const cfg of evidenceConfig) {
     const entry   = evidenceScores.find((s) => s.evidenceTypeId === cfg.evidenceTypeId);
     const score   = Math.min(100, Math.max(0, entry ? Number(entry.score) : 0));
     const weighted = Math.round((score * cfg.contribution) / 100 * 10) / 10;
-    const minReq  = cfg.minRequirement != null ? cfg.minRequirement : 0;
 
     finalScore += weighted;
 
-    const row = {
+    breakdown.push({
       evidenceTypeId: cfg.evidenceTypeId,
       score,
       contribution: cfg.contribution,
       weighted,
-      minRequirement: minReq,
-      belowMin: score < minReq,
-    };
-    breakdown.push(row);
-    if (row.belowMin) belowReq.push(row);
+    });
   }
 
-  return { finalScore: Math.round(finalScore * 10) / 10, breakdown, belowReq };
+  return { finalScore: Math.round(finalScore * 10) / 10, breakdown };
 }
 
 /**
