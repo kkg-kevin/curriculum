@@ -20,6 +20,25 @@ const generateId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+// Derives a short uppercase code from a name's word initials (or the first few letters of a
+// single word), then disambiguates against codes already in use by appending "-2", "-3", etc.
+// Mirrors the client-side generator used by the create form (learningHub.schema.js's
+// generateHubCode) — needed here too since duplicateCourse has no separate form step to
+// generate one on.
+function generateCourseCode(name, existingCodes = []) {
+  const words = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "";
+  const base = (
+    words.length === 1 ? words[0].slice(0, 3) : words.map((w) => w[0]).join("").slice(0, 4)
+  ).toUpperCase();
+
+  const taken = new Set(existingCodes.filter(Boolean).map((c) => c.toUpperCase()));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
 // Cross-field check — zod validates each bound independently, but "max < min" can
 // only be caught once both values are known together.
 function assertValidAgeRange(ageMin, ageMax) {
@@ -117,6 +136,61 @@ const CourseService = {
     CourseLearningAreaLinkModel.deleteByCourseId(id);
     CourseCurriculumLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
+  },
+
+  // Deep-clones a course: the record itself, its learning-area/competency tags, and every
+  // module + session (fresh ids throughout, since sessions hold the actual authored content).
+  // Curriculum links are deliberately NOT copied — the duplicate starts unattached as a Draft,
+  // so it never silently double-books a curriculum the original is already used in. The admin
+  // decides where (if anywhere) the copy gets attached.
+  async duplicateCourse(id) {
+    const source = CourseModel.findById(id);
+    if (!source) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const existingCodes = CourseModel.findAll().map((c) => c.code).filter(Boolean);
+    const { id: _id, createdAt, updatedAt, code, status, ...rest } = source;
+    const newCourse = CourseModel.create({
+      ...rest,
+      name: source.name,
+      // Same name as the source, so generateCourseCode's own collision-suffix logic (already
+      // needed for any two courses that happen to share initials) naturally gives the copy a
+      // distinct code — no artificial "Copy" text needed in the name or the code.
+      code: generateCourseCode(source.name, existingCodes),
+      status: "draft",
+    });
+
+    CourseLearningAreaLinkModel.findByCourseId(id)
+      .forEach((l) => CourseLearningAreaLinkModel.link(newCourse.id, l.learningAreaId));
+    CourseCompetencyLinkModel.findByCourseId(id)
+      .forEach((l) => CourseCompetencyLinkModel.link(newCourse.id, l.competencyId));
+
+    const moduleIdMap = new Map();
+    ModuleModel.findByCourseId(id).forEach((m) => {
+      const { id: oldModuleId, courseId: _courseId, createdAt: _c, updatedAt: _u, ...moduleRest } = m;
+      const newModule = ModuleModel.create({ ...moduleRest, courseId: newCourse.id });
+      moduleIdMap.set(oldModuleId, newModule.id);
+    });
+
+    const regenerateItemIds = (items = []) => items.map((item) => ({ ...item, id: generateId() }));
+    const sessionsData = SessionModel.findByCourseId(id).map((s) => {
+      const { id: _sessionId, courseId: _courseId, createdAt: _c, updatedAt: _u, ...sessionRest } = s;
+      return {
+        ...sessionRest,
+        courseId: newCourse.id,
+        moduleId: s.moduleId ? (moduleIdMap.get(s.moduleId) || null) : null,
+        mainConcepts: regenerateItemIds(s.mainConcepts),
+        activities: regenerateItemIds(s.activities),
+        notes: regenerateItemIds(s.notes),
+        resources: regenerateItemIds(s.resources),
+      };
+    });
+    if (sessionsData.length > 0) SessionModel.createMany(sessionsData);
+
+    return newCourse;
   },
 
   /* ── Competencies (authored globally in Settings, tagged onto a course here) ── */

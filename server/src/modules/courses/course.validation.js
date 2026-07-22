@@ -2,6 +2,12 @@ const { z } = require("zod");
 
 const createCourseSchema = z.object({
   name:        z.string().min(1, "Course name is required"),
+  // Auto-generated client-side from the name (or server-side when duplicating) — never typed
+  // in directly. See generateCourseCode.
+  code:        z.string().max(20).regex(/^[A-Z0-9-]*$/i, "Only letters, numbers, and hyphens").default(""),
+  // New courses start as "draft" — an admin promotes to "active" when it's ready to be used
+  // (linked to curricula, assigned to learners), or "archived" to retire it without deleting it.
+  status:      z.enum(["draft", "active", "archived"]).default("draft"),
   description: z.string().optional().default(""),
   coverImage:  z.string().nullable().optional().default(null),
   ageMin:      z.number().int().min(0).max(120).nullable().optional().default(null),

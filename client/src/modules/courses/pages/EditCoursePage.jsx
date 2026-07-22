@@ -29,6 +29,8 @@ export default function EditCoursePage() {
     if (course && linkedLearningAreas) {
       reset({
         name: course.name || "",
+        code: course.code || "",
+        status: course.status || "draft",
         description: course.description || "",
         coverImage: course.coverImage || null,
         ageMin: course.ageMin ?? "",

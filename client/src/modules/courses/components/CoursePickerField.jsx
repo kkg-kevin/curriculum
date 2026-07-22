@@ -105,7 +105,12 @@ export default function CoursePickerField({ value = [], onChange, color = "#2547
   const selected = value
     .map((id) => allCourses.find((c) => c.id === id))
     .filter(Boolean);
-  const available = allCourses.filter((c) => !value.includes(c.id));
+  // Only Active courses are offered for new picks — Draft ones aren't ready yet and Archived
+  // ones are retired. Courses saved before status existed have no status field at all, which
+  // counts as Active (they were already in real use). Already-selected courses stay shown via
+  // `selected` above regardless of status, so a course that's since moved to Draft/Archived
+  // doesn't silently vanish from a tag it already has.
+  const available = allCourses.filter((c) => !value.includes(c.id) && (c.status || "active") === "active");
 
   const addCourse = (id) => onChange([...value, id]);
   const removeCourse = (id) => onChange(value.filter((x) => x !== id));
