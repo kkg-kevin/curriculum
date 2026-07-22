@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
+import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -246,10 +248,15 @@ const TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "learning-areas", label: "Learning Areas" },
   { key: "inventory", label: "Inventory" },
+  { key: "learning-hubs", label: "Learning Hubs" },
 ];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("competencies");
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    TABS.some((t) => t.key === requestedTab) ? requestedTab : "competencies"
+  );
 
   useEffect(() => {
     const el = document.createElement("style");
@@ -285,6 +292,7 @@ export default function SettingsPage() {
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
+        {activeTab === "learning-hubs" && <LearningHubsPanel />}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiChevronDown, FiAward, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
-import { locationApi as schoolApi } from "../../locations/services/locationApi";
+import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";

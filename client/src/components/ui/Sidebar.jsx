@@ -5,7 +5,7 @@ import LogoutButton from "./LogoutButton";
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const menuItems = [
     { name: "Dashboard", path: "/" },
-    { name: "Locations", path: "/locations" },
+    { name: "Learning Hubs", path: "/learning-hubs" },
     { name: "Curriculum", path: "/curriculum" },
     { name: "Learners", path: "/learners" },
     { name: "Teachers", path: "/teachers" },

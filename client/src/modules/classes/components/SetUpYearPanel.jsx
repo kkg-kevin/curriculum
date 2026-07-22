@@ -79,7 +79,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
           {isAdmin ? (
             <button
               type="button"
-              onClick={() => navigate(`/locations/${school.id}/edit`)}
+              onClick={() => navigate(`/settings/learning-hubs/${school.id}/edit`)}
               style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, padding: 0 }}
             >
               Assign one →

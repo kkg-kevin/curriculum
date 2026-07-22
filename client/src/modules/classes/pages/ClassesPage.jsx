@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBookOpen } from "react-icons/fi";
-import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useAllClassesQuery } from "../hooks/useClasses";
-import SchoolPickerCard from "../../locations/components/SchoolPickerCard";
+import SchoolPickerCard from "../../learning-hubs/components/SchoolPickerCard";
 
 function SkeletonCard() {
   return (
@@ -22,7 +22,7 @@ function SkeletonCard() {
 
 export default function ClassesPage() {
   const navigate = useNavigate();
-  const { data: schoolsData, isLoading: schoolsLoading } = useAllLocationsQuery({ locationType: "school" });
+  const { data: schoolsData, isLoading: schoolsLoading } = useAllLearningHubsQuery({ hubType: "school" });
   const { data: classesData, isLoading: classesLoading } = useAllClassesQuery();
 
   const schools = schoolsData?.data || [];

@@ -1,7 +1,7 @@
 ﻿import { useEffect } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
-import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
 
 const S = {
@@ -23,7 +23,7 @@ export default function LearnerForm({ lockedSchoolId = "" }) {
 
   const schoolId = watch("schoolId");
 
-  const { data: schoolsData } = useAllLocationsQuery({ locationType: "school" });
+  const { data: schoolsData } = useAllLearningHubsQuery({ hubType: "school" });
   const schools = schoolsData?.data || [];
   const lockedSchool = lockedSchoolId ? schools.find((s) => s.id === lockedSchoolId) : null;
 

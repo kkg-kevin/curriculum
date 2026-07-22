@@ -34,8 +34,8 @@ const AuthService = {
     return this.createUser({ name, email, password, role });
   },
 
-  // Used by location.controller.js when an admin sets/resets a school-type location's portal
-  // password from the location form itself. If an account with that email already exists, its
+  // Used by learning-hub.controller.js when an admin sets/resets a school-type learning hub's
+  // portal password from the learning hub form itself. If an account with that email already exists, its
   // password is reset (only when the role matches — never silently repurpose an unrelated
   // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
   // account is created, same as self-signup.

@@ -11,8 +11,8 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
 
   const pageTitles = {
     "/": "Dashboard",
-    "/locations": "Locations",
-    "/locations/create": "Add Location",
+    "/learning-hubs": "Learning Hubs",
+    "/settings/learning-hubs/create": "Add Learning Hub",
     "/curriculum": "Curriculum",
     "/curriculum/create": "Create Curriculum",
     "/learners": "Learners",
@@ -56,10 +56,10 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
       return "Learners";
     if (pathname.startsWith("/school-portal/curriculum/"))
       return "Curriculum";
-    if (pathname.startsWith("/locations/") && pathname.endsWith("/edit"))
-      return "Edit Location";
-    if (pathname.startsWith("/locations/") && pathname.endsWith("/view"))
-      return "Location View";
+    if (pathname.startsWith("/settings/learning-hubs/") && pathname.endsWith("/edit"))
+      return "Edit Learning Hub";
+    if (pathname.startsWith("/learning-hubs/") && pathname.endsWith("/view"))
+      return "Learning Hub View";
     return "Dashboard";
   };
 

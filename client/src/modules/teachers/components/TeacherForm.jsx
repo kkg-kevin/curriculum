@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { TEACHER_STATUSES } from "../schemas/teacher.schema";
-import { useAllLocationsQuery } from "../../locations/hooks/useLocation";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -92,7 +92,7 @@ function PasswordField() {
 
 export default function TeacherForm({ lockedSchoolId = "" }) {
   const { register, formState: { errors } } = useFormContext();
-  const { data: schoolsData } = useAllLocationsQuery({ locationType: "school" });
+  const { data: schoolsData } = useAllLearningHubsQuery({ hubType: "school" });
   const schools = schoolsData?.data || [];
   const lockedSchool = lockedSchoolId ? schools.find((s) => s.id === lockedSchoolId) : null;
 

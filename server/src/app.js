@@ -8,7 +8,7 @@ const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
 const competencyRoutes = require("./modules/settings/competencies/competency.routes");
 const learningAreaRoutes = require("./modules/settings/learning-areas/learning-area.routes");
 const inventoryRoutes = require("./modules/settings/inventory/inventory.routes");
-const locationRoutes = require("./modules/locations/location.routes");
+const learningHubRoutes = require("./modules/learning-hubs/learning-hub.routes");
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
@@ -42,15 +42,15 @@ app.use("/api/auth", authRoutes);
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
 // non-admin reads a school inherits (its curriculum, and that curriculum's current courses)
 // before the router-wide admin gate — attachOwnRecords is mounted here too so those routes can
-// verify the requested curriculum is actually the caller's own. Locations/teachers/classes/
-// learners are read (and, for "school"-type locations, written) by more than one role, so their
+// verify the requested curriculum is actually the caller's own. Learning hubs/teachers/classes/
+// learners are read (and, for "school"-type hubs, written) by more than one role, so their
 // own routes files apply per-method role checks plus attachOwnRecords-based ownership scoping —
 // a school/teacher/learner account can only ever touch its own school's data, never another's.
 app.use("/api/curricula", protect, attachOwnRecords, curriculumRoutes);
 app.use("/api/competencies", protect, authorize("admin"), competencyRoutes);
 app.use("/api/learning-areas", protect, authorize("admin"), learningAreaRoutes);
 app.use("/api/inventory", protect, authorize("admin"), inventoryRoutes);
-app.use("/api/locations", protect, attachOwnRecords, locationRoutes);
+app.use("/api/learning-hubs", protect, attachOwnRecords, learningHubRoutes);
 app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
