@@ -10,6 +10,8 @@ import { courseApi } from "../services/courseApi";
 
 const DEFAULT_VALUES = {
   name: "",
+  code: "",
+  status: "draft",
   description: "",
   coverImage: null,
   ageMin: "",
@@ -128,7 +130,7 @@ export default function CreateCoursePage() {
 
       <FormProvider {...methods}>
         <form id="create-course-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <CourseForm />
+          <CourseForm autoGenerateCode />
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px", marginTop: "16px" }}>
             <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Modules & Sessions</h3>

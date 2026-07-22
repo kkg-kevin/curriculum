@@ -5,6 +5,7 @@ const {
   getCourseById,
   updateCourse,
   deleteCourse,
+  duplicateCourse,
   getCourseCompetencies,
   linkCompetency,
   unlinkCompetency,
@@ -37,6 +38,7 @@ router.route("/:id")
   .get(authorize("admin", "teacher", "learner", "school"), getCourseById)
   .put(authorize("admin"), updateCourse)
   .delete(authorize("admin"), deleteCourse);
+router.route("/:id/duplicate").post(authorize("admin"), duplicateCourse);
 
 // Competencies — this course's tagged competencies (authored globally under /api/competencies)
 router.route("/:id/competencies/links").get(authorize("admin"), getCourseCompetencies).post(authorize("admin"), linkCompetency);

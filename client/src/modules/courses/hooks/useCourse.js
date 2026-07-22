@@ -71,6 +71,20 @@ export function useDeleteCourse() {
   });
 }
 
+export function useDuplicateCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: courseApi.duplicate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.all });
+      toast.success("Course duplicated");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to duplicate course");
+    },
+  });
+}
+
 /* ── Competencies (authored globally in Settings, tagged onto a course here) ── */
 
 export function useCourseCompetencies(courseId) {

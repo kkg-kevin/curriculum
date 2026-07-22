@@ -39,6 +39,11 @@ const deleteCourse = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+const duplicateCourse = asyncHandler(async (req, res) => {
+  const course = await CourseService.duplicateCourse(req.params.id);
+  res.status(201).json({ success: true, data: course });
+});
+
 /* ── Competencies ────────────────────────────────────────────────────────── */
 
 const getCourseCompetencies = asyncHandler(async (req, res) => {
@@ -150,6 +155,7 @@ module.exports = {
   getCourseById,
   updateCourse,
   deleteCourse,
+  duplicateCourse,
   getCourseCompetencies,
   linkCompetency,
   unlinkCompetency,

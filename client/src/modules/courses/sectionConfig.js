@@ -16,6 +16,32 @@ export function sessionLabel(session, index) {
   return session.title ? `Session ${index + 1}: ${session.title}` : `Session ${index + 1}`;
 }
 
+// Numbers each session relative to its own module — Module 1's sessions are 1..N, Module 2's
+// restart at 1, etc. — rather than one continuous count across the whole course. Sessions with
+// no real module (moduleId null, or pointing at a module that's since been deleted) are grouped
+// together too so they still number sanely instead of every one showing "Session 1".
+// Returns a Map<sessionId, { index, total }> (index is 0-based; total is that module's session count).
+export function buildModuleLocalSessionIndex(sessions, modules = []) {
+  const moduleIds = new Set(modules.map((m) => m.id));
+  const groupKeyOf = (s) => (s.moduleId && moduleIds.has(s.moduleId)) ? s.moduleId : null;
+
+  const totals = new Map();
+  sessions.forEach((s) => {
+    const key = groupKeyOf(s);
+    totals.set(key, (totals.get(key) || 0) + 1);
+  });
+
+  const counts = new Map();
+  const result = new Map();
+  sessions.forEach((s) => {
+    const key = groupKeyOf(s);
+    const index = counts.get(key) || 0;
+    counts.set(key, index + 1);
+    result.set(s.id, { index, total: totals.get(key) });
+  });
+  return result;
+}
+
 // Main Concepts, Activity, and Notes are repeatable lists, not single fields — each holds its own
 // singular label (used both as the fallback item name and in "+ Add X" buttons). Ice Breaker and
 // Wrap Activity live as Notes entries — see NOTE_QUICK_PICKS below.

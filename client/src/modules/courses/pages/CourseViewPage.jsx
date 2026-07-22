@@ -15,13 +15,14 @@ import {
   useCreateModule,
   useUpdateModule,
   useDeleteModule,
+  useDuplicateCourse,
 } from "../hooks/useCourse";
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import AddModuleModal from "../components/AddModuleModal";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { SECTIONS, sessionLabel, sectionLinkPath } from "../sectionConfig";
+import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 import { normalizeActivityItems } from "../utils/sessionActivity";
 
@@ -34,6 +35,21 @@ function formatAgeRange(min, max) {
   if (min == null && max == null) return null;
   if (min != null && max != null) return min === max ? `${min}` : `${min}–${max}`;
   return min != null ? `${min}+` : `Up to ${max}`;
+}
+
+const STATUS_BADGE = {
+  draft:    { bg: "#fff8e6", color: "#b8860b", border: "#fcd97a", label: "Draft" },
+  active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
+  archived: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Archived" },
+};
+
+function StatusBadge({ status }) {
+  const s = STATUS_BADGE[status] || STATUS_BADGE.active;
+  return (
+    <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1.5px solid ${s.border}`, whiteSpace: "nowrap" }}>
+      {s.label}
+    </span>
+  );
 }
 
 const SESSION_DEFAULT_VALUES = {
@@ -84,12 +100,17 @@ function NavArrow({ direction }) {
   );
 }
 
-function SessionModal({ courseId, sessions, modules, startSessionId, onClose }) {
+function SessionModal({ courseId, sessions, modules, sessionPosition, startSessionId, onClose }) {
   const { mutate: updateSession, isPending: saving } = useUpdateSession(courseId);
   const [currentId, setCurrentId] = useState(startSessionId);
 
+  // Prev/Next still moves seamlessly across module boundaries (closing the modal at the edge
+  // of a module would be a real navigation regression) — only the displayed count is
+  // module-local, via sessionPosition.
   const index = sessions.findIndex((s) => s.id === currentId);
   const current = index !== -1 ? sessions[index] : null;
+  const position = current ? sessionPosition.get(current.id) : null;
+  const moduleName = current?.moduleId ? modules.find((m) => m.id === current.moduleId)?.name : null;
 
   const methods = useForm({
     resolver: zodResolver(sessionSchema),
@@ -157,7 +178,9 @@ function SessionModal({ courseId, sessions, modules, startSessionId, onClose }) 
             </button>
             <div>
               <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#0F2645" }}>
-                {current ? `Session ${index + 1} of ${sessions.length}` : "Loading…"}
+                {current
+                  ? (moduleName ? `${moduleName} — Session ${position.index + 1} of ${position.total}` : `Session ${position.index + 1} of ${position.total}`)
+                  : "Loading…"}
               </h2>
               {saving && <p style={{ margin: "1px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Saving…</p>}
             </div>
@@ -322,7 +345,7 @@ function AddSessionControl({ onAdd, adding }) {
 }
 
 function ModuleGroup({
-  courseId, courseModule, sessions, sessionIndex, expandedIds, onToggleSession, onEditSession,
+  courseId, courseModule, sessions, sessionPosition, expandedIds, onToggleSession, onEditSession,
   onAddSession, addingSession, expanded, onToggleExpand,
 }) {
   const { mutate: updateModule } = useUpdateModule(courseId);
@@ -385,7 +408,7 @@ function ModuleGroup({
                 key={session.id}
                 courseId={courseId}
                 session={session}
-                index={sessionIndex.get(session.id)}
+                index={sessionPosition.get(session.id)?.index ?? 0}
                 expanded={expandedIds.has(session.id)}
                 onToggle={() => onToggleSession(session.id)}
                 onEdit={onEditSession}
@@ -437,12 +460,13 @@ export default function CourseViewPage() {
   const { mutateAsync: createSessionsBulkAsync } = useCreateSessionsBulk();
   const { mutateAsync: createModuleAsync } = useCreateModule(id);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
+  const { mutate: duplicateCourse, isPending: isDuplicating } = useDuplicateCourse();
 
   const allExpanded = sessions.length > 0 && expandedIds.size === sessions.length && collapsedModuleIds.size === 0;
 
-  // Sessions keep one continuous "Session 1..N" numbering across the whole course
-  // regardless of which module (if any) they're grouped under.
-  const sessionIndex = new Map(sessions.map((s, i) => [s.id, i]));
+  // Each module numbers its own sessions starting at 1 (Module 2's first session is "Session 1",
+  // not a continuation of Module 1's count) — see buildModuleLocalSessionIndex.
+  const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
   const ungroupedSessions = sessions.filter((s) => !s.moduleId || !modules.some((m) => m.id === s.moduleId));
 
   // Every session belongs to a module — no "ungrouped" sessions. A session added without an
@@ -519,20 +543,34 @@ export default function CourseViewPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <button
-        type="button"
-        onClick={() => navigate("/courses")}
-        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", marginBottom: "16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-      >
-        ← Back to Courses
-      </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <button
+          type="button"
+          onClick={() => navigate("/courses")}
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          ← Back to Courses
+        </button>
+        <button
+          type="button"
+          disabled={isDuplicating}
+          onClick={() => duplicateCourse(id, { onSuccess: (copy) => navigate(`/courses/${copy.id}/view`) })}
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "20px", color: "#374151", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isDuplicating ? "not-allowed" : "pointer", opacity: isDuplicating ? 0.6 : 1 }}
+        >
+          {isDuplicating ? "Duplicating…" : "Duplicate"}
+        </button>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "20px", alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "12px" }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", color: "#111827" }}>{course.name}</h1>
+                <StatusBadge status={course.status} />
+                {course.code && (
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#9CA3AF" }}>{course.code}</span>
+                )}
                 {formatAgeRange(course.ageMin, course.ageMax) && (
                   <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1.5px solid #a8d5ee", whiteSpace: "nowrap" }}>
                     Ages {formatAgeRange(course.ageMin, course.ageMax)}
@@ -601,7 +639,7 @@ export default function CourseViewPage() {
                   courseId={id}
                   courseModule={courseModule}
                   sessions={sessions.filter((s) => s.moduleId === courseModule.id)}
-                  sessionIndex={sessionIndex}
+                  sessionPosition={sessionPosition}
                   expandedIds={expandedIds}
                   onToggleSession={toggleSession}
                   onEditSession={(s) => setModalSessionId(s.id)}
@@ -619,7 +657,7 @@ export default function CourseViewPage() {
                       key={session.id}
                       courseId={id}
                       session={session}
-                      index={sessionIndex.get(session.id)}
+                      index={sessionPosition.get(session.id)?.index ?? 0}
                       expanded={expandedIds.has(session.id)}
                       onToggle={() => toggleSession(session.id)}
                       onEdit={(s) => setModalSessionId(s.id)}
@@ -745,6 +783,7 @@ export default function CourseViewPage() {
           courseId={id}
           sessions={sessions}
           modules={modules}
+          sessionPosition={sessionPosition}
           startSessionId={modalSessionId}
           onClose={() => setModalSessionId(null)}
         />
