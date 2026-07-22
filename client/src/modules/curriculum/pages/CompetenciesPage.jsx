@@ -1582,11 +1582,12 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   const [category,    setCategory]   = useState("");
   const [defContrib,  setDefContrib] = useState("0");
   const [minReq,      setMinReq]     = useState("0");
+  const [minCount,    setMinCount]   = useState("0");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMode("add"); }
-  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setCategory(e.category || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMinCount("0"); setMode("add"); }
+  function openEdit(e){ setEdit(e); setName(e.name); setDesc(e.description || ""); setCategory(e.category || ""); setDefContrib(String(e.defaultContribution ?? 0)); setMinReq(String(e.minRequirement ?? 0)); setMinCount(String(e.minItemCount ?? 0)); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
@@ -1595,9 +1596,10 @@ function EvidenceTypesSubPanel({ curriculumId }) {
       category: category || null,
       defaultContribution: Math.min(100, Math.max(0, Number(defContrib) || 0)),
       minRequirement:      Math.min(100, Math.max(0, Number(minReq) || 0)),
+      minItemCount:        Math.max(0, Math.floor(Number(minCount) || 0)),
     };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setCategory(""); setDefContrib("0"); setMinReq("0"); setMinCount("0"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1653,6 +1655,18 @@ function EvidenceTypesSubPanel({ curriculumId }) {
           </div>
         </div>
         <div>
+          <label className="cp-field-label">Minimum Count</label>
+          <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>
+            {name.trim()
+              ? `Minimum number of "${name.trim()}" expected in a course. Reference only — not yet enforced by scoring.`
+              : "Minimum number of this evidence type expected in a course (e.g. minimum quizzes to complete). Reference only — not yet enforced by scoring."}
+          </p>
+          <input className="cp-input" type="number" min="0" step="1" style={{ width: "100%", boxSizing: "border-box" }}
+            value={minCount}
+            onChange={(e) => setMinCount(e.target.value)}
+          />
+        </div>
+        <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
           <textarea className="cp-textarea" rows={2} placeholder="Briefly describe what this evidence type involves…" value={desc} maxLength={500} onChange={(e) => setDesc(e.target.value)} />
           <div className="cp-char-count">{desc.length} / 500</div>
@@ -1696,6 +1710,11 @@ function EvidenceTypesSubPanel({ curriculumId }) {
                   {e.minRequirement > 0 && (
                     <span style={{ fontSize: "10px", fontWeight: "600", color: "#D97706", background: "#D9770615", padding: "2px 7px", borderRadius: "20px" }}>
                       {e.minRequirement}% min
+                    </span>
+                  )}
+                  {e.minItemCount > 0 && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", color: "#059669", background: "#05966915", padding: "2px 7px", borderRadius: "20px" }}>
+                      min {e.minItemCount} item{e.minItemCount !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
