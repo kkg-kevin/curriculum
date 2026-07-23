@@ -6,12 +6,10 @@ import {
   School as SchoolIcon,
   SchoolOutlined as SchoolOutlinedIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade, useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
 
@@ -38,36 +36,24 @@ function KpiTile({ icon, num, label }) {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
-  const { data: teachersData, isLoading: teacherLoading } = useQuery({
-    queryKey: ["teachers", "byEmail", user?.email],
-    queryFn: () => teacherApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const teacher = teachersData?.data?.[0] || null;
-
-  const { data: school, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "detail", teacher?.schoolId],
-    queryFn: () => schoolApi.getById(teacher.schoolId),
-    enabled: !!teacher?.schoolId,
-  });
-
-  const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
+  const { data: curriculum } = useCurriculumQuery(selectedHub?.curriculumId);
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
-    queryKey: ["classes", "bySchool", teacher?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
-    enabled: !!teacher?.schoolId,
+    queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
+    queryFn: () => classApi.getAll({ classTeacherId: teacher.id, schoolId: selectedHubId }),
+    enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myClasses = classesData?.data || [];
   const gradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
 
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
-  const { data: allMyCourses }   = useCurriculumCurrentCoursesForGrades(school?.curriculumId, gradeNames);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeNames);
+  const { data: allMyCourses }   = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeNames);
 
   const totalLearners = myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0);
 
-  const isLoading = teacherLoading || (!!teacher && (schoolLoading || classesLoading));
+  const isLoading = teacherLoading || (!!teacher && classesLoading);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -78,9 +64,9 @@ export default function DashboardPage() {
             Welcome back{user?.name ? `, ${user.name}` : ""}
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
-            {school ? (
+            {selectedHub ? (
               <>
-                {school.name}
+                {selectedHub.name}
                 {curriculum && <> · {curriculum.name}</>}
                 {curriculum?.publishedAcademicYear && <> · {curriculum.publishedAcademicYear}</>}
               </>

@@ -3,10 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
 import { useClassQuery, useUpdateClass } from "../hooks/useClasses";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { teacherApi } from "../../teachers/services/teacherApi";
+import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -42,12 +41,8 @@ export default function EditClassPage() {
 
   const { data: curriculum } = useCurriculumQuery(cls?.curriculumId);
 
-  const { data: teachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", cls?.schoolId],
-    queryFn:  () => teacherApi.getAll({ schoolId: cls.schoolId }),
-    enabled:  !!cls?.schoolId,
-  });
-  const activeTeachers = (teachersData?.data || []).filter((t) => t.status === "active");
+  const { data: hubTeachers } = useHubTeachersQuery(cls?.schoolId);
+  const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
 
   const { register, control, handleSubmit, reset, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(editSchema),
@@ -142,7 +137,7 @@ export default function EditClassPage() {
             <hr style={S.divider} />
 
             <div style={S.field}>
-              <label style={S.label}>Class Teacher</label>
+              <label style={S.label}>Class Tech Educator</label>
               <Controller
                 name="classTeacherId"
                 control={control}

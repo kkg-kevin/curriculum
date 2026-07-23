@@ -1,0 +1,192 @@
+[
+  {
+    "id": "28ef2de8-97c6-4e40-bb78-4371ecbf7f0d",
+    "learnerId": "54a57ad0-0ac1-4b06-b897-d5b7c6870736",
+    "hubId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
+    "classId": "30225afe-9c19-49c7-a639-597007a71a4c",
+    "admissionNumber": "DS-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.525Z",
+    "updatedAt": "2026-07-23T06:50:23.527Z"
+  },
+  {
+    "id": "9011db9f-de52-4e79-b1c1-8fc5a7e95627",
+    "learnerId": "8c2d4a71-e305-4f97-b260-1a3e5c8d0f92",
+    "hubId": "93dcef9a-d765-4093-8400-78df6e45bfe4",
+    "classId": "5c3a7e91-d284-4f06-b750-2e8d1a3c9b47",
+    "admissionNumber": "USIU-A-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.532Z",
+    "updatedAt": "2026-07-23T06:50:23.532Z"
+  },
+  {
+    "id": "d84149b5-8efc-4521-b544-d097a6c6ef76",
+    "learnerId": "3e7f1b04-a296-4d53-9e80-5c2a8d4f1b37",
+    "hubId": "93dcef9a-d765-4093-8400-78df6e45bfe4",
+    "classId": "5c3a7e91-d284-4f06-b750-2e8d1a3c9b47",
+    "admissionNumber": "USIU-A-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.534Z",
+    "updatedAt": "2026-07-23T06:50:23.534Z"
+  },
+  {
+    "id": "bc24c326-acde-428d-afa8-7a6aa997bccb",
+    "learnerId": "6a4c8e52-d179-4b30-8f15-9e1c3d7b2a04",
+    "hubId": "e3a14b52-8c76-4d19-b285-f9c032a6d71e",
+    "classId": "3f1c4a82-e705-4b69-8d24-9b3e6f1c5a08",
+    "admissionNumber": "BIS-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.537Z",
+    "updatedAt": "2026-07-23T06:50:23.537Z"
+  },
+  {
+    "id": "ac325de0-250b-4c44-896c-9d38a46a54f5",
+    "learnerId": "2f9e3d06-c481-4a75-b382-4d8c0e5f1a29",
+    "hubId": "7f2d9a41-3e85-4c67-b193-4d8a0f52c6b0",
+    "classId": "9a4d2b60-f318-4c85-a097-5e2c7d4b1f36",
+    "admissionNumber": "BRKH-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.538Z",
+    "updatedAt": "2026-07-23T06:50:23.538Z"
+  },
+  {
+    "id": "c615f7bf-26e4-4be8-a7a2-b7ba10974b30",
+    "learnerId": "7b1f5c83-e240-4d96-a071-8f3d2c4e9b50",
+    "hubId": "2c6e8b03-f174-4a95-8d27-1e93a7b4d520",
+    "classId": "4e7c0d31-a259-4f74-8b16-3f4a1e9c6d82",
+    "admissionNumber": "HLCR-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.540Z",
+    "updatedAt": "2026-07-23T06:50:23.540Z"
+  },
+  {
+    "id": "78be056f-6b48-40b3-957d-a02d8da0514f",
+    "learnerId": "4d8b0e27-f193-4c64-9a38-2e7f5b1d3c80",
+    "hubId": "9b4a7c12-5d3f-4e86-a041-b6c8d92e0f74",
+    "classId": "6b2f8a04-9d47-4e10-b583-1c6d3e8f2a95",
+    "admissionNumber": "GRNS-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.542Z",
+    "updatedAt": "2026-07-23T06:50:23.542Z"
+  },
+  {
+    "id": "6287ddfa-8bda-4ca7-8903-03f08ac28169",
+    "learnerId": "9e3c6d14-a058-4b82-8f50-7d2c9e4b1a36",
+    "hubId": "4d7f0e29-a136-4b57-8c94-2f0e5d817b3a",
+    "classId": "1d9c5b73-e480-4a62-8f17-7a3e0c4d8b29",
+    "admissionNumber": "PPNI-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.544Z",
+    "updatedAt": "2026-07-23T06:50:23.544Z"
+  },
+  {
+    "id": "2213d34d-5457-4e4f-b92e-9e209f1cf024",
+    "learnerId": "1a7f4e82-d396-4c50-b179-5e8a0d2c3f64",
+    "hubId": "4d7f0e29-a136-4b57-8c94-2f0e5d817b3a",
+    "classId": "8f3e1a46-b205-4c97-9d73-4b7a2e0c5f18",
+    "admissionNumber": "PPNI-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.546Z",
+    "updatedAt": "2026-07-23T06:50:23.546Z"
+  },
+  {
+    "id": "d1ca74ee-46ce-4cb7-9af6-e2e22876a5ed",
+    "learnerId": "5c0b9d38-f274-4e61-a403-9f1d5b8c2e07",
+    "hubId": "6a3c1f85-2d79-4e04-9b68-c7d4e0a5f392",
+    "classId": "2c6a9e53-d174-4b80-8f29-1d5c3e7a0f46",
+    "admissionNumber": "SAST-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.550Z",
+    "updatedAt": "2026-07-23T06:50:23.550Z"
+  },
+  {
+    "id": "9cc2f356-11ea-4f50-8b01-082afdf635ef",
+    "learnerId": "2d5f7a09-c183-4b94-8e26-3c8a4d1e6f50",
+    "hubId": "97dc8b3f-64da-448a-8dd6-6e2b5a884dc0",
+    "classId": "7d1b4f28-0c93-4e65-a372-6e8f5c2d0b41",
+    "admissionNumber": "DS-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.552Z",
+    "updatedAt": "2026-07-23T06:50:23.553Z"
+  },
+  {
+    "id": "620f750e-acce-432f-a4bc-d012d656006f",
+    "learnerId": "8a1e4c60-b392-4d75-9f08-6c3b7a0d2e41",
+    "hubId": "1e8b4c97-6a23-4f50-bd17-9e0c3d5a82f6",
+    "classId": "4a8e2c71-f306-4d94-b150-9c1a7f5e3b28",
+    "admissionNumber": "RSSR-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.554Z",
+    "updatedAt": "2026-07-23T06:50:23.555Z"
+  },
+  {
+    "id": "9c309979-ed10-47ff-9909-684765b5ce75",
+    "learnerId": "3f8c1d97-e450-4b23-a086-7e2f4d5c8b16",
+    "hubId": "3f7d2e84-b159-4a36-8c40-5f6a1d9b3e07",
+    "classId": "9f5b3d04-e218-4a76-c083-2f4e1a9d6c57",
+    "admissionNumber": "WPSK-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.556Z",
+    "updatedAt": "2026-07-23T06:50:23.556Z"
+  },
+  {
+    "id": "75eff12b-4c10-40dd-8bbe-ae0e001d9cdb",
+    "learnerId": "c65260fb-4a2d-4455-969f-9e912473b2dc",
+    "hubId": "29a5eee9-a150-43f9-a38d-404b148ac87f",
+    "classId": "ef4d2e31-2546-4ed9-bf0e-8d1e6fe07906",
+    "admissionNumber": "DS-001-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.559Z",
+    "updatedAt": "2026-07-23T06:50:23.559Z"
+  },
+  {
+    "id": "51f12ada-f349-4e6d-a05c-95157e2f5142",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "admissionNumber": "SS-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.560Z",
+    "updatedAt": "2026-07-23T06:50:23.560Z"
+  },
+  {
+    "id": "e12c5cd1-c72c-492d-a8f6-9aec6b95b74a",
+    "learnerId": "8e745b53-b69a-46cf-af4f-207fcbd0077e",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.562Z",
+    "updatedAt": "2026-07-23T06:50:23.562Z"
+  },
+  {
+    "id": "dcd9bff6-b489-4ca3-80ad-e40eb0852678",
+    "learnerId": "237993bb-87c9-4f33-a500-4cdce3d735e9",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-23T06:50:23.564Z",
+    "updatedAt": "2026-07-23T06:50:23.564Z"
+  },
+  {
+    "id": "463e9f62-2683-4923-8b1b-7f7e6f888ab8",
+    "learnerId": "1bf69a21-d2f2-4624-85bf-26616ec595b4",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "admissionNumber": "SS-2026-004",
+    "status": "active",
+    "createdAt": "2026-07-23T07:08:13.875Z",
+    "updatedAt": "2026-07-23T07:08:13.875Z"
+  },
+  {
+    "id": "4372dfb8-58b6-47cf-b53c-512d29975e72",
+    "learnerId": "1bf69a21-d2f2-4624-85bf-26616ec595b4",
+    "hubId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "classId": "dd40a2d0-c09e-45f8-b291-9599b354f11a",
+    "admissionNumber": "DS-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-23T17:57:47.730Z",
+    "updatedAt": "2026-07-23T17:57:47.730Z"
+  }
+]

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiChevronDown, FiAward, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseHomePath } from "../../../routes/portalPaths";
@@ -76,7 +76,7 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
             {teacherNames.length ? (
               <span>{teacherNames.join(", ")}</span>
             ) : (
-              <span style={{ color: T.inkFaint, fontStyle: "italic" }}>No class teacher</span>
+              <span style={{ color: T.inkFaint, fontStyle: "italic" }}>No class tech educator</span>
             )}
           </div>
         </div>
@@ -156,12 +156,8 @@ export default function CurriculumPage() {
   const classes = classesData?.data || [];
   const gradeNames = [...new Set(classes.map((c) => c.gradeName))];
 
-  const { data: teachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", school?.id, ""],
-    queryFn: () => teacherApi.getAll({ schoolId: school.id }),
-    enabled: !!school?.id,
-  });
-  const teachersMap = (teachersData?.data || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
+  const { data: hubTeachers } = useHubTeachersQuery(school?.id);
+  const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
 
   const { data: coursesByGrade, isLoading: coursesLoading } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
 

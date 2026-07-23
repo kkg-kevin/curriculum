@@ -9,7 +9,7 @@ const HERO_CONTENT = {
     title: "Choose how you want to use Digifunzii.",
     subtitle: "A short two-step registration so your account starts in the right place.",
     points: [
-      "Teachers deliver sessions, grade assessments, and track learners.",
+      "Tech Educators deliver sessions, grade assessments, and track learners.",
       "Learners access courses, complete assessments, and see their progress.",
       "Everything stays organized against your school's curriculum.",
     ],

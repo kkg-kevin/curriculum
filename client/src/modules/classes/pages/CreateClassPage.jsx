@@ -5,10 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useCreateClass } from "../hooks/useClasses";
-import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useLearningHubQuery as useSchoolQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -69,12 +68,8 @@ export default function CreateClassPage() {
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
   const gradeNames = curriculum?.classes || [];
 
-  const { data: teachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", selectedSchoolId],
-    queryFn:  () => teacherApi.getAll({ schoolId: selectedSchoolId }),
-    enabled:  !!selectedSchoolId,
-  });
-  const activeTeachers = (teachersData?.data || []).filter((t) => t.status === "active");
+  const { data: hubTeachers } = useHubTeachersQuery(selectedSchoolId);
+  const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
 
   const backPath = classesListPath(user?.role, lockedSchoolId);
 
@@ -163,7 +158,7 @@ export default function CreateClassPage() {
             </div>
 
             <div style={S.field}>
-              <label style={S.label}>Class Teacher</label>
+              <label style={S.label}>Class Tech Educator</label>
               <Controller
                 name="classTeacherId"
                 control={control}
@@ -174,7 +169,7 @@ export default function CreateClassPage() {
                   </select>
                 )}
               />
-              <span style={S.hint}>Only active teachers at this school are shown. Optional — can be assigned later.</span>
+              <span style={S.hint}>Only active tech educators at this school are shown. Optional — can be assigned later.</span>
             </div>
 
             <div style={S.row}>

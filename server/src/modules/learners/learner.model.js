@@ -32,21 +32,19 @@ const LearnerModel = {
     return record;
   },
 
-  findAll({ schoolId, classId, status, guardianEmail } = {}) {
+  // schoolId/classId/status/admissionNumber no longer live on the learner record — they're
+  // per-enrollment facts on learner-hub-link.model.js. `ids` lets a caller pre-resolve "which
+  // learners have a link matching X" via that table and filter down to just those (same
+  // pattern as teacher.model.js's `ids` filter, fed by teacher-hub-link lookups).
+  findAll({ ids, guardianEmail } = {}) {
     let all = readAll();
-    if (schoolId)      all = all.filter((l) => l.schoolId === schoolId);
-    if (classId)       all = all.filter((l) => l.classId === classId);
-    if (status)        all = all.filter((l) => l.status === status);
+    if (ids)           all = all.filter((l) => ids.includes(l.id));
     if (guardianEmail) all = all.filter((l) => l.guardianEmail?.toLowerCase() === guardianEmail.toLowerCase());
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   findById(id) {
     return readAll().find((l) => l.id === id) || null;
-  },
-
-  countByPrefix(prefix) {
-    return readAll().filter((l) => l.admissionNumber && l.admissionNumber.startsWith(prefix)).length;
   },
 
   update(id, data) {

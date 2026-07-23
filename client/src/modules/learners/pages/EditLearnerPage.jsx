@@ -23,9 +23,7 @@ export default function EditLearnerPage() {
     resolver: zodResolver(updateLearnerSchema),
     defaultValues: {
       firstName: "", lastName: "", gender: "",
-      schoolId: "", classId: "",
-      guardianName: "", guardianPhone: "", guardianEmail: "",
-      status: "active",
+      guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
     },
     mode: "onTouched",
   });
@@ -38,12 +36,10 @@ export default function EditLearnerPage() {
         firstName:     learner.firstName     || "",
         lastName:      learner.lastName      || "",
         gender:        learner.gender        || "",
-        schoolId:      learner.schoolId      || "",
-        classId:       learner.classId       || "",
         guardianName:  learner.guardianName  || "",
         guardianPhone: learner.guardianPhone || "",
         guardianEmail: learner.guardianEmail || "",
-        status:        learner.status        || "active",
+        password:      "",
       });
     }
   }, [learner, reset]);
@@ -78,7 +74,7 @@ export default function EditLearnerPage() {
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>Edit</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Edit Learner</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Update learner details, class assignment, or guardian info.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Update learner details or guardian info. Manage hub enrollment from their profile.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={handleCancel} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -100,7 +96,7 @@ export default function EditLearnerPage() {
       <div style={{ maxWidth: 640 }}>
         <FormProvider {...methods}>
           <form id="edit-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <LearnerForm lockedSchoolId={user?.role === "school" ? learner.schoolId : ""} />
+            <LearnerForm />
           </form>
         </FormProvider>
       </div>

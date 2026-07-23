@@ -7,7 +7,10 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
   const { user } = useAuth();
 
   const initial = user?.name?.trim()?.[0]?.toUpperCase() || "?";
-  const roleLabel = user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
+  // "teacher" is still the underlying role value (auth, permissions, users.json) — only the
+  // displayed label changes here, same as everywhere else "Teacher" was renamed to "Tech
+  // Educator" for display purposes.
+  const roleLabel = user?.role === "teacher" ? "Tech Educator" : user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
 
   const pageTitles = {
     "/": "Dashboard",
@@ -16,7 +19,7 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
     "/curriculum": "Curriculum",
     "/curriculum/create": "Create Curriculum",
     "/learners": "Learners",
-    "/teachers": "Teachers",
+    "/teachers": "Tech Educators",
     "/classes": "Classes",
     "/assessments": "Assessments",
     "/reports": "Reports",
@@ -51,7 +54,7 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
     if (pathname.startsWith("/school-portal/classes/"))
       return "Classes";
     if (pathname.startsWith("/school-portal/teachers/"))
-      return "Teachers";
+      return "Tech Educators";
     if (pathname.startsWith("/school-portal/learners/"))
       return "Learners";
     if (pathname.startsWith("/school-portal/curriculum/"))

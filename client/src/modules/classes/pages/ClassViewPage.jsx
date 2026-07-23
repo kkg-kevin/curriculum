@@ -1,11 +1,10 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useClassQuery, useDeleteClass } from "../hooks/useClasses";
-import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useQuery } from "@tanstack/react-query";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
@@ -55,11 +54,7 @@ export default function ClassViewPage() {
   // across every period (there's no reliable "current term" signal, see getCurrentCourses).
   const { data: classCourses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
-  const { data: teachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", cls?.schoolId],
-    queryFn: () => teacherApi.getAll({ schoolId: cls.schoolId }),
-    enabled: !!cls?.schoolId,
-  });
+  const { data: hubTeachers } = useHubTeachersQuery(cls?.schoolId);
 
   const { data: learnersData } = useQuery({
     queryKey: ["learners", "byClass", cls?.id],
@@ -76,7 +71,7 @@ export default function ClassViewPage() {
   }
 
   const schoolsMap = (schoolsData?.data || []).reduce((m, s) => { m[s.id] = s; return m; }, {});
-  const teachersMap = (teachersData?.data || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
+  const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
 
   const school  = schoolsMap[cls.schoolId];
   const teacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
@@ -139,7 +134,7 @@ export default function ClassViewPage() {
             <DetailRow label="Curriculum"    value={curriculum?.name} />
             <DetailRow label="Grade"         value={cls.gradeName} />
             <DetailRow label="Academic Year" value={cls.academicYear} />
-            <DetailRow label="Class Teacher" value={teacher ? `${teacher.firstName} ${teacher.lastName}` : null} />
+            <DetailRow label="Class Tech Educator" value={teacher ? `${teacher.firstName} ${teacher.lastName}` : null} />
             <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
             <DetailRow label="Status"        value={cls.status === "active" ? "Active" : "Inactive"} />
           </div>

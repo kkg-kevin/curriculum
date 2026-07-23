@@ -1,15 +1,24 @@
 import { z } from "zod";
 
-export const createLearnerSchema = z.object({
+const baseLearnerSchema = z.object({
   firstName:     z.string().min(1, "First name is required"),
   lastName:      z.string().min(1, "Last name is required"),
   gender:        z.enum(["male", "female", "other"], { required_error: "Gender is required" }),
-  schoolId:      z.string().min(1, "School is required"),
-  classId:       z.string().min(1, "Class is required"),
+  schoolId:      z.string().default(""),
+  classId:       z.string().default(""),
   guardianName:  z.string().min(1, "Guardian name is required"),
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
+  // Transient — never stored on the learner record. When present, creates or resets the
+  // matching guardian's learner-portal login for guardianEmail.
+  password:      z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
 });
 
-export const updateLearnerSchema = createLearnerSchema.partial();
+export const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {
+  if (data.password && !data.guardianEmail) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["guardianEmail"], message: "Guardian email is required to set a password" });
+  }
+});
+
+export const updateLearnerSchema = baseLearnerSchema.partial();

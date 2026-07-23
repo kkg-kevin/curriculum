@@ -654,13 +654,13 @@
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "gradeId": "d9b3650b-grade-5",
     "gradeName": "Grade 5",
-    "classTeacherId": null,
+    "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2026",
     "capacity": null,
     "status": "active",
     "id": "dd40a2d0-c09e-45f8-b291-9599b354f11a",
     "createdAt": "2026-07-20T10:44:09.086Z",
-    "updatedAt": "2026-07-20T10:44:09.086Z"
+    "updatedAt": "2026-07-23T18:26:25.347Z"
   },
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
@@ -713,5 +713,18 @@
     "id": "e1ab5688-5fc3-44f3-b40d-262b854c1043",
     "createdAt": "2026-07-20T10:44:24.605Z",
     "updatedAt": "2026-07-20T10:44:24.605Z"
+  },
+  {
+    "schoolId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "d9b3650b-grade-4",
+    "gradeName": "Grade 4",
+    "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
+    "academicYear": "2026",
+    "capacity": 20,
+    "status": "active",
+    "id": "4a1cf7a1-02b6-4fb1-8e3a-99b4131d0f46",
+    "createdAt": "2026-07-23T07:16:46.332Z",
+    "updatedAt": "2026-07-23T18:24:30.912Z"
   }
 ]

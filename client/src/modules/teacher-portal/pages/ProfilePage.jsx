@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FiCalendar, FiClock, FiHome, FiMail, FiPhone, FiUserCheck } from "react-icons/fi";
-import { useAuth } from "../../../context/AuthContext";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 
 const ACCENT = "#25476a";
@@ -57,29 +54,19 @@ const iconClock = <FiClock size={14} strokeWidth={2} />;
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { teacher, teacherLoading, hubs } = useOutletContext();
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState("");
 
-  const { data: teachersData, isLoading: teacherLoading } = useQuery({
-    queryKey: ["teachers", "byEmail", user?.email],
-    queryFn: () => teacherApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const teacher = teachersData?.data?.[0] || null;
-
-  const { data: school } = useQuery({
-    queryKey: ["schools", "detail", teacher?.schoolId],
-    queryFn: () => schoolApi.getById(teacher.schoolId),
-    enabled: !!teacher?.schoolId,
-  });
-
+  // Unlike the rest of the portal, Profile is identity info, not a workspace view — it always
+  // shows every hub the teacher is assigned to, regardless of which one the switcher is
+  // currently scoped to.
   const { data: classesData } = useQuery({
-    queryKey: ["classes", "bySchool", teacher?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
-    enabled: !!teacher?.schoolId,
+    queryKey: ["classes", "byClassTeacher", teacher?.id],
+    queryFn: () => classApi.getAll({ classTeacherId: teacher.id }),
+    enabled: !!teacher?.id,
   });
-  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myClasses = classesData?.data || [];
 
   const { mutate: updateTeacher, isPending: savingPhone } = useUpdateTeacher();
 
@@ -119,7 +106,11 @@ export default function ProfilePage() {
                 {STATUS_LABELS[teacher.status] ?? teacher.status}
               </span>
             </div>
-            {school && <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{school.name}</p>}
+            {hubs?.length > 0 && (
+              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
+                {hubs.map((h) => h.name).join(" · ")}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -179,7 +170,7 @@ export default function ProfilePage() {
                 <DetailRow icon={iconPhone} label="Phone" value={teacher.phone} />
               )}
               <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-                Name, email, and school assignment are managed by your school admin.
+                Name, email, and hub assignment are managed by your administrator.
               </p>
             </div>
           </Section>
@@ -187,17 +178,21 @@ export default function ProfilePage() {
 
         {/* Right */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Section title="School">
-            {school ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee" }}>
-                <span style={{ fontSize: 24, flexShrink: 0, color: ACCENT, display: "flex", alignItems: "center" }}><FiHome size={20} strokeWidth={2} /></span>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: "0 0 2px", fontSize: 14, fontWeight: 700, color: ACCENT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{school.name}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>{school.code}{school.address?.county ? ` · ${school.address.county}` : ""}</p>
-                </div>
+          <Section title="My Learning Hubs">
+            {hubs?.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {hubs.map((hub) => (
+                  <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee" }}>
+                    <span style={{ fontSize: 24, flexShrink: 0, color: ACCENT, display: "flex", alignItems: "center" }}><FiHome size={20} strokeWidth={2} /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: "0 0 2px", fontSize: 14, fontWeight: 700, color: ACCENT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>{hub.code}{hub.address?.county ? ` · ${hub.address.county}` : ""}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", textAlign: "center" }}>No school assigned.</p>
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", textAlign: "center" }}>Not assigned to any learning hub.</p>
             )}
           </Section>
 

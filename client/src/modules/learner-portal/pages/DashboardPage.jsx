@@ -4,8 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiClipboard, FiTrendingUp, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
-import { classApi } from "../../classes/services/classApi";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { getProgressSummary } from "../utils/progressStorage";
 
@@ -28,17 +27,13 @@ export default function DashboardPage() {
   });
   const learner = learnersData?.data?.[0] || null;
 
-  const { data: cls } = useQuery({
-    queryKey: ["classes", "detail", learner?.classId],
-    queryFn: () => classApi.getById(learner.classId),
-    enabled: !!learner?.classId,
-  });
-
-  const { data: school } = useQuery({
-    queryKey: ["schools", "detail", cls?.schoolId],
-    queryFn: () => schoolApi.getById(cls.schoolId),
-    enabled: !!cls?.schoolId,
-  });
+  // A learner can be enrolled at several hubs now — the first active enrollment is used as
+  // the "current" context here, same pragmatic default used on the admin side (LearnerViewPage)
+  // until a dedicated hub-context switcher exists for the learner portal.
+  const { data: hubs = [] } = useLearnerHubsQuery(learner?.id);
+  const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
+  const cls = primary?.class || null;
+  const school = primary || null;
 
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
   const progressSummary = useMemo(() => getProgressSummary(user?.email), [user?.email]);

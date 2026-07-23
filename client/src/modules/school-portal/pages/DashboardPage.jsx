@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { FiAlertTriangle, FiBookOpen, FiCalendar, FiMail, FiBook, FiBriefcase, FiUsers, FiUserCheck, FiLayers, FiChevronRight, FiAward, FiHome, FiClipboard } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
@@ -125,11 +125,11 @@ export default function DashboardPage() {
   // (SchoolClassesPage/SchoolTeachersPage/SchoolLearnersPage), so navigating between here and
   // there reuses the same cache entry instead of re-fetching.
   const { data: classesData }  = useQuery({ queryKey: ["classes", "bySchool", school?.id, ""],  queryFn: () => classApi.getAll({ schoolId: school.id }),  enabled: !!school?.id });
-  const { data: teachersData } = useQuery({ queryKey: ["teachers", "bySchool", school?.id, ""], queryFn: () => teacherApi.getAll({ schoolId: school.id }), enabled: !!school?.id });
+  const { data: hubTeachers }  = useHubTeachersQuery(school?.id);
   const { data: learnersData } = useQuery({ queryKey: ["learners", "bySchool", school?.id, ""], queryFn: () => learnerApi.getAll({ schoolId: school.id }), enabled: !!school?.id });
 
   const classes  = classesData?.data  || [];
-  const teachers = teachersData?.data || [];
+  const teachers = hubTeachers || [];
   const learners = learnersData?.data || [];
 
   const gradeNames = [...new Set(classes.map((c) => c.gradeName))];
@@ -148,7 +148,7 @@ export default function DashboardPage() {
   const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity || 0), 0);
 
   const recentActivity = [
-    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), name: `${t.firstName} ${t.lastName}`, sub: "Teacher added", createdAt: t.createdAt })),
+    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), name: `${t.firstName} ${t.lastName}`, sub: "Tech Educator added", createdAt: t.createdAt })),
     ...learners.map((l) => ({ id: `l-${l.id}`, initials: `${l.firstName?.[0] || ""}${l.lastName?.[0] || ""}`.toUpperCase(), name: `${l.firstName} ${l.lastName}`, sub: `Enrolled — ${classesMap[l.classId]?.gradeName || "No class"}`, createdAt: l.createdAt })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
@@ -208,7 +208,7 @@ export default function DashboardPage() {
             {classesWithoutTeacher.length > 0 && (
               <AttentionItem
                 icon={<FiUserCheck size={15} strokeWidth={2} />}
-                text={`${joinNatural(classesWithoutTeacher.map((c) => c.gradeName))} ${classesWithoutTeacher.length === 1 ? "has" : "have"} no class teacher assigned`}
+                text={`${joinNatural(classesWithoutTeacher.map((c) => c.gradeName))} ${classesWithoutTeacher.length === 1 ? "has" : "have"} no class tech educator assigned`}
                 actionLabel="Assign"
                 onAction={() => navigate(classesListPath("school", school.id))}
               />
@@ -237,13 +237,13 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <KpiCard
           icon={<FiBookOpen size={18} strokeWidth={2} />} num={classes.length} label="Classes"
-          sub={classes.length === 0 ? "None set up yet" : `${classesWithTeacher.length} of ${classes.length} has a teacher`}
+          sub={classes.length === 0 ? "None set up yet" : `${classesWithTeacher.length} of ${classes.length} has a tech educator`}
           meterPct={classes.length ? (classesWithTeacher.length / classes.length) * 100 : null}
           warnMeter={classesWithTeacher.length < classes.length}
           onClick={() => navigate(classesListPath("school", school.id))}
         />
         <KpiCard
-          icon={<FiUserCheck size={18} strokeWidth={2} />} num={teachers.length} label="Teachers"
+          icon={<FiUserCheck size={18} strokeWidth={2} />} num={teachers.length} label="Tech Educators"
           sub={teachers.length === 0 ? "None added yet" : `${activeTeachers.length} active`}
           meterPct={teachers.length ? (activeTeachers.length / teachers.length) * 100 : null}
           warnMeter={false}
@@ -267,7 +267,7 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Teacher</ActionButton>
+        <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Tech Educator</ActionButton>
         <ActionButton primary onClick={() => navigate(learnerCreatePath("school", school.id))}>＋ Enroll Learner</ActionButton>
         <ActionButton onClick={() => navigate(`${classesListPath("school", school.id)}?setup=1`)}><FiCalendar size={14} strokeWidth={2} /> Set Up Year</ActionButton>
         <ActionButton onClick={() => navigate(courseCatalogPath("school"))}><FiBook size={14} strokeWidth={2} /> Browse Curriculum</ActionButton>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {["Grade", "Class Teacher", "Learners", "Courses", "Status"].map((h) => (
+                    {["Grade", "Class Tech Educator", "Learners", "Courses", "Status"].map((h) => (
                       <th key={h} style={{ textAlign: "left", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: T.inkFaint, padding: "0 10px 8px", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                     ))}
                   </tr>

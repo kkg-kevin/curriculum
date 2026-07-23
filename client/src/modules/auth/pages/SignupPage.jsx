@@ -13,11 +13,11 @@ const ROLE_TILES = [
     value: "school",
     label: "School",
     icon: FiHome,
-    description: "Manage your school's classes, teachers, and learners for the academic year.",
+    description: "Manage your school's classes, tech educators, and learners for the academic year.",
   },
   {
     value: "teacher",
-    label: "Teacher",
+    label: "Tech Educator",
     icon: FiUsers,
     description: "Deliver sessions, grade assessments, and track your learners' progress.",
   },

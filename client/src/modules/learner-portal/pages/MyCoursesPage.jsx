@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
-import { classApi } from "../../classes/services/classApi";
+import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
@@ -15,15 +15,15 @@ export default function MyCoursesPage() {
   });
   const learner = learnersData?.data?.[0] || null;
 
-  const { data: cls, isLoading: classLoading } = useQuery({
-    queryKey: ["classes", "detail", learner?.classId],
-    queryFn: () => classApi.getById(learner.classId),
-    enabled: !!learner?.classId,
-  });
+  // A learner can be enrolled at several hubs now — the first active enrollment is used as
+  // the "current" context here, same default used on DashboardPage.
+  const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
+  const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
+  const cls = primary?.class || null;
 
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
-  const isLoading = learnerLoading || (!!learner && classLoading);
+  const isLoading = learnerLoading || (!!learner && hubsLoading);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>

@@ -32,10 +32,11 @@ const ClassModel = {
     return record;
   },
 
-  findAll({ schoolId, status } = {}) {
+  findAll({ schoolId, classTeacherId, status } = {}) {
     let all = readAll();
-    if (schoolId) all = all.filter((c) => c.schoolId === schoolId);
-    if (status)   all = all.filter((c) => c.status === status);
+    if (schoolId)       all = all.filter((c) => c.schoolId === schoolId);
+    if (classTeacherId) all = all.filter((c) => c.classTeacherId === classTeacherId);
+    if (status)         all = all.filter((c) => c.status === status);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 

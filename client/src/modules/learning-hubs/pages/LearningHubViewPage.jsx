@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
-import { useLearningHubQuery, useDeleteLearningHub } from "../hooks/useLearningHub";
+import { useLearningHubQuery, useDeleteLearningHub, useHubTeachersQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
@@ -80,11 +79,9 @@ export default function LearningHubViewPage() {
 
   const isSchool = hub?.hubType === "school";
 
-  const { data: teachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", id],
-    queryFn:  () => teacherApi.getAll({ schoolId: id }),
-    enabled:  !!id && isSchool,
-  });
+  // Teachers can be assigned to any hub type now — only Classes/Learners remain keyed by a
+  // single schoolId and so stay school-type-only below.
+  const { data: teachers = [] } = useHubTeachersQuery(id);
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", id],
     queryFn:  () => classApi.getAll({ schoolId: id }),
@@ -95,7 +92,6 @@ export default function LearningHubViewPage() {
     queryFn:  () => learnerApi.getAll({ schoolId: id }),
     enabled:  !!id && isSchool,
   });
-  const teachers = teachersData?.data || [];
   const classes  = classesData?.data  || [];
   const learners = learnersData?.data || [];
 
@@ -181,25 +177,25 @@ export default function LearningHubViewPage() {
         </div>
       )}
 
-      {/* Stats row — only meaningful for school-type hubs, which are the only ones Classes/
-          Teachers/Learners currently attach to */}
-      {isSchool && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-          {[
-            { label: "Teachers", value: teachers.length, icon: <PeopleAltIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+      {/* Stats row — Teachers now attach to any hub type; Classes/Learners stay
+          school-type-only since they're still keyed by a single schoolId */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Tech Educators", value: teachers.length, icon: <PeopleAltIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          ...(isSchool ? [
             { label: "Classes",  value: classes.length,  icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
             { label: "Learners", value: learners.length, icon: <PersonIcon fontSize="small" />, bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
-          ].map((s) => (
-            <div key={s.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${s.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: s.bg, display: "flex", alignItems: "center", justifyContent: "center", color: s.color, flexShrink: 0 }}>{s.icon}</div>
-              <div>
-                <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
-              </div>
+          ] : []),
+        ].map((s) => (
+          <div key={s.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${s.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: s.bg, display: "flex", alignItems: "center", justifyContent: "center", color: s.color, flexShrink: 0 }}>{s.icon}</div>
+            <div>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", marginBottom: isSchool ? "16px" : 0 }}>
         <Section title="Learning Hub Details">
@@ -353,31 +349,32 @@ export default function LearningHubViewPage() {
         </div>
       )}
 
-      {/* Teachers/Classes/Learners are still keyed by schoolId, so they only make sense for
-          school-type hubs */}
-      {isSchool && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-          <Section title="Teachers" count={teachers.length}>
-            {teachers.length === 0 ? (
-              <EmptyList icon="👩‍🏫" text="No teachers yet." />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {teachers.slice(0, 5).map((t) => (
-                  <div key={t.id} onClick={() => navigate(`/teachers/${t.id}/view`)}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
-                    {t.firstName} {t.lastName}
-                  </div>
-                ))}
-                {teachers.length > 5 && (
-                  <button type="button" onClick={() => navigate(`/teachers?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                    View all {teachers.length} →
-                  </button>
-                )}
-              </div>
-            )}
-          </Section>
+      {/* Teachers now attach to any hub type; Classes/Learners are still keyed by a single
+          schoolId, so they only render for school-type hubs */}
+      <div style={{ display: "grid", gridTemplateColumns: isSchool ? "1fr 1fr 1fr" : "1fr", gap: "16px" }}>
+        <Section title="Tech Educators" count={teachers.length}>
+          {teachers.length === 0 ? (
+            <EmptyList icon="👩‍🏫" text="No tech educators yet." />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {teachers.slice(0, 5).map((t) => (
+                <div key={t.id} onClick={() => navigate(`/teachers/${t.id}/view`)}
+                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
+                  {t.firstName} {t.lastName}
+                </div>
+              ))}
+              {teachers.length > 5 && (
+                <button type="button" onClick={() => navigate(`/teachers?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                  View all {teachers.length} →
+                </button>
+              )}
+            </div>
+          )}
+        </Section>
 
-          <Section title="Classes" count={classes.length}>
+        {isSchool && (
+        <>
+        <Section title="Classes" count={classes.length}>
             {classes.length === 0 ? (
               <EmptyList icon="🏫" text="No classes yet." />
             ) : (
@@ -411,8 +408,9 @@ export default function LearningHubViewPage() {
               </div>
             )}
           </Section>
-        </div>
-      )}
+        </>
+        )}
+      </div>
 
       <ConfirmDialog
         isOpen={confirmDelete}

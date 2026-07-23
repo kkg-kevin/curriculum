@@ -117,7 +117,7 @@ export function ClassCard({ cls, teachersMap }) {
             <FiUserCheck size={14} strokeWidth={2} color="#6B7280" />
             {teacher
               ? `${teacher.firstName} ${teacher.lastName}`
-              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class teacher</span>}
+              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class tech educator</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
             <FiUsers size={14} strokeWidth={2} color="#6B7280" />

@@ -2,6 +2,7 @@ const AssessmentIssueModel = require("./assessment-issue.model");
 const AssessmentSubmissionModel = require("./assessment-submission.model");
 const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
+const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const { requiresManualGrading, computeAutoScore, computeMaxScore } = require("./grading.utils");
 
 function loadAssessmentOrThrow(assessmentId) {
@@ -67,7 +68,12 @@ const AssessmentSubmissionService = {
       throw err;
     }
     const assessment = loadAssessmentOrThrow(issue.assessmentId);
-    const learners = LearnerModel.findAll({ classId: issue.classId, status: "active" });
+    // classId/status no longer live on the learner record — resolve the roster via enrollment
+    // links for this class instead (see learner-hub-link.model.js).
+    const learnerIds = LearnerHubLinkModel.findByClassId(issue.classId)
+      .filter((l) => l.status === "active")
+      .map((l) => l.learnerId);
+    const learners = LearnerModel.findAll({ ids: learnerIds });
     const submissions = AssessmentSubmissionModel.findAll({ issueId });
     const submissionByLearner = new Map(submissions.map((s) => [s.learnerId, s]));
 
@@ -79,7 +85,7 @@ const AssessmentSubmissionService = {
     return { issue, assessment, roster };
   },
 
-  getOrCreateSubmission({ issueId, learnerId, classId }) {
+  getOrCreateSubmission({ issueId, learnerId }) {
     const issue = AssessmentIssueModel.findById(issueId);
     if (!issue) {
       const err = new Error("Issue not found");
@@ -94,7 +100,9 @@ const AssessmentSubmissionService = {
       issueId,
       assessmentId: issue.assessmentId,
       learnerId,
-      classId,
+      // The issue itself already carries which class it was issued to — that's the
+      // authoritative source, not any field on the learner record.
+      classId: issue.classId,
       status: "in_progress",
       answers: [],
       autoScore: null,

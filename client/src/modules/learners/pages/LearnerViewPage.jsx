@@ -1,19 +1,30 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useLearnerQuery, useDeleteLearner, useUpdateLearner } from "../hooks/useLearners";
-import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useQuery } from "@tanstack/react-query";
+import {
+  useLearnerQuery, useDeleteLearner, useUpdateLearner,
+  useLearnerHubsQuery, useEnrollLearnerHub, useUpdateLearnerHubLink, useUnenrollLearnerHub,
+} from "../hooks/useLearners";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
-import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
+import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
+const ACCENT    = "#25476a";
 
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
+const STATUS_STYLES = {
+  active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+  inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+  transferred: { bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
+  graduated:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+};
 
 function Avatar({ firstName, lastName, size = 64 }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
@@ -157,35 +168,154 @@ function DetailRow({ label, value, empty = "—" }) {
   );
 }
 
+// One enrollment row — hub name, plus that hub's class/admission-number/status, editable
+// in place (mirrors TeacherViewPage's Learning Hubs row, richer because a learner's
+// placement within a hub is meaningful in a way a teacher's isn't).
+function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
+  const navigate = useNavigate();
+  const { mutate: updateLink } = useUpdateLearnerHubLink();
+
+  const { data: classesData } = useQuery({
+    queryKey: ["classes", "bySchool", enrollment.id],
+    queryFn:  () => classApi.getAll({ schoolId: enrollment.id }),
+    enabled:  isAdmin,
+  });
+  const classes = (classesData?.data || []).filter((c) => c.status === "active");
+  const statusStyle = STATUS_STYLES[enrollment.status] || STATUS_STYLES.inactive;
+
+  return (
+    <div style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div onClick={() => navigate(schoolViewPath(isAdmin ? "admin" : "school", enrollment.id))} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", minWidth: 0 }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>🏫</span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ACCENT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{enrollment.name}</p>
+            <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{enrollment.admissionNumber || "No admission number"}</p>
+          </div>
+        </div>
+        <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, flexShrink: 0 }}>
+          {STATUS_LABELS[enrollment.status] ?? enrollment.status}
+        </span>
+      </div>
+
+      {isAdmin && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <select
+            value={enrollment.classId || ""}
+            onChange={(e) => updateLink({ learnerId, hubId: enrollment.id, data: { classId: e.target.value } })}
+            style={{ padding: "6px 8px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151", flex: 1, minWidth: 140 }}
+          >
+            <option value="">— No class —</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+          </select>
+          <select
+            value={enrollment.status}
+            onChange={(e) => updateLink({ learnerId, hubId: enrollment.id, data: { status: e.target.value } })}
+            style={{ padding: "6px 8px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151" }}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="transferred">Transferred</option>
+            <option value="graduated">Graduated</option>
+          </select>
+          <button type="button" onClick={() => onRequestUnlink(enrollment)} style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+            Unlink
+          </button>
+        </div>
+      )}
+      {!isAdmin && (
+        <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
+          {enrollment.class ? `${enrollment.class.gradeName} — ${enrollment.class.academicYear}` : "No class assigned yet"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
+  const { data: allHubsData } = useAllLearningHubsQuery({ hubType: "school", status: "active" });
+  const availableHubs = (allHubsData?.data || []).filter((h) => !enrolledHubIds.includes(h.id));
+  const [selectedHubId, setSelectedHubId] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const { mutate: enroll, isPending } = useEnrollLearnerHub();
+
+  const { data: classesData } = useQuery({
+    queryKey: ["classes", "bySchool", selectedHubId],
+    queryFn:  () => classApi.getAll({ schoolId: selectedHubId }),
+    enabled:  !!selectedHubId,
+  });
+  const classes = (classesData?.data || []).filter((c) => c.status === "active");
+
+  return (
+    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <select
+        value={selectedHubId}
+        onChange={(e) => { setSelectedHubId(e.target.value); setSelectedClassId(""); }}
+        style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
+      >
+        <option value="">Enroll at hub…</option>
+        {availableHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+      </select>
+      <select
+        value={selectedClassId}
+        onChange={(e) => setSelectedClassId(e.target.value)}
+        disabled={!selectedHubId}
+        style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
+      >
+        <option value="">— No class yet —</option>
+        {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+      </select>
+      <button
+        type="button"
+        disabled={!selectedHubId || isPending}
+        onClick={() => {
+          enroll({ learnerId, data: { hubId: selectedHubId, classId: selectedClassId, status: "active" } });
+          setSelectedHubId(""); setSelectedClassId("");
+        }}
+        style={{ padding: "8px 16px", backgroundColor: !selectedHubId || isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !selectedHubId || isPending ? "not-allowed" : "pointer", flexShrink: 0 }}
+      >
+        Enroll
+      </button>
+    </div>
+  );
+}
+
 export default function LearnerViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isSchool = user?.role === "school";
   const { data: learner, isLoading } = useLearnerQuery(id);
+  const { data: enrollments = [] } = useLearnerHubsQuery(id);
   const { mutate: deleteLearner } = useDeleteLearner();
-  const { data: schoolsData } = useAllLearningHubsQuery({ hubType: "school" });
+  const { mutate: unenroll } = useUnenrollLearnerHub();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [unlinkTarget, setUnlinkTarget] = useState(null);
 
-  const { data: classesData } = useQuery({
-    queryKey: ["classes", "bySchool", learner?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: learner.schoolId }),
-    enabled: !!learner?.schoolId,
+  const { data: ownSchoolData } = useQuery({
+    queryKey: ["learningHubs", "byEmail", user?.email],
+    queryFn:  () => learningHubApi.getAll({ email: user.email }),
+    enabled:  isSchool && !!user?.email,
   });
+  const ownSchoolId = ownSchoolData?.data?.[0]?.id;
 
   if (isLoading) return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
   if (!learner)  return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#EF4444" }}>Learner not found.</div>;
 
-  const schoolsMap = (schoolsData?.data || []).reduce((m, s) => { m[s.id] = s; return m; }, {});
-  const classesMap = (classesData?.data || []).reduce((m, c) => { m[c.id] = c; return m; }, {});
+  // Multiple enrollments are possible now — the first active one is used as the "current"
+  // context for Learning Journey placement, same pragmatic default used elsewhere until a
+  // dedicated hub-context switcher exists for learners.
+  const primary = enrollments.find((e) => e.status === "active") || enrollments[0] || null;
+  const curriculumId = primary?.class?.curriculumId;
 
-  const school = schoolsMap[learner.schoolId];
-  const cls    = learner.classId ? classesMap[learner.classId] : null;
+  const backContext = isSchool ? ownSchoolId : undefined;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <button type="button" onClick={() => navigate(learnersListPath(user?.role, learner.schoolId))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+        <button type="button" onClick={() => navigate(learnersListPath(user?.role, backContext))} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           ← Learners
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
@@ -201,9 +331,8 @@ export default function LearnerViewPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{learner.firstName} {learner.lastName}</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{learner.admissionNumber}</span>
-                <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff" }}>
-                  {STATUS_LABELS[learner.status]}
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
+                  {enrollments.length === 0 ? "Not yet enrolled" : `${enrollments.length} hub enrollment${enrollments.length !== 1 ? "s" : ""}`}
                 </span>
               </div>
             </div>
@@ -213,7 +342,7 @@ export default function LearnerViewPage() {
               Edit
             </button>
             <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              Remove
+              {isSchool ? "Remove from Hub" : "Remove"}
             </button>
           </div>
         </div>
@@ -221,23 +350,28 @@ export default function LearnerViewPage() {
 
       {/* Details */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        {/* Enrollment */}
+        {/* Learning Hubs */}
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Enrollment</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <DetailRow label="Admission Number" value={learner.admissionNumber} />
-            <DetailRow label="School"           value={school?.name} />
-            <DetailRow label="Class"            value={cls?.gradeName} />
-            <DetailRow label="Academic Year"    value={cls?.academicYear} />
-            <DetailRow label="Gender"           value={learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null} />
-            <DetailRow label="Status"           value={STATUS_LABELS[learner.status]} />
-          </div>
+          <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learning Hubs</h3>
+          {enrollments.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Not enrolled at any learning hub yet.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {enrollments.map((e) => (
+                <EnrollmentRow key={e.linkId} learnerId={id} enrollment={e} isAdmin={isAdmin} onRequestUnlink={setUnlinkTarget} />
+              ))}
+            </div>
+          )}
+          {isAdmin && <EnrollLearnerControl learnerId={id} enrolledHubIds={enrollments.map((e) => e.id)} />}
         </div>
 
         {/* Guardian */}
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Guardian</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <DetailRow label="Gender" value={learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null} />
             <DetailRow label="Name"  value={learner.guardianName} />
             <DetailRow label="Phone" value={learner.guardianPhone} />
             <DetailRow label="Email" value={learner.guardianEmail} />
@@ -246,22 +380,44 @@ export default function LearnerViewPage() {
           </div>
         </div>
 
-        <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={cls?.curriculumId} />
-        <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={cls?.curriculumId} />
+        <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={curriculumId} />
+        <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} />
       </div>
 
       <ConfirmDialog
         isOpen={confirmDelete}
-        title="Remove Learner"
-        message={`"${learner.firstName} ${learner.lastName}" (${learner.admissionNumber}) will be permanently removed. This cannot be undone.`}
+        title={isSchool ? "Remove from Hub" : "Remove Learner"}
+        message={
+          isSchool
+            ? `"${learner.firstName} ${learner.lastName}" will be removed from this hub. Their record and any other hub enrollments are unaffected.`
+            : `"${learner.firstName} ${learner.lastName}" will be permanently removed. This cannot be undone.`
+        }
         confirmLabel="Remove"
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          deleteLearner(id, { onSuccess: () => navigate(learnersListPath(user?.role, learner.schoolId)) });
+          if (isSchool) {
+            unenroll({ learnerId: id, hubId: ownSchoolId }, { onSuccess: () => navigate(learnersListPath("school", ownSchoolId)) });
+          } else {
+            deleteLearner(id, { onSuccess: () => navigate(learnersListPath(user?.role)) });
+          }
         }}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!unlinkTarget}
+        title="Unlink Learning Hub"
+        message={`"${learner.firstName} ${learner.lastName}" will no longer be enrolled at "${unlinkTarget?.name}". Their record and any other hub enrollments are unaffected.`}
+        confirmLabel="Unlink"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          unenroll({ learnerId: id, hubId: unlinkTarget.id });
+          setUnlinkTarget(null);
+        }}
+        onCancel={() => setUnlinkTarget(null)}
       />
     </div>
   );

@@ -19,7 +19,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     { name: "Dashboard",   path: "/school-portal", end: true, enabled: true },
     { name: "Curriculum",  path: "/school-portal/curriculum", end: false, enabled: true },
     { name: "Classes",     path: `/school-portal/classes/${schoolId}`,    end: false, enabled: !!schoolId },
-    { name: "Teachers",    path: `/school-portal/teachers/${schoolId}`,   end: false, enabled: !!schoolId },
+    { name: "Tech Educators", path: `/school-portal/teachers/${schoolId}`, end: false, enabled: !!schoolId },
     { name: "Learners",    path: `/school-portal/learners/${schoolId}`,   end: false, enabled: !!schoolId },
     { name: "Attendance",  path: "/school-portal/attendance",             end: false, enabled: !!schoolId },
     { name: "Reports",     path: "/school-portal/reports", end: false, enabled: true },

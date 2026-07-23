@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Groups as GroupsIcon, School as SchoolIcon } from "@mui/icons-material";
+import { Class as ClassIcon, Groups as GroupsIcon } from "@mui/icons-material";
 import { useDeleteLearner } from "../hooks/useLearners";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
@@ -36,6 +36,10 @@ function MenuButton({ icon, label, onClick, danger = false }) {
   );
 }
 
+// `classMap` is only meaningful when this card is rendered inside a single hub's own context
+// (e.g. SchoolLearnersPage, where every returned learner is merged with that hub's enrollment
+// fields) — omit it entirely on the cross-hub admin list, where a learner may have several
+// enrollments and no single class/status is well-defined for a compact card.
 export function LearnerCard({ learner, classMap }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,7 +51,7 @@ export function LearnerCard({ learner, classMap }) {
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
 
-  const gradeName = classMap?.[learner.classId]?.gradeName || "—";
+  const gradeName = classMap ? (classMap[learner.classId]?.gradeName || "Unassigned") : null;
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -110,10 +114,12 @@ export function LearnerCard({ learner, classMap }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <SchoolIcon fontSize="small" sx={{ color: ACCENT }} />
-            {gradeName}
-          </div>
+          {gradeName && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+              <ClassIcon fontSize="small" sx={{ color: ACCENT }} />
+              {gradeName}
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
             <GroupsIcon fontSize="small" sx={{ color: ACCENT }} />
             {learner.guardianName
@@ -122,9 +128,11 @@ export function LearnerCard({ learner, classMap }) {
           </div>
         </div>
 
-        <div style={{ marginTop: "auto" }}>
-          <StatusBadge status={learner.status} />
-        </div>
+        {learner.status && (
+          <div style={{ marginTop: "auto" }}>
+            <StatusBadge status={learner.status} />
+          </div>
+        )}
       </div>
 
       {menuOpen && createPortal(

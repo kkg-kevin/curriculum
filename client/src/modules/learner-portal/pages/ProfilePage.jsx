@@ -2,9 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
-import { classApi } from "../../classes/services/classApi";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
-import { useUpdateLearner } from "../../learners/hooks/useLearners";
+import { useUpdateLearner, useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 
 const T = {
   accent: "#25476a",
@@ -39,17 +37,12 @@ export default function LearnerProfilePage() {
   });
   const learner = learnersData?.data?.[0] || null;
 
-  const { data: cls, isLoading: classLoading } = useQuery({
-    queryKey: ["classes", "detail", learner?.classId],
-    queryFn: () => classApi.getById(learner.classId),
-    enabled: !!learner?.classId,
-  });
-
-  const { data: school, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "detail", cls?.schoolId],
-    queryFn: () => schoolApi.getById(cls.schoolId),
-    enabled: !!cls?.schoolId,
-  });
+  // A learner can be enrolled at several hubs now — the first active enrollment is used as
+  // the "current" context for display here, same default used on DashboardPage.
+  const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
+  const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
+  const cls    = primary?.class || null;
+  const school = primary || null;
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -95,18 +88,10 @@ export default function LearnerProfilePage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    updateLearner({
-      id: learner.id,
-      data: {
-        ...formData,
-        schoolId: learner.schoolId,
-        classId: learner.classId,
-        status: learner.status || "active",
-      },
-    });
+    updateLearner({ id: learner.id, data: formData });
   };
 
-  const isLoading = learnerLoading || (!!learner && (classLoading || schoolLoading));
+  const isLoading = learnerLoading || (!!learner && hubsLoading);
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>;
@@ -186,7 +171,7 @@ export default function LearnerProfilePage() {
             <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Current record</p>
             <p style={{ margin: "10px 0 4px", fontSize: 18, fontWeight: 800, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
             <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{cls?.gradeName || "Class"} · {school?.name || "School"}</p>
-            <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>Status: {learner.status || "active"}</p>
+            {primary && <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>Status: {primary.status}</p>}
           </div>
 
           <div style={{ ...cardStyle(), padding: "20px 22px" }}>

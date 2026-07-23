@@ -33,9 +33,9 @@ const TeacherModel = {
     return teacher;
   },
 
-  findAll({ schoolId, status, subject, email } = {}) {
+  findAll({ ids, status, subject, email } = {}) {
     let all = readAll();
-    if (schoolId) all = all.filter((t) => t.schoolId === schoolId);
+    if (ids)      all = all.filter((t) => ids.includes(t.id));
     if (status)   all = all.filter((t) => t.status === status);
     if (subject)  all = all.filter((t) => t.subjects?.includes(subject));
     if (email)    all = all.filter((t) => t.email?.toLowerCase() === email.toLowerCase());

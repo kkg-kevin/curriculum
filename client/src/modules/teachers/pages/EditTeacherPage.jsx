@@ -32,7 +32,6 @@ export default function EditTeacherPage() {
         email:      teacher.email      || "",
         password:   "",
         phone:      teacher.phone      || "",
-        schoolId:   teacher.schoolId   || "",
         status:     teacher.status     || "active",
       });
     }
@@ -52,7 +51,7 @@ export default function EditTeacherPage() {
   if (isLoading) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>
-        Loading teacher…
+        Loading tech educator…
       </div>
     );
   }
@@ -60,7 +59,7 @@ export default function EditTeacherPage() {
   if (isError || !teacher) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Teacher not found.
+        ⚠ Tech Educator not found.
       </div>
     );
   }
@@ -76,9 +75,9 @@ export default function EditTeacherPage() {
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>Edit</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Edit Teacher</h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Edit Tech Educator</h1>
           <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Update teacher details or school assignment.
+            Update tech educator details.
           </p>
         </div>
 
@@ -103,7 +102,7 @@ export default function EditTeacherPage() {
 
       <FormProvider {...methods}>
         <form id="edit-teacher-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <TeacherForm lockedSchoolId={user?.role === "school" ? teacher.schoolId : ""} />
+          <TeacherForm />
         </form>
       </FormProvider>
 
