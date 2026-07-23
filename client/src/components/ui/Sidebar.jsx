@@ -8,7 +8,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
     { name: "Learning Hubs", path: "/learning-hubs" },
     { name: "Curriculum", path: "/curriculum" },
     { name: "Learners", path: "/learners" },
-    { name: "Teachers", path: "/teachers" },
+    { name: "Tech Educators", path: "/teachers" },
     { name: "Classes", path: "/classes" },
     { name: "Courses", path: "/courses" },
     { name: "Assessments", path: "/assessments" },

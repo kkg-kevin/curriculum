@@ -95,14 +95,12 @@ export default function AppRoutes() {
         </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />
-          <Route path="school/:schoolId" element={<SchoolLearnersPage />} />
           <Route path="create" element={<CreateLearnerPage />} />
           <Route path=":id/edit" element={<EditLearnerPage />} />
           <Route path=":id/view" element={<LearnerViewPage />} />
         </Route>
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
-          <Route path="school/:schoolId" element={<SchoolTeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
           <Route path=":id/edit" element={<EditTeacherPage />} />
           <Route path=":id/view" element={<TeacherViewPage />} />

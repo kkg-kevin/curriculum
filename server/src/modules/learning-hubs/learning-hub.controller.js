@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const LearningHubService = require("./learning-hub.service");
 const AuthService = require("../auth/auth.service");
+const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
+const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const { createLearningHubSchema, updateLearningHubSchema } = require("./learning-hub.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
@@ -50,9 +52,28 @@ const getAllLearningHubs = asyncHandler(async (req, res) => {
 const getLearningHubById = asyncHandler(async (req, res) => {
   const record = await LearningHubService.getLearningHubById(req.params.id);
   if (req.user.role === "school")  assertOwn(record.id === req.ownSchool?.id);
-  if (req.user.role === "teacher") assertOwn(record.id === req.ownTeacher?.schoolId);
-  if (req.user.role === "learner") assertOwn(record.id === req.ownLearner?.schoolId);
+  if (req.user.role === "teacher") {
+    const linked = req.ownTeacher
+      ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).some((l) => l.hubId === record.id)
+      : false;
+    assertOwn(linked);
+  }
+  if (req.user.role === "learner") {
+    const enrolled = req.ownLearner
+      ? LearnerHubLinkModel.findByLearnerId(req.ownLearner.id).some((l) => l.hubId === record.id)
+      : false;
+    assertOwn(enrolled);
+  }
   res.json({ success: true, data: record });
+});
+
+// Read-only mirror of the teacher-hub link table, scoped to one hub — the write side lives on
+// the teacher routes (see teacher.routes.js's /:id/hubs/links), this just lets a hub see who's
+// assigned to it.
+const getHubTeachers = asyncHandler(async (req, res) => {
+  if (req.user.role === "school") assertOwn(req.params.id === req.ownSchool?.id);
+  const teachers = await LearningHubService.getHubTeachers(req.params.id);
+  res.json({ success: true, data: teachers, count: teachers.length });
 });
 
 const updateLearningHub = asyncHandler(async (req, res) => {
@@ -86,4 +107,4 @@ const deleteLearningHub = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-module.exports = { createLearningHub, getAllLearningHubs, getLearningHubById, updateLearningHub, deleteLearningHub };
+module.exports = { createLearningHub, getAllLearningHubs, getLearningHubById, updateLearningHub, deleteLearningHub, getHubTeachers };

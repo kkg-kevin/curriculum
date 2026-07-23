@@ -9,11 +9,8 @@ import {
   Send as SendIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { teacherApi } from "../../teachers/services/teacherApi";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
@@ -183,31 +180,18 @@ function AssessmentCard({ item, issuesByKey, onIssue, issuingKey }) {
 
 export default function AssessmentsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const { data: teachersData, isLoading: teacherLoading } = useQuery({
-    queryKey: ["teachers", "byEmail", user?.email],
-    queryFn: () => teacherApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const teacher = teachersData?.data?.[0] || null;
-
-  const { data: school, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "detail", teacher?.schoolId],
-    queryFn: () => schoolApi.getById(teacher.schoolId),
-    enabled: !!teacher?.schoolId,
-  });
+  const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
-    queryKey: ["classes", "bySchool", teacher?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
-    enabled: !!teacher?.schoolId,
+    queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
+    queryFn: () => classApi.getAll({ classTeacherId: teacher.id, schoolId: selectedHubId }),
+    enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myClasses = classesData?.data || [];
   const gradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
 
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(school?.curriculumId, gradeNames);
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
+  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeNames);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeNames);
 
   const sessionsResults = useQueries({
     queries: courses.map((course) => ({
@@ -263,7 +247,7 @@ export default function AssessmentsPage() {
     issueAssessment({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id });
   };
 
-  const isLoading = teacherLoading || (!!teacher && (schoolLoading || classesLoading || coursesLoading || sessionsResults.some((r) => r.isLoading)));
+  const isLoading = teacherLoading || (!!teacher && (classesLoading || coursesLoading || sessionsResults.some((r) => r.isLoading)));
 
   const totalCount = attachments.length;
   const individualCount = attachments.filter((a) => a.mode === "individual").length;
@@ -284,11 +268,11 @@ export default function AssessmentsPage() {
     );
   }
 
-  if (!school?.curriculumId) {
+  if (!selectedHub?.curriculumId) {
     return (
       <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No curriculum assigned yet</h3>
-        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Your school hasn't been assigned a curriculum yet.</p>
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>This hub hasn't been assigned a curriculum yet.</p>
       </div>
     );
   }

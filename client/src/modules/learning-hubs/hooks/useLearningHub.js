@@ -32,6 +32,14 @@ export function useLearningHubQuery(id) {
   });
 }
 
+export function useHubTeachersQuery(hubId) {
+  return useQuery({
+    queryKey: ["learningHubs", "detail", hubId, "teachers"],
+    queryFn: () => learningHubApi.getTeachers(hubId),
+    enabled: !!hubId,
+  });
+}
+
 export function useCreateLearningHub() {
   const queryClient = useQueryClient();
   return useMutation({

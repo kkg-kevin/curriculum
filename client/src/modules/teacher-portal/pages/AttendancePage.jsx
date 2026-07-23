@@ -8,10 +8,8 @@ import {
   EventNote as EventNoteOutlinedIcon,
   School as SchoolOutlinedIcon,
 } from "@mui/icons-material";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useAttendanceByDateQuery, useAttendanceHistoryQuery, useMarkAttendance } from "../../attendance/hooks/useAttendance";
@@ -134,32 +132,31 @@ function HistoryRow({ row }) {
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { teacher, teacherLoading, selectedHubId } = useOutletContext();
   const [tab, setTab] = useState("mark");
   const [date, setDate] = useState(todayStr());
   const [draft, setDraft] = useState({});
   const [historyFrom, setHistoryFrom] = useState(() => addDays(todayStr(), -30));
   const [historyTo, setHistoryTo] = useState(() => todayStr());
 
-  const { data: teachersData, isLoading: teacherLoading } = useQuery({
-    queryKey: ["teachers", "byEmail", user?.email],
-    queryFn: () => teacherApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const teacher = teachersData?.data?.[0] || null;
-
   const { data: classesData, isLoading: classesLoading } = useQuery({
-    queryKey: ["classes", "bySchool", teacher?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
-    enabled: !!teacher?.schoolId,
+    queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
+    queryFn: () => classApi.getAll({ classTeacherId: teacher.id, schoolId: selectedHubId }),
+    enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myClasses = classesData?.data || [];
 
   const classIdParam = searchParams.get("classId");
   const selectedClassId = (classIdParam && myClasses.some((c) => c.id === classIdParam)) ? classIdParam : myClasses[0]?.id;
   const selectedClass = myClasses.find((c) => c.id === selectedClassId) || null;
 
-  const switchClass = (id) => setSearchParams({ classId: id });
+  // Preserve any other params already on the URL (notably the portal's own ?hub= hub-switcher
+  // param) — a plain setSearchParams({classId: id}) would wipe them out.
+  const switchClass = (id) => setSearchParams((prev) => {
+    const next = new URLSearchParams(prev);
+    next.set("classId", id);
+    return next;
+  });
 
   const { data: learnersData, isLoading: learnersLoading } = useQuery({
     queryKey: ["learners", "byClass", selectedClassId],

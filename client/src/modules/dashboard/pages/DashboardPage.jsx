@@ -599,9 +599,9 @@ export default function DashboardPage() {
         />
         <StatCard
           icon={<PersonIcon fontSize="small" />}
-          label="Teachers"
+          label="Tech Educators"
           value={teachersLoading ? "—" : totalTeachers}
-          sub={teachersLoading ? null : totalTeachers === 0 ? "Add teachers to classes" : `${activeTeachers} active`}
+          sub={teachersLoading ? null : totalTeachers === 0 ? "Add tech educators to classes" : `${activeTeachers} active`}
           accent="#25476a"
           actionLabel={totalTeachers === 0 ? "Get started" : "View all"}
           onAction={() => navigate("/teachers")}
@@ -834,8 +834,8 @@ export default function DashboardPage() {
               />
               <QuickAction
                 icon={<PersonIcon fontSize="small" />}
-                label="Add Teacher"
-                description="Register a teacher profile"
+                label="Add Tech Educator"
+                description="Register a tech educator profile"
                 onClick={() => navigate("/teachers/create")}
               />
             </div>
@@ -900,7 +900,7 @@ export default function DashboardPage() {
               />
               <ModuleTile
                 icon={<PersonIcon fontSize="small" />}
-                label="Teachers"
+                label="Tech Educators"
                 description="Staff profiles"
                 count={totalTeachers}
                 accentColor="#25476a"

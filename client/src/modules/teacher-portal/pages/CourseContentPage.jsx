@@ -1,41 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { teacherApi } from "../../teachers/services/teacherApi";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useOutletContext } from "react-router-dom";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
 export default function CourseContentPage() {
-  const { user } = useAuth();
-
-  const { data: teachersData, isLoading: teacherLoading } = useQuery({
-    queryKey: ["teachers", "byEmail", user?.email],
-    queryFn: () => teacherApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const teacher = teachersData?.data?.[0] || null;
-
-  const { data: school, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "detail", teacher?.schoolId],
-    queryFn: () => schoolApi.getById(teacher.schoolId),
-    enabled: !!teacher?.schoolId,
-  });
+  const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
   // A curriculum's courses are assigned per grade (see Curriculum Version Control) — so a
   // teacher only ever sees the courses for the grade(s) of the class(es) they're the class
-  // teacher for, not every course in the school's curriculum.
+  // teacher for at the currently selected hub, not every course in the hub's curriculum.
   const { data: classesData, isLoading: classesLoading } = useQuery({
-    queryKey: ["classes", "bySchool", teacher?.schoolId],
-    queryFn: () => classApi.getAll({ schoolId: teacher.schoolId }),
-    enabled: !!teacher?.schoolId,
+    queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
+    queryFn: () => classApi.getAll({ classTeacherId: teacher.id, schoolId: selectedHubId }),
+    enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = (classesData?.data || []).filter((c) => c.classTeacherId === teacher?.id);
+  const myClasses = classesData?.data || [];
   const myGradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
 
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(school?.curriculumId, myGradeNames);
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, myGradeNames);
 
-  const isLoading = teacherLoading || (!!teacher && (schoolLoading || classesLoading));
+  const isLoading = teacherLoading || (!!teacher && classesLoading);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -58,10 +43,10 @@ export default function CourseContentPage() {
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No teacher profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your school admin to add you as a teacher using this same email address.</p>
         </div>
-      ) : !school?.curriculumId ? (
+      ) : !selectedHub?.curriculumId ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Your school hasn't been assigned a curriculum yet.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>This hub hasn't been assigned a curriculum yet.</p>
         </div>
       ) : myClasses.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>

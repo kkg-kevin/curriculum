@@ -24,9 +24,7 @@ export default function CreateLearnerPage() {
     resolver: zodResolver(createLearnerSchema),
     defaultValues: {
       firstName: "", lastName: "", gender: "",
-      schoolId: lockedSchoolId, classId: "",
-      guardianName: "", guardianPhone: "", guardianEmail: "",
-      status: "active",
+      guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
     },
     mode: "onTouched",
   });
@@ -34,7 +32,11 @@ export default function CreateLearnerPage() {
   const { handleSubmit, formState: { isDirty } } = methods;
 
   const onSubmit = (data) => {
-    createLearner(data, {
+    // A learner is never linked to a hub as part of its own identity — hubId here is purely
+    // an optional one-shot convenience for when this page was opened from within a school's
+    // own page (e.g. its "Enrol Learner" button), same pattern as CreateTeacherPage.
+    const payload = lockedSchoolId ? { ...data, hubId: lockedSchoolId } : data;
+    createLearner(payload, {
       onSuccess: (learner) => navigate(learnerPath(user?.role, learner.id, "view")),
     });
   };
@@ -59,7 +61,7 @@ export default function CreateLearnerPage() {
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Enroll Learner</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            Fill in the learner's details. An admission number will be auto-generated.
+            Fill in the learner's details, then assign them to a learning hub from their profile.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -82,7 +84,7 @@ export default function CreateLearnerPage() {
       <div style={{ maxWidth: 640 }}>
         <FormProvider {...methods}>
           <form id="create-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <LearnerForm lockedSchoolId={lockedSchoolId} />
+            <LearnerForm />
           </form>
         </FormProvider>
       </div>

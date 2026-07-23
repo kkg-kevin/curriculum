@@ -11,7 +11,6 @@ const baseTeacherSchema = z.object({
   // setOrCreatePassword), then gets stripped before the teacher record is saved.
   password:   z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   phone:      z.string().max(20).default(""),
-  schoolId:   z.string().min(1, "School is required"),
   status:     z.enum(TEACHER_STATUSES).default("active"),
 });
 

@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const AssessmentSubmissionService = require("./assessment-submission.service");
 const ClassModel = require("../../classes/class.model");
+const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const { assertOwn } = require("../../../shared/middleware/scope.middleware");
 const {
   issueAssessmentSchema,
@@ -71,12 +72,17 @@ const revokeIssue = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-// Learner's own issued-assessments list — scoped entirely off their own learner record, never
-// off a client-supplied classId, so a learner can't read another class's assignments.
+// Learner's own issued-assessments list — scoped entirely off their own enrollment links,
+// never off a client-supplied classId, so a learner can't read another class's assignments.
+// A learner can now be enrolled in several classes at once, so this merges every active
+// enrollment's issued assessments into one list rather than assuming a single class.
 const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
-  if (!learner?.classId) return res.json({ success: true, data: [] });
-  const rows = AssessmentSubmissionService.getIssuedAssessmentsForLearner(learner.classId, learner.id);
+  if (!learner) return res.json({ success: true, data: [] });
+  const classIds = LearnerHubLinkModel.findByLearnerId(learner.id)
+    .filter((l) => l.classId && l.status === "active")
+    .map((l) => l.classId);
+  const rows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learner.id));
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -89,7 +95,7 @@ const getOrCreateSubmission = asyncHandler(async (req, res) => {
   }
   const learner = req.ownLearner;
   assertOwn(!!learner);
-  const submission = AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId: learner.id, classId: learner.classId });
+  const submission = AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId: learner.id });
   res.status(201).json({ success: true, data: submission });
 });
 

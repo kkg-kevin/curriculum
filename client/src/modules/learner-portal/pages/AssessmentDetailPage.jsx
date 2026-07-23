@@ -139,7 +139,7 @@ export default function AssessmentDetailPage() {
 
           {submission.overallFeedback && (
             <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
-              <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Teacher Feedback</p>
+              <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Tech Educator Feedback</p>
               <p style={{ margin: 0, fontSize: 13.5, color: T.ink }}>{submission.overallFeedback}</p>
             </div>
           )}

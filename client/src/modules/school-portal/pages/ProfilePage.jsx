@@ -6,11 +6,10 @@ import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
-import { useUpdateLearningHub as useUpdateSchool } from "../../learning-hubs/hooks/useLearningHub";
+import { useUpdateLearningHub as useUpdateSchool, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { learningHubProfileSchema as schoolProfileSchema, KENYA_COUNTIES } from "../../learning-hubs/schemas/learningHub.schema";
 import { classApi } from "../../classes/services/classApi";
-import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { classesListPath, teachersListPath, learnersListPath } from "../../../routes/portalPaths";
 
@@ -176,10 +175,10 @@ export default function ProfilePage() {
   // Trailing "" mirrors the unfiltered default of the statusFilter state on the list pages, so
   // navigating between here and there reuses the same cache entry instead of re-fetching.
   const { data: classesData }  = useQuery({ queryKey: ["classes", "bySchool", school?.id, ""],  queryFn: () => classApi.getAll({ schoolId: school.id }),  enabled: !!school?.id });
-  const { data: teachersData } = useQuery({ queryKey: ["teachers", "bySchool", school?.id, ""], queryFn: () => teacherApi.getAll({ schoolId: school.id }), enabled: !!school?.id });
+  const { data: hubTeachers }  = useHubTeachersQuery(school?.id);
   const { data: learnersData } = useQuery({ queryKey: ["learners", "bySchool", school?.id, ""], queryFn: () => learnerApi.getAll({ schoolId: school.id }), enabled: !!school?.id });
   const classesCount  = classesData?.data?.length  || 0;
-  const teachersCount = teachersData?.data?.length || 0;
+  const teachersCount = hubTeachers?.length || 0;
   const learnersCount = learnersData?.data?.length || 0;
 
   const [editing, setEditing] = useState(false);
@@ -227,7 +226,7 @@ export default function ProfilePage() {
       {/* Stats */}
       <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
         <StatTile icon={<FiBookOpen size={17} strokeWidth={2} />} num={classesCount} label="Classes" onClick={() => navigate(classesListPath("school", school.id))} />
-        <StatTile icon={<FiUserCheck size={17} strokeWidth={2} />} num={teachersCount} label="Teachers" onClick={() => navigate(teachersListPath("school", school.id))} />
+        <StatTile icon={<FiUserCheck size={17} strokeWidth={2} />} num={teachersCount} label="Tech Educators" onClick={() => navigate(teachersListPath("school", school.id))} />
         <StatTile icon={<FiAward size={17} strokeWidth={2} />} num={learnersCount} label="Learners" onClick={() => navigate(learnersListPath("school", school.id))} />
       </div>
 

@@ -3,6 +3,7 @@ const CurriculumService = require("./curriculum.service");
 const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema } = require("./curriculum.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const SchoolModel = require("../learning-hubs/learning-hub.model");
+const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);
@@ -23,8 +24,9 @@ const getCurriculumById = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     assertOwn(req.ownSchool?.curriculumId === curriculum.id);
   } else if (req.user.role === "teacher") {
-    const school = req.ownTeacher ? SchoolModel.findById(req.ownTeacher.schoolId) : null;
-    assertOwn(school?.curriculumId === curriculum.id);
+    const hubIds = req.ownTeacher ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).map((l) => l.hubId) : [];
+    const hasThisCurriculum = hubIds.some((hid) => SchoolModel.findById(hid)?.curriculumId === curriculum.id);
+    assertOwn(hasThisCurriculum);
   }
   res.json({ success: true, data: curriculum });
 });

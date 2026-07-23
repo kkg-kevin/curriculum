@@ -7,7 +7,7 @@ import { useCreateTeacher } from "../hooks/useTeacher";
 import { CLASS_KEYS } from "../../classes/hooks/useClasses";
 import { teacherSchema } from "../schemas/teacher.schema";
 import { classApi } from "../../classes/services/classApi";
-import { teacherApi } from "../services/teacherApi";
+import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -57,21 +57,17 @@ export default function CreateTeacherPage() {
     enabled:  !!lockedSchoolId,
   });
 
-  const { data: allTeachersData } = useQuery({
-    queryKey: ["teachers", "bySchool", lockedSchoolId],
-    queryFn:  () => teacherApi.getAll({ schoolId: lockedSchoolId }),
-    enabled:  !!lockedSchoolId,
-  });
+  const { data: hubTeachers } = useHubTeachersQuery(lockedSchoolId);
 
   const schoolClasses = (classesData?.data || []).filter((c) => c.status === "active");
-  const teachersMap = Object.fromEntries((allTeachersData?.data || []).map((t) => [t.id, t]));
+  const teachersMap = Object.fromEntries((hubTeachers || []).map((t) => [t.id, t]));
 
   const methods = useForm({
     resolver: zodResolver(teacherSchema),
     defaultValues: {
       firstName: "", lastName: "",
       email: "", password: "", phone: "",
-      schoolId: lockedSchoolId, status: "active",
+      status: "active",
     },
     mode: "onTouched",
   });
@@ -87,7 +83,8 @@ export default function CreateTeacherPage() {
   };
 
   const onSubmit = (data) => {
-    createTeacher(data, {
+    const payload = lockedSchoolId ? { ...data, hubId: lockedSchoolId } : data;
+    createTeacher(payload, {
       onSuccess: async (teacher) => {
         if (selectedClassIds.size > 0) {
           await Promise.all(
@@ -115,14 +112,14 @@ export default function CreateTeacherPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Teachers
+              ← Tech Educators
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Add Teacher</h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Add Tech Educator</h1>
           <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Fill in the teacher's details and optionally assign them to one or more classes.
+            Fill in the tech educator's details and optionally assign them to one or more classes.
           </p>
         </div>
 
@@ -138,14 +135,14 @@ export default function CreateTeacherPage() {
           >
             {isPending ? (
               <><span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>
-            ) : "Save Teacher"}
+            ) : "Save Tech Educator"}
           </button>
         </div>
       </div>
 
       <FormProvider {...methods}>
         <form id="create-teacher-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <TeacherForm lockedSchoolId={lockedSchoolId} />
+          <TeacherForm />
         </form>
       </FormProvider>
 
@@ -157,7 +154,7 @@ export default function CreateTeacherPage() {
               <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: "#9CA3AF" }}>optional</span>
             </h3>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-              Select which classes this teacher will be the class teacher for.
+              Select which classes this tech educator will be the class tech educator for.
               {selectedClassIds.size > 0 && (
                 <span style={{ marginLeft: 8, color: ACCENT, fontWeight: 600 }}>{selectedClassIds.size} selected</span>
               )}
@@ -179,7 +176,7 @@ export default function CreateTeacherPage() {
 
       {lockedSchoolId && schoolClasses.length === 0 && classesData && (
         <div style={{ marginTop: 20, padding: "16px 20px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 13, color: "#92400E" }}>
-          No active classes in this school yet. Set up classes first to assign this teacher.
+          No active classes in this school yet. Set up classes first to assign this tech educator.
         </div>
       )}
 
