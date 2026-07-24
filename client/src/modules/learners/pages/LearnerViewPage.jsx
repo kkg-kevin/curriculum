@@ -372,6 +372,9 @@ export default function LearnerViewPage() {
           <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Guardian</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DetailRow label="Gender" value={learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null} />
+            <DetailRow label="Date of Birth" value={learner.dateOfBirth ? new Date(learner.dateOfBirth).toLocaleDateString() : null} />
+            <DetailRow label="Nationality" value={learner.nationality} />
+            <DetailRow label="Languages" value={learner.languages} />
             <DetailRow label="Name"  value={learner.guardianName} />
             <DetailRow label="Phone" value={learner.guardianPhone} />
             <DetailRow label="Email" value={learner.guardianEmail} />

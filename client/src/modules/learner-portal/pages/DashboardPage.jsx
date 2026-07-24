@@ -8,7 +8,7 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
-import { getCourseCompletionPercent, getProgressSummary } from "../utils/progressStorage";
+import { summarizeCoursesProgress } from "../utils/progressStorage";
 import Avatar from "../components/Avatar";
 import SideRail from "../components/SideRail";
 
@@ -91,7 +91,7 @@ export default function DashboardPage() {
   const school = primary || null;
 
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
-  const progressSummary = useMemo(() => getProgressSummary(user?.email), [user?.email]);
+  const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
   const issuedRows = issuedData?.data || [];
@@ -110,13 +110,9 @@ export default function DashboardPage() {
     [issuedRows]
   );
 
-  const coursesWithProgress = useMemo(
-    () => (courses || []).map((c) => ({ ...c, percent: getCourseCompletionPercent(user?.email, c.id, c.sessionCount ?? 0) })),
-    [courses, user?.email]
-  );
   const continueCourse = useMemo(
-    () => coursesWithProgress.find((c) => c.percent > 0 && c.percent < 100) || coursesWithProgress[0] || null,
-    [coursesWithProgress]
+    () => progressSummary.courses.find((c) => c.percent > 0 && c.percent < 100) || progressSummary.courses[0] || null,
+    [progressSummary.courses]
   );
 
   // "My Teachers & Mentors" resolves each hub's class teacher — real data via a small join,

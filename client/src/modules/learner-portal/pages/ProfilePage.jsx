@@ -6,7 +6,7 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { useUpdateLearner, useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useCompetencies, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
-import { getProgressSummary } from "../utils/progressStorage";
+import { summarizeCoursesProgress } from "../utils/progressStorage";
 
 import { T, cardStyle } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
@@ -79,7 +79,7 @@ export default function ProfilePage() {
     [hubs, mentorTeachers]
   );
 
-  const progressSummary = useMemo(() => getProgressSummary(user?.email), [user?.email]);
+  const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
   const isLoading = learnerLoading || (!!learner && hubsLoading);
 

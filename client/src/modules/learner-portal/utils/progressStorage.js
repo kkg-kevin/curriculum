@@ -33,46 +33,6 @@ export function setLearnerProgress(email, progress) {
   writeStore(data);
 }
 
-export function updateCourseProgress(email, courseId, courseName, status) {
-  const progress = getLearnerProgress(email);
-  const next = {
-    ...progress,
-    courses: {
-      ...(progress.courses || {}),
-      [courseId]: {
-        courseName: courseName || progress.courses?.[courseId]?.courseName || `Course ${courseId}`,
-        status,
-        updatedAt: new Date().toISOString(),
-      },
-    },
-  };
-
-  setLearnerProgress(email, next);
-  return next;
-}
-
-export function getCourseProgress(email, courseId) {
-  const progress = getLearnerProgress(email);
-  return progress.courses?.[courseId] || null;
-}
-
-export function getProgressSummary(email) {
-  const progress = getLearnerProgress(email);
-  const courses = Object.values(progress.courses || {});
-  const completed = courses.filter((course) => course.status === "completed").length;
-  const inProgress = courses.filter((course) => course.status === "in-progress").length;
-  const started = completed + inProgress;
-  const total = courses.length;
-
-  return {
-    total,
-    completed,
-    inProgress,
-    started,
-    percent: total ? Math.round((completed / total) * 100) : 0,
-  };
-}
-
 /* ── Section-level completion (per session, per section) ─────────────────
    A section is marked complete the moment a learner opens it — every
    session always exposes the same fixed set of SECTIONS regardless of
@@ -128,4 +88,17 @@ export function getCourseCompletionPercent(email, courseId, sessionCount) {
   const totalSections = (sessionCount || 0) * SECTIONS.length;
   if (!totalSections) return 0;
   return Math.min(100, Math.round((countCompletedSections(email, courseId) / totalSections) * 100));
+}
+
+// Real, section-driven aggregate across a course list — the single source of truth for
+// "how much has this learner actually done," used by Dashboard, My Courses, and Progress so
+// they can never disagree with each other the way a separate self-reported status ever could.
+export function summarizeCoursesProgress(email, courses) {
+  const withPercent = (courses || []).map((c) => ({ ...c, percent: getCourseCompletionPercent(email, c.id, c.sessionCount ?? 0) }));
+  const completed = withPercent.filter((c) => c.percent === 100).length;
+  const inProgress = withPercent.filter((c) => c.percent > 0 && c.percent < 100).length;
+  const total = withPercent.length;
+  const avgPercent = total ? Math.round(withPercent.reduce((sum, c) => sum + c.percent, 0) / total) : 0;
+
+  return { courses: withPercent, total, completed, inProgress, notStarted: total - completed - inProgress, percent: avgPercent };
 }

@@ -188,5 +188,35 @@
     "status": "active",
     "createdAt": "2026-07-23T17:57:47.730Z",
     "updatedAt": "2026-07-23T17:57:47.730Z"
+  },
+  {
+    "id": "9539423d-fada-4ae0-855b-8bb5a9373a6e",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "hubId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "classId": "4a1cf7a1-02b6-4fb1-8e3a-99b4131d0f46",
+    "admissionNumber": "NAMB-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-24T07:09:14.405Z",
+    "updatedAt": "2026-07-24T07:09:14.405Z"
+  },
+  {
+    "id": "be6f296c-b4f3-40f1-80de-3610df7bb0d3",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "hubId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "classId": "7e0b0684-eb68-4270-8424-274879608c1b",
+    "admissionNumber": "DS-2026-004",
+    "status": "active",
+    "createdAt": "2026-07-24T07:09:18.573Z",
+    "updatedAt": "2026-07-24T07:09:18.573Z"
+  },
+  {
+    "id": "35f72e7f-91e4-4446-8326-f7fba36eefd1",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "hubId": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "classId": "e1ab5688-5fc3-44f3-b40d-262b854c1043",
+    "admissionNumber": "DIA-NRB-2026-001",
+    "status": "active",
+    "createdAt": "2026-07-24T07:09:22.174Z",
+    "updatedAt": "2026-07-24T07:09:22.174Z"
   }
 ]

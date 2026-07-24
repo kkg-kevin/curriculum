@@ -2,7 +2,7 @@
   {
     "name": "Admin",
     "email": "admin@digifunzi.com",
-    "passwordHash": "$2b$10$XsQKurtvqWeR/CyCkmVmEemQ2DE281QwIKxeQ00ugaKjtR96v55ZW",
+    "passwordHash": "$2b$10$t5vl4oP6QUDCeWQeDs.Qqe4of2lc6Zq3sV3cgqQJXr1LGAksW8dzS",
     "role": "admin",
     "id": "e8cc7387-d36b-4101-98d8-dcea02b885ac",
     "createdAt": "2026-07-08T11:20:18.637Z",
