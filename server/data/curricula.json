@@ -250,5 +250,24 @@
     "id": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
     "createdAt": "2026-07-24T12:43:58.328Z",
     "updatedAt": "2026-07-24T12:44:23.832Z"
+  },
+  {
+    "name": "wes",
+    "code": "W",
+    "academicYear": "",
+    "description": "ywserdfg",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": false,
+    "academicCycleModel": "terms",
+    "periods": [],
+    "classes": [],
+    "id": "8756f427-1a2b-4750-bdec-0b5a39f7fd35",
+    "createdAt": "2026-07-24T13:34:58.866Z",
+    "updatedAt": "2026-07-24T13:34:58.866Z"
   }
 ]
