@@ -375,6 +375,7 @@ export default function LearnerViewPage() {
             <DetailRow label="Date of Birth" value={learner.dateOfBirth ? new Date(learner.dateOfBirth).toLocaleDateString() : null} />
             <DetailRow label="Nationality" value={learner.nationality} />
             <DetailRow label="Languages" value={learner.languages} />
+            <DetailRow label="Student Username" value={learner.username} />
             <DetailRow label="Name"  value={learner.guardianName} />
             <DetailRow label="Phone" value={learner.guardianPhone} />
             <DetailRow label="Email" value={learner.guardianEmail} />

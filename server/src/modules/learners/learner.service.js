@@ -11,8 +11,21 @@ const generateAdmissionNumber = (schoolCode, year) => {
   return `${prefix}-${seq}`;
 };
 
+// Shared by create/update — a username has to be unique across every learner, since it's a
+// login identifier (see auth.service.js resolving it back to a guardian account).
+function assertUsernameAvailable(username, excludeId) {
+  if (!username) return;
+  const existing = LearnerModel.findByUsername(username);
+  if (existing && existing.id !== excludeId) {
+    const err = new Error("This username is already taken");
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
 const LearnerService = {
   async createLearner(data) {
+    assertUsernameAvailable(data.username);
     return LearnerModel.create(data);
   },
 
@@ -26,7 +39,13 @@ const LearnerService = {
   // identity records — there's no single enrollment to merge.
   async getAllLearners({ schoolId, classId, status, guardianEmail, ids } = {}) {
     if (!schoolId && !classId) {
-      return LearnerModel.findAll({ guardianEmail, ids });
+      // No single admissionNumber applies across hubs, but a hub count is real, cheap to
+      // compute here, and lets the flat cross-hub card show something more honest than
+      // "no ID" for a learner who simply isn't scoped to one hub in this view.
+      return LearnerModel.findAll({ guardianEmail, ids }).map((l) => ({
+        ...l,
+        hubCount: LearnerHubLinkModel.findByLearnerId(l.id).length,
+      }));
     }
     let links = classId ? LearnerHubLinkModel.findByClassId(classId) : LearnerHubLinkModel.findByHubId(schoolId);
     if (schoolId && classId) links = links.filter((l) => l.hubId === schoolId);
@@ -51,6 +70,7 @@ const LearnerService = {
   },
 
   async updateLearner(id, data) {
+    assertUsernameAvailable(data.username, id);
     const record = LearnerModel.update(id, data);
     if (!record) {
       const err = new Error("Learner not found");

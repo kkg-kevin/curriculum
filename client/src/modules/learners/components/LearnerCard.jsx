@@ -100,7 +100,9 @@ export function LearnerCard({ learner, classMap }) {
               >
                 {learner.firstName} {learner.lastName}
               </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{learner.admissionNumber || "No ID"}</p>
+              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
+                {learner.admissionNumber || (learner.hubCount > 0 ? `${learner.hubCount} hub${learner.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
+              </p>
             </div>
           </div>
           <button

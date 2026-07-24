@@ -2,7 +2,7 @@
   {
     "name": "Admin",
     "email": "admin@digifunzi.com",
-    "passwordHash": "$2b$10$t5vl4oP6QUDCeWQeDs.Qqe4of2lc6Zq3sV3cgqQJXr1LGAksW8dzS",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "admin",
     "id": "e8cc7387-d36b-4101-98d8-dcea02b885ac",
     "createdAt": "2026-07-08T11:20:18.637Z",
@@ -11,7 +11,7 @@
   {
     "name": "Teacher ",
     "email": "teacher@digifunzi.com",
-    "passwordHash": "$2b$10$T75l6HIAuHIdl8Nw6TYsEuhd.SN7F5Mk7ZxRpv4QyM8DT9dfZZFX.",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-09T07:54:00.373Z",
@@ -20,7 +20,7 @@
   {
     "name": "School",
     "email": "school@digifunzi.com",
-    "passwordHash": "$2b$10$KVlt0Qf6QVrx4f5fd66Xqe/cuD6BJFAsCmiAh8WcJadDtmqs9jNT6",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "school",
     "id": "4a3bcb82-123c-4102-a2b9-a730b5124d11",
     "createdAt": "2026-07-09T08:19:34.545Z",
@@ -29,7 +29,7 @@
   {
     "name": "Learner ",
     "email": "learner@digifunzi.com",
-    "passwordHash": "$2b$10$TcWK1n6GUaA9z6oJ4R88.eqV99NEPjnm.tLoxAXUuRTEdVCumevzy",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "ee4ef989-0569-47ad-9496-d4cfd15c7440",
     "createdAt": "2026-07-09T08:20:23.161Z",
@@ -38,7 +38,7 @@
   {
     "name": "KEVIN KIHARA",
     "email": "kev@digifunzi.com",
-    "passwordHash": "$2b$10$mJP55l092eHPWEyhKzvsvua5HsW3pyVB9vt1nnQNSS5fV3GZ5l.qe",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "school",
     "id": "9abf6b20-6383-464e-b7d0-ced868c1e6dd",
     "createdAt": "2026-07-17T12:24:36.806Z",
@@ -47,7 +47,7 @@
   {
     "name": "faith wanjiru",
     "email": "faith@faith.com",
-    "passwordHash": "$2b$10$xneV8GjHbQLh1WzI0eVYRuPuLqLsFLzLZKoEedcuZExcewEu33QkS",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "12d44e3c-982d-4155-81d0-dc28ac8c81b9",
     "createdAt": "2026-07-17T12:45:51.525Z",
@@ -56,7 +56,7 @@
   {
     "name": "Jane  Mwangi",
     "email": "jane@digifunzi.com",
-    "passwordHash": "$2b$10$/MgDAM//r0sF5QJW6plpFuizHpwmGBZofbOvhplAl3I2QM3RDsXj6",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "74b50d90-d8f7-4761-9a38-dfb154ccd182",
     "createdAt": "2026-07-17T12:47:10.539Z",
@@ -65,7 +65,7 @@
   {
     "name": "Nairobi Academy Main Branch",
     "email": "nairobi@digifunzi.com",
-    "passwordHash": "$2b$10$LJTH1SYmnixDzxu4BRK7w.weQkAZyBLiaHVkFbwDibHUqeO3MPF7y",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "school",
     "id": "b31e3cd4-5a26-4c42-9bbf-69130cadccd6",
     "createdAt": "2026-07-22T08:06:40.482Z",
@@ -74,7 +74,7 @@
   {
     "name": "Kevin Githinji",
     "email": "kevin@digifunzi.com",
-    "passwordHash": "$2b$10$f822OS38a3wJ4Suy0BdQIef0em.yp2rWch8gsFVEQeUdUnlxHw5E6",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "a64b583e-7c44-4764-a4b7-ba5e27087cec",
     "createdAt": "2026-07-22T13:26:18.709Z",
@@ -83,7 +83,7 @@
   {
     "name": "Kevin Githinji",
     "email": "kihara@gmail.com",
-    "passwordHash": "$2b$10$TO5FgVrzWWsLkwn6lrQx3uBq7F8UdFtbuueiUvSIec37YNgvP/k1S",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "7914b0d5-5709-4254-8262-cf2d47b734c1",
     "createdAt": "2026-07-23T06:30:13.274Z",
@@ -92,7 +92,7 @@
   {
     "name": "ken maina",
     "email": "maina@digifunzi.com",
-    "passwordHash": "$2b$10$LsFiOgYsUxsxw3F.Y8J6FeawDeh4KUBCINZDQPhfyHRfcC6cW8i22",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "8d1979c5-e62a-40cc-9e32-e9a2598398bf",
     "createdAt": "2026-07-23T06:30:13.393Z",
@@ -101,7 +101,7 @@
   {
     "name": "Rose Muthoni",
     "email": "rose.muthoni@westlandsprimary.ac.ke",
-    "passwordHash": "$2b$10$rs65ZpuTRHt0iHTf9eWjg.kAb3UGdwd/I4.O7clbCWIDe6zAqfNse",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "8ed387e9-2872-4150-85b0-5f335c3ba159",
     "createdAt": "2026-07-23T06:30:13.501Z",
@@ -110,7 +110,7 @@
   {
     "name": "Samuel Kipchoge",
     "email": "samuel.kipchoge@riarasprings.ac.ke",
-    "passwordHash": "$2b$10$vUfkqyJHPL9xMtsT2lOpVO3LWrlUbDT0ihVQ1DM9FCIB0esoB6vfi",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "737517cb-69eb-432d-b9ca-3a44696a9e4d",
     "createdAt": "2026-07-23T06:30:13.611Z",
@@ -119,7 +119,7 @@
   {
     "name": "Beatrice Otieno",
     "email": "beatrice.otieno@digifunzi.com",
-    "passwordHash": "$2b$10$CdD870wF.MmhDKPkM5dJwOlzhRE0e2Eihzbdhz2pfWma4PC20SARK",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "a1e8a54d-128e-4667-bc0f-b9799754c758",
     "createdAt": "2026-07-23T06:30:23.747Z",
@@ -128,7 +128,7 @@
   {
     "name": "David Kimani",
     "email": "david.kimani@peponi.ac.ke",
-    "passwordHash": "$2b$10$ef2tQBb2GFc.O0O/e91Tsekkmbd/L.Imiuf84x5z9lllIrc/d8gFC",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "74ba796d-5283-4884-b096-d9791c074b03",
     "createdAt": "2026-07-23T06:30:23.832Z",
@@ -137,7 +137,7 @@
   {
     "name": "Susan Njoroge",
     "email": "susan.njoroge@standrews-turi.ac.ke",
-    "passwordHash": "$2b$10$gj0fcjjxltScW0YDhAMI3OcS6E8eWUh1FWeO.Y3X0IojfPFS9psd6",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "70998d74-deba-4801-a1a0-b63acd0bf91b",
     "createdAt": "2026-07-23T06:30:23.914Z",
@@ -146,7 +146,7 @@
   {
     "name": "John Mutua",
     "email": "john.mutua@peponi.ac.ke",
-    "passwordHash": "$2b$10$c6QiHY5rHpKA/VXlKzN.QuHr9PrMI6CIqN5gPAkgN6dJuGu9Gr/x2",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "62012224-2817-484d-aaee-4ba7bf73316b",
     "createdAt": "2026-07-23T06:30:23.999Z",
@@ -155,7 +155,7 @@
   {
     "name": "Mary Achieng",
     "email": "mary.achieng@greensteds.ac.ke",
-    "passwordHash": "$2b$10$Fa1edRfMSYnEdZtAFsGxgOtyiwzp5fiCbHbPp2KM1Cb2USMIGP1by",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "01b68c12-93b6-44a5-8d28-3c8af2a91f4d",
     "createdAt": "2026-07-23T06:30:24.081Z",
@@ -164,7 +164,7 @@
   {
     "name": "Michael Kariuki",
     "email": "michael.kariuki@usiu.ac.ke",
-    "passwordHash": "$2b$10$gC0ziJP5RZHee0M3.PbB.e3j5rSPQf9mukfjWSB1cwtdNuFUnBTnq",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "1ac01eb6-2728-448e-829a-3c05df58a26b",
     "createdAt": "2026-07-23T06:30:24.165Z",
@@ -173,7 +173,7 @@
   {
     "name": "Rachel Atieno",
     "email": "rachel.atieno@hillcrest.ac.ke",
-    "passwordHash": "$2b$10$judaHp7RZHEwWxvCnmTlYeoEMG.KGJtLwhtyJ8tBlpWL1W8QofqpO",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "da552039-1d4e-4b6b-b2d6-b639d6d5bcbb",
     "createdAt": "2026-07-23T06:30:24.256Z",
@@ -182,7 +182,7 @@
   {
     "name": "Peter Odhiambo",
     "email": "peter.odhiambo@brookhouse.ac.ke",
-    "passwordHash": "$2b$10$Op6mLso11YS9GH4DVvjFTOlasoFQCGjuws/TrvhdQ6N39yDWmNkba",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "14b17ffc-d710-41d3-a54c-9e2844ff1cca",
     "createdAt": "2026-07-23T06:30:24.353Z",
@@ -191,7 +191,7 @@
   {
     "name": "Grace Wanjiku",
     "email": "grace.wanjiku@braeburn.ac.ke",
-    "passwordHash": "$2b$10$HI3OUKfetOh1uch0tES2vOIo5jcrtZoRMiztlj3MJK8yohJxpqPbm",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "62266356-c41d-48cd-b1fd-63825d7c47b8",
     "createdAt": "2026-07-23T06:30:24.459Z",
@@ -200,7 +200,7 @@
   {
     "name": "James Kamau",
     "email": "james.kamau@usiu.ac.ke",
-    "passwordHash": "$2b$10$NcjNOwLAHGZq88sTcbGq8eHqDZWCZWK14gfOJqH3KkK71.QLcrKWe",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "3f033548-c352-453c-a1c3-d6b9c1ba851e",
     "createdAt": "2026-07-23T06:30:24.546Z",
@@ -209,7 +209,7 @@
   {
     "name": "Ken Maina",
     "email": "kenmaina@digifunzi.com",
-    "passwordHash": "$2b$10$I/E5/ZDN/04rB5mFDDSuXeVpJ1zdwTkmjF15g91TwwFxd11PWUYxq",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "5dae9be9-8eb0-4946-9c6a-541a82a70c8f",
     "createdAt": "2026-07-23T06:30:24.629Z",
@@ -218,7 +218,7 @@
   {
     "name": "wVSD",
     "email": "acszx@gmail.com",
-    "passwordHash": "$2b$10$HwU2CYXC1gGsr2G77.g7YOOpAEtgQV6b6o33M4LUTGwTiFNCrbtRO",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "b05758b7-4d66-420b-9a4d-f07bd8e7790b",
     "createdAt": "2026-07-23T06:30:24.707Z",
@@ -227,7 +227,7 @@
   {
     "name": "Dorothy Oduya",
     "email": "dorothy.oduya@gmail.com",
-    "passwordHash": "$2b$10$K.WhUTLJUzp6xHpLFqa.qOXcmQqkFrxbHIiZXCZh9Rv0iYsm9USNG",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "45548f4a-d291-4893-ba0b-53721584b84d",
     "createdAt": "2026-07-23T06:30:24.793Z",
@@ -236,7 +236,7 @@
   {
     "name": "Peter Kariuki",
     "email": "peter.kariuki@gmail.com",
-    "passwordHash": "$2b$10$AqVjJ5lRtwgIYYy68YwHV.htJ8E5ZsB6brnrMARM4pxBEt/DKKU6S",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "f3189d64-62bf-4806-b82a-070b4833f03a",
     "createdAt": "2026-07-23T06:30:24.885Z",
@@ -245,7 +245,7 @@
   {
     "name": "Grace Akinyi",
     "email": "grace.akinyi@gmail.com",
-    "passwordHash": "$2b$10$25goupgyt9bzBOBlA.C5T.QOec0TYYY4.NZ3/DyOFP/AW3CV2q6Qq",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "0840d48c-ab2d-4b62-8c3e-7f75f7c8083b",
     "createdAt": "2026-07-23T06:30:24.979Z",
@@ -254,7 +254,7 @@
   {
     "name": "Samuel Mwangi",
     "email": "samuel.mwangi@gmail.com",
-    "passwordHash": "$2b$10$AGymdI.cOzl70HrNKRug7O4zIyTYk2ECAvvoGEvTw1Fv8TnBCASqe",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "64bb8d3b-af2b-4339-b886-f527a9b663a8",
     "createdAt": "2026-07-23T06:30:25.061Z",
@@ -263,7 +263,7 @@
   {
     "name": "Alice Kamau",
     "email": "alice.kamau@gmail.com",
-    "passwordHash": "$2b$10$PAChDDtoM60WZZASi5fcNuc0EqW/IJ7kM93Z3hnbT.u/CC481X6Hy",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "771c3e65-e9c4-4969-a801-93cd3086aafc",
     "createdAt": "2026-07-23T06:30:25.137Z",
@@ -272,7 +272,7 @@
   {
     "name": "George Otieno",
     "email": "george.otieno@gmail.com",
-    "passwordHash": "$2b$10$3ku3zKgWiIVtZyBGv0UESevjU.XZwhBTwnehAnKCmmqnSOsnRZNL2",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "acd5cd01-9660-4a9b-9b60-50801e507144",
     "createdAt": "2026-07-23T06:30:25.213Z",
@@ -281,7 +281,7 @@
   {
     "name": "Margaret Njeri",
     "email": "margaret.njeri@gmail.com",
-    "passwordHash": "$2b$10$YlcRwH75G.fkczwYAXSXL.AzC3ln6aiBVzZFr4OUpxUlAbGpJKi5q",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "e9a01e35-7bed-4b0e-9328-b1a7ecbf9ef8",
     "createdAt": "2026-07-23T06:30:25.307Z",
@@ -290,7 +290,7 @@
   {
     "name": "Korir Chepkwony",
     "email": "korir.chepkwony@gmail.com",
-    "passwordHash": "$2b$10$5VN9NPo/ygzF6zcBmbGeluXFL39cwvi4Gwpd835g29u5ZSvzh5.3q",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "b71e1bf7-f38e-4c26-a475-4516b39bf2a8",
     "createdAt": "2026-07-23T06:30:25.387Z",
@@ -299,7 +299,7 @@
   {
     "name": "Elizabeth Mutua",
     "email": "elizabeth.mutua@gmail.com",
-    "passwordHash": "$2b$10$.7V/1YQ67/Nb9JP.wjONs.0u8k1HKQ3R5M3QTmKqJICQx/TEn9MGe",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "dc3b9f3e-3af9-42cc-9b41-e5cd63cb0935",
     "createdAt": "2026-07-23T06:30:25.463Z",
@@ -308,7 +308,7 @@
   {
     "name": "Patrick Ochieng",
     "email": "patrick.ochieng@gmail.com",
-    "passwordHash": "$2b$10$4lYnDF/JFXQWp5YXWbMFx.nejMv0imnS8LfE4JKNp/1WwpA7rvL0i",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "e60cdfa0-9154-4c79-9ec3-7bf8d98a8f46",
     "createdAt": "2026-07-23T06:30:25.547Z",
@@ -317,7 +317,7 @@
   {
     "name": "Josephine Waweru",
     "email": "josephine.waweru@gmail.com",
-    "passwordHash": "$2b$10$Eyl3Ak.QKJAR3b7epTNavO4LHg/7ENicfa0ogUFxA5d3ezzK10PXu",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "94fd0d7e-b117-4355-a425-cc0b0e05e4f6",
     "createdAt": "2026-07-23T06:30:25.623Z",
@@ -326,7 +326,7 @@
   {
     "name": "Ahmed Hassan",
     "email": "ahmed.hassan@gmail.com",
-    "passwordHash": "$2b$10$MSK057Y/izEhOIJmYRzYNOHRor7lEIM76tqnB5Q1pNJYHFcbE8wOm",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "44cbbc6c-0b83-480f-97d6-471c4a1bf7dd",
     "createdAt": "2026-07-23T06:30:25.701Z",
@@ -335,7 +335,7 @@
   {
     "name": "Faith Wanjiru",
     "email": "guardian@gmail.com",
-    "passwordHash": "$2b$10$641cu/6PCLOajGhmzYP.k.4pwc0j0p//WQxyQRb70Ngtt6IdW7mbS",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "6397d963-0d25-4c6c-8c88-c6fee4a58ba7",
     "createdAt": "2026-07-23T06:30:25.780Z",
@@ -344,7 +344,7 @@
   {
     "name": "John Mbugua",
     "email": "mbugua@digifunzi.com",
-    "passwordHash": "$2b$10$oDy1J7ohAkfBXnjhw3VBxOqBrcCyE7wSaAsuXmIZ7SpsvWMy979XK",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "learner",
     "id": "2c6add17-08de-46a1-ac33-c30c65f2dd58",
     "createdAt": "2026-07-23T07:14:30.437Z",
@@ -353,7 +353,7 @@
   {
     "name": "Liza Wamuyu",
     "email": "liza@digifunzi.com",
-    "passwordHash": "$2b$10$IlkCo0jWUYQVmBN8F2XliO4bLuiwLkysa9YHQqbj8MGl.Pu97sEru",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "6bdd35e4-538d-4919-b7c1-81d8b7228d9b",
     "createdAt": "2026-07-23T07:16:10.133Z",
@@ -362,7 +362,7 @@
   {
     "name": "Kevin Githinji",
     "email": "kihara@digifunzi.com",
-    "passwordHash": "$2b$10$FkZTZ2OLbenev9S31CTMW.arsLZGwHtIiNPtEq9JptbuEj3aOjwlm",
+    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
     "role": "teacher",
     "id": "2ebe4772-f115-4f04-a34c-6d3c313a0b11",
     "createdAt": "2026-07-23T18:01:13.108Z",

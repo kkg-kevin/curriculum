@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+// Not a strict email format — a learner may sign in with their own username instead of the
+// guardian's email, into that same guardian-owned account.
 export const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  identifier: z.string().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
 });
 

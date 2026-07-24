@@ -22,6 +22,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     dateOfBirth: "",
     nationality: "",
     languages: "",
+    username: "",
     guardianName: "",
     guardianPhone: "",
     guardianEmail: "",
@@ -37,6 +38,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         dateOfBirth: learner.dateOfBirth || "",
         nationality: learner.nationality || "",
         languages: learner.languages || "",
+        username: learner.username || "",
         guardianName: learner.guardianName || "",
         guardianPhone: learner.guardianPhone || "",
         guardianEmail: learner.guardianEmail || "",
@@ -60,6 +62,9 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     if (!formData.guardianPhone.trim()) nextErrors.guardianPhone = "Guardian phone is required";
     if (formData.guardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guardianEmail)) {
       nextErrors.guardianEmail = "Enter a valid email";
+    }
+    if (formData.username && !/^[a-zA-Z0-9._-]{3,30}$/.test(formData.username)) {
+      nextErrors.username = "3-30 characters — letters, numbers, dots, underscores, and hyphens only";
     }
 
     setErrors(nextErrors);
@@ -137,6 +142,14 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
           <div>
             <label style={labelStyle}>Languages</label>
             <input name="languages" value={formData.languages} onChange={handleChange} placeholder="e.g. English, Kiswahili" style={inputStyle(false)} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Student username</label>
+            <input name="username" value={formData.username} onChange={handleChange} placeholder="e.g. grace.wambui" style={inputStyle(errors.username)} />
+            {errors.username
+              ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.username}</p>
+              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — lets your child log in with a username instead of your email, into this same account.</p>}
           </div>
 
           <div>

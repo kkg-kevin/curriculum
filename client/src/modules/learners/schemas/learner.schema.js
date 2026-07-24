@@ -7,6 +7,10 @@ const baseLearnerSchema = z.object({
   dateOfBirth:   z.string().optional().or(z.literal("")),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
+  // Lets the learner log into the same guardian-owned account by username instead of email.
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed")
+    .optional().or(z.literal("")),
   schoolId:      z.string().default(""),
   classId:       z.string().default(""),
   guardianName:  z.string().min(1, "Guardian name is required"),

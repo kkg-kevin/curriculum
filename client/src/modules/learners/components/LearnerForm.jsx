@@ -128,6 +128,13 @@ export default function LearnerForm() {
           </div>
         </div>
         <GuardianPasswordField />
+        <div style={S.field}>
+          <label style={S.label}>Student Username</label>
+          <input {...register("username")} placeholder="e.g. grace.wambui" style={S.input} />
+          {errors.username
+            ? <span style={S.error}>{errors.username.message}</span>
+            : <span style={S.hint}>Optional — lets the learner log into this same account with a username instead of typing the guardian's email.</span>}
+        </div>
       </div>
     </div>
   );

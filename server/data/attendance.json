@@ -31,5 +31,60 @@
     "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-21T11:10:21.731Z",
     "updatedAt": "2026-07-21T11:10:21.731Z"
+  },
+  {
+    "id": "06881bd3-1eac-442d-b535-5a98005e3c7f",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-24",
+    "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-24T08:51:10.422Z",
+    "updatedAt": "2026-07-24T08:51:10.422Z"
+  },
+  {
+    "id": "165c71c3-bfd0-439e-8e04-1f2fcb6a7f7b",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-24",
+    "learnerId": "1bf69a21-d2f2-4624-85bf-26616ec595b4",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-24T08:51:10.422Z",
+    "updatedAt": "2026-07-24T08:51:10.422Z"
+  },
+  {
+    "id": "42778f49-5240-4cf1-9397-cd52024af664",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-24",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-24T08:51:10.422Z",
+    "updatedAt": "2026-07-24T08:51:10.422Z"
+  },
+  {
+    "id": "b3b9bfb6-65f7-4863-9053-9b9129c615ac",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "date": "2026-07-24",
+    "learnerId": "237993bb-87c9-4f33-a500-4cdce3d735e9",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-24T08:51:18.725Z",
+    "updatedAt": "2026-07-24T08:51:18.725Z"
+  },
+  {
+    "id": "4c5af962-e1ff-4c9c-961c-b07311654c85",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "date": "2026-07-24",
+    "learnerId": "8e745b53-b69a-46cf-af4f-207fcbd0077e",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-24T08:51:18.725Z",
+    "updatedAt": "2026-07-24T08:51:18.725Z"
   }
 ]

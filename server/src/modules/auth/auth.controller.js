@@ -17,8 +17,8 @@ const signup = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = loginSchema.parse(req.body);
-  const { user, token } = await AuthService.login(email, password);
+  const { identifier, password } = loginSchema.parse(req.body);
+  const { user, token } = await AuthService.login(identifier, password);
   res.cookie(COOKIE_NAME, token, cookieOptions);
   res.json({ success: true, data: user });
 });

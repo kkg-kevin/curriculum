@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   AssignmentTurnedIn as AssignmentTurnedInIcon,
   AutoStories as AutoStoriesIcon,
@@ -6,12 +7,16 @@ import {
   School as SchoolIcon,
   SchoolOutlined as SchoolOutlinedIcon,
 } from "@mui/icons-material";
+import { FiAlertCircle } from "react-icons/fi";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade, useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
+import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
+import { attendanceApi } from "../../attendance/services/attendanceApi";
+import Avatar from "../../../components/ui/Avatar";
 
 const ACCENT = "#25476a";
 const T = {
@@ -21,13 +26,24 @@ const T = {
 
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
-function KpiTile({ icon, num, label }) {
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function HeroPill({ icon, value, label, highlight }) {
   return (
-    <div style={{ ...cardStyle, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{icon}</div>
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 14,
+        backgroundColor: highlight ? "rgba(254,177,57,0.18)" : "rgba(255,255,255,0.12)",
+        border: `1px solid ${highlight ? "rgba(254,177,57,0.4)" : "rgba(255,255,255,0.22)"}`,
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <span style={{ color: highlight ? "#feb139" : "rgba(255,255,255,0.85)", display: "flex" }}>{icon}</span>
       <div>
-        <p style={{ margin: 0, fontSize: 26, fontWeight: 800, color: T.accent, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{num}</p>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: T.inkMuted }}>{label}</p>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{value}</p>
+        <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{label}</p>
       </div>
     </div>
   );
@@ -53,25 +69,56 @@ export default function DashboardPage() {
 
   const totalLearners = myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0);
 
+  // Real, cheap signal for "needs attention" — which of today's classes still have zero
+  // attendance records for today, one lightweight query per class (same query the Attendance
+  // page itself uses, just checked across every class instead of one at a time).
+  const today = todayStr();
+  const attendanceChecks = useQueries({
+    queries: myClasses.map((c) => ({
+      queryKey: ATTENDANCE_KEYS.byDate(c.id, today),
+      queryFn: () => attendanceApi.getByClassDate(c.id, today),
+      enabled: !!c.id,
+    })),
+  });
+  const unmarkedClasses = useMemo(
+    () => myClasses.filter((c, i) => (c.learnerCount ?? 0) > 0 && attendanceChecks[i]?.data && (attendanceChecks[i].data.data || []).length === 0),
+    [myClasses, attendanceChecks]
+  );
+  const attendanceChecksLoading = attendanceChecks.some((q) => q.isLoading);
+
   const isLoading = teacherLoading || (!!teacher && classesLoading);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "28px 32px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ position: "relative" }}>
-          <h1 style={{ margin: "0 0 6px 0", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-            Welcome back{user?.name ? `, ${user.name}` : ""}
-          </h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
-            {selectedHub ? (
-              <>
-                {selectedHub.name}
-                {curriculum && <> · {curriculum.name}</>}
-                {curriculum?.publishedAcademicYear && <> · {curriculum.publishedAcademicYear}</>}
-              </>
-            ) : "Here's an overview of the classes you teach."}
-          </p>
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {teacher && <Avatar firstName={teacher.firstName} lastName={teacher.lastName} size={64} borderColor="rgba(255,255,255,0.3)" />}
+            <div>
+              <h1 style={{ margin: "0 0 6px 0", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
+                Welcome back{user?.name ? `, ${user.name}` : ""}
+              </h1>
+              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
+                {selectedHub ? (
+                  <>
+                    {selectedHub.name}
+                    {curriculum && <> · {curriculum.name}</>}
+                    {curriculum?.publishedAcademicYear && <> · {curriculum.publishedAcademicYear}</>}
+                  </>
+                ) : "Here's an overview of the classes you teach."}
+              </p>
+            </div>
+          </div>
+
+          {teacher && myClasses.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+              <HeroPill icon={<AutoStoriesIcon fontSize="small" />} value={myClasses.length} label={`Class${myClasses.length === 1 ? "" : "es"} taught`} />
+              <HeroPill icon={<PeopleAltIcon fontSize="small" />} value={totalLearners} label="Learners" />
+              <HeroPill icon={<AssignmentTurnedInIcon fontSize="small" />} value={allMyCourses?.length ?? 0} label={`Course${(allMyCourses?.length ?? 0) === 1 ? "" : "s"} to deliver`} />
+              <HeroPill icon={<FiAlertCircle size={16} />} value={unmarkedClasses.length} label="Attendance to mark today" highlight={unmarkedClasses.length > 0} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -94,11 +141,29 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-            <KpiTile icon={<AutoStoriesIcon fontSize="small" />} num={myClasses.length} label={`Class${myClasses.length === 1 ? "" : "es"} taught`} />
-            <KpiTile icon={<PeopleAltIcon fontSize="small" />} num={totalLearners} label="Learners" />
-            <KpiTile icon={<AssignmentTurnedInIcon fontSize="small" />} num={allMyCourses?.length ?? 0} label={`Course${(allMyCourses?.length ?? 0) === 1 ? "" : "s"} to deliver`} />
-          </div>
+          {!attendanceChecksLoading && unmarkedClasses.length > 0 && (
+            <div style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, color: T.accentMid, textTransform: "uppercase", letterSpacing: "0.07em" }}>Needs Your Attention</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {unmarkedClasses.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate(`/teacher-portal/attendance?classId=${c.id}`)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "10px 8px", borderRadius: 10, borderLeft: "3px solid #feb139" }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#B45309", flexShrink: 0 }}>
+                      <FiAlertCircle size={16} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{c.gradeName} — attendance not marked today</p>
+                      <p style={{ margin: 0, fontSize: 11.5, color: T.inkMuted }}>{c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}</p>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>Mark now →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {myClasses.map((c) => {

@@ -166,10 +166,11 @@
     "currentStageId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
     "id": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "createdAt": "2026-07-16T07:43:57.452Z",
-    "updatedAt": "2026-07-24T07:09:04.812Z",
+    "updatedAt": "2026-07-24T08:13:29.372Z",
     "dateOfBirth": "2015-06-20",
     "nationality": "Kenyan (Admin Edit)",
-    "languages": "English, Kiswahili, French"
+    "languages": "English, Kiswahili, French",
+    "username": "grace_test_learner"
   },
   {
     "firstName": "MARY",
@@ -234,6 +235,10 @@
     "currentStageId": null,
     "id": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
     "createdAt": "2026-07-23T07:14:30.442Z",
-    "updatedAt": "2026-07-23T07:14:30.442Z"
+    "updatedAt": "2026-07-24T08:23:07.890Z",
+    "dateOfBirth": "2010-02-01",
+    "nationality": "Kenyan",
+    "languages": "English, Kiswahili",
+    "username": "Derrick"
   }
 ]

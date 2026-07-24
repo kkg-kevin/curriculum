@@ -20,18 +20,18 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { identifier: "", password: "" },
     mode: "onTouched",
   });
 
-  const onSubmit = async ({ email, password }) => {
+  const onSubmit = async ({ identifier, password }) => {
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(identifier, password);
       const redirectTo = location.state?.from?.pathname || "/";
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      toast.error(err.message || "Invalid email or password");
+      toast.error(err.message || "Invalid email/username or password");
     } finally {
       setSubmitting(false);
     }
@@ -47,14 +47,14 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <FieldWrap label="Email address" error={errors.email?.message}>
+          <FieldWrap label="Email or Username" error={errors.identifier?.message}>
             <IconInput
               icon={FiMail}
-              type="email"
-              placeholder="you@school.ac.ke"
+              type="text"
+              placeholder="you@school.ac.ke or username"
               autoComplete="username"
-              error={errors.email}
-              {...register("email")}
+              error={errors.identifier}
+              {...register("identifier")}
             />
           </FieldWrap>
 

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiCalendar, FiClock, FiHome, FiMail, FiPhone, FiUserCheck } from "react-icons/fi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
 import { classApi } from "../../classes/services/classApi";
+import Avatar from "../../../components/ui/Avatar";
 
 const ACCENT = "#25476a";
 
@@ -13,15 +14,6 @@ const STATUS_STYLES = {
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
 };
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
-
-function Avatar({ firstName, lastName, size = 64 }) {
-  const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
-  return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", border: "3px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.34, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-      {initials || "?"}
-    </div>
-  );
-}
 
 function Section({ title, children, action }) {
   return (
@@ -98,7 +90,7 @@ export default function ProfilePage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <Avatar firstName={teacher.firstName} lastName={teacher.lastName} />
+          <Avatar firstName={teacher.firstName} lastName={teacher.lastName} borderColor="rgba(255,255,255,0.3)" />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>{teacher.firstName} {teacher.lastName}</h1>

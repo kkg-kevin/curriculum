@@ -16,6 +16,12 @@ const baseLearnerSchema = z.object({
   dateOfBirth:   z.string().optional().or(z.literal("")),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
+  // Lets the learner log into the same guardian-owned account by username instead of typing
+  // the guardian's email — see auth.service.js's login. Uniqueness is enforced in
+  // learner.service.js (own table, so it can't just reuse AuthService's email-uniqueness check).
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed")
+    .optional().or(z.literal("")),
   // Transient — never persisted onto the learner record. When present, creates or resets the
   // guardian's learner-portal login for guardianEmail (see auth.service.js's
   // setOrCreatePassword), then gets stripped before the learner record is saved.
