@@ -11,7 +11,7 @@
   {
     "name": "Teacher ",
     "email": "teacher@digifunzi.com",
-    "passwordHash": "$2b$10$q/t5KTXYM.OR6z/f8yFtXeqjrn7cSMCdLmQ8hKBI8wN8X3q6kC4Sy",
+    "passwordHash": "$2b$10$T75l6HIAuHIdl8Nw6TYsEuhd.SN7F5Mk7ZxRpv4QyM8DT9dfZZFX.",
     "role": "teacher",
     "id": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-09T07:54:00.373Z",

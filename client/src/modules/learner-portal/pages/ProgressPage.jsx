@@ -1,8 +1,7 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiCheckCircle, FiClipboard, FiTrendingUp } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { useCurrentLearner } from "../hooks/useCurrentLearner";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 
@@ -49,7 +48,7 @@ function statusOf(percent) {
 
 export default function LearnerProgressPage() {
   const navigate = useNavigate();
-  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useCurrentLearner();
+  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
   const summary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);
