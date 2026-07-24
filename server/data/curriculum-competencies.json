@@ -152,5 +152,26 @@
     "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
     "minimumThreshold": 60,
     "createdAt": "2026-07-24T12:08:18.639Z"
+  },
+  {
+    "id": "f38ba4ed-10ba-4252-aa18-feade7d0d8ca",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:44:41.258Z"
+  },
+  {
+    "id": "14be6b23-618b-413c-83e2-7d08f7d9f749",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:44:41.279Z"
+  },
+  {
+    "id": "8727cb10-5841-4565-be15-9e5a64b17ce6",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:44:41.282Z"
   }
 ]

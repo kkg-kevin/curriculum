@@ -217,5 +217,38 @@
     "id": "e2471e31-71ec-4e16-83bc-d6107881e09a",
     "createdAt": "2026-07-24T12:21:16.669Z",
     "updatedAt": "2026-07-24T12:21:16.670Z"
+  },
+  {
+    "name": "57tfyihbj",
+    "code": "5",
+    "academicYear": "",
+    "description": "fyigh/bjyifh",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "class1",
+      "class 2",
+      "class 3",
+      "class 4",
+      "class 5"
+    ],
+    "id": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "createdAt": "2026-07-24T12:43:58.328Z",
+    "updatedAt": "2026-07-24T12:44:23.832Z"
   }
 ]

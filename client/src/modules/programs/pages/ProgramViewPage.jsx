@@ -75,7 +75,6 @@ export default function ProgramViewPage() {
             <DetailRow label="Description"  value={program.description} />
             <DetailRow label="Curriculum"   value={program.curriculumName} />
             <DetailRow label="Learning Hub" value={program.hubName} />
-            <DetailRow label="Cohort"       value={program.gradeName} />
             <DetailRow label="Start Date"   value={formatDate(program.startDate)} />
             <DetailRow label="End Date"     value={formatDate(program.endDate)} />
             <DetailRow label="Status"       value={STATUS_LABEL[program.status] || program.status} />
@@ -86,7 +85,7 @@ export default function ProgramViewPage() {
           <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Manage</h3>
           <p style={{ margin: "0 0 8px", fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>
             Structure, competencies, courses, and version control all live on the program curriculum itself — same authoring
-            flow as any curriculum. Rosters, attendance, and the class tech educator live on the class.
+            flow as any curriculum. Rosters, attendance, and the class tech educator live on each class.
           </p>
           <button
             type="button"
@@ -95,13 +94,28 @@ export default function ProgramViewPage() {
           >
             View Program Curriculum <FiArrowRight size={14} strokeWidth={2} />
           </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/classes/${program.classId}/view`)}
-            style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-          >
-            View Class ({program.learnerCount} learner{program.learnerCount !== 1 ? "s" : ""}) <FiArrowRight size={14} strokeWidth={2} />
-          </button>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Classes</h3>
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6B7280" }}>
+          One class per cohort defined on the program's Structure step — created automatically when deployed.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {(program.classes || []).map((cls) => (
+            <div key={cls.id} onClick={() => navigate(`/classes/${cls.id}/view`)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827" }}>{cls.gradeName}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>{cls.learnerCount} learner{cls.learnerCount !== 1 ? "s" : ""} enrolled</p>
+              </div>
+              <FiArrowRight size={14} strokeWidth={2} color="#25476a" />
+            </div>
+          ))}
         </div>
       </div>
 

@@ -18,6 +18,7 @@ import {
 } from "../hooks/useCompetencies";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
+import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -47,6 +48,14 @@ const STATUS_CONFIG = {
   draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"     },
   inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
   archived:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Archived"  },
+};
+
+// Program deployment status — computed server-side (program.service.js's computeStatus) from a
+// deployment's own start/end dates, distinct from the curriculum version's draft/published status.
+const DEPLOYMENT_STATUS = {
+  upcoming:  { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", label: "Upcoming"  },
+  active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active"    },
+  completed: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Completed" },
 };
 
 const COURSE_SHADES = [
@@ -373,6 +382,11 @@ export default function CurriculumViewPage() {
   const { mutate: linkCourse }   = useLinkCourse(id);
   const { mutate: unlinkCourse } = useUnlinkCourse(id);
 
+  // A program curriculum can be deployed to more than one hub (or redeployed for a different
+  // run) — each deployment is its own Program record. Only relevant once isProgram is known,
+  // but the hook itself has to run unconditionally (rules of hooks), same as every query above.
+  const { data: deployments } = useProgramsByCurriculumQuery(id);
+
   const [activePeriod, setActivePeriod] = useState(0);
 
   if (currLoading || vLoading) return <LoadingState />;
@@ -545,6 +559,54 @@ export default function CurriculumViewPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Deployments (Programs only) ──────────────────────────────────── */}
+      {curriculum.isProgram && (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "16px 20px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+            <div>
+              <h2 style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Deployments</h2>
+              <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Every hub this program has been deployed to — deploy it to another anytime.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/programs/create?curriculumId=${id}`)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#25476a", color: "#ffffff", border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+            >
+              + Deploy to Hub
+            </button>
+          </div>
+
+          {!deployments?.length ? (
+            <p style={{ margin: "14px 0 4px", fontSize: "13px", color: "#9CA3AF" }}>Not deployed to any hub yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
+              {deployments.map((d) => {
+                const dsc = DEPLOYMENT_STATUS[d.status] || DEPLOYMENT_STATUS.upcoming;
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => navigate(`/programs/${d.id}/view`)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <div>
+                      <p style={{ margin: 0, fontSize: "13.5px", fontWeight: "600", color: "#111827" }}>{d.hubName}</p>
+                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
+                        {fmtDate(d.startDate)} → {fmtDate(d.endDate)} · {d.learnerCount} learner{d.learnerCount !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: dsc.bg, color: dsc.color, border: `1px solid ${dsc.border}`, whiteSpace: "nowrap" }}>
+                      {dsc.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Course Assignments Section ───────────────────────────────────── */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
