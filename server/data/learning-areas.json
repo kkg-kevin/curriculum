@@ -125,5 +125,41 @@
     ],
     "createdAt": "2026-07-24T12:08:18.651Z",
     "updatedAt": "2026-07-24T12:08:18.651Z"
+  },
+  {
+    "id": "abbf6871-e43d-4296-822e-fa85a0af3d93",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "name": "sample",
+    "description": "sample learning areas 101",
+    "color": "#DC2626",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:44:41.289Z",
+    "updatedAt": "2026-07-24T12:44:41.289Z"
+  },
+  {
+    "id": "baa9b4b8-8bf3-4533-adcb-577f8c5a141d",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:44:41.294Z",
+    "updatedAt": "2026-07-24T12:44:41.294Z"
+  },
+  {
+    "id": "e8d215eb-4c8f-436e-ba61-f0c8bc837c64",
+    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:44:41.299Z",
+    "updatedAt": "2026-07-24T12:44:41.299Z"
   }
 ]

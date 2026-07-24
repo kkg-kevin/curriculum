@@ -9,7 +9,8 @@ const createProgram = asyncHandler(async (req, res) => {
 });
 
 const getAllPrograms = asyncHandler(async (req, res) => {
-  const records = ProgramService.getAllPrograms();
+  const { curriculumId } = req.query;
+  const records = ProgramService.getAllPrograms({ curriculumId });
   res.json({ success: true, data: records, count: records.length });
 });
 

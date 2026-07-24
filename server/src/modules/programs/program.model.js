@@ -26,8 +26,10 @@ const ProgramModel = {
     return record;
   },
 
-  findAll() {
-    return readAll().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  findAll({ curriculumId } = {}) {
+    let all = readAll();
+    if (curriculumId) all = all.filter((p) => p.curriculumId === curriculumId);
+    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
   findById(id) {

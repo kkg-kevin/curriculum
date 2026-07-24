@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateProgram } from "../hooks/usePrograms";
 import { useCurriculaQuery, useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
 
 const createSchema = z.object({
-  curriculumId:   z.string().min(1, "Program is required"),
-  hubId:          z.string().min(1, "Learning hub is required"),
-  gradeName:      z.string().min(1, "Cohort/grade is required"),
-  startDate:      z.string().min(1, "Start date is required"),
-  endDate:        z.string().min(1, "End date is required"),
-  classTeacherId: z.string().nullable().optional(),
-  capacity:       z.coerce.number().int().positive().nullable().optional(),
+  curriculumId: z.string().min(1, "Program is required"),
+  hubId:        z.string().min(1, "Learning hub is required"),
+  startDate:    z.string().min(1, "Start date is required"),
+  endDate:      z.string().min(1, "End date is required"),
 }).superRefine((data, ctx) => {
   if (data.endDate && data.startDate && data.endDate <= data.startDate) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endDate"], message: "End date must be after start date" });
@@ -25,14 +22,15 @@ const createSchema = z.object({
 });
 
 const S = {
-  section: { display: "flex", flexDirection: "column", gap: 16 },
-  row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
-  field:   { display: "flex", flexDirection: "column", gap: 6 },
-  label:   { fontSize: 13, fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 3 },
-  input:   { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
-  select:  { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", cursor: "pointer" },
-  hint:    { fontSize: 12, color: "#6B7280" },
-  error:   { fontSize: 12, color: "#DC2626" },
+  card:      { backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 },
+  cardTitle: { margin: 0, fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" },
+  row:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
+  field:     { display: "flex", flexDirection: "column", gap: 6 },
+  label:     { fontSize: 13, fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 3 },
+  input:     { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
+  select:    { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", cursor: "pointer" },
+  hint:      { fontSize: 12, color: "#6B7280" },
+  error:     { fontSize: 12, color: "#DC2626" },
 };
 
 export default function CreateProgramPage() {
@@ -47,23 +45,17 @@ export default function CreateProgramPage() {
   const programCurricula = (curriculaData?.data || []).filter((c) => c.isProgram);
   const hubs = hubsData?.data || [];
 
-  const { register, control, handleSubmit, watch, formState: { isDirty, errors } } = useForm({
+  const { register, handleSubmit, watch, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(createSchema),
-    defaultValues: {
-      curriculumId: lockedCurriculumId, hubId: "", gradeName: "", startDate: "", endDate: "",
-      classTeacherId: null, capacity: null,
-    },
+    defaultValues: { curriculumId: lockedCurriculumId, hubId: "", startDate: "", endDate: "" },
     mode: "onTouched",
   });
 
   const curriculumId = watch("curriculumId");
-  const hubId = watch("hubId");
 
   const { data: curriculum } = useCurriculumQuery(curriculumId);
   const gradeNames = curriculum?.classes || [];
-
-  const { data: hubTeachers } = useHubTeachersQuery(hubId);
-  const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
+  const noCohorts = !!curriculumId && gradeNames.length === 0;
 
   const onSubmit = (data) => {
     createProgram(data, { onSuccess: (record) => navigate(`/programs/${record.id}/view`) });
@@ -97,17 +89,20 @@ export default function CreateProgramPage() {
           <button
             type="submit"
             form="create-program-form"
-            disabled={isPending}
-            style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+            disabled={isPending || noCohorts}
+            style={{ padding: "10px 24px", backgroundColor: (isPending || noCohorts) ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: (isPending || noCohorts) ? "not-allowed" : "pointer" }}
           >
             {isPending ? "Deploying…" : "Deploy"}
           </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 580 }}>
-        <form id="create-program-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div style={S.section}>
+      <div style={{ maxWidth: 560 }}>
+        <form id="create-program-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Deployment Target</h3>
+
             {lockedCurriculumId ? (
               <div style={S.field}>
                 <label style={S.label}>Program</label>
@@ -135,17 +130,37 @@ export default function CreateProgramPage() {
               </select>
               {errors.hubId && <span style={S.error}>{errors.hubId.message}</span>}
             </div>
+          </div>
 
-            <div style={S.field}>
-              <label style={S.label}>Cohort / Grade <span style={{ color: "#EF4444" }}>*</span></label>
-              <select {...register("gradeName")} style={S.select} disabled={!curriculumId || !gradeNames.length}>
-                <option value="">{!curriculumId ? "Select a program first" : gradeNames.length ? "Select cohort…" : "No cohorts defined on this program's Structure step"}</option>
-                {gradeNames.map((name) => <option key={name} value={name}>{name}</option>)}
-              </select>
-              <span style={S.hint}>Defined on the program curriculum's Structure step, same as a grade on a normal curriculum.</span>
-              {errors.gradeName && <span style={S.error}>{errors.gradeName.message}</span>}
+          {curriculumId && (
+            <div style={{ padding: "14px 18px", borderRadius: 14, border: `1.5px solid ${noCohorts ? "#FECACA" : "#a8d5ee"}`, backgroundColor: noCohorts ? "#FFF5F5" : "#F0F7FF", display: "flex", flexDirection: "column", gap: 10 }}>
+              {noCohorts ? (
+                <p style={{ margin: 0, fontSize: 13, color: "#DC2626" }}>
+                  This program has no cohorts defined yet — add one on its Structure step first.
+                </p>
+              ) : (
+                <>
+                  <p style={{ margin: 0, fontSize: 13, color: "#25476a", fontWeight: 600 }}>
+                    A class will be created automatically for each cohort below
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {gradeNames.map((name) => (
+                      <span key={name} style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: "#ffffff", border: "1.5px solid #a8d5ee", color: "#25476a" }}>
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: "#5b7a99" }}>
+                    Already defined on the program's Structure step — no need to pick again here. Assign a tech educator and
+                    capacity for each class afterward, from the Classes module.
+                  </p>
+                </>
+              )}
             </div>
+          )}
 
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Timeline</h3>
             <div style={S.row}>
               <div style={S.field}>
                 <label style={S.label}>Start Date <span style={{ color: "#EF4444" }}>*</span></label>
@@ -156,28 +171,6 @@ export default function CreateProgramPage() {
                 <label style={S.label}>End Date <span style={{ color: "#EF4444" }}>*</span></label>
                 <input type="date" {...register("endDate")} style={S.input} />
                 {errors.endDate && <span style={S.error}>{errors.endDate.message}</span>}
-              </div>
-            </div>
-
-            <div style={S.row}>
-              <div style={S.field}>
-                <label style={S.label}>Class Tech Educator</label>
-                <Controller
-                  name="classTeacherId"
-                  control={control}
-                  render={({ field }) => (
-                    <select value={field.value || ""} onChange={(e) => field.onChange(e.target.value || null)} style={S.select} disabled={!hubId}>
-                      <option value="">— None —</option>
-                      {activeTeachers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                    </select>
-                  )}
-                />
-                <span style={S.hint}>Only active tech educators at the selected hub are shown. Optional.</span>
-              </div>
-              <div style={S.field}>
-                <label style={S.label}>Capacity</label>
-                <input type="number" min={1} placeholder="Leave blank for unlimited" {...register("capacity", { valueAsNumber: true })} style={S.input} />
-                {errors.capacity && <span style={S.error}>{errors.capacity.message}</span>}
               </div>
             </div>
           </div>

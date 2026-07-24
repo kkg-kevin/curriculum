@@ -258,5 +258,15 @@
     "status": "active",
     "createdAt": "2026-07-24T07:56:07.148Z",
     "updatedAt": "2026-07-24T07:56:07.148Z"
+  },
+  {
+    "id": "78995605-7abe-4c7a-8995-ef86328832b8",
+    "learnerId": "8c2d4a71-e305-4f97-b260-1a3e5c8d0f92",
+    "hubId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "classId": "411bed3e-095f-4965-aa3c-bfab0ae7b376",
+    "admissionNumber": "NAMB-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-24T13:03:36.066Z",
+    "updatedAt": "2026-07-24T13:03:36.066Z"
   }
 ]
