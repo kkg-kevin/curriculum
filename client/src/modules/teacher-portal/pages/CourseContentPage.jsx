@@ -1,42 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
-import { FiBookOpen, FiLayers, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiChevronDown, FiChevronUp, FiLayers, FiUser, FiUsers } from "react-icons/fi";
+import { School as SchoolIcon } from "@mui/icons-material";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
+import { courseHomePath } from "../../../routes/portalPaths";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 
-const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", border: "#E5E7EB" };
+const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
 function cardStyle() {
   return { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: `1px solid ${T.border}` };
 }
 
-// Same "Viewing: ___" pattern as the hub switcher — a clean dropdown instead of stacking
-// every class's courses one after another, which gets long once a teacher has more than one.
-function ClassSwitcher({ classes, selectedClassId, onChange }) {
-  if (!classes || classes.length <= 1) return null;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: T.inkMuted, fontFamily: "Inter, sans-serif" }}>Viewing:</span>
-      <select
-        value={selectedClassId || ""}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          padding: "8px 30px 8px 12px", borderRadius: 10, border: `1.5px solid ${T.tintBorder}`,
-          backgroundColor: T.tintBg, color: T.accent, fontSize: 13, fontWeight: 700,
-          fontFamily: "Inter, sans-serif", cursor: "pointer", appearance: "none",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2325476a' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
-        }}
-      >
-        {classes.map((c) => (
-          <option key={c.id} value={c.id}>{c.gradeName}</option>
-        ))}
-      </select>
-    </div>
-  );
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function StatTile({ icon, value, label }) {
@@ -46,6 +26,92 @@ function StatTile({ icon, value, label }) {
       <div>
         <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.accent }}>{value}</p>
         <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function CourseMiniRow({ course, navigate }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
+      <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: T.tintBg, flexShrink: 0, overflow: "hidden" }}>
+        {course.coverImage && <img src={course.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{course.name}</p>
+        <p style={{ margin: 0, fontSize: 11.5, color: T.inkMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {stripHtml(course.description) || "No description added"}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => navigate(courseHomePath("teacher", course.id))}
+        style={{ background: "none", border: "none", color: T.accentMid, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", flexShrink: 0 }}
+      >
+        Open →
+      </button>
+    </div>
+  );
+}
+
+function ClassCard({ cls, courses, teacherName, isOpen, onToggleOpen, showFullCatalog, onToggleFullCatalog, navigate }) {
+  return (
+    <div style={{ ...cardStyle(), overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 3, background: "linear-gradient(90deg, #25476a, #2e7db5, #38aae1)" }} />
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
+              <SchoolIcon fontSize="small" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cls.gradeName}</h3>
+              <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>1 class</p>
+            </div>
+          </div>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "3px 10px", flexShrink: 0, whiteSpace: "nowrap" }}>
+            {courses.length} course{courses.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid ${T.border}`, paddingTop: 10, fontSize: 12.5, color: T.inkMuted }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FiUsers size={13} /> {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FiUser size={13} /> {teacherName}</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onToggleOpen}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 10, color: T.accent, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          Courses {isOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+        </button>
+
+        {isOpen && (
+          showFullCatalog ? (
+            <CourseCatalogGrid role="teacher" courses={courses} />
+          ) : courses.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 12.5, color: T.inkFaint, textAlign: "center", padding: "8px 0" }}>No courses for this grade yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {courses.map((c, i) => (
+                <div key={c.id} style={{ borderTop: i > 0 ? `1px solid #F3F4F6` : "none" }}>
+                  <CourseMiniRow course={c} navigate={navigate} />
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {isOpen && courses.length > 0 && (
+          <button
+            type="button"
+            onClick={onToggleFullCatalog}
+            style={{ alignSelf: "flex-start", background: "none", border: "none", color: T.inkMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0, marginTop: -4 }}
+          >
+            {showFullCatalog ? "View as compact list ←" : "View as full catalog →"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -71,12 +137,20 @@ export default function CourseContentPage() {
 
   const totalLearners = useMemo(() => myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0), [myClasses]);
 
-  const [selectedClassId, setSelectedClassId] = useState(null);
-  useEffect(() => {
-    if (!selectedClassId && myClasses.length > 0) setSelectedClassId(myClasses[0].id);
-  }, [myClasses, selectedClassId]);
-  const selectedClass = myClasses.find((c) => c.id === selectedClassId) || myClasses[0] || null;
-  const selectedClassCourses = selectedClass ? (coursesByGrade?.get(selectedClass.gradeName) || []) : [];
+  const [openClassIds, setOpenClassIds] = useState(() => new Set(myClasses.map((c) => c.id)));
+  const [fullCatalogClassIds, setFullCatalogClassIds] = useState(() => new Set());
+  const toggleOpen = (id) => setOpenClassIds((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleFullCatalog = (id) => setFullCatalogClassIds((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : "";
 
   const isLoading = teacherLoading || (!!teacher && classesLoading);
 
@@ -121,25 +195,21 @@ export default function CourseContentPage() {
             <StatTile icon={<FiUsers size={18} />} value={totalLearners} label="Total learners" />
           </div>
 
-          <ClassSwitcher classes={myClasses} selectedClassId={selectedClass?.id} onChange={setSelectedClassId} />
-
-          {selectedClass && (
-            <div style={{ ...cardStyle(), padding: 20 }}>
-              <div
-                onClick={() => navigate(`/teacher-portal/classes/${selectedClass.id}`)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: 16 }}
-              >
-                <div>
-                  <h2 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 800, color: T.ink }}>{selectedClass.gradeName}</h2>
-                  <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted }}>{selectedClass.learnerCount ?? 0} learner{(selectedClass.learnerCount ?? 0) !== 1 ? "s" : ""} · View roster →</p>
-                </div>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>
-                  {selectedClassCourses.length} course{selectedClassCourses.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <CourseCatalogGrid role="teacher" courses={selectedClassCourses} />
-            </div>
-          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, alignItems: "start" }}>
+            {myClasses.map((cls) => (
+              <ClassCard
+                key={cls.id}
+                cls={cls}
+                courses={coursesByGrade?.get(cls.gradeName) || []}
+                teacherName={teacherName}
+                isOpen={openClassIds.has(cls.id)}
+                onToggleOpen={() => toggleOpen(cls.id)}
+                showFullCatalog={fullCatalogClassIds.has(cls.id)}
+                onToggleFullCatalog={() => toggleFullCatalog(cls.id)}
+                navigate={navigate}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
