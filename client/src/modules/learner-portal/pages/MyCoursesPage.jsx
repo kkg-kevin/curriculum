@@ -3,7 +3,7 @@ import { FiBookOpen, FiCheckCircle, FiPlayCircle } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { useCurrentLearner } from "../hooks/useCurrentLearner";
-import { getCourseCompletionPercent } from "../utils/progressStorage";
+import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 
 const T = {
@@ -35,14 +35,7 @@ export default function MyCoursesPage() {
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useCurrentLearner();
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
-  const stats = useMemo(() => {
-    const withProgress = (courses || []).map((c) => getCourseCompletionPercent(user?.email, c.id, c.sessionCount ?? 0));
-    return {
-      total: withProgress.length,
-      completed: withProgress.filter((p) => p === 100).length,
-      inProgress: withProgress.filter((p) => p > 0 && p < 100).length,
-    };
-  }, [courses, user?.email]);
+  const stats = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>

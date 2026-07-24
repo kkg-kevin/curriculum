@@ -70,21 +70,40 @@ export default function LearnerForm() {
             {errors.lastName && <span style={S.error}>{errors.lastName.message}</span>}
           </div>
         </div>
-        <div style={{ ...S.field, maxWidth: 220 }}>
-          <label style={S.label}>Gender <span style={{ color: "#DC2626" }}>*</span></label>
-          <Controller
-            name="gender"
-            control={control}
-            render={({ field }) => (
-              <select {...field} style={S.select}>
-                <option value="">— Select gender —</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
-            )}
-          />
-          {errors.gender && <span style={S.error}>{errors.gender.message}</span>}
+        <div style={S.row}>
+          <div style={{ ...S.field, maxWidth: 220 }}>
+            <label style={S.label}>Gender <span style={{ color: "#DC2626" }}>*</span></label>
+            <Controller
+              name="gender"
+              control={control}
+              render={({ field }) => (
+                <select {...field} style={S.select}>
+                  <option value="">— Select gender —</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
+                </select>
+              )}
+            />
+            {errors.gender && <span style={S.error}>{errors.gender.message}</span>}
+          </div>
+          <div style={S.field}>
+            <label style={S.label}>Date of Birth</label>
+            <input {...register("dateOfBirth")} type="date" style={S.input} />
+            {errors.dateOfBirth && <span style={S.error}>{errors.dateOfBirth.message}</span>}
+          </div>
+        </div>
+        <div style={S.row}>
+          <div style={S.field}>
+            <label style={S.label}>Nationality</label>
+            <input {...register("nationality")} placeholder="e.g. Kenyan" style={S.input} />
+            {errors.nationality && <span style={S.error}>{errors.nationality.message}</span>}
+          </div>
+          <div style={S.field}>
+            <label style={S.label}>Languages</label>
+            <input {...register("languages")} placeholder="e.g. English, Kiswahili" style={S.input} />
+            {errors.languages && <span style={S.error}>{errors.languages.message}</span>}
+          </div>
         </div>
       </div>
 

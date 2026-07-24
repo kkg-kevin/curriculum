@@ -162,14 +162,14 @@
     "guardianName": "Test Guardian",
     "guardianPhone": "+254700000000",
     "guardianEmail": "learner@digifunzi.com",
-    "currentRungId": null,
+    "currentRungId": "3b5def6d-6c62-47e0-848e-ed422ec1d634",
     "currentStageId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
     "id": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "createdAt": "2026-07-16T07:43:57.452Z",
-    "updatedAt": "2026-07-24T06:35:23.416Z",
-    "dateOfBirth": "2016-03-10",
-    "nationality": "Kenyan",
-    "languages": "English, Kiswahili"
+    "updatedAt": "2026-07-24T07:09:04.812Z",
+    "dateOfBirth": "2015-06-20",
+    "nationality": "Kenyan (Admin Edit)",
+    "languages": "English, Kiswahili, French"
   },
   {
     "firstName": "MARY",
