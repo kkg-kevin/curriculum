@@ -2,6 +2,8 @@ const asyncHandler = require("express-async-handler");
 const TeacherService = require("./teacher.service");
 const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
+const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const ClassModel = require("../classes/class.model");
 const { createTeacherSchema, updateTeacherSchema } = require("./teacher.validation");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
@@ -10,6 +12,16 @@ const { assertOwn } = require("../../shared/middleware/scope.middleware");
 // a "school"-role caller needs to prove a teacher belongs to their own hub.
 function isLinkedToHub(teacherId, hubId) {
   return TeacherHubLinkModel.findByTeacherId(teacherId).some((l) => l.hubId === hubId);
+}
+
+// True whenever `teacherId` is the class teacher of any class the learner is currently
+// enrolled in — the read-only counterpart to isLinkedToHub above, letting a learner see
+// their own class teacher's basic info without opening up arbitrary teacher lookups.
+function isMyClassTeacher(teacherId, learnerId) {
+  return LearnerHubLinkModel.findByLearnerId(learnerId)
+    .map((l) => l.classId)
+    .filter(Boolean)
+    .some((classId) => ClassModel.findById(classId)?.classTeacherId === teacherId);
 }
 
 const createTeacher = asyncHandler(async (req, res) => {
@@ -48,6 +60,7 @@ const getTeacherById = asyncHandler(async (req, res) => {
   const teacher = await TeacherService.getTeacherById(req.params.id);
   if (req.user.role === "school")  assertOwn(isLinkedToHub(teacher.id, req.ownSchool?.id));
   if (req.user.role === "teacher") assertOwn(teacher.id === req.ownTeacher?.id);
+  if (req.user.role === "learner") assertOwn(isMyClassTeacher(teacher.id, req.ownLearner?.id));
   res.json({ success: true, data: teacher });
 });
 

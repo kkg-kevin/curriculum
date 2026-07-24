@@ -1,33 +1,52 @@
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { learnerApi } from "../../learners/services/learnerApi";
-import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
+import { useMemo } from "react";
+import { FiBookOpen, FiCheckCircle, FiPlayCircle } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
+import { useCurrentLearner } from "../hooks/useCurrentLearner";
+import { getCourseCompletionPercent } from "../utils/progressStorage";
+import SideRail from "../components/SideRail";
+
+const T = {
+  accent: "#25476a",
+  accentDeep: "#1a3550",
+  accentMid: "#2e7db5",
+  accentLight: "#38aae1",
+  tintBg: "#e8f5fb",
+  ink: "#111827",
+  inkMuted: "#6B7280",
+  inkFaint: "#9CA3AF",
+  border: "#E5E7EB",
+};
+
+function cardStyle() {
+  return { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: `1px solid ${T.border}` };
+}
+
+function StatTile({ icon, value, label }) {
+  return (
+    <div style={{ ...cardStyle(), padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.tintBg, display: "grid", placeItems: "center", color: T.accent, flexShrink: 0 }}>{icon}</div>
+      <div><p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.accent }}>{value}</p><p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>{label}</p></div>
+    </div>
+  );
+}
 
 export default function MyCoursesPage() {
-  const { user } = useAuth();
-
-  const { data: learnersData, isLoading: learnerLoading } = useQuery({
-    queryKey: ["learners", "byGuardianEmail", user?.email],
-    queryFn: () => learnerApi.getAll({ guardianEmail: user.email }),
-    enabled: !!user?.email,
-  });
-  const learner = learnersData?.data?.[0] || null;
-
-  // A learner can be enrolled at several hubs now — the first active enrollment is used as
-  // the "current" context here, same default used on DashboardPage.
-  const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
-  const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
-  const cls = primary?.class || null;
-
+  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useCurrentLearner();
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
-  const isLoading = learnerLoading || (!!learner && hubsLoading);
+  const stats = useMemo(() => {
+    const withProgress = (courses || []).map((c) => getCourseCompletionPercent(user?.email, c.id, c.sessionCount ?? 0));
+    return {
+      total: withProgress.length,
+      completed: withProgress.filter((p) => p === 100).length,
+      inProgress: withProgress.filter((p) => p > 0 && p < 100).length,
+    };
+  }, [courses, user?.email]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px" }}>
@@ -54,7 +73,20 @@ export default function MyCoursesPage() {
       ) : coursesLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
       ) : (
-        <CourseCatalogGrid role="learner" courses={courses || []} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 2, minWidth: 340 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+              <StatTile icon={<FiBookOpen size={18} />} value={stats.total} label="Courses enrolled" />
+              <StatTile icon={<FiPlayCircle size={18} />} value={stats.inProgress} label="In progress" />
+              <StatTile icon={<FiCheckCircle size={18} />} value={stats.completed} label="Completed" />
+            </div>
+            <CourseCatalogGrid role="learner" courses={courses || []} />
+          </div>
+
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
+          </div>
+        </div>
       )}
     </div>
   );

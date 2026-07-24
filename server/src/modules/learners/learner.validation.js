@@ -11,6 +11,11 @@ const baseLearnerSchema = z.object({
   guardianName:  z.string().min(1, "Guardian name is required"),
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid guardian email").optional().or(z.literal("")),
+  // Optional identity fields — deliberately no .default() (see updateLearner's partial-PUT
+  // filter in the controller, which relies on absent keys staying undefined, not defaulted).
+  dateOfBirth:   z.string().optional().or(z.literal("")),
+  nationality:   z.string().optional().or(z.literal("")),
+  languages:     z.string().optional().or(z.literal("")),
   // Transient — never persisted onto the learner record. When present, creates or resets the
   // guardian's learner-portal login for guardianEmail (see auth.service.js's
   // setOrCreatePassword), then gets stripped before the learner record is saved.

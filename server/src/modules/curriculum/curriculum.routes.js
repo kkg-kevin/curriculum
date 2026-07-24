@@ -96,14 +96,18 @@ const router = express.Router();
 // manages where its own learners sit on the curriculum's Learning Journey (see LearnerViewPage)
 // — that needs the ladder, learning areas, age categories, and the per-learner journey itself,
 // read AND (for placement) write. All ownership-checked (ownSchool's curriculumId must match).
-// Registered before the router-wide admin gate below so they're the sole exceptions; everything
-// else in this module (CRUD, structure, versions, competency/assessment authoring) stays
-// admin-only.
+// A learner also needs its own curriculum's competency names and age-categories for the
+// learner-portal profile (read-only, no ownership check — same posture as the courses read
+// above; competency/age-category names aren't treated as school-sensitive data anywhere else
+// in this module). Registered before the router-wide admin gate below so they're the sole
+// exceptions; everything else in this module (CRUD, structure, versions, competency/assessment
+// authoring) stays admin-only.
 router.route("/:id").get(authorize("admin", "school", "teacher"), getCurriculumById);
 router.route("/:id/versions/current/courses").get(authorize("admin", "school", "teacher", "learner"), getCurrentCourses);
+router.route("/:id/competencies/links").get(authorize("admin", "learner"), getCurriculumCompetencies);
 router.route("/:id/competencies/ladder").get(authorize("admin", "school"), ownCurriculumOnly, getLadder);
 router.route("/:id/competencies/learning-areas").get(authorize("admin", "school"), ownCurriculumOnly, getLearningAreas);
-router.route("/:id/competencies/age-categories").get(authorize("admin", "school"), ownCurriculumOnly, getAgeCategories);
+router.route("/:id/competencies/age-categories").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getAgeCategories);
 router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school"), ownCurriculumOnly, getLearningJourney);
 router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
 router.use(authorize("admin"));
@@ -127,7 +131,8 @@ router.route("/:id/academic-years/:groupId/versions").post(createAYVersion);
 router.route("/:id/academic-years/:groupId/versions/:versionId/status").patch(changeStatus);
 
 // Competencies — this curriculum's adopted competencies (authored globally under /api/competencies)
-router.route("/:id/competencies/links").get(getCurriculumCompetencies).post(linkCompetency);
+// GET is registered above (learner-portal profile needs the names) — only the write stays admin-only here.
+router.route("/:id/competencies/links").post(linkCompetency);
 router.route("/:id/competencies/links/:competencyId").put(updateCompetencyLink).delete(unlinkCompetency);
 
 // Competencies — indicators for how THIS curriculum evaluates an adopted competency

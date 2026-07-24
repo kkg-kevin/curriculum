@@ -21,9 +21,10 @@ router.route("/")
 // "teacher" may also PUT its own record — self-service profile editing — but the controller
 // restricts what actually changes to contact fields only (see updateTeacher). True delete is
 // admin-only — a "school" can only unlink a teacher from its own hub (see below), since the
-// teacher may still be legitimately linked to a hub it doesn't own.
+// teacher may still be legitimately linked to a hub it doesn't own. "learner" may also read —
+// scoped in the controller to only its own class teacher, for the learner-portal profile.
 router.route("/:id")
-  .get(authorize("admin", "school", "teacher"), getTeacherById)
+  .get(authorize("admin", "school", "teacher", "learner"), getTeacherById)
   .put(authorize("admin", "school", "teacher"), updateTeacher)
   .delete(authorize("admin"), deleteTeacher);
 
