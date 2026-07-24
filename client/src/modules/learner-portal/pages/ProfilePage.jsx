@@ -1,34 +1,42 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
+import { teacherApi } from "../../teachers/services/teacherApi";
 import { useUpdateLearner, useLearnerHubsQuery } from "../../learners/hooks/useLearners";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useCompetencies, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { getProgressSummary } from "../utils/progressStorage";
 
-const T = {
-  accent: "#25476a",
-  accentDeep: "#1a3550",
-  accentMid: "#2e7db5",
-  accentLight: "#38aae1",
-  tintBg: "#e8f5fb",
-  tintBorder: "#a8d5ee",
-  ink: "#111827",
-  inkMuted: "#6B7280",
-  inkFaint: "#9CA3AF",
-  border: "#E5E7EB",
-};
+import { T, cardStyle } from "../components/profile/theme";
+import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
+import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
+import SideRail from "../components/SideRail";
+import EditProfileModal from "../components/profile/EditProfileModal";
+import ProfileTabs from "../components/profile/ProfileTabs";
+import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
+import LearningJourneyCard from "../components/profile/LearningJourneyCard";
+import RecentEvidenceCard from "../components/profile/RecentEvidenceCard";
+import BadgesCertificatesCard from "../components/profile/BadgesCertificatesCard";
+import SummaryRow from "../components/profile/SummaryRow";
+import FrameworkLegend from "../components/profile/FrameworkLegend";
+import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
+import AssessmentsOverview from "../components/AssessmentsOverview";
 
-function cardStyle() {
-  return {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    border: `1px solid ${T.border}`,
-  };
+function ComingSoonPanel({ tab }) {
+  return (
+    <div style={{ ...cardStyle(), padding: "60px 24px", textAlign: "center" }}>
+      <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>{tab} is coming soon</h3>
+      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>This section isn't built yet — check the Overview tab for what's live today.</p>
+    </div>
+  );
 }
 
-export default function LearnerProfilePage() {
+export default function ProfilePage() {
   const { user } = useAuth();
-  const { mutate: updateLearner, isPending } = useUpdateLearner();
+  const { mutate: updateLearner, isPending: isSaving } = useUpdateLearner();
+  const [activeTab, setActiveTab] = useState("Overview");
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: learnersData, isLoading: learnerLoading } = useQuery({
     queryKey: ["learners", "byGuardianEmail", user?.email],
@@ -37,61 +45,47 @@ export default function LearnerProfilePage() {
   });
   const learner = learnersData?.data?.[0] || null;
 
-  // A learner can be enrolled at several hubs now — the first active enrollment is used as
-  // the "current" context for display here, same default used on DashboardPage.
+  // A learner can be enrolled at several hubs — the first active enrollment is used as the
+  // "current" context for curriculum-scoped data (courses, competencies), same default used
+  // on DashboardPage/MyCoursesPage until a hub-context switcher exists for this portal.
   const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
   const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
-  const cls    = primary?.class || null;
-  const school = primary || null;
+  const cls = primary?.class || null;
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    gender: "",
-    guardianName: "",
-    guardianPhone: "",
-    guardianEmail: "",
+  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
+  const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
+  const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+
+  // "My Teachers & Mentors" resolves each hub's class teacher — real data via a small join,
+  // not a fabricated mentor list. Hubs with no class teacher assigned are simply omitted.
+  const teacherIds = useMemo(
+    () => [...new Set(hubs.map((h) => h.class?.classTeacherId).filter(Boolean))],
+    [hubs]
+  );
+  const { data: mentorTeachers = [], isLoading: mentorTeachersLoading } = useQuery({
+    queryKey: ["learner-profile-mentor-teachers", teacherIds],
+    queryFn: () => Promise.all(teacherIds.map((id) => teacherApi.getById(id))),
+    enabled: teacherIds.length > 0,
   });
-  const [errors, setErrors] = useState({});
+  const mentors = useMemo(
+    () => hubs
+      .filter((h) => h.class?.classTeacherId)
+      .map((h) => {
+        const teacher = mentorTeachers.find((t) => t.id === h.class.classTeacherId);
+        return teacher ? { teacher, hubName: h.name } : null;
+      })
+      .filter(Boolean),
+    [hubs, mentorTeachers]
+  );
 
-  useEffect(() => {
-    if (learner) {
-      setFormData({
-        firstName: learner.firstName || "",
-        lastName: learner.lastName || "",
-        gender: learner.gender || "",
-        guardianName: learner.guardianName || "",
-        guardianPhone: learner.guardianPhone || "",
-        guardianEmail: learner.guardianEmail || "",
-      });
-    }
-  }, [learner]);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const nextErrors = {};
-    if (!formData.firstName.trim()) nextErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) nextErrors.lastName = "Last name is required";
-    if (!formData.gender) nextErrors.gender = "Gender is required";
-    if (!formData.guardianName.trim()) nextErrors.guardianName = "Guardian name is required";
-    if (!formData.guardianPhone.trim()) nextErrors.guardianPhone = "Guardian phone is required";
-    if (formData.guardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guardianEmail)) {
-      nextErrors.guardianEmail = "Enter a valid email";
-    }
-
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
-
-    updateLearner({ id: learner.id, data: formData });
-  };
+  const progressSummary = useMemo(() => getProgressSummary(user?.email), [user?.email]);
 
   const isLoading = learnerLoading || (!!learner && hubsLoading);
+
+  const handleSave = (formData) => {
+    updateLearner({ id: learner.id, data: formData }, { onSuccess: () => setIsEditOpen(false) });
+  };
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>;
@@ -108,78 +102,46 @@ export default function LearnerProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "28px 32px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ position: "relative" }}>
-          <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>My Profile</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 640 }}>Update your learner details and guardian contact information.</p>
-        </div>
+      <div>
+        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 900, color: T.ink, letterSpacing: "-0.3px" }}>Learner Profile</h1>
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>A lifelong record of learning. Portable. Verifiable. Future Ready.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <form onSubmit={handleSubmit} style={{ ...cardStyle(), padding: "24px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <div>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>First name</label>
-              <input name="firstName" value={formData.firstName} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.firstName ? "#ef4444" : T.border}`, fontSize: 14 }} />
-              {errors.firstName && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.firstName}</p>}
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Last name</label>
-              <input name="lastName" value={formData.lastName} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.lastName ? "#ef4444" : T.border}`, fontSize: 14 }} />
-              {errors.lastName && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.lastName}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Gender</label>
-            <select name="gender" value={formData.gender} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.gender ? "#ef4444" : T.border}`, fontSize: 14, backgroundColor: "#fff" }}>
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            {errors.gender && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.gender}</p>}
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Guardian name</label>
-            <input name="guardianName" value={formData.guardianName} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.guardianName ? "#ef4444" : T.border}`, fontSize: 14 }} />
-            {errors.guardianName && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianName}</p>}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <div>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Guardian phone</label>
-              <input name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.guardianPhone ? "#ef4444" : T.border}`, fontSize: 14 }} />
-              {errors.guardianPhone && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianPhone}</p>}
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink }}>Guardian email</label>
-              <input name="guardianEmail" type="email" value={formData.guardianEmail} onChange={handleChange} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${errors.guardianEmail ? "#ef4444" : T.border}`, fontSize: 14 }} />
-              {errors.guardianEmail && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianEmail}</p>}
-            </div>
-          </div>
-
-          <button type="submit" disabled={isPending} style={{ alignSelf: "flex-start", padding: "10px 18px", backgroundColor: isPending ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: isPending ? "not-allowed" : "pointer" }}>
-            {isPending ? "Saving…" : "Save profile"}
-          </button>
-        </form>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ ...cardStyle(), padding: "20px 22px" }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Current record</p>
-            <p style={{ margin: "10px 0 4px", fontSize: 18, fontWeight: 800, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
-            <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{cls?.gradeName || "Class"} · {school?.name || "School"}</p>
-            {primary && <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>Status: {primary.status}</p>}
-          </div>
-
-          <div style={{ ...cardStyle(), padding: "20px 22px" }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Need help?</p>
-            <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>If your class or school details are wrong, ask the school admin to update the learner record.</p>
-          </div>
-        </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+        <ProfileIdentityCard learner={learner} stage={stage} onEdit={() => setIsEditOpen(true)} />
+        <PortfolioSnapshot coursesCompleted={progressSummary.completed} />
+        <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={teacherIds.length > 0 && mentorTeachersLoading} />
       </div>
+
+      <ProfileTabs active={activeTab} onChange={setActiveTab} />
+
+      {activeTab === "Overview" && (
+        <>
+          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} />
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+            <LearningJourneyCard courses={courses} email={user?.email} isLoading={coursesLoading} />
+            <RecentEvidenceCard />
+            <BadgesCertificatesCard />
+          </div>
+        </>
+      )}
+
+      {activeTab === "Competencies" && (
+        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} />
+      )}
+
+      {activeTab === "Assessments" && <AssessmentsOverview />}
+
+      {!["Overview", "Competencies", "Assessments"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
+
+      <SummaryRow />
+
+      <FrameworkLegend />
+
+      {isEditOpen && (
+        <EditProfileModal learner={learner} isSaving={isSaving} onSave={handleSave} onClose={() => setIsEditOpen(false)} />
+      )}
     </div>
   );
 }

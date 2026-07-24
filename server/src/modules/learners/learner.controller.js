@@ -73,11 +73,19 @@ const getLearnerById = asyncHandler(async (req, res) => {
 });
 
 const updateLearner = asyncHandler(async (req, res) => {
-  const { password, ...data } = updateLearnerSchema.parse(req.body);
+  const { password, ...parsed } = updateLearnerSchema.parse(req.body);
+  // .partial() still applies each field's .default() when it's absent from the request body
+  // (currentRungId/currentStageId both default to null) — without this filter, a PUT that
+  // only sends identity fields (e.g. the learner-portal profile edit form) would silently wipe
+  // whatever placement a teacher/admin had already set. Only keys the caller actually sent survive.
+  const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   if (req.user.role === "school") {
     const existing = await LearnerService.getLearnerById(req.params.id);
     assertOwn(isLinkedToHub(existing.id, req.ownSchool?.id));
   }
+  // "learner" (guardian-mediated login) may only ever update its own linked record — the
+  // learner-portal profile edit form, never an arbitrary id.
+  if (req.user.role === "learner") assertOwn(req.params.id === req.ownLearner?.id);
   const record = await LearnerService.updateLearner(req.params.id, data);
   if (password) {
     if (!record.guardianEmail) {

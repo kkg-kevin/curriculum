@@ -23,7 +23,7 @@ router.route("/")
   .post(authorize("admin", "school"), createLearner);
 router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getLearnerById)
-  .put(authorize("admin", "school"), updateLearner)
+  .put(authorize("admin", "school", "learner"), updateLearner)
   .delete(authorize("admin"), deleteLearner);
 
 // Which learning hub(s) a learner is enrolled at — a many-to-many relationship, not a field on
