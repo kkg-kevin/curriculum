@@ -30,10 +30,14 @@ function EditCurriculumForm({ curriculum }) {
     formState: { isDirty },
   } = methods;
 
+  // Editing Basic Info is part of authoring, which always happens under Curriculum regardless
+  // of isProgram — see CurriculumStructurePage.jsx for the same reasoning.
+  const exitPath = "/curriculum";
+
   const onSubmit = (data) => {
     updateCurriculum(
       { id: curriculum.id, data },
-      { onSuccess: () => navigate("/curriculum") }
+      { onSuccess: () => navigate(exitPath) }
     );
   };
 
@@ -41,7 +45,7 @@ function EditCurriculumForm({ curriculum }) {
     if (isDirty) {
       setConfirmLeave(true);
     } else {
-      navigate("/curriculum");
+      navigate(exitPath);
     }
   };
 
@@ -209,7 +213,7 @@ function EditCurriculumForm({ curriculum }) {
         message="You have unsaved changes that will be lost if you leave this page."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/curriculum")}
+        onConfirm={() => navigate(exitPath)}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

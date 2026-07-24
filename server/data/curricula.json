@@ -79,7 +79,143 @@
     ],
     "id": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "createdAt": "2026-07-13T10:06:59.915Z",
-    "updatedAt": "2026-07-21T07:58:08.391Z",
+    "updatedAt": "2026-07-24T10:37:53.698Z",
     "competencyWeights": []
+  },
+  {
+    "name": "August 2026 Bootcamp Program",
+    "code": "BOOTCAMP-AUG26",
+    "academicYear": "",
+    "description": "Short-run August intensive bootcamp curriculum.",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "terms",
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 3",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Bootcamp Cohort 1"
+    ],
+    "id": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
+    "createdAt": "2026-07-24T11:34:51.758Z",
+    "updatedAt": "2026-07-24T11:49:17.041Z"
+  },
+  {
+    "name": "Full-Stack Web Development Bootcamp",
+    "code": "FSWD-BOOTCAMP",
+    "academicYear": "",
+    "description": "An intensive, project-based bootcamp taking learners from programming foundations through to a capstone build, condensed into a short structured cohort.",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Foundations",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Core Build",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Capstone Project",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Bootcamp Cohort A"
+    ],
+    "id": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "createdAt": "2026-07-24T11:54:54.760Z",
+    "updatedAt": "2026-07-24T11:56:09.253Z"
+  },
+  {
+    "name": "Digifunzi school PROGRAM",
+    "code": "DSP",
+    "academicYear": "",
+    "description": "Digufzi school programs that runs with the the on this dates ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      "Crib",
+      "Clikcer",
+      "Quest"
+    ],
+    "id": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "createdAt": "2026-07-24T12:07:44.959Z",
+    "updatedAt": "2026-07-24T12:08:04.818Z"
+  },
+  {
+    "name": "2qtewysrd",
+    "code": "2",
+    "academicYear": "",
+    "description": "dtkff",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": false,
+    "academicCycleModel": "terms",
+    "periods": [],
+    "classes": [],
+    "id": "e2471e31-71ec-4e16-83bc-d6107881e09a",
+    "createdAt": "2026-07-24T12:21:16.669Z",
+    "updatedAt": "2026-07-24T12:21:16.670Z"
   }
 ]

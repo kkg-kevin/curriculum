@@ -726,5 +726,44 @@
     "id": "4a1cf7a1-02b6-4fb1-8e3a-99b4131d0f46",
     "createdAt": "2026-07-23T07:16:46.332Z",
     "updatedAt": "2026-07-23T18:24:30.912Z"
+  },
+  {
+    "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "curriculumId": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
+    "gradeId": "1782e9af-bootcamp-cohort-1",
+    "gradeName": "Bootcamp Cohort 1",
+    "classTeacherId": null,
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "id": "c48b6fc4-779b-46e7-8101-905dcbc08ad5",
+    "createdAt": "2026-07-24T11:40:41.815Z",
+    "updatedAt": "2026-07-24T11:40:41.815Z"
+  },
+  {
+    "schoolId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeName": "Bootcamp Cohort A",
+    "classTeacherId": "608124b1-e041-4ec2-9fdf-200f5d03fd94",
+    "academicYear": "2026",
+    "capacity": 25,
+    "status": "active",
+    "id": "411bed3e-095f-4965-aa3c-bfab0ae7b376",
+    "createdAt": "2026-07-24T12:01:41.623Z",
+    "updatedAt": "2026-07-24T12:01:41.623Z"
+  },
+  {
+    "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeName": "Bootcamp Cohort A",
+    "classTeacherId": "6c16db4a-37fd-4095-9fdc-9f3d698949a0",
+    "academicYear": "2026",
+    "capacity": 50,
+    "status": "active",
+    "id": "f9155b1f-d7de-4bd4-83f3-7c6f70ed382e",
+    "createdAt": "2026-07-24T12:06:33.522Z",
+    "updatedAt": "2026-07-24T12:06:33.522Z"
   }
 ]

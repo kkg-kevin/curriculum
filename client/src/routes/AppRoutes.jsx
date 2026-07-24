@@ -51,6 +51,9 @@ import SchoolClassesPage from "../modules/classes/pages/SchoolClassesPage";
 import EditClassPage from "../modules/classes/pages/EditClassPage";
 import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
+import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
+import CreateProgramPage from "../modules/programs/pages/CreateProgramPage";
+import ProgramViewPage from "../modules/programs/pages/ProgramViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
@@ -111,6 +114,11 @@ export default function AppRoutes() {
           <Route path="school/:schoolId" element={<SchoolClassesPage />} />
           <Route path=":id/edit" element={<EditClassPage />} />
           <Route path=":id/view" element={<ClassViewPage />} />
+        </Route>
+        <Route path="programs">
+          <Route index element={<ProgramsListPage />} />
+          <Route path="create" element={<CreateProgramPage />} />
+          <Route path=":id/view" element={<ProgramViewPage />} />
         </Route>
         <Route path="courses">
           <Route index element={<CoursesPage />} />

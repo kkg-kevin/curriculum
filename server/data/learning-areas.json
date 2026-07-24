@@ -53,5 +53,77 @@
     ],
     "createdAt": "2026-07-17T05:41:56.295Z",
     "updatedAt": "2026-07-17T05:41:56.295Z"
+  },
+  {
+    "id": "d2550142-8a7b-4b12-bd7c-719e65b16e61",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "name": "sample",
+    "description": "sample learning areas 101",
+    "color": "#DC2626",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T11:58:59.673Z",
+    "updatedAt": "2026-07-24T11:58:59.673Z"
+  },
+  {
+    "id": "a7762cbb-e12a-426b-bcb3-5883ae5f416c",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T11:58:59.682Z",
+    "updatedAt": "2026-07-24T11:58:59.682Z"
+  },
+  {
+    "id": "6676a5f5-ff12-4312-baa2-6dd0eaaaf924",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T11:58:59.688Z",
+    "updatedAt": "2026-07-24T11:58:59.688Z"
+  },
+  {
+    "id": "e98c0734-14f7-43ba-b97a-7f62300c5aa2",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "name": "sample",
+    "description": "sample learning areas 101",
+    "color": "#DC2626",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:08:18.644Z",
+    "updatedAt": "2026-07-24T12:08:18.644Z"
+  },
+  {
+    "id": "3846a6a2-f27e-4e5c-a422-77e0b713be7c",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:08:18.648Z",
+    "updatedAt": "2026-07-24T12:08:18.648Z"
+  },
+  {
+    "id": "21e2b152-ff31-463e-bd3a-3d4abc8df055",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-24T12:08:18.651Z",
+    "updatedAt": "2026-07-24T12:08:18.651Z"
   }
 ]

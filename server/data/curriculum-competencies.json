@@ -89,5 +89,68 @@
     "competencyId": "93516d87-eb02-4ac5-9e44-290c60196781",
     "minimumThreshold": 60,
     "createdAt": "2026-07-20T08:09:16.203Z"
+  },
+  {
+    "id": "0d89daa0-1a9e-41db-a5e4-00299736e13b",
+    "curriculumId": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:39:33.885Z"
+  },
+  {
+    "id": "ff92c7c4-c2f5-4ccd-ad96-7beb9799349a",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:58:17.184Z"
+  },
+  {
+    "id": "5207233e-724a-4213-80e9-c38cf10a5001",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:58:18.235Z"
+  },
+  {
+    "id": "26232479-501b-4397-a9e1-47c7a7962a97",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:58:19.328Z"
+  },
+  {
+    "id": "037c9c37-75f7-48d6-810e-85dc6e432b22",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:58:20.413Z"
+  },
+  {
+    "id": "84ce192f-c9dc-41f9-b6e4-e2229c69e9f0",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T11:58:21.606Z"
+  },
+  {
+    "id": "6d53f4fe-7aa6-4b21-b970-bc4c333f1c34",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:08:18.619Z"
+  },
+  {
+    "id": "7a965220-b32d-4c0d-a1dd-e87f8c11f0c3",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:08:18.634Z"
+  },
+  {
+    "id": "8b8029e5-612b-4958-9d1d-fb8090475d58",
+    "curriculumId": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "minimumThreshold": 60,
+    "createdAt": "2026-07-24T12:08:18.639Z"
   }
 ]

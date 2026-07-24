@@ -15,5 +15,39 @@
     ],
     "createdAt": "2026-07-15T13:06:29.641Z",
     "updatedAt": "2026-07-15T13:06:29.641Z"
+  },
+  {
+    "id": "7a0c0279-2151-4746-b2c5-1d74bee811ba",
+    "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "learningAreaId": "1089a44c-aa75-4533-b070-dc365896028f",
+    "currentCourseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "history": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "reachedAt": "2026-07-24T12:20:18.005Z",
+        "reason": "manual",
+        "assessmentId": null
+      }
+    ],
+    "createdAt": "2026-07-24T12:20:18.005Z",
+    "updatedAt": "2026-07-24T12:20:18.005Z"
+  },
+  {
+    "id": "55bfcb80-721d-4b03-9c1c-13c776c5c834",
+    "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "learningAreaId": "0b556339-2983-4509-be53-cb86c1793403",
+    "currentCourseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "history": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "reachedAt": "2026-07-24T12:20:19.027Z",
+        "reason": "manual",
+        "assessmentId": null
+      }
+    ],
+    "createdAt": "2026-07-24T12:20:19.027Z",
+    "updatedAt": "2026-07-24T12:20:19.027Z"
   }
 ]
