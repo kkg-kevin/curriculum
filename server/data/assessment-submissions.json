@@ -4,10 +4,31 @@
     "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
     "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
-    "status": "in_progress",
-    "answers": [],
-    "autoScore": null,
-    "autoMax": null,
+    "status": "submitted",
+    "answers": [
+      {
+        "itemId": "a1",
+        "response": "qreshfdgc"
+      },
+      {
+        "itemId": "a2",
+        "response": "wagsedfng"
+      },
+      {
+        "itemId": "a3",
+        "response": "qwagesfdng"
+      },
+      {
+        "itemId": "a4",
+        "response": "qesh"
+      },
+      {
+        "itemId": "a5",
+        "response": "rwqeashrdgmf"
+      }
+    ],
+    "autoScore": 0,
+    "autoMax": 0,
     "autoItemResults": [],
     "manualScore": null,
     "totalScore": null,
@@ -15,11 +36,68 @@
     "requiresManualGrading": true,
     "itemFeedback": [],
     "overallFeedback": "",
-    "submittedAt": null,
+    "submittedAt": "2026-07-24T09:29:15.482Z",
     "gradedAt": null,
     "gradedBy": null,
     "id": "efb588db-5104-490a-9c8f-7f636ecc0ea6",
     "createdAt": "2026-07-21T11:11:12.379Z",
-    "updatedAt": "2026-07-21T11:11:12.379Z"
+    "updatedAt": "2026-07-24T09:29:15.483Z"
+  },
+  {
+    "issueId": "53ca30e8-7a7f-409e-8304-121659ef95b4",
+    "assessmentId": "fa98f60a-0e29-4d5d-b080-c4db39b55667",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "demo-q1",
+        "response": "Breaking a problem into smaller parts"
+      },
+      {
+        "itemId": "demo-q2",
+        "response": [
+          "Breaks down problems"
+        ]
+      },
+      {
+        "itemId": "demo-q3",
+        "response": "Pseudocode helps you plan logic before worrying about syntax."
+      }
+    ],
+    "autoScore": 25,
+    "autoMax": 30,
+    "autoItemResults": [
+      {
+        "itemId": "demo-q1",
+        "correct": true,
+        "marksAwarded": 25,
+        "maxMarks": 25
+      },
+      {
+        "itemId": "demo-q2",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 5
+      }
+    ],
+    "manualScore": 3,
+    "totalScore": 28,
+    "maxScore": 34,
+    "requiresManualGrading": true,
+    "itemFeedback": [
+      {
+        "itemId": "demo-q3",
+        "marks": 3,
+        "comment": ""
+      }
+    ],
+    "overallFeedback": "Great job explaining pseudocode! Keep practicing decomposition questions.",
+    "submittedAt": "2026-07-24T09:14:46.305Z",
+    "gradedAt": "2026-07-24T09:15:30.648Z",
+    "gradedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "id": "aa80ef82-a031-40f6-8b6d-0ca9f0503abc",
+    "createdAt": "2026-07-24T09:14:44.463Z",
+    "updatedAt": "2026-07-24T09:15:30.648Z"
   }
 ]
