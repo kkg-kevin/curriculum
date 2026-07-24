@@ -1,11 +1,6 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock, FiTrendingUp, FiUser, FiUserCheck } from "react-icons/fi";
-import { useAuth } from "../../../context/AuthContext";
-import { learnerApi } from "../../learners/services/learnerApi";
-import { teacherApi } from "../../teachers/services/teacherApi";
-import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
@@ -74,27 +69,19 @@ function formatDueDate(dateStr) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const { data: learnersData, isLoading: learnerLoading } = useQuery({
-    queryKey: ["learners", "byGuardianEmail", user?.email],
-    queryFn: () => learnerApi.getAll({ guardianEmail: user.email }),
-    enabled: !!user?.email,
-  });
-  const learner = learnersData?.data?.[0] || null;
-
-  // A learner can be enrolled at several hubs now — the first active enrollment is used as
-  // the "current" context here, same default used on ProfilePage/MyCoursesPage.
-  const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
-  const primary = hubs.find((h) => h.status === "active") || hubs[0] || null;
-  const cls = primary?.class || null;
-  const school = primary || null;
+  const { user, learner, learnerLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
+  const school = selectedHub || null;
 
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
-  const issuedRows = issuedData?.data || [];
+  // Scoped to the currently-selected hub's class — a learner enrolled at several hubs can have
+  // assessments issued in more than one, and mixing them here would misrepresent both.
+  const issuedRows = useMemo(
+    () => (issuedData?.data || []).filter((r) => !cls?.id || r.issue.classId === cls.id),
+    [issuedData, cls?.id]
+  );
 
   const pendingRows = useMemo(
     () => issuedRows
@@ -113,28 +100,6 @@ export default function DashboardPage() {
   const continueCourse = useMemo(
     () => progressSummary.courses.find((c) => c.percent > 0 && c.percent < 100) || progressSummary.courses[0] || null,
     [progressSummary.courses]
-  );
-
-  // "My Teachers & Mentors" resolves each hub's class teacher — real data via a small join,
-  // not a fabricated mentor list. Hubs with no class teacher assigned are simply omitted.
-  const teacherIds = useMemo(
-    () => [...new Set(hubs.map((h) => h.class?.classTeacherId).filter(Boolean))],
-    [hubs]
-  );
-  const { data: mentorTeachers = [], isLoading: mentorTeachersLoading } = useQuery({
-    queryKey: ["learner-profile-mentor-teachers", teacherIds],
-    queryFn: () => Promise.all(teacherIds.map((id) => teacherApi.getById(id))),
-    enabled: teacherIds.length > 0,
-  });
-  const mentors = useMemo(
-    () => hubs
-      .filter((h) => h.class?.classTeacherId)
-      .map((h) => {
-        const teacher = mentorTeachers.find((t) => t.id === h.class.classTeacherId);
-        return teacher ? { teacher, hubName: h.name } : null;
-      })
-      .filter(Boolean),
-    [hubs, mentorTeachers]
   );
 
   return (
@@ -268,7 +233,7 @@ export default function DashboardPage() {
 
           {/* Right rail */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 280 }}>
-            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={teacherIds.length > 0 && mentorTeachersLoading} />
+            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
 
             <div style={{ ...cardStyle(), padding: 18 }}>
               <h2 style={{ ...sectionHeaderStyle(), marginBottom: 14 }}>Recently Graded</h2>

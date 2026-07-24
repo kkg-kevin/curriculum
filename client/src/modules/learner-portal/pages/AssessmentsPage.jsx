@@ -1,6 +1,6 @@
+import { useOutletContext } from "react-router-dom";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import SideRail from "../components/SideRail";
-import { useCurrentLearner } from "../hooks/useCurrentLearner";
 
 const T = {
   accent: "#25476a",
@@ -10,7 +10,7 @@ const T = {
 };
 
 export default function LearnerAssessmentsPage() {
-  const { hubs, hubsLoading, mentors, mentorsLoading } = useCurrentLearner();
+  const { hubs, hubsLoading, mentors, mentorsLoading, cls } = useOutletContext();
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -24,7 +24,7 @@ export default function LearnerAssessmentsPage() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 2, minWidth: 340 }}>
-          <AssessmentsOverview />
+          <AssessmentsOverview classId={cls?.id} />
         </div>
         <div style={{ flex: 1, minWidth: 280 }}>
           <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />

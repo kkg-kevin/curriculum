@@ -25,10 +25,12 @@ function Stage({ label, sub, done }) {
   );
 }
 
-export default function SummaryRow() {
+// `classId`, when given, scopes to one hub's class — see AssessmentsOverview for why.
+export default function SummaryRow({ classId } = {}) {
   const navigate = useNavigate();
   const { data, isLoading } = useIssuedForLearner();
-  const rows = data?.data || [];
+  const allRows = data?.data || [];
+  const rows = classId ? allRows.filter((r) => r.issue.classId === classId) : allRows;
 
   const issued = rows.length;
   const graded = rows.filter((r) => r.submission.status === "graded");

@@ -1,8 +1,8 @@
 import { useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 import { FiBookOpen, FiCheckCircle, FiPlayCircle } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
-import { useCurrentLearner } from "../hooks/useCurrentLearner";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 
@@ -32,7 +32,7 @@ function StatTile({ icon, value, label }) {
 }
 
 export default function MyCoursesPage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useCurrentLearner();
+  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
 
   const stats = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);

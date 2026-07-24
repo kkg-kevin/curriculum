@@ -49,10 +49,13 @@ const STATUS_CONFIG = {
 
 // Shared between the standalone Assessments page (which wraps this in its own hero) and the
 // Profile page's Assessments tab (which already has a page-level hero) — this is just the body.
-export default function AssessmentsOverview({ limit } = {}) {
+// `classId`, when given, scopes to one hub's class — a learner enrolled at several hubs can
+// have assessments issued in more than one, and each hub only makes sense against its own.
+export default function AssessmentsOverview({ limit, classId } = {}) {
   const navigate = useNavigate();
   const { data, isLoading } = useIssuedForLearner();
-  const rows = data?.data || [];
+  const allRows = data?.data || [];
+  const rows = classId ? allRows.filter((r) => r.issue.classId === classId) : allRows;
   const visibleRows = limit ? rows.slice(0, limit) : rows;
 
   const pending = rows.filter((r) => r.submission.status === "not_started" || r.submission.status === "in_progress").length;

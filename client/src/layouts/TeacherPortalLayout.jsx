@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import TeacherSidebar from "../modules/teacher-portal/components/TeacherSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
-import HubSwitcher from "../modules/teacher-portal/components/HubSwitcher";
+import HubSwitcher from "../components/ui/HubSwitcher";
 import { useTeacherPortalScope } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
 
 function TeacherPortalLayout() {
