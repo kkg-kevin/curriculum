@@ -430,7 +430,7 @@ export default function CurriculumViewPage() {
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
         <button
           type="button"
-          onClick={() => navigate("/curriculum")}
+          onClick={() => navigate(curriculum.isProgram ? "/programs" : "/curriculum")}
           style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             padding: "7px 14px", backgroundColor: "#ffffff", color: "#374151",
@@ -442,7 +442,7 @@ export default function CurriculumViewPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          All Curricula
+          {curriculum.isProgram ? "All Programs" : "All Curricula"}
         </button>
         <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
         <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "220px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -496,10 +496,12 @@ export default function CurriculumViewPage() {
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 🏗 Structure
               </button>
-              <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                📅 Academic Year
-              </button>
+              {!curriculum.isProgram && (
+                <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                  📅 Academic Year
+                </button>
+              )}
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 🗂 Version Control

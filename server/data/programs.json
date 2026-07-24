@@ -1,0 +1,32 @@
+[
+  {
+    "curriculumId": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
+    "hubId": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "classId": "c48b6fc4-779b-46e7-8101-905dcbc08ad5",
+    "startDate": "2026-08-01",
+    "endDate": "2026-08-30",
+    "id": "76ed1d8a-dd02-4a0a-8a78-5c7e4805bd99",
+    "createdAt": "2026-07-24T11:40:41.821Z",
+    "updatedAt": "2026-07-24T11:40:41.821Z"
+  },
+  {
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "hubId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
+    "classId": "411bed3e-095f-4965-aa3c-bfab0ae7b376",
+    "startDate": "2026-09-01",
+    "endDate": "2026-10-10",
+    "id": "f168d78f-2683-4113-9d9a-f55e3f187ac6",
+    "createdAt": "2026-07-24T12:01:41.641Z",
+    "updatedAt": "2026-07-24T12:01:41.641Z"
+  },
+  {
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "f9155b1f-d7de-4bd4-83f3-7c6f70ed382e",
+    "startDate": "2026-01-01",
+    "endDate": "2026-03-31",
+    "id": "119b5034-0600-4749-991b-deb417a90115",
+    "createdAt": "2026-07-24T12:06:33.526Z",
+    "updatedAt": "2026-07-24T12:06:33.526Z"
+  }
+]

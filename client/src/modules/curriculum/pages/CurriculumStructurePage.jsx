@@ -255,6 +255,7 @@ export default function CurriculumStructurePage() {
 
   /* Settings */
   const [curriculumType, setCurriculumType] = useState("");
+  const [isProgram,    setIsProgram]    = useState(false);
   const [cycleModel,   setCycleModel]   = useState("terms");
 
   /* Custom cycle */
@@ -273,6 +274,7 @@ export default function CurriculumStructurePage() {
     if (!curriculum) return;
 
     setCurriculumType(curriculum.curriculumType || "");
+    setIsProgram(!!curriculum.isProgram);
 
     const model = curriculum.academicCycleModel || "terms";
     setCycleModel(model);
@@ -330,10 +332,16 @@ export default function CurriculumStructurePage() {
     const periods     = periodNames.map((name) => ({ name }));
 
     updateCurriculum(
-      { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType } },
+      { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType: isProgram ? "" : curriculumType, isProgram } },
       { onSuccess: () => navigate(destination) }
     );
   };
+
+  // Authoring (Basic Info -> Structure -> Competencies -> Version Control) always happens
+  // under Curriculum, regardless of the isProgram flag — only the finished, viewable result
+  // (CurriculumViewPage) hands off into /programs. See CurriculumPage.jsx / ProgramsListPage.jsx
+  // for where isProgram actually changes which list a curriculum shows up in.
+  const exitPath = "/curriculum";
 
   /* ── Loading ─────────────────────────────────────────────────────── */
   if (isLoading) {
@@ -368,7 +376,7 @@ export default function CurriculumStructurePage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", padding: 0 }}>
+            <button type="button" onClick={() => navigate(exitPath)} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", padding: 0 }}>
               ← Curriculum
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
@@ -383,7 +391,7 @@ export default function CurriculumStructurePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-          <button type="button" onClick={() => handleSave("/curriculum")} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
+          <button type="button" onClick={() => handleSave(exitPath)} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
             Done
           </button>
           <button type="button" onClick={() => handleSave(`/curriculum/${id}/competencies`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
@@ -408,20 +416,35 @@ export default function CurriculumStructurePage() {
               Curriculum Framework
             </h4>
 
-            <label style={fieldLabel}>
-              Curriculum Type
+            {/* Curriculum Type doesn't apply to Programs — a program runs on its own fixed
+                start/end date (set when deployed to a hub), not a school's curriculum-stack
+                classification. It's the primary field here, so it comes first; the Program
+                toggle is a secondary, simple opt-in below it. */}
+            {!isProgram && (
+              <div>
+                <label style={fieldLabel}>
+                  Curriculum Type
+                </label>
+                <select
+                  value={curriculumType}
+                  onChange={(e) => setCurriculumType(e.target.value)}
+                  className="csp-select"
+                >
+                  <option value="">Select type…</option>
+                  {CURRICULUM_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <p style={hintMsg}>How this curriculum is categorised in the learning framework.</p>
+              </div>
+            )}
+
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: isProgram ? 0 : "18px", paddingTop: isProgram ? 0 : "16px", borderTop: isProgram ? "none" : "1px solid #F3F4F6", cursor: "pointer" }}>
+              <input type="checkbox" checked={isProgram} onChange={(e) => setIsProgram(e.target.checked)} style={{ cursor: "pointer", flexShrink: 0 }} />
+              <span style={{ fontSize: "13px", color: "#374151" }}>
+                This is a <strong>Program</strong> <span style={{ color: "#9CA3AF" }}>— a short-run cohort (e.g. a bootcamp), listed under Programs instead</span>
+              </span>
             </label>
-            <select
-              value={curriculumType}
-              onChange={(e) => setCurriculumType(e.target.value)}
-              className="csp-select"
-            >
-              <option value="">Select type…</option>
-              {CURRICULUM_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            <p style={hintMsg}>How this curriculum is categorised in the learning framework.</p>
           </div>
 
           {/* Cycle */}

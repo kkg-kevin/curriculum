@@ -83,7 +83,12 @@ function buildCurriculumMeta() {
       }
 
       let effectiveStatus;
-      if (cvPublishedIds.has(curriculum.id) && ayPublishedIds.has(curriculum.id)) {
+      if (curriculum.isProgram) {
+        // Programs run on their own fixed startDate/endDate (set on the Program record when
+        // deployed to a hub), not an academic year cycle — so publishing only ever depends on
+        // the curriculum version, never on an academic year being set up at all.
+        effectiveStatus = cvPublishedIds.has(curriculum.id) ? "published" : (curriculum.status || "draft");
+      } else if (cvPublishedIds.has(curriculum.id) && ayPublishedIds.has(curriculum.id)) {
         effectiveStatus = "published";
       } else if (cvActiveIds.has(curriculum.id)) {
         effectiveStatus = "active";

@@ -10,6 +10,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
     { name: "Learners", path: "/learners" },
     { name: "Tech Educators", path: "/teachers" },
     { name: "Classes", path: "/classes" },
+    { name: "Programs", path: "/programs" },
     { name: "Courses", path: "/courses" },
     { name: "Assessments", path: "/assessments" },
     { name: "Reports", path: "/reports" },
