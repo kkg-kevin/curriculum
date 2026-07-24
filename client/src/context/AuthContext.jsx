@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const loggedInUser = await authApi.login(email, password);
+  const login = useCallback(async (identifier, password) => {
+    const loggedInUser = await authApi.login(identifier, password);
     setUser(loggedInUser);
     return loggedInUser;
   }, []);

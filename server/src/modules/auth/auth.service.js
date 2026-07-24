@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
+const LearnerModel = require("../learners/learner.model");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
 const SALT_ROUNDS = 10;
@@ -53,16 +54,24 @@ const AuthService = {
     return this.createUser({ name, email, password, role });
   },
 
-  async login(email, password) {
-    const user = UserModel.findByEmail(email);
+  // `identifier` is either an account's own email (admin/school/teacher, or a guardian logging
+  // in directly) or a learner's chosen username — the student's own way into the exact same
+  // guardian-owned account, not a separate identity. Username resolution goes through the
+  // learner record it belongs to, then that learner's guardianEmail, then the account itself.
+  async login(identifier, password) {
+    let user = UserModel.findByEmail(identifier);
     if (!user) {
-      const err = new Error("Invalid email or password");
+      const learner = LearnerModel.findByUsername(identifier);
+      if (learner?.guardianEmail) user = UserModel.findByEmail(learner.guardianEmail);
+    }
+    if (!user) {
+      const err = new Error("Invalid email/username or password");
       err.statusCode = 401;
       throw err;
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      const err = new Error("Invalid email or password");
+      const err = new Error("Invalid email/username or password");
       err.statusCode = 401;
       throw err;
     }

@@ -4,7 +4,7 @@ import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
-import Avatar from "../components/Avatar";
+import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
 
 const T = {

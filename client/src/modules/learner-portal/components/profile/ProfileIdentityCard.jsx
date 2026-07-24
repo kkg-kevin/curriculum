@@ -1,6 +1,6 @@
 import { FiEdit2, FiStar, FiZap } from "react-icons/fi";
 import { T, cardStyle, NotOnRecord } from "./theme";
-import Avatar from "../Avatar";
+import Avatar from "../../../../components/ui/Avatar";
 
 function MetaRow({ label, value }) {
   return (
@@ -76,6 +76,7 @@ export default function ProfileIdentityCard({ learner, stage, onEdit }) {
             <MetaRow label="DCF ID" value={dcfId || <NotOnRecord />} />
             <MetaRow label="Nationality" value={learner.nationality || <NotOnRecord />} />
             <MetaRow label="Languages" value={learner.languages || <NotOnRecord />} />
+            <MetaRow label="Username" value={learner.username || <NotOnRecord />} />
           </div>
         </div>
       </div>

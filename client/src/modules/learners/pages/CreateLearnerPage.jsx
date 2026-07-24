@@ -23,7 +23,7 @@ export default function CreateLearnerPage() {
   const methods = useForm({
     resolver: zodResolver(createLearnerSchema),
     defaultValues: {
-      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "",
+      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
       guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
     },
     mode: "onTouched",

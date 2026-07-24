@@ -8,8 +8,10 @@ const USER_ROLES = ["admin", "school", "teacher", "learner"];
 // controller forgets to double-check. Admins are seeded/created by another admin only.
 const PUBLIC_SIGNUP_ROLES = ["school", "teacher", "learner"];
 
+// Not a strict email format — a learner may log in with their username instead of the
+// guardian's email (see auth.service.js's login, which tries both).
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  identifier: z.string().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
 });
 

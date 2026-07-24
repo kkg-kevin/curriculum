@@ -22,7 +22,7 @@ export default function EditLearnerPage() {
   const methods = useForm({
     resolver: zodResolver(updateLearnerSchema),
     defaultValues: {
-      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "",
+      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
       guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
     },
     mode: "onTouched",
@@ -39,6 +39,7 @@ export default function EditLearnerPage() {
         dateOfBirth:   learner.dateOfBirth   || "",
         nationality:   learner.nationality   || "",
         languages:     learner.languages     || "",
+        username:      learner.username      || "",
         guardianName:  learner.guardianName  || "",
         guardianPhone: learner.guardianPhone || "",
         guardianEmail: learner.guardianEmail || "",

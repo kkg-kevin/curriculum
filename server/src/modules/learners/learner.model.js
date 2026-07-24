@@ -43,6 +43,13 @@ const LearnerModel = {
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
+  // Used both for uniqueness checks (learner.service.js) and to resolve a username-based
+  // login (auth.service.js) back to the learner whose guardian account it should sign into.
+  findByUsername(username) {
+    if (!username) return null;
+    return readAll().find((l) => l.username?.toLowerCase() === username.toLowerCase()) || null;
+  },
+
   findById(id) {
     return readAll().find((l) => l.id === id) || null;
   },

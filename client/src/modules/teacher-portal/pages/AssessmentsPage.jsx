@@ -179,7 +179,6 @@ function AssessmentCard({ item, issuesByKey, onIssue, issuingKey }) {
 }
 
 export default function AssessmentsPage() {
-  const navigate = useNavigate();
   const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
@@ -296,23 +295,6 @@ export default function AssessmentsPage() {
         <KpiTile icon={<SendIcon fontSize="small" />} num={issuedCount} label="Issued" sub="Live for your class right now" />
         <KpiTile icon={<PersonIcon fontSize="small" />} num={individualCount} label="Individual" sub="Teacher-marked or learner work" />
         <KpiTile icon={<GroupIcon fontSize="small" />} num={groupCount} label="Group" sub="Shared activities or group tasks" />
-      </div>
-
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          onClick={() => navigate("/teacher-portal/course-content")}
-          style={{ flex: "1 1 180px", minWidth: 160, padding: "10px 18px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-        >
-          Browse course content
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/teacher-portal/attendance")}
-          style={{ flex: "1 1 180px", minWidth: 160, padding: "10px 18px", backgroundColor: "#FFFBEB", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-        >
-          Attendance
-        </button>
       </div>
 
       {attachments.length === 0 ? (
