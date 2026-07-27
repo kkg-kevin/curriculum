@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 // Kept in one place so scoping in more roles later is a one-line change.
-const USER_ROLES = ["admin", "school", "teacher", "learner"];
+const USER_ROLES = ["admin", "school", "teacher", "learner", "curriculumAdmin"];
 
 // Public self-signup is only ever allowed to create these roles — "admin" is never reachable
 // from this schema, so privilege escalation via the signup form isn't possible even if the

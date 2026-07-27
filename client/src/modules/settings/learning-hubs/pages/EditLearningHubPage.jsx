@@ -6,6 +6,7 @@ import { useLearningHubQuery, useUpdateLearningHub } from "../../../learning-hub
 import { learningHubSchema } from "../../../learning-hubs/schemas/learningHub.schema";
 import LearningHubForm from "../components/LearningHubForm";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../../components/ui/PasswordRevealDialog";
 
 export default function EditLearningHubPage() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function EditLearningHubPage() {
   const { data: hub, isLoading, isError } = useLearningHubQuery(id);
   const { mutate: updateLearningHub, isPending } = useUpdateLearningHub();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const methods = useForm({
     resolver: zodResolver(learningHubSchema),
@@ -54,8 +56,15 @@ export default function EditLearningHubPage() {
 
   const onSubmit = (data) => {
     const payload = { ...data, curriculumId: data.curriculumId || null };
+    const viewPath = `/learning-hubs/${id}/view`;
     updateLearningHub({ id, data: payload }, {
-      onSuccess: () => navigate(`/learning-hubs/${id}/view`),
+      onSuccess: () => {
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: data.name, navigateTo: viewPath });
+        } else {
+          navigate(viewPath);
+        }
+      },
     });
   };
 
@@ -142,6 +151,13 @@ export default function EditLearningHubPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate(`/learning-hubs/${id}/view`)}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

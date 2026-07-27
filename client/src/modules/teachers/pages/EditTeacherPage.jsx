@@ -6,6 +6,7 @@ import { useTeacherQuery, useUpdateTeacher } from "../hooks/useTeacher";
 import { teacherSchema } from "../schemas/teacher.schema";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherPath } from "../../../routes/portalPaths";
 
@@ -16,6 +17,7 @@ export default function EditTeacherPage() {
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
   const { mutate: updateTeacher, isPending } = useUpdateTeacher();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const methods = useForm({
     resolver: zodResolver(teacherSchema),
@@ -38,8 +40,15 @@ export default function EditTeacherPage() {
   }, [teacher, reset]);
 
   const onSubmit = (data) => {
+    const viewPath = teacherPath(user?.role, id, "view");
     updateTeacher({ id, data }, {
-      onSuccess: () => navigate(teacherPath(user?.role, id, "view")),
+      onSuccess: () => {
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
+        } else {
+          navigate(viewPath);
+        }
+      },
     });
   };
 
@@ -114,6 +123,13 @@ export default function EditTeacherPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate(teacherPath(user?.role, id, "view"))}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

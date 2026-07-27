@@ -1,19 +1,23 @@
 const LearningHubModel = require("../../modules/learning-hubs/learning-hub.model");
 const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
+const CurriculumModel = require("../../modules/curriculum/curriculum.model");
 
-// Resolves the caller's own LearningHub/Teacher/Learner record from their JWT email and attaches
-// it to req — a "school"-role account matches against whichever learning hub record has that
-// email (school is just one hub type; only school-type hubs have portal logins today), and
-// teacher accounts match on their own email; a learner account logs in as the guardian, so it
-// matches guardianEmail instead. Route handlers scope every query and ownership check off these
-// attached records, never off client-supplied ids, so a role can't widen its own access by
-// editing a query param or path param.
+// Resolves the caller's own LearningHub/Teacher/Learner/Curriculum record from their JWT
+// identity and attaches it to req — a "school"-role account matches against whichever learning
+// hub record has that email (school is just one hub type; only school-type hubs have portal
+// logins today), teacher accounts match on their own email, a learner account logs in as the
+// guardian so it matches guardianEmail instead, and a "curriculumAdmin" account matches whichever
+// curriculum has curriculumAdminId === their own user id (mirrors class.classTeacherId — one
+// outward-pointing field, not a separate collection). Route handlers scope every query and
+// ownership check off these attached records, never off client-supplied ids, so a role can't
+// widen its own access by editing a query param or path param.
 function attachOwnRecords(req, res, next) {
-  const { role, email } = req.user;
-  if (role === "school")  req.ownSchool  = LearningHubModel.findAll({ email })[0] || null;
-  if (role === "teacher") req.ownTeacher = TeacherModel.findAll({ email })[0] || null;
-  if (role === "learner") req.ownLearner = LearnerModel.findAll({ guardianEmail: email })[0] || null;
+  const { role, email, id } = req.user;
+  if (role === "school")          req.ownSchool     = LearningHubModel.findAll({ email })[0] || null;
+  if (role === "teacher")         req.ownTeacher     = TeacherModel.findAll({ email })[0] || null;
+  if (role === "learner")         req.ownLearner     = LearnerModel.findAll({ guardianEmail: email })[0] || null;
+  if (role === "curriculumAdmin") req.ownCurriculum = CurriculumModel.findAll().find((c) => c.curriculumAdminId === id) || null;
   next();
 }
 

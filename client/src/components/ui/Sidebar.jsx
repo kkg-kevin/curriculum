@@ -1,21 +1,32 @@
 ﻿import { NavLink } from "react-router-dom";
 import logo from "../../assets/Logo-image.png";
 import LogoutButton from "./LogoutButton";
+import { useAuth } from "../../context/AuthContext";
+
+const ADMIN_MENU_ITEMS = [
+  { name: "Dashboard", path: "/" },
+  { name: "Learning Hubs", path: "/learning-hubs" },
+  { name: "Curriculum", path: "/curriculum" },
+  { name: "Learners", path: "/learners" },
+  { name: "Tech Educators", path: "/teachers" },
+  { name: "Classes", path: "/classes" },
+  { name: "Programs", path: "/programs" },
+  { name: "Courses", path: "/courses" },
+  { name: "Assessments", path: "/assessments" },
+  { name: "Reports", path: "/reports" },
+  { name: "Settings", path: "/settings" },
+];
+
+// A curriculumAdmin only ever has access to the curriculum-authoring routes (scoped server-side
+// to their own curriculum) — every other admin nav item would just 403 for them, so it's hidden
+// rather than shown and broken.
+const CURRICULUM_ADMIN_MENU_ITEMS = [
+  { name: "Curriculum", path: "/curriculum" },
+];
 
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
-  const menuItems = [
-    { name: "Dashboard", path: "/" },
-    { name: "Learning Hubs", path: "/learning-hubs" },
-    { name: "Curriculum", path: "/curriculum" },
-    { name: "Learners", path: "/learners" },
-    { name: "Tech Educators", path: "/teachers" },
-    { name: "Classes", path: "/classes" },
-    { name: "Programs", path: "/programs" },
-    { name: "Courses", path: "/courses" },
-    { name: "Assessments", path: "/assessments" },
-    { name: "Reports", path: "/reports" },
-    { name: "Settings", path: "/settings" },
-  ];
+  const { user } = useAuth();
+  const menuItems = user?.role === "curriculumAdmin" ? CURRICULUM_ADMIN_MENU_ITEMS : ADMIN_MENU_ITEMS;
 
   return (
     <>

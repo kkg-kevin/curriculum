@@ -6,6 +6,7 @@ import { useLearnerQuery, useUpdateLearner } from "../hooks/useLearners";
 import { updateLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
 
@@ -18,6 +19,7 @@ export default function EditLearnerPage() {
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { mutate: updateLearner, isPending } = useUpdateLearner();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const methods = useForm({
     resolver: zodResolver(updateLearnerSchema),
@@ -49,8 +51,15 @@ export default function EditLearnerPage() {
   }, [learner, reset]);
 
   const onSubmit = (data) => {
+    const viewPath = learnerPath(user?.role, id, "view");
     updateLearner({ id, data }, {
-      onSuccess: () => navigate(learnerPath(user?.role, id, "view")),
+      onSuccess: () => {
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: data.guardianName || `${learner.firstName} ${learner.lastName}`, navigateTo: viewPath });
+        } else {
+          navigate(viewPath);
+        }
+      },
     });
   };
 
@@ -113,6 +122,13 @@ export default function EditLearnerPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate(learnerPath(user?.role, id, "view"))}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

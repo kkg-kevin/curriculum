@@ -2,12 +2,15 @@ const express = require("express");
 const {
   createCurriculum,
   getAllCurricula,
+  getMyCurriculum,
   getCurriculumById,
   updateCurriculum,
   deleteCurriculum,
   getCurriculumCourses,
   linkCourse,
   unlinkCourse,
+  assignCurriculumAdmin,
+  unassignCurriculumAdmin,
 } = require("./curriculum.controller");
 const {
   getVersions,
@@ -79,11 +82,13 @@ const {
 const { authorize } = require("../../shared/middleware/auth.middleware");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 
-// A school only ever reads/writes within its own assigned curriculum — never another
-// school's, even by guessing an id. No-op for every other role (their own authorize(...) call
-// already decided whether they belong on the route at all).
+// A school only ever reads/writes within its own assigned curriculum, and a curriculumAdmin
+// only ever reads/writes the one curriculum they're assigned to manage — never another
+// curriculum, even by guessing an id. No-op for every other role (their own authorize(...) call
+// already decided whether they belong on the route at all — admin is always unrestricted here).
 function ownCurriculumOnly(req, res, next) {
   if (req.user.role === "school") assertOwn(req.ownSchool?.curriculumId === req.params.id);
+  if (req.user.role === "curriculumAdmin") assertOwn(req.ownCurriculum?.id === req.params.id);
   next();
 }
 
@@ -99,10 +104,13 @@ const router = express.Router();
 // A learner also needs its own curriculum's competency names and age-categories for the
 // learner-portal profile (read-only, no ownership check — same posture as the courses read
 // above; competency/age-category names aren't treated as school-sensitive data anywhere else
-// in this module). Registered before the router-wide admin gate below so they're the sole
-// exceptions; everything else in this module (CRUD, structure, versions, competency/assessment
-// authoring) stays admin-only.
-router.route("/:id").get(authorize("admin", "school", "teacher"), getCurriculumById);
+// in this module). Registered before the router-wide gate below so they're the sole exceptions
+// for school/teacher/learner; a "curriculumAdmin" instead gets the same authoring access as
+// admin (scoped to their own curriculum) via that gate further down.
+// "/mine" must come before "/:id" below — otherwise Express would match "mine" as the :id
+// param and this route would never be reached.
+router.route("/mine").get(authorize("curriculumAdmin"), getMyCurriculum);
+router.route("/:id").get(authorize("admin", "school", "teacher", "curriculumAdmin"), getCurriculumById);
 router.route("/:id/versions/current/courses").get(authorize("admin", "school", "teacher", "learner"), getCurrentCourses);
 router.route("/:id/competencies/links").get(authorize("admin", "learner"), getCurriculumCompetencies);
 router.route("/:id/competencies/ladder").get(authorize("admin", "school"), ownCurriculumOnly, getLadder);
@@ -110,11 +118,25 @@ router.route("/:id/competencies/learning-areas").get(authorize("admin", "school"
 router.route("/:id/competencies/age-categories").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getAgeCategories);
 router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school"), ownCurriculumOnly, getLearningJourney);
 router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
-router.use(authorize("admin"));
+// Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
+// stay global-admin-only actions; a curriculumAdmin only ever manages content *within* their
+// one assigned curriculum, never the roster of curricula or the record's own lifecycle.
+router.route("/").get(authorize("admin"), getAllCurricula).post(authorize("admin"), createCurriculum);
+router.route("/:id")
+  .put(authorize("admin", "curriculumAdmin"), ownCurriculumOnly, updateCurriculum)
+  .delete(authorize("admin"), deleteCurriculum);
 
-// Curriculum CRUD
-router.route("/").get(getAllCurricula).post(createCurriculum);
-router.route("/:id").put(updateCurriculum).delete(deleteCurriculum);
+// Who manages this curriculum — assigning/removing a curriculumAdmin is itself a global-admin
+// action (a curriculumAdmin can't grant themselves or anyone else more access). Only one at a
+// time (curriculum.curriculumAdminId) — assigning again replaces whoever was there before.
+router.route("/:id/admin")
+  .post(authorize("admin"), assignCurriculumAdmin)
+  .delete(authorize("admin"), unassignCurriculumAdmin);
+
+// Everything below is curriculum-authoring content (courses, versions, academic years,
+// competencies, assessments, performance bands, learning journey) — admin is unrestricted;
+// curriculumAdmin may only touch the one curriculum they're assigned to (ownCurriculumOnly).
+router.use(authorize("admin", "curriculumAdmin"), ownCurriculumOnly);
 
 // Courses — added to this curriculum from here (a course stays independent otherwise)
 router.route("/:id/courses/links").get(getCurriculumCourses).post(linkCourse);

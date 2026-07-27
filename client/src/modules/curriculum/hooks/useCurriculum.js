@@ -26,6 +26,16 @@ export function useCurriculumQuery(id) {
   });
 }
 
+// For a "curriculumAdmin" account — their own assigned curriculum. Not enabled by default;
+// callers gate this on the logged-in user's role.
+export function useMyCurriculumQuery(enabled) {
+  return useQuery({
+    queryKey: ["curricula", "mine"],
+    queryFn: () => curriculumApi.getMine(),
+    enabled: !!enabled,
+  });
+}
+
 export function useCreateCurriculum() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -105,5 +115,33 @@ export function useUnlinkCourse(curriculumId) {
       toast.success("Course removed from this curriculum");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to remove course"),
+  });
+}
+
+/* ── Curriculum admin — the one account delegated to manage this specific curriculum ───── */
+/* curriculum.curriculumAdmin ({id,name,email} or null) comes back on the normal detail read
+   (useCurriculumQuery) — these mutations just invalidate that same query on success. */
+
+export function useAssignCurriculumAdmin(curriculumId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => curriculumApi.assignAdmin(curriculumId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(curriculumId) });
+      toast.success("Curriculum admin assigned");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to assign curriculum admin"),
+  });
+}
+
+export function useUnassignCurriculumAdmin(curriculumId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => curriculumApi.unassignAdmin(curriculumId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(curriculumId) });
+      toast.success("Curriculum admin unassigned");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to unassign curriculum admin"),
   });
 }

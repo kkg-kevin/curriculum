@@ -1,4 +1,5 @@
 const CurriculumModel          = require("./curriculum.model");
+const UserModel = require("../auth/user.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
@@ -107,7 +108,16 @@ function buildCurriculumMeta() {
 
 function enrichCurriculum(curriculum, meta) {
   if (!curriculum) return curriculum;
-  return { ...curriculum, ...meta.getMeta(curriculum) };
+  const enriched = { ...curriculum, ...meta.getMeta(curriculum) };
+  // Resolved fresh from the live user record each read, never stored, so it can't drift if
+  // that account's name/email changes later (same posture as program.service.js's enrich()).
+  if (curriculum.curriculumAdminId) {
+    const admin = UserModel.findById(curriculum.curriculumAdminId);
+    enriched.curriculumAdmin = admin ? { id: admin.id, name: admin.name, email: admin.email } : null;
+  } else {
+    enriched.curriculumAdmin = null;
+  }
+  return enriched;
 }
 
 const CurriculumService = {
@@ -141,6 +151,19 @@ const CurriculumService = {
       throw err;
     }
     return curriculum;
+  },
+
+  // Bypasses updateCurriculumSchema entirely — curriculumAdminId is deliberately never part of
+  // the general update payload (see curriculum.validation.js), only ever set here by the
+  // dedicated assign/unassign controller actions.
+  async setCurriculumAdmin(id, curriculumAdminId) {
+    const curriculum = CurriculumModel.update(id, { curriculumAdminId });
+    if (!curriculum) {
+      const err = new Error("Curriculum not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return enrichCurriculum(curriculum, buildCurriculumMeta());
   },
 
   async deleteCurriculum(id) {

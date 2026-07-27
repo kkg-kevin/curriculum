@@ -6,12 +6,14 @@ import { useCreateLearningHub } from "../../../learning-hubs/hooks/useLearningHu
 import { learningHubSchema } from "../../../learning-hubs/schemas/learningHub.schema";
 import LearningHubForm from "../components/LearningHubForm";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../../components/ui/PasswordRevealDialog";
 
 const ACCENT = "#25476a";
 
 export default function CreateLearningHubPage() {
   const navigate = useNavigate();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const { mutate: createLearningHub, isPending } = useCreateLearningHub();
 
@@ -35,7 +37,13 @@ export default function CreateLearningHubPage() {
   const onSubmit = (data) => {
     const payload = { ...data, curriculumId: data.curriculumId || null };
     createLearningHub(payload, {
-      onSuccess: () => navigate("/settings?tab=learning-hubs"),
+      onSuccess: () => {
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: data.name, navigateTo: "/settings?tab=learning-hubs" });
+        } else {
+          navigate("/settings?tab=learning-hubs");
+        }
+      },
     });
   };
 
@@ -108,6 +116,13 @@ export default function CreateLearningHubPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate("/settings?tab=learning-hubs")}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

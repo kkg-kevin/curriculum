@@ -86,16 +86,6 @@ export default function AppRoutes() {
           <Route index element={<LearningHubsPage />} />
           <Route path=":id/view" element={<LearningHubViewPage />} />
         </Route>
-        <Route path="curriculum">
-          <Route index element={<CurriculumPage />} />
-          <Route path="create" element={<CreateCurriculumPage />} />
-          <Route path=":id/edit" element={<EditCurriculumPage />} />
-          <Route path=":id/structure" element={<CurriculumStructurePage />} />
-          <Route path=":id/view" element={<CurriculumViewPage />} />
-          <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
-          <Route path=":id/academic-year" element={<AcademicYearPage />} />
-          <Route path=":id/competencies" element={<CompetenciesPage />} />
-        </Route>
         <Route path="learners">
           <Route index element={<LearnersPage />} />
           <Route path="create" element={<CreateLearnerPage />} />
@@ -139,6 +129,27 @@ export default function AppRoutes() {
           <Route index element={<SettingsPage />} />
           <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />
           <Route path="learning-hubs/:id/edit" element={<EditLearningHubPage />} />
+        </Route>
+      </Route>
+      </Route>
+
+      {/* Curriculum authoring — admin (unrestricted) and curriculumAdmin (own curriculum only,
+          enforced server-side). Kept as its own RoleRoute/MainLayout branch, separate from the
+          admin-only tree above, so a curriculumAdmin never gets routed anywhere else in the
+          admin app (Schools, Tech Educators, Learners, Settings, etc). Same MainLayout shell and
+          the exact same "/curriculum/*" paths admin already uses — Sidebar.jsx filters the nav
+          for this role, and the pages themselves don't need to know which role is viewing them. */}
+      <Route element={<RoleRoute allow={["admin", "curriculumAdmin"]} />}>
+      <Route path="/" element={<MainLayout />}>
+        <Route path="curriculum">
+          <Route index element={<CurriculumPage />} />
+          <Route path="create" element={<CreateCurriculumPage />} />
+          <Route path=":id/edit" element={<EditCurriculumPage />} />
+          <Route path=":id/structure" element={<CurriculumStructurePage />} />
+          <Route path=":id/view" element={<CurriculumViewPage />} />
+          <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
+          <Route path=":id/academic-year" element={<AcademicYearPage />} />
+          <Route path=":id/competencies" element={<CompetenciesPage />} />
         </Route>
       </Route>
       </Route>

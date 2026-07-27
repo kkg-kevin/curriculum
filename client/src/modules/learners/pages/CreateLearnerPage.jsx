@@ -6,6 +6,7 @@ import { useCreateLearner } from "../hooks/useLearners";
 import { createLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
 
@@ -19,6 +20,7 @@ export default function CreateLearnerPage() {
 
   const { mutate: createLearner, isPending } = useCreateLearner();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const methods = useForm({
     resolver: zodResolver(createLearnerSchema),
@@ -37,7 +39,14 @@ export default function CreateLearnerPage() {
     // own page (e.g. its "Enrol Learner" button), same pattern as CreateTeacherPage.
     const payload = lockedSchoolId ? { ...data, hubId: lockedSchoolId } : data;
     createLearner(payload, {
-      onSuccess: (learner) => navigate(learnerPath(user?.role, learner.id, "view")),
+      onSuccess: (learner) => {
+        const viewPath = learnerPath(user?.role, learner.id, "view");
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: data.guardianName || `${learner.firstName} ${learner.lastName}`, navigateTo: viewPath });
+        } else {
+          navigate(viewPath);
+        }
+      },
     });
   };
 
@@ -97,6 +106,13 @@ export default function CreateLearnerPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate(learnersListPath(user?.role, lockedSchoolId))}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

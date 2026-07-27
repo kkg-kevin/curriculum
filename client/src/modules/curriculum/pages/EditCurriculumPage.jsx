@@ -6,12 +6,15 @@ import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum"
 import { curriculumDetailsSchema } from "../schemas/curriculum.schema";
 import CurriculumForm from "../components/CurriculumForm";
 import CurriculumPreview from "../components/CurriculumPreview";
+import CurriculumAdminsCard from "../components/CurriculumAdminsCard";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
 
 /* ── Inner form (only renders once curriculum is loaded) ─────────────── */
 
 function EditCurriculumForm({ curriculum }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -206,6 +209,15 @@ function EditCurriculumForm({ curriculum }) {
           </div>
         </form>
       </FormProvider>
+
+      {/* Only the platform admin assigns/removes who's delegated to run this curriculum — a
+          curriculumAdmin can already only ever reach their own curriculum's Edit page, but
+          this card is additionally hidden for them since managing admins isn't their call. */}
+      {user?.role === "admin" && (
+        <div style={{ marginTop: "24px" }}>
+          <CurriculumAdminsCard curriculum={curriculum} />
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={confirmLeave}

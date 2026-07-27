@@ -64,6 +64,12 @@ const createCurriculumSchema = z.object({
   classes: z.array(classSchema).optional().default([]),
 });
 
+// curriculumAdminId (the one account delegated to author this curriculum — mirrors
+// class.classTeacherId, a single outward-pointing field rather than a separate link table,
+// since there's only ever one at a time) is deliberately absent from both schemas below. It's
+// only ever written by the dedicated assign/unassign handlers in curriculum.controller.js, never
+// through general create/update — so even a curriculumAdmin PUTting their own curriculum's
+// basic info can't reassign or clear it, without needing an extra field-stripping guard.
 const updateCurriculumSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters").optional(),
   code: z
@@ -90,4 +96,12 @@ const linkCourseSchema = z.object({
   courseId: z.string().min(1, "courseId is required"),
 });
 
-module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema, linkCourseSchema };
+// Assigning a curriculum admin always sets up their login too — a curriculumAdminId with no
+// working login would be useless, unlike Teacher/Learner which can exist before one is added.
+const assignAdminSchema = z.object({
+  name:     z.string().min(1, "Name is required").max(150),
+  email:    z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema, linkCourseSchema, assignAdminSchema };
