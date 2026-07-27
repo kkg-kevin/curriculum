@@ -57,7 +57,6 @@ function CourseMiniRow({ course, navigate }) {
 function ClassCard({ cls, courses, teacherName, isOpen, onToggleOpen, showFullCatalog, onToggleFullCatalog, navigate }) {
   return (
     <div style={{ ...cardStyle(), overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div style={{ height: 3, background: "linear-gradient(90deg, #25476a, #2e7db5, #38aae1)" }} />
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>

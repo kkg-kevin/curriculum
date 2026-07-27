@@ -27,6 +27,25 @@ function stripHtml(html) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Same labels/colors used everywhere else an assessment's type shows up (teacher-portal's
+// AssessmentsPage, the builder, course/session views) — kept consistent rather than inventing a
+// separate naming here.
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
+const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
+
+function typeBadgeStyle(color) {
+  return {
+    fontSize: 10,
+    fontWeight: 700,
+    color,
+    backgroundColor: `${color}12`,
+    border: `1px solid ${color}35`,
+    padding: "2px 8px",
+    borderRadius: 20,
+    whiteSpace: "nowrap",
+  };
+}
+
 function KpiTile({ icon, value, label, sub }) {
   return (
     <div style={{ ...cardStyle(), padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -86,11 +105,15 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
         <div style={{ display: "grid", gap: 16 }}>
           {visibleRows.map(({ issue, assessment, submission }) => {
             const cfg = STATUS_CONFIG[submission.status] || STATUS_CONFIG.not_started;
+            const typeColor = TYPE_COLORS[assessment.type] || T.inkMuted;
             return (
               <div key={issue.id} style={{ ...cardStyle(), padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <div style={{ minWidth: 220, flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{assessment.name}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{assessment.name}</p>
+                      <span style={typeBadgeStyle(typeColor)}>{TYPE_LABELS[assessment.type] || assessment.type}</span>
+                    </div>
                     <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>{stripHtml(assessment.description) || "No description added"}</p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, minWidth: 140 }}>
