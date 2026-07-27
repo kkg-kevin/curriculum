@@ -268,5 +268,15 @@
     "status": "active",
     "createdAt": "2026-07-24T13:03:36.066Z",
     "updatedAt": "2026-07-24T13:03:36.066Z"
+  },
+  {
+    "id": "617644bb-2175-4aba-a94a-9ec517e17695",
+    "learnerId": "96024e19-0ec2-4df2-bc51-d7075c7d790c",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-006",
+    "status": "active",
+    "createdAt": "2026-07-27T11:12:34.925Z",
+    "updatedAt": "2026-07-27T11:12:34.925Z"
   }
 ]

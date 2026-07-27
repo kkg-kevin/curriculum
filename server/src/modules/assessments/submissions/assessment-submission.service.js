@@ -3,6 +3,7 @@ const AssessmentSubmissionModel = require("./assessment-submission.model");
 const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const { requiresManualGrading, computeAutoScore, computeMaxScore } = require("./grading.utils");
 
 function loadAssessmentOrThrow(assessmentId) {
@@ -15,6 +16,20 @@ function loadAssessmentOrThrow(assessmentId) {
   return assessment;
 }
 
+// A standalone diagnostic issue (see issueDiagnostic below) carries an ageCategoryId — once a
+// submission for it reaches "graded" (either instantly here, via submit()'s auto-grade path, or
+// later via a teacher's grade() pass), its score resolves this learner's curriculum-wide
+// Performance Band, and the age category it was issued for becomes their confirmed
+// Developmental Stage (see CompetencyService.placeLearnerFromDiagnostic). Ordinary class-issued
+// assessments have no ageCategoryId, so this is a no-op for them.
+function maybePlaceFromDiagnostic(submission) {
+  if (submission.status !== "graded") return;
+  const issue = AssessmentIssueModel.findById(submission.issueId);
+  if (!issue?.learnerId || !issue?.ageCategoryId) return;
+  const scorePercent = submission.maxScore > 0 ? (submission.totalScore / submission.maxScore) * 100 : 0;
+  CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.ageCategoryId, scorePercent);
+}
+
 const AssessmentSubmissionService = {
   // Issuing is idempotent per (assessment, session, class) — re-issuing (e.g. after editing the
   // due date) updates the existing record instead of creating a duplicate that would otherwise
@@ -24,6 +39,39 @@ const AssessmentSubmissionService = {
     const existing = AssessmentIssueModel.findOne({ assessmentId, sessionId, classId });
     if (existing) return AssessmentIssueModel.update(existing.id, { dueDate: dueDate ?? existing.dueDate });
     return AssessmentIssueModel.create({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate: dueDate || null });
+  },
+
+  // Standalone diagnostic issuance — bypasses the normal course/session attachment entirely
+  // (unlike issueAssessment above), since a diagnostic is meant to run before any course is
+  // even assigned. Idempotent per (assessment, learner): re-triggering (e.g. re-enrolling)
+  // never creates a duplicate. See learner.service.js's maybeAutoIssueDiagnostic for the caller.
+  issueDiagnostic({ assessmentId, learnerId, ageCategoryId }) {
+    loadAssessmentOrThrow(assessmentId);
+    const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId });
+    if (existing) return existing;
+    return AssessmentIssueModel.create({
+      assessmentId, learnerId, ageCategoryId,
+      sessionId: null, courseId: null, classId: null,
+      issuedBy: "system", dueDate: null,
+    });
+  },
+
+  // Every standalone issue (diagnostic or otherwise) targeting this learner directly, merged
+  // with their own submission — the learnerId-keyed counterpart to getIssuedAssessmentsForLearner
+  // above, which is keyed by class instead.
+  getStandaloneIssuedAssessments(learnerId) {
+    const issues = AssessmentIssueModel.findAll({ learnerId });
+    return issues.map((issue) => {
+      const assessment = AssessmentModel.findById(issue.assessmentId);
+      const submission = AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId });
+      return { issue, assessment, submission: submission || { status: "not_started" } };
+    }).filter((row) => !!row.assessment);
+  },
+
+  // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
+  // Assessment" card on LearnerViewPage.
+  getDiagnosticForLearner(learnerId) {
+    return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)[0] || null;
   },
 
   revokeIssue(issueId) {
@@ -157,7 +205,7 @@ const AssessmentSubmissionService = {
     const { autoScore, autoMax, itemResults } = computeAutoScore(assessment, answers);
     const needsManual = requiresManualGrading(assessment);
 
-    return AssessmentSubmissionModel.update(submissionId, {
+    const updated = AssessmentSubmissionModel.update(submissionId, {
       answers,
       autoScore,
       autoMax,
@@ -167,6 +215,8 @@ const AssessmentSubmissionService = {
       totalScore: needsManual ? null : autoScore,
       gradedAt: needsManual ? null : new Date().toISOString(),
     });
+    maybePlaceFromDiagnostic(updated);
+    return updated;
   },
 
   // Teacher's grading pass — supplies marks/feedback for whatever the learner's answers didn't
@@ -181,7 +231,7 @@ const AssessmentSubmissionService = {
     }
     const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
 
-    return AssessmentSubmissionModel.update(submissionId, {
+    const graded = AssessmentSubmissionModel.update(submissionId, {
       itemFeedback,
       overallFeedback,
       manualScore: Number(manualScore) || 0,
@@ -190,6 +240,8 @@ const AssessmentSubmissionService = {
       gradedAt: new Date().toISOString(),
       gradedBy,
     });
+    maybePlaceFromDiagnostic(graded);
+    return graded;
   },
 
   getSubmission(id) {

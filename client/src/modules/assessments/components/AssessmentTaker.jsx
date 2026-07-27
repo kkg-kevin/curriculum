@@ -129,6 +129,28 @@ function MatchingField({ item, value, onChange }) {
   );
 }
 
+function ScaleField({ item, value, onChange }) {
+  const scale = item.ratingScale?.length ? item.ratingScale : [];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      {scale.map((point) => (
+        <label
+          key={point}
+          style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999,
+            border: `1.5px solid ${value === point ? T.accentLight : T.border}`,
+            backgroundColor: value === point ? T.tintBg : "#fff",
+            fontSize: 13, color: value === point ? T.accent : T.ink, fontWeight: value === point ? 600 : 400, cursor: "pointer",
+          }}
+        >
+          <input type="radio" name={item.id} checked={value === point} onChange={() => onChange(point)} style={{ margin: 0 }} />
+          {point}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function TextField({ value, onChange, placeholder }) {
   return (
     <textarea
@@ -145,6 +167,7 @@ function ItemField({ item, value, onChange }) {
   if (item.kind === "fillBlank") return <FillBlankField item={item} value={value} onChange={onChange} />;
   if (item.kind === "ordering") return <OrderingField item={item} value={value} onChange={onChange} />;
   if (item.kind === "matching") return <MatchingField item={item} value={value} onChange={onChange} />;
+  if (item.kind === "survey") return <ScaleField item={item} value={value} onChange={onChange} />;
   if (item.kind === "externalLink") return <TextField value={value} onChange={onChange} placeholder="Paste a link…" />;
   if (FILE_KINDS.includes(item.kind)) {
     return (

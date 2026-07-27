@@ -35,6 +35,9 @@ export default function EditTeacherPage() {
         password:   "",
         phone:      teacher.phone      || "",
         status:     teacher.status     || "active",
+        employmentType: teacher.employmentType ?? null,
+        teacherLevel:   teacher.teacherLevel   ?? null,
+        paymentTerms:   teacher.paymentTerms   ?? null,
       });
     }
   }, [teacher, reset]);

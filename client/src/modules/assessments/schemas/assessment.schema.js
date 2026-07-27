@@ -6,7 +6,7 @@ export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "obser
 export const STRUCTURE_MODES = ["structured", "unstructured", "mixed"];
 export const STRUCTURE_MODE_LABELS = { structured: "Structured", unstructured: "Unstructured", mixed: "Mixed" };
 
-export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "shortAnswer"];
+export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "shortAnswer", "survey"];
 export const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
 export const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
 export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
@@ -14,9 +14,11 @@ export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practica
 export const TASK_TYPES = ["written", "practical", "research"];
 export const TASK_TYPE_LABELS = { written: "Written", practical: "Practical", research: "Research" };
 
+export const DEFAULT_SURVEY_SCALE = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
+
 export const ITEM_KIND_LABELS = {
   mcqSingle: "Multiple Choice (Single)", mcqMultiple: "Multiple Choice (Multiple)", trueFalse: "True / False",
-  matching: "Matching", ordering: "Ordering", fillBlank: "Fill in the Blank", shortAnswer: "Short Answer",
+  matching: "Matching", ordering: "Ordering", fillBlank: "Fill in the Blank", shortAnswer: "Short Answer", survey: "Survey (Scale)",
   longAnswer: "Long Answer", essay: "Essay", reflection: "Reflection", scenarioResponse: "Scenario Based",
   practicalTask: "Practical Task", openEnded: "Open-ended Question",
   documentUpload: "Document Upload", imageUpload: "Image Upload", videoUpload: "Video Upload",

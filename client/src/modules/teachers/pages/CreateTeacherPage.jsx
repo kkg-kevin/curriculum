@@ -70,6 +70,7 @@ export default function CreateTeacherPage() {
       firstName: "", lastName: "",
       email: "", password: "", phone: "",
       status: "active",
+      employmentType: null, teacherLevel: null, paymentTerms: null,
     },
     mode: "onTouched",
   });

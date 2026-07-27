@@ -5,6 +5,7 @@ const {
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
+  getDiagnosticForLearner,
   getOrCreateSubmission,
   saveDraft,
   submitAnswers,
@@ -23,6 +24,9 @@ router.get("/issues", authorize("admin", "school", "teacher"), getIssuesForClass
 router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRosterForIssue);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
+
+// Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class involved).
+router.get("/diagnostic/:learnerId", authorize("admin", "school"), getDiagnosticForLearner);
 
 // Learner-facing: what's issued to them, and their own attempt.
 router.get("/learner/issued", authorize("learner"), getIssuedForLearner);

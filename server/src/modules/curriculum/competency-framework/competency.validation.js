@@ -68,6 +68,10 @@ const ageCategoryFields = z.object({
   description: z.string().max(500).optional().default(""),
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  // The one assessment auto-issued to a new learner once their age resolves to this stage —
+  // one diagnostic per stage, same "single FK, not a whole module" pattern as
+  // class.classTeacherId / curriculum.curriculumAdminId.
+  diagnosticAssessmentId: z.string().optional().nullable().default(null),
 });
 
 const ageRangeRefinement = (data) =>

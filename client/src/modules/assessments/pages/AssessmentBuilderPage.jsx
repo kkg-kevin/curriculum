@@ -18,7 +18,7 @@ import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks,
+  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, DEFAULT_SURVEY_SCALE,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -357,6 +357,7 @@ function defaultEntry(kind, sectionId) {
     pairs: kind === "matching" ? [{ left: "", right: "" }, { left: "", right: "" }] : [],
     blanks: kind === "fillBlank" ? [""] : [],
     sequence: kind === "ordering" ? ["", ""] : [],
+    ratingScale: kind === "survey" ? [...DEFAULT_SURVEY_SCALE] : [],
     acceptedFileTypes: [],
     taskType: null,
     submissionKinds: [],
@@ -641,6 +642,14 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <div>
           <Label>Model Answer (optional)</Label>
           <input className="tb-input" value={entry.correctAnswer} onChange={(e) => set("correctAnswer", e.target.value)} />
+        </div>
+      )}
+
+      {entry.kind === "survey" && (
+        <div>
+          <Label>Scale</Label>
+          <ListEditor values={entry.ratingScale} onChange={(v) => set("ratingScale", v)} placeholder="Point" minItems={2} />
+          <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>The learner picks one point on this scale — there's no right or wrong answer, so it's reviewed manually rather than auto-graded.</p>
         </div>
       )}
 

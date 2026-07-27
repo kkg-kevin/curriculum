@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const AssessmentSubmissionService = require("./assessment-submission.service");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
-const { assertOwn } = require("../../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   issueAssessmentSchema,
   submitAnswersSchema,
@@ -20,6 +20,19 @@ function assertClassAccess(req, cls) {
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
   if (req.user.role === "teacher") assertOwn(cls.classTeacherId === req.ownTeacher?.id);
+}
+
+// A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)
+// has no classId, so assertClassAccess doesn't apply — ownership instead comes from whether
+// the learner is enrolled at a hub this caller owns. Diagnostics aren't tied to any class/
+// teacher, so a "teacher" caller never has standalone access, only admin/school.
+function assertLearnerHubAccess(req, learnerId) {
+  if (req.user.role === "school") {
+    const hubIds = LearnerHubLinkModel.findByLearnerId(learnerId).map((l) => l.hubId);
+    assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
+  } else if (req.user.role === "teacher") {
+    assertOwn(false);
+  }
 }
 
 function assertLearnerOwnsSubmission(req, submission) {
@@ -82,8 +95,20 @@ const getIssuedForLearner = asyncHandler(async (req, res) => {
   const classIds = LearnerHubLinkModel.findByLearnerId(learner.id)
     .filter((l) => l.classId && l.status === "active")
     .map((l) => l.classId);
-  const rows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learner.id));
+  const classRows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learner.id));
+  // Standalone issues (e.g. an auto-issued diagnostic) target the learner directly, with no
+  // class involved at all — merged in alongside the class-issued ones.
+  const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learner.id);
+  const rows = [...standaloneRows, ...classRows];
   res.json({ success: true, data: rows, count: rows.length });
+});
+
+// Admin/school-facing: this learner's auto-issued diagnostic (if any), for the Diagnostic
+// Assessment card on LearnerViewPage.
+const getDiagnosticForLearner = asyncHandler(async (req, res) => {
+  assertLearnerHubAccess(req, req.params.learnerId);
+  const row = AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId);
+  res.json({ success: true, data: row });
 });
 
 const getOrCreateSubmission = asyncHandler(async (req, res) => {
@@ -124,9 +149,11 @@ const getSubmission = asyncHandler(async (req, res) => {
   }
   if (req.user.role === "learner") {
     assertOwn(submission.learnerId === req.ownLearner?.id);
-  } else {
+  } else if (submission.classId) {
     const cls = ClassModel.findById(submission.classId);
     assertClassAccess(req, cls);
+  } else {
+    assertLearnerHubAccess(req, submission.learnerId);
   }
   res.json({ success: true, data: submission });
 });
@@ -138,8 +165,12 @@ const gradeSubmission = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  const cls = ClassModel.findById(existing.classId);
-  assertClassAccess(req, cls);
+  if (existing.classId) {
+    const cls = ClassModel.findById(existing.classId);
+    assertClassAccess(req, cls);
+  } else {
+    assertLearnerHubAccess(req, existing.learnerId);
+  }
   const data = gradeSubmissionSchema.parse(req.body);
   const submission = AssessmentSubmissionService.grade(req.params.id, { ...data, gradedBy: req.ownTeacher?.id || req.user.id });
   res.json({ success: true, data: submission });
@@ -151,6 +182,7 @@ module.exports = {
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
+  getDiagnosticForLearner,
   getOrCreateSubmission,
   saveDraft,
   submitAnswers,
