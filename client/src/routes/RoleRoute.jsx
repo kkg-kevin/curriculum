@@ -2,7 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AUTH_ENABLED } from "../config/authConfig";
 
-export const ROLE_HOME = { admin: "/", school: "/school-portal", teacher: "/teacher-portal", learner: "/learner-portal" };
+export const ROLE_HOME = { admin: "/", school: "/school-portal", teacher: "/teacher-portal", learner: "/learner-portal", curriculumAdmin: "/curriculum" };
 
 // Nests inside ProtectedRoute — runs only once a user is known, and bounces
 // a role that doesn't belong on this branch back to its own portal home.

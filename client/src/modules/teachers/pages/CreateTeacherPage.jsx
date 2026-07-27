@@ -10,6 +10,7 @@ import { classApi } from "../../classes/services/classApi";
 import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath } from "../../../routes/portalPaths";
 
@@ -50,6 +51,7 @@ export default function CreateTeacherPage() {
   const { mutate: createTeacher, isPending } = useCreateTeacher();
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [selectedClassIds, setSelectedClassIds] = useState(new Set());
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", lockedSchoolId],
@@ -94,7 +96,12 @@ export default function CreateTeacherPage() {
           );
           qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
         }
-        navigate(teacherPath(user?.role, teacher.id, "view"));
+        const viewPath = teacherPath(user?.role, teacher.id, "view");
+        if (data.password) {
+          setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
+        } else {
+          navigate(viewPath);
+        }
       },
     });
   };
@@ -188,6 +195,13 @@ export default function CreateTeacherPage() {
         cancelLabel="Stay"
         onConfirm={() => navigate(teachersListPath(user?.role, lockedSchoolId))}
         onCancel={() => setConfirmLeave(false)}
+      />
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
       />
     </div>
   );

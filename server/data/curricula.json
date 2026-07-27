@@ -43,8 +43,9 @@
     ],
     "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "createdAt": "2026-06-25T09:29:38.606Z",
-    "updatedAt": "2026-07-09T13:40:54.433Z",
-    "competencyWeights": []
+    "updatedAt": "2026-07-27T07:27:43.331Z",
+    "competencyWeights": [],
+    "curriculumAdminId": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf"
   },
   {
     "name": "Digital Innovators Curriculum",
@@ -97,8 +98,10 @@
     ],
     "id": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "createdAt": "2026-07-13T10:06:59.915Z",
-    "updatedAt": "2026-07-24T10:37:53.698Z",
-    "competencyWeights": []
+    "updatedAt": "2026-07-27T07:19:05.200Z",
+    "competencyWeights": [],
+    "isProgram": false,
+    "curriculumAdminId": "30ae06e1-f88b-4474-b11f-9ccfa801fe4f"
   },
   {
     "name": "August 2026 Bootcamp Program",
@@ -279,24 +282,5 @@
     "id": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
     "createdAt": "2026-07-24T12:43:58.328Z",
     "updatedAt": "2026-07-24T12:44:23.832Z"
-  },
-  {
-    "name": "wes",
-    "code": "W",
-    "academicYear": "",
-    "description": "ywserdfg",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "",
-    "isProgram": false,
-    "academicCycleModel": "terms",
-    "periods": [],
-    "classes": [],
-    "id": "8756f427-1a2b-4750-bdec-0b5a39f7fd35",
-    "createdAt": "2026-07-24T13:34:58.866Z",
-    "updatedAt": "2026-07-24T13:34:58.866Z"
   }
 ]

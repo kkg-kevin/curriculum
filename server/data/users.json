@@ -367,5 +367,23 @@
     "id": "2ebe4772-f115-4f04-a34c-6d3c313a0b11",
     "createdAt": "2026-07-23T18:01:13.108Z",
     "updatedAt": "2026-07-23T18:01:13.108Z"
+  },
+  {
+    "name": "Curriculum Admin",
+    "email": "curriculumadmin@digifunzi.com",
+    "passwordHash": "$2b$10$apdcORk7VJ76E5I3BhcorebPiEpMBIxg/RJ36K0bVLckTNS/ro7Wq",
+    "role": "curriculumAdmin",
+    "id": "30ae06e1-f88b-4474-b11f-9ccfa801fe4f",
+    "createdAt": "2026-07-27T07:08:22.095Z",
+    "updatedAt": "2026-07-27T07:08:22.095Z"
+  },
+  {
+    "name": "cadmin",
+    "email": "cadmin@digifunzi.com",
+    "passwordHash": "$2b$10$Zs/ppluutQBeQVSIiajtqeEoBsEHzRsVbkLbTRYMMyNLDFTpCZGnm",
+    "role": "curriculumAdmin",
+    "id": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf",
+    "createdAt": "2026-07-27T07:27:43.328Z",
+    "updatedAt": "2026-07-27T07:27:43.328Z"
   }
 ]

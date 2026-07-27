@@ -1,10 +1,11 @@
 import { CalendarMonth as CalendarMonthIcon, Clear as ClearIcon, MenuBook as MenuBookIcon, School as SchoolIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { useCurriculaQuery } from "../hooks/useCurriculum";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useCurriculaQuery, useMyCurriculumQuery } from "../hooks/useCurriculum";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilter, clearFilters } from "../../../store/curriculumSlice";
 import { FRAMEWORKS } from "../schemas/curriculum.schema";
 import CurriculumCard from "../components/CurriculumCard";
+import { useAuth } from "../../../context/AuthContext";
 
 /* ── Empty state ──────────────────────────────────────────────────────── */
 
@@ -90,8 +91,32 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
 export default function CurriculumPage() {
   const navigate  = useNavigate();
   const dispatch  = useDispatch();
+  const { user }  = useAuth();
+  const isCurriculumAdmin = user?.role === "curriculumAdmin";
   const filters   = useSelector((state) => state.curriculum.filters);
   const { data, isLoading, isError, error } = useCurriculaQuery();
+  const { data: myCurriculum, isLoading: myLoading, isError: myError } = useMyCurriculumQuery(isCurriculumAdmin);
+
+  // A curriculumAdmin only ever has the one curriculum they're assigned to — skip the list
+  // entirely (they have no use for "all curricula") and land straight on it.
+  if (isCurriculumAdmin) {
+    if (myLoading) {
+      return (
+        <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: "14px", fontFamily: "Inter, sans-serif" }}>
+          Loading your curriculum...
+        </div>
+      );
+    }
+    if (myError || !myCurriculum) {
+      return (
+        <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 20px" }}>
+          <p style={{ fontSize: "16px", color: "#EF4444", marginBottom: "8px" }}>No curriculum is assigned to your account yet.</p>
+          <p style={{ fontSize: "13px", color: "#6B7280" }}>Ask a platform admin to assign one.</p>
+        </div>
+      );
+    }
+    return <Navigate to={`/curriculum/${myCurriculum.id}/view`} replace />;
+  }
 
   // Program-flagged curricula live under /programs instead — see CurriculumStructurePage's
   // "This is a Program" toggle.
