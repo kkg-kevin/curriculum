@@ -40,6 +40,7 @@ export default function EditLearningHubPage() {
         password: "",
         phone: hub.phone || "",
         curriculumId: hub.curriculumId || "",
+        branchId: hub.branchId || "",
         status: hub.status || "active",
         description: hub.description || "",
         photos: hub.photos || [],
@@ -55,7 +56,7 @@ export default function EditLearningHubPage() {
   }, [hub, reset]);
 
   const onSubmit = (data) => {
-    const payload = { ...data, curriculumId: data.curriculumId || null };
+    const payload = { ...data, curriculumId: data.curriculumId || null, branchId: data.branchId || null };
     const viewPath = `/learning-hubs/${id}/view`;
     updateLearningHub({ id, data: payload }, {
       onSuccess: () => {

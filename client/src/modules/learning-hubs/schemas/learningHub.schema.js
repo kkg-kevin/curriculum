@@ -108,6 +108,7 @@ export const learningHubSchema = z
     address: addressSchema,
     mapLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
     curriculumId: z.string().or(z.literal("")).nullable().default(""),
+    branchId: z.string().or(z.literal("")).nullable().default(""),
     // New hubs start as "draft" — invisible everywhere outside Settings until promoted to
     // "active", at which point they appear in the Learning Hubs module and every other consumer.
     status: z.enum(["draft", "active", "inactive"]).default("draft"),

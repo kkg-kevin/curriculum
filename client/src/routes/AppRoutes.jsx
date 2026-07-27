@@ -82,29 +82,6 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="learning-hubs">
-          <Route index element={<LearningHubsPage />} />
-          <Route path=":id/view" element={<LearningHubViewPage />} />
-        </Route>
-        <Route path="learners">
-          <Route index element={<LearnersPage />} />
-          <Route path="create" element={<CreateLearnerPage />} />
-          <Route path=":id/edit" element={<EditLearnerPage />} />
-          <Route path=":id/view" element={<LearnerViewPage />} />
-        </Route>
-        <Route path="teachers">
-          <Route index element={<TeachersPage />} />
-          <Route path="create" element={<CreateTeacherPage />} />
-          <Route path=":id/edit" element={<EditTeacherPage />} />
-          <Route path=":id/view" element={<TeacherViewPage />} />
-        </Route>
-        <Route path="classes">
-          <Route index element={<ClassesPage />} />
-          <Route path="create" element={<CreateClassPage />} />
-          <Route path="school/:schoolId" element={<SchoolClassesPage />} />
-          <Route path=":id/edit" element={<EditClassPage />} />
-          <Route path=":id/view" element={<ClassViewPage />} />
-        </Route>
         <Route path="programs">
           <Route index element={<ProgramsListPage />} />
           <Route path="create" element={<CreateProgramPage />} />
@@ -150,6 +127,44 @@ export default function AppRoutes() {
           <Route path=":id/versions" element={<CurriculumVersionControlPage />} />
           <Route path=":id/academic-year" element={<AcademicYearPage />} />
           <Route path=":id/competencies" element={<CompetenciesPage />} />
+        </Route>
+      </Route>
+      </Route>
+
+      {/* Hub network management — admin (unrestricted) and branchAdmin (every hub under their
+          one branch only, enforced server-side via req.ownBranchHubIds). Same pattern as the
+          curriculum block above: its own RoleRoute/MainLayout branch reusing admin's existing
+          Learning Hubs/Tech Educators/Learners/Classes pages as-is, so a branchAdmin never gets
+          routed into Curriculum/Programs/Courses/Settings/etc. Sidebar.jsx filters the nav for
+          this role. settings/learning-hubs/create and .../:id/edit are duplicated here (same
+          components as the admin-only settings tree) purely so this role can reach them —
+          LearningHubViewPage's Edit button is hardcoded to that path. */}
+      <Route element={<RoleRoute allow={["admin", "branchAdmin"]} />}>
+      <Route path="/" element={<MainLayout />}>
+        <Route path="learning-hubs">
+          <Route index element={<LearningHubsPage />} />
+          <Route path=":id/view" element={<LearningHubViewPage />} />
+        </Route>
+        <Route path="settings/learning-hubs/create" element={<CreateLearningHubPage />} />
+        <Route path="settings/learning-hubs/:id/edit" element={<EditLearningHubPage />} />
+        <Route path="learners">
+          <Route index element={<LearnersPage />} />
+          <Route path="create" element={<CreateLearnerPage />} />
+          <Route path=":id/edit" element={<EditLearnerPage />} />
+          <Route path=":id/view" element={<LearnerViewPage />} />
+        </Route>
+        <Route path="teachers">
+          <Route index element={<TeachersPage />} />
+          <Route path="create" element={<CreateTeacherPage />} />
+          <Route path=":id/edit" element={<EditTeacherPage />} />
+          <Route path=":id/view" element={<TeacherViewPage />} />
+        </Route>
+        <Route path="classes">
+          <Route index element={<ClassesPage />} />
+          <Route path="create" element={<CreateClassPage />} />
+          <Route path="school/:schoolId" element={<SchoolClassesPage />} />
+          <Route path=":id/edit" element={<EditClassPage />} />
+          <Route path=":id/view" element={<ClassViewPage />} />
         </Route>
       </Route>
       </Route>

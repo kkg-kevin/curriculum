@@ -103,5 +103,95 @@
     "id": "c4c73b56-39ce-44ca-b65b-4380724db04c",
     "createdAt": "2026-07-22T08:06:40.489Z",
     "updatedAt": "2026-07-22T08:07:00.473Z"
+  },
+  {
+    "name": "Digifunzi Hub 1",
+    "hubType": "school",
+    "code": "DGF1",
+    "email": "",
+    "password": "",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "mapLink": "",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "status": "active",
+    "description": "",
+    "photos": [],
+    "amenities": [],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "ea682cf4-945b-45b4-aebf-a3864ceeced4",
+    "createdAt": "2026-07-27T09:03:32.136Z",
+    "updatedAt": "2026-07-27T09:06:02.940Z",
+    "branchId": "ca2e5536-f084-4931-9f6a-e40518d8a0a4"
+  },
+  {
+    "name": "Digifunzi Hub 2",
+    "hubType": "school",
+    "code": "DGF2",
+    "email": "",
+    "password": "",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "mapLink": "",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "status": "active",
+    "description": "",
+    "photos": [],
+    "amenities": [],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "7a0037c8-648d-4250-a633-7a46d573cfa5",
+    "createdAt": "2026-07-27T09:03:32.140Z",
+    "updatedAt": "2026-07-27T09:05:34.697Z",
+    "branchId": "ca2e5536-f084-4931-9f6a-e40518d8a0a4"
+  },
+  {
+    "name": "Digifunzi Hub 3",
+    "hubType": "school",
+    "code": "DGF3",
+    "email": "",
+    "password": "",
+    "phone": "",
+    "contactPerson": "",
+    "address": {
+      "street": "",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "mapLink": "",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "status": "active",
+    "description": "",
+    "photos": [],
+    "amenities": [],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "58b19557-ddb3-4eba-97ba-1b5e5a34e1bb",
+    "createdAt": "2026-07-27T09:03:32.142Z",
+    "updatedAt": "2026-07-27T09:05:06.513Z",
+    "branchId": "ca2e5536-f084-4931-9f6a-e40518d8a0a4"
   }
 ]

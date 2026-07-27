@@ -67,6 +67,11 @@ const baseLearningHubSchema = z.object({
   address: addressSchema,
   mapLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
   curriculumId: z.string().or(z.literal("")).nullable().default(null),
+  // Groups related hubs under one umbrella (e.g. "Digifunzi Hub 1"/"Digifunzi Hub 2" both under
+  // "Digifunzi") so a branchAdmin can manage all of them centrally — see
+  // server/src/modules/branches/. Same shape as curriculumId: a plain outward-pointing field,
+  // no separate link table, since a hub only ever belongs to one branch.
+  branchId: z.string().or(z.literal("")).nullable().default(null),
   // New hubs start as "draft" — invisible everywhere outside Settings until an admin promotes
   // them to "active", at which point they appear in the Learning Hubs module and every other
   // consumer (Teachers/Classes/Learners pickers, curriculum view, dashboard, etc).

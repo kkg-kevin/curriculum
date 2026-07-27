@@ -32,9 +32,9 @@ const LearningHubModel = {
     return record;
   },
 
-  findAll({ status, county, curriculumId, email, hubType, includeDrafts } = {}) {
+  findAll({ status, county, curriculumId, branchId, email, hubType, includeDrafts } = {}) {
     let all = readAll();
-    if (status)            all = all.filter((l) => l.status === status);
+    if (status)          all = all.filter((l) => l.status === status);
     // Drafts are staged records still being set up in Settings — hidden from every listing by
     // default so they don't leak into pickers/dashboards until an admin activates them. Callers
     // that need to see them (Settings' own management view, a school viewing its own record)
@@ -42,6 +42,7 @@ const LearningHubModel = {
     else if (!includeDrafts) all = all.filter((l) => l.status !== "draft");
     if (county)       all = all.filter((l) => l.address?.county === county);
     if (curriculumId) all = all.filter((l) => l.curriculumId === curriculumId);
+    if (branchId)     all = all.filter((l) => l.branchId === branchId);
     if (email)        all = all.filter((l) => l.email?.toLowerCase() === email.toLowerCase());
     if (hubType)      all = all.filter((l) => l.hubType === hubType);
     return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

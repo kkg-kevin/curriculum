@@ -5,13 +5,21 @@ const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassModel = require("../classes/class.model");
 const { createTeacherSchema, updateTeacherSchema } = require("./teacher.validation");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // True whenever `teacherId` is linked to `hubId` via the teacher-hub link table — the
 // membership test that replaced the old single teacher.schoolId equality check everywhere
 // a "school"-role caller needs to prove a teacher belongs to their own hub.
 function isLinkedToHub(teacherId, hubId) {
   return TeacherHubLinkModel.findByTeacherId(teacherId).some((l) => l.hubId === hubId);
+}
+
+// Same membership test, but for a caller that may own more than one hub — a "school" account's
+// one hub, or every hub under a "branchAdmin" account's branch.
+function isLinkedToOwnHub(req, teacherId) {
+  if (req.user.role === "school") return isLinkedToHub(teacherId, req.ownSchool?.id);
+  if (req.user.role === "branchAdmin") return !!req.ownBranchHubIds?.some((hubId) => isLinkedToHub(teacherId, hubId));
+  return false;
 }
 
 // True whenever `teacherId` is the class teacher of any class the learner is currently
@@ -31,6 +39,8 @@ const createTeacher = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
     linkHubId = req.ownSchool.id;
+  } else if (req.user.role === "branchAdmin" && linkHubId) {
+    assertOwn(isOwnHub(req, linkHubId));
   }
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a teacher record with no login.
@@ -48,6 +58,9 @@ const getAllTeachers = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
     filters.ids = TeacherHubLinkModel.findByHubId(req.ownSchool.id).map((l) => l.teacherId);
+  } else if (req.user.role === "branchAdmin") {
+    if (!req.ownBranch) return res.json({ success: true, data: [], count: 0 });
+    filters.ids = req.ownBranchHubIds.flatMap((hubId) => TeacherHubLinkModel.findByHubId(hubId).map((l) => l.teacherId));
   } else if (req.user.role === "teacher") {
     if (!req.ownTeacher) return res.json({ success: true, data: [], count: 0 });
     filters.email = req.ownTeacher.email;
@@ -58,7 +71,7 @@ const getAllTeachers = asyncHandler(async (req, res) => {
 
 const getTeacherById = asyncHandler(async (req, res) => {
   const teacher = await TeacherService.getTeacherById(req.params.id);
-  if (req.user.role === "school")  assertOwn(isLinkedToHub(teacher.id, req.ownSchool?.id));
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isLinkedToOwnHub(req, teacher.id));
   if (req.user.role === "teacher") assertOwn(teacher.id === req.ownTeacher?.id);
   if (req.user.role === "learner") assertOwn(isMyClassTeacher(teacher.id, req.ownLearner?.id));
   res.json({ success: true, data: teacher });
@@ -78,9 +91,9 @@ const TEACHER_SELF_EDIT_FIELDS = ["phone"];
 const updateTeacher = asyncHandler(async (req, res) => {
   const parsed = updateTeacherSchema.parse(req.body);
   const { password, ...data } = parsed;
-  if (req.user.role === "school") {
+  if (req.user.role === "school" || req.user.role === "branchAdmin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
-    assertOwn(isLinkedToHub(existing.id, req.ownSchool?.id));
+    assertOwn(isLinkedToOwnHub(req, existing.id));
   } else if (req.user.role === "teacher") {
     assertOwn(req.params.id === req.ownTeacher?.id);
     Object.keys(data).forEach((key) => {
@@ -110,24 +123,24 @@ const deleteTeacher = asyncHandler(async (req, res) => {
 const getTeacherHubs = asyncHandler(async (req, res) => {
   if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
   let hubs = await TeacherService.getTeacherHubs(req.params.id);
-  if (req.user.role === "school") {
-    assertOwn(isLinkedToHub(req.params.id, req.ownSchool?.id));
-    // A school only ever gets to see its own hub in the list — not the names of any other
-    // hub a shared teacher also happens to teach at.
-    hubs = hubs.filter((h) => h.id === req.ownSchool.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") {
+    assertOwn(isLinkedToOwnHub(req, req.params.id));
+    // A school/branchAdmin only ever gets to see its own hub(s) in the list — not the names of
+    // any other hub a shared teacher also happens to teach at.
+    hubs = hubs.filter((h) => isOwnHub(req, h.id));
   }
   res.json({ success: true, data: hubs, count: hubs.length });
 });
 
 const linkTeacherHub = asyncHandler(async (req, res) => {
   const { hubId } = req.body;
-  if (req.user.role === "school") assertOwn(hubId === req.ownSchool?.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, hubId));
   const hubs = await TeacherService.linkHub(req.params.id, hubId);
   res.status(201).json({ success: true, data: hubs });
 });
 
 const unlinkTeacherHub = asyncHandler(async (req, res) => {
-  if (req.user.role === "school") assertOwn(req.params.hubId === req.ownSchool?.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, req.params.hubId));
   const hubs = await TeacherService.unlinkHub(req.params.id, req.params.hubId);
   res.json({ success: true, data: hubs });
 });

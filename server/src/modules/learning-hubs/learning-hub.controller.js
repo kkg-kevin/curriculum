@@ -4,7 +4,7 @@ const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const { createLearningHubSchema, updateLearningHubSchema } = require("./learning-hub.validation");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // updateLearningHubSchema is baseLearningHubSchema.partial(), but zod still materializes a field's
 // .default(...) when its key is simply absent from the request body — e.g. an update body that
@@ -25,6 +25,12 @@ function pickPresent(parsed, raw) {
 
 const createLearningHub = asyncHandler(async (req, res) => {
   const { password, ...data } = createLearningHubSchema.parse(req.body);
+  // A branchAdmin can only ever create a new hub within their own branch — never pick an
+  // arbitrary one, even if the request body tries to.
+  if (req.user.role === "branchAdmin") {
+    assertOwn(!!req.ownBranch);
+    data.branchId = req.ownBranch.id;
+  }
   // Create the login first — if it fails (e.g. the email is already someone else's account),
   // nothing is written at all, rather than leaving an orphaned hub with no matching login.
   if (password) {
@@ -35,14 +41,20 @@ const createLearningHub = asyncHandler(async (req, res) => {
 });
 
 const getAllLearningHubs = asyncHandler(async (req, res) => {
-  const { status, county, curriculumId, email, hubType, includeDrafts } = req.query;
-  const filters = { status, county, curriculumId, email, hubType, includeDrafts: includeDrafts === "true" };
+  const { status, county, curriculumId, branchId, email, hubType, includeDrafts } = req.query;
+  const filters = { status, county, curriculumId, branchId, email, hubType, includeDrafts: includeDrafts === "true" };
   // A "school"-role account only ever sees its own record (the account is matched to whichever
   // hub has its email — see scope.middleware.js's attachOwnRecords). Always include drafts here:
   // a school can log in and land on its own profile before an admin has activated it.
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
     filters.email = req.ownSchool.email;
+    filters.includeDrafts = true;
+  } else if (req.user.role === "branchAdmin") {
+    // Every hub under their branch, draft or not — same "sees its own before an admin activates
+    // it" posture as "school" above, just for the whole set instead of one record.
+    if (!req.ownBranch) return res.json({ success: true, data: [], count: 0 });
+    filters.branchId = req.ownBranch.id;
     filters.includeDrafts = true;
   }
   const records = await LearningHubService.getAllLearningHubs(filters);
@@ -51,7 +63,7 @@ const getAllLearningHubs = asyncHandler(async (req, res) => {
 
 const getLearningHubById = asyncHandler(async (req, res) => {
   const record = await LearningHubService.getLearningHubById(req.params.id);
-  if (req.user.role === "school")  assertOwn(record.id === req.ownSchool?.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.id));
   if (req.user.role === "teacher") {
     const linked = req.ownTeacher
       ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).some((l) => l.hubId === record.id)
@@ -71,7 +83,7 @@ const getLearningHubById = asyncHandler(async (req, res) => {
 // the teacher routes (see teacher.routes.js's /:id/hubs/links), this just lets a hub see who's
 // assigned to it.
 const getHubTeachers = asyncHandler(async (req, res) => {
-  if (req.user.role === "school") assertOwn(req.params.id === req.ownSchool?.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, req.params.id));
   const teachers = await LearningHubService.getHubTeachers(req.params.id);
   res.json({ success: true, data: teachers, count: teachers.length });
 });
@@ -82,13 +94,21 @@ const updateLearningHub = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     const existing = await LearningHubService.getLearningHubById(req.params.id);
     assertOwn(existing.id === req.ownSchool?.id);
-    // A school can update its own contact info, but code/status/curriculum assignment/type stay
-    // platform-admin-controlled governance fields — force them back to their current values
-    // regardless of what's in the request body.
+    // A school can update its own contact info, but code/status/curriculum assignment/type/branch
+    // stay platform-admin-controlled governance fields — force them back to their current
+    // values regardless of what's in the request body.
     data.code = existing.code;
     data.status = existing.status;
     data.curriculumId = existing.curriculumId;
     data.hubType = existing.hubType;
+    data.branchId = existing.branchId;
+  } else if (req.user.role === "branchAdmin") {
+    // Unlike "school" above, a branchAdmin gets full admin-level control over a hub's fields
+    // (status, curriculum assignment, etc) — they're managing it, not just self-editing a
+    // contact profile. The one thing locked down is which branch it belongs to.
+    const existing = await LearningHubService.getLearningHubById(req.params.id);
+    assertOwn(isOwnHub(req, existing.id));
+    data.branchId = existing.branchId;
   }
   const record = await LearningHubService.updateLearningHub(req.params.id, data);
   if (password) {

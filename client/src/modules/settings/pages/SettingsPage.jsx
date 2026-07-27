@@ -4,6 +4,7 @@ import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
+import BranchesPanel from "../../branches/components/BranchesPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -249,6 +250,7 @@ const TABS = [
   { key: "learning-areas", label: "Learning Areas" },
   { key: "inventory", label: "Inventory" },
   { key: "learning-hubs", label: "Learning Hubs" },
+  { key: "branches", label: "Branches" },
 ];
 
 export default function SettingsPage() {
@@ -293,6 +295,7 @@ export default function SettingsPage() {
         {activeTab === "learning-areas" && <LearningAreasPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
+        {activeTab === "branches" && <BranchesPanel />}
       </div>
     </div>
   );
