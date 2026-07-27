@@ -38,7 +38,7 @@ export default function ProfilePage() {
   // Curriculum-scoped content (courses, competencies) follows whichever hub the portal-wide
   // switcher is currently on — the identity card and hub/teacher rail below deliberately don't,
   // since those are meant to always show this learner's whole record, not just one hub's slice.
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;

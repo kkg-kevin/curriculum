@@ -52,7 +52,7 @@ export default function ClassViewPage() {
 
   // What this class inherited from the curriculum — courses currently assigned to its grade,
   // across every period (there's no reliable "current term" signal, see getCurrentCourses).
-  const { data: classCourses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: classCourses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
 
   const { data: hubTeachers } = useHubTeachersQuery(cls?.schoolId);
 

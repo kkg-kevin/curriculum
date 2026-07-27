@@ -62,10 +62,10 @@ export default function DashboardPage() {
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const gradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
+  const gradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeNames);
-  const { data: allMyCourses }   = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeNames);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeIds);
+  const { data: allMyCourses }   = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeIds);
 
   const totalLearners = myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0);
 
@@ -167,7 +167,7 @@ export default function DashboardPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {myClasses.map((c) => {
-              const courseCount = (coursesByGrade?.get(c.gradeName) || []).length;
+              const courseCount = (coursesByGrade?.get(c.gradeId) || []).length;
               return (
                 <div key={c.id} style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -49,7 +49,7 @@ export function ClassCard({ cls, teachersMap }) {
   const dropdownRef = useRef(null);
 
   const teacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
-  const { data: courses } = useCurriculumCurrentCourses(cls.curriculumId, cls.gradeName);
+  const { data: courses } = useCurriculumCurrentCourses(cls.curriculumId, cls.gradeId);
   const courseCount = courses?.length ?? 0;
 
   const openMenu = () => {

@@ -54,8 +54,8 @@ export default function CreateProgramPage() {
   const curriculumId = watch("curriculumId");
 
   const { data: curriculum } = useCurriculumQuery(curriculumId);
-  const gradeNames = curriculum?.classes || [];
-  const noCohorts = !!curriculumId && gradeNames.length === 0;
+  const curriculumClasses = curriculum?.classes || [];
+  const noCohorts = !!curriculumId && curriculumClasses.length === 0;
 
   const onSubmit = (data) => {
     createProgram(data, { onSuccess: (record) => navigate(`/programs/${record.id}/view`) });
@@ -144,9 +144,9 @@ export default function CreateProgramPage() {
                     A class will be created automatically for each cohort below
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {gradeNames.map((name) => (
-                      <span key={name} style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: "#ffffff", border: "1.5px solid #a8d5ee", color: "#25476a" }}>
-                        {name}
+                    {curriculumClasses.map((cls) => (
+                      <span key={cls.id} style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: "#ffffff", border: "1.5px solid #a8d5ee", color: "#25476a" }}>
+                        {cls.name}
                       </span>
                     ))}
                   </div>

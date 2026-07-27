@@ -600,7 +600,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "gradeId": "c47a17de-grade-1",
+    "gradeId": "72480379-e455-42bf-a5ee-8a2786c653e9",
     "gradeName": "Grade 1",
     "classTeacherId": "bb66af51-e545-4b2c-ac66-8736b3e368db",
     "academicYear": "2026",
@@ -613,7 +613,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "gradeId": "c47a17de-grade-2",
+    "gradeId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba",
     "gradeName": "Grade 2",
     "classTeacherId": "bb66af51-e545-4b2c-ac66-8736b3e368db",
     "academicYear": "2026",
@@ -626,7 +626,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
-    "gradeId": "c47a17de-grade-3",
+    "gradeId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386",
     "gradeName": "Grade 3",
     "classTeacherId": "bb66af51-e545-4b2c-ac66-8736b3e368db",
     "academicYear": "2026",
@@ -639,7 +639,7 @@
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-4",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
     "gradeName": "Grade 4",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -652,7 +652,7 @@
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-5",
+    "gradeId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
     "gradeName": "Grade 5",
     "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2026",
@@ -665,7 +665,7 @@
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-6",
+    "gradeId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
     "gradeName": "Grade 6",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -678,7 +678,7 @@
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-4",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
     "gradeName": "Grade 4",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -691,7 +691,7 @@
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-5",
+    "gradeId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
     "gradeName": "Grade 5",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -704,7 +704,7 @@
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-6",
+    "gradeId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
     "gradeName": "Grade 6",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -717,7 +717,7 @@
   {
     "schoolId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "gradeId": "d9b3650b-grade-4",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
     "gradeName": "Grade 4",
     "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2026",
@@ -730,7 +730,7 @@
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
     "curriculumId": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
-    "gradeId": "1782e9af-bootcamp-cohort-1",
+    "gradeId": "ab946f66-23f4-4f03-8857-66f9a810b46a",
     "gradeName": "Bootcamp Cohort 1",
     "classTeacherId": null,
     "academicYear": "2026",
@@ -743,7 +743,7 @@
   {
     "schoolId": "c4c73b56-39ce-44ca-b65b-4380724db04c",
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
-    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
     "classTeacherId": "608124b1-e041-4ec2-9fdf-200f5d03fd94",
     "academicYear": "2026",
@@ -756,7 +756,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
-    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
     "classTeacherId": "6c16db4a-37fd-4095-9fdc-9f3d698949a0",
     "academicYear": "2026",
@@ -769,7 +769,7 @@
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
-    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
     "classTeacherId": "608124b1-e041-4ec2-9fdf-200f5d03fd94",
     "academicYear": "2027",
@@ -782,7 +782,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
-    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
     "classTeacherId": null,
     "academicYear": "2027",
@@ -795,7 +795,7 @@
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
-    "gradeId": "00e7306d-bootcamp-cohort-a",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
     "classTeacherId": null,
     "academicYear": "2027",

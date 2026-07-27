@@ -132,16 +132,18 @@ export default function DashboardPage() {
   const teachers = hubTeachers || [];
   const learners = learnersData?.data || [];
 
-  const gradeNames = [...new Set(classes.map((c) => c.gradeName))];
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
+  // Grouped by gradeId (the curriculum class's stable id), not gradeName — a grade can't
+  // drift out of sync with its course-coverage stats just because it was renamed.
+  const gradeGroups = [...new Map(classes.map((c) => [c.gradeId, { id: c.gradeId, name: c.gradeName }])).values()];
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeGroups.map((g) => g.id));
 
   const teachersMap = teachers.reduce((m, t) => { m[t.id] = t; return m; }, {});
   const classesMap  = classes.reduce((m, c) => { m[c.id] = c; return m; }, {});
 
   const classesWithTeacher = classes.filter((c) => !!c.classTeacherId);
   const classesWithoutTeacher = classes.filter((c) => !c.classTeacherId);
-  const gradesWithoutCourses = gradeNames.filter((g) => (coursesByGrade?.get(g) || []).length === 0);
-  const classesWithCourseCount = gradeNames.length - gradesWithoutCourses.length;
+  const gradesWithoutCourses = gradeGroups.filter((g) => (coursesByGrade?.get(g.id) || []).length === 0);
+  const classesWithCourseCount = gradeGroups.length - gradesWithoutCourses.length;
   const activeTeachers = teachers.filter((t) => t.status === "active");
   const learnersMissingGuardianEmail = learners.filter((l) => !l.guardianEmail);
 
@@ -216,7 +218,7 @@ export default function DashboardPage() {
             {gradesWithoutCourses.length > 0 && (
               <AttentionItem
                 icon={<FiBookOpen size={15} strokeWidth={2} />}
-                text={`${joinNatural(gradesWithoutCourses)} ${gradesWithoutCourses.length === 1 ? "has" : "have"} no courses from the curriculum yet`}
+                text={`${joinNatural(gradesWithoutCourses.map((g) => g.name))} ${gradesWithoutCourses.length === 1 ? "has" : "have"} no courses from the curriculum yet`}
                 actionLabel="Review"
                 onAction={() => navigate(classesListPath("school", school.id))}
               />
@@ -257,10 +259,10 @@ export default function DashboardPage() {
           onClick={() => navigate(learnersListPath("school", school.id))}
         />
         <KpiCard
-          icon={<FiLayers size={18} strokeWidth={2} />} num={`${classesWithCourseCount} / ${gradeNames.length || 0}`} label="Curriculum Coverage"
+          icon={<FiLayers size={18} strokeWidth={2} />} num={`${classesWithCourseCount} / ${gradeGroups.length || 0}`} label="Curriculum Coverage"
           sub="Classes with courses assigned"
-          meterPct={gradeNames.length ? (classesWithCourseCount / gradeNames.length) * 100 : null}
-          warnMeter={classesWithCourseCount < gradeNames.length}
+          meterPct={gradeGroups.length ? (classesWithCourseCount / gradeGroups.length) * 100 : null}
+          warnMeter={classesWithCourseCount < gradeGroups.length}
           onClick={() => navigate(classesListPath("school", school.id))}
         />
       </div>
@@ -297,7 +299,7 @@ export default function DashboardPage() {
                 <tbody>
                   {classes.map((c) => {
                     const teacher = c.classTeacherId ? teachersMap[c.classTeacherId] : null;
-                    const courseCount = (coursesByGrade?.get(c.gradeName) || []).length;
+                    const courseCount = (coursesByGrade?.get(c.gradeId) || []).length;
                     const isSetUp = !!teacher && courseCount > 0;
                     return (
                       <tr key={c.id} onClick={() => navigate(classPath("school", c.id, "view"))} style={{ cursor: "pointer" }}>
@@ -349,20 +351,20 @@ export default function DashboardPage() {
       </div>
 
       {/* Grade Overview: enrollment + curriculum coverage, side by side per grade */}
-      {gradeNames.length > 0 && (
+      {gradeGroups.length > 0 && (
         <div style={{ ...cardStyle, padding: "20px 22px" }}>
           <p style={{ margin: "0 0 16px", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.accentLight }}>Grade Overview</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px 32px" }}>
-            {gradeNames.map((g) => {
-              const gradeClasses = classes.filter((c) => c.gradeName === g);
+            {gradeGroups.map(({ id, name }) => {
+              const gradeClasses = classes.filter((c) => c.gradeId === id);
               const enrolled = gradeClasses.reduce((sum, c) => sum + (c.learnerCount || 0), 0);
               const capacity = gradeClasses.reduce((sum, c) => sum + (c.capacity || 0), 0);
-              const courseCount = (coursesByGrade?.get(g) || []).length;
-              const maxCourses = Math.max(1, ...gradeNames.map((gg) => (coursesByGrade?.get(gg) || []).length));
+              const courseCount = (coursesByGrade?.get(id) || []).length;
+              const maxCourses = Math.max(1, ...gradeGroups.map((gg) => (coursesByGrade?.get(gg.id) || []).length));
               return (
-                <div key={g} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div key={id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <MagnitudeBar
-                    label={g}
+                    label={name}
                     value={enrolled}
                     max={capacity || Math.max(1, enrolled)}
                     valueLabel={capacity ? `${enrolled}/${capacity}` : `${enrolled}`}

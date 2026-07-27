@@ -130,10 +130,10 @@ export default function CourseContentPage() {
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const myGradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
+  const myGradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, myGradeNames);
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, myGradeNames);
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, myGradeIds);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, myGradeIds);
 
   const totalLearners = useMemo(() => myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0), [myClasses]);
 
@@ -200,7 +200,7 @@ export default function CourseContentPage() {
               <ClassCard
                 key={cls.id}
                 cls={cls}
-                courses={coursesByGrade?.get(cls.gradeName) || []}
+                courses={coursesByGrade?.get(cls.gradeId) || []}
                 teacherName={teacherName}
                 isOpen={openClassIds.has(cls.id)}
                 onToggleOpen={() => toggleOpen(cls.id)}

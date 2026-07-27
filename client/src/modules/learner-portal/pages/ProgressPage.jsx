@@ -49,7 +49,7 @@ function statusOf(percent) {
 export default function LearnerProgressPage() {
   const navigate = useNavigate();
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
 
   const summary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);
 

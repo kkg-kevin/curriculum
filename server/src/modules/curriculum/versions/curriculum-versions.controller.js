@@ -26,7 +26,7 @@ const changeVersionStatus = asyncHandler(async (req, res) => {
 });
 
 const getCurrentCourses = asyncHandler(async (req, res) => {
-  const courses = CurriculumVersionService.getCurrentCourses(req.params.id, req.query.grade || null);
+  const courses = CurriculumVersionService.getCurrentCourses(req.params.id, req.query.gradeId || null);
   res.json({ success: true, data: courses });
 });
 
