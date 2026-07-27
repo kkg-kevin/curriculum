@@ -40,6 +40,7 @@ import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from 
 import { learningAreasApi as catalogLearningAreasApi } from "../../settings/learning-areas/services/learningAreasApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CoursePickerField from "../../courses/components/CoursePickerField";
+import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -2228,6 +2229,9 @@ function AgeCategoriesPanel({ curriculumId }) {
   const { mutate: create, isPending: creating } = useCreateAgeCategory(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
+  const { data: assessmentsData } = useAssessmentsQuery();
+  const assessments = assessmentsData?.data || [];
+  const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
 
   const [mode,       setMode]       = useState("list");
   const [editTarget, setEditTarget] = useState(null);
@@ -2235,16 +2239,17 @@ function AgeCategoriesPanel({ curriculumId }) {
   const [desc,       setDesc]       = useState("");
   const [minAge,     setMinAge]     = useState("");
   const [maxAge,     setMaxAge]     = useState("");
+  const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setMode("add");
   }
   function openEdit(c) {
     setEditTarget(c); setName(c.name); setDesc(c.description || "");
-    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setMode("edit");
+    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setDiagnosticAssessmentId(c.diagnosticAssessmentId || ""); setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
 
@@ -2257,6 +2262,7 @@ function AgeCategoriesPanel({ curriculumId }) {
       description: desc.trim(),
       minAge: minAge === "" ? null : Number(minAge),
       maxAge: maxAge === "" ? null : Number(maxAge),
+      diagnosticAssessmentId: diagnosticAssessmentId || null,
     };
     if (mode === "edit") {
       update({ id: editTarget.id, data }, { onSuccess: cancel });
@@ -2343,6 +2349,20 @@ function AgeCategoriesPanel({ curriculumId }) {
                 <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
               )}
             </div>
+            <div>
+              <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                Auto-issued to a new learner once their age places them in this stage. Its graded score sets their Performance Band.
+              </p>
+              <select
+                className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+                value={diagnosticAssessmentId}
+                onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
+              >
+                <option value="">— None —</option>
+                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
             <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim() || ageRangeInvalid}>
@@ -2403,6 +2423,11 @@ function AgeCategoriesPanel({ curriculumId }) {
                     <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
                   )}
                 </div>
+                {cat.diagnosticAssessmentId && (
+                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669" }}>
+                    🩺 {assessmentNameById[cat.diagnosticAssessmentId] || "Diagnostic assigned"}
+                  </p>
+                )}
               </div>
             );
           })}

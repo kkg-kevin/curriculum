@@ -240,5 +240,23 @@
     "nationality": "Kenyan",
     "languages": "English, Kiswahili",
     "username": "Derrick"
+  },
+  {
+    "firstName": "john",
+    "lastName": "john",
+    "gender": "male",
+    "guardianName": "mother",
+    "guardianPhone": "4454484848",
+    "guardianEmail": "mother@digifunzi.com",
+    "dateOfBirth": "2025-01-01",
+    "nationality": "Kenyan",
+    "languages": "Spanish, French & English",
+    "username": "john",
+    "currentRungId": null,
+    "currentStageId": null,
+    "currentBandId": null,
+    "id": "41a99e78-8b05-4fb9-a1d4-f93762bca4fb",
+    "createdAt": "2026-07-27T11:36:12.129Z",
+    "updatedAt": "2026-07-27T11:36:12.129Z"
   }
 ]

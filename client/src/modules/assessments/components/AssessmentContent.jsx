@@ -77,6 +77,11 @@ function ItemDetail({ item }) {
       {item.kind === "shortAnswer" && item.correctAnswer && (
         <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#6B7280", fontStyle: "italic" }}>Model answer: {item.correctAnswer}</p>
       )}
+      {item.kind === "survey" && item.ratingScale?.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "8px" }}>
+          {item.ratingScale.map((r) => <Badge key={r}>{r}</Badge>)}
+        </div>
+      )}
       {isObservation && item.kind === "checklist" && (
         <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>Checklist item</p>
       )}

@@ -36,12 +36,13 @@ const AssessmentIssueModel = {
     return record;
   },
 
-  findAll({ assessmentId, sessionId, courseId, classId, issuedBy } = {}) {
+  findAll({ assessmentId, sessionId, courseId, classId, learnerId, issuedBy } = {}) {
     let all = readAll();
     if (assessmentId) all = all.filter((r) => r.assessmentId === assessmentId);
     if (sessionId)    all = all.filter((r) => r.sessionId === sessionId);
     if (courseId)     all = all.filter((r) => r.courseId === courseId);
     if (classId)      all = all.filter((r) => r.classId === classId);
+    if (learnerId)    all = all.filter((r) => r.learnerId === learnerId);
     if (issuedBy)     all = all.filter((r) => r.issuedBy === issuedBy);
     return all.sort((a, b) => new Date(b.issuedAt) - new Date(a.issuedAt));
   },
@@ -52,6 +53,13 @@ const AssessmentIssueModel = {
 
   findOne({ assessmentId, sessionId, classId }) {
     return readAll().find((r) => r.assessmentId === assessmentId && r.sessionId === sessionId && r.classId === classId) || null;
+  },
+
+  // Idempotency check for a standalone diagnostic issue (see issueDiagnostic in
+  // assessment-submission.service.js) — keyed by learner instead of class/session, since it
+  // bypasses course/session attachment entirely.
+  findOneStandalone({ assessmentId, learnerId }) {
+    return readAll().find((r) => r.assessmentId === assessmentId && r.learnerId === learnerId) || null;
   },
 
   update(id, data) {

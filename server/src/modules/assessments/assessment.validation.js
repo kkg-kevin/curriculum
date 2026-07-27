@@ -5,6 +5,7 @@ const {
 
 const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation"];
 const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
+const DEFAULT_SURVEY_SCALE = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
 
 // Rich-text fields (authored via TipTap) store HTML — an empty editor still serializes
 // to "<p></p>", so a plain length/min(1) check doesn't actually catch "nothing typed".
@@ -42,6 +43,7 @@ const itemSchema = z.object({
   pairs:         z.array(z.object({ left: z.string().min(1), right: z.string().min(1) })).optional().default([]),
   blanks:        z.array(z.string().min(1)).optional().default([]),
   sequence:      z.array(z.string().min(1)).optional().default([]),
+  ratingScale:   z.array(z.string().min(1)).optional().default(DEFAULT_SURVEY_SCALE),
   acceptedFileTypes: z.array(z.string().min(1)).optional().default([]),
   // Assignment/Project task fields
   taskType:      z.enum(TASK_TYPES).optional().nullable().default(null),
@@ -56,7 +58,8 @@ const itemSchema = z.object({
   .refine((d) => !["mcqSingle", "mcqMultiple"].includes(d.kind) || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
   .refine((d) => d.kind !== "matching" || d.pairs.length >= 2, { message: "Add at least 2 pairs", path: ["pairs"] })
   .refine((d) => d.kind !== "fillBlank" || d.blanks.length >= 1, { message: "Add at least 1 blank answer", path: ["blanks"] })
-  .refine((d) => d.kind !== "ordering" || d.sequence.length >= 2, { message: "Add at least 2 steps", path: ["sequence"] });
+  .refine((d) => d.kind !== "ordering" || d.sequence.length >= 2, { message: "Add at least 2 steps", path: ["sequence"] })
+  .refine((d) => d.kind !== "survey" || d.ratingScale.length >= 2, { message: "Add at least 2 scale points", path: ["ratingScale"] });
 
 const rubricCriterionSchema = z.object({
   id:          z.string().optional(),
@@ -131,4 +134,5 @@ module.exports = {
   linkInventoryItemSchema,
   ASSESSMENT_TYPES,
   DEFAULT_RATING_SCALE,
+  DEFAULT_SURVEY_SCALE,
 };

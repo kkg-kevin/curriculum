@@ -394,5 +394,14 @@
     "id": "c3d7ce7b-e2e7-43ce-88c2-90d05de6a99c",
     "createdAt": "2026-07-27T09:07:14.787Z",
     "updatedAt": "2026-07-27T09:07:14.787Z"
+  },
+  {
+    "name": "mother",
+    "email": "mother@digifunzi.com",
+    "passwordHash": "$2b$10$.xeKwbwBSlkn1CaWYzCY3uzvBXqt3dFCNINOk4seU0ZOOktKh2aUS",
+    "role": "learner",
+    "id": "45eb94db-615c-46a6-b856-9877d548d991",
+    "createdAt": "2026-07-27T11:36:12.125Z",
+    "updatedAt": "2026-07-27T11:36:12.125Z"
   }
 ]

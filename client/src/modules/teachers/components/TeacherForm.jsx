@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { TEACHER_STATUSES } from "../schemas/teacher.schema";
+import { TEACHER_STATUSES, EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -87,6 +87,25 @@ function PasswordField() {
   );
 }
 
+// A nullable classification select — renders a "— Not set —" option and coerces the empty
+// string back to null (numeric option values back to Number) since a native <select> only
+// ever emits strings. Placeholder fields for now — nothing reads these yet.
+function NullableSelect({ name, label, options, numeric = false, hint }) {
+  const { register, formState: { errors } } = useFormContext();
+  const error = errors?.[name]?.message;
+  return (
+    <Field label={label} error={error} hint={hint}>
+      <select
+        {...register(name, { setValueAs: (v) => (v === "" ? null : numeric ? Number(v) : v) })}
+        style={selectStyle(!!error)}
+      >
+        <option value="">— Not set —</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </Field>
+  );
+}
+
 /* ── Main form ────────────────────────────────────────────────────────── */
 
 export default function TeacherForm() {
@@ -119,7 +138,7 @@ export default function TeacherForm() {
       </div>
 
       {/* Status */}
-      <div style={{ padding: "20px 24px" }}>
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Status</h3>
         <div style={{ maxWidth: "220px" }}>
           <Field label="Status" required error={errors?.status?.message}>
@@ -129,6 +148,17 @@ export default function TeacherForm() {
               ))}
             </select>
           </Field>
+        </div>
+      </div>
+
+      {/* Employment — placeholder classification fields; the full employment/payroll feature
+          (rates, computed pay, etc.) isn't built yet, this just holds the data for it. */}
+      <div style={{ padding: "20px 24px" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Employment</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+          <NullableSelect name="employmentType" label="Employment Type" options={EMPLOYMENT_TYPES} />
+          <NullableSelect name="teacherLevel" label="Tech Educator Level" options={TEACHER_LEVELS} numeric />
+          <NullableSelect name="paymentTerms" label="Payment Terms" options={PAYMENT_TERMS} />
         </div>
       </div>
     </div>

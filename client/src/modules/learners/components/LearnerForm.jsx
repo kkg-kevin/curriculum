@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 
+// Mirrors client/src/modules/learner-portal/components/profile/ProfileIdentityCard.jsx's
+// computeAge — display-only, derived live from whatever date of birth is currently typed in.
+function computeAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+
 const S = {
   form:    { display: "flex", flexDirection: "column", gap: 24 },
   section: { display: "flex", flexDirection: "column", gap: 16 },
@@ -51,7 +64,8 @@ function GuardianPasswordField() {
 // Enrollment (which hub, which class, admission number, status) is managed separately, per
 // hub, from the learner's own detail page (see the "Learning Hubs" section on LearnerViewPage).
 export default function LearnerForm() {
-  const { register, control, formState: { errors } } = useFormContext();
+  const { register, control, watch, formState: { errors } } = useFormContext();
+  const age = computeAge(watch("dateOfBirth"));
 
   return (
     <div style={S.form}>
@@ -90,7 +104,9 @@ export default function LearnerForm() {
           <div style={S.field}>
             <label style={S.label}>Date of Birth</label>
             <input {...register("dateOfBirth")} type="date" style={S.input} />
-            {errors.dateOfBirth && <span style={S.error}>{errors.dateOfBirth.message}</span>}
+            {errors.dateOfBirth
+              ? <span style={S.error}>{errors.dateOfBirth.message}</span>
+              : age !== null && <span style={S.hint}>Age: {age} year{age !== 1 ? "s" : ""}</span>}
           </div>
         </div>
         <div style={S.row}>

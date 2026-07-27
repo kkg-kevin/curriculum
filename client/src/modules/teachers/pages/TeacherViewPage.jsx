@@ -5,6 +5,7 @@ import { useTeacherQuery, useDeleteTeacher, useTeacherHubsQuery, useLinkTeacherH
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
+import { EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
 import { classApi } from "../../classes/services/classApi";
 import { useUpdateClass } from "../../classes/hooks/useClasses";
 import { useAuth } from "../../../context/AuthContext";
@@ -80,6 +81,9 @@ function AssignClassControl({ teacherId, hubs }) {
 }
 
 const HUB_TYPE_LABELS = Object.fromEntries(LEARNING_HUB_TYPES.map((t) => [t.value, t.label]));
+const EMPLOYMENT_TYPE_LABELS = Object.fromEntries(EMPLOYMENT_TYPES.map((t) => [t.value, t.label]));
+const TEACHER_LEVEL_LABELS = Object.fromEntries(TEACHER_LEVELS.map((t) => [t.value, t.label]));
+const PAYMENT_TERMS_LABELS = Object.fromEntries(PAYMENT_TERMS.map((t) => [t.value, t.label]));
 
 const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -358,6 +362,18 @@ export default function TeacherViewPage() {
               )}
             </div>
           </Section>
+
+          {/* Employment — placeholder classification fields; full employment/payroll feature
+              (rates, computed pay, etc.) isn't built yet, this just surfaces what's captured. */}
+          {(teacher.employmentType || teacher.teacherLevel || teacher.paymentTerms) && (
+            <Section title="Employment">
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <DetailRow label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType]} />
+                <DetailRow label="Tech Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />
+                <DetailRow label="Payment Terms" value={PAYMENT_TERMS_LABELS[teacher.paymentTerms]} />
+              </div>
+            </Section>
+          )}
 
           {/* Record info */}
           <Section title="Record Info">

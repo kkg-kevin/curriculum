@@ -8,8 +8,10 @@ import {
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
-import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
+import { useDiagnosticForLearner, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import GradingPanel from "../../assessments/components/GradingPanel";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
@@ -70,6 +72,97 @@ function JourneyPlacementCard({ learnerId, currentRungId, curriculumId }) {
           ? <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>Placed at "{current.label}"</span>
           : <span style={{ fontSize: 12, color: "#9CA3AF" }}>No starting stage set yet</span>}
       </div>
+    </div>
+  );
+}
+
+const DIAGNOSTIC_STATUS_STYLES = {
+  not_started: { label: "Not Started",   bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+  in_progress: { label: "In Progress",   bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
+  submitted:   { label: "Needs Grading", bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+  graded:      { label: "Graded",        bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+};
+
+function DiagnosticStatusBadge({ status }) {
+  const s = DIAGNOSTIC_STATUS_STYLES[status] || DIAGNOSTIC_STATUS_STYLES.not_started;
+  return (
+    <span style={{ display: "inline-flex", padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+      {s.label}
+    </span>
+  );
+}
+
+// The auto-issued diagnostic (see age-category.model.js's diagnosticAssessmentId +
+// learner.service.js's maybeAutoIssueDiagnostic) that placed — or will place — this learner.
+// Grading it here (rather than through the usual class roster) is what triggers
+// CompetencyService.placeLearnerFromDiagnostic server-side, since this issue has no class.
+function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, curriculumId }) {
+  const { data: row, isLoading } = useDiagnosticForLearner(learnerId);
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const { data: bands = [] } = usePerformanceBands(curriculumId);
+  const { mutate: grade, isPending: grading } = useGradeSubmission();
+  const [gradeOpen, setGradeOpen] = useState(false);
+
+  if (isLoading) return null;
+
+  const stageName = stages.find((s) => s.id === currentStageId)?.name;
+  const bandName = bands.find((b) => b.id === currentBandId)?.name;
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Diagnostic Assessment</h3>
+      <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
+        Auto-issued based on this learner's age; grading it sets their Developmental Stage and Performance Band below.
+      </p>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 28, flexWrap: "wrap", marginBottom: 16 }}>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Developmental Stage</span>
+          <p style={{ margin: "2px 0 0", fontSize: 14, fontWeight: 600, color: "#111827" }}>{stageName || "Not set"}</p>
+        </div>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance Band</span>
+          <p style={{ margin: "2px 0 0", fontSize: 14, fontWeight: 600, color: "#111827" }}>{bandName || "Not yet placed"}</p>
+        </div>
+      </div>
+
+      {!row ? (
+        <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>
+          No diagnostic issued yet — this happens automatically once the learner's age matches a Developmental Stage that has one configured (Curriculum → Competencies → Progress Arc).
+        </p>
+      ) : (
+        <div style={{ padding: "12px 14px", borderRadius: 10, background: "#FAFCFF", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{row.assessment.name}</p>
+            <DiagnosticStatusBadge status={row.submission.status} />
+            {row.submission.status === "graded" && (
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#25476a" }}>{row.submission.totalScore}/{row.submission.maxScore}</span>
+            )}
+          </div>
+          {row.submission.status === "submitted" && (
+            <button type="button" onClick={() => setGradeOpen(true)} style={{ padding: "8px 16px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              Grade Now
+            </button>
+          )}
+        </div>
+      )}
+
+      {gradeOpen && row && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Grade Diagnostic — {row.assessment.name}</h3>
+              <button type="button" onClick={() => setGradeOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
+            </div>
+            <GradingPanel
+              assessment={row.assessment}
+              submission={row.submission}
+              isSaving={grading}
+              onSave={(payload) => grade({ id: row.submission.id, ...payload }, { onSuccess: () => setGradeOpen(false) })}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -384,6 +477,9 @@ export default function LearnerViewPage() {
           </div>
         </div>
 
+        {(isAdmin || isSchool) && curriculumId && (
+          <DiagnosticAssessmentCard learnerId={id} currentStageId={learner.currentStageId} currentBandId={learner.currentBandId} curriculumId={curriculumId} />
+        )}
         <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={curriculumId} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} />
       </div>

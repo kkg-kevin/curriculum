@@ -912,6 +912,25 @@ const CompetencyService = {
     });
   },
 
+  // Bridges a graded standalone diagnostic (see assessment-submission.service.js's
+  // maybePlaceFromDiagnostic) into this learner's placement identity: the age category the
+  // diagnostic was issued for becomes their confirmed Developmental Stage, and the score
+  // resolves their curriculum-wide Performance Band — the same "stage x band" identity the
+  // Identity Matrix preview describes, now persisted for the first time on a real learner.
+  // Mirrors calculateScore's own band match (strict minScore/maxScore range) rather than
+  // resolvePlacementFromScore's "highest cleared" rule, since that rule is specific to a
+  // Learning Area's course ladder.
+  placeLearnerFromDiagnostic(learnerId, ageCategoryId, scorePercent) {
+    const category = AgeCategoryModel.findById(ageCategoryId);
+    if (!category) return null;
+    const bands = PerformanceBandModel.findByCurriculum(category.curriculumId).filter((b) => !b.learningAreaId);
+    const band = [...bands]
+      .sort((a, b) => a.minScore - b.minScore)
+      .find((b) => scorePercent >= b.minScore && scorePercent <= b.maxScore) || null;
+    LearnerModel.update(learnerId, { currentStageId: ageCategoryId, currentBandId: band?.id ?? null });
+    return { stageId: ageCategoryId, band };
+  },
+
 };
 
 module.exports = CompetencyService;

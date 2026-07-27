@@ -31,9 +31,16 @@ const baseLearnerSchema = z.object({
   // the old ladder UI/data still exists; not read by anything new.
   currentRungId: z.string().optional().nullable().default(null),
   // Which Developmental Stage (Progress Arc age category) this learner is in — set
-  // manually by a teacher/admin. Used by Learning Journey to resolve a default starting
-  // course per Learning Area when no placement/diagnostic result exists yet.
+  // automatically from their age once a class enrollment resolves a curriculum (see
+  // learner.service.js's maybeAutoIssueDiagnostic), or manually by a teacher/admin. Used by
+  // Learning Journey to resolve a default starting course per Learning Area when no
+  // placement/diagnostic result exists yet.
   currentStageId: z.string().optional().nullable().default(null),
+  // Which curriculum-wide Performance Band ("Progress Arc") this learner last placed into —
+  // set automatically when their auto-issued diagnostic is graded (see
+  // CompetencyService.placeLearnerFromDiagnostic). Combined with currentStageId, this is the
+  // learner's full "stage + band" placement identity.
+  currentBandId: z.string().optional().nullable().default(null),
 });
 
 const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {

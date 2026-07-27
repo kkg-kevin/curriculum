@@ -3,6 +3,39 @@ const LearnerHubLinkModel = require("./learner-hub-link.model");
 const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
 const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
+const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
+const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
+
+function computeAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+// Runs whenever a learner's enrollment resolves a class (and so a curriculum) — matches their
+// age (from dateOfBirth) against that curriculum's Developmental Stages, and if the matched
+// stage has a diagnostic assessment configured, auto-issues it (see
+// AssessmentSubmissionService.issueDiagnostic, idempotent per learner+assessment). An existing
+// manual/diagnostic placement is never overwritten by this age guess — only fills in
+// currentStageId when it's still unset.
+function maybeAutoIssueDiagnostic(learnerId, cls) {
+  if (!cls?.curriculumId) return;
+  const learner = LearnerModel.findById(learnerId);
+  const age = computeAge(learner?.dateOfBirth);
+  if (age === null) return;
+  const category = AgeCategoryModel.findByCurriculumId(cls.curriculumId)
+    .find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
+  if (!category) return;
+  if (!learner.currentStageId) LearnerModel.update(learnerId, { currentStageId: category.id });
+  if (category.diagnosticAssessmentId) {
+    AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id });
+  }
+}
 
 const generateAdmissionNumber = (schoolCode, year) => {
   const prefix = `${(schoolCode || "GEN").toUpperCase()}-${year}`;
@@ -143,6 +176,7 @@ const LearnerService = {
     const year = cls?.academicYear || String(new Date().getFullYear());
     const admissionNumber = generateAdmissionNumber(hub.code, year);
     LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId, admissionNumber, status });
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
     return LearnerService.getLearnerHubs(learnerId);
   },
 
@@ -153,8 +187,9 @@ const LearnerService = {
       err.statusCode = 404;
       throw err;
     }
+    let cls = null;
     if (data.classId) {
-      const cls = ClassModel.findById(data.classId);
+      cls = ClassModel.findById(data.classId);
       if (!cls || cls.schoolId !== hubId) {
         const err = new Error("Class does not belong to this learning hub");
         err.statusCode = 400;
@@ -162,6 +197,7 @@ const LearnerService = {
       }
     }
     LearnerHubLinkModel.update(link.id, data);
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
     return LearnerService.getLearnerHubs(learnerId);
   },
 

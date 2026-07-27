@@ -7,6 +7,7 @@ const KEYS = {
   roster:         (issueId)   => ["assessment-issues", issueId, "roster"],
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   submission:     (id)        => ["assessment-submissions", id],
+  diagnostic:     (learnerId) => ["assessment-issues", "diagnostic", learnerId],
 };
 
 export function useIssueAssessment() {
@@ -85,6 +86,16 @@ export function useSubmitAssessment() {
   });
 }
 
+// Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class
+// involved) — drives the Diagnostic Assessment card on LearnerViewPage.
+export function useDiagnosticForLearner(learnerId) {
+  return useQuery({
+    queryKey: KEYS.diagnostic(learnerId),
+    queryFn:  () => assessmentSubmissionApi.getDiagnosticForLearner(learnerId),
+    enabled:  !!learnerId,
+  });
+}
+
 export function useSubmissionQuery(id) {
   return useQuery({
     queryKey: KEYS.submission(id),
@@ -100,6 +111,10 @@ export function useGradeSubmission() {
     onSuccess: (submission) => {
       qc.setQueryData(KEYS.submission(submission.id), submission);
       qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      // A graded diagnostic may have just set this learner's currentStageId/currentBandId
+      // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
+      // so LearnerViewPage reflects the new placement without a manual reload.
+      if (submission.learnerId) qc.invalidateQueries({ queryKey: ["learners", "detail", submission.learnerId] });
       toast.success("Grade saved — released to the learner");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save grade"),

@@ -968,5 +968,192 @@
     "id": "c7357aa2-1ab8-4cd9-9be7-83bb5714791b",
     "createdAt": "2026-07-20T12:16:42.061Z",
     "updatedAt": "2026-07-20T12:16:42.061Z"
+  },
+  {
+    "name": "Foundational Skills Diagnostic (Sample)",
+    "type": "quiz",
+    "description": "<p>A short, fully auto-graded placement quiz — sample content meant as a starting base. Duplicate or edit this before assigning it as the diagnostic for a real Developmental Stage.</p>",
+    "instructions": "<p>Answer every question as best you can. There's no time limit, and every question type here grades itself instantly.</p>",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [
+      {
+        "id": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "name": "Foundational Skills",
+        "order": 1
+      }
+    ],
+    "items": [
+      {
+        "id": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "kind": "mcqSingle",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>What is 7 + 5?</p>",
+        "options": [
+          "10",
+          "11",
+          "12",
+          "13"
+        ],
+        "correctAnswer": "12",
+        "points": 2,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "kind": "mcqSingle",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>Which word is spelled correctly?</p>",
+        "options": [
+          "Recieve",
+          "Receive",
+          "Receeve",
+          "Receve"
+        ],
+        "correctAnswer": "Receive",
+        "points": 2,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "kind": "trueFalse",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>The sun rises in the East.</p>",
+        "options": [],
+        "correctAnswer": "True",
+        "points": 1,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "kind": "mcqSingle",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>What is the next number in the sequence: 2, 4, 6, 8, ___?</p>",
+        "options": [
+          "9",
+          "10",
+          "12",
+          "14"
+        ],
+        "correctAnswer": "10",
+        "points": 2,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "kind": "fillBlank",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>Complete the sentence: The opposite of \"hot\" is ___.</p>",
+        "options": [],
+        "correctAnswer": "",
+        "blanks": [
+          "cold"
+        ],
+        "points": 1,
+        "pairs": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "kind": "matching",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>Match each country to its capital city.</p>",
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [
+          {
+            "left": "Kenya",
+            "right": "Nairobi"
+          },
+          {
+            "left": "France",
+            "right": "Paris"
+          },
+          {
+            "left": "Japan",
+            "right": "Tokyo"
+          }
+        ],
+        "points": 3,
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "kind": "mcqSingle",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>Which shape has three sides?</p>",
+        "options": [
+          "Square",
+          "Triangle",
+          "Circle",
+          "Rectangle"
+        ],
+        "correctAnswer": "Triangle",
+        "points": 1,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "kind": "trueFalse",
+        "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
+        "question": "<p>A week has seven days.</p>",
+        "options": [],
+        "correctAnswer": "True",
+        "points": 1,
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "createdAt": "2026-07-27T11:32:45.805Z",
+    "updatedAt": "2026-07-27T11:32:45.810Z"
   }
 ]
