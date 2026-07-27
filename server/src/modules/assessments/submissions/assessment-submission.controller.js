@@ -5,6 +5,7 @@ const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   issueAssessmentSchema,
+  issueOnSessionCompleteSchema,
   submitAnswersSchema,
   gradeSubmissionSchema,
 } = require("./assessment-submission.validation");
@@ -111,6 +112,30 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: row });
 });
 
+// A learner reading their own accumulating competency progress, or an admin/school reviewing
+// it for a learner in their own hub — same access shape as the diagnostic card.
+const getLearnerIndicatorProgress = asyncHandler(async (req, res) => {
+  const learnerId = req.params.learnerId;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, learnerId);
+  }
+  const rows = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId);
+  res.json({ success: true, data: rows, count: rows.length });
+});
+
+// Learner-facing: fired client-side the moment SectionViewPage.jsx detects every other
+// section of a session is complete — issues that session's attached assessment(s) to this
+// learner alone (see issueOnSessionComplete), independent of classmates' own progress.
+const issueOnSessionComplete = asyncHandler(async (req, res) => {
+  const learner = req.ownLearner;
+  assertOwn(!!learner);
+  const data = issueOnSessionCompleteSchema.parse(req.body);
+  const issue = AssessmentSubmissionService.issueOnSessionComplete({ ...data, learnerId: learner.id });
+  res.status(201).json({ success: true, data: issue });
+});
+
 const getOrCreateSubmission = asyncHandler(async (req, res) => {
   const { issueId } = req.body;
   if (!issueId) {
@@ -183,6 +208,8 @@ module.exports = {
   revokeIssue,
   getIssuedForLearner,
   getDiagnosticForLearner,
+  getLearnerIndicatorProgress,
+  issueOnSessionComplete,
   getOrCreateSubmission,
   saveDraft,
   submitAnswers,

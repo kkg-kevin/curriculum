@@ -58,5 +58,16 @@
     "dueDate": null,
     "id": "32030c84-67e7-4450-a787-d1b72aa55546",
     "issuedAt": "2026-07-21T11:10:06.910Z"
+  },
+  {
+    "assessmentId": "85c3271a-85d1-446b-871b-9a75dade7d76",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "sessionId": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+    "classId": null,
+    "issuedBy": "system",
+    "dueDate": null,
+    "id": "22717882-0879-4d87-a29b-7a9221c35ea5",
+    "issuedAt": "2026-07-27T12:17:25.353Z"
   }
 ]

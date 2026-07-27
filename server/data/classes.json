@@ -745,13 +745,13 @@
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
     "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
-    "classTeacherId": "608124b1-e041-4ec2-9fdf-200f5d03fd94",
+    "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2026",
     "capacity": 25,
     "status": "active",
     "id": "411bed3e-095f-4965-aa3c-bfab0ae7b376",
     "createdAt": "2026-07-24T12:01:41.623Z",
-    "updatedAt": "2026-07-24T12:01:41.623Z"
+    "updatedAt": "2026-07-27T12:19:06.270Z"
   },
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
@@ -771,13 +771,13 @@
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
     "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
-    "classTeacherId": "608124b1-e041-4ec2-9fdf-200f5d03fd94",
+    "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2027",
     "capacity": 20,
     "status": "active",
     "id": "5410d1f1-b4a2-4147-85fe-193dff81808c",
     "createdAt": "2026-07-24T12:41:36.135Z",
-    "updatedAt": "2026-07-24T13:08:11.389Z"
+    "updatedAt": "2026-07-27T12:19:15.142Z"
   },
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
@@ -797,12 +797,12 @@
     "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
     "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
     "gradeName": "Bootcamp Cohort A",
-    "classTeacherId": null,
+    "classTeacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
     "academicYear": "2027",
     "capacity": null,
     "status": "active",
     "id": "8f5da551-36b3-4eb2-8cbd-683c22bb3f10",
     "createdAt": "2026-07-24T12:59:00.465Z",
-    "updatedAt": "2026-07-24T12:59:00.465Z"
+    "updatedAt": "2026-07-27T12:19:21.855Z"
   }
 ]

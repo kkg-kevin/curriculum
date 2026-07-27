@@ -4,7 +4,8 @@ const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
-const { requiresManualGrading, computeAutoScore, computeMaxScore } = require("./grading.utils");
+const CompetencyModel = require("../../settings/competencies/competency.model");
+const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
 
 function loadAssessmentOrThrow(assessmentId) {
   const assessment = AssessmentModel.findById(assessmentId);
@@ -22,6 +23,18 @@ function loadAssessmentOrThrow(assessmentId) {
 // Performance Band, and the age category it was issued for becomes their confirmed
 // Developmental Stage (see CompetencyService.placeLearnerFromDiagnostic). Ordinary class-issued
 // assessments have no ageCategoryId, so this is a no-op for them.
+// indicatorMarks/indicatorBreakdown only ever store an indicatorId — resolve it back to its
+// owning competency plus both names for display, from the global competency catalog
+// (indicators aren't curriculum-scoped, so no curriculumId is needed here).
+function resolveIndicator(indicatorId) {
+  const competencies = CompetencyModel.findAll();
+  for (const comp of competencies) {
+    const indicator = (comp.indicators || []).find((i) => i.id === indicatorId);
+    if (indicator) return { competencyId: comp.id, competencyName: comp.name, indicatorName: indicator.name };
+  }
+  return null;
+}
+
 function maybePlaceFromDiagnostic(submission) {
   if (submission.status !== "graded") return;
   const issue = AssessmentIssueModel.findById(submission.issueId);
@@ -56,9 +69,24 @@ const AssessmentSubmissionService = {
     });
   },
 
-  // Every standalone issue (diagnostic or otherwise) targeting this learner directly, merged
-  // with their own submission — the learnerId-keyed counterpart to getIssuedAssessmentsForLearner
-  // above, which is keyed by class instead.
+  // A learner has just finished every other section of a course session — see
+  // SectionViewPage.jsx's areNonAssessmentSectionsComplete check, the client-side trigger for
+  // this (there's no server-side course-progress tracking to fire it from instead). Same
+  // "bypass class/session issuance" pattern as issueDiagnostic, but keyed to the course/session
+  // that triggered it instead of an age category. Idempotent per (assessment, learner).
+  issueOnSessionComplete({ assessmentId, learnerId, courseId, sessionId }) {
+    loadAssessmentOrThrow(assessmentId);
+    const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId });
+    if (existing) return existing;
+    return AssessmentIssueModel.create({
+      assessmentId, learnerId, courseId, sessionId,
+      classId: null, issuedBy: "system", dueDate: null,
+    });
+  },
+
+  // Every standalone issue (diagnostic or course-progress-triggered) targeting this learner
+  // directly, merged with their own submission — the learnerId-keyed counterpart to
+  // getIssuedAssessmentsForLearner above, which is keyed by class instead.
   getStandaloneIssuedAssessments(learnerId) {
     const issues = AssessmentIssueModel.findAll({ learnerId });
     return issues.map((issue) => {
@@ -69,9 +97,12 @@ const AssessmentSubmissionService = {
   },
 
   // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
-  // Assessment" card on LearnerViewPage.
+  // Assessment" card on LearnerViewPage. Filtered to ageCategoryId specifically, since a
+  // learner can now also hold course-progress-triggered standalone issues (see
+  // issueOnSessionComplete above) that share the same learnerId-keyed issue shape.
   getDiagnosticForLearner(learnerId) {
-    return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)[0] || null;
+    return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
+      .find((row) => !!row.issue.ageCategoryId) || null;
   },
 
   revokeIssue(issueId) {
@@ -204,6 +235,9 @@ const AssessmentSubmissionService = {
     const assessment = loadAssessmentOrThrow(submission.assessmentId);
     const { autoScore, autoMax, itemResults } = computeAutoScore(assessment, answers);
     const needsManual = requiresManualGrading(assessment);
+    // Fully auto-gradable assessments release straight to "graded" here — their competency
+    // breakdown is exact from the auto results alone, no manual itemFeedback exists yet.
+    const indicatorBreakdown = needsManual ? [] : computeIndicatorBreakdown(assessment, itemResults, []);
 
     const updated = AssessmentSubmissionModel.update(submissionId, {
       answers,
@@ -214,6 +248,7 @@ const AssessmentSubmissionService = {
       status: needsManual ? "submitted" : "graded",
       totalScore: needsManual ? null : autoScore,
       gradedAt: needsManual ? null : new Date().toISOString(),
+      indicatorBreakdown: needsManual ? submission.indicatorBreakdown || [] : indicatorBreakdown,
     });
     maybePlaceFromDiagnostic(updated);
     return updated;
@@ -229,7 +264,9 @@ const AssessmentSubmissionService = {
       err.statusCode = 404;
       throw err;
     }
+    const assessment = loadAssessmentOrThrow(submission.assessmentId);
     const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
+    const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);
 
     const graded = AssessmentSubmissionModel.update(submissionId, {
       itemFeedback,
@@ -239,6 +276,7 @@ const AssessmentSubmissionService = {
       status: "graded",
       gradedAt: new Date().toISOString(),
       gradedBy,
+      indicatorBreakdown,
     });
     maybePlaceFromDiagnostic(graded);
     return graded;
@@ -246,6 +284,38 @@ const AssessmentSubmissionService = {
 
   getSubmission(id) {
     return AssessmentSubmissionModel.findById(id);
+  },
+
+  // Accumulating, per-learner view across every graded submission they've ever had — sums each
+  // indicator's earned/possible marks across every assessment that touched it (see
+  // computeIndicatorBreakdown in grading.utils.js), rather than a single point-in-time
+  // snapshot. This is what finally gives the Progress Arc's indicator engine real per-learner
+  // data (see CompetencyService.calculateIndicatorProgress) instead of the empty, manually-set
+  // achievement store it had before.
+  getLearnerIndicatorProgress(learnerId) {
+    const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
+    const totals = new Map();
+    submissions.forEach((s) => {
+      (s.indicatorBreakdown || []).forEach(({ indicatorId, marksEarned, marksPossible }) => {
+        const cur = totals.get(indicatorId) || { marksEarned: 0, marksPossible: 0 };
+        cur.marksEarned += marksEarned;
+        cur.marksPossible += marksPossible;
+        totals.set(indicatorId, cur);
+      });
+    });
+
+    return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => {
+      const resolved = resolveIndicator(indicatorId);
+      return {
+        indicatorId,
+        competencyId: resolved?.competencyId || null,
+        competencyName: resolved?.competencyName || "Unknown",
+        indicatorName: resolved?.indicatorName || "Unknown indicator",
+        marksEarned: Math.round(marksEarned * 100) / 100,
+        marksPossible,
+        percent: marksPossible > 0 ? Math.round((marksEarned / marksPossible) * 100) : 0,
+      };
+    }).sort((a, b) => a.competencyName.localeCompare(b.competencyName) || a.indicatorName.localeCompare(b.indicatorName));
   },
 };
 

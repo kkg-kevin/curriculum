@@ -97,6 +97,65 @@ function computeMaxScore(assessment) {
   return itemMax + rubricMax;
 }
 
+// Resolves each item's/rubric criterion's indicatorMarks (marks tagged per competency
+// indicator, authored via IndicatorPicker) against how much of it was actually earned — the
+// per-submission "competency reflection" feeding both the per-assessment breakdown a learner
+// sees and the accumulating per-learner indicator progress. Untagged items (plain `points`,
+// no indicatorMarks) contribute nothing — there's no indicator to attribute them to.
+//
+// Auto-graded items are exact: grading is binary, so an indicator's tagged share either fully
+// counts (correct) or fully doesn't (incorrect) — no assumption involved. Manually-graded
+// items/rubric use whatever per-indicator split the teacher entered in their feedback
+// (itemFeedbackSchema's indicatorMarks — see GradingPanel.jsx); if a submission was graded
+// before that existed, or a teacher skipped the split, this falls back to apportioning the
+// flat marks proportionally by each indicator's tagged share rather than losing the entry.
+function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
+  const autoByItem = new Map((autoItemResults || []).map((r) => [r.itemId, r]));
+  const feedbackByKey = new Map((itemFeedback || []).map((f) => [f.itemId, f]));
+  const totals = new Map();
+
+  function add(indicatorId, earned, possible) {
+    const cur = totals.get(indicatorId) || { marksEarned: 0, marksPossible: 0 };
+    cur.marksEarned += earned;
+    cur.marksPossible += possible;
+    totals.set(indicatorId, cur);
+  }
+
+  function applyEntry(entry, feedbackKey) {
+    const indicatorMarks = entry.indicatorMarks || [];
+    if (indicatorMarks.length === 0) return;
+
+    const auto = autoByItem.get(entry.id);
+    if (auto) {
+      const ratio = auto.maxMarks > 0 ? auto.marksAwarded / auto.maxMarks : 0;
+      indicatorMarks.forEach(({ indicatorId, marks }) => add(indicatorId, (Number(marks) || 0) * ratio, Number(marks) || 0));
+      return;
+    }
+
+    const feedback = feedbackByKey.get(feedbackKey);
+    const feedbackIndicatorMarks = feedback?.indicatorMarks || [];
+    if (feedbackIndicatorMarks.length > 0) {
+      const earnedById = new Map(feedbackIndicatorMarks.map((m) => [m.indicatorId, Number(m.marks) || 0]));
+      indicatorMarks.forEach(({ indicatorId, marks }) => add(indicatorId, earnedById.get(indicatorId) || 0, Number(marks) || 0));
+      return;
+    }
+
+    const possibleTotal = computeEntryMarks(entry);
+    const earnedTotal = Number(feedback?.marks) || 0;
+    const ratio = possibleTotal > 0 ? earnedTotal / possibleTotal : 0;
+    indicatorMarks.forEach(({ indicatorId, marks }) => add(indicatorId, (Number(marks) || 0) * ratio, Number(marks) || 0));
+  }
+
+  (assessment.items || []).forEach((item) => applyEntry(item, item.id));
+  (assessment.rubric || []).forEach((c) => applyEntry(c, `rubric:${c.id}`));
+
+  return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => ({
+    indicatorId,
+    marksEarned: Math.round(marksEarned * 100) / 100,
+    marksPossible,
+  }));
+}
+
 module.exports = {
   AUTO_GRADABLE_KINDS,
   isAutoGradableItem,
@@ -104,4 +163,5 @@ module.exports = {
   gradeItem,
   computeAutoScore,
   computeMaxScore,
+  computeIndicatorBreakdown,
 };

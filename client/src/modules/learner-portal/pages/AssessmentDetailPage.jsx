@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiCheckCircle, FiClock, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import RichContent from "../../assessments/components/RichContent";
@@ -62,6 +63,16 @@ export default function AssessmentDetailPage() {
   const autoByItem = useMemo(() => new Map((submission?.autoItemResults || []).map((r) => [r.itemId, r])), [submission?.autoItemResults]);
   const feedbackByKey = useMemo(() => new Map((submission?.itemFeedback || []).map((f) => [f.itemId, f])), [submission?.itemFeedback]);
   const answersByItem = useMemo(() => new Map((submission?.answers || []).map((a) => [a.itemId, a.response])), [submission?.answers]);
+
+  // Resolves the graded submission's indicatorBreakdown (bare indicatorIds — see
+  // grading.utils.js's computeIndicatorBreakdown) to a display name, same competencies already
+  // tagged onto this assessment at authoring time.
+  const { data: linkedCompetencies = [] } = useAssessmentCompetencies(row?.assessment?.id, { enabled: !!row?.assessment?.id });
+  const indicatorNameById = useMemo(() => {
+    const map = new Map();
+    linkedCompetencies.forEach((comp) => (comp.indicators || []).forEach((ind) => map.set(ind.id, { name: ind.name, competencyName: comp.name })));
+    return map;
+  }, [linkedCompetencies]);
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -136,6 +147,29 @@ export default function AssessmentDetailPage() {
               </p>
             </div>
           </div>
+
+          {submission.indicatorBreakdown?.length > 0 && (
+            <div style={{ ...cardStyle, padding: "16px 20px" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Breakdown</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {submission.indicatorBreakdown.map((entry) => {
+                  const resolved = indicatorNameById.get(entry.indicatorId);
+                  const percent = entry.marksPossible > 0 ? Math.round((entry.marksEarned / entry.marksPossible) * 100) : 0;
+                  return (
+                    <div key={entry.indicatorId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{resolved?.name || "Indicator"}</p>
+                        {resolved?.competencyName && <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{resolved.competencyName}</p>}
+                      </div>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: percent >= 60 ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
+                        {entry.marksEarned}/{entry.marksPossible} · {percent}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {submission.overallFeedback && (
             <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>

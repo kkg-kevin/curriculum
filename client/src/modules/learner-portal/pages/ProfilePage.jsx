@@ -90,7 +90,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "Competencies" && (
-        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} />
+        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} />
       )}
 
       {activeTab === "Assessments" && <AssessmentsOverview classId={cls?.id} />}

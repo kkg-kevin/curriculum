@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
@@ -7,7 +8,8 @@ import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatable
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
-import { markSectionComplete, getCourseSectionProgress, getSessionCompletion } from "../../learner-portal/utils/progressStorage";
+import { markSectionComplete, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete } from "../../learner-portal/utils/progressStorage";
+import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
@@ -400,6 +402,7 @@ export default function SectionViewPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
+  const queryClient = useQueryClient();
 
   // Auto-completion is passive: just opening a section is what marks it done for the
   // learner, per the product decision behind this feature — no separate "Mark Complete" click.
@@ -410,7 +413,23 @@ export default function SectionViewPage() {
     if (!isLearner || !user?.email || !id || !sessionId || !sectionKey) return;
     markSectionComplete(user.email, id, sessionId, sectionKey);
     forceRerender((v) => v + 1);
-  }, [isLearner, user?.email, id, sessionId, sectionKey]);
+
+    // Once every OTHER section of this session is done, whatever assessment is attached to it
+    // becomes available — auto-issued standalone to just this learner (same "bypass class/
+    // session issuance" mechanism built for the diagnostic assessment), independent of
+    // classmates' own progress. Re-checked on every section visit within this session; the
+    // server call is idempotent per (assessment, learner), so re-firing once already issued is
+    // a harmless no-op.
+    if (sectionKey !== "assessments" && areNonAssessmentSectionsComplete(user.email, id, sessionId)) {
+      const currentSession = sessions.find((s) => s.id === sessionId);
+      const attached = currentSession?.attachedAssessments || [];
+      attached.forEach((a) => {
+        assessmentSubmissionApi.issueOnSessionComplete({ assessmentId: a.id, courseId: id, sessionId })
+          .then(() => queryClient.invalidateQueries({ queryKey: ["assessment-issues"] }))
+          .catch(() => {});
+      });
+    }
+  }, [isLearner, user?.email, id, sessionId, sectionKey, sessions, queryClient]);
 
   const sectionProgress = isLearner ? getCourseSectionProgress(user.email, id) : null;
   const sessionCompletion = isLearner && sessionId ? getSessionCompletion(user.email, id, sessionId) : null;
