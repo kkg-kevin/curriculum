@@ -18,6 +18,7 @@ const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const programRoutes = require("./modules/programs/program.routes");
+const branchRoutes = require("./modules/branches/branch.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect, authorize } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
@@ -63,6 +64,7 @@ app.use("/api/assessments", protect, authorize("admin"), assessmentRoutes);
 app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubmissionRoutes);
 app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
 app.use("/api/programs", protect, authorize("admin"), programRoutes);
+app.use("/api/branches", protect, attachOwnRecords, branchRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

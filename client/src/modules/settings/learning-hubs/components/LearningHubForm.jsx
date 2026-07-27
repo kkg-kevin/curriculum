@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
-import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Coffee as CoffeeIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
+import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Coffee as CoffeeIcon, CorporateFare as CorporateFareIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
 import {
   KENYA_COUNTIES, LEARNING_HUB_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
 } from "../../../learning-hubs/schemas/learningHub.schema";
 import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
 import { useAllLearningHubsQuery } from "../../../learning-hubs/hooks/useLearningHub";
+import { useBranchesQuery } from "../../../branches/hooks/useBranch";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 
 const ACCENT = "#25476a";
@@ -401,6 +402,8 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
   const { register, watch, control, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
+  const { data: branchesData } = useBranchesQuery();
+  const branches = branchesData?.data || [];
   const { data: allHubsData } = useAllLearningHubsQuery({ includeDrafts: true });
   const existingCodes = (allHubsData?.data || []).map((h) => h.code).filter(Boolean);
   const hubType = watch("hubType");
@@ -515,6 +518,22 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
         {curricula.length === 0 && (
           <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#F59E0B" }}>
             No curricula found. Create a curriculum first to assign it here.
+          </p>
+        )}
+      </SectionCard>
+
+      <SectionCard icon={<CorporateFareIcon fontSize="small" />} title="Branch" subtitle="Groups this hub with other related hubs (e.g. multiple locations of the same network) under one centralized admin.">
+        <Field label="Branch" error={errors?.branchId?.message}>
+          <select {...register("branchId")} style={selectStyle}>
+            <option value="">No branch — standalone hub</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </Field>
+        {branches.length === 0 && (
+          <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#F59E0B" }}>
+            No branches found. Create one from Settings → Branches to group hubs together.
           </p>
         )}
       </SectionCard>

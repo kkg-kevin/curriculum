@@ -385,5 +385,14 @@
     "id": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf",
     "createdAt": "2026-07-27T07:27:43.328Z",
     "updatedAt": "2026-07-27T07:27:43.328Z"
+  },
+  {
+    "name": "Organization",
+    "email": "org@digifunzi.com",
+    "passwordHash": "$2b$10$TzZTdQRSxIEL5ogPIFmWjej6wiKsdFWeFi1eaJ6NuLaELdvV/UCfS",
+    "role": "branchAdmin",
+    "id": "c3d7ce7b-e2e7-43ce-88c2-90d05de6a99c",
+    "createdAt": "2026-07-27T09:07:14.787Z",
+    "updatedAt": "2026-07-27T09:07:14.787Z"
   }
 ]

@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const AttendanceService = require("./attendance.service");
 const ClassModel = require("../classes/class.model");
 const { markAttendanceSchema } = require("./attendance.validation");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // Attendance belongs to a Class, which itself belongs to a school and (for the class-teacher
 // case) a teacher — so every route here first loads the target Class and reuses the exact same
@@ -13,7 +13,7 @@ function assertClassAccess(req, cls) {
     err.statusCode = 404;
     throw err;
   }
-  if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
   if (req.user.role === "teacher") assertOwn(cls.classTeacherId === req.ownTeacher?.id);
 }
 

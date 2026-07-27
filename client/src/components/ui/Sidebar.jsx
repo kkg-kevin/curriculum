@@ -24,9 +24,23 @@ const CURRICULUM_ADMIN_MENU_ITEMS = [
   { name: "Curriculum", path: "/curriculum" },
 ];
 
+// A branchAdmin only ever has access to the hub-network routes (every hub under their one
+// branch, scoped server-side) — same reasoning as CURRICULUM_ADMIN_MENU_ITEMS above.
+const BRANCH_ADMIN_MENU_ITEMS = [
+  { name: "Learning Hubs", path: "/learning-hubs" },
+  { name: "Tech Educators", path: "/teachers" },
+  { name: "Learners", path: "/learners" },
+  { name: "Classes", path: "/classes" },
+];
+
+const ROLE_MENU_ITEMS = {
+  curriculumAdmin: CURRICULUM_ADMIN_MENU_ITEMS,
+  branchAdmin: BRANCH_ADMIN_MENU_ITEMS,
+};
+
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { user } = useAuth();
-  const menuItems = user?.role === "curriculumAdmin" ? CURRICULUM_ADMIN_MENU_ITEMS : ADMIN_MENU_ITEMS;
+  const menuItems = ROLE_MENU_ITEMS[user?.role] || ADMIN_MENU_ITEMS;
 
   return (
     <>
