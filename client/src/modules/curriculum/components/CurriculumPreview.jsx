@@ -39,9 +39,6 @@ export default function CurriculumPreview() {
         overflow: "hidden",
         border: "1px solid #E8F0FE",
       }}>
-        {/* Top gradient bar */}
-        <div style={{ height: "5px", background: "linear-gradient(90deg, #25476a 0%, #2e7db5 40%, #42A5F5 100%)" }} />
-
         <div style={{ padding: "22px" }}>
 
           {/* Name */}

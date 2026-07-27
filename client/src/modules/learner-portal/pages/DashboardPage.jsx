@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock, FiTrendingUp, FiUser, FiUserCheck } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useAgeCategories } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
+import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
 
 const T = {
   accent: "#25476a",
@@ -75,6 +77,11 @@ export default function DashboardPage() {
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
+  // Same stage lookup ProfilePage.jsx uses for ProfileIdentityCard's "Developmental Academy"
+  // pill — kept in sync here so the dashboard's snapshot card shows the same placement.
+  const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
+  const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
   // Scoped to the currently-selected hub's class — a learner enrolled at several hubs can have
   // assessments issued in more than one, and mixing them here would misrepresent both.
@@ -124,6 +131,10 @@ export default function DashboardPage() {
               <HeroPill icon={<FiTrendingUp size={18} />} value={`${progressSummary.percent}%`} label="Course completion" />
               <HeroPill icon={<FiCheckCircle size={18} />} value={progressSummary.completed} label="Courses completed" />
               <HeroPill icon={<FiClipboard size={18} />} value={pendingRows.length} label="Assessments pending" highlight={pendingRows.length > 0} />
+              {/* Same "Developmental Academy" placement ProfileIdentityCard's first StatusPill
+                  shows on the full profile — borrowed here so it's visible without leaving the
+                  dashboard. */}
+              <HeroPill icon={<FiAward size={18} />} value={stage?.name || "Not placed"} label="Developmental Academy" />
             </div>
           )}
         </div>
@@ -233,6 +244,8 @@ export default function DashboardPage() {
 
           {/* Right rail */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 280 }}>
+            <DevelopmentalSnapshotCard stage={stage} />
+
             <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
 
             <div style={{ ...cardStyle(), padding: 18 }}>

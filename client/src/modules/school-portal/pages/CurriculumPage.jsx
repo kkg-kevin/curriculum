@@ -47,7 +47,6 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
         transition: "box-shadow 0.2s",
       }}
     >
-      <div style={{ height: 4, background: `linear-gradient(90deg, ${T.accentDeep}, ${T.accentMid}, ${T.accentLight})` }} />
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

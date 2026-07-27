@@ -44,7 +44,6 @@ const inputBaseStyle = (error) => ({
 function SectionCard({ icon, title, subtitle, badge, children }) {
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-      <div style={{ height: "3px", background: "linear-gradient(90deg, #25476a, #2e7db5, #38aae1)" }} />
       <div style={{ padding: "20px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: subtitle ? "4px" : "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>

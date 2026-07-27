@@ -76,12 +76,10 @@ export function LearningHubCard({ hub, curriculaMap }) {
       onMouseLeave={() => setHovered(false)}
       style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto" }}
     >
-      {hub.photos?.length > 0 ? (
+      {hub.photos?.length > 0 && (
         <div style={{ height: 110, overflow: "hidden" }}>
           <img src={hub.photos[0]} alt={hub.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.2s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
         </div>
-      ) : (
-        <div style={{ height: hovered ? 4 : 3, background: "linear-gradient(90deg, #25476a, #2e7db5, #38aae1)", transition: "height 0.2s" }} />
       )}
 
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
