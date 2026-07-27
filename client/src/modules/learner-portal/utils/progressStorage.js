@@ -79,6 +79,17 @@ export function getSessionCompletion(email, courseId, sessionId) {
   return { completed, total: SECTIONS.length, percent: Math.round((completed / SECTIONS.length) * 100) };
 }
 
+const NON_ASSESSMENT_SECTIONS = SECTIONS.filter((s) => s.key !== "assessments");
+
+// Whether a session's content (everything except its own Assessments tab) is fully done —
+// the trigger condition for auto-issuing that session's attached assessment(s) to this learner
+// (see SectionViewPage.jsx). Order-independent: a learner can open the 6 non-assessment
+// sections in any order, this just checks all of them are done.
+export function areNonAssessmentSectionsComplete(email, courseId, sessionId) {
+  const sessionProgress = getCourseSectionProgress(email, courseId)[sessionId] || {};
+  return NON_ASSESSMENT_SECTIONS.every((s) => !!sessionProgress[s.key]);
+}
+
 export function countCompletedSections(email, courseId) {
   const courseProgress = getCourseSectionProgress(email, courseId);
   return Object.values(courseProgress).reduce((sum, sessionMap) => sum + Object.keys(sessionMap).length, 0);

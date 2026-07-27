@@ -8,6 +8,7 @@ const KEYS = {
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId) => ["assessment-issues", "diagnostic", learnerId],
+  indicatorProgress: (learnerId) => ["assessment-issues", "indicator-progress", learnerId],
 };
 
 export function useIssueAssessment() {
@@ -92,6 +93,17 @@ export function useDiagnosticForLearner(learnerId) {
   return useQuery({
     queryKey: KEYS.diagnostic(learnerId),
     queryFn:  () => assessmentSubmissionApi.getDiagnosticForLearner(learnerId),
+    enabled:  !!learnerId,
+  });
+}
+
+// A learner's accumulating competency progress — sums earned/possible marks per indicator
+// across every graded assessment they've ever had (see CompetencyService's
+// getLearnerIndicatorProgress). Usable by the learner themselves or an admin/school reviewing it.
+export function useLearnerIndicatorProgress(learnerId) {
+  return useQuery({
+    queryKey: KEYS.indicatorProgress(learnerId),
+    queryFn:  () => assessmentSubmissionApi.getLearnerIndicatorProgress(learnerId),
     enabled:  !!learnerId,
   });
 }

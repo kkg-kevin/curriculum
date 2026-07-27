@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { normalizeLegacyItem, entryMarks } from "../schemas/assessment.schema";
+import { useAssessmentCompetencies } from "../hooks/useAssessment";
 import RichContent from "./RichContent";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -37,8 +38,58 @@ function AutoGradedRow({ index, item, response, autoResult }) {
   );
 }
 
-function ManualGradeRow({ index, item, response, feedback, onChange }) {
-  const max = entryMarks(item);
+// An entry's marks input — one flat "Marks" field for an untagged item/criterion, or one field
+// per tagged competency indicator when it has indicatorMarks (so the earned split feeds the
+// competency breakdown accurately instead of being an apportioned guess — see
+// grading.utils.js's computeIndicatorBreakdown). The flat `marks` total is always kept in sync
+// with whatever's entered, since totalScore math and the read-only auto rows still read it.
+function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
+  const max = entryMarks(entry);
+  const taggedIndicators = entry.indicatorMarks || [];
+
+  if (taggedIndicators.length === 0) {
+    return (
+      <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
+        Marks
+        <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Math.min(max, Math.max(0, Number(e.target.value) || 0)) })} style={{ ...fieldStyle, width: 60 }} />
+        / {max}
+      </label>
+    );
+  }
+
+  const earnedById = new Map((feedback.indicatorMarks || []).map((m) => [m.indicatorId, m.marks]));
+  const setIndicatorMark = (indicatorId, value, indicatorMax) => {
+    const clamped = Math.min(indicatorMax, Math.max(0, Number(value) || 0));
+    const nextIndicatorMarks = taggedIndicators.map(({ indicatorId: id }) => ({
+      indicatorId: id,
+      marks: id === indicatorId ? clamped : (earnedById.get(id) ?? 0),
+    }));
+    const nextTotal = nextIndicatorMarks.reduce((sum, m) => sum + m.marks, 0);
+    onChange({ ...feedback, marks: nextTotal, indicatorMarks: nextIndicatorMarks });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+      <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        Marks per Indicator
+      </p>
+      {taggedIndicators.map(({ indicatorId, marks: indicatorMax }) => (
+        <label key={indicatorId} style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ flex: 1, minWidth: 0 }}>{indicatorNameById.get(indicatorId)?.name || "Indicator"}</span>
+          <input
+            type="number" min={0} max={indicatorMax} value={earnedById.get(indicatorId) ?? 0}
+            onChange={(e) => setIndicatorMark(indicatorId, e.target.value, indicatorMax)}
+            style={{ ...fieldStyle, width: 60 }}
+          />
+          <span style={{ flexShrink: 0 }}>/ {indicatorMax}</span>
+        </label>
+      ))}
+      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.ink }}>Total: {feedback.marks} / {max}</p>
+    </div>
+  );
+}
+
+function ManualGradeRow({ index, item, response, feedback, indicatorNameById, onChange }) {
   return (
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -49,29 +100,20 @@ function ManualGradeRow({ index, item, response, feedback, onChange }) {
         {formatResponse(response)}
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 20, flexWrap: "wrap" }}>
-        <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
-          Marks
-          <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Number(e.target.value) })} style={{ ...fieldStyle, width: 60 }} />
-          / {max}
-        </label>
+        <MarksInputs entry={item} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
         <input type="text" placeholder="Feedback (optional)" value={feedback.comment} onChange={(e) => onChange({ ...feedback, comment: e.target.value })} style={{ ...fieldStyle, flex: 1, minWidth: 180 }} />
       </div>
     </div>
   );
 }
 
-function RubricRow({ criterion, feedback, onChange }) {
-  const max = entryMarks(criterion);
+function RubricRow({ criterion, feedback, indicatorNameById, onChange }) {
   return (
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{criterion.criterion}</p>
       {criterion.description && <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{criterion.description}</p>}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
-          Marks
-          <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Number(e.target.value) })} style={{ ...fieldStyle, width: 60 }} />
-          / {max}
-        </label>
+        <MarksInputs entry={criterion} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
         <input type="text" placeholder="Feedback (optional)" value={feedback.comment} onChange={(e) => onChange({ ...feedback, comment: e.target.value })} style={{ ...fieldStyle, flex: 1, minWidth: 180 }} />
       </div>
     </div>
@@ -88,6 +130,15 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const answersByItem = useMemo(() => new Map((submission.answers || []).map((a) => [a.itemId, a.response])), [submission.answers]);
   const autoByItem = useMemo(() => new Map((submission.autoItemResults || []).map((r) => [r.itemId, r])), [submission.autoItemResults]);
 
+  // Resolves indicatorMarks' bare indicatorIds to a display name — same competencies already
+  // tagged onto this assessment via IndicatorPicker at authoring time.
+  const { data: linkedCompetencies = [] } = useAssessmentCompetencies(assessment.id);
+  const indicatorNameById = useMemo(() => {
+    const map = new Map();
+    linkedCompetencies.forEach((comp) => (comp.indicators || []).forEach((ind) => map.set(ind.id, { name: ind.name, competencyName: comp.name })));
+    return map;
+  }, [linkedCompetencies]);
+
   const existingFeedback = useMemo(() => {
     const map = new Map((submission.itemFeedback || []).map((f) => [f.itemId, f]));
     return map;
@@ -97,12 +148,12 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     const map = new Map();
     items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      map.set(i.id, { marks: existing?.marks ?? 0, comment: existing?.comment ?? "" });
+      map.set(i.id, { marks: existing?.marks ?? 0, comment: existing?.comment ?? "", indicatorMarks: existing?.indicatorMarks ?? [] });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
-      map.set(key, { marks: existing?.marks ?? 0, comment: existing?.comment ?? "" });
+      map.set(key, { marks: existing?.marks ?? 0, comment: existing?.comment ?? "", indicatorMarks: existing?.indicatorMarks ?? [] });
     });
     return map;
   });
@@ -120,7 +171,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
 
   const handleSave = () => {
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, comment: f.comment }));
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, comment: f.comment, indicatorMarks: f.indicatorMarks || [] }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
@@ -151,7 +202,8 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
                 index={autoItems.length + i}
                 item={item}
                 response={answersByItem.get(item.id)}
-                feedback={itemFeedback.get(item.id) || { marks: 0, comment: "" }}
+                feedback={itemFeedback.get(item.id) || { marks: 0, comment: "", indicatorMarks: [] }}
+                indicatorNameById={indicatorNameById}
                 onChange={(f) => setFeedback(item.id, f)}
               />
             ))}
@@ -166,7 +218,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {rubric.map((c) => (
-              <RubricRow key={c.id} criterion={c} feedback={itemFeedback.get(`rubric:${c.id}`) || { marks: 0, comment: "" }} onChange={(f) => setFeedback(`rubric:${c.id}`, f)} />
+              <RubricRow key={c.id} criterion={c} feedback={itemFeedback.get(`rubric:${c.id}`) || { marks: 0, comment: "", indicatorMarks: [] }} indicatorNameById={indicatorNameById} onChange={(f) => setFeedback(`rubric:${c.id}`, f)} />
             ))}
           </div>
         </div>

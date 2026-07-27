@@ -127,39 +127,39 @@
     "updatedAt": "2026-07-24T12:08:18.651Z"
   },
   {
-    "id": "abbf6871-e43d-4296-822e-fa85a0af3d93",
-    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "id": "f35270c4-20aa-48f0-a463-783fd24e110e",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "sample",
     "description": "sample learning areas 101",
     "color": "#DC2626",
     "courses": [
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
-    "createdAt": "2026-07-24T12:44:41.289Z",
-    "updatedAt": "2026-07-24T12:44:41.289Z"
+    "createdAt": "2026-07-27T13:02:25.333Z",
+    "updatedAt": "2026-07-27T13:02:25.333Z"
   },
   {
-    "id": "baa9b4b8-8bf3-4533-adcb-577f8c5a141d",
-    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "id": "436142c5-7ebe-4c79-8fd8-808dab8873f7",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Robotics & Automation",
     "description": "Hands-on building and programming of robots and automated systems.",
     "color": "#7C3AED",
     "courses": [
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
-    "createdAt": "2026-07-24T12:44:41.294Z",
-    "updatedAt": "2026-07-24T12:44:41.294Z"
+    "createdAt": "2026-07-27T13:02:25.342Z",
+    "updatedAt": "2026-07-27T13:02:25.342Z"
   },
   {
-    "id": "e8d215eb-4c8f-436e-ba61-f0c8bc837c64",
-    "curriculumId": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
+    "id": "499a258f-91a9-43c6-b581-8937d5cb9b05",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "buwegyg",
     "description": "fnbvuasfub",
     "color": "#25476a",
     "courses": [
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
-    "createdAt": "2026-07-24T12:44:41.299Z",
-    "updatedAt": "2026-07-24T12:44:41.299Z"
+    "createdAt": "2026-07-27T13:02:25.345Z",
+    "updatedAt": "2026-07-27T13:02:25.345Z"
   }
 ]

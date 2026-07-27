@@ -6,6 +6,8 @@ const {
   revokeIssue,
   getIssuedForLearner,
   getDiagnosticForLearner,
+  getLearnerIndicatorProgress,
+  issueOnSessionComplete,
   getOrCreateSubmission,
   saveDraft,
   submitAnswers,
@@ -28,8 +30,14 @@ router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), 
 // Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class involved).
 router.get("/diagnostic/:learnerId", authorize("admin", "school"), getDiagnosticForLearner);
 
+// A learner's own accumulating competency progress, or an admin/school reviewing it.
+router.get("/learner/:learnerId/competency-progress", authorize("admin", "school", "learner"), getLearnerIndicatorProgress);
+
 // Learner-facing: what's issued to them, and their own attempt.
 router.get("/learner/issued", authorize("learner"), getIssuedForLearner);
+// Fired client-side when a learner finishes every other section of a course session —
+// see SectionViewPage.jsx's areNonAssessmentSectionsComplete check.
+router.post("/issues/course-progress", authorize("learner"), issueOnSessionComplete);
 router.post("/submissions", authorize("learner"), getOrCreateSubmission);
 router.patch("/submissions/:id/draft", authorize("learner"), saveDraft);
 router.post("/submissions/:id/submit", authorize("learner"), submitAnswers);

@@ -22,29 +22,5 @@
     "updatedAt": "2026-07-15T08:45:56.152Z",
     "status": "active",
     "code": "SC"
-  },
-  {
-    "name": "sample course",
-    "description": "<p>sample course description</p>",
-    "coverImage": "http://localhost:5000/uploads/66fa1d1d-381d-43f2-8a86-4da6e184b3a1.jpeg",
-    "ageMin": 5,
-    "ageMax": 18,
-    "code": "SCC",
-    "status": "archived",
-    "id": "121a11be-e0a7-4207-a5e8-c7047b702341",
-    "createdAt": "2026-07-22T08:44:32.146Z",
-    "updatedAt": "2026-07-22T08:46:39.948Z"
-  },
-  {
-    "name": "sample course",
-    "description": "<p>sample course description</p>",
-    "coverImage": "http://localhost:5000/uploads/66fa1d1d-381d-43f2-8a86-4da6e184b3a1.jpeg",
-    "ageMin": 5,
-    "ageMax": 18,
-    "code": "SC(C",
-    "status": "draft",
-    "id": "43f2bfd1-ee3a-48ca-a2a9-8d7d31777ba7",
-    "createdAt": "2026-07-22T08:45:46.976Z",
-    "updatedAt": "2026-07-22T08:45:46.976Z"
   }
 ]
