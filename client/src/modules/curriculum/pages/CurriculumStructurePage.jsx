@@ -238,6 +238,47 @@ function Spinner() {
   );
 }
 
+/* ── ClassChip — click the name to rename in place, keeping the same id ────── */
+
+function ClassChip({ cls, onRename, onRemove }) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(cls.name);
+
+  const commit = () => {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== cls.name) onRename(cls.id, draft);
+    else setDraft(cls.name);
+  };
+
+  if (editing) {
+    return (
+      <span className="class-chip">
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { setDraft(cls.name); setEditing(false); }
+          }}
+          style={{ border: "none", background: "transparent", outline: "none", font: "inherit", color: "inherit", width: `${Math.max(draft.length, 3)}ch` }}
+        />
+        <button type="button" className="class-chip-x" onClick={() => onRemove(cls.id)} title="Remove">×</button>
+      </span>
+    );
+  }
+
+  return (
+    <span className="class-chip">
+      <span onClick={() => { setDraft(cls.name); setEditing(true); }} style={{ cursor: "text" }} title="Click to rename">
+        {cls.name}
+      </span>
+      <button type="button" className="class-chip-x" onClick={() => onRemove(cls.id)} title="Remove">×</button>
+    </span>
+  );
+}
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 function derivePeriodNames(cycleModel, customNames) {
@@ -299,13 +340,16 @@ export default function CurriculumStructurePage() {
     });
   };
 
-  /* Classes */
+  /* Classes — each carries a stable id (crypto.randomUUID(), same pattern used for client-
+     generated ids elsewhere e.g. courses module) so renaming here doesn't orphan the course
+     assignments this class already has in Version Control, or the real Classes created from it. */
   const addClasses = () => {
     if (!classInput.trim()) return;
-    const typed    = classInput.split(",").map((c) => c.trim()).filter(Boolean);
-    const incoming = typed.filter((c) => !classes.includes(c));
+    const typed      = classInput.split(",").map((c) => c.trim()).filter(Boolean);
+    const existingLc = classes.map((c) => c.name.toLowerCase());
+    const incoming   = typed.filter((c) => !existingLc.includes(c.toLowerCase()));
     if (incoming.length) {
-      setClasses((p) => [...p, ...incoming]);
+      setClasses((p) => [...p, ...incoming.map((name) => ({ id: crypto.randomUUID(), name }))]);
     } else {
       toast.error(typed.length === 1 ? `"${typed[0]}" is already in the list` : "All typed classes are already in the list");
     }
@@ -316,7 +360,17 @@ export default function CurriculumStructurePage() {
     if (e.key === "Enter") { e.preventDefault(); addClasses(); }
   };
 
-  const removeClass = (name) => setClasses((p) => p.filter((c) => c !== name));
+  const removeClass = (id) => setClasses((p) => p.filter((c) => c.id !== id));
+
+  const renameClass = (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (classes.some((c) => c.id !== id && c.name.toLowerCase() === trimmed.toLowerCase())) {
+      toast.error(`"${trimmed}" is already in the list`);
+      return;
+    }
+    setClasses((p) => p.map((c) => (c.id === id ? { ...c, name: trimmed } : c)));
+  };
 
   /* Save + navigate */
   const handleSave = (destination) => {
@@ -561,10 +615,7 @@ export default function CurriculumStructurePage() {
             {classes.length > 0 ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {classes.map((cls) => (
-                  <span key={cls} className="class-chip">
-                    {cls}
-                    <button type="button" className="class-chip-x" onClick={() => removeClass(cls)} title="Remove">×</button>
-                  </span>
+                  <ClassChip key={cls.id} cls={cls} onRename={renameClass} onRemove={removeClass} />
                 ))}
               </div>
             ) : (
@@ -607,9 +658,9 @@ export default function CurriculumStructurePage() {
                       {classes.length > 0 ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                           {classes.map((cls) => (
-                            <div key={cls} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "3px 0" }}>
+                            <div key={cls.id} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "3px 0" }}>
                               <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#25476a", flexShrink: 0 }} />
-                              <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{cls}</span>
+                              <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{cls.name}</span>
                             </div>
                           ))}
                         </div>

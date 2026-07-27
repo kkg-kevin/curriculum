@@ -135,7 +135,7 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
 
 export default function CurriculumPage() {
   const { user } = useAuth();
-  const [selectedGrade, setSelectedGrade] = useState(null);
+  const [selectedGradeId, setSelectedGradeId] = useState(null);
 
   const { data: schoolsData, isLoading: schoolLoading } = useQuery({
     queryKey: ["schools", "byEmail", user?.email],
@@ -154,17 +154,20 @@ export default function CurriculumPage() {
     enabled: !!school?.id,
   });
   const classes = classesData?.data || [];
-  const gradeNames = [...new Set(classes.map((c) => c.gradeName))];
+  // Group real classes by gradeId (the curriculum class's stable id), not gradeName — a grade
+  // can't drift out of sync with its course assignments just because it was renamed.
+  const gradeGroups = [...new Map(classes.map((c) => [c.gradeId, { id: c.gradeId, name: c.gradeName }])).values()];
+  const selectedGradeName = gradeGroups.find((g) => g.id === selectedGradeId)?.name || null;
 
   const { data: hubTeachers } = useHubTeachersQuery(school?.id);
   const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
 
-  const { data: coursesByGrade, isLoading: coursesLoading } = useCurriculumCoursesByGrade(school?.curriculumId, gradeNames);
+  const { data: coursesByGrade, isLoading: coursesLoading } = useCurriculumCoursesByGrade(school?.curriculumId, gradeGroups.map((g) => g.id));
 
   const isLoading = schoolLoading || (!!school && classesLoading);
 
-  const heroSubtitle = selectedGrade
-    ? `${selectedGrade} · ${(coursesByGrade?.get(selectedGrade) || []).length} course${(coursesByGrade?.get(selectedGrade) || []).length !== 1 ? "s" : ""}`
+  const heroSubtitle = selectedGradeId
+    ? `${selectedGradeName} · ${(coursesByGrade?.get(selectedGradeId) || []).length} course${(coursesByGrade?.get(selectedGradeId) || []).length !== 1 ? "s" : ""}`
     : curriculum
       ? `${curriculum.name}${curriculum.publishedAcademicYear ? ` · ${curriculum.publishedAcademicYear}` : ""}`
       : "Browse the curriculum content assigned to your school.";
@@ -174,17 +177,17 @@ export default function CurriculumPage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
-          {selectedGrade && (
+          {selectedGradeId && (
             <button
               type="button"
-              onClick={() => setSelectedGrade(null)}
+              onClick={() => setSelectedGradeId(null)}
               style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "6px 14px", backgroundColor: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 20, color: "#fff", fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
             >
               ← All Grades
             </button>
           )}
           <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px" }}>
-            {selectedGrade || "Curriculum"}
+            {selectedGradeName || "Curriculum"}
           </h1>
           <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", maxWidth: "560px" }}>
             {heroSubtitle}
@@ -207,25 +210,25 @@ export default function CurriculumPage() {
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask a platform admin to assign a curriculum to your school.</p>
         </div>
-      ) : gradeNames.length === 0 ? (
+      ) : gradeGroups.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No classes set up yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Curriculum content follows your school's classes — set up a class to see its grades and courses here.</p>
         </div>
       ) : coursesLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
-      ) : selectedGrade ? (
-        <CourseCatalogGrid role="school" courses={coursesByGrade?.get(selectedGrade) || []} />
+      ) : selectedGradeId ? (
+        <CourseCatalogGrid role="school" courses={coursesByGrade?.get(selectedGradeId) || []} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-          {gradeNames.map((gradeName) => (
+          {gradeGroups.map(({ id, name }) => (
             <GradeCard
-              key={gradeName}
-              gradeName={gradeName}
-              classesForGrade={classes.filter((c) => c.gradeName === gradeName)}
-              courses={coursesByGrade?.get(gradeName) || []}
+              key={id}
+              gradeName={name}
+              classesForGrade={classes.filter((c) => c.gradeId === id)}
+              courses={coursesByGrade?.get(id) || []}
               teachersMap={teachersMap}
-              onViewAll={() => setSelectedGrade(gradeName)}
+              onViewAll={() => setSelectedGradeId(id)}
             />
           ))}
         </div>

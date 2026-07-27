@@ -4,16 +4,6 @@ const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 
-function slugify(value) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
-}
-
-// Same deterministic gradeId the admin Class-creation form generates client-side
-// (CreateClassPage.jsx) — not a real foreign key, just a stable curriculum+grade-name key.
-function deriveGradeId(curriculumId, gradeName) {
-  return `${curriculumId.slice(0, 8)}-${slugify(gradeName)}`;
-}
-
 function computeStatus(startDate, endDate) {
   const today = new Date().toISOString().slice(0, 10);
   if (today < startDate) return "upcoming";
@@ -46,8 +36,8 @@ const ProgramService = {
       err.statusCode = 404;
       throw err;
     }
-    const gradeNames = curriculum.classes || [];
-    if (gradeNames.length === 0) {
+    const curriculumClasses = curriculum.classes || [];
+    if (curriculumClasses.length === 0) {
       const err = new Error("This program has no cohorts defined yet — add one on its Structure step first");
       err.statusCode = 400;
       throw err;
@@ -56,11 +46,11 @@ const ProgramService = {
     // Tech educator and capacity are per-class decisions, made afterward from the Classes
     // module — a deployment can create several classes at once (one per cohort), so there's no
     // single sensible value to apply to all of them here.
-    const classes = gradeNames.map((gradeName) => ClassModel.create({
+    const classes = curriculumClasses.map((cls) => ClassModel.create({
       schoolId: hub.id,
       curriculumId: curriculum.id,
-      gradeId: deriveGradeId(curriculum.id, gradeName),
-      gradeName,
+      gradeId: cls.id,
+      gradeName: cls.name,
       classTeacherId: null,
       academicYear: String(new Date(data.startDate).getFullYear()),
       capacity: null,

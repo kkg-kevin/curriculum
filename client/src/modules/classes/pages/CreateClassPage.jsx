@@ -66,7 +66,7 @@ export default function CreateClassPage() {
   const { data: selectedSchool } = useSchoolQuery(selectedSchoolId);
   const school = lockedSchoolId ? lockedSchool : selectedSchool;
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
-  const gradeNames = curriculum?.classes || [];
+  const curriculumClasses = curriculum?.classes || [];
 
   const { data: hubTeachers } = useHubTeachersQuery(selectedSchoolId);
   const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
@@ -74,7 +74,7 @@ export default function CreateClassPage() {
   const backPath = classesListPath(user?.role, lockedSchoolId);
 
   const onSubmit = (data) => {
-    const gradeId = `${school.curriculumId.slice(0, 8)}-${data.gradeName.trim().toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+    const gradeId = curriculumClasses.find((c) => c.name === data.gradeName)?.id;
     const payload = { ...data, curriculumId: school.curriculumId, gradeId };
     createClass(payload, { onSuccess: (record) => navigate(classPath(user?.role, record.id, "view")) });
   };
@@ -144,9 +144,9 @@ export default function CreateClassPage() {
             <div style={S.row}>
               <div style={S.field}>
                 <label style={S.label}>Grade <span style={{ color: "#EF4444" }}>*</span></label>
-                <select {...register("gradeName")} style={S.select} disabled={!gradeNames.length}>
-                  <option value="">{gradeNames.length ? "Select grade…" : "No grades available"}</option>
-                  {gradeNames.map((name) => <option key={name} value={name}>{name}</option>)}
+                <select {...register("gradeName")} style={S.select} disabled={!curriculumClasses.length}>
+                  <option value="">{curriculumClasses.length ? "Select grade…" : "No grades available"}</option>
+                  {curriculumClasses.map((cls) => <option key={cls.id} value={cls.name}>{cls.name}</option>)}
                 </select>
                 {errors.gradeName && <span style={S.error}>{errors.gradeName.message}</span>}
               </div>

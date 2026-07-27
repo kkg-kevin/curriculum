@@ -17,7 +17,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
   const isAdmin = user?.role !== "school";
   const { mutate: bulkCreate, isPending } = useBulkCreateClasses();
 
-  const gradeNames  = curriculum?.classes || [];
+  const curriculumClasses = curriculum?.classes || [];
   const academicYear = extractYear(curriculum?.publishedAcademicYear);
 
   const existingKeySet = useMemo(() => {
@@ -32,22 +32,22 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
     if (!academicYear) return { toCreate: [], alreadyExistCount: 0 };
     const toCreate = [];
     let alreadyExistCount = 0;
-    for (const name of gradeNames) {
-      if (existingKeySet.has(`${name.trim().toLowerCase()}|${academicYear}`)) {
+    for (const cls of curriculumClasses) {
+      if (existingKeySet.has(`${cls.name.trim().toLowerCase()}|${academicYear}`)) {
         alreadyExistCount++;
       } else {
-        toCreate.push(name);
+        toCreate.push(cls);
       }
     }
     return { toCreate, alreadyExistCount };
-  }, [gradeNames, existingKeySet, academicYear]);
+  }, [curriculumClasses, existingKeySet, academicYear]);
 
   const handleGenerate = () => {
-    const items = toCreate.map((gradeName) => ({
+    const items = toCreate.map((cls) => ({
       schoolId:       school.id,
       curriculumId:   school.curriculumId,
-      gradeId:        `${school.curriculumId.slice(0, 8)}-${gradeName.trim().toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
-      gradeName:      gradeName.trim(),
+      gradeId:        cls.id,
+      gradeName:      cls.name.trim(),
       academicYear,
       status:         "active",
       capacity:       null,
@@ -101,7 +101,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
           ) : "Ask a platform admin to publish one."}
         </div>
 
-      ) : gradeNames.length === 0 ? (
+      ) : curriculumClasses.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
           <strong>{curriculum.name}</strong> has no grades defined yet. Add grades in the curriculum structure before setting up classes.
         </p>
@@ -123,11 +123,11 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
 
           {/* Grade pills */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-            {gradeNames.map((name) => {
-              const done = existingKeySet.has(`${name.trim().toLowerCase()}|${academicYear}`);
+            {curriculumClasses.map((cls) => {
+              const done = existingKeySet.has(`${cls.name.trim().toLowerCase()}|${academicYear}`);
               return (
                 <span
-                  key={name}
+                  key={cls.id}
                   style={{
                     padding: "3px 10px",
                     borderRadius: 20,
@@ -139,7 +139,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
                     textDecoration: done ? "line-through" : "none",
                   }}
                 >
-                  {name.trim()}
+                  {cls.name.trim()}
                 </span>
               );
             })}
@@ -147,7 +147,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
 
           {toCreate.length === 0 ? (
             <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
-              All {gradeNames.length} classes for {academicYear} are already set up.
+              All {curriculumClasses.length} classes for {academicYear} are already set up.
             </p>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

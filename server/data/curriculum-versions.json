@@ -19,7 +19,8 @@
                 "name": "maths",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -29,7 +30,8 @@
                 "name": "maths",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -39,7 +41,8 @@
                 "name": "maths",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -54,7 +57,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -64,7 +68,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -74,7 +79,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -107,7 +113,8 @@
                 "name": "vygy",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -117,7 +124,8 @@
                 "name": "maths",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -127,7 +135,8 @@
                 "name": "maths",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -142,7 +151,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -152,7 +162,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -162,7 +173,8 @@
                 "name": "science",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -190,7 +202,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -200,7 +213,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -210,7 +224,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -219,15 +234,18 @@
         "classes": [
           {
             "className": "Grade 1",
-            "courses": []
+            "courses": [],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
-            "courses": []
+            "courses": [],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
-            "courses": []
+            "courses": [],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -260,7 +278,8 @@
                 "name": "Level 1: Code Foundations",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -270,7 +289,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -280,7 +300,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -289,15 +310,18 @@
         "classes": [
           {
             "className": "Grade 1",
-            "courses": []
+            "courses": [],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
-            "courses": []
+            "courses": [],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
-            "courses": []
+            "courses": [],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -330,7 +354,8 @@
                 "name": "Level 1: Code Foundations",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -345,7 +370,8 @@
                 "name": "Level 1: Code Foundations",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -360,7 +386,8 @@
                 "name": "Level 1: Code Foundations",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -375,7 +402,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -385,7 +413,8 @@
                 "name": "sample",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -395,7 +424,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -539,7 +569,8 @@
                 ],
                 "snapshotAt": "2026-07-10T10:30:17.866Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -549,7 +580,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -559,7 +591,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -568,15 +601,18 @@
         "classes": [
           {
             "className": "Grade 1",
-            "courses": []
+            "courses": [],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
-            "courses": []
+            "courses": [],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
-            "courses": []
+            "courses": [],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -720,7 +756,8 @@
                 ],
                 "snapshotAt": "2026-07-10T10:34:27.045Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -730,7 +767,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -740,7 +778,8 @@
                 "name": "Python Course - 101",
                 "code": ""
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -749,15 +788,18 @@
         "classes": [
           {
             "className": "Grade 1",
-            "courses": []
+            "courses": [],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
-            "courses": []
+            "courses": [],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
-            "courses": []
+            "courses": [],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -812,7 +854,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:05.144Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -849,7 +892,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:09.162Z"
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -886,7 +930,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:11.517Z"
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -928,7 +973,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:14.924Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -965,7 +1011,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:16.659Z"
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -1002,7 +1049,8 @@
                 ],
                 "snapshotAt": "2026-07-10T12:32:18.627Z"
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -1086,7 +1134,8 @@
                 ],
                 "snapshotAt": "2026-07-15T07:54:23.586Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -1152,7 +1201,8 @@
                 ],
                 "snapshotAt": "2026-07-15T07:54:25.708Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -1218,7 +1268,8 @@
                 ],
                 "snapshotAt": "2026-07-15T07:54:27.614Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -1227,15 +1278,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -1244,15 +1298,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -1336,7 +1393,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:46:57.144Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -1402,7 +1460,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:46:59.388Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -1468,7 +1527,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:00.957Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -1510,7 +1570,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:03.360Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -1547,7 +1608,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:06.698Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -1584,7 +1646,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:09.376Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -1710,7 +1773,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:16.980Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -1831,7 +1895,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:18.801Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -1952,7 +2017,8 @@
                 ],
                 "snapshotAt": "2026-07-15T08:47:20.638Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -1996,7 +2062,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:11:51.604Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2022,7 +2089,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:11:53.284Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2048,7 +2116,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:11:54.870Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2079,7 +2148,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:11:57.259Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2105,7 +2175,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:11:59.078Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2131,7 +2202,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:12:00.538Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2162,7 +2234,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:12:03.870Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2188,7 +2261,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:12:05.487Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2214,7 +2288,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:12:07.098Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -2258,7 +2333,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:13:00.767Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2284,7 +2360,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:13:02.775Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2310,7 +2387,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:13:04.557Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2319,15 +2397,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2336,15 +2417,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -2388,7 +2472,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:19:25.210Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2414,7 +2499,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:19:26.756Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2440,7 +2526,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:19:28.613Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2449,15 +2536,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2466,15 +2556,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -2518,7 +2611,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:29:23.682Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2544,7 +2638,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:29:25.819Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2570,7 +2665,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:29:27.603Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2579,15 +2675,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2596,15 +2695,18 @@
         "classes": [
           {
             "className": "Grade 4",
-            "courses": []
+            "courses": [],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
-            "courses": []
+            "courses": [],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
-            "courses": []
+            "courses": [],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -2648,7 +2750,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:08.288Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2674,7 +2777,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:09.682Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2700,7 +2804,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:11.081Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2771,7 +2876,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:14.282Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2837,7 +2943,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:15.945Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -2903,7 +3010,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:17.468Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -2945,7 +3053,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:21.700Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -2982,7 +3091,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:24.578Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3019,7 +3129,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:30:26.173Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -3063,7 +3174,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:01.727Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3089,7 +3201,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:03.439Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3115,7 +3228,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:04.873Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -3157,7 +3271,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:08.256Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3194,7 +3309,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:13.249Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3231,7 +3347,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:15.299Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -3302,7 +3419,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:19.296Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3368,7 +3486,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:22.165Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3434,7 +3553,8 @@
                 ],
                 "snapshotAt": "2026-07-15T09:48:23.992Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -3478,7 +3598,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:08.679Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3504,7 +3625,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:10.174Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3530,7 +3652,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:11.660Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -3601,7 +3724,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:14.115Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3667,7 +3791,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:15.699Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3733,7 +3858,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:17.328Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -3775,7 +3901,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:20.077Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3812,7 +3939,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:21.665Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3849,7 +3977,8 @@
                 ],
                 "snapshotAt": "2026-07-15T10:20:23.190Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
@@ -3862,8 +3991,8 @@
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "academicYearId": "656d63eb-4544-4b7b-a15c-d85a7c590cc4",
     "versionNumber": 10,
-    "status": "published",
-    "isCurrent": true,
+    "status": "inactive",
+    "isCurrent": false,
     "versionOf": null,
     "content": [
       {
@@ -3904,7 +4033,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:40.321Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -3941,7 +4071,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:42.428Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -3978,7 +4109,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:44.712Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -4104,7 +4236,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:47.940Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -4225,7 +4358,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:49.570Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -4346,7 +4480,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:51.250Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       },
@@ -4388,7 +4523,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:54.494Z"
               }
-            ]
+            ],
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8"
           },
           {
             "className": "Grade 5",
@@ -4425,7 +4561,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:56.848Z"
               }
-            ]
+            ],
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666"
           },
           {
             "className": "Grade 6",
@@ -4462,13 +4599,14 @@
                 ],
                 "snapshotAt": "2026-07-16T06:51:58.445Z"
               }
-            ]
+            ],
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4"
           }
         ]
       }
     ],
     "createdAt": "2026-07-16T06:52:00.785Z",
-    "updatedAt": "2026-07-24T10:37:53.714Z"
+    "updatedAt": "2026-07-27T06:33:21.125Z"
   },
   {
     "id": "0128ddc4-4a25-4de3-94d8-834e80e17d22",
@@ -4517,7 +4655,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:12.400Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -4554,7 +4693,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:13.802Z"
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -4591,7 +4731,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:15.408Z"
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       },
@@ -4717,7 +4858,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:22.174Z"
               }
-            ]
+            ],
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9"
           },
           {
             "className": "Grade 2",
@@ -4838,7 +4980,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:23.879Z"
               }
-            ]
+            ],
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba"
           },
           {
             "className": "Grade 3",
@@ -4959,7 +5102,8 @@
                 ],
                 "snapshotAt": "2026-07-16T06:52:25.459Z"
               }
-            ]
+            ],
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386"
           }
         ]
       }
@@ -5014,7 +5158,8 @@
                 ],
                 "snapshotAt": "2026-07-24T11:39:33.253Z"
               }
-            ]
+            ],
+            "classId": "ab946f66-23f4-4f03-8857-66f9a810b46a"
           }
         ]
       },
@@ -5023,7 +5168,8 @@
         "classes": [
           {
             "className": "Bootcamp Cohort 1",
-            "courses": []
+            "courses": [],
+            "classId": "ab946f66-23f4-4f03-8857-66f9a810b46a"
           }
         ]
       },
@@ -5032,7 +5178,8 @@
         "classes": [
           {
             "className": "Bootcamp Cohort 1",
-            "courses": []
+            "courses": [],
+            "classId": "ab946f66-23f4-4f03-8857-66f9a810b46a"
           }
         ]
       }
@@ -5171,7 +5318,8 @@
                 ],
                 "snapshotAt": "2026-07-24T11:58:57.415Z"
               }
-            ]
+            ],
+            "classId": "54e7731b-bc3f-4440-9a59-efd478412d18"
           }
         ]
       },
@@ -5213,7 +5361,8 @@
                 ],
                 "snapshotAt": "2026-07-24T11:58:58.990Z"
               }
-            ]
+            ],
+            "classId": "54e7731b-bc3f-4440-9a59-efd478412d18"
           }
         ]
       },
@@ -5222,7 +5371,8 @@
         "classes": [
           {
             "className": "Bootcamp Cohort A",
-            "courses": []
+            "courses": [],
+            "classId": "54e7731b-bc3f-4440-9a59-efd478412d18"
           }
         ]
       }
@@ -5277,7 +5427,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:08:13.100Z"
               }
-            ]
+            ],
+            "classId": "6205a3ed-2d7e-42ed-9288-553ce8783054"
           },
           {
             "className": "Clikcer",
@@ -5314,7 +5465,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:08:14.751Z"
               }
-            ]
+            ],
+            "classId": "f9b401ee-3ee5-428f-aa4c-9016f27ceee3"
           },
           {
             "className": "Quest",
@@ -5435,7 +5587,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:08:17.002Z"
               }
-            ]
+            ],
+            "classId": "84bf4276-bb2a-4116-9a52-15a491b5aa15"
           }
         ]
       }
@@ -5490,7 +5643,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:15:09.097Z"
               }
-            ]
+            ],
+            "classId": "6205a3ed-2d7e-42ed-9288-553ce8783054"
           },
           {
             "className": "Clikcer",
@@ -5611,7 +5765,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:15:10.719Z"
               }
-            ]
+            ],
+            "classId": "f9b401ee-3ee5-428f-aa4c-9016f27ceee3"
           },
           {
             "className": "Quest",
@@ -5732,7 +5887,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:15:12.659Z"
               }
-            ]
+            ],
+            "classId": "84bf4276-bb2a-4116-9a52-15a491b5aa15"
           }
         ]
       }
@@ -5787,7 +5943,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:44:32.846Z"
               }
-            ]
+            ],
+            "classId": "b4e33eca-f3d2-4ffe-bb3c-8ed8b1657c8c"
           },
           {
             "className": "class 2",
@@ -5824,7 +5981,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:44:40.356Z"
               }
-            ]
+            ],
+            "classId": "68410004-73f1-4b59-af48-778c9bc7e695"
           },
           {
             "className": "class 3",
@@ -5945,7 +6103,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:44:38.779Z"
               }
-            ]
+            ],
+            "classId": "b7b3ef7f-4335-4eee-a824-68415adc6c54"
           },
           {
             "className": "class 4",
@@ -6066,7 +6225,8 @@
                 ],
                 "snapshotAt": "2026-07-24T12:44:37.248Z"
               }
-            ]
+            ],
+            "classId": "2f559781-42e9-4f65-bafc-32846d9ddb8b"
           },
           {
             "className": "class 5",
@@ -6103,12 +6263,635 @@
                 ],
                 "snapshotAt": "2026-07-24T12:44:35.674Z"
               }
-            ]
+            ],
+            "classId": "f5555112-5ff2-43d3-83f6-45132ab9db5d"
           }
         ]
       }
     ],
     "createdAt": "2026-07-24T12:44:41.237Z",
     "updatedAt": "2026-07-24T12:44:42.209Z"
+  },
+  {
+    "id": "641232e9-1ece-4e01-833f-e128757382ed",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "academicYearId": "656d63eb-4544-4b7b-a15c-d85a7c590cc4",
+    "versionNumber": 11,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:00.850Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:04.996Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:06.781Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:09.190Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:10.581Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:12.376Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:15.335Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:16.964Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-07-27T06:33:18.396Z"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-27T06:33:19.851Z",
+    "updatedAt": "2026-07-27T06:33:21.140Z"
   }
 ]

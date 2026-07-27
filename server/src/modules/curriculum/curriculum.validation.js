@@ -35,6 +35,11 @@ const periodSchema = z
     }
   });
 
+const classSchema = z.object({
+  id:   z.string().min(1),
+  name: z.string().min(1, "Class name is required"),
+});
+
 const createCurriculumSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
   code: z
@@ -56,7 +61,7 @@ const createCurriculumSchema = z.object({
   isProgram: z.boolean().optional().default(false),
   academicCycleModel: z.string().optional().default("terms"),
   periods: z.array(periodSchema).optional().default([]),
-  classes: z.array(z.string()).optional().default([]),
+  classes: z.array(classSchema).optional().default([]),
 });
 
 const updateCurriculumSchema = z.object({
@@ -78,7 +83,7 @@ const updateCurriculumSchema = z.object({
   isProgram: z.boolean().optional(),
   academicCycleModel: z.string().optional(),
   periods: z.array(periodSchema).optional(),
-  classes: z.array(z.string()).optional(),
+  classes: z.array(classSchema).optional(),
 });
 
 const linkCourseSchema = z.object({

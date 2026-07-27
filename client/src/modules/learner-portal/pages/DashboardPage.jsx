@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const { user, learner, learnerLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
   const school = selectedHub || null;
 
-  const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();

@@ -233,38 +233,22 @@ const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 function scaffoldBlank(curriculum) {
-  const map = new Map();
-  (curriculum.structure || []).forEach((t) => {
-    (t.grades || []).forEach((g) => {
-      const k = g.id || g.name;
-      if (k && !map.has(k)) map.set(k, g.name || g);
-    });
-  });
-  let names = [...map.values()];
-  if (!names.length) names = curriculum.classes || [];
+  const classes = curriculum.classes || [];
   return (curriculum.periods || []).map((p) => ({
     periodName: p.name,
-    classes: names.map((n) => ({ className: n, courses: [] })),
+    classes: classes.map((c) => ({ classId: c.id, className: c.name, courses: [] })),
   }));
 }
 
 function scaffoldFromExisting(curriculum, existingContent) {
-  const map = new Map();
-  (curriculum.structure || []).forEach((t) => {
-    (t.grades || []).forEach((g) => {
-      const k = g.id || g.name;
-      if (k && !map.has(k)) map.set(k, g.name || g);
-    });
-  });
-  let names = [...map.values()];
-  if (!names.length) names = curriculum.classes || [];
+  const classes = curriculum.classes || [];
   return (curriculum.periods || []).map((p) => {
     const ep = (existingContent || []).find((x) => x.periodName === p.name);
     return {
       periodName: p.name,
-      classes: names.map((n) => {
-        const ec = ep?.classes?.find((c) => c.className === n);
-        return { className: n, courses: ec?.courses || [] };
+      classes: classes.map((c) => {
+        const ec = ep?.classes?.find((x) => x.classId === c.id);
+        return { classId: c.id, className: c.name, courses: ec?.courses || [] };
       }),
     };
   });
@@ -536,7 +520,7 @@ function CourseMatrixView({ content, activeTab }) {
   return (
     <div>
       {pc.classes.map((cls) => (
-        <div key={cls.className} className="vc-class-row">
+        <div key={cls.classId || cls.className} className="vc-class-row">
           <div className="vc-class-label">{cls.className}</div>
           <div className="vc-chips">
             {cls.courses.length === 0
@@ -579,7 +563,7 @@ function CourseMatrixEdit({ content, activeTab, onUpdate, allCourses }) {
   return (
     <div>
       {pc.classes.map((cls, ci) => (
-        <div key={cls.className}>
+        <div key={cls.classId || cls.className}>
           <div className="vc-class-row">
             <div className="vc-class-label">{cls.className}</div>
             <div className="vc-chips">

@@ -8,7 +8,7 @@ export const curriculumVersionApi = {
   edit:         (cid, vId, data)   => api.put(`${base(cid)}/${vId}`, data).then((r) => r.data.data),
   changeStatus: (cid, vId, status) => api.patch(`${base(cid)}/${vId}/status`, { status }).then((r) => r.data.data),
   // Courses actually live right now for this curriculum (from the published version's
-  // content), optionally scoped to one grade.
-  getCurrentCourses: (cid, gradeName) =>
-    api.get(`${base(cid)}/current/courses`, { params: gradeName ? { grade: gradeName } : {} }).then((r) => r.data.data),
+  // content), optionally scoped to one grade (by its stable classId).
+  getCurrentCourses: (cid, gradeId) =>
+    api.get(`${base(cid)}/current/courses`, { params: gradeId ? { gradeId } : {} }).then((r) => r.data.data),
 };

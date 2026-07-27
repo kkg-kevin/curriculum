@@ -784,7 +784,7 @@ export default function CurriculumViewPage() {
                     </div>
                     <div className="cvp-class-list">
                       {(activePeriodData.classes || []).map((cls) => (
-                        <div key={cls.className} className="cvp-class-row">
+                        <div key={cls.classId || cls.className} className="cvp-class-row">
                           <span className="cvp-class-name">{cls.className}</span>
                           <div className="cvp-chips">
                             {(cls.courses || []).length === 0 ? (

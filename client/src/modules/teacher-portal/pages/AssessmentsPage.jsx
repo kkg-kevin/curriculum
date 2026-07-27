@@ -187,10 +187,10 @@ export default function AssessmentsPage() {
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const gradeNames = [...new Set(myClasses.map((c) => c.gradeName))];
+  const gradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeNames);
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeNames);
+  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeIds);
+  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeIds);
 
   const sessionsResults = useQueries({
     queries: courses.map((course) => ({
@@ -222,7 +222,7 @@ export default function AssessmentsPage() {
     const rows = [];
     sessionsResults.forEach((result, index) => {
       const course = courses[index];
-      const eligibleClasses = myClasses.filter((cls) => (coursesByGrade?.get(cls.gradeName) || []).some((c) => c.id === course.id));
+      const eligibleClasses = myClasses.filter((cls) => (coursesByGrade?.get(cls.gradeId) || []).some((c) => c.id === course.id));
       (result.data || []).forEach((session) => {
         (session.attachedAssessments || []).forEach((assessment) => {
           rows.push({

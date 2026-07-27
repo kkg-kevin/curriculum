@@ -3,8 +3,8 @@ import toast from "react-hot-toast";
 import { curriculumVersionApi } from "../services/curriculumVersionApi";
 
 const KEYS = {
-  all:            (cid)            => ["curriculum-versions", cid],
-  currentCourses: (cid, gradeName) => ["curriculum-versions", cid, "current-courses", gradeName || null],
+  all:            (cid)          => ["curriculum-versions", cid],
+  currentCourses: (cid, gradeId) => ["curriculum-versions", cid, "current-courses", gradeId || null],
 };
 
 export function useCurriculumVersions(curriculumId) {
@@ -17,11 +17,12 @@ export function useCurriculumVersions(curriculumId) {
 }
 
 // What learner/teacher portals should read — the live version's courses, not the separate
-// flat course-curriculum link. Pass a gradeName to scope to one grade; omit for every grade.
-export function useCurriculumCurrentCourses(curriculumId, gradeName) {
+// flat course-curriculum link. Pass a gradeId (the curriculum class's stable id, e.g. a real
+// Class record's cls.gradeId) to scope to one grade; omit for every grade.
+export function useCurriculumCurrentCourses(curriculumId, gradeId) {
   return useQuery({
-    queryKey: KEYS.currentCourses(curriculumId, gradeName),
-    queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeName),
+    queryKey: KEYS.currentCourses(curriculumId, gradeId),
+    queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
     enabled:  !!curriculumId,
   });
 }
@@ -29,11 +30,11 @@ export function useCurriculumCurrentCourses(curriculumId, gradeName) {
 // Same as above, but for a teacher assigned to more than one class — merges current courses
 // across every distinct grade they're the class teacher for (shares cache entries with the
 // single-grade hook above, since it's the same query key per grade).
-export function useCurriculumCurrentCoursesForGrades(curriculumId, gradeNames) {
+export function useCurriculumCurrentCoursesForGrades(curriculumId, gradeIds) {
   const results = useQueries({
-    queries: (gradeNames || []).map((gradeName) => ({
-      queryKey: KEYS.currentCourses(curriculumId, gradeName),
-      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeName),
+    queries: (gradeIds || []).map((gradeId) => ({
+      queryKey: KEYS.currentCourses(curriculumId, gradeId),
+      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
       enabled:  !!curriculumId,
     })),
   });
@@ -46,19 +47,19 @@ export function useCurriculumCurrentCoursesForGrades(curriculumId, gradeNames) {
 
 // Same per-grade queries as above, but kept separate per grade instead of merged — for a
 // school-wide view that needs to know which specific grade has which courses (e.g. "Grade 1
-// has 0 courses"), not just the deduplicated union.
-export function useCurriculumCoursesByGrade(curriculumId, gradeNames) {
-  const names = gradeNames || [];
+// has 0 courses"), not just the deduplicated union. Returned Map is keyed by gradeId.
+export function useCurriculumCoursesByGrade(curriculumId, gradeIds) {
+  const ids = gradeIds || [];
   const results = useQueries({
-    queries: names.map((gradeName) => ({
-      queryKey: KEYS.currentCourses(curriculumId, gradeName),
-      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeName),
+    queries: ids.map((gradeId) => ({
+      queryKey: KEYS.currentCourses(curriculumId, gradeId),
+      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
       enabled:  !!curriculumId,
     })),
   });
 
   const byGrade = new Map();
-  names.forEach((gradeName, i) => byGrade.set(gradeName, results[i]?.data || []));
+  ids.forEach((gradeId, i) => byGrade.set(gradeId, results[i]?.data || []));
 
   return { data: byGrade, isLoading: results.some((r) => r.isLoading) };
 }

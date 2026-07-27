@@ -33,7 +33,7 @@ function StatTile({ icon, value, label }) {
 
 export default function MyCoursesPage() {
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeName);
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
 
   const stats = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);
 

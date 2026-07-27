@@ -6,22 +6,11 @@ const { collectCourseIds }   = require("./content.utils");
 
 function buildContentScaffold(curriculum) {
   const periods = curriculum.periods || [];
-
-  // Collect unique grade names from curriculum.structure
-  const gradesMap = new Map();
-  (curriculum.structure || []).forEach((term) => {
-    (term.grades || []).forEach((g) => {
-      const key = g.id || g.name;
-      if (key && !gradesMap.has(key)) gradesMap.set(key, g.name || g);
-    });
-  });
-  let gradeNames = [...gradesMap.values()];
-  // Fall back to legacy curriculum.classes if structure has no grades
-  if (gradeNames.length === 0) gradeNames = curriculum.classes || [];
+  const classes = curriculum.classes || [];
 
   return periods.map((p) => ({
     periodName: p.name,
-    classes: gradeNames.map((name) => ({ className: name, courses: [] })),
+    classes: classes.map((c) => ({ classId: c.id, className: c.name, courses: [] })),
   }));
 }
 
@@ -44,7 +33,7 @@ const CurriculumVersionService = {
       ? scaffold.map((sp) => {
           const provided = data.content.find((p) => p.periodName === sp.periodName);
           return provided
-            ? { ...sp, classes: sp.classes.map((sc) => { const pc = provided.classes?.find((c) => c.className === sc.className); return pc || sc; }) }
+            ? { ...sp, classes: sp.classes.map((sc) => { const pc = provided.classes?.find((c) => c.classId === sc.classId); return pc || sc; }) }
             : sp;
         })
       : scaffold;
@@ -113,18 +102,18 @@ const CurriculumVersionService = {
 
   // The courses actually visible to learners/teachers — read from the live (isCurrent)
   // version's content, not the separate flat course-curriculum link. Optionally scoped to
-  // one grade (className), since the version matrix assigns courses per period+grade and a
+  // one grade (classId), since the version matrix assigns courses per period+grade and a
   // grade shouldn't see courses assigned only to a different one. Merges across every period
   // (there's no reliable "current term" signal — period dates are optional/often unset).
-  getCurrentCourses(curriculumId, gradeName) {
+  getCurrentCourses(curriculumId, gradeId) {
     const current = CurriculumVersionModel.findAllByCurriculumId(curriculumId).find((v) => v.isCurrent);
     if (!current) return [];
 
     let content = current.content || [];
-    if (gradeName) {
+    if (gradeId) {
       content = content.map((period) => ({
         ...period,
-        classes: (period.classes || []).filter((cls) => cls.className === gradeName),
+        classes: (period.classes || []).filter((cls) => cls.classId === gradeId),
       }));
     }
 

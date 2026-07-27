@@ -28,9 +28,18 @@
       }
     ],
     "classes": [
-      "Grade 1",
-      "Grade 2",
-      "Grade 3"
+      {
+        "id": "72480379-e455-42bf-a5ee-8a2786c653e9",
+        "name": "Grade 1"
+      },
+      {
+        "id": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba",
+        "name": "Grade 2"
+      },
+      {
+        "id": "21ca6481-dc80-4bc2-a4cc-4e6963dee386",
+        "name": "Grade 3"
+      }
     ],
     "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "createdAt": "2026-06-25T09:29:38.606Z",
@@ -73,9 +82,18 @@
       }
     ],
     "classes": [
-      "Grade 4",
-      "Grade 5",
-      "Grade 6"
+      {
+        "id": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+        "name": "Grade 4"
+      },
+      {
+        "id": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+        "name": "Grade 5"
+      },
+      {
+        "id": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+        "name": "Grade 6"
+      }
     ],
     "id": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "createdAt": "2026-07-13T10:06:59.915Z",
@@ -119,7 +137,10 @@
       }
     ],
     "classes": [
-      "Bootcamp Cohort 1"
+      {
+        "id": "ab946f66-23f4-4f03-8857-66f9a810b46a",
+        "name": "Bootcamp Cohort 1"
+      }
     ],
     "id": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
     "createdAt": "2026-07-24T11:34:51.758Z",
@@ -162,7 +183,10 @@
       }
     ],
     "classes": [
-      "Bootcamp Cohort A"
+      {
+        "id": "54e7731b-bc3f-4440-9a59-efd478412d18",
+        "name": "Bootcamp Cohort A"
+      }
     ],
     "id": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
     "createdAt": "2026-07-24T11:54:54.760Z",
@@ -191,32 +215,22 @@
       }
     ],
     "classes": [
-      "Crib",
-      "Clikcer",
-      "Quest"
+      {
+        "id": "6205a3ed-2d7e-42ed-9288-553ce8783054",
+        "name": "Crib"
+      },
+      {
+        "id": "f9b401ee-3ee5-428f-aa4c-9016f27ceee3",
+        "name": "Clikcer"
+      },
+      {
+        "id": "84bf4276-bb2a-4116-9a52-15a491b5aa15",
+        "name": "Quest"
+      }
     ],
     "id": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
     "createdAt": "2026-07-24T12:07:44.959Z",
     "updatedAt": "2026-07-24T12:08:04.818Z"
-  },
-  {
-    "name": "2qtewysrd",
-    "code": "2",
-    "academicYear": "",
-    "description": "dtkff",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "",
-    "isProgram": false,
-    "academicCycleModel": "terms",
-    "periods": [],
-    "classes": [],
-    "id": "e2471e31-71ec-4e16-83bc-d6107881e09a",
-    "createdAt": "2026-07-24T12:21:16.669Z",
-    "updatedAt": "2026-07-24T12:21:16.670Z"
   },
   {
     "name": "57tfyihbj",
@@ -241,11 +255,26 @@
       }
     ],
     "classes": [
-      "class1",
-      "class 2",
-      "class 3",
-      "class 4",
-      "class 5"
+      {
+        "id": "b4e33eca-f3d2-4ffe-bb3c-8ed8b1657c8c",
+        "name": "class1"
+      },
+      {
+        "id": "68410004-73f1-4b59-af48-778c9bc7e695",
+        "name": "class 2"
+      },
+      {
+        "id": "b7b3ef7f-4335-4eee-a824-68415adc6c54",
+        "name": "class 3"
+      },
+      {
+        "id": "2f559781-42e9-4f65-bafc-32846d9ddb8b",
+        "name": "class 4"
+      },
+      {
+        "id": "f5555112-5ff2-43d3-83f6-45132ab9db5d",
+        "name": "class 5"
+      }
     ],
     "id": "08ab2195-8e88-4fb0-9cc8-86684e73e011",
     "createdAt": "2026-07-24T12:43:58.328Z",
