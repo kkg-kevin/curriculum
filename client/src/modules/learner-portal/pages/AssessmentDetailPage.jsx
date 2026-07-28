@@ -137,14 +137,23 @@ export default function AssessmentDetailPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ ...cardStyle, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669", fontSize: 22, flexShrink: 0 }}><FiCheckCircle /></div>
-            <div>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{submission.totalScore} / {submission.maxScore}</p>
-              <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
-                {submission.maxScore ? `${Math.round((submission.totalScore / submission.maxScore) * 100)}%` : ""} · Graded {new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
-              </p>
+          <div style={{ ...cardStyle, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669", fontSize: 22, flexShrink: 0 }}><FiCheckCircle /></div>
+              <div>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{submission.totalScore} / {submission.maxScore}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
+                  {submission.maxScore ? `${Math.round((submission.totalScore / submission.maxScore) * 100)}%` : ""} · Graded {new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => navigate("/learner-portal/reports")}
+              style={{ padding: "8px 16px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              View in Reports →
+            </button>
           </div>
 
           {submission.indicatorBreakdown?.length > 0 && (

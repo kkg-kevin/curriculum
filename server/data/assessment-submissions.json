@@ -235,24 +235,121 @@
     "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
     "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
-    "status": "submitted",
+    "status": "graded",
     "answers": [],
     "autoScore": 0,
     "autoMax": 0,
     "autoItemResults": [],
-    "manualScore": null,
-    "totalScore": null,
+    "manualScore": 63,
+    "totalScore": 63,
     "maxScore": 70,
     "requiresManualGrading": true,
-    "itemFeedback": [],
-    "overallFeedback": "",
+    "itemFeedback": [
+      {
+        "itemId": "rubric:pr1",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr2",
+        "marks": 10,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr3",
+        "marks": 10,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr4",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr5",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr6",
+        "marks": 8,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr7",
+        "marks": 8,
+        "comment": "",
+        "indicatorMarks": []
+      }
+    ],
+    "overallFeedback": "This project is well done good code quality algorrithms \nwell done \nWork on the highlighted sections ",
     "submittedAt": "2026-07-28T06:47:18.514Z",
-    "gradedAt": null,
-    "gradedBy": null,
+    "gradedAt": "2026-07-28T10:15:05.869Z",
+    "gradedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
     "id": "dd058c44-022e-461f-9f1c-9461a97ea769",
     "createdAt": "2026-07-28T06:47:16.991Z",
-    "updatedAt": "2026-07-28T06:47:18.515Z",
-    "indicatorBreakdown": []
+    "updatedAt": "2026-07-28T10:15:11.586Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 9,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 10,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "marksEarned": 4.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 4.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+        "marksEarned": 9,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+        "marksEarned": 4,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+        "marksEarned": 4,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+        "marksEarned": 8,
+        "marksPossible": 10
+      }
+    ],
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-28T10:15:11.585Z",
+    "reportPublishedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db"
   },
   {
     "issueId": "2e6ab74f-1f92-4953-a13c-be26760ea531",
@@ -372,8 +469,11 @@
     "gradedBy": null,
     "id": "bd9e080b-1277-4e5d-934c-4742a2872b00",
     "createdAt": "2026-07-28T06:47:26.419Z",
-    "updatedAt": "2026-07-28T06:48:13.097Z",
-    "indicatorBreakdown": []
+    "updatedAt": "2026-07-28T10:32:16.839Z",
+    "indicatorBreakdown": [],
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-28T10:32:16.837Z",
+    "reportPublishedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db"
   },
   {
     "issueId": "412e1348-80c5-4bd7-9af1-3707b03fe442",
@@ -669,5 +769,32 @@
         "marksPossible": 1.5
       }
     ]
+  },
+  {
+    "issueId": "32f9d088-a041-45bb-95ef-24a72be22cbc",
+    "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "status": "graded",
+    "answers": [],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": 0,
+    "totalScore": 0,
+    "maxScore": 0,
+    "requiresManualGrading": true,
+    "itemFeedback": [],
+    "overallFeedback": "Collaborated well during the group task.",
+    "submittedAt": "2026-07-28T10:32:12.199Z",
+    "gradedAt": "2026-07-28T10:32:16.780Z",
+    "gradedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-28T10:32:16.804Z",
+    "reportPublishedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "id": "c4646027-48ee-4b75-8cc9-9a6a6bcf6906",
+    "createdAt": "2026-07-28T10:32:12.153Z",
+    "updatedAt": "2026-07-28T10:32:16.806Z",
+    "indicatorBreakdown": []
   }
 ]

@@ -16,12 +16,16 @@ function notFound(message) {
 
 // Every assessment a learner needs graded for a course to be report-eligible — a course's
 // content is a list of Sessions, each of which may carry its own attached assessment(s) (see
-// sessionAssessment.utils.js), so this is the union of every session's attachments.
+// sessionAssessment.utils.js), so this is the union of every session's attachments. Filtered to
+// assessments that still actually exist — a session can keep referencing an assessment's id after
+// that assessment was deleted (attachment records aren't cleaned up on delete), and treating a
+// dead reference as "required" would make the course permanently unable to reach "ready" for any
+// learner, since a deleted assessment can never be graded.
 function getCourseRequiredAssessmentIds(courseId) {
   const sessions = SessionModel.findByCourseId(courseId);
   const ids = new Set();
   sessions.forEach((session) => getSessionAssessmentIds(session).forEach((id) => ids.add(id)));
-  return [...ids];
+  return [...ids].filter((id) => !!AssessmentModel.findById(id));
 }
 
 // A submission only counts toward a course report once its own report has been published to the

@@ -137,7 +137,7 @@ export default function AssessmentRosterPage() {
                   {!selectedRow.submission.reportPublished && (
                     <button
                       type="button"
-                      onClick={() => publishReport(selectedRow.submission.id)}
+                      onClick={() => publishReport(selectedRow.submission.id, { onSuccess: () => navigate("/teacher-portal/reports") })}
                       disabled={publishing}
                       style={{ padding: "8px 16px", backgroundColor: publishing ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publishing ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
                     >

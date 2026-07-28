@@ -1,1 +1,181 @@
-[]
+[
+  {
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "status": "published",
+    "generatedAt": "2026-07-28T10:32:16.995Z",
+    "generatedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "publishedAt": "2026-07-28T10:32:17.104Z",
+    "publishedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "remarks": "Great progress across the course this term!",
+    "content": {
+      "assessments": [
+        {
+          "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+          "name": "Foundational Skills Diagnostic (Sample)",
+          "type": "quiz",
+          "totalScore": 11,
+          "maxScore": 13,
+          "percent": 85,
+          "gradedAt": "2026-07-28T06:48:13.093Z"
+        },
+        {
+          "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+          "name": "Collaboration & Digital Citizenship — Classroom Observation",
+          "type": "observation",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-28T10:32:16.780Z"
+        },
+        {
+          "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+          "name": "Digital Creativity Capstone: Build a Mini App or Game",
+          "type": "project",
+          "totalScore": 63,
+          "maxScore": 70,
+          "percent": 90,
+          "gradedAt": "2026-07-28T10:15:05.869Z"
+        },
+        {
+          "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+          "name": "Digital Creativity Capstone: Build a Mini App or Game",
+          "type": "project",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-28T09:15:41.796Z"
+        },
+        {
+          "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+          "name": "Computational Thinking & Programming Fundamentals",
+          "type": "quiz",
+          "totalScore": 8,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-28T08:10:03.321Z"
+        }
+      ],
+      "overall": {
+        "totalScore": 82,
+        "maxScore": 83,
+        "percent": 99
+      },
+      "indicatorBreakdown": [
+        {
+          "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Breaks down problems",
+          "marksEarned": 9,
+          "marksPossible": 10,
+          "percent": 90
+        },
+        {
+          "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Designs step-by-step solutions",
+          "marksEarned": 10,
+          "marksPossible": 10,
+          "percent": 100
+        },
+        {
+          "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Evaluates solution efficiency",
+          "marksEarned": 0,
+          "marksPossible": 0,
+          "percent": 0
+        },
+        {
+          "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Identifies patterns",
+          "marksEarned": 0,
+          "marksPossible": 0,
+          "percent": 0
+        },
+        {
+          "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Debugs errors",
+          "marksEarned": 4.5,
+          "marksPossible": 5,
+          "percent": 90
+        },
+        {
+          "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Tests program output",
+          "marksEarned": 4.5,
+          "marksPossible": 5,
+          "percent": 90
+        },
+        {
+          "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Uses core programming constructs",
+          "marksEarned": 5,
+          "marksPossible": 5,
+          "percent": 100
+        },
+        {
+          "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Writes organized, readable code",
+          "marksEarned": 5,
+          "marksPossible": 5,
+          "percent": 100
+        },
+        {
+          "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Completes a functional project",
+          "marksEarned": 4,
+          "marksPossible": 5,
+          "percent": 80
+        },
+        {
+          "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Generates original project ideas",
+          "marksEarned": 9,
+          "marksPossible": 10,
+          "percent": 90
+        },
+        {
+          "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Integrates multiple concepts",
+          "marksEarned": 4,
+          "marksPossible": 5,
+          "percent": 80
+        },
+        {
+          "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+          "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+          "competencyName": "5. Collaboration, Communication & Digital Citizenship",
+          "indicatorName": "Collaborates on shared tasks",
+          "marksEarned": 8,
+          "marksPossible": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "id": "0e2568e9-a707-425a-887c-107fc4d0a9a1",
+    "createdAt": "2026-07-28T10:32:16.996Z",
+    "updatedAt": "2026-07-28T10:32:17.105Z"
+  }
+]
