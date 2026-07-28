@@ -2,6 +2,7 @@ const express = require("express");
 const {
   issueAssessment,
   getIssuesForClass,
+  getSubmissionsNeedingGrading,
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
@@ -13,6 +14,7 @@ const {
   submitAnswers,
   getSubmission,
   gradeSubmission,
+  publishSubmissionReport,
 } = require("./assessment-submission.controller");
 const { authorize } = require("../../../shared/middleware/auth.middleware");
 
@@ -23,9 +25,14 @@ const router = express.Router();
 // targets, same pattern as attendance/classes.
 router.post("/issues", authorize("admin", "school", "teacher"), issueAssessment);
 router.get("/issues", authorize("admin", "school", "teacher"), getIssuesForClass);
+// Cross-cutting "needs grading" queue for a class — see getSubmissionsNeedingGrading.
+router.get("/needs-grading", authorize("admin", "school", "teacher"), getSubmissionsNeedingGrading);
 router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRosterForIssue);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
+// Releases an already-graded submission's score/feedback to the learner — a separate step from
+// grading itself, see publishReport in assessment-submission.service.js.
+router.post("/submissions/:id/publish-report", authorize("admin", "school", "teacher"), publishSubmissionReport);
 
 // Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class involved).
 router.get("/diagnostic/:learnerId", authorize("admin", "school"), getDiagnosticForLearner);

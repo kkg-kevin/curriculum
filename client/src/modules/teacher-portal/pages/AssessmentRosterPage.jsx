@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useRosterForIssue, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, usePublishSubmissionReport } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -27,6 +27,7 @@ export default function AssessmentRosterPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useRosterForIssue(issueId);
   const { mutate: grade, isPending: saving } = useGradeSubmission();
+  const { mutate: publishReport, isPending: publishing } = usePublishSubmissionReport();
   const [selectedLearnerId, setSelectedLearnerId] = useState(null);
 
   if (isLoading) {
@@ -40,6 +41,7 @@ export default function AssessmentRosterPage() {
   const selectedRow = roster.find((r) => r.learner.id === selectedLearnerId) || null;
   const submitted = roster.filter((r) => r.submission.status !== "not_started" && r.submission.status !== "in_progress").length;
   const gradedCount = roster.filter((r) => r.submission.status === "graded").length;
+  const publishedCount = roster.filter((r) => r.submission.status === "graded" && r.submission.reportPublished).length;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -51,7 +53,7 @@ export default function AssessmentRosterPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: "#fff" }}>{assessment.name}</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{submitted} of {roster.length} submitted · {gradedCount} graded</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{submitted} of {roster.length} submitted · {gradedCount} graded · {publishedCount} reports published</p>
         </div>
       </div>
 
@@ -75,7 +77,9 @@ export default function AssessmentRosterPage() {
                   <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: active ? T.accent : T.ink }}>{learner.firstName} {learner.lastName}</p>
                   <StatusBadge status={submission.status} />
                   {submission.status === "graded" && (
-                    <span style={{ marginLeft: 8, fontSize: 11.5, fontWeight: 700, color: T.accent }}>{submission.totalScore}/{submission.maxScore}</span>
+                    <span style={{ marginLeft: 8, fontSize: 11.5, fontWeight: 700, color: T.accent }}>
+                      {submission.totalScore}/{submission.maxScore}{!submission.reportPublished ? " · hidden" : ""}
+                    </span>
                   )}
                 </button>
               );
@@ -105,6 +109,43 @@ export default function AssessmentRosterPage() {
                 isSaving={saving}
                 onSave={(payload) => grade({ id: selectedRow.submission.id, ...payload })}
               />
+              {selectedRow.submission.status === "graded" && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    padding: "12px 16px",
+                    borderRadius: 10,
+                    backgroundColor: selectedRow.submission.reportPublished ? "#ECFDF5" : "#FFFBEB",
+                    border: `1.5px solid ${selectedRow.submission.reportPublished ? "#A7F3D0" : "#FDE68A"}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: selectedRow.submission.reportPublished ? "#059669" : "#92400E" }}>
+                      {selectedRow.submission.reportPublished ? "Report published" : "Not yet visible to the learner"}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>
+                      {selectedRow.submission.reportPublished
+                        ? `Published ${new Date(selectedRow.submission.reportPublishedAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" })}`
+                        : "The grade and feedback above are saved but hidden from the learner until you create the report."}
+                    </p>
+                  </div>
+                  {!selectedRow.submission.reportPublished && (
+                    <button
+                      type="button"
+                      onClick={() => publishReport(selectedRow.submission.id)}
+                      disabled={publishing}
+                      style={{ padding: "8px 16px", backgroundColor: publishing ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publishing ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {publishing ? "Publishing…" : "Create Report"}
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

@@ -18,7 +18,17 @@ function attachOwnRecords(req, res, next) {
   const { role, email, id } = req.user;
   if (role === "school")          req.ownSchool     = LearningHubModel.findAll({ email })[0] || null;
   if (role === "teacher")         req.ownTeacher     = TeacherModel.findAll({ email })[0] || null;
-  if (role === "learner")         req.ownLearner     = LearnerModel.findAll({ guardianEmail: email })[0] || null;
+  if (role === "learner") {
+    // A guardian can have more than one learner linked to the same email (siblings) — every
+    // learner-scoped route authorizes off req.ownLearner, so the client picks which one via the
+    // X-Active-Learner-Id header (see api.js's request interceptor); falling back to the first
+    // when absent/invalid keeps every existing single-child caller working unchanged. Never
+    // trusts the header blindly — it only ever resolves to one of this guardian's own learners.
+    const allLearners = LearnerModel.findAll({ guardianEmail: email });
+    req.ownLearners = allLearners;
+    const requestedId = req.headers["x-active-learner-id"];
+    req.ownLearner = (requestedId && allLearners.find((l) => l.id === requestedId)) || allLearners[0] || null;
+  }
   if (role === "curriculumAdmin") req.ownCurriculum  = CurriculumModel.findAll().find((c) => c.curriculumAdminId === id) || null;
   if (role === "branchAdmin") {
     req.ownBranch = BranchModel.findAll().find((b) => b.branchAdminId === id) || null;

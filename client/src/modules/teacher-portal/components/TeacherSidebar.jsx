@@ -6,6 +6,7 @@ const menuItems = [
   { name: "Dashboard",       path: "/teacher-portal" },
   { name: "Course Content",  path: "/teacher-portal/course-content" },
   { name: "Assessments",     path: "/teacher-portal/assessments" },
+  { name: "Reports",         path: "/teacher-portal/reports" },
   { name: "Attendance",      path: "/teacher-portal/attendance" },
   { name: "My Profile",      path: "/teacher-portal/profile" },
 ];

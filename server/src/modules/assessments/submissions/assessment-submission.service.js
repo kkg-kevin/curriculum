@@ -35,6 +35,34 @@ function resolveIndicator(indicatorId) {
   return null;
 }
 
+// Shared by getLearnerIndicatorProgress (all-time) and getLearnerIndicatorProgressForAssessments
+// (course-scoped) — sums each indicator's earned/possible marks across the given graded
+// submissions and resolves each indicator's display name/competency.
+function summarizeIndicatorProgress(submissions) {
+  const totals = new Map();
+  submissions.forEach((s) => {
+    (s.indicatorBreakdown || []).forEach(({ indicatorId, marksEarned, marksPossible }) => {
+      const cur = totals.get(indicatorId) || { marksEarned: 0, marksPossible: 0 };
+      cur.marksEarned += marksEarned;
+      cur.marksPossible += marksPossible;
+      totals.set(indicatorId, cur);
+    });
+  });
+
+  return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => {
+    const resolved = resolveIndicator(indicatorId);
+    return {
+      indicatorId,
+      competencyId: resolved?.competencyId || null,
+      competencyName: resolved?.competencyName || "Unknown",
+      indicatorName: resolved?.indicatorName || "Unknown indicator",
+      marksEarned: Math.round(marksEarned * 100) / 100,
+      marksPossible,
+      percent: marksPossible > 0 ? Math.round((marksEarned / marksPossible) * 100) : 0,
+    };
+  }).sort((a, b) => a.competencyName.localeCompare(b.competencyName) || a.indicatorName.localeCompare(b.indicatorName));
+}
+
 function maybePlaceFromDiagnostic(submission) {
   if (submission.status !== "graded") return;
   const issue = AssessmentIssueModel.findById(submission.issueId);
@@ -121,6 +149,21 @@ const AssessmentSubmissionService = {
     return AssessmentIssueModel.findAll({ courseId });
   },
 
+  // Cross-cutting "needs grading" queue for a class — every submitted-but-ungraded submission
+  // across every issue in the class, each merged with its learner/assessment for display. The
+  // inverse of getRosterForIssue (which is per-issue, every learner); this is per-class, only the
+  // ones actually awaiting a teacher's review, so a teacher doesn't have to open each assessment's
+  // roster individually to find pending work.
+  getSubmissionsNeedingGrading(classId) {
+    const submissions = AssessmentSubmissionModel.findAll({ classId, status: "submitted" });
+    return submissions.map((submission) => ({
+      submission,
+      issue: AssessmentIssueModel.findById(submission.issueId),
+      assessment: AssessmentModel.findById(submission.assessmentId),
+      learner: LearnerModel.findById(submission.learnerId),
+    })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
+  },
+
   // What a learner sees: every issue targeting their class, each merged with their own
   // submission (or a synthetic "not_started" placeholder if they haven't opened it yet).
   getIssuedAssessmentsForLearner(classId, learnerId) {
@@ -196,6 +239,11 @@ const AssessmentSubmissionService = {
       submittedAt: null,
       gradedAt: null,
       gradedBy: null,
+      // A graded submission's score/feedback stays hidden from the learner until this flips —
+      // see grade()/submit()/publishReport for exactly when that happens.
+      reportPublished: false,
+      reportPublishedAt: null,
+      reportPublishedBy: null,
     });
   },
 
@@ -239,6 +287,9 @@ const AssessmentSubmissionService = {
     // breakdown is exact from the auto results alone, no manual itemFeedback exists yet.
     const indicatorBreakdown = needsManual ? [] : computeIndicatorBreakdown(assessment, itemResults, []);
 
+    // Fully auto-gradable assessments have no teacher step to gate on, so their report releases
+    // in the same instant as grading — only a submission a teacher actually grades (see grade())
+    // goes through the separate publishReport step.
     const updated = AssessmentSubmissionModel.update(submissionId, {
       answers,
       autoScore,
@@ -249,6 +300,7 @@ const AssessmentSubmissionService = {
       totalScore: needsManual ? null : autoScore,
       gradedAt: needsManual ? null : new Date().toISOString(),
       indicatorBreakdown: needsManual ? submission.indicatorBreakdown || [] : indicatorBreakdown,
+      ...(needsManual ? {} : { reportPublished: true, reportPublishedAt: new Date().toISOString() }),
     });
     maybePlaceFromDiagnostic(updated);
     return updated;
@@ -256,7 +308,10 @@ const AssessmentSubmissionService = {
 
   // Teacher's grading pass — supplies marks/feedback for whatever the learner's answers didn't
   // already auto-grade (rubric criteria, short-answer items, observation indicators, deliverables).
-  // Combines with any stored auto-score and releases both together.
+  // Combines with any stored auto-score. A class-issued submission's grade is saved here but kept
+  // hidden from the learner until the teacher explicitly calls publishReport — a standalone
+  // submission (diagnostic/course-progress-triggered) has no roster UI built around that extra
+  // step, so it keeps releasing instantly like before.
   grade(submissionId, { itemFeedback = [], overallFeedback = "", manualScore = 0, gradedBy }) {
     const submission = AssessmentSubmissionModel.findById(submissionId);
     if (!submission) {
@@ -267,6 +322,7 @@ const AssessmentSubmissionService = {
     const assessment = loadAssessmentOrThrow(submission.assessmentId);
     const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
     const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);
+    const isStandalone = !submission.classId;
 
     const graded = AssessmentSubmissionModel.update(submissionId, {
       itemFeedback,
@@ -277,9 +333,33 @@ const AssessmentSubmissionService = {
       gradedAt: new Date().toISOString(),
       gradedBy,
       indicatorBreakdown,
+      ...(isStandalone ? { reportPublished: true, reportPublishedAt: new Date().toISOString(), reportPublishedBy: gradedBy } : {}),
     });
     maybePlaceFromDiagnostic(graded);
     return graded;
+  },
+
+  // Releases an already-graded, class-issued submission's score/feedback to the learner — a
+  // separate step from grade() so a teacher can grade privately, review, then choose when the
+  // learner actually sees it. Idempotent: publishing an already-published report is a no-op.
+  publishReport(submissionId, publishedBy) {
+    const submission = AssessmentSubmissionModel.findById(submissionId);
+    if (!submission) {
+      const err = new Error("Submission not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (submission.status !== "graded") {
+      const err = new Error("This submission hasn't been graded yet");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (submission.reportPublished) return submission;
+    return AssessmentSubmissionModel.update(submissionId, {
+      reportPublished: true,
+      reportPublishedAt: new Date().toISOString(),
+      reportPublishedBy: publishedBy,
+    });
   },
 
   getSubmission(id) {
@@ -293,29 +373,18 @@ const AssessmentSubmissionService = {
   // data (see CompetencyService.calculateIndicatorProgress) instead of the empty, manually-set
   // achievement store it had before.
   getLearnerIndicatorProgress(learnerId) {
-    const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
-    const totals = new Map();
-    submissions.forEach((s) => {
-      (s.indicatorBreakdown || []).forEach(({ indicatorId, marksEarned, marksPossible }) => {
-        const cur = totals.get(indicatorId) || { marksEarned: 0, marksPossible: 0 };
-        cur.marksEarned += marksEarned;
-        cur.marksPossible += marksPossible;
-        totals.set(indicatorId, cur);
-      });
-    });
+    return summarizeIndicatorProgress(AssessmentSubmissionModel.findAll({ learnerId, status: "graded" }));
+  },
 
-    return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => {
-      const resolved = resolveIndicator(indicatorId);
-      return {
-        indicatorId,
-        competencyId: resolved?.competencyId || null,
-        competencyName: resolved?.competencyName || "Unknown",
-        indicatorName: resolved?.indicatorName || "Unknown indicator",
-        marksEarned: Math.round(marksEarned * 100) / 100,
-        marksPossible,
-        percent: marksPossible > 0 ? Math.round((marksEarned / marksPossible) * 100) : 0,
-      };
-    }).sort((a, b) => a.competencyName.localeCompare(b.competencyName) || a.indicatorName.localeCompare(b.indicatorName));
+  // Same aggregation, narrowed to one course's worth of assessments — the reports module's
+  // "indicator breakdown within this course" view, reusing the exact indicator-resolution logic
+  // above rather than duplicating it. Only counts assessments whose own report has already been
+  // published to the learner — a course report shouldn't reveal a score the learner hasn't seen
+  // released on its own assessment page yet.
+  getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds) {
+    const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" })
+      .filter((s) => assessmentIds.includes(s.assessmentId) && s.reportPublished);
+    return summarizeIndicatorProgress(submissions);
   },
 };
 

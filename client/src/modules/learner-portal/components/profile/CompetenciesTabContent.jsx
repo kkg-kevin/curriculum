@@ -3,6 +3,7 @@ import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { iconFor } from "./competencyIcons";
 import { useLearnerIndicatorProgress } from "../../../assessments/hooks/useAssessmentSubmission";
+import { competencyPercent } from "../../utils/competencyProgress";
 
 function ProgressBadge({ percent }) {
   if (percent == null) return null;
@@ -12,17 +13,6 @@ function ProgressBadge({ percent }) {
       {percent}%
     </span>
   );
-}
-
-// A competency's overall percent is the sum of its indicators' earned/possible marks across
-// every graded assessment (see server's getLearnerIndicatorProgress) — null when the learner
-// hasn't attempted anything tagged to any of this competency's indicators yet.
-function competencyPercent(indicators, progressByIndicator) {
-  const relevant = indicators.map((ind) => progressByIndicator.get(ind.id)).filter(Boolean);
-  if (relevant.length === 0) return null;
-  const earned = relevant.reduce((sum, r) => sum + r.marksEarned, 0);
-  const possible = relevant.reduce((sum, r) => sum + r.marksPossible, 0);
-  return possible > 0 ? Math.round((earned / possible) * 100) : null;
 }
 
 function CompetencyRow({ competency, isOpen, onToggle, progressByIndicator }) {

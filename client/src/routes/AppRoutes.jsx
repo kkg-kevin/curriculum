@@ -16,6 +16,8 @@ import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
 import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
 import TeacherAssessmentsPage from "../modules/teacher-portal/pages/AssessmentsPage";
 import TeacherAssessmentRosterPage from "../modules/teacher-portal/pages/AssessmentRosterPage";
+import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
+import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
@@ -26,6 +28,8 @@ import LearnerPortalDashboardPage from "../modules/learner-portal/pages/Dashboar
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
 import LearnerAssessmentsPage from "../modules/learner-portal/pages/AssessmentsPage";
 import LearnerAssessmentDetailPage from "../modules/learner-portal/pages/AssessmentDetailPage";
+import LearnerReportsPage from "../modules/learner-portal/pages/ReportsPage";
+import LearnerReportDetailPage from "../modules/learner-portal/pages/ReportDetailPage";
 import LearnerProgressPage from "../modules/learner-portal/pages/ProgressPage";
 import LearnerProfilePage from "../modules/learner-portal/pages/ProfilePage";
 import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
@@ -179,6 +183,8 @@ export default function AppRoutes() {
           <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
           <Route path="assessments" element={<TeacherAssessmentsPage />} />
           <Route path="assessments/:issueId" element={<TeacherAssessmentRosterPage />} />
+          <Route path="reports" element={<TeacherReportsPage />} />
+          <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
@@ -218,6 +224,8 @@ export default function AppRoutes() {
           <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
           <Route path="assessments" element={<LearnerAssessmentsPage />} />
           <Route path="assessments/:issueId" element={<LearnerAssessmentDetailPage />} />
+          <Route path="reports" element={<LearnerReportsPage />} />
+          <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
         </Route>

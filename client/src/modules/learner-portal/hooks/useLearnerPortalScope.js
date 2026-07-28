@@ -5,6 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
+import { getActiveLearnerId, setActiveLearnerId } from "../utils/activeLearner";
 
 const STORAGE_KEY = "learnerPortal.selectedHubId";
 
@@ -22,7 +23,32 @@ export function useLearnerPortalScope() {
     queryFn: () => learnerApi.getAll({ guardianEmail: user.email }),
     enabled: !!user?.email,
   });
-  const learner = learnersData?.data?.[0] || null;
+  const learners = learnersData?.data || [];
+
+  // A guardian can have more than one learner linked to their email (siblings) — resolved with
+  // the same URL-param + localStorage pattern as selectedHubId below, but on its own `child`
+  // param so switching hub and switching child are independent choices.
+  const urlLearnerId = searchParams.get("child");
+  const storedLearnerId = getActiveLearnerId();
+
+  let selectedLearnerId;
+  if (urlLearnerId && learners.some((l) => l.id === urlLearnerId)) selectedLearnerId = urlLearnerId;
+  else if (storedLearnerId && learners.some((l) => l.id === storedLearnerId)) selectedLearnerId = storedLearnerId;
+  else selectedLearnerId = learners[0]?.id;
+
+  const learner = learners.find((l) => l.id === selectedLearnerId) || learners[0] || null;
+
+  // The one place that writes the active child — persisted via activeLearner.js (read by the
+  // axios interceptor on every request, see api.js) and mirrored into the URL so a shared/
+  // bookmarked link keeps working.
+  const setSelectedLearnerId = (learnerId) => {
+    setActiveLearnerId(learnerId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("child", learnerId);
+      return next;
+    });
+  };
 
   const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
 
@@ -75,6 +101,9 @@ export function useLearnerPortalScope() {
   return {
     user,
     learner,
+    learners,
+    selectedLearnerId,
+    setSelectedLearnerId,
     learnerLoading,
     hubs,
     hubsLoading,

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getActiveLearnerId } from "../modules/learner-portal/utils/activeLearner";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -6,6 +7,16 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// Lets a guardian with more than one linked learner (siblings sharing the same guardianEmail)
+// scope every request to whichever child the learner-portal is currently switched to — a no-op
+// for every other role, since the server only reads this header when role === "learner"
+// (see scope.middleware.js's attachOwnRecords).
+api.interceptors.request.use((config) => {
+  const id = getActiveLearnerId();
+  if (id) config.headers["X-Active-Learner-Id"] = id;
+  return config;
 });
 
 api.interceptors.response.use(

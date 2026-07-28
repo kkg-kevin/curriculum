@@ -47,7 +47,7 @@ export default function SummaryRow({ classId } = {}) {
           <h2 style={sectionHeaderStyle()}>Assessment Summary</h2>
           <button
             type="button"
-            onClick={() => navigate("/learner-portal/assessments")}
+            onClick={() => navigate("/learner-portal/reports")}
             style={{ background: "none", border: "none", color: T.accent, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
             View full reports

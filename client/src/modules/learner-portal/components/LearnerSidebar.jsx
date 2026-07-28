@@ -6,6 +6,7 @@ const menuItems = [
   { name: "Dashboard",    path: "/learner-portal" },
   { name: "My Courses",   path: "/learner-portal/courses" },
   { name: "Assessments",  path: "/learner-portal/assessments" },
+  { name: "Reports",      path: "/learner-portal/reports" },
   { name: "Progress",     path: "/learner-portal/progress" },
   { name: "Profile",      path: "/learner-portal/profile" },
 ];

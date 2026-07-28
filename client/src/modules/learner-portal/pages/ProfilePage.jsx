@@ -19,6 +19,7 @@ import SummaryRow from "../components/profile/SummaryRow";
 import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
+import ReportsOverview from "../components/ReportsOverview";
 
 function ComingSoonPanel({ tab }) {
   return (
@@ -79,7 +80,7 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
-          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} />
+          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             <LearningJourneyCard courses={courses} email={user?.email} isLoading={coursesLoading} />
@@ -95,7 +96,9 @@ export default function ProfilePage() {
 
       {activeTab === "Assessments" && <AssessmentsOverview classId={cls?.id} />}
 
-      {!["Overview", "Competencies", "Assessments"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
+      {activeTab === "Reports" && <ReportsOverview />}
+
+      {!["Overview", "Competencies", "Assessments", "Reports"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
 
       <SummaryRow classId={cls?.id} />
 
