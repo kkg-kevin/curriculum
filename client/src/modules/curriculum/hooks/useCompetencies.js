@@ -20,6 +20,8 @@ const KEYS = {
   indicatorAchievements: (cid) => ["indicator-achievements", cid],
   competencyScores:      (cid) => ["competency-scores", cid],
   bandProgress:          (cid) => ["band-progress", cid],
+  learnerCompetencyScores: (cid, learnerId) => ["competency-scores", "learner", cid, learnerId],
+  learnerBandProgress:     (cid, learnerId) => ["band-progress", "learner", cid, learnerId],
 };
 
 /* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
@@ -253,6 +255,25 @@ export function useBandProgress(curriculumId) {
     queryKey: KEYS.bandProgress(curriculumId),
     queryFn:  () => competenciesApi.getBandProgress(curriculumId),
     enabled:  !!curriculumId,
+  });
+}
+
+// Real per-learner siblings of the two hooks above — this learner's own graded work run
+// through the curriculum's real Evidence/Assessment-Type scoring config, instead of the shared
+// curriculum-wide manual preview value.
+export function useLearnerCompetencyScores(curriculumId, learnerId) {
+  return useQuery({
+    queryKey: KEYS.learnerCompetencyScores(curriculumId, learnerId),
+    queryFn:  () => competenciesApi.getLearnerCompetencyScores(curriculumId, learnerId),
+    enabled:  !!curriculumId && !!learnerId,
+  });
+}
+
+export function useLearnerBandProgress(curriculumId, learnerId) {
+  return useQuery({
+    queryKey: KEYS.learnerBandProgress(curriculumId, learnerId),
+    queryFn:  () => competenciesApi.getLearnerBandProgress(curriculumId, learnerId),
+    enabled:  !!curriculumId && !!learnerId,
   });
 }
 

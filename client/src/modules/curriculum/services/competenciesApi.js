@@ -69,6 +69,12 @@ export const competenciesApi = {
   getCompetencyScores: (curriculumId) =>
     api.get(`${base(curriculumId)}/scores`).then((r) => r.data.data),
 
+  // Real per-learner sibling of the above — this learner's own graded work run through the
+  // same Evidence Type → Assessment Type → Engine 1/2/5/3 pipeline, instead of the shared
+  // curriculum-wide manual preview value.
+  getLearnerCompetencyScores: (curriculumId, learnerId) =>
+    api.get(`${base(curriculumId)}/scores/learner/${learnerId}`).then((r) => r.data.data),
+
   /* Age Categories */
   getAgeCategories: (curriculumId) =>
     api.get(`${base(curriculumId)}/age-categories`).then((r) => r.data.data),
@@ -165,6 +171,11 @@ export const competenciesApi = {
   // Indicator-driven band completion, computed from persisted indicator-achievements.
   getBandProgress: (curriculumId) =>
     api.get(`${base(curriculumId)}/bands/progress`).then((r) => r.data.data),
+
+  // Real per-learner sibling — this learner's own accumulating indicator progress instead of
+  // the shared curriculum-wide manual store.
+  getLearnerBandProgress: (curriculumId, learnerId) =>
+    api.get(`${base(curriculumId)}/bands/progress/learner/${learnerId}`).then((r) => r.data.data),
 
   /* Learning Journey — per-learner, per-Learning-Area placement/history */
   getLearningJourney: (curriculumId, learnerId) =>

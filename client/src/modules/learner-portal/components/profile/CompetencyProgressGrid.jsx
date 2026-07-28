@@ -1,12 +1,26 @@
 import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { iconFor } from "./competencyIcons";
 import { useLearnerIndicatorProgress } from "../../../assessments/hooks/useAssessmentSubmission";
+import { useLearnerCompetencyScores } from "../../../curriculum/hooks/useCompetencies";
 import { competencyPercent } from "../../utils/competencyProgress";
 
-export default function CompetencyProgressGrid({ competencies, isLoading, learnerId }) {
+// Same curriculum-weighted band shown on the Competencies tab (BandBadge there) — kept here as
+// its own small component rather than shared, matching this codebase's per-file badge pattern.
+function BandBadge({ band }) {
+  if (!band) return null;
+  return (
+    <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 7px", whiteSpace: "nowrap" }}>
+      {band.name}
+    </span>
+  );
+}
+
+export default function CompetencyProgressGrid({ competencies, isLoading, learnerId, curriculumId }) {
   const items = (competencies || []).slice(0, 8);
   const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId);
   const progressByIndicator = new Map(progressRows.map((r) => [r.indicatorId, r]));
+  const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
+  const scoreByCompetencyId = new Map(scoreRows.map((r) => [r.competencyId, r]));
 
   return (
     <div style={{ ...cardStyle(), padding: 20 }}>
@@ -29,9 +43,12 @@ export default function CompetencyProgressGrid({ competencies, isLoading, learne
                   <Icon size={16} />
                 </div>
                 <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink, lineHeight: 1.3, minHeight: 32 }}>{c.name}</p>
-                <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: percent == null ? T.inkFaint : percent >= 60 ? "#059669" : "#DC2626" }}>
-                  {percent == null ? "Not yet scored" : `${percent}%`}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: percent == null ? T.inkFaint : percent >= 60 ? "#059669" : "#DC2626" }}>
+                    {percent == null ? "Not yet scored" : `${percent}%`}
+                  </p>
+                  <BandBadge band={scoreByCompetencyId.get(c.id)?.band} />
+                </div>
                 <div style={{ height: 6, borderRadius: 4, backgroundColor: "#F3F4F6", overflow: "hidden" }}>
                   <div style={{ width: `${percent || 0}%`, height: "100%", backgroundColor: percent == null ? T.tintBorder : percent >= 60 ? "#059669" : "#DC2626" }} />
                 </div>

@@ -24,9 +24,10 @@ router.route("/:id").get(authorize("admin"), getAssessmentById).put(authorize("a
 
 // Competencies — this assessment's tagged competencies (authored globally under /api/competencies).
 // The read is also needed outside the builder: GradingPanel.jsx resolves indicator display names
-// through it when a teacher/school grades a submission, so it isn't admin-only like the rest of
-// the builder's authoring routes.
-router.get("/:id/competencies/links", authorize("admin", "school", "teacher"), getAssessmentCompetencies);
+// through it when a teacher/school grades a submission, and the learner-portal graded-assessment
+// view resolves the same names for its own Competency Breakdown — plain name lookup, not
+// ownership-sensitive, so it isn't admin-only like the rest of the builder's authoring routes.
+router.get("/:id/competencies/links", authorize("admin", "school", "teacher", "learner"), getAssessmentCompetencies);
 router.post("/:id/competencies/links", authorize("admin"), linkCompetency);
 router.delete("/:id/competencies/links/:competencyId", authorize("admin"), unlinkCompetency);
 

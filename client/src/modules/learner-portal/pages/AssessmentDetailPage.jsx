@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiCheckCircle, FiClock, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
+import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
 import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import RichContent from "../../assessments/components/RichContent";
@@ -18,6 +19,18 @@ function formatResponse(response) {
     return response.join(", ");
   }
   return String(response);
+}
+
+// The curriculum's own weighted Evidence/Assessment-Type band for a competency this indicator
+// belongs to — a different, cumulative-across-all-assessments number from the flat marks/percent
+// shown alongside it, same source as the Profile page's Competencies tab.
+function BandBadge({ band }) {
+  if (!band) return null;
+  return (
+    <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 7px", whiteSpace: "nowrap" }}>
+      {band.name}
+    </span>
+  );
 }
 
 function FeedbackRow({ index, item, response, autoResult, feedback }) {
@@ -69,9 +82,16 @@ export default function AssessmentDetailPage() {
   const { data: linkedCompetencies = [] } = useAssessmentCompetencies(row?.assessment?.id, { enabled: !!row?.assessment?.id });
   const indicatorNameById = useMemo(() => {
     const map = new Map();
-    linkedCompetencies.forEach((comp) => (comp.indicators || []).forEach((ind) => map.set(ind.id, { name: ind.name, competencyName: comp.name })));
+    linkedCompetencies.forEach((comp) => (comp.indicators || []).forEach((ind) => map.set(ind.id, { name: ind.name, competencyName: comp.name, competencyId: comp.id })));
     return map;
   }, [linkedCompetencies]);
+
+  // Real per-learner score/band per competency (Evidence Type → Assessment Type → Engine
+  // pipeline) — shown alongside each indicator's flat marks so a learner can see how this one
+  // graded assessment connects to their overall standing on that competency.
+  const { cls, learner } = useOutletContext();
+  const { data: scoreRows = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id);
+  const scoreByCompetencyId = useMemo(() => new Map(scoreRows.map((r) => [r.competencyId, r])), [scoreRows]);
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -163,11 +183,17 @@ export default function AssessmentDetailPage() {
                 {submission.indicatorBreakdown.map((entry) => {
                   const resolved = indicatorNameById.get(entry.indicatorId);
                   const percent = entry.marksPossible > 0 ? Math.round((entry.marksEarned / entry.marksPossible) * 100) : 0;
+                  const scoreEntry = scoreByCompetencyId.get(resolved?.competencyId);
                   return (
                     <div key={entry.indicatorId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{resolved?.name || "Indicator"}</p>
-                        {resolved?.competencyName && <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{resolved.competencyName}</p>}
+                        {resolved?.competencyName && (
+                          <p style={{ margin: 0, fontSize: 11, color: T.inkFaint, display: "flex", alignItems: "center", gap: 6 }}>
+                            {resolved.competencyName}
+                            <BandBadge band={scoreEntry?.band} />
+                          </p>
+                        )}
                       </div>
                       <span style={{ fontSize: 12.5, fontWeight: 700, color: percent >= 60 ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
                         {entry.marksEarned}/{entry.marksPossible} · {percent}%

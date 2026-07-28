@@ -30,6 +30,23 @@ function IndicatorRow({ ind }) {
   );
 }
 
+function CompetencyScoreRow({ cs }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink }}>{cs.name}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>{cs.score}%</span>
+        {cs.level && <span style={{ fontSize: 11, color: T.inkFaint }}>{cs.level.name}</span>}
+        {cs.band && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 8px" }}>
+            {cs.band.name}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ReportEditorPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
@@ -75,6 +92,15 @@ export default function ReportEditorPage() {
             {content.assessments.map((item) => <ScoreRow key={item.assessmentId} item={item} />)}
           </div>
         </div>
+
+        {content.competencyScores?.length > 0 && (
+          <div>
+            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Standing</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {content.competencyScores.map((cs) => <CompetencyScoreRow key={cs.competencyId} cs={cs} />)}
+            </div>
+          </div>
+        )}
 
         {content.indicatorBreakdown.length > 0 && (
           <div>

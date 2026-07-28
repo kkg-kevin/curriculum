@@ -796,5 +796,32 @@
     "createdAt": "2026-07-28T10:32:12.153Z",
     "updatedAt": "2026-07-28T10:32:16.806Z",
     "indicatorBreakdown": []
+  },
+  {
+    "issueId": "4a31ca4c-a933-4e7d-a8be-3a20242ae502",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "status": "submitted",
+    "answers": [],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": null,
+    "totalScore": null,
+    "maxScore": 70,
+    "requiresManualGrading": true,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-28T12:41:49.556Z",
+    "gradedAt": null,
+    "gradedBy": null,
+    "reportPublished": false,
+    "reportPublishedAt": null,
+    "reportPublishedBy": null,
+    "id": "07bb4ec6-22d9-410f-8ffe-d3af65c282b5",
+    "createdAt": "2026-07-28T12:41:44.100Z",
+    "updatedAt": "2026-07-28T12:41:49.557Z",
+    "indicatorBreakdown": []
   }
 ]

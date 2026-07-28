@@ -172,10 +172,62 @@
           "marksPossible": 10,
           "percent": 80
         }
+      ],
+      "competencyScores": [
+        {
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "name": "1. Computational Thinking & Problem Decomposition",
+          "score": 100,
+          "level": {
+            "id": "ad6b53f2-1146-4bf2-aeca-6acef417dc6b",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Specialization",
+            "description": "The learner develops advanced expertise in specific areas of interest, such as AI, software development, or robotics. They work on complex, self-driven projects, explore advanced concepts, and demonstrate innovation, critical thinking, and the ability to extend beyond the standard curriculum.",
+            "minScore": 90,
+            "maxScore": 100,
+            "order": 5,
+            "createdAt": "2026-06-25T10:54:27.566Z",
+            "updatedAt": "2026-06-25T10:54:27.566Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        }
       ]
     },
     "id": "0e2568e9-a707-425a-887c-107fc4d0a9a1",
     "createdAt": "2026-07-28T10:32:16.996Z",
-    "updatedAt": "2026-07-28T10:32:17.105Z"
+    "updatedAt": "2026-07-28T12:34:18.002Z"
   }
 ]

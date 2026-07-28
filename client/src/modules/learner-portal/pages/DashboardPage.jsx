@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock, FiTrendingUp, FiUser, FiUserCheck } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { useAgeCategories, useLearnerCompetencyScores, useProgressLevels } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import Avatar from "../../../components/ui/Avatar";
@@ -81,6 +81,19 @@ export default function DashboardPage() {
   // pill — kept in sync here so the dashboard's snapshot card shows the same placement.
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+
+  // Aggregate "current level" for the Developmental Snapshot card — averages this learner's own
+  // weighted competency scores (Evidence Type -> Assessment Type -> Engine pipeline, same data as
+  // the Profile Competencies tab) and maps that average onto the curriculum's Progress Levels,
+  // the same range-lookup runProgressArcEngine uses per-competency server-side.
+  const { data: competencyScores = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id);
+  const { data: progressLevels = [] } = useProgressLevels(cls?.curriculumId);
+  const avgCompetencyScore = competencyScores.length
+    ? competencyScores.reduce((sum, c) => sum + c.score, 0) / competencyScores.length
+    : null;
+  const currentLevel = avgCompetencyScore != null
+    ? progressLevels.find((l) => avgCompetencyScore >= l.minScore && avgCompetencyScore <= l.maxScore) || null
+    : null;
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
   // Scoped to the currently-selected hub's class — a learner enrolled at several hubs can have
@@ -244,7 +257,7 @@ export default function DashboardPage() {
 
           {/* Right rail */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 280 }}>
-            <DevelopmentalSnapshotCard stage={stage} />
+            <DevelopmentalSnapshotCard stage={stage} currentLevel={currentLevel} />
 
             <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
 

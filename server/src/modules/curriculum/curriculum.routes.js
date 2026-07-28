@@ -76,6 +76,8 @@ const {
   setIndicatorAchievement,
   getCompetencyScores,
   getBandProgress,
+  getLearnerCompetencyScores,
+  getLearnerBandProgress,
   getLearningJourney,
   placeLearner,
 } = require("./competency-framework/competency.controller");
@@ -116,6 +118,16 @@ router.route("/:id/competencies/links").get(authorize("admin", "learner"), getCu
 router.route("/:id/competencies/ladder").get(authorize("admin", "school"), ownCurriculumOnly, getLadder);
 router.route("/:id/competencies/learning-areas").get(authorize("admin", "school"), ownCurriculumOnly, getLearningAreas);
 router.route("/:id/competencies/age-categories").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getAgeCategories);
+// Progress Levels — plain name/description/score-range lookup, same non-sensitive posture as
+// age-categories above. Needed by the learner Dashboard to map an averaged competency score onto
+// a level name (see DevelopmentalSnapshotCard's "Current Level Summary").
+router.route("/:id/competencies/levels").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getProgressLevels);
+// Real per-learner competency score/band-progress — a learner reading their own profile, or
+// admin/school reviewing a learner in their own hub (ownership enforced in the controller,
+// same shape as assessment-submission's getLearnerIndicatorProgress). Registered here, ahead of
+// the blanket admin/curriculumAdmin gate below, same as the other learner-reachable reads above.
+router.route("/:id/competencies/scores/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerCompetencyScores);
+router.route("/:id/competencies/bands/progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerBandProgress);
 router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school"), ownCurriculumOnly, getLearningJourney);
 router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
 // Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
@@ -188,8 +200,8 @@ router.route("/:id/competencies/scores").get(getCompetencyScores);
 router.route("/:id/competencies/age-categories").post(createAgeCategory);
 router.route("/:id/competencies/age-categories/:acId").put(updateAgeCategory).delete(deleteAgeCategory);
 
-// Progress Arc — progress levels
-router.route("/:id/competencies/levels").get(getProgressLevels).post(createProgressLevel);
+// Progress Arc — progress levels (GET registered above — learner Dashboard needs it too)
+router.route("/:id/competencies/levels").post(createProgressLevel);
 router.route("/:id/competencies/levels/:plId").put(updateProgressLevel).delete(deleteProgressLevel);
 
 // Assessments (legacy simple list)
