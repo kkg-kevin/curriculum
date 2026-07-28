@@ -107,7 +107,7 @@ export default function ReportEditorPage() {
           {!isPublished && (
             <button
               type="button"
-              onClick={() => publish(report.id)}
+              onClick={() => publish(report.id, { onSuccess: () => navigate("/teacher-portal/reports") })}
               disabled={publishing}
               style={{ padding: "10px 22px", backgroundColor: publishing ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publishing ? "not-allowed" : "pointer" }}
             >
