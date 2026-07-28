@@ -43,15 +43,14 @@ const ProgramService = {
       throw err;
     }
 
-    // Tech educator and capacity are per-class decisions, made afterward from the Classes
-    // module — a deployment can create several classes at once (one per cohort), so there's no
-    // single sensible value to apply to all of them here.
+    // Course-educator assignment and capacity are per-class decisions, made afterward from the
+    // Classes module — a deployment can create several classes at once (one per cohort), so
+    // there's no single sensible value to apply to all of them here.
     const classes = curriculumClasses.map((cls) => ClassModel.create({
       schoolId: hub.id,
       curriculumId: curriculum.id,
       gradeId: cls.id,
       gradeName: cls.name,
-      classTeacherId: null,
       academicYear: String(new Date(data.startDate).getFullYear()),
       capacity: null,
       status: "active",
@@ -88,7 +87,6 @@ const ProgramService = {
         learnerCount: LearnerHubLinkModel.findByClassId(cls.id).length,
       })),
       learnerCount: classes.reduce((sum, cls) => sum + LearnerHubLinkModel.findByClassId(cls.id).length, 0),
-      classTeacherId: classes[0]?.classTeacherId || null,
     };
   },
 

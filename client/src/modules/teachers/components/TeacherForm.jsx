@@ -157,7 +157,7 @@ export default function TeacherForm() {
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Employment</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
           <NullableSelect name="employmentType" label="Employment Type" options={EMPLOYMENT_TYPES} />
-          <NullableSelect name="teacherLevel" label="Tech Educator Level" options={TEACHER_LEVELS} numeric />
+          <NullableSelect name="teacherLevel" label="Educator Level" options={TEACHER_LEVELS} numeric />
           <NullableSelect name="paymentTerms" label="Payment Terms" options={PAYMENT_TERMS} />
         </div>
       </div>

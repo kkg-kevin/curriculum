@@ -11,7 +11,7 @@ export const loginSchema = z.object({
 // never offered here, accounts with that role are seeded/created by an existing admin only.
 export const SIGNUP_ROLES = [
   { value: "school", label: "School" },
-  { value: "teacher", label: "Tech Educator" },
+  { value: "teacher", label: "Educator" },
   { value: "learner", label: "Learner" },
 ];
 

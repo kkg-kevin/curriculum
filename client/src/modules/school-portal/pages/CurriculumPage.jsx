@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiChevronDown, FiAward, FiUserCheck } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
-import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
@@ -26,15 +25,22 @@ function ChevronDown({ open }) {
   return <FiChevronDown size={13} strokeWidth={2.2} style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />;
 }
 
-function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll }) {
+function GradeCard({ gradeName, classesForGrade, courses, onViewAll }) {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const totalLearners = classesForGrade.reduce((sum, c) => sum + (c.learnerCount || 0), 0);
-  const teacherNames = [...new Set(
-    classesForGrade.map((c) => c.classTeacherId ? teachersMap[c.classTeacherId] : null).filter(Boolean)
-      .map((t) => `${t.firstName} ${t.lastName}`)
-  )];
+
+  // Educators are assigned per course now, not per class — pull every course-educator link
+  // across every class for this grade (usually just one class) and dedupe names, since
+  // classesForGrade.length is dynamic and hooks can't be called in a loop.
+  const classIds = classesForGrade.map((c) => c.id);
+  const { data: gradeLinks = [] } = useQuery({
+    queryKey: ["classes", "courseTeachers", "byGrade", classIds.join(",")],
+    queryFn: async () => (await Promise.all(classIds.map((id) => classApi.getCourseTeachers(id)))).flat(),
+    enabled: classIds.length > 0,
+  });
+  const teacherNames = [...new Set(gradeLinks.map((l) => `${l.teacher.firstName} ${l.teacher.lastName}`))];
   const courseCount = courses.length;
 
   return (
@@ -75,7 +81,7 @@ function GradeCard({ gradeName, classesForGrade, courses, teachersMap, onViewAll
             {teacherNames.length ? (
               <span>{teacherNames.join(", ")}</span>
             ) : (
-              <span style={{ color: T.inkFaint, fontStyle: "italic" }}>No class tech educator</span>
+              <span style={{ color: T.inkFaint, fontStyle: "italic" }}>No educators assigned</span>
             )}
           </div>
         </div>
@@ -158,9 +164,6 @@ export default function CurriculumPage() {
   const gradeGroups = [...new Map(classes.map((c) => [c.gradeId, { id: c.gradeId, name: c.gradeName }])).values()];
   const selectedGradeName = gradeGroups.find((g) => g.id === selectedGradeId)?.name || null;
 
-  const { data: hubTeachers } = useHubTeachersQuery(school?.id);
-  const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
-
   const { data: coursesByGrade, isLoading: coursesLoading } = useCurriculumCoursesByGrade(school?.curriculumId, gradeGroups.map((g) => g.id));
 
   const isLoading = schoolLoading || (!!school && classesLoading);
@@ -226,7 +229,6 @@ export default function CurriculumPage() {
               gradeName={name}
               classesForGrade={classes.filter((c) => c.gradeId === id)}
               courses={coursesByGrade?.get(id) || []}
-              teachersMap={teachersMap}
               onViewAll={() => setSelectedGradeId(id)}
             />
           ))}

@@ -47,7 +47,7 @@ export default function ReportDetailPage() {
 
       {report.remarks && (
         <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
-          <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Tech Educator Remarks</p>
+          <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Educator Remarks</p>
           <p style={{ margin: 0, fontSize: 13.5, color: T.ink }}>{report.remarks}</p>
         </div>
       )}

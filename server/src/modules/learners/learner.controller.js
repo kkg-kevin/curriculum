@@ -4,14 +4,14 @@ const AuthService = require("../auth/auth.service");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
 const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema } = require("./learner.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
-const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 
-// A learner belongs to a class, and a class belongs to a teacher — this is the only place a
-// teacher's access to a learner is decided, so both getAllLearners and getLearnerById go through it.
+// A learner belongs to a class, and a class has zero or more course-educator links — this is the
+// only place a teacher's access to a learner is decided, so both getAllLearners and
+// getLearnerById go through it.
 function classTaughtByTeacher(classId, teacherId) {
   if (!classId) return false;
-  const cls = ClassModel.findById(classId);
-  return !!cls && cls.classTeacherId === teacherId;
+  return ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === teacherId);
 }
 
 // True whenever `learnerId` has an enrollment link at `hubId` — the membership test a

@@ -1,5 +1,6 @@
 const ClassModel   = require("./class.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 
 const ClassService = {
   async createClass(data) {
@@ -50,6 +51,7 @@ const ClassService = {
     }
     // Learners enrolled here stay enrolled at the hub, just no longer placed in a class.
     LearnerHubLinkModel.clearClassId(id);
+    ClassCourseTeacherLinkModel.deleteByClassId(id);
     return { message: "Class deleted successfully" };
   },
 };

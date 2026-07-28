@@ -1,6 +1,7 @@
 const TeacherModel = require("./teacher.model");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 
 const TeacherService = {
   async createTeacher(data) {
@@ -65,6 +66,7 @@ const TeacherService = {
       throw err;
     }
     TeacherHubLinkModel.deleteByTeacherId(id);
+    ClassCourseTeacherLinkModel.deleteByTeacherId(id);
     return { message: "Teacher deleted successfully" };
   },
 };

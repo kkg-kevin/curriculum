@@ -1,12 +1,14 @@
 const asyncHandler = require("express-async-handler");
 const ReportService = require("./report.service");
 const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { generateReportSchema, updateRemarksSchema } = require("./report.validation");
 
 // Same ownership shape as assessment-submission.controller.js's assertClassAccess — a report
 // always has a classId (a course report only ever comes from a class enrollment), so a
-// teacher/school can only reach reports for their own class.
+// teacher/school can only reach reports for a class they have at least one course-educator
+// link in / their own school.
 function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
@@ -14,7 +16,9 @@ function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
-  if (req.user.role === "teacher") assertOwn(cls.classTeacherId === req.ownTeacher?.id);
+  if (req.user.role === "teacher") {
+    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
+  }
 }
 
 function assertLearnerOwnsReport(req, report) {

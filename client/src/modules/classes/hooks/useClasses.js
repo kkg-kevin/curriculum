@@ -5,6 +5,8 @@ import { classApi } from "../services/classApi";
 export const CLASS_KEYS = {
   all:    ["classes"],
   detail: (id)      => ["classes", "detail", id],
+  courseTeachers: (classId)  => ["classes", "detail", classId, "course-teachers"],
+  teacherLinks:   (teacherId) => ["classes", "course-teacher-links", teacherId],
 };
 
 export function useAllClassesQuery() {
@@ -68,5 +70,50 @@ export function useDeleteClass() {
       toast.success("Class deleted");
     },
     onError: (err) => toast.error(err.message || "Failed to delete class"),
+  });
+}
+
+// Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
+export function useClassCourseTeachers(classId) {
+  return useQuery({
+    queryKey: CLASS_KEYS.courseTeachers(classId),
+    queryFn:  () => classApi.getCourseTeachers(classId),
+    enabled:  !!classId,
+  });
+}
+
+export function useAssignCourseTeacher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, courseId, teacherId }) => classApi.assignCourseTeacher(classId, courseId, teacherId),
+    onSuccess: (_data, { classId, teacherId }) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.courseTeachers(classId) });
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.teacherLinks(teacherId) });
+      toast.success("Educator assigned to course");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to assign educator"),
+  });
+}
+
+export function useUnassignCourseTeacher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, courseId, teacherId }) => classApi.unassignCourseTeacher(classId, courseId, teacherId),
+    onSuccess: (_data, { classId, teacherId }) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.courseTeachers(classId) });
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.teacherLinks(teacherId) });
+      toast.success("Educator removed from course");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove educator"),
+  });
+}
+
+// Every (class, course) link for one teacher, across every class — feeds TeacherViewPage's
+// "my course assignments" list.
+export function useTeacherCourseAssignments(teacherId) {
+  return useQuery({
+    queryKey: CLASS_KEYS.teacherLinks(teacherId),
+    queryFn:  () => classApi.getCourseTeacherLinksForTeacher(teacherId),
+    enabled:  !!teacherId,
   });
 }

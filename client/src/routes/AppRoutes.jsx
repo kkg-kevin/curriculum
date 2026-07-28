@@ -117,7 +117,7 @@ export default function AppRoutes() {
       {/* Curriculum authoring — admin (unrestricted) and curriculumAdmin (own curriculum only,
           enforced server-side). Kept as its own RoleRoute/MainLayout branch, separate from the
           admin-only tree above, so a curriculumAdmin never gets routed anywhere else in the
-          admin app (Schools, Tech Educators, Learners, Settings, etc). Same MainLayout shell and
+          admin app (Schools, Educators, Learners, Settings, etc). Same MainLayout shell and
           the exact same "/curriculum/*" paths admin already uses — Sidebar.jsx filters the nav
           for this role, and the pages themselves don't need to know which role is viewing them. */}
       <Route element={<RoleRoute allow={["admin", "curriculumAdmin"]} />}>
@@ -138,7 +138,7 @@ export default function AppRoutes() {
       {/* Hub network management — admin (unrestricted) and branchAdmin (every hub under their
           one branch only, enforced server-side via req.ownBranchHubIds). Same pattern as the
           curriculum block above: its own RoleRoute/MainLayout branch reusing admin's existing
-          Learning Hubs/Tech Educators/Learners/Classes pages as-is, so a branchAdmin never gets
+          Learning Hubs/Educators/Learners/Classes pages as-is, so a branchAdmin never gets
           routed into Curriculum/Programs/Courses/Settings/etc. Sidebar.jsx filters the nav for
           this role. settings/learning-hubs/create and .../:id/edit are duplicated here (same
           components as the admin-only settings tree) purely so this role can reach them —

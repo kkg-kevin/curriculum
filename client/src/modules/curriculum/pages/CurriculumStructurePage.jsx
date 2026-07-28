@@ -239,8 +239,50 @@ function Spinner() {
 }
 
 /* ── ClassChip — click the name to rename in place, keeping the same id ────── */
+/* ── LevelBadge — click to set/edit this grade's standardized Level tag ────── */
 
-function ClassChip({ cls, onRename, onRemove }) {
+function LevelBadge({ level, onSetLevel }) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(level || "");
+
+  const commit = () => {
+    setEditing(false);
+    onSetLevel(draft.trim());
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { setDraft(level || ""); setEditing(false); }
+        }}
+        placeholder="Level 1"
+        style={{ border: "1px solid #a8d5ee", background: "#fff", outline: "none", font: "inherit", fontSize: "11px", color: "#25476a", borderRadius: "10px", padding: "1px 6px", width: `${Math.max((draft || "Level 1").length, 6)}ch` }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => { setDraft(level || ""); setEditing(true); }}
+      title="Click to set this grade's standardized Level tag"
+      style={{
+        cursor: "pointer", fontSize: "11px", fontWeight: "600", borderRadius: "10px", padding: "1px 7px",
+        backgroundColor: level ? "#fff" : "transparent", border: `1px dashed ${level ? "#a8d5ee" : "#b8d9ee"}`,
+        color: level ? "#25476a" : "#7ba9c9",
+      }}
+    >
+      {level || "+ Level"}
+    </span>
+  );
+}
+
+function ClassChip({ cls, onRename, onRemove, onSetLevel }) {
   const [editing, setEditing] = useState(false);
   const [draft,   setDraft]   = useState(cls.name);
 
@@ -274,6 +316,7 @@ function ClassChip({ cls, onRename, onRemove }) {
       <span onClick={() => { setDraft(cls.name); setEditing(true); }} style={{ cursor: "text" }} title="Click to rename">
         {cls.name}
       </span>
+      <LevelBadge level={cls.level} onSetLevel={(level) => onSetLevel(cls.id, level)} />
       <button type="button" className="class-chip-x" onClick={() => onRemove(cls.id)} title="Remove">×</button>
     </span>
   );
@@ -370,6 +413,10 @@ export default function CurriculumStructurePage() {
       return;
     }
     setClasses((p) => p.map((c) => (c.id === id ? { ...c, name: trimmed } : c)));
+  };
+
+  const setClassLevel = (id, level) => {
+    setClasses((p) => p.map((c) => (c.id === id ? { ...c, level } : c)));
   };
 
   /* Save + navigate */
@@ -615,7 +662,7 @@ export default function CurriculumStructurePage() {
             {classes.length > 0 ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {classes.map((cls) => (
-                  <ClassChip key={cls.id} cls={cls} onRename={renameClass} onRemove={removeClass} />
+                  <ClassChip key={cls.id} cls={cls} onRename={renameClass} onRemove={removeClass} onSetLevel={setClassLevel} />
                 ))}
               </div>
             ) : (

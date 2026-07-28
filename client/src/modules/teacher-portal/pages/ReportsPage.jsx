@@ -92,7 +92,7 @@ export default function ReportsPage() {
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
-    queryFn:  () => classApi.getAll({ classTeacherId: teacher.id, schoolId: selectedHubId }),
+    queryFn:  () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled:  !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];

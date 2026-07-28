@@ -1,0 +1,23 @@
+[
+  {
+    "id": "e569f994-d616-4ca4-9a1a-1807adf279c3",
+    "classId": "7e0b0684-eb68-4270-8424-274879608c1b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "14f13e37-0896-43ef-a06d-62b15a4c0cd5",
+    "createdAt": "2026-07-28T13:56:52.251Z"
+  },
+  {
+    "id": "b9310278-542a-42a5-bbd4-18d6f3ab6aac",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "8d4b3c1a-f295-4e67-b810-3a9c2e0d5f84",
+    "createdAt": "2026-07-28T13:58:39.473Z"
+  },
+  {
+    "id": "4dc05d0f-0b74-4654-a35a-864c26d853e5",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "2e7c5f30-a148-4b93-8d62-7f1e4b09c5d3",
+    "createdAt": "2026-07-28T13:58:56.630Z"
+  }
+]

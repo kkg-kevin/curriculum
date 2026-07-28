@@ -2,7 +2,7 @@
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { useLearningHubQuery as useSchoolQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../services/classApi";
 import { ClassCard } from "../components/ClassCard";
@@ -34,10 +34,7 @@ export default function SchoolClassesPage() {
     enabled: !!schoolId,
   });
 
-  const { data: hubTeachers } = useHubTeachersQuery(schoolId);
-
   const classes     = classesData?.data || [];
-  const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
   const activeCount = classes.filter((c) => c.status === "active").length;
 
   // Fetched directly by id (not the full curricula list — a school/teacher account can only
@@ -175,7 +172,7 @@ export default function SchoolClassesPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {classes.map((c) => <ClassCard key={c.id} cls={c} teachersMap={teachersMap} />)}
+          {classes.map((c) => <ClassCard key={c.id} cls={c} />)}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useClassQuery, useDeleteClass } from "../hooks/useClasses";
+import { useClassQuery, useDeleteClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher } from "../hooks/useClasses";
 import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
@@ -15,6 +15,50 @@ function DetailRow({ label, value, empty = "—" }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
       <span style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value || empty}</span>
+    </div>
+  );
+}
+
+// One course chip's educator badges + inline assign control — a course can have more than one
+// co-equal educator (equal peers, full access), replacing the old single Class.classTeacherId.
+function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUnassign, isAssigning }) {
+  const [selectedTeacherId, setSelectedTeacherId] = useState("");
+  const assignedIds = new Set(links.map((l) => l.teacherId));
+  const available = (hubTeachers || []).filter((t) => !assignedIds.has(t.id));
+
+  return (
+    <div style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{course.name}</p>
+      {links.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {links.map((l) => (
+            <span key={l.teacherId} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 600, backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", color: "#25476a" }}>
+              {l.teacher.firstName} {l.teacher.lastName}
+              <button type="button" onClick={() => onUnassign(course.id, l.teacherId)} style={{ background: "none", border: "none", color: "#25476a", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }} title="Unassign">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      {available.length > 0 && (
+        <div style={{ display: "flex", gap: 6 }}>
+          <select
+            value={selectedTeacherId}
+            onChange={(e) => setSelectedTeacherId(e.target.value)}
+            style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151", backgroundColor: "#F9FAFB" }}
+          >
+            <option value="">+ Assign educator…</option>
+            {available.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+          </select>
+          <button
+            type="button"
+            disabled={!selectedTeacherId || isAssigning}
+            onClick={() => { onAssign(course.id, selectedTeacherId); setSelectedTeacherId(""); }}
+            style={{ padding: "6px 12px", backgroundColor: !selectedTeacherId || isAssigning ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !selectedTeacherId || isAssigning ? "not-allowed" : "pointer" }}
+          >
+            Assign
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -56,6 +100,12 @@ export default function ClassViewPage() {
 
   const { data: hubTeachers } = useHubTeachersQuery(cls?.schoolId);
 
+  // Which educator(s) teach each of this class's courses — replaces the old single
+  // Class.classTeacherId, a class can now have a different set of educators per course.
+  const { data: courseTeacherLinks = [] } = useClassCourseTeachers(cls?.id);
+  const { mutate: assignCourseTeacher, isPending: isAssigning } = useAssignCourseTeacher();
+  const { mutate: unassignCourseTeacher } = useUnassignCourseTeacher();
+
   const { data: learnersData } = useQuery({
     queryKey: ["learners", "byClass", cls?.id],
     queryFn: () => learnerApi.getAll({ classId: cls.id }),
@@ -71,10 +121,12 @@ export default function ClassViewPage() {
   }
 
   const schoolsMap = (schoolsData?.data || []).reduce((m, s) => { m[s.id] = s; return m; }, {});
-  const teachersMap = (hubTeachers || []).reduce((m, t) => { m[t.id] = t; return m; }, {});
 
-  const school  = schoolsMap[cls.schoolId];
-  const teacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
+  const school = schoolsMap[cls.schoolId];
+  const linksByCourseId = (classCourses || []).reduce((m, c) => {
+    m[c.id] = courseTeacherLinks.filter((l) => l.courseId === c.id);
+    return m;
+  }, {});
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -134,16 +186,15 @@ export default function ClassViewPage() {
             <DetailRow label="Curriculum"    value={curriculum?.name} />
             <DetailRow label="Grade"         value={cls.gradeName} />
             <DetailRow label="Academic Year" value={cls.academicYear} />
-            <DetailRow label="Class Tech Educator" value={teacher ? `${teacher.firstName} ${teacher.lastName}` : null} />
             <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
             <DetailRow label="Status"        value={cls.status === "active" ? "Active" : "Inactive"} />
           </div>
         </div>
 
-        {/* Courses this class inherited from the curriculum */}
+        {/* Courses this class inherited from the curriculum, with per-course educator assignment */}
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Courses</h3>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Courses & Educators</h3>
             {!coursesLoading && (
               <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>{classCourses?.length || 0}</span>
             )}
@@ -158,11 +209,18 @@ export default function ClassViewPage() {
               <p style={{ margin: 0, fontSize: 13 }}>No courses assigned to {cls.gradeName} yet in this curriculum.</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {classCourses.map((c) => (
-                <span key={c.id} style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: "#e8f5fb", border: "1.5px solid #a8d5ee", color: "#25476a" }}>
-                  {c.name}
-                </span>
+                <CourseEducatorRow
+                  key={c.id}
+                  classId={cls.id}
+                  course={c}
+                  links={linksByCourseId[c.id] || []}
+                  hubTeachers={hubTeachers}
+                  isAssigning={isAssigning}
+                  onAssign={(courseId, teacherId) => assignCourseTeacher({ classId: cls.id, courseId, teacherId })}
+                  onUnassign={(courseId, teacherId) => unassignCourseTeacher({ classId: cls.id, courseId, teacherId })}
+                />
               ))}
             </div>
           )}

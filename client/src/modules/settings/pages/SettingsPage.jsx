@@ -250,6 +250,13 @@ const TABS = [
   { key: "learning-areas", label: "Learning Areas" },
   { key: "inventory", label: "Inventory" },
   { key: "learning-hubs", label: "Learning Hubs" },
+];
+
+// Branches groups related Learning Hubs under one centralized admin — nested here as a sub-tab
+// of Learning Hubs rather than its own top-level Settings tab, since it's a view onto the same
+// hub network, not an independent catalog.
+const HUB_SUB_TABS = [
+  { key: "hubs", label: "Hubs" },
   { key: "branches", label: "Branches" },
 ];
 
@@ -259,6 +266,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState(
     TABS.some((t) => t.key === requestedTab) ? requestedTab : "competencies"
   );
+  const [hubSub, setHubSub] = useState("hubs");
 
   useEffect(() => {
     const el = document.createElement("style");
@@ -294,8 +302,22 @@ export default function SettingsPage() {
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
-        {activeTab === "learning-hubs" && <LearningHubsPanel />}
-        {activeTab === "branches" && <BranchesPanel />}
+        {activeTab === "learning-hubs" && (
+          <div>
+            <div className="stg-tabs" style={{ marginBottom: "18px" }}>
+              {HUB_SUB_TABS.map((tab) => (
+                <button
+                  key={tab.key} type="button"
+                  className={`stg-tab-btn${hubSub === tab.key ? " active" : ""}`}
+                  onClick={() => setHubSub(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            {hubSub === "hubs" ? <LearningHubsPanel /> : <BranchesPanel />}
+          </div>
+        )}
       </div>
     </div>
   );

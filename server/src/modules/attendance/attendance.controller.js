@@ -1,12 +1,14 @@
 const asyncHandler = require("express-async-handler");
 const AttendanceService = require("./attendance.service");
 const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const { markAttendanceSchema } = require("./attendance.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
-// Attendance belongs to a Class, which itself belongs to a school and (for the class-teacher
-// case) a teacher — so every route here first loads the target Class and reuses the exact same
-// ownership checks class.controller.js already applies to the class itself.
+// Attendance belongs to a Class, which itself belongs to a school and (for the teacher case) is
+// gated by whether that teacher has at least one course-educator link in the class — so every
+// route here first loads the target Class and reuses the exact same ownership checks
+// class.controller.js already applies to the class itself.
 function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
@@ -14,7 +16,9 @@ function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
-  if (req.user.role === "teacher") assertOwn(cls.classTeacherId === req.ownTeacher?.id);
+  if (req.user.role === "teacher") {
+    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
+  }
 }
 
 const markAttendance = asyncHandler(async (req, res) => {

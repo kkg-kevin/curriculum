@@ -8,7 +8,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Learning Hubs", path: "/learning-hubs" },
   { name: "Curriculum", path: "/curriculum" },
   { name: "Learners", path: "/learners" },
-  { name: "Tech Educators", path: "/teachers" },
+  { name: "Educators", path: "/teachers" },
   { name: "Classes", path: "/classes" },
   { name: "Programs", path: "/programs" },
   { name: "Courses", path: "/courses" },
@@ -28,7 +28,7 @@ const CURRICULUM_ADMIN_MENU_ITEMS = [
 // branch, scoped server-side) — same reasoning as CURRICULUM_ADMIN_MENU_ITEMS above.
 const BRANCH_ADMIN_MENU_ITEMS = [
   { name: "Learning Hubs", path: "/learning-hubs" },
-  { name: "Tech Educators", path: "/teachers" },
+  { name: "Educators", path: "/teachers" },
   { name: "Learners", path: "/learners" },
   { name: "Classes", path: "/classes" },
 ];

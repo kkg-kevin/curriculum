@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClassQuery, useUpdateClass } from "../hooks/useClasses";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -13,9 +12,8 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 const ACCENT = "#25476a";
 
 const editSchema = z.object({
-  classTeacherId: z.string().nullable().optional(),
-  capacity:       z.coerce.number().int().positive().nullable().optional(),
-  status:         z.enum(["active", "inactive"]).default("active"),
+  capacity: z.coerce.number().int().positive().nullable().optional(),
+  status:   z.enum(["active", "inactive"]).default("active"),
 });
 
 const S = {
@@ -41,21 +39,17 @@ export default function EditClassPage() {
 
   const { data: curriculum } = useCurriculumQuery(cls?.curriculumId);
 
-  const { data: hubTeachers } = useHubTeachersQuery(cls?.schoolId);
-  const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
-
   const { register, control, handleSubmit, reset, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(editSchema),
-    defaultValues: { classTeacherId: null, capacity: null, status: "active" },
+    defaultValues: { capacity: null, status: "active" },
     mode: "onTouched",
   });
 
   useEffect(() => {
     if (cls) {
       reset({
-        classTeacherId: cls.classTeacherId || null,
-        capacity:       cls.capacity       || null,
-        status:         cls.status         || "active",
+        capacity: cls.capacity || null,
+        status:   cls.status   || "active",
       });
     }
   }, [cls, reset]);
@@ -93,7 +87,7 @@ export default function EditClassPage() {
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>Edit</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Edit Class</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Assign a class teacher, set capacity, or change status.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Set capacity or change status. Assign educators to courses from the class's own page.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={handleCancel} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -133,29 +127,8 @@ export default function EditClassPage() {
         {/* Editable form */}
         <form id="edit-class-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div style={S.section}>
-            <p style={S.heading}>Assign &amp; Configure</p>
+            <p style={S.heading}>Configure</p>
             <hr style={S.divider} />
-
-            <div style={S.field}>
-              <label style={S.label}>Class Tech Educator</label>
-              <Controller
-                name="classTeacherId"
-                control={control}
-                render={({ field }) => (
-                  <select
-                    value={field.value || ""}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    style={S.select}
-                  >
-                    <option value="">— None —</option>
-                    {activeTeachers.map((t) => (
-                      <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
-                    ))}
-                  </select>
-                )}
-              />
-              <span style={S.hint}>Only active teachers at this school are shown.</span>
-            </div>
 
             <div style={S.row}>
               <div style={S.field}>

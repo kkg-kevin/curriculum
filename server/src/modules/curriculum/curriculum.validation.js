@@ -36,8 +36,11 @@ const periodSchema = z
   });
 
 const classSchema = z.object({
-  id:   z.string().min(1),
-  name: z.string().min(1, "Class name is required"),
+  id:    z.string().min(1),
+  name:  z.string().min(1, "Class name is required"),
+  // A standardized tag (e.g. "Level 1") independent of whatever this curriculum calls the
+  // grade, so grades can be compared/tracked across curricula that name them differently.
+  level: z.string().trim().optional().default(""),
 });
 
 const createCurriculumSchema = z.object({
