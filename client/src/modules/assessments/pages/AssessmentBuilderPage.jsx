@@ -336,10 +336,13 @@ function IndicatorPicker({ options, selectedIds, onChange }) {
   );
 }
 
-// Reconciles an IndicatorPicker's selected-id list back onto an `indicatorMarks` array —
-// ids that remain keep their existing marks value, newly-added ids start at 0.
-function syncIndicatorMarks(indicatorMarks, newIds) {
-  return newIds.map((id) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: 0 });
+// Reconciles an IndicatorPicker's selected-id list back onto an `indicatorMarks` array — ids
+// that remain keep their existing marks value; a newly-added id defaults to an even split of the
+// entry's own points value (not 0), so tagging a competency onto a question never silently zeroes
+// out its score before the author gets a chance to fine-tune the per-indicator split.
+function syncIndicatorMarks(indicatorMarks, newIds, totalPoints = 0) {
+  const evenShare = newIds.length > 0 ? Math.round((totalPoints / newIds.length) * 100) / 100 : 0;
+  return newIds.map((id) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: evenShare });
 }
 
 /* ── entry factory ──────────────────────────────────────────────────────── */
@@ -554,7 +557,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <IndicatorPicker
           options={indicatorOptions}
           selectedIds={indicatorMarks.map((m) => m.indicatorId)}
-          onChange={(ids) => set("indicatorMarks", syncIndicatorMarks(indicatorMarks, ids))}
+          onChange={(ids) => set("indicatorMarks", syncIndicatorMarks(indicatorMarks, ids, entry.points))}
         />
       )}
 
@@ -582,7 +585,10 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
                 );
               })}
             </div>
-            <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Total: {entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</p>
+            <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: entryMarks(entry) === 0 ? 700 : 400, color: entryMarks(entry) === 0 ? "#DC2626" : "#9CA3AF" }}>
+              Total: {entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}
+              {entryMarks(entry) === 0 && " — worth nothing until you set marks above"}
+            </p>
           </div>
         )
       )}
@@ -834,7 +840,7 @@ function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
                 <IndicatorPicker
                   options={indicatorOptions}
                   selectedIds={indicatorMarks.map((m) => m.indicatorId)}
-                  onChange={(ids) => update(c.id, { indicatorMarks: syncIndicatorMarks(indicatorMarks, ids) })}
+                  onChange={(ids) => update(c.id, { indicatorMarks: syncIndicatorMarks(indicatorMarks, ids, c.points) })}
                 />
               </div>
               {indicatorMarks.length > 0 && (
@@ -855,7 +861,10 @@ function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
                       );
                     })}
                   </div>
-                  <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Total: {entryMarks(c)} pt{entryMarks(c) !== 1 ? "s" : ""}</p>
+                  <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: entryMarks(c) === 0 ? 700 : 400, color: entryMarks(c) === 0 ? "#DC2626" : "#9CA3AF" }}>
+                    Total: {entryMarks(c)} pt{entryMarks(c) !== 1 ? "s" : ""}
+                    {entryMarks(c) === 0 && " — worth nothing until you set marks above"}
+                  </p>
                 </div>
               )}
             </div>

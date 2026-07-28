@@ -34,7 +34,6 @@ function FeedbackRow({ index, item, response, autoResult, feedback }) {
         <span style={{ fontSize: 11, fontWeight: 700, color: good ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>{marks}/{max}</span>
       </div>
       <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted }}>Your answer: {formatResponse(response)}</p>
-      {feedback?.comment && <p style={{ margin: "6px 0 0 20px", fontSize: 12.5, color: T.accent, fontStyle: "italic" }}>"{feedback.comment}"</p>}
     </div>
   );
 }
@@ -205,7 +204,6 @@ export default function AssessmentDetailPage() {
                       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{c.criterion}</p>
                       <span style={{ fontSize: 12, fontWeight: 700, color: T.accent, whiteSpace: "nowrap" }}>{fb?.marks ?? 0}/{max}</span>
                     </div>
-                    {fb?.comment && <p style={{ margin: "6px 0 0", fontSize: 12.5, color: T.accent, fontStyle: "italic" }}>"{fb.comment}"</p>}
                   </div>
                 );
               })}

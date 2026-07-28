@@ -46,7 +46,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-            "marks": 0
+            "marks": 2
           }
         ]
       },
@@ -67,7 +67,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
-            "marks": 0
+            "marks": 1
           }
         ]
       },
@@ -101,7 +101,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
-            "marks": 0
+            "marks": 3
           }
         ]
       },
@@ -127,7 +127,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
-            "marks": 0
+            "marks": 3
           }
         ]
       },
@@ -153,7 +153,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
-            "marks": 0
+            "marks": 2
           }
         ]
       },
@@ -177,7 +177,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
-            "marks": 0
+            "marks": 2
           }
         ]
       },
@@ -198,7 +198,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "0431502c-8319-484f-910b-996422bee428",
-            "marks": 0
+            "marks": 3
           }
         ]
       },
@@ -219,11 +219,11 @@
         "indicatorMarks": [
           {
             "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
-            "marks": 0
+            "marks": 1.5
           },
           {
             "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
-            "marks": 0
+            "marks": 1.5
           }
         ]
       },
@@ -247,7 +247,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-            "marks": 0
+            "marks": 1
           }
         ]
       }
@@ -279,7 +279,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-            "marks": 0
+            "marks": 10
           }
         ]
       },
@@ -292,7 +292,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
-            "marks": 0
+            "marks": 10
           }
         ]
       },
@@ -305,11 +305,11 @@
         "indicatorMarks": [
           {
             "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
-            "marks": 0
+            "marks": 5
           },
           {
             "indicatorId": "0431502c-8319-484f-910b-996422bee428",
-            "marks": 0
+            "marks": 5
           }
         ]
       },
@@ -322,11 +322,11 @@
         "indicatorMarks": [
           {
             "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
-            "marks": 0
+            "marks": 5
           },
           {
             "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
-            "marks": 0
+            "marks": 5
           }
         ]
       },
@@ -339,7 +339,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
-            "marks": 0
+            "marks": 10
           }
         ]
       },
@@ -352,11 +352,11 @@
         "indicatorMarks": [
           {
             "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
-            "marks": 0
+            "marks": 5
           },
           {
             "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
-            "marks": 0
+            "marks": 5
           }
         ]
       },
@@ -369,7 +369,7 @@
         "indicatorMarks": [
           {
             "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
-            "marks": 0
+            "marks": 10
           }
         ]
       }

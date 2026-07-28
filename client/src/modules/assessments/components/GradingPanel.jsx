@@ -22,11 +22,11 @@ function formatResponse(response) {
   return String(response);
 }
 
-function AutoGradedRow({ index, item, response, autoResult, feedback, onChange }) {
+function AutoGradedRow({ index, item, response, autoResult }) {
   const correct = autoResult?.correct;
   return (
-    <div style={{ padding: "12px 14px", backgroundColor: correct ? "#ECFDF5" : "#FFF5F5", border: `1px solid ${correct ? "#A7F3D0" : "#FECACA"}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+    <div style={{ padding: "12px 14px", backgroundColor: correct ? "#ECFDF5" : "#FFF5F5", border: `1px solid ${correct ? "#A7F3D0" : "#FECACA"}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
         <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
         <span style={{ fontSize: 11, fontWeight: 700, color: correct ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
@@ -34,11 +34,6 @@ function AutoGradedRow({ index, item, response, autoResult, feedback, onChange }
         </span>
       </div>
       <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted }}>Answer: {formatResponse(response)}</p>
-      <input
-        type="text" placeholder="Feedback (optional)" value={feedback.comment}
-        onChange={(e) => onChange({ ...feedback, comment: e.target.value })}
-        style={{ ...fieldStyle, marginLeft: 20 }}
-      />
     </div>
   );
 }
@@ -80,9 +75,8 @@ function ManualGradeRow({ index, item, response, feedback, indicatorNameById, on
       <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.ink, backgroundColor: "#fff", border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px" }}>
         {formatResponse(response)}
       </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 20, flexWrap: "wrap" }}>
+      <div style={{ marginLeft: 20 }}>
         <MarksInputs entry={item} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
-        <input type="text" placeholder="Feedback (optional)" value={feedback.comment} onChange={(e) => onChange({ ...feedback, comment: e.target.value })} style={{ ...fieldStyle, flex: 1, minWidth: 180 }} />
       </div>
     </div>
   );
@@ -93,18 +87,16 @@ function RubricRow({ criterion, feedback, indicatorNameById, onChange }) {
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{criterion.criterion}</p>
       {criterion.description && <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{criterion.description}</p>}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <MarksInputs entry={criterion} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
-        <input type="text" placeholder="Feedback (optional)" value={feedback.comment} onChange={(e) => onChange({ ...feedback, comment: e.target.value })} style={{ ...fieldStyle, flex: 1, minWidth: 180 }} />
-      </div>
+      <MarksInputs entry={criterion} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
     </div>
   );
 }
 
 // Teacher's grading surface for one learner's submission. Auto-gradable items are shown
 // read-only (already scored server-side at submit time — see grading.utils.js); everything else
-// — short-answer/unstructured/submission items and every rubric criterion — gets a marks +
-// comment input here. Saving combines both into the release the learner sees.
+// — short-answer/unstructured/submission items and every rubric criterion — gets a marks input
+// here. Feedback is deliberately only the single Overall Feedback field below, not per-question —
+// that one note is what the learner/guardian sees, and what feeds into the course report.
 export default function GradingPanel({ assessment, submission, onSave, isSaving }) {
   const items = useMemo(() => (assessment.items || []).map(normalizeLegacyItem), [assessment.items]);
   const rubric = assessment.rubric || [];
@@ -125,20 +117,19 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     return map;
   }, [submission.itemFeedback]);
 
-  // Every item gets a feedback slot, not just the ones needing manual marks — an auto-graded
-  // item's `marks` here always stays 0 (its real score lives in autoScore/autoItemResults
-  // already) so it never double-counts into manualScore below; only its comment is ever edited.
+  // One marks slot per manually-graded item/rubric criterion — feedback is deliberately only
+  // ever the single Overall Feedback field below, not per-question, so there's nothing to
+  // populate for auto-graded items here at all.
   const [itemFeedback, setItemFeedback] = useState(() => {
     const map = new Map();
-    items.forEach((i) => {
+    items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      const isAuto = AUTO_GRADABLE_KINDS.includes(i.kind);
-      map.set(i.id, { marks: isAuto ? 0 : (existing?.marks ?? 0), comment: existing?.comment ?? "" });
+      map.set(i.id, { marks: existing?.marks ?? 0 });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
-      map.set(key, { marks: existing?.marks ?? 0, comment: existing?.comment ?? "" });
+      map.set(key, { marks: existing?.marks ?? 0 });
     });
     return map;
   });
@@ -152,14 +143,11 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
 
   const autoItems = items.filter((i) => AUTO_GRADABLE_KINDS.includes(i.kind));
   const manualItems = items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind));
-  const autoItemIds = useMemo(() => new Set(autoItems.map((i) => i.id)), [autoItems]);
 
-  // Auto-graded items are excluded here even though their feedback.marks is always 0 anyway —
-  // being explicit means this can never double-count if that ever changes.
-  const manualScore = [...itemFeedback.entries()].reduce((sum, [key, f]) => (autoItemIds.has(key) ? sum : sum + (Number(f.marks) || 0)), 0);
+  const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
 
   const handleSave = () => {
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, comment: f.comment }));
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
@@ -172,15 +160,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {autoItems.map((item, i) => (
-              <AutoGradedRow
-                key={item.id}
-                index={i}
-                item={item}
-                response={answersByItem.get(item.id)}
-                autoResult={autoByItem.get(item.id)}
-                feedback={itemFeedback.get(item.id) || { marks: 0, comment: "" }}
-                onChange={(f) => setFeedback(item.id, f)}
-              />
+              <AutoGradedRow key={item.id} index={i} item={item} response={answersByItem.get(item.id)} autoResult={autoByItem.get(item.id)} />
             ))}
           </div>
         </div>
@@ -198,7 +178,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
                 index={autoItems.length + i}
                 item={item}
                 response={answersByItem.get(item.id)}
-                feedback={itemFeedback.get(item.id) || { marks: 0, comment: "" }}
+                feedback={itemFeedback.get(item.id) || { marks: 0 }}
                 indicatorNameById={indicatorNameById}
                 onChange={(f) => setFeedback(item.id, f)}
               />
@@ -214,7 +194,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {rubric.map((c) => (
-              <RubricRow key={c.id} criterion={c} feedback={itemFeedback.get(`rubric:${c.id}`) || { marks: 0, comment: "" }} indicatorNameById={indicatorNameById} onChange={(f) => setFeedback(`rubric:${c.id}`, f)} />
+              <RubricRow key={c.id} criterion={c} feedback={itemFeedback.get(`rubric:${c.id}`) || { marks: 0 }} indicatorNameById={indicatorNameById} onChange={(f) => setFeedback(`rubric:${c.id}`, f)} />
             ))}
           </div>
         </div>
