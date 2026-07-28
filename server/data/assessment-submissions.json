@@ -242,7 +242,7 @@
     "autoItemResults": [],
     "manualScore": null,
     "totalScore": null,
-    "maxScore": 0,
+    "maxScore": 70,
     "requiresManualGrading": true,
     "itemFeedback": [],
     "overallFeedback": "",
@@ -491,7 +491,7 @@
     "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
     "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
     "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
-    "status": "submitted",
+    "status": "graded",
     "answers": [
       {
         "itemId": "q1",
@@ -599,21 +599,75 @@
         "maxMarks": 0
       }
     ],
-    "manualScore": null,
-    "totalScore": null,
-    "maxScore": 0,
+    "manualScore": 4,
+    "totalScore": 4,
+    "maxScore": 20,
     "requiresManualGrading": true,
-    "itemFeedback": [],
+    "itemFeedback": [
+      {
+        "itemId": "q7",
+        "marks": 2,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "q8",
+        "marks": 2,
+        "comment": "",
+        "indicatorMarks": []
+      }
+    ],
     "overallFeedback": "",
     "submittedAt": "2026-07-28T09:06:42.819Z",
-    "gradedAt": null,
-    "gradedBy": null,
-    "reportPublished": false,
-    "reportPublishedAt": null,
-    "reportPublishedBy": null,
+    "gradedAt": "2026-07-28T10:09:31.874Z",
+    "gradedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-28T10:09:36.405Z",
+    "reportPublishedBy": "bb66af51-e545-4b2c-ac66-8736b3e368db",
     "id": "04cc4a3f-7f1f-4eec-9076-f5d58259d899",
     "createdAt": "2026-07-28T09:05:23.227Z",
-    "updatedAt": "2026-07-28T09:06:42.820Z",
-    "indicatorBreakdown": []
+    "updatedAt": "2026-07-28T10:09:36.408Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 0,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "marksEarned": 0,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 0,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 0,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "marksEarned": 0,
+        "marksPossible": 4
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 2,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "marksEarned": 1,
+        "marksPossible": 1.5
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 1,
+        "marksPossible": 1.5
+      }
+    ]
   }
 ]
