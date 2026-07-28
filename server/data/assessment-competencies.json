@@ -52,5 +52,41 @@
     "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
     "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
     "createdAt": "2026-07-16T11:46:52.690Z"
+  },
+  {
+    "id": "3ce710e0-937f-4727-85b6-c926621bc654",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+    "createdAt": "2026-07-28T07:08:10.536Z"
+  },
+  {
+    "id": "f3c05105-2ca0-418f-a3fc-150c883bc052",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+    "createdAt": "2026-07-28T07:08:10.650Z"
+  },
+  {
+    "id": "890e3f0e-2571-49f5-95a5-da7af8d5a4e3",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+    "createdAt": "2026-07-28T07:08:10.717Z"
+  },
+  {
+    "id": "83ffda70-7d8a-421d-abc0-f26a5396a5f2",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+    "createdAt": "2026-07-28T07:08:10.782Z"
+  },
+  {
+    "id": "30e2c364-3548-4eb4-bc17-4fdd92279730",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+    "createdAt": "2026-07-28T07:08:10.858Z"
+  },
+  {
+    "id": "648bd723-1c65-4056-9599-e2caad2d3b38",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+    "createdAt": "2026-07-28T07:08:10.964Z"
   }
 ]

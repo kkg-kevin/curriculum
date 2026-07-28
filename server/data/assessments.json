@@ -578,15 +578,16 @@
       {
         "id": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
         "name": "Foundational Skills",
-        "order": 1
+        "order": 0
       }
     ],
     "items": [
       {
         "id": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "question": "<p>What is 7 + 5?</p>",
         "kind": "mcqSingle",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>What is 7 + 5?</p>",
+        "points": 2,
         "options": [
           "10",
           "11",
@@ -594,20 +595,36 @@
           "13"
         ],
         "correctAnswer": "12",
-        "points": 2,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 2
+          },
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 0
+          }
+        ]
       },
       {
         "id": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "question": "<p>Which word is spelled correctly?</p>",
         "kind": "mcqSingle",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>Which word is spelled correctly?</p>",
+        "points": 2,
         "options": [
           "Recieve",
           "Receive",
@@ -615,36 +632,64 @@
           "Receve"
         ],
         "correctAnswer": "Receive",
-        "points": 2,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+            "marks": 1
+          },
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "question": "<p>The sun rises in the East.</p>",
         "kind": "trueFalse",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>The sun rises in the East.</p>",
+        "points": 1,
         "options": [],
         "correctAnswer": "True",
-        "points": 1,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "question": "<p>What is the next number in the sequence: 2, 4, 6, 8, ___?</p>",
         "kind": "mcqSingle",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>What is the next number in the sequence: 2, 4, 6, 8, ___?</p>",
+        "points": 2,
         "options": [
           "9",
           "10",
@@ -652,38 +697,66 @@
           "14"
         ],
         "correctAnswer": "10",
-        "points": 2,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 1
+          },
+          {
+            "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "question": "<p>Complete the sentence: The opposite of \"hot\" is ___.</p>",
         "kind": "fillBlank",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>Complete the sentence: The opposite of \"hot\" is ___.</p>",
+        "points": 1,
         "options": [],
         "correctAnswer": "",
+        "pairs": [],
         "blanks": [
           "cold"
         ],
-        "points": 1,
-        "pairs": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "question": "<p>Match each country to its capital city.</p>",
         "kind": "matching",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>Match each country to its capital city.</p>",
+        "points": 3,
         "options": [],
         "correctAnswer": "",
         "pairs": [
@@ -700,19 +773,39 @@
             "right": "Tokyo"
           }
         ],
-        "points": 3,
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 1
+          },
+          {
+            "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+            "marks": 1
+          },
+          {
+            "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "question": "<p>Which shape has three sides?</p>",
         "kind": "mcqSingle",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>Which shape has three sides?</p>",
+        "points": 1,
         "options": [
           "Square",
           "Triangle",
@@ -720,30 +813,53 @@
           "Rectangle"
         ],
         "correctAnswer": "Triangle",
-        "points": 1,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+            "marks": 1
+          }
+        ]
       },
       {
         "id": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "question": "<p>A week has seven days.</p>",
         "kind": "trueFalse",
         "sectionId": "f04a40d5-b85c-4a48-82b9-3920b81b0850",
-        "question": "<p>A week has seven days.</p>",
+        "points": 1,
         "options": [],
         "correctAnswer": "True",
-        "points": 1,
         "pairs": [],
         "blanks": [],
         "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
         "acceptedFileTypes": [],
         "taskType": null,
         "submissionKinds": [],
-        "indicatorMarks": []
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 1
+          }
+        ]
       }
     ],
     "rubric": [],
@@ -752,6 +868,6 @@
     "milestones": [],
     "id": "0c25da97-17cf-4d05-ac57-0b6364933618",
     "createdAt": "2026-07-27T11:32:45.805Z",
-    "updatedAt": "2026-07-27T11:32:45.810Z"
+    "updatedAt": "2026-07-28T07:08:10.468Z"
   }
 ]

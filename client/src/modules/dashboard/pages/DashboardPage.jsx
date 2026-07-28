@@ -776,7 +776,7 @@ export default function DashboardPage() {
                       key={l.id}
                       avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), gradient: "linear-gradient(135deg, #1a3550, #25476a)" }}
                       primary={`${l.firstName} ${l.lastName}`}
-                      secondary={l.admissionNumber || l.id}
+                      secondary={l.admissionNumber || (l.hubCount > 0 ? `${l.hubCount} hub${l.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
                       badge={l.status}
                       badgeColor={sc.color}
                       badgeBg={sc.bg}

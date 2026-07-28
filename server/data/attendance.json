@@ -152,5 +152,71 @@
     "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-27T11:48:22.525Z",
     "updatedAt": "2026-07-27T11:48:22.525Z"
+  },
+  {
+    "id": "02aabbb1-3d10-4dd1-b7d0-60dba12a31d0",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-28",
+    "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:58:52.388Z",
+    "updatedAt": "2026-07-28T06:58:52.388Z"
+  },
+  {
+    "id": "eeb43a52-4e9f-466c-9e76-c815cb43c0cc",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-28",
+    "learnerId": "1bf69a21-d2f2-4624-85bf-26616ec595b4",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:58:52.388Z",
+    "updatedAt": "2026-07-28T06:58:52.388Z"
+  },
+  {
+    "id": "92461a41-e67b-4d1e-9406-1c426c4e87ea",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "date": "2026-07-28",
+    "learnerId": "e36d2244-627b-4b29-a5a8-7a60af39674e",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:58:52.388Z",
+    "updatedAt": "2026-07-28T06:58:52.388Z"
+  },
+  {
+    "id": "593dc711-cc7a-4322-9e68-871586e57210",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "date": "2026-07-28",
+    "learnerId": "96024e19-0ec2-4df2-bc51-d7075c7d790c",
+    "status": "absent",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:59:06.261Z",
+    "updatedAt": "2026-07-28T06:59:06.261Z"
+  },
+  {
+    "id": "8d7e2391-d7d3-4ea1-bbb3-2dd10fae53d0",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "date": "2026-07-28",
+    "learnerId": "237993bb-87c9-4f33-a500-4cdce3d735e9",
+    "status": "absent",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:59:06.261Z",
+    "updatedAt": "2026-07-28T06:59:06.261Z"
+  },
+  {
+    "id": "eb6a44ad-5096-4f54-8483-3ceaa55ecdd0",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "date": "2026-07-28",
+    "learnerId": "8e745b53-b69a-46cf-af4f-207fcbd0077e",
+    "status": "present",
+    "notes": "",
+    "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
+    "createdAt": "2026-07-28T06:59:06.261Z",
+    "updatedAt": "2026-07-28T06:59:06.261Z"
   }
 ]

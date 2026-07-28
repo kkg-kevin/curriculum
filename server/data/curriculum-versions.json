@@ -4613,8 +4613,8 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "academicYearId": "08bd4695-dcef-4c72-b853-1820f29ece53",
     "versionNumber": 9,
-    "status": "published",
-    "isCurrent": true,
+    "status": "inactive",
+    "isCurrent": false,
     "versionOf": null,
     "content": [
       {
@@ -5109,7 +5109,7 @@
       }
     ],
     "createdAt": "2026-07-16T06:52:26.711Z",
-    "updatedAt": "2026-07-16T06:52:27.987Z"
+    "updatedAt": "2026-07-28T06:28:36.809Z"
   },
   {
     "id": "801c0687-5908-481d-a104-2dff7aef76d4",
@@ -5901,8 +5901,8 @@
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "academicYearId": "656d63eb-4544-4b7b-a15c-d85a7c590cc4",
     "versionNumber": 11,
-    "status": "published",
-    "isCurrent": true,
+    "status": "inactive",
+    "isCurrent": false,
     "versionOf": null,
     "content": [
       {
@@ -6516,6 +6516,1887 @@
       }
     ],
     "createdAt": "2026-07-27T06:33:19.851Z",
-    "updatedAt": "2026-07-27T06:33:21.140Z"
+    "updatedAt": "2026-07-28T06:29:05.376Z"
+  },
+  {
+    "id": "34bf99f2-5c03-40cc-a2b8-3decf52a5852",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "academicYearId": "08bd4695-dcef-4c72-b853-1820f29ece53",
+    "versionNumber": 10,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Semester 1",
+        "classes": [
+          {
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9",
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:25.034Z"
+              }
+            ]
+          },
+          {
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba",
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:26.707Z"
+              }
+            ]
+          },
+          {
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386",
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:28.059Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Semester 2",
+        "classes": [
+          {
+            "classId": "72480379-e455-42bf-a5ee-8a2786c653e9",
+            "className": "Grade 1",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:31.360Z"
+              }
+            ]
+          },
+          {
+            "classId": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba",
+            "className": "Grade 2",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:32.791Z"
+              }
+            ]
+          },
+          {
+            "classId": "21ca6481-dc80-4bc2-a4cc-4e6963dee386",
+            "className": "Grade 3",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:34.303Z"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-28T06:28:35.661Z",
+    "updatedAt": "2026-07-28T06:28:36.816Z"
+  },
+  {
+    "id": "fab09d31-9c12-4054-8014-837fa7e46d17",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "academicYearId": "656d63eb-4544-4b7b-a15c-d85a7c590cc4",
+    "versionNumber": 12,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:47.825Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:49.366Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:50.873Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:54.189Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:55.663Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:57.096Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "classId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+            "className": "Grade 4",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:28:59.605Z"
+              }
+            ]
+          },
+          {
+            "classId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+            "className": "Grade 5",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:29:01.126Z"
+              }
+            ]
+          },
+          {
+            "classId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+            "className": "Grade 6",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-07-28T06:29:02.492Z"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-28T06:29:04.389Z",
+    "updatedAt": "2026-07-28T06:29:05.386Z"
   }
 ]

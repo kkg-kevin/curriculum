@@ -127,8 +127,27 @@ export function useGradeSubmission() {
       // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
       // so LearnerViewPage reflects the new placement without a manual reload.
       if (submission.learnerId) qc.invalidateQueries({ queryKey: ["learners", "detail", submission.learnerId] });
-      toast.success("Grade saved — released to the learner");
+      // A class-issued submission's grade now stays hidden until the teacher separately
+      // publishes its report (see publishReport in assessment-submission.service.js) — a
+      // standalone one (diagnostic/course-progress) still releases the same instant it's graded.
+      toast.success(submission.classId ? "Grade saved — click Create Report to release it to the learner" : "Grade saved — released to the learner");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save grade"),
+  });
+}
+
+// Releases an already-graded, class-issued submission's score/feedback to the learner — a
+// separate step from grading itself (see GradingPanel's "Save & Release Grade" vs. the roster
+// page's "Create Report" action).
+export function usePublishSubmissionReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: assessmentSubmissionApi.publishReport,
+    onSuccess: (submission) => {
+      qc.setQueryData(KEYS.submission(submission.id), submission);
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      toast.success("Report published — the learner can now see their grade");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to publish report"),
   });
 }

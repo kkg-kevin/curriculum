@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Assignment as AssignmentIcon,
   Description as DescriptionIcon,
+  ExpandMore as ExpandMoreIcon,
+  ChevronRight as ChevronRightIcon,
   Group as GroupIcon,
   Person as PersonIcon,
   Quiz as QuizIcon,
@@ -99,6 +101,8 @@ function assessmentSummary(assessment) {
   return `${indicators} indicator${indicators === 1 ? "" : "s"}`;
 }
 
+// One eligible class's issue action for one specific (assessment, session) occurrence — either
+// a "not yet issued" CTA, or a shortcut into the roster if it already has been.
 function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
   const navigate = useNavigate();
   if (issue) {
@@ -108,7 +112,7 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
         onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
         style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
       >
-        <VisibilityIcon sx={{ fontSize: 13 }} /> View {cls.gradeName} roster
+        <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster
       </button>
     );
   }
@@ -124,54 +128,132 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
   );
 }
 
-function AssessmentCard({ item, issuesByKey, onIssue, issuingKey }) {
-  const color = TYPE_COLORS[item.type] || T.accentLight;
-  const modeColor = MODE_COLORS[item.mode] || T.inkMuted;
+// One assessment's card, shown once per course no matter how many sessions it's attached to —
+// each attached session becomes a compact row underneath instead of a whole repeated card, which
+// is what made the previous flat layout hard to scan once an observation/checklist-style
+// assessment was reused across many sessions.
+function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, issuingKey }) {
+  const color = TYPE_COLORS[assessment.type] || T.accentLight;
+  const modeColor = MODE_COLORS[assessment.mode] || T.inkMuted;
 
   return (
-    <div
-      style={{
-        ...cardStyle,
-        width: "100%",
-        padding: "18px 20px",
-        border: "1px solid transparent",
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-      }}
-    >
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
-          {item.type === "quiz" ? <QuizIcon fontSize="small" /> : item.type === "exam" ? <SchoolIcon fontSize="small" /> : item.type === "project" ? <AssignmentIcon fontSize="small" /> : item.type === "assignment" ? <DescriptionIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+    <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}>
+          {assessment.type === "quiz" ? <QuizIcon fontSize="small" /> : assessment.type === "exam" ? <SchoolIcon fontSize="small" /> : assessment.type === "project" ? <AssignmentIcon fontSize="small" /> : assessment.type === "assignment" ? <DescriptionIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.name}
-          </h3>
-          <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted }}>
-            {item.courseName} · {item.sessionLabel}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h4 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: T.ink }}>{assessment.name}</h4>
+          <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {stripHtml(assessment.description) || "No description added"}
           </p>
         </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <span style={badgeStyle(color)}>{TYPE_LABELS[assessment.type] || assessment.type}</span>
+          <span style={badgeStyle(modeColor)}>{MODE_LABELS[assessment.mode] || "Individual"}</span>
+          <span style={badgeStyle(T.accent)}>{assessmentSummary(assessment)}</span>
+          <span style={badgeStyle(T.inkMuted)}>{occurrences.length} session{occurrences.length === 1 ? "" : "s"}</span>
+        </div>
       </div>
 
-      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-        {stripHtml(item.description) || "No description added"}
-      </p>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <span style={badgeStyle(color)}>{TYPE_LABELS[item.type] || item.type}</span>
-        <span style={badgeStyle(modeColor)}>{MODE_LABELS[item.mode] || "Individual"}</span>
-        <span style={badgeStyle(T.accent)}>{assessmentSummary(item)}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {occurrences.map((occ) => (
+          <div key={occ.sessionId} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, padding: "8px 10px", backgroundColor: "#FAFBFF", borderRadius: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, minWidth: 90 }}>{occ.sessionLabel}</span>
+            {occ.eligibleClasses.map((cls) => {
+              const key = `${assessment.id}:${occ.sessionId}:${cls.id}`;
+              const item = { id: assessment.id, sessionId: occ.sessionId, courseId: occ.courseId };
+              return (
+                <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c)} isIssuing={issuingKey === key} />
+              );
+            })}
+          </div>
+        ))}
       </div>
+    </div>
+  );
+}
 
-      {item.eligibleClasses.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
-          {item.eligibleClasses.map((cls) => {
-            const key = `${item.id}:${item.sessionId}:${cls.id}`;
-            return (
-              <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c)} isIssuing={issuingKey === key} />
-            );
-          })}
+// Groups the flat (course, session, assessment) attachment list into one entry per course, and
+// within a course, one entry per distinct assessment with every session it's attached to nested
+// underneath — see AssessmentGroupCard.
+function groupAttachmentsByCourse(attachments) {
+  const courseMap = new Map();
+  attachments.forEach((att) => {
+    if (!courseMap.has(att.courseId)) {
+      courseMap.set(att.courseId, { courseId: att.courseId, courseName: att.courseName, sessionIds: new Set(), assessmentMap: new Map() });
+    }
+    const courseEntry = courseMap.get(att.courseId);
+    courseEntry.sessionIds.add(att.sessionId);
+    if (!courseEntry.assessmentMap.has(att.id)) courseEntry.assessmentMap.set(att.id, { assessment: att, occurrences: [] });
+    courseEntry.assessmentMap.get(att.id).occurrences.push(att);
+  });
+
+  return [...courseMap.values()].map((c) => ({
+    courseId: c.courseId,
+    courseName: c.courseName,
+    sessionCount: c.sessionIds.size,
+    assessments: [...c.assessmentMap.values()].map((a) => ({
+      ...a,
+      occurrences: [...a.occurrences].sort((x, y) => (x.sessionOrder || 0) - (y.sessionOrder || 0)),
+    })),
+  }));
+}
+
+// Cross-cutting queue of every submitted-but-ungraded submission across the teacher's classes —
+// so pending work is visible without opening each assessment's roster individually to find it.
+function NeedsGradingSection({ rows, navigate }) {
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ ...cardStyle, overflow: "hidden", border: "1.5px solid #FED7AA" }}>
+      <div style={{ padding: "14px 20px", backgroundColor: "#FFF7ED", borderBottom: `1px solid ${T.border}` }}>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.05em" }}>Needs Grading</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{rows.length} submission{rows.length === 1 ? "" : "s"} awaiting your review</p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {rows.map(({ submission, issue, assessment, learner, className }) => (
+          <div key={submission.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: `1px solid #F9FAFB`, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
+                {assessment.name}{className ? ` · ${className}` : ""} · Submitted {new Date(submission.submittedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
+              style={{ padding: "7px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              Grade →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CourseSection({ group, isCollapsed, onToggle, issuesByKey, onIssue, issuingKey }) {
+  return (
+    <div style={{ ...cardStyle, overflow: "hidden" }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "16px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+      >
+        {isCollapsed ? <ChevronRightIcon sx={{ color: T.inkFaint }} /> : <ExpandMoreIcon sx={{ color: T.inkFaint }} />}
+        <div>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>{group.courseName}</h3>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint }}>
+            {group.sessionCount} session{group.sessionCount === 1 ? "" : "s"} · {group.assessments.length} assessment{group.assessments.length === 1 ? "" : "s"}
+          </p>
+        </div>
+      </button>
+      {!isCollapsed && (
+        <div style={{ padding: "0 20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {group.assessments.map(({ assessment, occurrences }) => (
+            <AssessmentGroupCard key={assessment.id} assessment={assessment} occurrences={occurrences} issuesByKey={issuesByKey} onIssue={onIssue} issuingKey={issuingKey} />
+          ))}
         </div>
       )}
     </div>
@@ -179,7 +261,9 @@ function AssessmentCard({ item, issuesByKey, onIssue, issuingKey }) {
 }
 
 export default function AssessmentsPage() {
+  const navigate = useNavigate();
   const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
+  const [collapsedCourseIds, setCollapsedCourseIds] = useState(() => new Set());
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
@@ -218,6 +302,23 @@ export default function AssessmentsPage() {
     return map;
   }, [issuesResults]);
 
+  // Every submitted-but-ungraded submission across the teacher's classes — see NeedsGradingSection.
+  const needsGradingResults = useQueries({
+    queries: myClasses.map((cls) => ({
+      queryKey: ["assessment-submissions", "needs-grading", cls.id],
+      queryFn: () => assessmentSubmissionApi.getNeedsGrading(cls.id),
+      enabled: !!cls.id,
+    })),
+  });
+  const needsGradingRows = useMemo(() => {
+    const classById = new Map(myClasses.map((c) => [c.id, c]));
+    const rows = [];
+    needsGradingResults.forEach((r) => (r.data?.data || []).forEach((row) => {
+      rows.push({ ...row, className: classById.get(row.submission.classId)?.gradeName });
+    }));
+    return rows.sort((a, b) => new Date(a.submission.submittedAt || 0) - new Date(b.submission.submittedAt || 0));
+  }, [needsGradingResults, myClasses]);
+
   const attachments = useMemo(() => {
     const rows = [];
     sessionsResults.forEach((result, index) => {
@@ -230,6 +331,7 @@ export default function AssessmentsPage() {
             courseId: course.id,
             courseName: course.name,
             sessionId: session.id,
+            sessionOrder: session.order || 0,
             sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
             eligibleClasses,
           });
@@ -238,6 +340,16 @@ export default function AssessmentsPage() {
     });
     return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   }, [courses, sessionsResults, myClasses, coursesByGrade]);
+
+  const courseGroups = useMemo(() => groupAttachmentsByCourse(attachments), [attachments]);
+
+  const toggleCourse = (courseId) => {
+    setCollapsedCourseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId); else next.add(courseId);
+      return next;
+    });
+  };
 
   const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();
   const issuingKey = issuing && issuingVariables ? `${issuingVariables.assessmentId}:${issuingVariables.sessionId}:${issuingVariables.classId}` : null;
@@ -251,7 +363,7 @@ export default function AssessmentsPage() {
   const totalCount = attachments.length;
   const individualCount = attachments.filter((a) => a.mode === "individual").length;
   const groupCount = attachments.filter((a) => a.mode === "group").length;
-  const courseCount = new Set(attachments.map((a) => a.courseId)).size;
+  const courseCount = courseGroups.length;
   const issuedCount = [...issuesByKey.values()].length;
 
   if (isLoading) {
@@ -297,17 +409,21 @@ export default function AssessmentsPage() {
         <KpiTile icon={<GroupIcon fontSize="small" />} num={groupCount} label="Group" sub="Shared activities or group tasks" />
       </div>
 
-      {attachments.length === 0 ? (
+      <NeedsGradingSection rows={needsGradingRows} navigate={navigate} />
+
+      {courseGroups.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No assessments attached yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Once your school adds assessments to your class courses, they will show up here automatically.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, alignItems: "stretch" }}>
-          {attachments.map((item) => (
-            <AssessmentCard
-              key={`${item.courseId}:${item.sessionId}:${item.id}`}
-              item={item}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {courseGroups.map((group) => (
+            <CourseSection
+              key={group.courseId}
+              group={group}
+              isCollapsed={collapsedCourseIds.has(group.courseId)}
+              onToggle={() => toggleCourse(group.courseId)}
               issuesByKey={issuesByKey}
               onIssue={handleIssue}
               issuingKey={issuingKey}

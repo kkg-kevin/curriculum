@@ -45,6 +45,28 @@ function assertLearnerOwnsSubmission(req, submission) {
   if (req.user.role === "learner") assertOwn(submission.learnerId === req.ownLearner?.id);
 }
 
+// A class-issued submission is graded internally (status "graded") as soon as a teacher saves
+// marks, but stays hidden from the learner until the teacher separately calls publishReport (see
+// assessment-submission.service.js) — presented here as still "submitted" so every existing
+// learner-facing UI, which only ever branches on status, needs no changes to respect the gate.
+// Only ever applied for the "learner" role — admin/school/teacher always see the real state.
+function redactUnpublishedReport(submission) {
+  if (submission.status !== "graded" || submission.reportPublished) return submission;
+  return {
+    ...submission,
+    status: "submitted",
+    totalScore: null,
+    autoScore: null,
+    manualScore: null,
+    autoItemResults: [],
+    itemFeedback: [],
+    overallFeedback: "",
+    indicatorBreakdown: [],
+    gradedAt: null,
+    gradedBy: null,
+  };
+}
+
 const issueAssessment = asyncHandler(async (req, res) => {
   const data = issueAssessmentSchema.parse(req.body);
   const cls = ClassModel.findById(data.classId);
@@ -64,6 +86,21 @@ const getIssuesForClass = asyncHandler(async (req, res) => {
   assertClassAccess(req, cls);
   const issues = AssessmentSubmissionService.getIssuesForClass(classId);
   res.json({ success: true, data: issues, count: issues.length });
+});
+
+// The teacher's cross-cutting "needs grading" queue for one class — see
+// getSubmissionsNeedingGrading in the service for why this is separate from a per-issue roster.
+const getSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = ClassModel.findById(classId);
+  assertClassAccess(req, cls);
+  const rows = AssessmentSubmissionService.getSubmissionsNeedingGrading(classId);
+  res.json({ success: true, data: rows, count: rows.length });
 });
 
 const getRosterForIssue = asyncHandler(async (req, res) => {
@@ -100,7 +137,7 @@ const getIssuedForLearner = asyncHandler(async (req, res) => {
   // Standalone issues (e.g. an auto-issued diagnostic) target the learner directly, with no
   // class involved at all — merged in alongside the class-issued ones.
   const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learner.id);
-  const rows = [...standaloneRows, ...classRows];
+  const rows = [...standaloneRows, ...classRows].map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -174,7 +211,10 @@ const getSubmission = asyncHandler(async (req, res) => {
   }
   if (req.user.role === "learner") {
     assertOwn(submission.learnerId === req.ownLearner?.id);
-  } else if (submission.classId) {
+    res.json({ success: true, data: redactUnpublishedReport(submission) });
+    return;
+  }
+  if (submission.classId) {
     const cls = ClassModel.findById(submission.classId);
     assertClassAccess(req, cls);
   } else {
@@ -201,9 +241,29 @@ const gradeSubmission = asyncHandler(async (req, res) => {
   res.json({ success: true, data: submission });
 });
 
+// Teacher's explicit "make this grade visible to the learner" action — same ownership shape as
+// gradeSubmission, since only whoever could grade it should be able to release it.
+const publishSubmissionReport = asyncHandler(async (req, res) => {
+  const existing = AssessmentSubmissionService.getSubmission(req.params.id);
+  if (!existing) {
+    const err = new Error("Submission not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (existing.classId) {
+    const cls = ClassModel.findById(existing.classId);
+    assertClassAccess(req, cls);
+  } else {
+    assertLearnerHubAccess(req, existing.learnerId);
+  }
+  const submission = AssessmentSubmissionService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
+  res.json({ success: true, data: submission });
+});
+
 module.exports = {
   issueAssessment,
   getIssuesForClass,
+  getSubmissionsNeedingGrading,
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
@@ -215,4 +275,5 @@ module.exports = {
   submitAnswers,
   getSubmission,
   gradeSubmission,
+  publishSubmissionReport,
 };

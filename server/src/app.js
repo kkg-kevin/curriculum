@@ -16,6 +16,7 @@ const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
+const reportRoutes = require("./modules/reports/report.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const programRoutes = require("./modules/programs/program.routes");
 const branchRoutes = require("./modules/branches/branch.routes");
@@ -58,10 +59,15 @@ app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
-app.use("/api/assessments", protect, authorize("admin"), assessmentRoutes);
+// Authoring stays admin-only, but one read (an assessment's linked competencies) is needed by
+// teacher/school too, when grading — see assessment.routes.js for the per-route split.
+app.use("/api/assessments", protect, assessmentRoutes);
 // Issuing/taking/grading is not authoring — teacher/school/learner reach it here, scoped by
 // attachOwnRecords, while the assessment *builder* above stays admin-only.
 app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubmissionRoutes);
+// Course reports read off graded submissions above — same not-authoring, multi-role,
+// attachOwnRecords-scoped shape.
+app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
 app.use("/api/programs", protect, authorize("admin"), programRoutes);
 app.use("/api/branches", protect, attachOwnRecords, branchRoutes);
