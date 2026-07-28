@@ -1,5 +1,7 @@
 const asyncHandler      = require("express-async-handler");
 const CompetencyService = require("./competency.service");
+const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   linkCompetencySchema,
   updateCompetencyLinkSchema,
@@ -327,13 +329,51 @@ exports.setIndicatorAchievement = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Curriculum-wide preview — averaged across every learner who actually has graded work against
+// this curriculum (see getCurriculumWideCompetencyScores), not the old manual IndicatorAchievement
+// entry that no admin UI ever populated.
 exports.getCompetencyScores = asyncHandler(async (req, res) => {
-  const data = CompetencyService.getCompetencyScores(req.params.id);
+  const data = CompetencyService.getCurriculumWideCompetencyScores(req.params.id);
   res.json({ success: true, data });
 });
 
 exports.getBandProgress = asyncHandler(async (req, res) => {
-  const data = CompetencyService.getBandProgress(req.params.id);
+  const data = CompetencyService.getCurriculumWideBandProgress(req.params.id);
+  res.json({ success: true, data });
+});
+
+// A learner reading their own real competency scores/band-progress, or an admin/school
+// reviewing it for a learner in their own hub — same ownership shape as
+// assessment-submission.controller.js's getLearnerIndicatorProgress (this is the same live
+// data, just run through the curriculum's own Evidence/Assessment-Type scoring config on top).
+function assertLearnerHubAccess(req, learnerId) {
+  if (req.user.role === "school") {
+    const hubIds = LearnerHubLinkModel.findByLearnerId(learnerId).map((l) => l.hubId);
+    assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
+  } else if (req.user.role === "teacher") {
+    assertOwn(false);
+  }
+}
+
+exports.getLearnerCompetencyScores = asyncHandler(async (req, res) => {
+  const learnerId = req.params.learnerId;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, learnerId);
+  }
+  const data = CompetencyService.getLearnerCompetencyScores(req.params.id, learnerId);
+  res.json({ success: true, data });
+});
+
+exports.getLearnerBandProgress = asyncHandler(async (req, res) => {
+  const learnerId = req.params.learnerId;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, learnerId);
+  }
+  const data = CompetencyService.getLearnerBandProgress(req.params.id, learnerId);
   res.json({ success: true, data });
 });
 

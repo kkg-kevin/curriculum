@@ -7,6 +7,7 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
+const CompetencyService = require("../curriculum/competency-framework/competency.service");
 
 function notFound(message) {
   const err = new Error(message);
@@ -39,7 +40,7 @@ function getPublishedGradedAssessmentIds(learnerId) {
   );
 }
 
-function buildReportContent(learnerId, requiredAssessmentIds) {
+function buildReportContent(learnerId, requiredAssessmentIds, curriculumId) {
   const publishedIds = getPublishedGradedAssessmentIds(learnerId);
   const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" })
     .filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId));
@@ -75,7 +76,14 @@ function buildReportContent(learnerId, requiredAssessmentIds) {
     requiredAssessmentIds
   );
 
-  return { assessments, overall, indicatorBreakdown };
+  // The curriculum's own weighted Evidence Type → Assessment Type → Engine verdict for this
+  // learner (score/level/band per competency) — a different number from the flat indicatorBreakdown
+  // above, same pair shown together on the graded assessment view and the Profile Competencies tab.
+  const competencyScores = curriculumId
+    ? CompetencyService.getLearnerCompetencyScores(curriculumId, learnerId)
+    : [];
+
+  return { assessments, overall, indicatorBreakdown, competencyScores };
 }
 
 const ReportService = {
@@ -124,7 +132,7 @@ const ReportService = {
     }
 
     const cls = ClassModel.findById(classId);
-    const content = buildReportContent(learnerId, requiredAssessmentIds);
+    const content = buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId);
 
     const existing = ReportModel.findOne({ learnerId, courseId });
     if (existing) return ReportModel.update(existing.id, { content });
@@ -158,7 +166,8 @@ const ReportService = {
     if (report.status === "published") return report;
 
     const requiredAssessmentIds = getCourseRequiredAssessmentIds(report.courseId);
-    const content = buildReportContent(report.learnerId, requiredAssessmentIds);
+    const cls = ClassModel.findById(report.classId);
+    const content = buildReportContent(report.learnerId, requiredAssessmentIds, cls?.curriculumId);
     return ReportModel.update(id, {
       content,
       status: "published",

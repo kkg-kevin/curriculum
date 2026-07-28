@@ -80,7 +80,7 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
-          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} />
+          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             <LearningJourneyCard courses={courses} email={user?.email} isLoading={coursesLoading} />
@@ -91,7 +91,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "Competencies" && (
-        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} />
+        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
       )}
 
       {activeTab === "Assessments" && <AssessmentsOverview classId={cls?.id} />}
