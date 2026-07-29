@@ -725,7 +725,8 @@
     "status": "active",
     "id": "4a1cf7a1-02b6-4fb1-8e3a-99b4131d0f46",
     "createdAt": "2026-07-23T07:16:46.332Z",
-    "updatedAt": "2026-07-23T18:24:30.912Z"
+    "updatedAt": "2026-07-29T07:24:33.266Z",
+    "tag": "Thrive 2"
   },
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
@@ -751,7 +752,8 @@
     "status": "active",
     "id": "411bed3e-095f-4965-aa3c-bfab0ae7b376",
     "createdAt": "2026-07-24T12:01:41.623Z",
-    "updatedAt": "2026-07-27T12:19:06.270Z"
+    "updatedAt": "2026-07-29T07:23:55.035Z",
+    "tag": "Thrive 1"
   },
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",

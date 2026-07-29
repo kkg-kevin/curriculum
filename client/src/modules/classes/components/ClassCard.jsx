@@ -99,7 +99,10 @@ export function ClassCard({ cls }) {
               >
                 {cls.gradeName}
               </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{cls.academicYear}</p>
+              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
+                {cls.academicYear}
+                {cls.tag && <span style={{ marginLeft: 6, padding: "1px 7px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>{cls.tag}</span>}
+              </p>
             </div>
           </div>
           <button

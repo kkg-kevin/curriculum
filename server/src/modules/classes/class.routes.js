@@ -1,7 +1,8 @@
 const express = require("express");
 const {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
-  getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, getCourseTeacherLinksForTeacher,
+  getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
+  getCourseTeacherLinksForTeacher,
 } = require("./class.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -32,5 +33,7 @@ router.route("/:id/course-teachers")
   .post(authorize("admin", "school", "branchAdmin"), assignCourseTeacher);
 router.route("/:id/course-teachers/:courseId/:teacherId")
   .delete(authorize("admin", "school", "branchAdmin"), unassignCourseTeacher);
+router.route("/:id/course-teachers/:courseId/:teacherId/primary")
+  .patch(authorize("admin", "school", "branchAdmin"), setPrimaryCourseTeacher);
 
 module.exports = router;

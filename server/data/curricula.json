@@ -234,5 +234,43 @@
     "id": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
     "createdAt": "2026-07-24T12:07:44.959Z",
     "updatedAt": "2026-07-24T12:08:04.818Z"
+  },
+  {
+    "name": "ehsf",
+    "code": "E",
+    "academicYear": "",
+    "description": "egadsx",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": false,
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      {
+        "id": "cada9077-a462-4fce-a877-d29c5c981765",
+        "name": "Grade 1",
+        "level": ""
+      },
+      {
+        "id": "918ffd9b-c84e-4996-9625-9f4ae7697ec7",
+        "name": "Grade 2",
+        "level": ""
+      }
+    ],
+    "id": "aec5ef0c-0a71-4bbd-a103-5170406f93d0",
+    "createdAt": "2026-07-29T07:20:29.418Z",
+    "updatedAt": "2026-07-29T07:20:49.189Z"
   }
 ]

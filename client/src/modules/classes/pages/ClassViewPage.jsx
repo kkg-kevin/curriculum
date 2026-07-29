@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useClassQuery, useDeleteClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher } from "../hooks/useClasses";
+import { FiStar } from "react-icons/fi";
+import { useClassQuery, useDeleteClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useSetPrimaryCourseTeacher } from "../hooks/useClasses";
 import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
@@ -20,21 +21,44 @@ function DetailRow({ label, value, empty = "—" }) {
 }
 
 // One course chip's educator badges + inline assign control — a course can have more than one
-// co-equal educator (equal peers, full access), replacing the old single Class.classTeacherId.
-function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUnassign, isAssigning }) {
+// co-teacher (full access), replacing the old single Class.classTeacherId, but exactly one of
+// them is flagged primary — the educator of record shown first with a filled star; the rest are
+// secondary co-teachers with a hollow star to promote themselves into that spot.
+function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUnassign, onSetPrimary, isAssigning, isSettingPrimary }) {
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const assignedIds = new Set(links.map((l) => l.teacherId));
   const available = (hubTeachers || []).filter((t) => !assignedIds.has(t.id));
+  const sortedLinks = [...links].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
 
   return (
     <div style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{course.name}</p>
-      {links.length > 0 && (
+      {sortedLinks.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {links.map((l) => (
-            <span key={l.teacherId} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 600, backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", color: "#25476a" }}>
+          {sortedLinks.map((l) => (
+            <span
+              key={l.teacherId}
+              title={l.isPrimary ? "Primary — currently teaching" : "Secondary co-teacher"}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 600,
+                backgroundColor: l.isPrimary ? "#25476a" : "#e8f5fb",
+                border: `1px solid ${l.isPrimary ? "#25476a" : "#a8d5ee"}`,
+                color: l.isPrimary ? "#ffffff" : "#25476a",
+              }}
+            >
+              {sortedLinks.length > 1 && (
+                <button
+                  type="button"
+                  disabled={l.isPrimary || isSettingPrimary}
+                  onClick={() => onSetPrimary(course.id, l.teacherId)}
+                  style={{ display: "flex", background: "none", border: "none", padding: 0, color: "inherit", cursor: l.isPrimary ? "default" : "pointer" }}
+                  title={l.isPrimary ? "Primary — currently teaching" : "Make primary"}
+                >
+                  <FiStar size={12} strokeWidth={2} fill={l.isPrimary ? "currentColor" : "none"} />
+                </button>
+              )}
               {l.teacher.firstName} {l.teacher.lastName}
-              <button type="button" onClick={() => onUnassign(course.id, l.teacherId)} style={{ background: "none", border: "none", color: "#25476a", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }} title="Unassign">×</button>
+              <button type="button" onClick={() => onUnassign(course.id, l.teacherId)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }} title="Unassign">×</button>
             </span>
           ))}
         </div>
@@ -105,6 +129,7 @@ export default function ClassViewPage() {
   const { data: courseTeacherLinks = [] } = useClassCourseTeachers(cls?.id);
   const { mutate: assignCourseTeacher, isPending: isAssigning } = useAssignCourseTeacher();
   const { mutate: unassignCourseTeacher } = useUnassignCourseTeacher();
+  const { mutate: setPrimaryCourseTeacher, isPending: isSettingPrimary } = useSetPrimaryCourseTeacher();
 
   const { data: learnersData } = useQuery({
     queryKey: ["learners", "byClass", cls?.id],
@@ -154,7 +179,14 @@ export default function ClassViewPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>🏫</div>
             <div>
-              <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
+                {cls.tag && (
+                  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff" }}>
+                    {cls.tag}
+                  </span>
+                )}
+              </div>
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {cls.status === "active" ? "Active" : "Inactive"}</p>
             </div>
           </div>
@@ -186,6 +218,7 @@ export default function ClassViewPage() {
             <DetailRow label="Curriculum"    value={curriculum?.name} />
             <DetailRow label="Grade"         value={cls.gradeName} />
             <DetailRow label="Academic Year" value={cls.academicYear} />
+            <DetailRow label="Tag"           value={cls.tag} empty="Not set" />
             <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
             <DetailRow label="Status"        value={cls.status === "active" ? "Active" : "Inactive"} />
           </div>
@@ -218,8 +251,10 @@ export default function ClassViewPage() {
                   links={linksByCourseId[c.id] || []}
                   hubTeachers={hubTeachers}
                   isAssigning={isAssigning}
+                  isSettingPrimary={isSettingPrimary}
                   onAssign={(courseId, teacherId) => assignCourseTeacher({ classId: cls.id, courseId, teacherId })}
                   onUnassign={(courseId, teacherId) => unassignCourseTeacher({ classId: cls.id, courseId, teacherId })}
+                  onSetPrimary={(courseId, teacherId) => setPrimaryCourseTeacher({ classId: cls.id, courseId, teacherId })}
                 />
               ))}
             </div>

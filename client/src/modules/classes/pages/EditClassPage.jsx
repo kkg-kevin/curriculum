@@ -14,6 +14,7 @@ const ACCENT = "#25476a";
 const editSchema = z.object({
   capacity: z.coerce.number().int().positive().nullable().optional(),
   status:   z.enum(["active", "inactive"]).default("active"),
+  tag:      z.string().trim().optional(),
 });
 
 const S = {
@@ -41,7 +42,7 @@ export default function EditClassPage() {
 
   const { register, control, handleSubmit, reset, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(editSchema),
-    defaultValues: { capacity: null, status: "active" },
+    defaultValues: { capacity: null, status: "active", tag: "" },
     mode: "onTouched",
   });
 
@@ -50,12 +51,13 @@ export default function EditClassPage() {
       reset({
         capacity: cls.capacity || null,
         status:   cls.status   || "active",
+        tag:      cls.tag      || "",
       });
     }
   }, [cls, reset]);
 
   const onSubmit = (data) => {
-    updateClass({ id, data }, { onSuccess: () => navigate(classPath(user?.role, id, "view")) });
+    updateClass({ id, data: { ...data, tag: data.tag?.trim() || null } }, { onSuccess: () => navigate(classPath(user?.role, id, "view")) });
   };
 
   const handleCancel = () => {
@@ -156,6 +158,13 @@ export default function EditClassPage() {
                   )}
                 />
               </div>
+            </div>
+
+            <div style={S.field}>
+              <label style={S.label}>Tag</label>
+              <input {...register("tag")} style={S.input} placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
+              <span style={S.hint}>A short code unique to this class instance — lets you tell it apart from same-named classes at other hubs.</span>
+              {errors.tag && <span style={S.error}>{errors.tag.message}</span>}
             </div>
           </div>
         </form>

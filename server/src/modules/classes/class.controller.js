@@ -111,6 +111,17 @@ const unassignCourseTeacher = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// Marks one educator as the primary (currently-teaching) educator for a class's course, demoting
+// any other co-teacher on that same course back to secondary. Same write posture as assign/unassign.
+const setPrimaryCourseTeacher = asyncHandler(async (req, res) => {
+  const { courseId, teacherId } = req.params;
+  const record = await ClassService.getClassById(req.params.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  const link = ClassCourseTeacherLinkModel.setPrimary(req.params.id, courseId, teacherId);
+  if (!link) return res.status(404).json({ success: false, message: "Educator is not assigned to this course" });
+  res.json({ success: true, data: link });
+});
+
 // Flat list of every (class, course) link for one teacher, across every class — feeds
 // TeacherViewPage's "my course assignments" list, grouped by class client-side. Registered
 // ahead of "/:id" in the router (a literal path, not a class id).
@@ -160,5 +171,6 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
 
 module.exports = {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
-  getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, getCourseTeacherLinksForTeacher,
+  getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
+  getCourseTeacherLinksForTeacher,
 };

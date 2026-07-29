@@ -15,6 +15,7 @@ export const classApi = {
   getCourseTeachers:     (classId)                    => api.get(`${BASE}/${classId}/course-teachers`).then((r) => r.data.data),
   assignCourseTeacher:   (classId, courseId, teacherId)   => api.post(`${BASE}/${classId}/course-teachers`, { courseId, teacherId }).then((r) => r.data.data),
   unassignCourseTeacher: (classId, courseId, teacherId)   => api.delete(`${BASE}/${classId}/course-teachers/${courseId}/${teacherId}`).then((r) => r.data),
+  setPrimaryCourseTeacher: (classId, courseId, teacherId) => api.patch(`${BASE}/${classId}/course-teachers/${courseId}/${teacherId}/primary`).then((r) => r.data.data),
   // Flat list of every (class, course) link for one teacher, across every class.
   getCourseTeacherLinksForTeacher: (teacherId) => api.get(`${BASE}/course-teacher-links`, { params: { teacherId } }).then((r) => r.data.data),
 };

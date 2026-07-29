@@ -108,6 +108,19 @@ export function useUnassignCourseTeacher() {
   });
 }
 
+export function useSetPrimaryCourseTeacher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, courseId, teacherId }) => classApi.setPrimaryCourseTeacher(classId, courseId, teacherId),
+    onSuccess: (_data, { classId, teacherId }) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.courseTeachers(classId) });
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.teacherLinks(teacherId) });
+      toast.success("Primary educator updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update primary educator"),
+  });
+}
+
 // Every (class, course) link for one teacher, across every class — feeds TeacherViewPage's
 // "my course assignments" list.
 export function useTeacherCourseAssignments(teacherId) {
