@@ -3,7 +3,7 @@ const TeacherService = require("./teacher.service");
 const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
-const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const { createTeacherSchema, updateTeacherSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
@@ -22,14 +22,14 @@ function isLinkedToOwnHub(req, teacherId) {
   return false;
 }
 
-// True whenever `teacherId` is the class teacher of any class the learner is currently
+// True whenever `teacherId` has a course-educator link in any class the learner is currently
 // enrolled in — the read-only counterpart to isLinkedToHub above, letting a learner see
-// their own class teacher's basic info without opening up arbitrary teacher lookups.
+// one of their own educators' basic info without opening up arbitrary teacher lookups.
 function isMyClassTeacher(teacherId, learnerId) {
   return LearnerHubLinkModel.findByLearnerId(learnerId)
     .map((l) => l.classId)
     .filter(Boolean)
-    .some((classId) => ClassModel.findById(classId)?.classTeacherId === teacherId);
+    .some((classId) => ClassCourseTeacherLinkModel.findByClassId(classId).some((link) => link.teacherId === teacherId));
 }
 
 const createTeacher = asyncHandler(async (req, res) => {

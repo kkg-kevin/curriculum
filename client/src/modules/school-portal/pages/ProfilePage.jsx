@@ -226,7 +226,7 @@ export default function ProfilePage() {
       {/* Stats */}
       <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
         <StatTile icon={<FiBookOpen size={17} strokeWidth={2} />} num={classesCount} label="Classes" onClick={() => navigate(classesListPath("school", school.id))} />
-        <StatTile icon={<FiUserCheck size={17} strokeWidth={2} />} num={teachersCount} label="Tech Educators" onClick={() => navigate(teachersListPath("school", school.id))} />
+        <StatTile icon={<FiUserCheck size={17} strokeWidth={2} />} num={teachersCount} label="Educators" onClick={() => navigate(teachersListPath("school", school.id))} />
         <StatTile icon={<FiAward size={17} strokeWidth={2} />} num={learnersCount} label="Learners" onClick={() => navigate(learnersListPath("school", school.id))} />
       </div>
 

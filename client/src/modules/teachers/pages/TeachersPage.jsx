@@ -70,10 +70,10 @@ export default function TeachersPage() {
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px" }}>
           <div>
             <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-              Tech Educators
+              Educators
             </h1>
             <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "560px" }}>
-              Every tech educator across every hub, in one place. Add a tech educator independently, then assign them to a learning hub whenever you're ready.
+              Every educator across every hub, in one place. Add an educator independently, then assign them to a learning hub whenever you're ready.
             </p>
           </div>
           <button
@@ -82,7 +82,7 @@ export default function TeachersPage() {
             style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
           >
             <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
-            Add Tech Educator
+            Add Educator
           </button>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function TeachersPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Tech Educators", value: teachersLoading ? "—" : teachers.length,          icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Total Educators", value: teachersLoading ? "—" : teachers.length,          icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
           { label: "Active",         value: teachersLoading ? "—" : activeCount,                    icon: <CheckCircleIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
           { label: "Inactive",       value: teachersLoading ? "—" : teachers.length - activeCount,   icon: <PauseCircleIcon fontSize="small" />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
         ].map((stat) => (

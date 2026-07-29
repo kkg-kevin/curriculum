@@ -144,7 +144,7 @@ export function TeacherCard({ teacher }) {
 
       <ConfirmDialog
         isOpen={confirmOpen}
-        title="Delete Tech Educator"
+        title="Delete Educator"
         message={`"${teacher.firstName} ${teacher.lastName}" will be permanently deleted.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"

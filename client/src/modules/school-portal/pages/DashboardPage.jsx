@@ -137,11 +137,25 @@ export default function DashboardPage() {
   const gradeGroups = [...new Map(classes.map((c) => [c.gradeId, { id: c.gradeId, name: c.gradeName }])).values()];
   const { data: coursesByGrade } = useCurriculumCoursesByGrade(school?.curriculumId, gradeGroups.map((g) => g.id));
 
-  const teachersMap = teachers.reduce((m, t) => { m[t.id] = t; return m; }, {});
-  const classesMap  = classes.reduce((m, c) => { m[c.id] = c; return m; }, {});
+  const classesMap = classes.reduce((m, c) => { m[c.id] = c; return m; }, {});
 
-  const classesWithTeacher = classes.filter((c) => !!c.classTeacherId);
-  const classesWithoutTeacher = classes.filter((c) => !c.classTeacherId);
+  // Educators are assigned per course now, not per class — pull every course-educator link
+  // across every class in this school in one query (can't call a hook per class in a loop),
+  // then derive per-class educator names and the has-any-educator split from that.
+  const classIds = classes.map((c) => c.id);
+  const { data: allCourseTeacherLinks = [] } = useQuery({
+    queryKey: ["classes", "courseTeachers", "bySchool", school?.id, classIds.join(",")],
+    queryFn: async () => (await Promise.all(classIds.map((id) => classApi.getCourseTeachers(id)))).flat(),
+    enabled: classIds.length > 0,
+  });
+  const educatorNamesByClassId = allCourseTeacherLinks.reduce((m, l) => {
+    if (!m[l.classId]) m[l.classId] = new Set();
+    m[l.classId].add(`${l.teacher.firstName} ${l.teacher.lastName}`);
+    return m;
+  }, {});
+
+  const classesWithTeacher = classes.filter((c) => !!educatorNamesByClassId[c.id]?.size);
+  const classesWithoutTeacher = classes.filter((c) => !educatorNamesByClassId[c.id]?.size);
   const gradesWithoutCourses = gradeGroups.filter((g) => (coursesByGrade?.get(g.id) || []).length === 0);
   const classesWithCourseCount = gradeGroups.length - gradesWithoutCourses.length;
   const activeTeachers = teachers.filter((t) => t.status === "active");
@@ -150,7 +164,7 @@ export default function DashboardPage() {
   const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity || 0), 0);
 
   const recentActivity = [
-    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), name: `${t.firstName} ${t.lastName}`, sub: "Tech Educator added", createdAt: t.createdAt })),
+    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), name: `${t.firstName} ${t.lastName}`, sub: "Educator added", createdAt: t.createdAt })),
     ...learners.map((l) => ({ id: `l-${l.id}`, initials: `${l.firstName?.[0] || ""}${l.lastName?.[0] || ""}`.toUpperCase(), name: `${l.firstName} ${l.lastName}`, sub: `Enrolled — ${classesMap[l.classId]?.gradeName || "No class"}`, createdAt: l.createdAt })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
@@ -210,7 +224,7 @@ export default function DashboardPage() {
             {classesWithoutTeacher.length > 0 && (
               <AttentionItem
                 icon={<FiUserCheck size={15} strokeWidth={2} />}
-                text={`${joinNatural(classesWithoutTeacher.map((c) => c.gradeName))} ${classesWithoutTeacher.length === 1 ? "has" : "have"} no class tech educator assigned`}
+                text={`${joinNatural(classesWithoutTeacher.map((c) => c.gradeName))} ${classesWithoutTeacher.length === 1 ? "has" : "have"} no educators assigned`}
                 actionLabel="Assign"
                 onAction={() => navigate(classesListPath("school", school.id))}
               />
@@ -239,13 +253,13 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <KpiCard
           icon={<FiBookOpen size={18} strokeWidth={2} />} num={classes.length} label="Classes"
-          sub={classes.length === 0 ? "None set up yet" : `${classesWithTeacher.length} of ${classes.length} has a tech educator`}
+          sub={classes.length === 0 ? "None set up yet" : `${classesWithTeacher.length} of ${classes.length} has an educator`}
           meterPct={classes.length ? (classesWithTeacher.length / classes.length) * 100 : null}
           warnMeter={classesWithTeacher.length < classes.length}
           onClick={() => navigate(classesListPath("school", school.id))}
         />
         <KpiCard
-          icon={<FiUserCheck size={18} strokeWidth={2} />} num={teachers.length} label="Tech Educators"
+          icon={<FiUserCheck size={18} strokeWidth={2} />} num={teachers.length} label="Educators"
           sub={teachers.length === 0 ? "None added yet" : `${activeTeachers.length} active`}
           meterPct={teachers.length ? (activeTeachers.length / teachers.length) * 100 : null}
           warnMeter={false}
@@ -269,7 +283,7 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Tech Educator</ActionButton>
+        <ActionButton primary onClick={() => navigate(teacherCreatePath("school", school.id))}>＋ Add Educator</ActionButton>
         <ActionButton primary onClick={() => navigate(learnerCreatePath("school", school.id))}>＋ Enroll Learner</ActionButton>
         <ActionButton onClick={() => navigate(`${classesListPath("school", school.id)}?setup=1`)}><FiCalendar size={14} strokeWidth={2} /> Set Up Year</ActionButton>
         <ActionButton onClick={() => navigate(courseCatalogPath("school"))}><FiBook size={14} strokeWidth={2} /> Browse Curriculum</ActionButton>
@@ -291,24 +305,24 @@ export default function DashboardPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {["Grade", "Class Tech Educator", "Learners", "Courses", "Status"].map((h) => (
+                    {["Grade", "Educators", "Learners", "Courses", "Status"].map((h) => (
                       <th key={h} style={{ textAlign: "left", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: T.inkFaint, padding: "0 10px 8px", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {classes.map((c) => {
-                    const teacher = c.classTeacherId ? teachersMap[c.classTeacherId] : null;
+                    const educatorNames = [...(educatorNamesByClassId[c.id] || [])];
                     const courseCount = (coursesByGrade?.get(c.gradeId) || []).length;
-                    const isSetUp = !!teacher && courseCount > 0;
+                    const isSetUp = educatorNames.length > 0 && courseCount > 0;
                     return (
                       <tr key={c.id} onClick={() => navigate(classPath("school", c.id, "view"))} style={{ cursor: "pointer" }}>
                         <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}` }}>
                           <span style={{ fontWeight: 700, color: T.ink }}>{c.gradeName}</span>
                           <span style={{ display: "block", fontWeight: 400, color: T.inkFaint, fontSize: 11.5 }}>{c.academicYear}</span>
                         </td>
-                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, color: teacher ? T.inkSoft : T.inkFaint, fontStyle: teacher ? "normal" : "italic" }}>
-                          {teacher ? `${teacher.firstName} ${teacher.lastName}` : "Unassigned"}
+                        <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, color: educatorNames.length ? T.inkSoft : T.inkFaint, fontStyle: educatorNames.length ? "normal" : "italic" }}>
+                          {educatorNames.length ? educatorNames.join(", ") : "Unassigned"}
                         </td>
                         <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, fontVariantNumeric: "tabular-nums" }}>
                           {c.learnerCount ?? 0} · {c.capacity ? c.capacity : "unlimited"}

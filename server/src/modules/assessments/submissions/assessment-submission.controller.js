@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const AssessmentSubmissionService = require("./assessment-submission.service");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-link.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   issueAssessmentSchema,
@@ -11,8 +12,8 @@ const {
 } = require("./assessment-submission.validation");
 
 // Issuing/grading/roster-viewing all revolve around a class — reuse the exact ownership check
-// classes/attendance already apply, so a teacher can only ever touch their own class teacher
-// assignment and a school only its own school's classes.
+// classes/attendance already apply, so a teacher can only ever touch a class they have at least
+// one course-educator link in, and a school only its own school's classes.
 function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
@@ -20,7 +21,9 @@ function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
-  if (req.user.role === "teacher") assertOwn(cls.classTeacherId === req.ownTeacher?.id);
+  if (req.user.role === "teacher") {
+    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
+  }
 }
 
 // A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)

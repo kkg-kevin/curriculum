@@ -181,7 +181,7 @@ export default function LearningHubViewPage() {
           school-type-only since they're still keyed by a single schoolId */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Tech Educators", value: teachers.length, icon: <PeopleAltIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Educators", value: teachers.length, icon: <PeopleAltIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
           ...(isSchool ? [
             { label: "Classes",  value: classes.length,  icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
             { label: "Learners", value: learners.length, icon: <PersonIcon fontSize="small" />, bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
@@ -352,9 +352,9 @@ export default function LearningHubViewPage() {
       {/* Teachers now attach to any hub type; Classes/Learners are still keyed by a single
           schoolId, so they only render for school-type hubs */}
       <div style={{ display: "grid", gridTemplateColumns: isSchool ? "1fr 1fr 1fr" : "1fr", gap: "16px" }}>
-        <Section title="Tech Educators" count={teachers.length}>
+        <Section title="Educators" count={teachers.length}>
           {teachers.length === 0 ? (
-            <EmptyList icon="👩‍🏫" text="No tech educators yet." />
+            <EmptyList icon="👩‍🏫" text="No educators yet." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {teachers.slice(0, 5).map((t) => (

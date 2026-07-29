@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { useClassQuery } from "../../classes/hooks/useClasses";
+import { useClassQuery, useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 
@@ -52,6 +52,11 @@ export default function MyClassPage() {
   });
   const teacher = teachersData?.data?.[0] || null;
 
+  // Access is granted if this teacher has at least one course-educator link in this class —
+  // replaces the old single classTeacherId equality check, same class-wide posture as before.
+  const { data: courseTeacherLinks = [] } = useClassCourseTeachers(classId);
+  const hasCourseInClass = courseTeacherLinks.some((l) => l.teacherId === teacher?.id);
+
   const { data: learnersData, isLoading: learnersLoading } = useQuery({
     queryKey: ["learners", "byClass", classId],
     queryFn: () => learnerApi.getAll({ classId }),
@@ -71,10 +76,10 @@ export default function MyClassPage() {
     );
   }
 
-  if (teacher && cls.classTeacherId !== teacher.id) {
+  if (teacher && !hasCourseInClass) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ You aren't the class teacher for this class.
+        ⚠ You aren't assigned to any course in this class.
       </div>
     );
   }

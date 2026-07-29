@@ -16,7 +16,7 @@ export default function SchoolTeachersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const backPath  = user?.role === "school" ? "/school-portal" : "/teachers";
-  const backLabel = user?.role === "school" ? "Dashboard" : "Tech Educators";
+  const backLabel = user?.role === "school" ? "Dashboard" : "Educators";
   const [statusFilter, setStatusFilter] = useState("");
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
@@ -55,7 +55,7 @@ export default function SchoolTeachersPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.4px" }}>{school?.name}</h1>
               <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
-                {school?.address?.county ? `${school.address.county} County · ` : ""}Tech Educators
+                {school?.address?.county ? `${school.address.county} County · ` : ""}Educators
               </p>
             </div>
           </div>
@@ -64,7 +64,7 @@ export default function SchoolTeachersPage() {
             onClick={() => navigate(teacherCreatePath(user?.role, schoolId))}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
           >
-            + Add Tech Educator
+            + Add Educator
           </button>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function SchoolTeachersPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Tech Educators", value: teachersLoading ? "—" : teachers.length,          icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Total Educators", value: teachersLoading ? "—" : teachers.length,          icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
           { label: "Active",         value: teachersLoading ? "—" : activeCount,                    icon: <CheckCircleIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
           { label: "Inactive",       value: teachersLoading ? "—" : teachers.length - activeCount,   icon: <PauseCircleIcon fontSize="small" />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
         ].map((stat) => (

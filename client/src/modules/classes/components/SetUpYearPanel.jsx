@@ -49,9 +49,8 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
       gradeId:        cls.id,
       gradeName:      cls.name.trim(),
       academicYear,
-      status:         "active",
-      capacity:       null,
-      classTeacherId: null,
+      status:   "active",
+      capacity: null,
     }));
     bulkCreate(items, { onSuccess: onClose });
   };

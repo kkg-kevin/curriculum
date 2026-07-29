@@ -17,7 +17,7 @@ const ROLE_TILES = [
   },
   {
     value: "teacher",
-    label: "Tech Educator",
+    label: "Educator",
     icon: FiUsers,
     description: "Deliver sessions, grade assessments, and track your learners' progress.",
   },

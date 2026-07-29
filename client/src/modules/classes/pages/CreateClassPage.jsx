@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useCreateClass } from "../hooks/useClasses";
-import { useLearningHubQuery as useSchoolQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAuth } from "../../../context/AuthContext";
@@ -18,9 +18,9 @@ const createSchema = z.object({
   schoolId:       z.string().min(1, "School is required"),
   gradeName:      z.string().min(1, "Grade is required"),
   academicYear:   z.string().min(1, "Academic year is required"),
-  classTeacherId: z.string().nullable().optional(),
   capacity:       z.coerce.number().int().positive().nullable().optional(),
   status:         z.enum(["active", "inactive"]).default("active"),
+  tag:            z.string().trim().optional(),
 });
 
 const S = {
@@ -57,7 +57,7 @@ export default function CreateClassPage() {
     resolver: zodResolver(createSchema),
     defaultValues: {
       schoolId: lockedSchoolId, gradeName: "", academicYear: String(new Date().getFullYear()),
-      classTeacherId: null, capacity: null, status: "active",
+      capacity: null, status: "active", tag: "",
     },
     mode: "onTouched",
   });
@@ -68,14 +68,11 @@ export default function CreateClassPage() {
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
   const curriculumClasses = curriculum?.classes || [];
 
-  const { data: hubTeachers } = useHubTeachersQuery(selectedSchoolId);
-  const activeTeachers = (hubTeachers || []).filter((t) => t.status === "active");
-
   const backPath = classesListPath(user?.role, lockedSchoolId);
 
   const onSubmit = (data) => {
     const gradeId = curriculumClasses.find((c) => c.name === data.gradeName)?.id;
-    const payload = { ...data, curriculumId: school.curriculumId, gradeId };
+    const payload = { ...data, curriculumId: school.curriculumId, gradeId, tag: data.tag?.trim() || null };
     createClass(payload, { onSuccess: (record) => navigate(classPath(user?.role, record.id, "view")) });
   };
 
@@ -157,21 +154,6 @@ export default function CreateClassPage() {
               </div>
             </div>
 
-            <div style={S.field}>
-              <label style={S.label}>Class Tech Educator</label>
-              <Controller
-                name="classTeacherId"
-                control={control}
-                render={({ field }) => (
-                  <select value={field.value || ""} onChange={(e) => field.onChange(e.target.value || null)} style={S.select}>
-                    <option value="">— None —</option>
-                    {activeTeachers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
-                  </select>
-                )}
-              />
-              <span style={S.hint}>Only active tech educators at this school are shown. Optional — can be assigned later.</span>
-            </div>
-
             <div style={S.row}>
               <div style={S.field}>
                 <label style={S.label}>Capacity</label>
@@ -191,6 +173,13 @@ export default function CreateClassPage() {
                   )}
                 />
               </div>
+            </div>
+
+            <div style={S.field}>
+              <label style={S.label}>Tag</label>
+              <input {...register("tag")} style={S.input} placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
+              <span style={S.hint}>A short code unique to this class instance — lets you tell it apart from same-named classes at other hubs.</span>
+              {errors.tag && <span style={S.error}>{errors.tag.message}</span>}
             </div>
           </div>
         </form>

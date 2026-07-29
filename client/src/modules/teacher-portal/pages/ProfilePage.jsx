@@ -55,7 +55,7 @@ export default function ProfilePage() {
   // currently scoped to.
   const { data: classesData } = useQuery({
     queryKey: ["classes", "byClassTeacher", teacher?.id],
-    queryFn: () => classApi.getAll({ classTeacherId: teacher.id }),
+    queryFn: () => classApi.getAll({ teacherId: teacher.id }),
     enabled: !!teacher?.id,
   });
   const myClasses = classesData?.data || [];

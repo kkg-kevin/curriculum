@@ -2,7 +2,7 @@
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiBookOpen, FiEdit2, FiEye, FiMoreVertical, FiTrash2, FiUserCheck, FiUsers } from "react-icons/fi";
-import { useDeleteClass } from "../hooks/useClasses";
+import { useDeleteClass, useClassCourseTeachers } from "../hooks/useClasses";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
@@ -37,7 +37,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
   );
 }
 
-export function ClassCard({ cls, teachersMap }) {
+export function ClassCard({ cls }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteClass, isPending: isDeleting } = useDeleteClass();
@@ -48,9 +48,12 @@ export function ClassCard({ cls, teachersMap }) {
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
 
-  const teacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
   const { data: courses } = useCurriculumCurrentCourses(cls.curriculumId, cls.gradeId);
   const courseCount = courses?.length ?? 0;
+  // Educators are now assigned per course, not per class — count of distinct educators across
+  // every course-educator link in this class, replacing the old single classTeacherId display.
+  const { data: courseTeacherLinks = [] } = useClassCourseTeachers(cls.id);
+  const educatorCount = new Set(courseTeacherLinks.map((l) => l.teacherId)).size;
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -96,7 +99,10 @@ export function ClassCard({ cls, teachersMap }) {
               >
                 {cls.gradeName}
               </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{cls.academicYear}</p>
+              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
+                {cls.academicYear}
+                {cls.tag && <span style={{ marginLeft: 6, padding: "1px 7px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>{cls.tag}</span>}
+              </p>
             </div>
           </div>
           <button
@@ -113,9 +119,9 @@ export function ClassCard({ cls, teachersMap }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
             <FiUserCheck size={14} strokeWidth={2} color="#6B7280" />
-            {teacher
-              ? `${teacher.firstName} ${teacher.lastName}`
-              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No class tech educator</span>}
+            {educatorCount > 0
+              ? `${educatorCount} educator${educatorCount !== 1 ? "s" : ""} assigned`
+              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No educators assigned</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
             <FiUsers size={14} strokeWidth={2} color="#6B7280" />

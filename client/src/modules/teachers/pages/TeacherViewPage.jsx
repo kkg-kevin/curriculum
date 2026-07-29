@@ -7,74 +7,119 @@ import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
 import { EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
 import { classApi } from "../../classes/services/classApi";
-import { useUpdateClass } from "../../classes/hooks/useClasses";
+import { useClassQuery, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useTeacherCourseAssignments } from "../../classes/hooks/useClasses";
+import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
 
-// Assigns/unassigns this teacher as a class's class teacher — scoped to hubs this teacher is
-// already linked to (you can't be a class's teacher at a hub you're not even part of). A class
-// only ever has one class teacher (Class.classTeacherId), so "linking" here means picking a
-// hub, then a class within it, same two-step shape as EnrollLearnerControl on LearnerViewPage.
-function AssignClassControl({ teacherId, hubs }) {
+// One class this teacher is assigned to at least one course in — shows each course they teach
+// there, with its own Unassign button (equal-peer educators, so unassigning is per course).
+function MyClassGroup({ classId, courseIds, teacherId, canManage }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: cls } = useClassQuery(classId);
+  const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
+  const { mutate: unassign } = useUnassignCourseTeacher();
+  const courseNameById = Object.fromEntries(courses.map((c) => [c.id, c.name]));
+
+  if (!cls) return null;
+
+  return (
+    <div style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div onClick={() => navigate(classPath(user?.role, cls.id, "view"))} style={{ cursor: "pointer", minWidth: 0, flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{cls.gradeName}</p>
+          <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>Academic Year {cls.academicYear}</p>
+        </div>
+        <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: cls.status === "active" ? "#e8f5fb" : "#F9FAFB", color: cls.status === "active" ? "#25476a" : "#6B7280", border: `1px solid ${cls.status === "active" ? "#a8d5ee" : "#E5E7EB"}`, flexShrink: 0 }}>
+          {cls.status === "active" ? "Active" : "Inactive"}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {courseIds.map((courseId) => (
+          <span key={courseId} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 600, backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", color: "#25476a" }}>
+            {courseNameById[courseId] || "Course"}
+            {canManage && (
+              <button type="button" onClick={() => unassign({ classId, courseId, teacherId })} style={{ background: "none", border: "none", color: "#25476a", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }} title="Unassign">×</button>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Assigns this teacher to a course within a class — scoped to hubs this teacher is already
+// linked to (you can't teach a class at a hub you're not even part of). A course can have more
+// than one co-equal educator, so "linking" here is hub → class → course → assign, one step
+// deeper than the old single-class-teacher picker.
+function AssignCourseControl({ teacherId, hubs }) {
   const [selectedHubId, setSelectedHubId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
-  const { mutate: updateClass, isPending } = useUpdateClass();
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const { mutate: assign, isPending } = useAssignCourseTeacher();
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", selectedHubId],
     queryFn:  () => classApi.getAll({ schoolId: selectedHubId, status: "active" }),
     enabled:  !!selectedHubId,
   });
-  const classes = (classesData?.data || []).filter((c) => c.classTeacherId !== teacherId);
+  const classes = classesData?.data || [];
+  const selectedClass = classes.find((c) => c.id === selectedClassId) || null;
 
-  const { data: hubTeachers } = useQuery({
-    queryKey: ["learningHubs", "detail", selectedHubId, "teachers"],
-    queryFn:  () => learningHubApi.getTeachers(selectedHubId),
-    enabled:  !!selectedHubId,
-  });
-  const teacherNameById = Object.fromEntries((hubTeachers || []).map((t) => [t.id, `${t.firstName} ${t.lastName}`]));
+  const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
+  const { data: existingLinks = [] } = useClassCourseTeachers(selectedClassId);
+  const availableCourses = courses.filter((c) => !existingLinks.some((l) => l.courseId === c.id && l.teacherId === teacherId));
 
   return (
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select
           value={selectedHubId}
-          onChange={(e) => { setSelectedHubId(e.target.value); setSelectedClassId(""); }}
-          style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
+          onChange={(e) => { setSelectedHubId(e.target.value); setSelectedClassId(""); setSelectedCourseId(""); }}
+          style={{ flex: 1, minWidth: 110, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
         >
           <option value="">Pick a hub…</option>
           {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
         </select>
         <select
           value={selectedClassId}
-          onChange={(e) => setSelectedClassId(e.target.value)}
+          onChange={(e) => { setSelectedClassId(e.target.value); setSelectedCourseId(""); }}
           disabled={!selectedHubId}
-          style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
+          style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
         >
           <option value="">Pick a class…</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.gradeName} — {c.academicYear}{c.classTeacherId ? ` (replaces ${teacherNameById[c.classTeacherId] || "current tech educator"})` : ""}
-            </option>
-          ))}
+          {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+        </select>
+        <select
+          value={selectedCourseId}
+          onChange={(e) => setSelectedCourseId(e.target.value)}
+          disabled={!selectedClassId}
+          style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedClassId ? 1 : 0.5 }}
+        >
+          <option value="">Pick a course…</option>
+          {availableCourses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <button
           type="button"
-          disabled={!selectedClassId || isPending}
+          disabled={!selectedCourseId || isPending}
           onClick={() => {
-            updateClass({ id: selectedClassId, data: { classTeacherId: teacherId } });
-            setSelectedClassId("");
+            assign({ classId: selectedClassId, courseId: selectedCourseId, teacherId });
+            setSelectedCourseId("");
           }}
-          style={{ padding: "8px 16px", backgroundColor: !selectedClassId || isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !selectedClassId || isPending ? "not-allowed" : "pointer", flexShrink: 0 }}
+          style={{ padding: "8px 16px", backgroundColor: !selectedCourseId || isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !selectedCourseId || isPending ? "not-allowed" : "pointer", flexShrink: 0 }}
         >
           Assign
         </button>
       </div>
+      {selectedClassId && availableCourses.length === 0 && (
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>Already assigned to every course in this class.</span>
+      )}
       {selectedHubId && classes.length === 0 && (
-        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No other active classes at this hub.</span>
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No active classes at this hub.</span>
       )}
     </div>
   );
@@ -161,13 +206,17 @@ export default function TeacherViewPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState(null);
 
-  const { data: classesData } = useQuery({
-    queryKey: ["classes", "byClassTeacher", id],
-    queryFn:  () => classApi.getAll({ classTeacherId: id }),
-    enabled:  !!id,
-  });
-  const myClasses = classesData?.data || [];
-  const { mutate: updateClass } = useUpdateClass();
+  // Every (class, course) link for this teacher, grouped by class — replaces the old
+  // classTeacherId-based "my classes" query, since a teacher's classes are now derived from
+  // course-educator links rather than a single field.
+  const { data: courseAssignments = [] } = useTeacherCourseAssignments(id);
+  const myClassGroups = Object.values(
+    courseAssignments.reduce((acc, l) => {
+      if (!acc[l.classId]) acc[l.classId] = { classId: l.classId, courseIds: [] };
+      acc[l.classId].courseIds.push(l.courseId);
+      return acc;
+    }, {})
+  );
 
   if (isLoading) {
     return (
@@ -197,7 +246,7 @@ export default function TeacherViewPage() {
           {/* Breadcrumb */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
             <button type="button" onClick={() => navigate(teachersListPath(isSchool ? "school" : "admin", ownSchoolId))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.65)", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
-              Tech Educators
+              Educators
             </button>
             <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px" }}>/</span>
             <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px", fontWeight: "500" }}>
@@ -230,7 +279,7 @@ export default function TeacherViewPage() {
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Edit Tech Educator
+                Edit Educator
               </button>
               <button
                 type="button"
@@ -250,40 +299,21 @@ export default function TeacherViewPage() {
         {/* Left */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <Section title="Classes">
-            {myClasses.length === 0 ? (
+            {myClassGroups.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned as class tech educator to any class yet.</p>
+                <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned to any course in a class yet.</p>
                 {hubs.length === 1 && (
                   <button type="button" onClick={() => navigate(classCreatePath(user?.role, hubs[0].id))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
                 )}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {myClasses.map((c) => (
-                  <div key={c.id}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E7EB" }}
-                  >
-                    <div onClick={() => navigate(classPath(user?.role, c.id, "view"))} style={{ cursor: "pointer", minWidth: 0, flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.gradeName}</p>
-                      <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>Academic Year {c.academicYear}</p>
-                    </div>
-                    <span style={{ padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: c.status === "active" ? "#e8f5fb" : "#F9FAFB", color: c.status === "active" ? "#25476a" : "#6B7280", border: `1px solid ${c.status === "active" ? "#a8d5ee" : "#E5E7EB"}`, flexShrink: 0 }}>
-                      {c.status === "active" ? "Active" : "Inactive"}
-                    </span>
-                    {(isAdmin || isSchool) && (
-                      <button
-                        type="button"
-                        onClick={() => updateClass({ id: c.id, data: { classTeacherId: null } })}
-                        style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", flexShrink: 0 }}
-                      >
-                        Unassign
-                      </button>
-                    )}
-                  </div>
+                {myClassGroups.map((g) => (
+                  <MyClassGroup key={g.classId} classId={g.classId} courseIds={g.courseIds} teacherId={id} canManage={isAdmin || isSchool} />
                 ))}
               </div>
             )}
-            {(isAdmin || isSchool) && hubs.length > 0 && <AssignClassControl teacherId={id} hubs={hubs} />}
+            {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} />}
           </Section>
         </div>
 
@@ -369,7 +399,7 @@ export default function TeacherViewPage() {
             <Section title="Employment">
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <DetailRow label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType]} />
-                <DetailRow label="Tech Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />
+                <DetailRow label="Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />
                 <DetailRow label="Payment Terms" value={PAYMENT_TERMS_LABELS[teacher.paymentTerms]} />
               </div>
             </Section>
@@ -395,7 +425,7 @@ export default function TeacherViewPage() {
 
       <ConfirmDialog
         isOpen={confirmDelete}
-        title={isSchool ? "Remove from Hub" : "Remove Tech Educator"}
+        title={isSchool ? "Remove from Hub" : "Remove Educator"}
         message={
           isSchool
             ? `"${teacher.firstName} ${teacher.lastName}" will be removed from this hub. Their account and any other hub assignments are unaffected.`

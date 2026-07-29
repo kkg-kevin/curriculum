@@ -1,13 +1,9 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCreateTeacher } from "../hooks/useTeacher";
-import { CLASS_KEYS } from "../../classes/hooks/useClasses";
 import { teacherSchema } from "../schemas/teacher.schema";
-import { classApi } from "../../classes/services/classApi";
-import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import TeacherForm from "../components/TeacherForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
@@ -16,53 +12,15 @@ import { teachersListPath, teacherPath } from "../../../routes/portalPaths";
 
 const ACCENT = "#25476a";
 
-function ClassCheckbox({ cls, teachersMap, selected, onToggle }) {
-  const currentTeacher = cls.classTeacherId ? teachersMap[cls.classTeacherId] : null;
-  return (
-    <label
-      style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${selected ? ACCENT : "#E5E7EB"}`, backgroundColor: selected ? "#e8f5fb" : "#FAFAFA", cursor: "pointer", transition: "all 0.15s" }}
-    >
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={onToggle}
-        style={{ marginTop: 2, accentColor: ACCENT, flexShrink: 0, width: 16, height: 16, cursor: "pointer" }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: selected ? ACCENT : "#111827" }}>{cls.gradeName}</p>
-        <p style={{ margin: "1px 0 0", fontSize: 12, color: "#9CA3AF" }}>{cls.academicYear} · {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}</p>
-        {currentTeacher && (
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#F59E0B" }}>
-            Currently: {currentTeacher.firstName} {currentTeacher.lastName} — will be replaced
-          </p>
-        )}
-      </div>
-    </label>
-  );
-}
-
 export default function CreateTeacherPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const lockedSchoolId = searchParams.get("schoolId") || "";
 
   const { mutate: createTeacher, isPending } = useCreateTeacher();
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const [selectedClassIds, setSelectedClassIds] = useState(new Set());
   const [passwordReveal, setPasswordReveal] = useState(null);
-
-  const { data: classesData } = useQuery({
-    queryKey: ["classes", "bySchool", lockedSchoolId],
-    queryFn:  () => classApi.getAll({ schoolId: lockedSchoolId }),
-    enabled:  !!lockedSchoolId,
-  });
-
-  const { data: hubTeachers } = useHubTeachersQuery(lockedSchoolId);
-
-  const schoolClasses = (classesData?.data || []).filter((c) => c.status === "active");
-  const teachersMap = Object.fromEntries((hubTeachers || []).map((t) => [t.id, t]));
 
   const methods = useForm({
     resolver: zodResolver(teacherSchema),
@@ -77,26 +35,10 @@ export default function CreateTeacherPage() {
 
   const { handleSubmit, formState: { isDirty } } = methods;
 
-  const toggleClass = (id) => {
-    setSelectedClassIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
   const onSubmit = (data) => {
     const payload = lockedSchoolId ? { ...data, hubId: lockedSchoolId } : data;
     createTeacher(payload, {
-      onSuccess: async (teacher) => {
-        if (selectedClassIds.size > 0) {
-          await Promise.all(
-            [...selectedClassIds].map((classId) =>
-              classApi.update(classId, { classTeacherId: teacher.id })
-            )
-          );
-          qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
-        }
+      onSuccess: (teacher) => {
         const viewPath = teacherPath(user?.role, teacher.id, "view");
         if (data.password) {
           setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
@@ -108,7 +50,7 @@ export default function CreateTeacherPage() {
   };
 
   const handleCancel = () => {
-    if (isDirty || selectedClassIds.size > 0) setConfirmLeave(true);
+    if (isDirty) setConfirmLeave(true);
     else navigate(teachersListPath(user?.role, lockedSchoolId));
   };
 
@@ -120,14 +62,14 @@ export default function CreateTeacherPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Tech Educators
+              ← Educators
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Add Tech Educator</h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Add Educator</h1>
           <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Fill in the tech educator's details and optionally assign them to one or more classes.
+            Fill in the educator's details. Course assignments happen afterward, from the class's own page.
           </p>
         </div>
 
@@ -143,7 +85,7 @@ export default function CreateTeacherPage() {
           >
             {isPending ? (
               <><span style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>
-            ) : "Save Tech Educator"}
+            ) : "Save Educator"}
           </button>
         </div>
       </div>
@@ -153,40 +95,6 @@ export default function CreateTeacherPage() {
           <TeacherForm />
         </form>
       </FormProvider>
-
-      {lockedSchoolId && schoolClasses.length > 0 && (
-        <div style={{ marginTop: 20, backgroundColor: "#ffffff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-          <div style={{ padding: "16px 24px", borderBottom: "1px solid #F3F4F6" }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>
-              Assign to Classes
-              <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: "#9CA3AF" }}>optional</span>
-            </h3>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-              Select which classes this tech educator will be the class tech educator for.
-              {selectedClassIds.size > 0 && (
-                <span style={{ marginLeft: 8, color: ACCENT, fontWeight: 600 }}>{selectedClassIds.size} selected</span>
-              )}
-            </p>
-          </div>
-          <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-            {schoolClasses.map((cls) => (
-              <ClassCheckbox
-                key={cls.id}
-                cls={cls}
-                teachersMap={teachersMap}
-                selected={selectedClassIds.has(cls.id)}
-                onToggle={() => toggleClass(cls.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {lockedSchoolId && schoolClasses.length === 0 && classesData && (
-        <div style={{ marginTop: 20, padding: "16px 20px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 13, color: "#92400E" }}>
-          No active classes in this school yet. Set up classes first to assign this tech educator.
-        </div>
-      )}
 
       <ConfirmDialog
         isOpen={confirmLeave}
