@@ -25,6 +25,11 @@
         "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
         "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
         "percentage": 40
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 10
       }
     ],
     "advancementThreshold": 90,
@@ -71,47 +76,6 @@
     "createdAt": "2026-07-10T12:40:59.072Z"
   },
   {
-    "id": "cf070ccc-1913-44ca-a29b-d3975bf8bf5b",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "whSR",
-    "description": "WHARSDBF",
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [
-      "976629f0-c49e-45d8-a3bd-d44719972d09"
-    ],
-    "indicatorContributions": [],
-    "advancementThreshold": 90,
-    "order": 1,
-    "createdAt": "2026-07-15T07:28:23.239Z"
-  },
-  {
-    "id": "c92f9fb6-3069-4097-b885-a7b484d14c0e",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "hewsd",
-    "description": "hedb",
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [],
-    "indicatorContributions": [],
-    "advancementThreshold": 90,
-    "order": 2,
-    "createdAt": "2026-07-15T07:46:50.826Z"
-  },
-  {
-    "id": "671b048f-4100-42e2-82e7-69caa56647bb",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "QGEASD",
-    "description": "RBSFZX",
-    "minScore": 0,
-    "maxScore": 100,
-    "competencyIds": [],
-    "indicatorContributions": [],
-    "advancementThreshold": 12,
-    "order": 3,
-    "createdAt": "2026-07-15T07:50:03.665Z"
-  },
-  {
     "id": "c00f8b79-48ac-4abd-b8d1-af2eb0c7389e",
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "name": "Learning area one — Level 1: Code Foundations",
@@ -140,5 +104,187 @@
     "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
     "order": 4,
     "createdAt": "2026-07-15T13:40:19.563Z"
+  },
+  {
+    "id": "b84578bd-d5a2-468e-84e8-582d68b21e28",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Robotics - sample course",
+    "description": "",
+    "minScore": 0,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorContributions": [],
+    "advancementThreshold": 0,
+    "learningAreaId": "470d8f45-afdf-4ba9-9049-a9c9cc30f869",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "order": 4,
+    "createdAt": "2026-07-29T10:24:23.652Z"
+  },
+  {
+    "id": "4cb014ed-3c00-4776-a50d-85b77abc2ca2",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Robotics - Level 1",
+    "description": "",
+    "minScore": 60,
+    "maxScore": 100,
+    "competencyIds": [],
+    "indicatorContributions": [],
+    "advancementThreshold": 0,
+    "learningAreaId": "470d8f45-afdf-4ba9-9049-a9c9cc30f869",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "order": 5,
+    "createdAt": "2026-07-29T10:24:23.655Z"
+  },
+  {
+    "id": "1fe23eb9-9cbf-4d5f-8219-a166e2c064f2",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Emerging",
+    "description": "Beginning to demonstrate computational thinking with support.",
+    "minScore": 0,
+    "maxScore": 39,
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "percentage": 25
+      }
+    ],
+    "advancementThreshold": 40,
+    "learningAreaId": null,
+    "courseId": null,
+    "order": 3,
+    "createdAt": "2026-07-29T11:33:02.726Z"
+  },
+  {
+    "id": "325c2837-4592-42a2-8b9a-1e878da78213",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Developing",
+    "description": "Applies computational thinking with some independence.",
+    "minScore": 40,
+    "maxScore": 64,
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "percentage": 25
+      }
+    ],
+    "advancementThreshold": 65,
+    "learningAreaId": null,
+    "courseId": null,
+    "order": 4,
+    "createdAt": "2026-07-29T11:33:02.728Z"
+  },
+  {
+    "id": "9e7a4cca-a79a-4b66-84e4-6f2aa1d2889a",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Proficient",
+    "description": "Consistently applies computational thinking independently.",
+    "minScore": 65,
+    "maxScore": 84,
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "percentage": 25
+      }
+    ],
+    "advancementThreshold": 85,
+    "learningAreaId": null,
+    "courseId": null,
+    "order": 5,
+    "createdAt": "2026-07-29T11:33:02.730Z"
+  },
+  {
+    "id": "afe35c68-c0a7-43f7-ad19-27b3898a562c",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Advanced",
+    "description": "Applies computational thinking flexibly to novel problems.",
+    "minScore": 85,
+    "maxScore": 100,
+    "competencyIds": [
+      "976629f0-c49e-45d8-a3bd-d44719972d09"
+    ],
+    "indicatorContributions": [
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "percentage": 25
+      },
+      {
+        "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "percentage": 25
+      }
+    ],
+    "advancementThreshold": 100,
+    "learningAreaId": null,
+    "courseId": null,
+    "order": 6,
+    "createdAt": "2026-07-29T11:33:02.732Z"
   }
 ]

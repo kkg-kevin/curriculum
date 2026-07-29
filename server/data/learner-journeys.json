@@ -55,16 +55,22 @@
     "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "learningAreaId": "470d8f45-afdf-4ba9-9049-a9c9cc30f869",
-    "currentCourseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "currentCourseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "history": [
       {
         "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
         "reachedAt": "2026-07-27T11:32:38.141Z",
         "reason": "manual",
         "assessmentId": null
+      },
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "reachedAt": "2026-07-29T10:24:23.706Z",
+        "reason": "diagnostic",
+        "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
       }
     ],
     "createdAt": "2026-07-27T11:32:38.141Z",
-    "updatedAt": "2026-07-27T11:32:38.141Z"
+    "updatedAt": "2026-07-29T10:24:23.706Z"
   }
 ]

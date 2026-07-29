@@ -8,6 +8,7 @@ const KEYS = {
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId) => ["assessment-issues", "diagnostic", learnerId],
+  learningAreaDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "learning-areas", learnerId],
   indicatorProgress: (learnerId) => ["assessment-issues", "indicator-progress", learnerId],
 };
 
@@ -97,6 +98,16 @@ export function useDiagnosticForLearner(learnerId) {
   });
 }
 
+// Plural counterpart — every Learning-Area diagnostic this learner currently holds, drives the
+// per-area diagnostic cards on LearnerViewPage.
+export function useLearningAreaDiagnosticsForLearner(learnerId) {
+  return useQuery({
+    queryKey: KEYS.learningAreaDiagnostics(learnerId),
+    queryFn:  () => assessmentSubmissionApi.getLearningAreaDiagnosticsForLearner(learnerId),
+    enabled:  !!learnerId,
+  });
+}
+
 // A learner's accumulating competency progress — sums earned/possible marks per indicator
 // across every graded assessment they've ever had (see CompetencyService's
 // getLearnerIndicatorProgress). Usable by the learner themselves or an admin/school reviewing it.
@@ -127,6 +138,11 @@ export function useGradeSubmission() {
       // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
       // so LearnerViewPage reflects the new placement without a manual reload.
       if (submission.learnerId) qc.invalidateQueries({ queryKey: ["learners", "detail", submission.learnerId] });
+      // A graded Learning-Area diagnostic may have just placed this learner at a starting
+      // course (see CompetencyService.placeLearnerFromLearningAreaDiagnostic) — no cheap way to
+      // know which (curriculumId, learnerId) pair from here, so invalidate every Learning
+      // Journey query rather than skip the refresh.
+      qc.invalidateQueries({ queryKey: ["learning-journey"] });
       // A class-issued submission's grade now stays hidden until the teacher separately
       // publishes its report (see publishReport in assessment-submission.service.js) — a
       // standalone one (diagnostic/course-progress) still releases the same instant it's graded.

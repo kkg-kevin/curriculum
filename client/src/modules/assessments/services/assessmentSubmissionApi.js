@@ -11,6 +11,7 @@ export const assessmentSubmissionApi = {
 
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
   getDiagnosticForLearner: (learnerId)   => api.get(`${BASE}/diagnostic/${learnerId}`).then((r) => r.data.data),
+  getLearningAreaDiagnosticsForLearner: (learnerId) => api.get(`${BASE}/diagnostic/learning-areas/${learnerId}`).then((r) => r.data.data),
   getLearnerIndicatorProgress: (learnerId) => api.get(`${BASE}/learner/${learnerId}/competency-progress`).then((r) => r.data.data),
   issueOnSessionComplete: (payload)      => api.post(`${BASE}/issues/course-progress`, payload).then((r) => r.data.data),
   getOrCreateSubmission: (issueId)       => api.post(`${BASE}/submissions`, { issueId }).then((r) => r.data.data),

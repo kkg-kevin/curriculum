@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
+import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import BranchesPanel from "../../branches/components/BranchesPanel";
@@ -248,6 +249,7 @@ const CSS = `
 const TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "learning-areas", label: "Learning Areas" },
+  { key: "system-levels", label: "System Levels" },
   { key: "inventory", label: "Inventory" },
   { key: "learning-hubs", label: "Learning Hubs" },
 ];
@@ -301,6 +303,7 @@ export default function SettingsPage() {
       <div className="stg-card">
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "learning-areas" && <LearningAreasPanel />}
+        {activeTab === "system-levels" && <SystemLevelsPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
         {activeTab === "learning-hubs" && (
           <div>

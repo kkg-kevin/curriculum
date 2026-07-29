@@ -30,47 +30,36 @@
     "updatedAt": "2026-07-15T13:38:32.964Z"
   },
   {
-    "id": "6805c454-20a6-4a2e-9843-aa67ba98fae8",
+    "id": "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "ASC",
-    "description": "EADQVDZX",
-    "minAge": 1,
-    "maxAge": 2,
+    "name": "Foundational Upper Primary",
+    "description": "Grade 4 learners building core computational thinking and coding foundations.",
+    "minAge": 8,
+    "maxAge": 9,
     "order": 1,
-    "createdAt": "2026-07-15T07:27:41.591Z",
-    "updatedAt": "2026-07-15T07:27:41.591Z"
+    "createdAt": "2026-07-29T11:33:02.709Z",
+    "updatedAt": "2026-07-29T11:33:02.709Z"
   },
   {
-    "id": "6481fd75-1da6-44ba-9be1-f40a67cbc88a",
+    "id": "84f50dc0-d8ba-460b-8ab6-ced9834d800f",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "whqg78h7h",
-    "description": "hwvh7argsgvygy",
-    "minAge": 1,
-    "maxAge": 2,
+    "name": "Developing Upper Primary",
+    "description": "Grade 5 learners extending programming skills and beginning independent projects.",
+    "minAge": 9,
+    "maxAge": 10,
     "order": 2,
-    "createdAt": "2026-07-15T07:40:28.770Z",
-    "updatedAt": "2026-07-15T07:40:28.770Z"
+    "createdAt": "2026-07-29T11:33:02.713Z",
+    "updatedAt": "2026-07-29T11:33:02.713Z"
   },
   {
-    "id": "6a93757a-0246-46e3-a788-68351415d518",
+    "id": "9fa8af55-0d19-4e6e-bc57-69f1e674807b",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "35hyq5",
-    "description": "3qy5hwae",
-    "minAge": 1,
-    "maxAge": 2,
+    "name": "Advanced Upper Primary",
+    "description": "Grade 6 learners applying computational thinking to multi-step, real-world projects.",
+    "minAge": 10,
+    "maxAge": 12,
     "order": 3,
-    "createdAt": "2026-07-15T07:46:36.395Z",
-    "updatedAt": "2026-07-15T07:46:36.395Z"
-  },
-  {
-    "id": "f56d59dc-19db-4573-ae3d-c62aae8b968d",
-    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "sfbx",
-    "description": "wsbfx",
-    "minAge": 1,
-    "maxAge": 2,
-    "order": 4,
-    "createdAt": "2026-07-15T07:49:51.496Z",
-    "updatedAt": "2026-07-15T07:49:51.496Z"
+    "createdAt": "2026-07-29T11:33:02.716Z",
+    "updatedAt": "2026-07-29T11:33:02.716Z"
   }
 ]

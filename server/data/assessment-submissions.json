@@ -823,5 +823,178 @@
     "createdAt": "2026-07-28T12:41:44.100Z",
     "updatedAt": "2026-07-28T12:41:49.557Z",
     "indicatorBreakdown": []
+  },
+  {
+    "issueId": "22789b62-d91a-4b3f-888a-3bf74d43b518",
+    "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+    "learnerId": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
+    "classId": null,
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "q1",
+        "response": "Decomposition"
+      },
+      {
+        "itemId": "q2",
+        "response": "True"
+      },
+      {
+        "itemId": "q3",
+        "response": [
+          {
+            "left": "Pattern recognition",
+            "right": "Spotting similarities across problems"
+          },
+          {
+            "left": "Decomposition",
+            "right": "Splitting a problem into smaller parts"
+          },
+          {
+            "left": "Algorithm",
+            "right": "A step-by-step sequence of instructions"
+          }
+        ]
+      },
+      {
+        "itemId": "q4",
+        "response": [
+          "Boil the water",
+          "Place a tea bag in the cup",
+          "Pour the hot water into the cup",
+          "Let it steep, then remove the tea bag"
+        ]
+      },
+      {
+        "itemId": "q5",
+        "response": [
+          "Variables",
+          "Loops",
+          "Conditionals"
+        ]
+      },
+      {
+        "itemId": "q6",
+        "response": [
+          "loop",
+          "conditional (if statement)"
+        ]
+      },
+      {
+        "itemId": "q7",
+        "response": "Meaningful names describe what the value represents, so others do not have to guess."
+      },
+      {
+        "itemId": "q8",
+        "response": "I would re-check the logic, test with sample inputs, and use print statements to isolate the bug."
+      },
+      {
+        "itemId": "8317d02d-a487-4451-b777-83601f54c3f3",
+        "response": "CPU"
+      }
+    ],
+    "autoScore": 11,
+    "autoMax": 14,
+    "autoItemResults": [
+      {
+        "itemId": "q1",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "q2",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q3",
+        "correct": true,
+        "marksAwarded": 3,
+        "maxMarks": 3
+      },
+      {
+        "itemId": "q4",
+        "correct": true,
+        "marksAwarded": 3,
+        "maxMarks": 3
+      },
+      {
+        "itemId": "q5",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "q6",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "8317d02d-a487-4451-b777-83601f54c3f3",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": 6,
+    "totalScore": 17,
+    "maxScore": 20,
+    "requiresManualGrading": true,
+    "itemFeedback": [],
+    "overallFeedback": "Solid grasp of decomposition and debugging process. Keep practicing programming constructs.",
+    "submittedAt": "2026-07-29T10:24:23.691Z",
+    "gradedAt": "2026-07-29T10:24:23.695Z",
+    "gradedBy": "admin-demo",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-29T10:24:23.696Z",
+    "reportPublishedBy": "admin-demo",
+    "id": "8f4ca45e-9007-43fc-a70e-91078c73bee9",
+    "createdAt": "2026-07-29T10:24:23.687Z",
+    "updatedAt": "2026-07-29T10:24:23.698Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 2,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 3,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 3,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "marksEarned": 2,
+        "marksPossible": 4
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 0,
+        "marksPossible": 3
+      },
+      {
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "marksEarned": 0,
+        "marksPossible": 1.5
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 0,
+        "marksPossible": 1.5
+      }
+    ]
   }
 ]

@@ -63,12 +63,20 @@ function summarizeIndicatorProgress(submissions) {
   }).sort((a, b) => a.competencyName.localeCompare(b.competencyName) || a.indicatorName.localeCompare(b.indicatorName));
 }
 
+// A standalone diagnostic issue carries either an ageCategoryId (Developmental Stage ->
+// Performance Band placement) or a learningAreaId (Learning Area -> starting course
+// placement) — never both. Ordinary class-issued assessments have neither, so this is a
+// no-op for them.
 function maybePlaceFromDiagnostic(submission) {
   if (submission.status !== "graded") return;
   const issue = AssessmentIssueModel.findById(submission.issueId);
-  if (!issue?.learnerId || !issue?.ageCategoryId) return;
+  if (!issue?.learnerId) return;
   const scorePercent = submission.maxScore > 0 ? (submission.totalScore / submission.maxScore) * 100 : 0;
-  CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.ageCategoryId, scorePercent);
+  if (issue.ageCategoryId) {
+    CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.ageCategoryId, scorePercent);
+  } else if (issue.learningAreaId) {
+    CompetencyService.placeLearnerFromLearningAreaDiagnostic(issue.learnerId, issue.learningAreaId, scorePercent, issue.assessmentId);
+  }
 }
 
 const AssessmentSubmissionService = {
@@ -85,13 +93,15 @@ const AssessmentSubmissionService = {
   // Standalone diagnostic issuance — bypasses the normal course/session attachment entirely
   // (unlike issueAssessment above), since a diagnostic is meant to run before any course is
   // even assigned. Idempotent per (assessment, learner): re-triggering (e.g. re-enrolling)
-  // never creates a duplicate. See learner.service.js's maybeAutoIssueDiagnostic for the caller.
-  issueDiagnostic({ assessmentId, learnerId, ageCategoryId }) {
+  // never creates a duplicate. Pass exactly one of ageCategoryId/learningAreaId — which one is
+  // set is what maybePlaceFromDiagnostic branches on at grading time. See
+  // learner.service.js's maybeAutoIssueDiagnostic for the caller(s).
+  issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, learningAreaId = null }) {
     loadAssessmentOrThrow(assessmentId);
     const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId });
     if (existing) return existing;
     return AssessmentIssueModel.create({
-      assessmentId, learnerId, ageCategoryId,
+      assessmentId, learnerId, ageCategoryId, learningAreaId,
       sessionId: null, courseId: null, classId: null,
       issuedBy: "system", dueDate: null,
     });
@@ -131,6 +141,14 @@ const AssessmentSubmissionService = {
   getDiagnosticForLearner(learnerId) {
     return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
       .find((row) => !!row.issue.ageCategoryId) || null;
+  },
+
+  // Every Learning-Area diagnostic this learner currently holds (one per area their class's
+  // courses expose, per learner.service.js's maybeAutoIssueDiagnostic) — plural counterpart to
+  // getDiagnosticForLearner above, since a learner can hold several of these at once.
+  getLearningAreaDiagnosticsForLearner(learnerId) {
+    return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
+      .filter((row) => !!row.issue.learningAreaId);
   },
 
   revokeIssue(issueId) {

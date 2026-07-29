@@ -4,6 +4,8 @@ const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
 const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
+const LearningAreaModel = require("../curriculum/competency-framework/learning-area.model");
+const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 
 function computeAge(dateOfBirth) {
@@ -22,18 +24,40 @@ function computeAge(dateOfBirth) {
 // stage has a diagnostic assessment configured, auto-issues it (see
 // AssessmentSubmissionService.issueDiagnostic, idempotent per learner+assessment). An existing
 // manual/diagnostic placement is never overwritten by this age guess — only fills in
-// currentStageId when it's still unset.
+// currentStageId when it's still unset. Also auto-issues one diagnostic per Learning Area the
+// class's courses actually expose (see maybeAutoIssueLearningAreaDiagnostics below) — a
+// separate placement identity (starting course per area) from the stage/band one above.
 function maybeAutoIssueDiagnostic(learnerId, cls) {
   if (!cls?.curriculumId) return;
   const learner = LearnerModel.findById(learnerId);
   const age = computeAge(learner?.dateOfBirth);
-  if (age === null) return;
-  const category = AgeCategoryModel.findByCurriculumId(cls.curriculumId)
-    .find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
-  if (!category) return;
-  if (!learner.currentStageId) LearnerModel.update(learnerId, { currentStageId: category.id });
-  if (category.diagnosticAssessmentId) {
-    AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id });
+  if (age !== null) {
+    const category = AgeCategoryModel.findByCurriculumId(cls.curriculumId)
+      .find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
+    if (category) {
+      if (!learner.currentStageId) LearnerModel.update(learnerId, { currentStageId: category.id });
+      if (category.diagnosticAssessmentId) {
+        AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id });
+      }
+    }
+  }
+  maybeAutoIssueLearningAreaDiagnostics(learnerId, cls);
+}
+
+// One diagnostic per Learning Area whose courses are actually visible to this class (via the
+// curriculum's live version, same source ClassViewPage's "Courses & Educators" panel reads) and
+// that has a diagnosticAssessmentId configured. issueDiagnostic's own (assessmentId, learnerId)
+// idempotency means this is safe to re-run on every enrollment/class change — a learner already
+// holding a given area's diagnostic never gets a duplicate, and moving to a class exposing a
+// *new* area issues just that one.
+function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls) {
+  if (!cls?.gradeId) return;
+  const currentCourseIds = new Set(CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId).map((c) => c.id));
+  if (currentCourseIds.size === 0) return;
+  const areas = LearningAreaModel.findByCurriculumId(cls.curriculumId)
+    .filter((a) => a.diagnosticAssessmentId && (a.courses || []).some((cid) => currentCourseIds.has(cid)));
+  for (const area of areas) {
+    AssessmentSubmissionService.issueDiagnostic({ assessmentId: area.diagnosticAssessmentId, learnerId, learningAreaId: area.id });
   }
 }
 

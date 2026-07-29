@@ -10,7 +10,7 @@ import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useDiagnosticForLearner, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -20,6 +20,10 @@ import { formatClassName } from "../../classes/utils/classDisplay";
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 const ACCENT    = "#25476a";
+// Diagnostics are a distinct category from every other card on this page (Guardian, Learning
+// Hubs, Learning Journey, etc. all share the standard teal heading) — this violet accent plus
+// the 🩺 icon is what sets them apart at a glance.
+const DIAGNOSTIC_ACCENT = "#7C3AED";
 
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
 const STATUS_STYLES = {
@@ -110,8 +114,8 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
   const bandName = bands.find((b) => b.id === currentBandId)?.name;
 
   return (
-    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Diagnostic Assessment</h3>
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, borderLeft: `4px solid ${DIAGNOSTIC_ACCENT}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>🩺 Diagnostic Assessment</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
         Auto-issued based on this learner's age; grading it sets their Developmental Stage and Performance Band below.
       </p>
@@ -137,11 +141,11 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{row.assessment.name}</p>
             <DiagnosticStatusBadge status={row.submission.status} />
             {row.submission.status === "graded" && (
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#25476a" }}>{row.submission.totalScore}/{row.submission.maxScore}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: DIAGNOSTIC_ACCENT }}>{row.submission.totalScore}/{row.submission.maxScore}</span>
             )}
           </div>
           {row.submission.status === "submitted" && (
-            <button type="button" onClick={() => setGradeOpen(true)} style={{ padding: "8px 16px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={() => setGradeOpen(true)} style={{ padding: "8px 16px", backgroundColor: DIAGNOSTIC_ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Grade Now
             </button>
           )}
@@ -160,6 +164,70 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
               submission={row.submission}
               isSaving={grading}
               onSave={(payload) => grade({ id: row.submission.id, ...payload }, { onSuccess: () => setGradeOpen(false) })}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One diagnostic per Learning Area the learner's class exposes (see learner.service.js's
+// maybeAutoIssueLearningAreaDiagnostics) — a separate placement identity from the single
+// Developmental Stage diagnostic above: grading one of these sets the learner's starting course
+// in that specific area (via CompetencyService.placeLearnerFromLearningAreaDiagnostic), reflected
+// below in the Learning Journey card once graded. Only one grading modal open at a time, keyed by
+// issue id so grading one row doesn't also open every other row's panel.
+function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
+  const { data: rows = [], isLoading } = useLearningAreaDiagnosticsForLearner(learnerId);
+  const { data: areas = [] } = useLearningAreas(curriculumId);
+  const { mutate: grade, isPending: grading } = useGradeSubmission();
+  const [gradeOpenId, setGradeOpenId] = useState(null);
+
+  if (isLoading || rows.length === 0) return null;
+
+  const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
+  const openRow = rows.find((r) => r.issue.id === gradeOpenId) || null;
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, borderLeft: `4px solid ${DIAGNOSTIC_ACCENT}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>🩺 Learning Area Diagnostics</h3>
+      <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
+        One diagnostic per learning area this learner's class exposes; grading one places them at a starting course in that area, below.
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {rows.map((row) => (
+          <div key={row.issue.id} style={{ padding: "12px 14px", borderRadius: 10, background: "#FAFCFF", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: DIAGNOSTIC_ACCENT }}>{areaNameById.get(row.issue.learningAreaId) || "Unknown area"}</span>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{row.assessment.name}</p>
+              <DiagnosticStatusBadge status={row.submission.status} />
+              {row.submission.status === "graded" && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: DIAGNOSTIC_ACCENT }}>{row.submission.totalScore}/{row.submission.maxScore}</span>
+              )}
+            </div>
+            {row.submission.status === "submitted" && (
+              <button type="button" onClick={() => setGradeOpenId(row.issue.id)} style={{ padding: "8px 16px", backgroundColor: DIAGNOSTIC_ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                Grade Now
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {openRow && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Grade Diagnostic — {openRow.assessment.name}</h3>
+              <button type="button" onClick={() => setGradeOpenId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
+            </div>
+            <GradingPanel
+              assessment={openRow.assessment}
+              submission={openRow.submission}
+              isSaving={grading}
+              onSave={(payload) => grade({ id: openRow.submission.id, ...payload }, { onSuccess: () => setGradeOpenId(null) })}
             />
           </div>
         </div>
@@ -487,7 +555,10 @@ export default function LearnerViewPage() {
         </div>
 
         {(isAdmin || isSchool) && curriculumId && (
-          <DiagnosticAssessmentCard learnerId={id} currentStageId={learner.currentStageId} currentBandId={learner.currentBandId} curriculumId={curriculumId} />
+          <>
+            <DiagnosticAssessmentCard learnerId={id} currentStageId={learner.currentStageId} currentBandId={learner.currentBandId} curriculumId={curriculumId} />
+            <LearningAreaDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
+          </>
         )}
         <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={curriculumId} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} />

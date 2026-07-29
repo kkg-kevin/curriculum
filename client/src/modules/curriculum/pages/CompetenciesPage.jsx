@@ -498,6 +498,9 @@ function LearningAreasPanel({ curriculumId }) {
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
   const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
+  const { data: assessmentsData } = useAssessmentsQuery();
+  const assessments = assessmentsData?.data || [];
+  const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
   const queryClient = useQueryClient();
   const availableToImport = catalogAreas.filter(
     (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
@@ -509,22 +512,23 @@ function LearningAreasPanel({ curriculumId }) {
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
   const [courses,  setCourses]    = useState([]);
+  const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setShowForm(true);
+    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setDiagnosticAssessmentId(""); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
-    setCourses(area.courses || []); setShowForm(true);
+    setCourses(area.courses || []); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), color, courses };
+    const data = { name: name.trim(), description: desc.trim(), color, courses, diagnosticAssessmentId: diagnosticAssessmentId || null };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
@@ -608,6 +612,21 @@ function LearningAreasPanel({ curriculumId }) {
             </div>
           </div>
 
+          <div style={{ marginTop: "12px" }}>
+            <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
+            <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+              Auto-issued once to a learner whose class exposes one of this area's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
+            </p>
+            <select
+              className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+              value={diagnosticAssessmentId}
+              onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
             <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim()}>
               {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
@@ -635,6 +654,11 @@ function LearningAreasPanel({ curriculumId }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cp-item-name">{area.name}</div>
                     {area.description && <div className="cp-item-sub">{area.description}</div>}
+                    {area.diagnosticAssessmentId && (
+                      <p style={{ margin: "4px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669" }}>
+                        🩺 {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
+                      </p>
+                    )}
                   </div>
                   <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>

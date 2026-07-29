@@ -403,5 +403,14 @@
     "id": "45eb94db-615c-46a6-b856-9877d548d991",
     "createdAt": "2026-07-27T11:36:12.125Z",
     "updatedAt": "2026-07-27T11:36:12.125Z"
+  },
+  {
+    "name": "mark",
+    "email": "mark@digifunzi.com",
+    "passwordHash": "$2b$10$BUZyPypMT33HBjkHFkV4OuYjymNu/1T9y.zeAr.mCUVnejnWfq0Ti",
+    "role": "learner",
+    "id": "55716a43-8aba-4969-a5d4-014bd4d52daa",
+    "createdAt": "2026-07-29T10:12:24.612Z",
+    "updatedAt": "2026-07-29T10:12:24.612Z"
   }
 ]
