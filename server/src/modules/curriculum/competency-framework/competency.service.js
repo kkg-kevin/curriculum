@@ -1048,6 +1048,20 @@ const CompetencyService = {
     return { stageId: ageCategoryId, band };
   },
 
+  // Bridges a graded standalone Learning-Area diagnostic (see assessment-submission.service.js's
+  // maybePlaceFromDiagnostic) into that area's own Learning Journey: the score resolves a
+  // starting course via resolvePlacementFromScore — the same "highest cleared threshold" rule
+  // checkAdvancement uses for ongoing coursework — and always places the learner there, even if
+  // that's their current or a "lower" course. Unlike checkAdvancement, a first diagnostic isn't
+  // an advancement to guard against moving backward from; it's establishing the starting point.
+  placeLearnerFromLearningAreaDiagnostic(learnerId, learningAreaId, scorePercent, assessmentId = null) {
+    const area = LearningAreaModel.findById(learningAreaId);
+    if (!area) return null;
+    const courseId = this.resolvePlacementFromScore(area.curriculumId, learningAreaId, scorePercent);
+    if (!courseId) return null;
+    return this.placeLearner(area.curriculumId, learnerId, learningAreaId, { courseId, reason: "diagnostic", assessmentId });
+  },
+
 };
 
 module.exports = CompetencyService;

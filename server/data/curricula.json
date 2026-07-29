@@ -30,22 +30,53 @@
     "classes": [
       {
         "id": "72480379-e455-42bf-a5ee-8a2786c653e9",
-        "name": "Grade 1"
+        "name": "Grade 1",
+        "systemLevelId": null,
+        "shortLabel": "",
+        "developmentalStageId": null
       },
       {
         "id": "5ae17509-adfe-4fba-8fe4-0c5ac7d662ba",
-        "name": "Grade 2"
+        "name": "Grade 2",
+        "systemLevelId": null,
+        "shortLabel": "",
+        "developmentalStageId": null
       },
       {
         "id": "21ca6481-dc80-4bc2-a4cc-4e6963dee386",
-        "name": "Grade 3"
+        "name": "Grade 3",
+        "systemLevelId": null,
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "e3ea943f-60c3-4841-abc5-a30cebbf134d",
+        "name": "Grade 1",
+        "systemLevelId": "a44094a4-019f-4704-aaae-8079ed445eff",
+        "shortLabel": "",
+        "developmentalStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb"
+      },
+      {
+        "id": "f4b37931-4c49-4348-b3b7-ae918579f0ad",
+        "name": "Grade 2",
+        "systemLevelId": "55fe4e93-b7cc-4fd1-8693-9ef97a7ef65f",
+        "shortLabel": "",
+        "developmentalStageId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84"
+      },
+      {
+        "id": "a4524f5e-e55c-4756-9566-1c983c14a3eb",
+        "name": "Grade 3",
+        "systemLevelId": "8709f6c6-a7be-4c1c-a180-80e146c8cee9",
+        "shortLabel": "",
+        "developmentalStageId": "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930"
       }
     ],
     "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "createdAt": "2026-06-25T09:29:38.606Z",
-    "updatedAt": "2026-07-27T07:27:43.331Z",
+    "updatedAt": "2026-07-29T13:25:40.466Z",
     "competencyWeights": [],
-    "curriculumAdminId": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf"
+    "curriculumAdminId": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf",
+    "isProgram": false
   },
   {
     "name": "Digital Innovators Curriculum",
@@ -62,22 +93,22 @@
     "periods": [
       {
         "name": "Term 1",
-        "startDate": "",
-        "endDate": "",
+        "startDate": "2026-01-06",
+        "endDate": "2026-04-03",
         "breakStartDate": "",
         "breakEndDate": ""
       },
       {
         "name": "Term 2",
-        "startDate": "",
-        "endDate": "",
+        "startDate": "2026-04-27",
+        "endDate": "2026-08-07",
         "breakStartDate": "",
         "breakEndDate": ""
       },
       {
         "name": "Term 3",
-        "startDate": "",
-        "endDate": "",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-13",
         "breakStartDate": "",
         "breakEndDate": ""
       }
@@ -85,20 +116,29 @@
     "classes": [
       {
         "id": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
-        "name": "Grade 4"
+        "name": "Grade 4",
+        "systemLevelId": "dd3af09b-a047-4dc6-acf3-09d85ec43715",
+        "shortLabel": "G4",
+        "developmentalStageId": "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51"
       },
       {
         "id": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
-        "name": "Grade 5"
+        "name": "Grade 5",
+        "systemLevelId": "8a0ddd31-e0a3-4cd9-b1e6-db1c0f465efd",
+        "shortLabel": "G5",
+        "developmentalStageId": "84f50dc0-d8ba-460b-8ab6-ced9834d800f"
       },
       {
         "id": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
-        "name": "Grade 6"
+        "name": "Grade 6",
+        "systemLevelId": "88a11253-a024-462e-a4d0-8199576f71c6",
+        "shortLabel": "G6",
+        "developmentalStageId": "9fa8af55-0d19-4e6e-bc57-69f1e674807b"
       }
     ],
     "id": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "createdAt": "2026-07-13T10:06:59.915Z",
-    "updatedAt": "2026-07-27T07:19:05.200Z",
+    "updatedAt": "2026-07-29T13:17:12.558Z",
     "competencyWeights": [],
     "isProgram": false,
     "curriculumAdminId": "30ae06e1-f88b-4474-b11f-9ccfa801fe4f"
@@ -236,10 +276,10 @@
     "updatedAt": "2026-07-24T12:08:04.818Z"
   },
   {
-    "name": "ehsf",
-    "code": "E",
+    "name": "Digifunzi school 101",
+    "code": "DS1",
     "academicYear": "",
-    "description": "egadsx",
+    "description": "bnwrufubwuebfcvh",
     "status": "draft",
     "educationLevel": "",
     "gradeFrom": "",
@@ -247,10 +287,24 @@
     "framework": "",
     "curriculumType": "",
     "isProgram": false,
-    "academicCycleModel": "custom",
+    "academicCycleModel": "terms",
     "periods": [
       {
-        "name": "Period 1",
+        "name": "Term 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 3",
         "startDate": "",
         "endDate": "",
         "breakStartDate": "",
@@ -259,18 +313,36 @@
     ],
     "classes": [
       {
-        "id": "cada9077-a462-4fce-a877-d29c5c981765",
-        "name": "Grade 1",
-        "level": ""
+        "id": "9db35b67-95a0-48e7-a3d4-34685d0665fd",
+        "name": "Class 1",
+        "systemLevelId": "a44094a4-019f-4704-aaae-8079ed445eff",
+        "shortLabel": "",
+        "developmentalStageId": null
       },
       {
-        "id": "918ffd9b-c84e-4996-9625-9f4ae7697ec7",
-        "name": "Grade 2",
-        "level": ""
+        "id": "5c420bae-c288-49b3-ac7b-f75861ef958d",
+        "name": "Class 2",
+        "systemLevelId": "55fe4e93-b7cc-4fd1-8693-9ef97a7ef65f",
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "0f7f4945-c506-4b8c-8a36-79a7aa2bfa21",
+        "name": "Class 3",
+        "systemLevelId": "8709f6c6-a7be-4c1c-a180-80e146c8cee9",
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "82f408a5-4592-4796-be7f-3cc06a3901b5",
+        "name": "Class 4",
+        "systemLevelId": "86e0254c-ef76-4b63-b7a4-92d0eb59f13e",
+        "shortLabel": "",
+        "developmentalStageId": null
       }
     ],
-    "id": "aec5ef0c-0a71-4bbd-a103-5170406f93d0",
-    "createdAt": "2026-07-29T07:20:29.418Z",
-    "updatedAt": "2026-07-29T07:20:49.189Z"
+    "id": "78a3b693-ab54-4473-a27a-bf1d43536c44",
+    "createdAt": "2026-07-29T13:02:43.151Z",
+    "updatedAt": "2026-07-29T13:26:03.594Z"
   }
 ]

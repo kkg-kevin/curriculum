@@ -36,11 +36,20 @@ const periodSchema = z
   });
 
 const classSchema = z.object({
-  id:    z.string().min(1),
-  name:  z.string().min(1, "Class name is required"),
-  // A standardized tag (e.g. "Level 1") independent of whatever this curriculum calls the
-  // grade, so grades can be compared/tracked across curricula that name them differently.
-  level: z.string().trim().optional().default(""),
+  id:   z.string().min(1),
+  // The curriculum's own name for this grade (e.g. "Grade 4") — what this session's earlier
+  // "level" free-text field was meant to be standardized alongside, now done properly below.
+  name: z.string().min(1, "Class name is required"),
+  // Which of the 14 fixed System Levels (settings/system-levels) this grade maps onto — the
+  // real cross-curriculum anchor. "Grade 4" here and "Year 5" in a different curriculum can
+  // both point at the same systemLevelId and be recognized as the same developmental position.
+  systemLevelId: z.string().nullable().optional().default(null),
+  // Compact form of `name` for cards/tables (e.g. "G4").
+  shortLabel: z.string().trim().optional().default(""),
+  // Which of THIS curriculum's own Developmental Stages (Progress Arc / AgeCategoryModel) this
+  // grade falls under — the "Phase" column. Curriculum-scoped, not global, since Developmental
+  // Stages are themselves authored per curriculum.
+  developmentalStageId: z.string().nullable().optional().default(null),
 });
 
 const createCurriculumSchema = z.object({

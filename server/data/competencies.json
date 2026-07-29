@@ -325,20 +325,38 @@
     "updatedAt": "2026-07-20T07:57:48.863Z"
   },
   {
-    "name": "Digital Codes",
-    "description": "WSDVGRWSDV",
+    "name": "Creative Problem-Solving & Design Thinking",
+    "description": "The learner generates original ideas, applies a structured design-thinking process, and iterates solutions based on testing and feedback.",
     "indicators": [
       {
-        "name": "Code 101",
-        "description": "rbs",
+        "name": "Generates creative ideas",
+        "description": "Explores multiple possible approaches before selecting one to pursue.",
         "id": "050a6473-849b-4e5b-b422-b8982e68d1df",
-        "code": "DC2-C1"
+        "code": "CPSDT-GCI"
+      },
+      {
+        "name": "Applies design thinking process",
+        "description": "Follows a structured cycle of empathize, ideate, prototype, and test when solving a problem.",
+        "id": "a1b2c3d4-1111-4a1a-8a1a-111111111111",
+        "code": "CPSDT-ADTP"
+      },
+      {
+        "name": "Iterates based on feedback",
+        "description": "Revises a solution in response to testing results or peer/teacher feedback.",
+        "id": "a1b2c3d4-2222-4a2a-8a2a-222222222222",
+        "code": "CPSDT-IBF"
+      },
+      {
+        "name": "Reflects on the design process",
+        "description": "Articulates what worked, what did not, and why, after completing a project.",
+        "id": "a1b2c3d4-3333-4a3a-8a3a-333333333333",
+        "code": "CPSDT-RDP"
       }
     ],
     "id": "93516d87-eb02-4ac5-9e44-290c60196781",
-    "code": "DC2",
+    "code": "CPSDT",
     "createdAt": "2026-07-20T08:06:00.686Z",
-    "updatedAt": "2026-07-20T08:06:00.686Z"
+    "updatedAt": "2026-07-29T11:33:02.740Z"
   },
   {
     "name": "WRSFZB",

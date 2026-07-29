@@ -237,7 +237,7 @@
     "admissionNumber": "DS-2026-005",
     "status": "active",
     "createdAt": "2026-07-24T07:55:59.681Z",
-    "updatedAt": "2026-07-24T07:55:59.681Z"
+    "updatedAt": "2026-07-29T10:24:23.662Z"
   },
   {
     "id": "5b45ddef-6c71-43e4-9c51-3d9812fc7f0d",
@@ -278,5 +278,25 @@
     "status": "active",
     "createdAt": "2026-07-27T11:12:34.925Z",
     "updatedAt": "2026-07-27T11:12:34.925Z"
+  },
+  {
+    "id": "556103f0-71f9-4574-9b1d-c43ec61dc652",
+    "learnerId": "de980950-d443-4a1e-a26e-d40d21f360de",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-007",
+    "status": "active",
+    "createdAt": "2026-07-29T10:12:43.836Z",
+    "updatedAt": "2026-07-29T10:12:43.836Z"
+  },
+  {
+    "id": "99ffd2dd-c89b-402d-b52f-510bd080eb21",
+    "learnerId": "41a99e78-8b05-4fb9-a1d4-f93762bca4fb",
+    "hubId": "d59eba23-997c-4794-b550-c9ceb6735bef",
+    "classId": "c48b6fc4-779b-46e7-8101-905dcbc08ad5",
+    "admissionNumber": "DIA-NRB-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-29T10:39:40.127Z",
+    "updatedAt": "2026-07-29T10:39:40.128Z"
   }
 ]

@@ -152,6 +152,14 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: row });
 });
 
+// Same access shape as getDiagnosticForLearner, plural — this learner's Learning-Area
+// diagnostics, for the Learning Journey section of LearnerViewPage.
+const getLearningAreaDiagnosticsForLearner = asyncHandler(async (req, res) => {
+  assertLearnerHubAccess(req, req.params.learnerId);
+  const rows = AssessmentSubmissionService.getLearningAreaDiagnosticsForLearner(req.params.learnerId);
+  res.json({ success: true, data: rows, count: rows.length });
+});
+
 // A learner reading their own accumulating competency progress, or an admin/school reviewing
 // it for a learner in their own hub — same access shape as the diagnostic card.
 const getLearnerIndicatorProgress = asyncHandler(async (req, res) => {
@@ -271,6 +279,7 @@ module.exports = {
   revokeIssue,
   getIssuedForLearner,
   getDiagnosticForLearner,
+  getLearningAreaDiagnosticsForLearner,
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,

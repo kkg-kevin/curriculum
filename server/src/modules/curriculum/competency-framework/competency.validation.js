@@ -38,6 +38,12 @@ const createLearningAreaSchema = z.object({
   // to a real course before saving.
   courses:     z.array(z.string().min(1)).optional().default([]),
   courseSequence: z.array(learningAreaCourseSequenceEntrySchema).optional().default([]),
+  // The one assessment auto-issued to a learner once a class places them in front of one of
+  // this area's courses — one diagnostic per area, same "single FK" pattern as AgeCategory's
+  // diagnosticAssessmentId. Its graded score resolves a starting course via this area's
+  // Placement Thresholds (Performance Bands with learningAreaId+courseId set) — see
+  // CompetencyService.placeLearnerFromLearningAreaDiagnostic.
+  diagnosticAssessmentId: z.string().optional().nullable().default(null),
 });
 
 const updateLearningAreaSchema = createLearningAreaSchema.partial();

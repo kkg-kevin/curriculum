@@ -1,8 +1,10 @@
 ﻿import { useState, useEffect } from "react";
 import { Check as CheckIcon } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
+import { useAgeCategories } from "../hooks/useCompetencies";
+import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLevels";
+import CurriculumLevelMappingTable, { CurriculumLevelMappingPreview } from "../components/CurriculumLevelMappingTable";
 import { CURRICULUM_TYPES } from "../schemas/curriculum.schema";
 
 /* ── Constants ───────────────────────────────────────────────────────────── */
@@ -96,58 +98,6 @@ const CSS = `
   }
   .cycle-btn:hover { border-color: #b8d9ee; background: #F8FBFF; }
   .cycle-btn.active { border: 2px solid #25476a; background: #e8f5fb; }
-
-  .period-preview-grid {
-    display: grid;
-    gap: 12px;
-  }
-
-  .period-card {
-    background: #fff;
-    border: 1.5px solid #E5E7EB;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .period-card-head {
-    padding: 10px 14px;
-    background: linear-gradient(135deg, #25476a 0%, #2e7db5 100%);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    font-family: Inter, sans-serif;
-    letter-spacing: 0.01em;
-  }
-  .period-card-body {
-    padding: 10px 14px;
-    min-height: 72px;
-  }
-
-  .class-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 6px 5px 12px;
-    background: #e8f5fb;
-    border: 1px solid #a8d5ee;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #25476a;
-  }
-  .class-chip-x {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #b8d9ee;
-    font-size: 15px;
-    line-height: 1;
-    padding: 0 3px;
-    display: flex;
-    align-items: center;
-    font-family: Inter, sans-serif;
-    transition: color 0.1s;
-  }
-  .class-chip-x:hover { color: #EF4444; }
 `;
 
 /* ── Shared style objects ────────────────────────────────────────────────── */
@@ -238,90 +188,6 @@ function Spinner() {
   );
 }
 
-/* ── ClassChip — click the name to rename in place, keeping the same id ────── */
-/* ── LevelBadge — click to set/edit this grade's standardized Level tag ────── */
-
-function LevelBadge({ level, onSetLevel }) {
-  const [editing, setEditing] = useState(false);
-  const [draft,   setDraft]   = useState(level || "");
-
-  const commit = () => {
-    setEditing(false);
-    onSetLevel(draft.trim());
-  };
-
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit(); }
-          if (e.key === "Escape") { setDraft(level || ""); setEditing(false); }
-        }}
-        placeholder="Level 1"
-        style={{ border: "1px solid #a8d5ee", background: "#fff", outline: "none", font: "inherit", fontSize: "11px", color: "#25476a", borderRadius: "10px", padding: "1px 6px", width: `${Math.max((draft || "Level 1").length, 6)}ch` }}
-      />
-    );
-  }
-
-  return (
-    <span
-      onClick={() => { setDraft(level || ""); setEditing(true); }}
-      title="Click to set this grade's standardized Level tag"
-      style={{
-        cursor: "pointer", fontSize: "11px", fontWeight: "600", borderRadius: "10px", padding: "1px 7px",
-        backgroundColor: level ? "#fff" : "transparent", border: `1px dashed ${level ? "#a8d5ee" : "#b8d9ee"}`,
-        color: level ? "#25476a" : "#7ba9c9",
-      }}
-    >
-      {level || "+ Level"}
-    </span>
-  );
-}
-
-function ClassChip({ cls, onRename, onRemove, onSetLevel }) {
-  const [editing, setEditing] = useState(false);
-  const [draft,   setDraft]   = useState(cls.name);
-
-  const commit = () => {
-    setEditing(false);
-    if (draft.trim() && draft.trim() !== cls.name) onRename(cls.id, draft);
-    else setDraft(cls.name);
-  };
-
-  if (editing) {
-    return (
-      <span className="class-chip">
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") { setDraft(cls.name); setEditing(false); }
-          }}
-          style={{ border: "none", background: "transparent", outline: "none", font: "inherit", color: "inherit", width: `${Math.max(draft.length, 3)}ch` }}
-        />
-        <button type="button" className="class-chip-x" onClick={() => onRemove(cls.id)} title="Remove">×</button>
-      </span>
-    );
-  }
-
-  return (
-    <span className="class-chip">
-      <span onClick={() => { setDraft(cls.name); setEditing(true); }} style={{ cursor: "text" }} title="Click to rename">
-        {cls.name}
-      </span>
-      <LevelBadge level={cls.level} onSetLevel={(level) => onSetLevel(cls.id, level)} />
-      <button type="button" className="class-chip-x" onClick={() => onRemove(cls.id)} title="Remove">×</button>
-    </span>
-  );
-}
-
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 function derivePeriodNames(cycleModel, customNames) {
@@ -336,6 +202,8 @@ export default function CurriculumStructurePage() {
   const navigate = useNavigate();
   const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
   const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
+  const { data: systemLevels = [] } = useSystemLevels();
+  const { data: developmentalStages = [] } = useAgeCategories(id);
 
   /* Settings */
   const [curriculumType, setCurriculumType] = useState("");
@@ -346,9 +214,12 @@ export default function CurriculumStructurePage() {
   const [customPeriodCount, setCustomPeriodCount] = useState(3);
   const [customPeriodNames, setCustomPeriodNames] = useState(["Period 1", "Period 2", "Period 3"]);
 
-  /* Classes */
-  const [classes,    setClasses]    = useState([]);
-  const [classInput, setClassInput] = useState("");
+  /* Classes — saved independently of the rest of this page (see handleSaveClasses below), so
+     this tracks its own dirty state rather than sharing the page-wide save/errors flow. Once
+     saved, the section collapses to a read-only preview; "Edit" re-opens the full table. */
+  const [classes, setClasses] = useState([]);
+  const [classesDirty, setClassesDirty] = useState(false);
+  const [editingClasses, setEditingClasses] = useState(false);
 
   /* Validation */
   const [errors, setErrors] = useState({});
@@ -370,6 +241,10 @@ export default function CurriculumStructurePage() {
     }
 
     setClasses(curriculum.classes || []);
+    setClassesDirty(false);
+    // Nothing configured yet -> open straight into the editable table; already-configured ->
+    // start collapsed on the preview.
+    setEditingClasses((curriculum.classes || []).length === 0);
   }, [curriculum?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Custom period count sync */
@@ -383,40 +258,42 @@ export default function CurriculumStructurePage() {
     });
   };
 
-  /* Classes — each carries a stable id (crypto.randomUUID(), same pattern used for client-
-     generated ids elsewhere e.g. courses module) so renaming here doesn't orphan the course
-     assignments this class already has in Version Control, or the real Classes created from it. */
-  const addClasses = () => {
-    if (!classInput.trim()) return;
-    const typed      = classInput.split(",").map((c) => c.trim()).filter(Boolean);
-    const existingLc = classes.map((c) => c.name.toLowerCase());
-    const incoming   = typed.filter((c) => !existingLc.includes(c.toLowerCase()));
-    if (incoming.length) {
-      setClasses((p) => [...p, ...incoming.map((name) => ({ id: crypto.randomUUID(), name }))]);
+  // Classes — each carries a stable id (crypto.randomUUID(), same pattern used for client-
+  // generated ids elsewhere e.g. courses module) so editing here doesn't orphan the course
+  // assignments this class already has in Version Control, or the real Classes created from it.
+  // One classes[] entry exists per included System Level; toggling a level off removes its entry.
+  const toggleSystemLevel = (level) => {
+    setClassesDirty(true);
+    const existing = classes.find((c) => c.systemLevelId === level.id);
+    if (existing) {
+      setClasses((p) => p.filter((c) => c.systemLevelId !== level.id));
     } else {
-      toast.error(typed.length === 1 ? `"${typed[0]}" is already in the list` : "All typed classes are already in the list");
+      setClasses((p) => [...p, {
+        id: crypto.randomUUID(), systemLevelId: level.id,
+        name: level.name, shortLabel: "", developmentalStageId: null,
+      }]);
     }
-    setClassInput("");
   };
 
-  const handleClassKey = (e) => {
-    if (e.key === "Enter") { e.preventDefault(); addClasses(); }
+  const updateClassField = (systemLevelId, field, value) => {
+    setClassesDirty(true);
+    setClasses((p) => p.map((c) => (c.systemLevelId === systemLevelId ? { ...c, [field]: value } : c)));
   };
 
-  const removeClass = (id) => setClasses((p) => p.filter((c) => c.id !== id));
-
-  const renameClass = (id, name) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    if (classes.some((c) => c.id !== id && c.name.toLowerCase() === trimmed.toLowerCase())) {
-      toast.error(`"${trimmed}" is already in the list`);
-      return;
-    }
-    setClasses((p) => p.map((c) => (c.id === id ? { ...c, name: trimmed } : c)));
+  // Independent save for just this section — an admin can commit grade/level changes without
+  // also having to finish (or accidentally re-submit) Curriculum Type / Academic Cycle above.
+  // Collapses back to the preview once saved; editing again re-opens the full table.
+  const handleSaveClasses = () => {
+    updateCurriculum(
+      { id: curriculum.id, data: { classes } },
+      { onSuccess: () => { setClassesDirty(false); setEditingClasses(false); } }
+    );
   };
 
-  const setClassLevel = (id, level) => {
-    setClasses((p) => p.map((c) => (c.id === id ? { ...c, level } : c)));
+  const handleCancelEditClasses = () => {
+    setClasses(curriculum.classes || []);
+    setClassesDirty(false);
+    setEditingClasses(false);
   };
 
   /* Save + navigate */
@@ -429,8 +306,22 @@ export default function CurriculumStructurePage() {
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
-    const periodNames = derivePeriodNames(cycleModel, customPeriodNames);
-    const periods     = periodNames.map((name) => ({ name }));
+    // Rebuilding periods from names alone would silently drop any startDate/endDate/break
+    // dates already set (on Academic Year) every time Structure is saved — carry over an
+    // existing period's dates when its name is unchanged; only a genuinely new/renamed
+    // period starts blank.
+    const periodNames    = derivePeriodNames(cycleModel, customPeriodNames);
+    const existingByName = new Map((curriculum.periods || []).map((p) => [p.name, p]));
+    const periods = periodNames.map((name) => {
+      const existing = existingByName.get(name);
+      return {
+        name,
+        startDate: existing?.startDate || "",
+        endDate: existing?.endDate || "",
+        breakStartDate: existing?.breakStartDate || "",
+        breakEndDate: existing?.breakEndDate || "",
+      };
+    });
 
     updateCurriculum(
       { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType: isProgram ? "" : curriculumType, isProgram } },
@@ -465,9 +356,6 @@ export default function CurriculumStructurePage() {
       </div>
     );
   }
-
-  const periodNames = derivePeriodNames(cycleModel, customPeriodNames);
-  const gridCols    = Math.min(periodNames.length, 3);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -620,105 +508,69 @@ export default function CurriculumStructurePage() {
 
           {/* Classes */}
           <div style={card}>
-            <h4 style={sectionTitle()}>
-              <span style={stepBadge}>3</span>
-              Grade Classes
-              <span style={{ fontSize: "12px", fontWeight: "400", color: "#9CA3AF" }}>
-                — applied to all {cycleModel === "semesters" ? "semesters" : "periods"}
-              </span>
-            </h4>
-
-            {/* Input */}
-            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-              <input
-                type="text"
-                value={classInput}
-                onChange={(e) => setClassInput(e.target.value)}
-                onKeyDown={handleClassKey}
-                placeholder="e.g. Grade 1, Grade 2, PP1, PP2"
-                className="csp-input"
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={addClasses}
-                style={{
-                  flexShrink: 0, padding: "0 20px", height: "44px",
-                  backgroundColor: "#25476a", color: "#fff",
-                  border: "none", borderRadius: "10px",
-                  fontSize: "13px", fontWeight: "600",
-                  fontFamily: "Inter, sans-serif", cursor: "pointer",
-                  transition: "background-color 0.15s",
-                }}
-              >
-                Add
-              </button>
-            </div>
-            <p style={{ ...hintMsg, marginBottom: "14px" }}>
-              Separate multiple classes with commas. Press Enter or click Add.
-            </p>
-
-            {/* Chips */}
-            {classes.length > 0 ? (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {classes.map((cls) => (
-                  <ClassChip key={cls.id} cls={cls} onRename={renameClass} onRemove={removeClass} onSetLevel={setClassLevel} />
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: "22px", backgroundColor: "#F9FAFB", border: "1.5px dashed #E5E7EB", borderRadius: "10px", textAlign: "center" }}>
-                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-                  No classes added yet. Type class names above separated by commas.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Structure preview */}
-          <div style={card}>
-            <h4 style={sectionTitle({ marginBottom: "16px" })}>
-              Structure Preview
-              {periodNames.length > 0 && classes.length > 0 && (
-                <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: "600", color: "#38aae1", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "2px 10px" }}>
-                  {periodNames.length} {cycleModel === "semesters" ? "semester" : "period"}{periodNames.length !== 1 ? "s" : ""} · {classes.length} class{classes.length !== 1 ? "es" : ""}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+              <h4 style={sectionTitle()}>
+                <span style={stepBadge}>3</span>
+                Grade Classes
+                <span style={{ fontSize: "12px", fontWeight: "400", color: "#9CA3AF" }}>
+                  — applied to all {cycleModel === "semesters" ? "semesters" : "periods"}
                 </span>
+              </h4>
+              {!editingClasses && (
+                <button
+                  type="button"
+                  onClick={() => setEditingClasses(true)}
+                  style={{ flexShrink: 0, padding: "6px 14px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #a8d5ee", borderRadius: "8px", fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                >
+                  Edit
+                </button>
               )}
-            </h4>
+            </div>
 
-            {periodNames.length === 0 ? (
-              <div style={{ padding: "32px", textAlign: "center" }}>
-                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-                  {cycleModel === "custom"
-                    ? "Fill in the period names above to see the structure preview."
-                    : "Select an academic cycle to see the structure preview."}
+            {editingClasses ? (
+              <>
+                <p style={{ ...hintMsg, marginBottom: "12px" }}>
+                  Toggle which of the 14 System Levels this curriculum spans, then label each one the
+                  way this curriculum names it. Manage the level list itself in Settings → System Levels.
                 </p>
-              </div>
+
+                <CurriculumLevelMappingTable
+                  systemLevels={systemLevels}
+                  classes={classes}
+                  stages={developmentalStages}
+                  onToggle={toggleSystemLevel}
+                  onChangeField={updateClassField}
+                />
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "14px" }}>
+                  <button
+                    type="button"
+                    onClick={handleSaveClasses}
+                    disabled={!classesDirty || isPending}
+                    style={{
+                      padding: "9px 20px",
+                      backgroundColor: !classesDirty || isPending ? "#b8d9ee" : "#25476a",
+                      color: "#fff", border: "none", borderRadius: "10px",
+                      fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+                      cursor: !classesDirty || isPending ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {isPending ? "Saving…" : "Save Changes"}
+                  </button>
+                  {classes.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditClasses}
+                      style={{ padding: "9px 16px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </>
             ) : (
-              <div
-                className="period-preview-grid"
-                style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
-              >
-                {periodNames.map((pName) => (
-                  <div key={pName} className="period-card">
-                    <div className="period-card-head">{pName}</div>
-                    <div className="period-card-body">
-                      {classes.length > 0 ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                          {classes.map((cls) => (
-                            <div key={cls.id} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "3px 0" }}>
-                              <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#25476a", flexShrink: 0 }} />
-                              <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{cls.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>
-                          No classes yet
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div style={{ marginTop: "12px" }}>
+                <CurriculumLevelMappingPreview systemLevels={systemLevels} classes={classes} stages={developmentalStages} />
               </div>
             )}
           </div>

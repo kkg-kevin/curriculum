@@ -11,7 +11,7 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-15T09:23:28.910Z",
-    "updatedAt": "2026-07-17T05:41:56.235Z",
+    "updatedAt": "2026-07-29T10:24:23.641Z",
     "courseSequence": [
       {
         "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
@@ -28,31 +28,30 @@
           "f56d59dc-19db-4573-ae3d-c62aae8b968d"
         ]
       }
-    ]
+    ],
+    "diagnosticAssessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
   },
   {
     "id": "1089a44c-aa75-4533-b070-dc365896028f",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "sample",
-    "description": "sample learning areas 101",
-    "color": "#DC2626",
+    "name": "Computer Science & Coding",
+    "description": "Foundational programming, algorithmic thinking, and software development skills.",
+    "color": "#2563EB",
     "courses": [
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-17T05:41:56.166Z",
-    "updatedAt": "2026-07-17T05:41:56.166Z"
+    "updatedAt": "2026-07-29T11:33:02.744Z"
   },
   {
     "id": "0b556339-2983-4509-be53-cb86c1793403",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
-    "name": "buwegyg",
-    "description": "fnbvuasfub",
-    "color": "#25476a",
-    "courses": [
-      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
-    ],
+    "name": "Digital Citizenship & Online Safety",
+    "description": "Safe, ethical, and responsible use of technology and online spaces.",
+    "color": "#059669",
+    "courses": [],
     "createdAt": "2026-07-17T05:41:56.295Z",
-    "updatedAt": "2026-07-17T05:41:56.295Z"
+    "updatedAt": "2026-07-29T11:33:02.747Z"
   },
   {
     "id": "d2550142-8a7b-4b12-bd7c-719e65b16e61",
@@ -136,7 +135,8 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.333Z",
-    "updatedAt": "2026-07-27T13:02:25.333Z"
+    "updatedAt": "2026-07-29T10:11:13.066Z",
+    "diagnosticAssessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
   },
   {
     "id": "436142c5-7ebe-4c79-8fd8-808dab8873f7",
@@ -148,7 +148,8 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.342Z",
-    "updatedAt": "2026-07-27T13:02:25.342Z"
+    "updatedAt": "2026-07-29T10:11:05.802Z",
+    "diagnosticAssessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4"
   },
   {
     "id": "499a258f-91a9-43c6-b581-8937d5cb9b05",
@@ -160,6 +161,37 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.345Z",
-    "updatedAt": "2026-07-27T13:02:25.345Z"
+    "updatedAt": "2026-07-29T10:10:48.238Z",
+    "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618"
+  },
+  {
+    "id": "c297c4a4-5318-4f46-9e50-f2f3ca94a76c",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Design Thinking & Creative Problem-Solving",
+    "description": "Structured approaches to identifying problems, generating creative solutions, and iterating through prototypes.",
+    "color": "#F59E0B",
+    "courses": [],
+    "createdAt": "2026-07-29T11:33:02.750Z",
+    "updatedAt": "2026-07-29T11:33:02.750Z"
+  },
+  {
+    "id": "f4ae45ed-decf-40e5-afde-5e58a7cabdbf",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Mathematics for STEM",
+    "description": "Numeracy, logical reasoning, and mathematical foundations that underpin computational and scientific thinking.",
+    "color": "#DC2626",
+    "courses": [],
+    "createdAt": "2026-07-29T11:33:02.754Z",
+    "updatedAt": "2026-07-29T11:33:02.754Z"
+  },
+  {
+    "id": "ac93096f-a536-449d-9815-06fef85e6b8b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Science & Technology Exploration",
+    "description": "Hands-on inquiry into scientific concepts and emerging technologies relevant to STEM careers.",
+    "color": "#DB2777",
+    "courses": [],
+    "createdAt": "2026-07-29T11:33:02.758Z",
+    "updatedAt": "2026-07-29T11:33:02.758Z"
   }
 ]

@@ -279,5 +279,24 @@
     "createdAt": "2026-07-27T11:36:12.129Z",
     "updatedAt": "2026-07-27T11:36:12.129Z",
     "registrationNumber": "REG-000021"
+  },
+  {
+    "firstName": "mark",
+    "lastName": "mark",
+    "gender": "male",
+    "guardianName": "mark",
+    "guardianPhone": "5448551584845",
+    "guardianEmail": "mark@digifunzi.com",
+    "dateOfBirth": "2001-12-30",
+    "nationality": "Kenyan",
+    "languages": "Spanish, French & English",
+    "username": "mark",
+    "currentRungId": null,
+    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
+    "currentBandId": null,
+    "registrationNumber": "REG-000022",
+    "id": "de980950-d443-4a1e-a26e-d40d21f360de",
+    "createdAt": "2026-07-29T10:12:24.618Z",
+    "updatedAt": "2026-07-29T10:12:43.844Z"
   }
 ]
