@@ -15,6 +15,7 @@ import GradingPanel from "../../assessments/components/GradingPanel";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
+import { formatClassName } from "../../classes/utils/classDisplay";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -299,7 +300,7 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
             style={{ padding: "6px 8px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151", flex: 1, minWidth: 140 }}
           >
             <option value="">— No class —</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+            {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)} — {c.academicYear}</option>)}
           </select>
           <select
             value={enrollment.status}
@@ -318,7 +319,7 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
       )}
       {!isAdmin && (
         <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
-          {enrollment.class ? `${enrollment.class.gradeName} — ${enrollment.class.academicYear}` : "No class assigned yet"}
+          {enrollment.class ? `${formatClassName(enrollment.class)} — ${enrollment.class.academicYear}` : "No class assigned yet"}
         </p>
       )}
     </div>
@@ -356,7 +357,7 @@ function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
         style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
       >
         <option value="">— No class yet —</option>
-        {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+        {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)} — {c.academicYear}</option>)}
       </select>
       <button
         type="button"
@@ -422,7 +423,14 @@ export default function LearnerViewPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <Avatar firstName={learner.firstName} lastName={learner.lastName} />
             <div>
-              <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{learner.firstName} {learner.lastName}</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{learner.firstName} {learner.lastName}</h1>
+                {learner.registrationNumber && (
+                  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff" }}>
+                    {learner.registrationNumber}
+                  </span>
+                )}
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
                   {enrollments.length === 0 ? "Not yet enrolled" : `${enrollments.length} hub enrollment${enrollments.length !== 1 ? "s" : ""}`}
@@ -464,6 +472,7 @@ export default function LearnerViewPage() {
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 18px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Guardian</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <DetailRow label="Registration Number" value={learner.registrationNumber} />
             <DetailRow label="Gender" value={learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null} />
             <DetailRow label="Date of Birth" value={learner.dateOfBirth ? new Date(learner.dateOfBirth).toLocaleDateString() : null} />
             <DetailRow label="Nationality" value={learner.nationality} />

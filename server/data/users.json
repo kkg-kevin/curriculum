@@ -2,11 +2,11 @@
   {
     "name": "Admin",
     "email": "admin@digifunzi.com",
-    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
+    "passwordHash": "$2b$10$uLqU0H9K9TyoG30JHiRz3.DrQIRxtAwPfEENPfUm8Et5cs5DY1/m2",
     "role": "admin",
     "id": "e8cc7387-d36b-4101-98d8-dcea02b885ac",
     "createdAt": "2026-07-08T11:20:18.637Z",
-    "updatedAt": "2026-07-08T11:20:18.638Z"
+    "updatedAt": "2026-07-29T08:34:38.167Z"
   },
   {
     "name": "Teacher ",

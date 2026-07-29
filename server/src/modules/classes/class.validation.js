@@ -14,6 +14,12 @@ const createClassSchema = z.object({
   // (Set Up Year, Program deployment) create several classes at once with no per-class input;
   // set later from the class's own edit page.
   tag:             z.string().trim().min(1, "Tag cannot be empty").nullable().optional().default(null),
+  // Splits one grade at one hub into parallel sections (e.g. "Blue", "A") that each get their
+  // own roster/attendance/educators — a stream is just another Class row for the same
+  // (schoolId, gradeId, academicYear), told apart by this label. Left blank for a grade's only
+  // class; required for any additional class in that same group (enforced in class.service.js,
+  // since it depends on what else already exists — not expressible as a Zod rule).
+  streamName:      z.string().trim().min(1, "Stream name cannot be empty").nullable().optional().default(null),
 });
 
 const updateClassSchema = createClassSchema.partial();

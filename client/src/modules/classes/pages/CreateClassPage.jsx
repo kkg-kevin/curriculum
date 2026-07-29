@@ -21,6 +21,7 @@ const createSchema = z.object({
   capacity:       z.coerce.number().int().positive().nullable().optional(),
   status:         z.enum(["active", "inactive"]).default("active"),
   tag:            z.string().trim().optional(),
+  streamName:     z.string().trim().optional(),
 });
 
 const S = {
@@ -39,6 +40,11 @@ export default function CreateClassPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const lockedSchoolId = searchParams.get("schoolId") || "";
+  // Set from GradeStreamsPage's "+ Add Stream" button — prefills (not locks) Grade/Academic
+  // Year so adding another stream to a grade that already has one doesn't require re-picking
+  // both from scratch, but they're still editable in case that's not actually what's wanted.
+  const prefillGradeName    = searchParams.get("gradeName") || "";
+  const prefillAcademicYear = searchParams.get("academicYear");
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const { mutate: createClass, isPending } = useCreateClass();
@@ -56,8 +62,8 @@ export default function CreateClassPage() {
   const { register, control, handleSubmit, watch, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(createSchema),
     defaultValues: {
-      schoolId: lockedSchoolId, gradeName: "", academicYear: String(new Date().getFullYear()),
-      capacity: null, status: "active", tag: "",
+      schoolId: lockedSchoolId, gradeName: prefillGradeName, academicYear: prefillAcademicYear || String(new Date().getFullYear()),
+      capacity: null, status: "active", tag: "", streamName: "",
     },
     mode: "onTouched",
   });
@@ -72,7 +78,7 @@ export default function CreateClassPage() {
 
   const onSubmit = (data) => {
     const gradeId = curriculumClasses.find((c) => c.name === data.gradeName)?.id;
-    const payload = { ...data, curriculumId: school.curriculumId, gradeId, tag: data.tag?.trim() || null };
+    const payload = { ...data, curriculumId: school.curriculumId, gradeId, tag: data.tag?.trim() || null, streamName: data.streamName?.trim() || null };
     createClass(payload, { onSuccess: (record) => navigate(classPath(user?.role, record.id, "view")) });
   };
 
@@ -152,6 +158,13 @@ export default function CreateClassPage() {
                 <input {...register("academicYear")} style={S.input} placeholder="e.g. 2026" />
                 {errors.academicYear && <span style={S.error}>{errors.academicYear.message}</span>}
               </div>
+            </div>
+
+            <div style={S.field}>
+              <label style={S.label}>Stream</label>
+              <input {...register("streamName")} style={S.input} placeholder="e.g. Blue, A, East — leave blank if this grade has only one class" />
+              <span style={S.hint}>Required only if this grade already has another class at this school for this year — splits it into parallel sections, each with its own roster, attendance, and educators.</span>
+              {errors.streamName && <span style={S.error}>{errors.streamName.message}</span>}
             </div>
 
             <div style={S.row}>

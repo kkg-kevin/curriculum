@@ -6,6 +6,7 @@ import { useDeleteLearner } from "../hooks/useLearners";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { formatClassName } from "../../classes/utils/classDisplay";
 
 const ACCENT = "#25476a";
 
@@ -51,7 +52,7 @@ export function LearnerCard({ learner, classMap }) {
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
 
-  const gradeName = classMap ? (classMap[learner.classId]?.gradeName || "Unassigned") : null;
+  const gradeName = classMap ? (formatClassName(classMap[learner.classId]) || "Unassigned") : null;
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -99,7 +100,10 @@ export function LearnerCard({ learner, classMap }) {
                 {learner.firstName} {learner.lastName}
               </h3>
               <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
-                {learner.admissionNumber || (learner.hubCount > 0 ? `${learner.hubCount} hub${learner.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
+                {/* Hub-specific admission number wins when this card has that context (SchoolLearnersPage);
+                    otherwise fall back to the learner's own permanent registration number, which — unlike
+                    admissionNumber — is always present regardless of hub scope. */}
+                {learner.admissionNumber || learner.registrationNumber || (learner.hubCount > 0 ? `${learner.hubCount} hub${learner.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
               </p>
             </div>
           </div>

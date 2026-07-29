@@ -7,6 +7,7 @@ import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculu
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { formatClassName } from "../utils/classDisplay";
 
 const ACCENT    = "#25476a";
 const GRAD_FROM = "#feb139";
@@ -97,7 +98,7 @@ export function ClassCard({ cls }) {
                 onClick={() => navigate(classPath(user?.role, cls.id, "view"))}
                 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: hovered ? ACCENT : "#111827", cursor: "pointer", transition: "color 0.15s" }}
               >
-                {cls.gradeName}
+                {formatClassName(cls)}
               </h3>
               <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
                 {cls.academicYear}
@@ -148,7 +149,7 @@ export function ClassCard({ cls }) {
       {menuOpen && createPortal(
         <div ref={dropdownRef} style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,0.12)", zIndex: 9999, minWidth: 192, overflow: "hidden", padding: 6 }}>
           <div style={{ padding: "8px 10px 10px", borderBottom: "1px solid #F3F4F6", marginBottom: 4 }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#111827" }}>{cls.gradeName}</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#111827" }}>{formatClassName(cls)}</p>
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{cls.academicYear}</p>
           </div>
           {[
@@ -169,7 +170,7 @@ export function ClassCard({ cls }) {
       <ConfirmDialog
         isOpen={confirmOpen}
         title="Delete Class"
-        message={`"${cls.gradeName} — ${cls.academicYear}" will be permanently deleted.`}
+        message={`"${formatClassName(cls)} — ${cls.academicYear}" will be permanently deleted.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"

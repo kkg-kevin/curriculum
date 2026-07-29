@@ -16,9 +16,32 @@ function assertTagAvailable(tag, excludeId) {
   }
 }
 
+// A grade's first class at a hub for a given year needs no stream label — it's the only one.
+// Any additional class in that same (schoolId, gradeId, academicYear) group must be told apart
+// with a streamName, and that name can't repeat another stream already in the group, so the
+// Classes grid never shows two identically-labeled cards for the same grade.
+function assertStreamAvailable(schoolId, gradeId, academicYear, streamName, excludeId) {
+  const group = ClassModel.findAll({ schoolId }).filter(
+    (c) => c.id !== excludeId && c.gradeId === gradeId && c.academicYear === academicYear
+  );
+  if (group.length === 0) return;
+  const norm = (s) => (s || "").trim().toLowerCase();
+  if (!norm(streamName)) {
+    const err = new Error("A class for this grade already exists at this hub — give this one a stream name to tell them apart");
+    err.statusCode = 409;
+    throw err;
+  }
+  if (group.some((c) => norm(c.streamName) === norm(streamName))) {
+    const err = new Error("A class with this grade and stream already exists");
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
 const ClassService = {
   async createClass(data) {
     assertTagAvailable(data.tag, null);
+    assertStreamAvailable(data.schoolId, data.gradeId, data.academicYear, data.streamName, null);
     return ClassModel.create(data);
   },
 
@@ -45,6 +68,10 @@ const ClassService = {
 
   async updateClass(id, data) {
     if (data.tag !== undefined) assertTagAvailable(data.tag, id);
+    if (data.streamName !== undefined) {
+      const existing = ClassModel.findById(id);
+      if (existing) assertStreamAvailable(existing.schoolId, existing.gradeId, existing.academicYear, data.streamName, id);
+    }
     const record = ClassModel.update(id, data);
     if (!record) {
       const err = new Error("Class not found");
@@ -69,6 +96,12 @@ const ClassService = {
       }
       seen.add(key);
       assertTagAvailable(item.tag, null);
+    }
+    // Set Up Year / Program deployment each create exactly one class per grade per batch, so
+    // there's never a same-grade collision within the batch itself — only against classes that
+    // already exist from an earlier run.
+    for (const item of items) {
+      assertStreamAvailable(item.schoolId, item.gradeId, item.academicYear, item.streamName, null);
     }
     return Promise.all(items.map((item) => ClassModel.create(item)));
   },

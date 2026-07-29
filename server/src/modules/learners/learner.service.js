@@ -44,6 +44,22 @@ const generateAdmissionNumber = (schoolCode, year) => {
   return `${prefix}-${seq}`;
 };
 
+// A learner's one global, permanent identity number — distinct from admissionNumber, which is
+// per-hub-enrollment and resets per school+year (a learner enrolled at two hubs has two
+// different admission numbers). Registration number is assigned once at creation, never
+// editable, and never scoped to a hub. Derived from the highest existing sequence rather than a
+// plain count so a deleted learner's number is never reissued to someone else.
+const REGISTRATION_PREFIX = "REG-";
+function nextRegistrationNumber() {
+  const maxSeq = LearnerModel.findAll().reduce((max, l) => {
+    const seq = typeof l.registrationNumber === "string" && l.registrationNumber.startsWith(REGISTRATION_PREFIX)
+      ? parseInt(l.registrationNumber.slice(REGISTRATION_PREFIX.length), 10)
+      : NaN;
+    return Number.isFinite(seq) ? Math.max(max, seq) : max;
+  }, 0);
+  return `${REGISTRATION_PREFIX}${String(maxSeq + 1).padStart(6, "0")}`;
+}
+
 // Shared by create/update — a username has to be unique across every learner, since it's a
 // login identifier (see auth.service.js resolving it back to a guardian account).
 function assertUsernameAvailable(username, excludeId) {
@@ -59,7 +75,10 @@ function assertUsernameAvailable(username, excludeId) {
 const LearnerService = {
   async createLearner(data) {
     assertUsernameAvailable(data.username);
-    return LearnerModel.create(data);
+    // Always server-assigned, always overwritten here regardless of what's in `data` — the
+    // validation schema never exposes this field to a client, but this is the actual guarantee
+    // that it can never be spoofed or overwritten on create.
+    return LearnerModel.create({ ...data, registrationNumber: nextRegistrationNumber() });
   },
 
   // When scoped by `schoolId`/`classId`, resolves matching enrollment links first, then merges

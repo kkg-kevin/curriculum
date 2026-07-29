@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { useClassQuery, useClassCourseTeachers } from "../../classes/hooks/useClasses";
+import { formatClassName } from "../../classes/utils/classDisplay";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 
@@ -96,7 +97,7 @@ export default function MyClassPage() {
 
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
+          <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{formatClassName(cls)}</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {learners.length} learner{learners.length !== 1 ? "s" : ""}</p>
         </div>
         <button

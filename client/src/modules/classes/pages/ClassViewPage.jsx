@@ -10,6 +10,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { formatClassName } from "../utils/classDisplay";
 
 function DetailRow({ label, value, empty = "—" }) {
   return (
@@ -169,7 +170,7 @@ export default function ClassViewPage() {
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
           </>
         )}
-        <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{cls.gradeName}</span>
+        <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{formatClassName(cls)}</span>
       </div>
 
       {/* Header card */}
@@ -180,7 +181,7 @@ export default function ClassViewPage() {
             <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>🏫</div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{cls.gradeName}</h1>
+                <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{formatClassName(cls)}</h1>
                 {cls.tag && (
                   <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff" }}>
                     {cls.tag}
@@ -217,6 +218,7 @@ export default function ClassViewPage() {
             <DetailRow label="School"        value={school?.name} />
             <DetailRow label="Curriculum"    value={curriculum?.name} />
             <DetailRow label="Grade"         value={cls.gradeName} />
+            <DetailRow label="Stream"        value={cls.streamName} empty="Not set" />
             <DetailRow label="Academic Year" value={cls.academicYear} />
             <DetailRow label="Tag"           value={cls.tag} empty="Not set" />
             <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
@@ -305,7 +307,7 @@ export default function ClassViewPage() {
       <ConfirmDialog
         isOpen={confirmDelete}
         title="Delete Class"
-        message={`"${cls.gradeName} — ${cls.academicYear}" will be permanently deleted. This cannot be undone.`}
+        message={`"${formatClassName(cls)} — ${cls.academicYear}" will be permanently deleted. This cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
