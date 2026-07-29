@@ -8,13 +8,15 @@ import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { formatClassName } from "../utils/classDisplay";
 
 const ACCENT = "#25476a";
 
 const editSchema = z.object({
-  capacity: z.coerce.number().int().positive().nullable().optional(),
-  status:   z.enum(["active", "inactive"]).default("active"),
-  tag:      z.string().trim().optional(),
+  capacity:   z.coerce.number().int().positive().nullable().optional(),
+  status:     z.enum(["active", "inactive"]).default("active"),
+  tag:        z.string().trim().optional(),
+  streamName: z.string().trim().optional(),
 });
 
 const S = {
@@ -42,22 +44,26 @@ export default function EditClassPage() {
 
   const { register, control, handleSubmit, reset, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(editSchema),
-    defaultValues: { capacity: null, status: "active", tag: "" },
+    defaultValues: { capacity: null, status: "active", tag: "", streamName: "" },
     mode: "onTouched",
   });
 
   useEffect(() => {
     if (cls) {
       reset({
-        capacity: cls.capacity || null,
-        status:   cls.status   || "active",
-        tag:      cls.tag      || "",
+        capacity:   cls.capacity   || null,
+        status:     cls.status     || "active",
+        tag:        cls.tag        || "",
+        streamName: cls.streamName || "",
       });
     }
   }, [cls, reset]);
 
   const onSubmit = (data) => {
-    updateClass({ id, data: { ...data, tag: data.tag?.trim() || null } }, { onSuccess: () => navigate(classPath(user?.role, id, "view")) });
+    updateClass(
+      { id, data: { ...data, tag: data.tag?.trim() || null, streamName: data.streamName?.trim() || null } },
+      { onSuccess: () => navigate(classPath(user?.role, id, "view")) }
+    );
   };
 
   const handleCancel = () => {
@@ -84,7 +90,7 @@ export default function EditClassPage() {
               ← Classes
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{cls.gradeName}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{formatClassName(cls)}</span>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>Edit</span>
           </div>
@@ -165,6 +171,13 @@ export default function EditClassPage() {
               <input {...register("tag")} style={S.input} placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
               <span style={S.hint}>A short code unique to this class instance — lets you tell it apart from same-named classes at other hubs.</span>
               {errors.tag && <span style={S.error}>{errors.tag.message}</span>}
+            </div>
+
+            <div style={S.field}>
+              <label style={S.label}>Stream</label>
+              <input {...register("streamName")} style={S.input} placeholder="e.g. Blue, A, East — leave blank if this grade has only one class" />
+              <span style={S.hint}>Required only if this grade already has another class at this school for this year.</span>
+              {errors.streamName && <span style={S.error}>{errors.streamName.message}</span>}
             </div>
           </div>
         </form>

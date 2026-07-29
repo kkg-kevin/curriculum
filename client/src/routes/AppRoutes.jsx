@@ -55,6 +55,7 @@ import SchoolClassesPage from "../modules/classes/pages/SchoolClassesPage";
 import EditClassPage from "../modules/classes/pages/EditClassPage";
 import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
+import GradeStreamsPage from "../modules/classes/pages/GradeStreamsPage";
 import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateProgramPage from "../modules/programs/pages/CreateProgramPage";
 import ProgramViewPage from "../modules/programs/pages/ProgramViewPage";
@@ -167,6 +168,7 @@ export default function AppRoutes() {
           <Route index element={<ClassesPage />} />
           <Route path="create" element={<CreateClassPage />} />
           <Route path="school/:schoolId" element={<SchoolClassesPage />} />
+          <Route path="school/:schoolId/grade/:gradeId/:academicYear" element={<GradeStreamsPage />} />
           <Route path=":id/edit" element={<EditClassPage />} />
           <Route path=":id/view" element={<ClassViewPage />} />
         </Route>
@@ -198,6 +200,7 @@ export default function AppRoutes() {
           <Route path="curriculum/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
           <Route path="curriculum/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
           <Route path="classes/:schoolId" element={<SchoolClassesPage />} />
+          <Route path="classes/:schoolId/grade/:gradeId/:academicYear" element={<GradeStreamsPage />} />
           <Route path="classes/create" element={<CreateClassPage />} />
           <Route path="classes/:id/view" element={<ClassViewPage />} />
           <Route path="classes/:id/edit" element={<EditClassPage />} />

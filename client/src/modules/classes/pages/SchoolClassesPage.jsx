@@ -6,6 +6,7 @@ import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../services/classApi";
 import { ClassCard } from "../components/ClassCard";
+import { GradeGroupCard } from "../components/GradeGroupCard";
 import SetUpYearPanel from "../components/SetUpYearPanel";
 import { classCreatePath } from "../../../routes/portalPaths";
 
@@ -36,6 +37,16 @@ export default function SchoolClassesPage() {
 
   const classes     = classesData?.data || [];
   const activeCount = classes.filter((c) => c.status === "active").length;
+
+  // Streams of one grade (same gradeId+academicYear) collapse into a single GradeGroupCard;
+  // a grade with only one class renders its plain ClassCard exactly as before streams existed.
+  const groups = Object.values(
+    classes.reduce((acc, c) => {
+      const key = `${c.gradeId}|${c.academicYear}`;
+      (acc[key] ||= []).push(c);
+      return acc;
+    }, {})
+  );
 
   // Fetched directly by id (not the full curricula list — a school/teacher account can only
   // ever read its own curriculum, not enumerate every curriculum in the system).
@@ -172,7 +183,10 @@ export default function SchoolClassesPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {classes.map((c) => <ClassCard key={c.id} cls={c} />)}
+          {groups.map((group) => group.length > 1
+            ? <GradeGroupCard key={`${group[0].gradeId}|${group[0].academicYear}`} group={group} schoolId={schoolId} />
+            : <ClassCard key={group[0].id} cls={group[0]} />
+          )}
         </div>
       )}
     </div>

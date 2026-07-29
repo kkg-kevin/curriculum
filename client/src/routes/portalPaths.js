@@ -42,6 +42,14 @@ export function classCreatePath(role, schoolId) {
   return schoolId ? `${base}?schoolId=${schoolId}` : base;
 }
 
+// One grade at one hub can have several streams (same gradeId+academicYear, different
+// streamName — see class.service.js's assertStreamAvailable). This is the drill-down from a
+// grouped grade card on the Classes grid down to that grade's individual stream cards.
+export function gradeStreamsPath(role, schoolId, gradeId, academicYear) {
+  const base = role === "school" ? `/school-portal/classes/${schoolId}` : `/classes/school/${schoolId}`;
+  return `${base}/grade/${gradeId}/${encodeURIComponent(academicYear)}`;
+}
+
 // A school views its own profile in-portal; admin views any school through the cross-school
 // directory.
 export function schoolViewPath(role, schoolId) {

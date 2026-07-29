@@ -647,7 +647,8 @@
     "status": "active",
     "id": "63552e4e-64bb-4326-b735-2d26d6742fec",
     "createdAt": "2026-07-20T10:44:09.080Z",
-    "updatedAt": "2026-07-20T10:44:09.080Z"
+    "updatedAt": "2026-07-29T08:14:09.713Z",
+    "streamName": "Blue"
   },
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
@@ -660,7 +661,8 @@
     "status": "active",
     "id": "dd40a2d0-c09e-45f8-b291-9599b354f11a",
     "createdAt": "2026-07-20T10:44:09.086Z",
-    "updatedAt": "2026-07-23T18:26:25.347Z"
+    "updatedAt": "2026-07-29T08:14:09.700Z",
+    "streamName": "Blue"
   },
   {
     "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
@@ -673,7 +675,8 @@
     "status": "active",
     "id": "7e0b0684-eb68-4270-8424-274879608c1b",
     "createdAt": "2026-07-20T10:44:09.091Z",
-    "updatedAt": "2026-07-20T10:44:09.091Z"
+    "updatedAt": "2026-07-29T08:14:09.683Z",
+    "streamName": "Blue"
   },
   {
     "schoolId": "d59eba23-997c-4794-b550-c9ceb6735bef",
@@ -779,7 +782,8 @@
     "status": "active",
     "id": "5410d1f1-b4a2-4147-85fe-193dff81808c",
     "createdAt": "2026-07-24T12:41:36.135Z",
-    "updatedAt": "2026-07-27T12:19:15.142Z"
+    "updatedAt": "2026-07-29T08:14:09.656Z",
+    "streamName": "Blue"
   },
   {
     "schoolId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
@@ -806,5 +810,61 @@
     "id": "8f5da551-36b3-4eb2-8cbd-683c22bb3f10",
     "createdAt": "2026-07-24T12:59:00.465Z",
     "updatedAt": "2026-07-27T12:19:21.855Z"
+  },
+  {
+    "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "curriculumId": "00e7306d-66f5-4813-9ae2-8e81b4d9fa48",
+    "gradeId": "54e7731b-bc3f-4440-9a59-efd478412d18",
+    "gradeName": "Bootcamp Cohort A",
+    "academicYear": "2027",
+    "capacity": 20,
+    "status": "active",
+    "tag": null,
+    "streamName": "Green",
+    "id": "5c2b1cb1-1b90-4c58-8002-ee1b8cff080a",
+    "createdAt": "2026-07-29T08:14:09.672Z",
+    "updatedAt": "2026-07-29T08:14:09.672Z"
+  },
+  {
+    "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+    "gradeName": "Grade 6",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": "Green",
+    "id": "2d668df5-0c4e-4f98-b8f1-91e515f22f8b",
+    "createdAt": "2026-07-29T08:14:09.692Z",
+    "updatedAt": "2026-07-29T08:14:09.692Z"
+  },
+  {
+    "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+    "gradeName": "Grade 5",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": "Green",
+    "id": "e08e2f98-99ad-47ef-ab52-e378ae14134b",
+    "createdAt": "2026-07-29T08:14:09.707Z",
+    "updatedAt": "2026-07-29T08:14:09.707Z"
+  },
+  {
+    "schoolId": "61922ba8-da3a-48c9-b1f4-0c14564f0d0b",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+    "gradeName": "Grade 4",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": "Green",
+    "id": "b49462a3-bba1-4cef-8ca9-a377dcf577b5",
+    "createdAt": "2026-07-29T08:14:09.720Z",
+    "updatedAt": "2026-07-29T08:14:09.720Z"
   }
 ]
