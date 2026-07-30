@@ -8,7 +8,14 @@ import { useEnsureDiagnosticsIssued, useMarkPortalOnboardingComplete } from "../
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tintBg: "#e8f5fb", tintBorder: "#a8d5ee" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
-function isOutstanding(row) {
+// A diagnostic only actually releases the gate once it's graded — "submitted" still blocks
+// (see the exported component's doc comment for why), it's just not something the learner has
+// any further action to take on.
+function isGraded(row) {
+  return row.submission.status === "graded";
+}
+
+function needsLearnerAction(row) {
   return row.submission.status === "not_started" || row.submission.status === "in_progress";
 }
 
@@ -22,10 +29,33 @@ function LoadingState() {
   );
 }
 
-// One outstanding diagnostic's start/answer/submit flow, trimmed from the full learner-portal
+// Shown once every remaining diagnostic has been submitted but at least one still needs a
+// teacher's grade — nothing left for the learner to do, but the gate can't release yet because
+// grading is what actually sets their placement (see maybePlaceFromDiagnostic). Polls in the
+// background (see the exported component) so it clears itself once grading lands.
+function AwaitingGradingState({ count }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "8px 4px 40px", fontFamily: "Inter, sans-serif" }}>
+      <style>{"@keyframes fldg-spin { to { transform: rotate(360deg); } }"}</style>
+      <div style={{ textAlign: "center", maxWidth: 560, marginInline: "auto" }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", color: T.accent, fontSize: 20 }}><FiActivity /></div>
+        <h1 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800, color: T.ink }}>Nice work!</h1>
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+          {count > 1 ? `Your ${count} diagnostics are` : "Your diagnostic is"} submitted and waiting on your teacher to grade {count > 1 ? "them" : "it"}. This page updates automatically once that's done.
+        </p>
+      </div>
+      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+        <span style={{ width: 22, height: 22, border: `3px solid ${T.border}`, borderTopColor: T.accent, borderRadius: "50%", display: "inline-block", animation: "fldg-spin 0.7s linear infinite" }} />
+      </div>
+    </div>
+  );
+}
+
+// One actionable diagnostic's start/answer/submit flow, trimmed from the full learner-portal
 // AssessmentDetailPage (no "submitted"/"graded" review view needed here — the moment a step
-// leaves not_started/in_progress it drops out of the gate's outstanding list on its own, via
-// useSubmitAssessment's diagnostic-query invalidation). Keyed by issue.id at the call site so
+// leaves not_started/in_progress it drops out of the gate's actionable list on its own, via
+// useSubmitAssessment's diagnostic-query invalidation; from there the exported component's
+// AwaitingGradingState or markComplete effect takes over). Keyed by issue.id at the call site so
 // remounting between steps resets local state for free instead of manual bookkeeping.
 function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
   const { issue, assessment, submission: initialSubmission } = row;
@@ -85,21 +115,30 @@ function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
 }
 
 // Blocks the rest of the learner-portal behind this until every Learning-Area diagnostic the
-// learner's current hub/curriculum owes them is submitted — the very first thing a learner sees
-// on their first portal visit, per the product decision this was built for. Only ever active
-// while learner.portalOnboardingCompletedAt is unset; once cleared (here, either by finishing
-// every diagnostic or by there being none to take), it never reappears for this learner again.
+// learner's current hub/curriculum owes them has been GRADED — not merely submitted. A
+// manually-graded diagnostic only sets the learner's placement (Performance Band / starting
+// course, see maybePlaceFromDiagnostic in assessment-submission.service.js) once a teacher
+// grades it, so releasing the gate on submit alone would let a learner into a portal whose
+// placement hasn't landed yet. This is the very first thing a learner sees on their first
+// portal visit, per the product decision this was built for. Only ever active while
+// learner.portalOnboardingCompletedAt is unset; once cleared (here, once every diagnostic is
+// graded, or there being none to take), it never reappears for this learner again — even if a
+// new diagnostic is added to the curriculum later.
 export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete = () => {} }) {
   const hasEnsured = useRef(false);
-  // Separate from rowsLoading on purpose: this only ever tracks whether the one-time
-  // "ensure diagnostics are issued" background call has settled (or wasn't needed at all), so a
-  // hung/slow network call can't itself block the spinner past its own axios timeout — the gate
-  // renders off whatever useLearningAreaDiagnosticsForLearner already knows the instant that
-  // query resolves, with or without ensure having finished.
+  // Covers both halves of "the one-time top-up call is done": hub/cls turning out to be
+  // unresolvable (nothing to ensure) and the call itself finishing (see the effect below).
   const [ensureSettled, setEnsureSettled] = useState(false);
   const totalRef = useRef(null);
 
-  const { mutate: ensureIssued } = useEnsureDiagnosticsIssued();
+  // mutateAsync + a plain Promise chain, not the mutation's own subscribed status/onSuccess-
+  // onError callbacks — both of those are bound to this hook's mutation-cache subscription,
+  // which React.StrictMode's dev-only mount→cleanup→remount cycle (see main.jsx) can tear down
+  // and never re-deliver a result through, even though the request itself succeeded (confirmed
+  // via network + a temporary render trace: the POST landed 200, but `status` sat on "pending"
+  // forever). Driving ensureSettled off the Promise itself, resolved into a plain setState,
+  // sidesteps that subscription entirely.
+  const { mutateAsync: ensureIssuedAsync } = useEnsureDiagnosticsIssued();
   const { mutate: markComplete, isPending: completing } = useMarkPortalOnboardingComplete();
   const { data: rowsData, isLoading: rowsLoading, refetch } = useLearningAreaDiagnosticsForLearner(learner.id);
   const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
@@ -112,41 +151,56 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
     if (!hub?.id || !cls?.id) { setEnsureSettled(true); return; }
     if (hasEnsured.current) return;
     hasEnsured.current = true;
-    ensureIssued(
-      { learnerId: learner.id, hubId: hub.id },
-      { onSettled: () => { setEnsureSettled(true); refetch(); } }
-    );
+    ensureIssuedAsync({ learnerId: learner.id, hubId: hub.id })
+      .catch(() => {})
+      .finally(() => { setEnsureSettled(true); refetch(); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub?.id, cls?.id]);
 
   const rows = rowsData || [];
-  const outstanding = rows.filter(isOutstanding);
-  if (totalRef.current === null && outstanding.length > 0) totalRef.current = outstanding.length;
+  // "pending" = still blocks the gate (not yet graded). "actionable" = the subset the learner
+  // can actually do something with right now; the rest ("submitted") is waiting on a teacher.
+  const pending = rows.filter((row) => !isGraded(row));
+  const actionable = pending.filter(needsLearnerAction);
+  const awaitingGradingCount = pending.length - actionable.length;
+  if (totalRef.current === null && pending.length > 0) totalRef.current = pending.length;
 
-  // Already have something outstanding to show? Render it immediately — never wait on the
-  // ensure top-up once real data has arrived, so a slow/failed ensure call can't stall a learner
-  // who already has a diagnostic sitting there waiting for them.
-  const hasOutstanding = !rowsLoading && outstanding.length > 0;
+  // Already have something pending to show (actionable or awaiting grading)? Render it
+  // immediately — never wait on the ensure top-up once real data has arrived, so a slow/failed
+  // ensure call can't stall a learner who already has a diagnostic sitting there waiting for them.
+  const hasPending = !rowsLoading && pending.length > 0;
 
   // Only safe to conclude "nothing to show" once the ensure top-up has actually had its chance
   // to run — otherwise a brand-new enrollment (rows still empty on the very first fetch) would
   // release the gate before its diagnostic even got issued.
-  const nothingToShow = ensureSettled && !rowsLoading && outstanding.length === 0;
+  const nothingToShow = ensureSettled && !rowsLoading && pending.length === 0;
   useEffect(() => {
     if (nothingToShow && !completing) markComplete(learner.id, { onSuccess: onComplete });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nothingToShow]);
 
-  if (!hasOutstanding) {
+  // Nothing left for the learner to act on, but at least one diagnostic is still waiting on a
+  // teacher's grade — poll in the background so the gate clears itself the moment grading
+  // lands, since the learner has no other way to find out short of manually reloading.
+  const waitingOnGrading = hasPending && actionable.length === 0;
+  useEffect(() => {
+    if (!waitingOnGrading) return undefined;
+    const interval = setInterval(() => refetch(), 15000);
+    return () => clearInterval(interval);
+  }, [waitingOnGrading, refetch]);
+
+  if (!hasPending) {
     if (rowsLoading || !ensureSettled) return <LoadingState />;
     // Nothing to show — markComplete effect above should have already fired; layout will
     // refresh once the learner record updates. Nothing to render here in the meantime.
     if (nothingToShow) return null;
   }
 
-  const total = totalRef.current || outstanding.length;
-  const doneCount = total - outstanding.length;
-  const current = outstanding[0];
+  if (waitingOnGrading) return <AwaitingGradingState count={awaitingGradingCount} />;
+
+  const total = totalRef.current || pending.length;
+  const doneCount = total - actionable.length;
+  const current = actionable[0];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "8px 4px 40px", fontFamily: "Inter, sans-serif" }}>

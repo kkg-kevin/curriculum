@@ -502,5 +502,77 @@
     "id": "1a868e3a-6c79-4fb6-9692-2b111d7f2191",
     "createdAt": "2026-07-30T07:31:29.997Z",
     "updatedAt": "2026-07-30T07:31:29.997Z"
+  },
+  {
+    "name": "lisa",
+    "email": "lisamom@digifunzi.com",
+    "passwordHash": "$2b$10$FF/0tv.fxjFlwAnye810CucXP5edGEojmcpERnh5MMepoJh7Mlzqe",
+    "role": "learner",
+    "id": "a9c78862-7b14-4ed0-b4f2-d2f6f9586d70",
+    "createdAt": "2026-07-30T09:12:25.409Z",
+    "updatedAt": "2026-07-30T09:38:08.135Z"
+  },
+  {
+    "name": "Gate Guardian",
+    "email": "gate-test-guardian2@example.com",
+    "passwordHash": "$2b$10$RUML674MhAF8IIWia9kT9eqvMVL1sBlJAvAzaQY3cgoTXHp88YvJy",
+    "role": "learner",
+    "id": "b2ae2bbf-f86d-4aeb-8fb9-7795d46adccb",
+    "createdAt": "2026-07-30T09:47:53.855Z",
+    "updatedAt": "2026-07-30T09:47:53.855Z"
+  },
+  {
+    "name": "Gate Guardian3",
+    "email": "gate-test-guardian3@example.com",
+    "passwordHash": "$2b$10$FbUB4Nys1Rgy0Cho.zHrh.RayQRT9Od7rCLPfy7oVtC0E2obQ/UgG",
+    "role": "learner",
+    "id": "32378d65-eb01-4e47-bd3a-1a0e283c2509",
+    "createdAt": "2026-07-30T09:53:12.340Z",
+    "updatedAt": "2026-07-30T09:53:12.340Z"
+  },
+  {
+    "name": "Gate Guardian4",
+    "email": "gate-test-guardian4@example.com",
+    "passwordHash": "$2b$10$.gxwRfgstvusMYMEyJ/e.OxjZ/TWMUounSN3NuwTBpAXwldrxK1Zi",
+    "role": "learner",
+    "id": "49d18556-385b-4b8f-a82a-2ddd8062425b",
+    "createdAt": "2026-07-30T09:54:32.407Z",
+    "updatedAt": "2026-07-30T09:54:32.407Z"
+  },
+  {
+    "name": "Gate Guardian5",
+    "email": "gate-test-guardian5@example.com",
+    "passwordHash": "$2b$10$C3Fk5gOZ6LdJnitDyEHmAuZ31M7IN9aHq9OzRQ.KoMp2tBTSiU1R.",
+    "role": "learner",
+    "id": "569576ee-8ce2-4adc-8ecc-b56068904cd3",
+    "createdAt": "2026-07-30T09:56:11.113Z",
+    "updatedAt": "2026-07-30T09:56:11.113Z"
+  },
+  {
+    "name": "levv",
+    "email": "lev@digifunzi.com",
+    "passwordHash": "$2b$10$tCmsRSnZlEKedGDBdXcUGu6Ub4rd8vmZnP.fUinOdXW2xZ0BuwiAe",
+    "role": "learner",
+    "id": "43cfa59e-aec3-4187-9e12-c5ede6210bc8",
+    "createdAt": "2026-07-30T10:12:45.011Z",
+    "updatedAt": "2026-07-30T10:12:45.011Z"
+  },
+  {
+    "name": "Mama jane ",
+    "email": "she@digifunzi.com",
+    "passwordHash": "$2b$10$.ivIOnRDw4Nntf6hcjh7ouw9nKSrxSksqW/oqkywpoPCw9eQUeSGa",
+    "role": "learner",
+    "id": "e22ef095-c884-4837-b12d-5cf3783bfdec",
+    "createdAt": "2026-07-30T10:16:45.648Z",
+    "updatedAt": "2026-07-30T10:16:45.648Z"
+  },
+  {
+    "name": "Mama kevin",
+    "email": "he@digifunzi.com",
+    "passwordHash": "$2b$10$GXWi8QvZmZScvjQn2dzwIe2Z81rf3wtPTR1tkrVx3N1aIXBfc8sv6",
+    "role": "learner",
+    "id": "250199eb-beb6-469c-8c10-2e8cbc4b9a50",
+    "createdAt": "2026-07-30T10:25:15.110Z",
+    "updatedAt": "2026-07-30T10:25:15.110Z"
   }
 ]

@@ -81,8 +81,8 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.333Z",
-    "updatedAt": "2026-07-30T07:34:46.149Z",
-    "diagnosticAssessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+    "updatedAt": "2026-07-30T08:03:07.615Z",
+    "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
     "courseSequence": [
       {
         "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
@@ -105,8 +105,8 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.342Z",
-    "updatedAt": "2026-07-29T10:11:05.802Z",
-    "diagnosticAssessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4"
+    "updatedAt": "2026-07-30T08:03:13.576Z",
+    "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618"
   },
   {
     "id": "499a258f-91a9-43c6-b581-8937d5cb9b05",
@@ -118,7 +118,7 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.345Z",
-    "updatedAt": "2026-07-29T10:10:48.238Z",
+    "updatedAt": "2026-07-30T08:03:20.284Z",
     "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618"
   },
   {
@@ -141,8 +141,8 @@
         ]
       }
     ],
-    "diagnosticAssessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
     "createdAt": "2026-07-29T14:08:04.023Z",
-    "updatedAt": "2026-07-30T07:34:00.634Z"
+    "updatedAt": "2026-07-30T08:02:55.645Z"
   }
 ]

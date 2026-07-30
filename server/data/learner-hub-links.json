@@ -18,5 +18,105 @@
     "status": "active",
     "createdAt": "2026-07-30T07:35:24.972Z",
     "updatedAt": "2026-07-30T07:35:24.972Z"
+  },
+  {
+    "id": "55c24408-6487-4f61-8a2f-fb02f1a60dcf",
+    "learnerId": "eae585c5-e65d-408f-a677-a753a3ca7b52",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-30T08:04:26.464Z",
+    "updatedAt": "2026-07-30T08:04:26.464Z"
+  },
+  {
+    "id": "8ca42610-796d-4dcb-a263-16757952c3d4",
+    "learnerId": "eae585c5-e65d-408f-a677-a753a3ca7b52",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-002",
+    "status": "active",
+    "createdAt": "2026-07-30T08:04:30.982Z",
+    "updatedAt": "2026-07-30T08:04:30.982Z"
+  },
+  {
+    "id": "4de91ed5-5e38-4033-8042-a01824143333",
+    "learnerId": "a5ced6b9-379e-4ee4-9b7e-ffe21a357c1a",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-30T09:12:32.799Z",
+    "updatedAt": "2026-07-30T09:12:32.799Z"
+  },
+  {
+    "id": "d555c1c4-7274-4bd7-a8bd-2d41697dc16f",
+    "learnerId": "472751f9-8cac-437e-b80a-e539d86d177e",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-004",
+    "status": "active",
+    "createdAt": "2026-07-30T09:47:53.864Z",
+    "updatedAt": "2026-07-30T09:47:53.864Z"
+  },
+  {
+    "id": "d536847f-a8a6-4540-bcd0-d9ca71bbf9c6",
+    "learnerId": "da4aa89b-da8a-4851-9a88-7f9d4e3eecb8",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-005",
+    "status": "active",
+    "createdAt": "2026-07-30T09:53:12.354Z",
+    "updatedAt": "2026-07-30T09:53:12.354Z"
+  },
+  {
+    "id": "8af6e192-9d8b-4d8c-aae5-903ed89bbf61",
+    "learnerId": "74895035-0ea7-4fae-8f9d-a932b776664f",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-006",
+    "status": "active",
+    "createdAt": "2026-07-30T09:54:32.421Z",
+    "updatedAt": "2026-07-30T09:54:32.421Z"
+  },
+  {
+    "id": "802122ee-be3c-46c3-a911-3dc9ae1e2a53",
+    "learnerId": "62b89d99-ebba-4ad8-868c-e1964ce9d964",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-007",
+    "status": "active",
+    "createdAt": "2026-07-30T09:56:11.135Z",
+    "updatedAt": "2026-07-30T09:56:11.135Z"
+  },
+  {
+    "id": "1aea8371-4bd1-44a1-82c1-80a4a1ab5d3c",
+    "learnerId": "37355b44-2500-4c23-b561-b5a9d28e99eb",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-008",
+    "status": "active",
+    "createdAt": "2026-07-30T10:12:54.346Z",
+    "updatedAt": "2026-07-30T10:12:54.346Z"
+  },
+  {
+    "id": "687bf9d9-1a50-4eb8-ad50-6c3420700eb4",
+    "learnerId": "31e5b9c3-1363-448c-8b75-0ab0a9035146",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-009",
+    "status": "active",
+    "createdAt": "2026-07-30T10:16:54.588Z",
+    "updatedAt": "2026-07-30T10:16:54.588Z"
+  },
+  {
+    "id": "a6f773a7-1237-4c27-93c9-cda7786bfbc9",
+    "learnerId": "bb79d6c0-21f1-43c6-b71c-5496963e8e86",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-003",
+    "status": "active",
+    "createdAt": "2026-07-30T10:25:23.102Z",
+    "updatedAt": "2026-07-30T10:25:23.102Z"
   }
 ]

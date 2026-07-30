@@ -137,9 +137,13 @@ const getIssuedForLearner = asyncHandler(async (req, res) => {
     .filter((l) => l.classId && l.status === "active")
     .map((l) => l.classId);
   const classRows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learner.id));
-  // Standalone issues (e.g. an auto-issued diagnostic) target the learner directly, with no
-  // class involved at all — merged in alongside the class-issued ones.
-  const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learner.id);
+  // Standalone issues (e.g. a course-progress-triggered one) target the learner directly, with
+  // no class involved at all — merged in alongside the class-issued ones. Diagnostics
+  // (ageCategoryId/learningAreaId set) are excluded: those are exclusively the first-login
+  // gate's concern (FirstLoginDiagnosticGate.jsx) and, once taken, shouldn't resurface as a
+  // regular assessment in the learner's portal.
+  const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learner.id)
+    .filter((row) => !row.issue.ageCategoryId && !row.issue.learningAreaId);
   const rows = [...standaloneRows, ...classRows].map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
   res.json({ success: true, data: rows, count: rows.length });
 });
