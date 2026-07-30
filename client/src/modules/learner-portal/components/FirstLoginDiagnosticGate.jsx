@@ -115,18 +115,6 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   const outstanding = rows.filter(isOutstanding);
   if (totalRef.current === null && outstanding.length > 0) totalRef.current = outstanding.length;
 
-  // DEBUG
-  console.log("FirstLoginDiagnosticGate Debug:", {
-    learner: learner?.id,
-    hub: hub?.id,
-    cls: cls?.id,
-    ensured,
-    rowsLoading,
-    rowsData: rows.length,
-    outstanding: outstanding.length,
-    areas: areas.length,
-  });
-
   const nothingToShow = ensured && !rowsLoading && outstanding.length === 0;
   useEffect(() => {
     if (nothingToShow && !completing) markComplete(learner.id, { onSuccess: onComplete });
