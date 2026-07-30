@@ -3,7 +3,7 @@ import { FiActivity, FiSend } from "react-icons/fi";
 import { useLearningAreas } from "../../curriculum/hooks/useCompetencies";
 import { useLearningAreaDiagnosticsForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
-import { useEnsureDiagnosticsIssued, useMarkPortalOnboardingComplete } from "../hooks/usePortalOnboarding";
+import { useEnsureDiagnosticsIssued, useMarkHubOnboardingComplete } from "../hooks/usePortalOnboarding";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tintBg: "#e8f5fb", tintBorder: "#a8d5ee" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -119,11 +119,14 @@ function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
 // manually-graded diagnostic only sets the learner's placement (Performance Band / starting
 // course, see maybePlaceFromDiagnostic in assessment-submission.service.js) once a teacher
 // grades it, so releasing the gate on submit alone would let a learner into a portal whose
-// placement hasn't landed yet. This is the very first thing a learner sees on their first
-// portal visit, per the product decision this was built for. Only ever active while
-// learner.portalOnboardingCompletedAt is unset; once cleared (here, once every diagnostic is
-// graded, or there being none to take), it never reappears for this learner again — even if a
-// new diagnostic is added to the curriculum later.
+// placement hasn't landed yet. This is the very first thing a learner sees the first time they
+// visit a given hub's portal, per the product decision this was built for. Only ever active
+// while the CURRENTLY SELECTED hub's onboardingCompletedAt (see LearnerPortalLayout's
+// gateActive, LearnerHubLinkModel) is unset; once cleared (here, once every diagnostic is
+// graded, or there being none to take), it never reappears for that hub again — even if a new
+// diagnostic is added to the curriculum later. Scoped per hub rather than per learner so a
+// learner enrolled at several hubs still gets gated on a hub they haven't cleared yet, even
+// after clearing another one.
 export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete = () => {} }) {
   const hasEnsured = useRef(false);
   // Covers both halves of "the one-time top-up call is done": hub/cls turning out to be
@@ -139,7 +142,7 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // forever). Driving ensureSettled off the Promise itself, resolved into a plain setState,
   // sidesteps that subscription entirely.
   const { mutateAsync: ensureIssuedAsync } = useEnsureDiagnosticsIssued();
-  const { mutate: markComplete, isPending: completing } = useMarkPortalOnboardingComplete();
+  const { mutate: markComplete, isPending: completing } = useMarkHubOnboardingComplete();
   const { data: rowsData, isLoading: rowsLoading, refetch } = useLearningAreaDiagnosticsForLearner(learner.id);
   const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
@@ -157,7 +160,13 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub?.id, cls?.id]);
 
-  const rows = rowsData || [];
+  // useLearningAreaDiagnosticsForLearner aggregates outstanding diagnostics across every hub
+  // the learner is active at, not just this one (the admin-facing LearnerViewPage wants that
+  // full picture) — filtered down here to just the areas belonging to the CURRENTLY SELECTED
+  // hub's curriculum, so a learner gated for this hub only ever sees this hub's diagnostics,
+  // never one left outstanding at a different hub they haven't switched to yet.
+  const areaIds = new Set(areas.map((a) => a.id));
+  const rows = (rowsData || []).filter((row) => areaIds.has(row.issue.learningAreaId));
   // "pending" = still blocks the gate (not yet graded). "actionable" = the subset the learner
   // can actually do something with right now; the rest ("submitted") is waiting on a teacher.
   const pending = rows.filter((row) => !isGraded(row));
@@ -175,7 +184,7 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // release the gate before its diagnostic even got issued.
   const nothingToShow = ensureSettled && !rowsLoading && pending.length === 0;
   useEffect(() => {
-    if (nothingToShow && !completing) markComplete(learner.id, { onSuccess: onComplete });
+    if (nothingToShow && !completing && hub?.id) markComplete({ learnerId: learner.id, hubId: hub.id }, { onSuccess: onComplete });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nothingToShow]);
 

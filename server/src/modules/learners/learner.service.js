@@ -41,21 +41,26 @@ function maybeAutoIssueDiagnostic(learnerId, cls) {
       }
     }
   }
-  maybeAutoIssueLearningAreaDiagnostics(learnerId, cls);
+  maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age);
 }
 
 // One diagnostic per Learning Area whose courses are actually visible to this class (via the
-// curriculum's live version, same source ClassViewPage's "Courses & Educators" panel reads) and
-// that has a diagnosticAssessmentId configured. issueDiagnostic's own (assessmentId, learnerId)
-// idempotency means this is safe to re-run on every enrollment/class change — a learner already
-// holding a given area's diagnostic never gets a duplicate, and moving to a class exposing a
-// *new* area issues just that one.
-function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls) {
+// curriculum's live version, same source ClassViewPage's "Courses & Educators" panel reads),
+// that has a diagnosticAssessmentId configured, and whose own minAge/maxAge (if set) covers this
+// learner — same open-ended-range matching as the stage lookup above, so a learner is never owed
+// every learning area in the curriculum, only the ones actually meant for their age. `age` is
+// null when the learner has no dateOfBirth on file; that skips the age check entirely (every
+// eligible area still issues) rather than risk under-diagnosing someone we can't place by age at
+// all. issueDiagnostic's own (assessmentId, learnerId) idempotency means this is safe to re-run on
+// every enrollment/class change — a learner already holding a given area's diagnostic never gets
+// a duplicate, and moving to a class exposing a *new* area issues just that one.
+function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age) {
   if (!cls?.gradeId) return;
   const currentCourseIds = new Set(CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId).map((c) => c.id));
   if (currentCourseIds.size === 0) return;
   const areas = LearningAreaModel.findByCurriculumId(cls.curriculumId)
-    .filter((a) => a.diagnosticAssessmentId && (a.courses || []).some((cid) => currentCourseIds.has(cid)));
+    .filter((a) => a.diagnosticAssessmentId && (a.courses || []).some((cid) => currentCourseIds.has(cid)))
+    .filter((a) => age == null || ((a.minAge == null || age >= a.minAge) && (a.maxAge == null || age <= a.maxAge)));
   for (const area of areas) {
     AssessmentSubmissionService.issueDiagnostic({ assessmentId: area.diagnosticAssessmentId, learnerId, learningAreaId: area.id });
   }
@@ -178,7 +183,14 @@ const LearnerService = {
         const hub = SchoolModel.findById(link.hubId);
         if (!hub) return null;
         const cls = link.classId ? ClassModel.findById(link.classId) : null;
-        return { ...hub, linkId: link.id, classId: link.classId || "", class: cls, admissionNumber: link.admissionNumber, status: link.status };
+        return {
+          ...hub, linkId: link.id, classId: link.classId || "", class: cls,
+          admissionNumber: link.admissionNumber, status: link.status,
+          // Per-hub counterpart to the old learner-level portalOnboardingCompletedAt — a
+          // learner enrolled at several hubs needs the first-login diagnostic gate to
+          // re-trigger for a hub they haven't cleared yet, even after clearing another one.
+          onboardingCompletedAt: link.onboardingCompletedAt || null,
+        };
       })
       .filter(Boolean);
   },
@@ -270,6 +282,16 @@ const LearnerService = {
     if (!link?.classId) return;
     const cls = ClassModel.findById(link.classId);
     if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
+  },
+
+  // Clears the first-login diagnostic gate for this one hub only — fired once the gate
+  // decides there's nothing left outstanding for it (see FirstLoginDiagnosticGate.jsx). Scoped
+  // to the hub-link rather than the learner record so a learner enrolled at several hubs still
+  // gets gated again on a hub they haven't cleared yet, even after clearing another one.
+  async markHubOnboardingComplete(learnerId, hubId) {
+    const link = LearnerHubLinkModel.findOne(learnerId, hubId);
+    if (!link) return null;
+    return LearnerHubLinkModel.update(link.id, { onboardingCompletedAt: new Date().toISOString() });
   },
 };
 

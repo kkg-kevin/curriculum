@@ -869,5 +869,128 @@
     "id": "0c25da97-17cf-4d05-ac57-0b6364933618",
     "createdAt": "2026-07-27T11:32:45.805Z",
     "updatedAt": "2026-07-28T07:08:10.468Z"
+  },
+  {
+    "name": "Diagnostic 101",
+    "type": "quiz",
+    "description": "<p>A short 5-question multiple choice diagnostic.</p>",
+    "instructions": "<p>Choose the best answer for each question.</p>",
+    "structureType": "structured",
+    "overview": "",
+    "sections": [],
+    "items": [
+      {
+        "id": "q1",
+        "question": "<p>What is 7 + 5?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 1,
+        "options": [
+          "10",
+          "11",
+          "12",
+          "13"
+        ],
+        "correctAnswer": "12",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "q2",
+        "question": "<p>Which of these is a vowel?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 1,
+        "options": [
+          "B",
+          "C",
+          "E",
+          "T"
+        ],
+        "correctAnswer": "E",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "q3",
+        "question": "<p>What color do you get when you mix blue and yellow?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 1,
+        "options": [
+          "Purple",
+          "Green",
+          "Orange",
+          "Red"
+        ],
+        "correctAnswer": "Green",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "q4",
+        "question": "<p>Which of the following is a living thing?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 1,
+        "options": [
+          "Rock",
+          "Tree",
+          "Chair",
+          "Cloud"
+        ],
+        "correctAnswer": "Tree",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      },
+      {
+        "id": "q5",
+        "question": "<p>How many days are there in a week?</p>",
+        "kind": "mcqSingle",
+        "sectionId": null,
+        "points": 1,
+        "options": [
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "correctAnswer": "7",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": []
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "createdAt": "2026-07-30T10:37:27.041Z",
+    "updatedAt": "2026-07-30T10:37:27.042Z"
   }
 ]

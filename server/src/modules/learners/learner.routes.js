@@ -10,6 +10,7 @@ const {
   updateLearnerHubLink,
   unenrollLearnerHub,
   ensureDiagnosticsIssued,
+  completeHubOnboarding,
 } = require("./learner.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -41,5 +42,8 @@ router.route("/:id/hubs/links/:hubId")
 
 // Learner-portal-only safety net — see ensureDiagnosticsIssued's comment in the controller.
 router.post("/:id/ensure-diagnostics", authorize("learner"), ensureDiagnosticsIssued);
+
+// Learner-portal-only — see completeHubOnboarding's comment in the controller.
+router.post("/:id/hubs/:hubId/complete-onboarding", authorize("learner"), completeHubOnboarding);
 
 module.exports = router;

@@ -3633,5 +3633,31 @@
         "marksPossible": 1
       }
     ]
+  },
+  {
+    "issueId": "f7e4263b-e6f9-47fa-91d1-573c51376c3c",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "learnerId": "bb79d6c0-21f1-43c6-b71c-5496963e8e86",
+    "classId": "test-class-001",
+    "status": "in_progress",
+    "answers": [],
+    "autoScore": null,
+    "autoMax": null,
+    "autoItemResults": [],
+    "manualScore": null,
+    "totalScore": null,
+    "maxScore": 13,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": null,
+    "gradedAt": null,
+    "gradedBy": null,
+    "reportPublished": false,
+    "reportPublishedAt": null,
+    "reportPublishedBy": null,
+    "id": "3713e331-b394-4375-8531-3f731b011dd8",
+    "createdAt": "2026-07-30T11:36:00.316Z",
+    "updatedAt": "2026-07-30T11:36:00.316Z"
   }
 ]

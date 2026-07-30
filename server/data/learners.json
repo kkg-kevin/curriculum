@@ -80,54 +80,6 @@
     "updatedAt": "2026-07-30T09:12:25.425Z"
   },
   {
-    "firstName": "Gate",
-    "lastName": "Tester",
-    "gender": "other",
-    "guardianName": "Gate Guardian",
-    "guardianPhone": "0700000000",
-    "guardianEmail": "gate-test-guardian2@example.com",
-    "registrationNumber": "REG-000005",
-    "id": "472751f9-8cac-437e-b80a-e539d86d177e",
-    "createdAt": "2026-07-30T09:47:53.746Z",
-    "updatedAt": "2026-07-30T09:47:53.746Z"
-  },
-  {
-    "firstName": "Gate3",
-    "lastName": "Tester",
-    "gender": "other",
-    "guardianName": "Gate Guardian3",
-    "guardianPhone": "0700000000",
-    "guardianEmail": "gate-test-guardian3@example.com",
-    "registrationNumber": "REG-000006",
-    "id": "da4aa89b-da8a-4851-9a88-7f9d4e3eecb8",
-    "createdAt": "2026-07-30T09:53:12.198Z",
-    "updatedAt": "2026-07-30T09:53:12.205Z"
-  },
-  {
-    "firstName": "Gate4",
-    "lastName": "Tester",
-    "gender": "other",
-    "guardianName": "Gate Guardian4",
-    "guardianPhone": "0700000000",
-    "guardianEmail": "gate-test-guardian4@example.com",
-    "registrationNumber": "REG-000007",
-    "id": "74895035-0ea7-4fae-8f9d-a932b776664f",
-    "createdAt": "2026-07-30T09:54:32.188Z",
-    "updatedAt": "2026-07-30T09:54:32.276Z"
-  },
-  {
-    "firstName": "Gate5",
-    "lastName": "Tester",
-    "gender": "other",
-    "guardianName": "Gate Guardian5",
-    "guardianPhone": "0700000000",
-    "guardianEmail": "gate-test-guardian5@example.com",
-    "registrationNumber": "REG-000008",
-    "id": "62b89d99-ebba-4ad8-868c-e1964ce9d964",
-    "createdAt": "2026-07-30T09:56:10.954Z",
-    "updatedAt": "2026-07-30T09:56:10.960Z"
-  },
-  {
     "firstName": "lev",
     "lastName": "lev",
     "gender": "female",

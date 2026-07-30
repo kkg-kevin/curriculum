@@ -171,6 +171,16 @@ const ensureDiagnosticsIssued = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// Learner-portal-only: fired once the first-login diagnostic gate has nothing left
+// outstanding for this hub. Deliberately its own narrow endpoint rather than reusing
+// updateLearnerHubLink — that route also allows changing classId/status, which a learner must
+// never be able to do to their own enrollment.
+const completeHubOnboarding = asyncHandler(async (req, res) => {
+  assertOwn(req.params.id === req.ownLearner?.id);
+  const hub = await LearnerService.markHubOnboardingComplete(req.params.id, req.params.hubId);
+  res.json({ success: true, data: hub });
+});
+
 module.exports = {
   createLearner,
   getAllLearners,
@@ -182,4 +192,5 @@ module.exports = {
   updateLearnerHubLink,
   unenrollLearnerHub,
   ensureDiagnosticsIssued,
+  completeHubOnboarding,
 };

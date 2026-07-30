@@ -27,7 +27,10 @@
     "description": "This is the advanced stage where learners dive deeper into real-world tech skills such as programming, AI, robotics, and software development. Emphasis is on complex projects, critical thinking, innovation, and preparing learners for future academic or career paths in technology.",
     "order": 3,
     "createdAt": "2026-06-25T10:51:48.724Z",
-    "updatedAt": "2026-07-15T13:38:32.964Z"
+    "updatedAt": "2026-07-30T11:03:36.473Z",
+    "minAge": null,
+    "maxAge": null,
+    "diagnosticAssessmentId": null
   },
   {
     "id": "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51",

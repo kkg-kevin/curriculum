@@ -557,6 +557,8 @@ function LearningAreasPanel({ curriculumId }) {
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
   const [courses,  setCourses]    = useState([]);
+  const [minAge,   setMinAge]     = useState("");
+  const [maxAge,   setMaxAge]     = useState("");
   const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
 
@@ -580,17 +582,26 @@ function LearningAreasPanel({ curriculumId }) {
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setDiagnosticAssessmentId(""); setShowForm(true);
+    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]);
+    setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
-    setCourses(area.courses || []); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
+    setCourses(area.courses || []);
+    setMinAge(area.minAge ?? ""); setMaxAge(area.maxAge ?? ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
+  const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
+
   function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), color, courses, diagnosticAssessmentId: diagnosticAssessmentId || null };
+    if (!name.trim() || ageRangeInvalid) return;
+    const data = {
+      name: name.trim(), description: desc.trim(), color, courses,
+      minAge: minAge === "" ? null : Number(minAge),
+      maxAge: maxAge === "" ? null : Number(maxAge),
+      diagnosticAssessmentId: diagnosticAssessmentId || null,
+    };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
@@ -674,6 +685,34 @@ function LearningAreasPanel({ curriculumId }) {
             </div>
           </div>
 
+          <div style={{ marginTop: "12px" }}>
+            <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
+            <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+              Only learners in this age range are auto-issued this area's diagnostic. Leave blank to apply to every age.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                <input
+                  type="number" min="0" max="120" className="cp-comp-config-input"
+                  placeholder="Min" value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                />
+              </div>
+              <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                <input
+                  type="number" min="0" max="120" className="cp-comp-config-input"
+                  placeholder="Max" value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                />
+              </div>
+              <span style={{ color: "#9CA3AF", fontSize: "12px" }}>years</span>
+            </div>
+            {ageRangeInvalid && (
+              <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
+            )}
+          </div>
+
           {/* Existing areas set/change their diagnostic from the dedicated section on the card
               instead (see the "Diagnostic Assessment" cp-diag-section below) — kept here only
               for create, since a brand-new area has no card yet to attach that to. */}
@@ -695,7 +734,7 @@ function LearningAreasPanel({ curriculumId }) {
           )}
 
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim()}>
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || ageRangeInvalid}>
               {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
@@ -721,6 +760,15 @@ function LearningAreasPanel({ curriculumId }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cp-item-name">{area.name}</div>
                     {area.description && <div className="cp-item-sub">{area.description}</div>}
+                    {(area.minAge != null || area.maxAge != null) && (
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
+                        {area.minAge != null && area.maxAge != null
+                          ? `${area.minAge}–${area.maxAge} yrs`
+                          : area.minAge != null
+                          ? `${area.minAge}+ yrs`
+                          : `up to ${area.maxAge} yrs`}
+                      </p>
+                    )}
                   </div>
                   <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
