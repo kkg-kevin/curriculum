@@ -186,6 +186,19 @@ const AssessmentSubmissionService = {
     return AssessmentIssueModel.findAll({ courseId });
   },
 
+  // Shared by getSubmissionsNeedingGrading/getStandaloneSubmissionsNeedingGrading below — merges
+  // each submission with its issue/assessment/learner for display, dropping any row whose
+  // referenced record has since been deleted (issue revoked, assessment removed, learner
+  // deleted) rather than surfacing a broken row.
+  _hydrateSubmissionRows(submissions) {
+    return submissions.map((submission) => ({
+      submission,
+      issue: AssessmentIssueModel.findById(submission.issueId),
+      assessment: AssessmentModel.findById(submission.assessmentId),
+      learner: LearnerModel.findById(submission.learnerId),
+    })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
+  },
+
   // Cross-cutting "needs grading" queue for a class — every submitted-but-ungraded submission
   // across every issue in the class, each merged with its learner/assessment for display. The
   // inverse of getRosterForIssue (which is per-issue, every learner); this is per-class, only the
@@ -193,12 +206,7 @@ const AssessmentSubmissionService = {
   // roster individually to find pending work.
   getSubmissionsNeedingGrading(classId) {
     const submissions = AssessmentSubmissionModel.findAll({ classId, status: "submitted" });
-    return submissions.map((submission) => ({
-      submission,
-      issue: AssessmentIssueModel.findById(submission.issueId),
-      assessment: AssessmentModel.findById(submission.assessmentId),
-      learner: LearnerModel.findById(submission.learnerId),
-    })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
+    return AssessmentSubmissionService._hydrateSubmissionRows(submissions);
   },
 
   // Teacher-facing counterpart to getSubmissionsNeedingGrading above — that one only ever sees
@@ -212,12 +220,7 @@ const AssessmentSubmissionService = {
       .map((l) => l.learnerId);
     const submissions = AssessmentSubmissionModel.findAll({ status: "submitted" })
       .filter((s) => !s.classId && learnerIds.includes(s.learnerId));
-    return submissions.map((submission) => ({
-      submission,
-      issue: AssessmentIssueModel.findById(submission.issueId),
-      assessment: AssessmentModel.findById(submission.assessmentId),
-      learner: LearnerModel.findById(submission.learnerId),
-    })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
+    return AssessmentSubmissionService._hydrateSubmissionRows(submissions);
   },
 
   // What a learner sees: every issue targeting their class, each merged with their own

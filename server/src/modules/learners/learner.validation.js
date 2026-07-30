@@ -41,11 +41,6 @@ const baseLearnerSchema = z.object({
   // CompetencyService.placeLearnerFromDiagnostic). Combined with currentStageId, this is the
   // learner's full "stage + band" placement identity.
   currentBandId: z.string().optional().nullable().default(null),
-  // When this learner's portal (guardian-authenticated) first-login diagnostic gate last
-  // cleared — set once by the gate itself (see learner-portal's FirstLoginDiagnosticGate) and
-  // never again, so a learner is only ever stopped at it the very first time they reach the
-  // portal, regardless of any diagnostics issued to them afterward.
-  portalOnboardingCompletedAt: z.string().optional().nullable().default(null),
 });
 
 const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {

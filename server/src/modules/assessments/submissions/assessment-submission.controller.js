@@ -11,6 +11,14 @@ const {
   gradeSubmissionSchema,
 } = require("./assessment-submission.validation");
 
+// Whether this teacher has at least one course-educator link in the given class — the one
+// precision level every teacher-facing ownership check in this file uses, whether the class is
+// known directly (assertClassAccess) or reached indirectly through a learner's enrollment
+// (assertLearnerHubAccess).
+function teacherLinkedToClass(req, classId) {
+  return ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === req.ownTeacher?.id);
+}
+
 // Issuing/grading/roster-viewing all revolve around a class — reuse the exact ownership check
 // classes/attendance already apply, so a teacher can only ever touch a class they have at least
 // one course-educator link in, and a school only its own school's classes.
@@ -21,9 +29,7 @@ function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
-  if (req.user.role === "teacher") {
-    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
-  }
+  if (req.user.role === "teacher") assertOwn(teacherLinkedToClass(req, cls.id));
 }
 
 // A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)
@@ -38,7 +44,7 @@ function assertLearnerHubAccess(req, learnerId) {
     assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
   } else if (req.user.role === "teacher") {
     const classIds = LearnerHubLinkModel.findByLearnerId(learnerId).filter((l) => l.classId).map((l) => l.classId);
-    assertOwn(classIds.some((classId) => ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === req.ownTeacher?.id)));
+    assertOwn(classIds.some((classId) => teacherLinkedToClass(req, classId)));
   }
 }
 
@@ -49,6 +55,32 @@ function assertLearnerOwnsSubmission(req, submission) {
     throw err;
   }
   if (req.user.role === "learner") assertOwn(submission.learnerId === req.ownLearner?.id);
+}
+
+// Shared by getSubmission/gradeSubmission/publishSubmissionReport — a class-issued submission
+// checks ownership via its class, a standalone one (diagnostic/course-progress, no classId) via
+// the learner's own hub/class links instead.
+function assertSubmissionAccess(req, submission) {
+  if (submission.classId) {
+    assertClassAccess(req, ClassModel.findById(submission.classId));
+  } else {
+    assertLearnerHubAccess(req, submission.learnerId);
+  }
+}
+
+// Shared by getIssuesForClass/getSubmissionsNeedingGrading/getStandaloneSubmissionsNeedingGrading
+// — every one of them is "resolve the classId query param, require it, then prove this caller
+// owns that class" before doing anything else.
+function requireOwnedClassFromQuery(req) {
+  const { classId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = ClassModel.findById(classId);
+  assertClassAccess(req, cls);
+  return cls;
 }
 
 // A class-issued submission is graded internally (status "graded") as soon as a teacher saves
@@ -82,45 +114,24 @@ const issueAssessment = asyncHandler(async (req, res) => {
 });
 
 const getIssuesForClass = asyncHandler(async (req, res) => {
-  const { classId } = req.query;
-  if (!classId) {
-    const err = new Error("classId is required");
-    err.statusCode = 400;
-    throw err;
-  }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
-  const issues = AssessmentSubmissionService.getIssuesForClass(classId);
+  const cls = requireOwnedClassFromQuery(req);
+  const issues = AssessmentSubmissionService.getIssuesForClass(cls.id);
   res.json({ success: true, data: issues, count: issues.length });
 });
 
 // The teacher's cross-cutting "needs grading" queue for one class — see
 // getSubmissionsNeedingGrading in the service for why this is separate from a per-issue roster.
 const getSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
-  const { classId } = req.query;
-  if (!classId) {
-    const err = new Error("classId is required");
-    err.statusCode = 400;
-    throw err;
-  }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
-  const rows = AssessmentSubmissionService.getSubmissionsNeedingGrading(classId);
+  const cls = requireOwnedClassFromQuery(req);
+  const rows = AssessmentSubmissionService.getSubmissionsNeedingGrading(cls.id);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
 // Teacher-facing counterpart to getSubmissionsNeedingGrading — see
 // getStandaloneSubmissionsNeedingGrading in the service for why this is separate.
 const getStandaloneSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
-  const { classId } = req.query;
-  if (!classId) {
-    const err = new Error("classId is required");
-    err.statusCode = 400;
-    throw err;
-  }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
-  const rows = AssessmentSubmissionService.getStandaloneSubmissionsNeedingGrading(classId);
+  const cls = requireOwnedClassFromQuery(req);
+  const rows = AssessmentSubmissionService.getStandaloneSubmissionsNeedingGrading(cls.id);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -253,12 +264,7 @@ const getSubmission = asyncHandler(async (req, res) => {
     res.json({ success: true, data: redactUnpublishedReport(submission) });
     return;
   }
-  if (submission.classId) {
-    const cls = ClassModel.findById(submission.classId);
-    assertClassAccess(req, cls);
-  } else {
-    assertLearnerHubAccess(req, submission.learnerId);
-  }
+  assertSubmissionAccess(req, submission);
   res.json({ success: true, data: submission });
 });
 
@@ -269,12 +275,7 @@ const gradeSubmission = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  if (existing.classId) {
-    const cls = ClassModel.findById(existing.classId);
-    assertClassAccess(req, cls);
-  } else {
-    assertLearnerHubAccess(req, existing.learnerId);
-  }
+  assertSubmissionAccess(req, existing);
   const data = gradeSubmissionSchema.parse(req.body);
   const submission = AssessmentSubmissionService.grade(req.params.id, { ...data, gradedBy: req.ownTeacher?.id || req.user.id });
   res.json({ success: true, data: submission });
@@ -289,12 +290,7 @@ const publishSubmissionReport = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  if (existing.classId) {
-    const cls = ClassModel.findById(existing.classId);
-    assertClassAccess(req, cls);
-  } else {
-    assertLearnerHubAccess(req, existing.learnerId);
-  }
+  assertSubmissionAccess(req, existing);
   const submission = AssessmentSubmissionService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
   res.json({ success: true, data: submission });
 });

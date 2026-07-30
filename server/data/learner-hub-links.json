@@ -95,5 +95,15 @@
     "createdAt": "2026-07-30T11:20:59.381Z",
     "updatedAt": "2026-07-30T11:34:45.342Z",
     "onboardingCompletedAt": "2026-07-30T10:27:11.706Z"
+  },
+  {
+    "id": "8082958d-4b4f-419e-8b2d-88ee38ac81d9",
+    "learnerId": "a5ced6b9-379e-4ee4-9b7e-ffe21a357c1a",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "c05625a4-1129-45dd-b477-0c44c31b4b7a",
+    "admissionNumber": "SS-2026-004",
+    "status": "active",
+    "createdAt": "2026-07-30T12:29:15.585Z",
+    "updatedAt": "2026-07-30T12:29:15.585Z"
   }
 ]

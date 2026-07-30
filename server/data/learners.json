@@ -71,13 +71,13 @@
     "languages": "English, Kiswahili",
     "username": "lisa",
     "currentRungId": null,
-    "currentStageId": null,
+    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
     "currentBandId": null,
     "portalOnboardingCompletedAt": null,
     "registrationNumber": "REG-000004",
     "id": "a5ced6b9-379e-4ee4-9b7e-ffe21a357c1a",
     "createdAt": "2026-07-30T09:12:25.425Z",
-    "updatedAt": "2026-07-30T09:12:25.425Z"
+    "updatedAt": "2026-07-30T12:29:15.601Z"
   },
   {
     "firstName": "lev",
