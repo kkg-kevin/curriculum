@@ -28,14 +28,17 @@ function assertClassAccess(req, cls) {
 
 // A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)
 // has no classId, so assertClassAccess doesn't apply — ownership instead comes from whether
-// the learner is enrolled at a hub this caller owns. Diagnostics aren't tied to any class/
-// teacher, so a "teacher" caller never has standalone access, only admin/school.
+// the learner is enrolled at a hub/class this caller owns. A "teacher" caller has no hub of
+// their own, so their access comes from the learner's class instead — same "any course-link in
+// the class is enough" precision assertClassAccess already uses for ordinary class-issued
+// grading, not narrowed down to the specific Learning Area's courses.
 function assertLearnerHubAccess(req, learnerId) {
   if (req.user.role === "school") {
     const hubIds = LearnerHubLinkModel.findByLearnerId(learnerId).map((l) => l.hubId);
     assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
   } else if (req.user.role === "teacher") {
-    assertOwn(false);
+    const classIds = LearnerHubLinkModel.findByLearnerId(learnerId).filter((l) => l.classId).map((l) => l.classId);
+    assertOwn(classIds.some((classId) => ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === req.ownTeacher?.id)));
   }
 }
 
@@ -103,6 +106,21 @@ const getSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
   const cls = ClassModel.findById(classId);
   assertClassAccess(req, cls);
   const rows = AssessmentSubmissionService.getSubmissionsNeedingGrading(classId);
+  res.json({ success: true, data: rows, count: rows.length });
+});
+
+// Teacher-facing counterpart to getSubmissionsNeedingGrading — see
+// getStandaloneSubmissionsNeedingGrading in the service for why this is separate.
+const getStandaloneSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = ClassModel.findById(classId);
+  assertClassAccess(req, cls);
+  const rows = AssessmentSubmissionService.getStandaloneSubmissionsNeedingGrading(classId);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -285,6 +303,7 @@ module.exports = {
   issueAssessment,
   getIssuesForClass,
   getSubmissionsNeedingGrading,
+  getStandaloneSubmissionsNeedingGrading,
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,

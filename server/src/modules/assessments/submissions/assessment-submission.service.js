@@ -201,6 +201,25 @@ const AssessmentSubmissionService = {
     })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
   },
 
+  // Teacher-facing counterpart to getSubmissionsNeedingGrading above — that one only ever sees
+  // class-issued submissions (filtered by submission.classId), so a learner's standalone
+  // diagnostic (classId: null, see issueDiagnostic) never showed up in a teacher's queue at all.
+  // Scoped by which learners are actively enrolled in this class instead, since the submission
+  // itself carries no classId to filter on.
+  getStandaloneSubmissionsNeedingGrading(classId) {
+    const learnerIds = LearnerHubLinkModel.findByClassId(classId)
+      .filter((l) => l.status === "active")
+      .map((l) => l.learnerId);
+    const submissions = AssessmentSubmissionModel.findAll({ status: "submitted" })
+      .filter((s) => !s.classId && learnerIds.includes(s.learnerId));
+    return submissions.map((submission) => ({
+      submission,
+      issue: AssessmentIssueModel.findById(submission.issueId),
+      assessment: AssessmentModel.findById(submission.assessmentId),
+      learner: LearnerModel.findById(submission.learnerId),
+    })).filter((row) => !!row.issue && !!row.assessment && !!row.learner);
+  },
+
   // What a learner sees: every issue targeting their class, each merged with their own
   // submission (or a synthetic "not_started" placeholder if they haven't opened it yet).
   getIssuedAssessmentsForLearner(classId, learnerId) {

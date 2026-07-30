@@ -43,7 +43,7 @@ function computeAge(dateOfBirth) {
   return age;
 }
 
-export default function ProfileIdentityCard({ learner, stage, onEdit }) {
+export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
   const dcfId = deriveDcfId(learner);
   const age = computeAge(learner.dateOfBirth);
 
@@ -87,7 +87,7 @@ export default function ProfileIdentityCard({ learner, stage, onEdit }) {
           value={stage?.name || "Not yet placed"}
           sub={stage?.ageRange ? `(${stage.ageRange})` : "Set by a teacher or admin"}
         />
-        <StatusPill eyebrow="Current Level Summary" value="Not yet available" icon={<FiStar size={13} />} />
+        <StatusPill eyebrow="Current Level Summary" value={band?.name || "Not yet available"} icon={<FiStar size={13} />} />
         <StatusPill eyebrow="Learning Streak" value="Not tracked yet" icon={<FiZap size={13} />} />
       </div>
     </div>
