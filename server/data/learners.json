@@ -138,5 +138,19 @@
     "id": "bb79d6c0-21f1-43c6-b71c-5496963e8e86",
     "createdAt": "2026-07-30T10:25:15.115Z",
     "updatedAt": "2026-07-30T10:27:11.729Z"
+  },
+  {
+    "firstName": "ZZDELETETEST",
+    "lastName": "Learner1785417928",
+    "gender": "other",
+    "guardianName": "Test Guardian",
+    "guardianPhone": "0700000000",
+    "currentRungId": null,
+    "currentStageId": null,
+    "currentBandId": null,
+    "registrationNumber": "REG-000012",
+    "id": "edd60327-5ec5-41eb-b970-916f6ddb3b02",
+    "createdAt": "2026-07-30T13:25:28.979Z",
+    "updatedAt": "2026-07-30T13:25:28.979Z"
   }
 ]
