@@ -100,16 +100,14 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
 
-  // Runs once per gate mount — if learner has no class yet, or hub/curriculum not set up,
-  // just mark ensured=true so the gate releases immediately. Otherwise ensure diagnostics are issued.
+  // Runs whenever hub or cls changes — once hub and cls are loaded, ensure diagnostics are issued.
+  // If learner has no class yet, just mark ensured=true so the gate releases immediately.
   useEffect(() => {
+    if (!hub || !cls) return; // Wait for hub/cls to load
     if (hasEnsured.current) return;
     hasEnsured.current = true;
-    if (!hub?.id) { setEnsured(true); return; }
-    if (!cls?.id) { setEnsured(true); return; } // No class assigned yet — skip diagnostics
     ensureIssued({ learnerId: learner.id, hubId: hub.id }, { onSettled: () => { setEnsured(true); refetch(); } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hub, cls, learner.id, ensureIssued, refetch]);
 
   const rows = rowsData || [];
   const outstanding = rows.filter(isOutstanding);
