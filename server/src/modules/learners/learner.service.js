@@ -51,12 +51,21 @@ function maybeAutoIssueDiagnostic(learnerId, cls) {
 // holding a given area's diagnostic never gets a duplicate, and moving to a class exposing a
 // *new* area issues just that one.
 function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls) {
-  if (!cls?.gradeId) return;
+  if (!cls?.gradeId) {
+    console.log(`[issueLADiag] No gradeId on class ${cls?.id}`);
+    return;
+  }
   const currentCourseIds = new Set(CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId).map((c) => c.id));
-  if (currentCourseIds.size === 0) return;
+  console.log(`[issueLADiag] Found ${currentCourseIds.size} courses for curriculum ${cls.curriculumId} grade ${cls.gradeId}`);
+  if (currentCourseIds.size === 0) {
+    console.log(`[issueLADiag] No courses found, returning`);
+    return;
+  }
   const areas = LearningAreaModel.findByCurriculumId(cls.curriculumId)
     .filter((a) => a.diagnosticAssessmentId && (a.courses || []).some((cid) => currentCourseIds.has(cid)));
+  console.log(`[issueLADiag] Found ${areas.length} learning areas with diagnostics that match courses`);
   for (const area of areas) {
+    console.log(`[issueLADiag] Issuing diagnostic for area ${area.id} with assessment ${area.diagnosticAssessmentId}`);
     AssessmentSubmissionService.issueDiagnostic({ assessmentId: area.diagnosticAssessmentId, learnerId, learningAreaId: area.id });
   }
 }
