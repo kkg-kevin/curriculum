@@ -119,7 +119,7 @@ function AssignCourseControl({ teacherId, hubs }) {
         <span style={{ fontSize: 12, color: "#9CA3AF" }}>Already assigned to every course in this class.</span>
       )}
       {selectedHubId && classes.length === 0 && (
-        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No active classes at this hub.</span>
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No classes at this hub.</span>
       )}
     </div>
   );
