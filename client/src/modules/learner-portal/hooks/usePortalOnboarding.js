@@ -20,10 +20,20 @@ export function useMarkPortalOnboardingComplete() {
   return useMutation({
     mutationFn: (learnerId) => learnerApi.update(learnerId, { portalOnboardingCompletedAt: new Date().toISOString() }),
     onSuccess: (data) => {
-      if (data?.id) qc.invalidateQueries({ queryKey: LEARNER_KEYS.detail(data.id) });
-      // useLearnerPortalScope reads learners via ["learners", "byGuardianEmail", email] — refresh
-      // that too so the layout's gate check flips to "cleared" without a manual reload.
-      qc.invalidateQueries({ queryKey: ["learners", "byGuardianEmail"] });
+      if (!data?.id) return;
+      qc.setQueryData(LEARNER_KEYS.detail(data.id), data);
+      // useLearnerPortalScope's gateActive check reads learners via
+      // ["learners", "byGuardianEmail", email] and computes gateActive off whatever's in that
+      // cache *right now* — invalidateQueries alone only schedules a background refetch, which
+      // leaves a window where this mutation has already resolved (so the gate stops rendering
+      // its own content) but the layout's copy of the learner still shows
+      // portalOnboardingCompletedAt unset, rendering neither the gate nor the real portal until
+      // that refetch happens to land. Patching the cache directly with the already-known result
+      // closes that window instead of hoping the refetch is fast.
+      qc.setQueriesData({ queryKey: ["learners", "byGuardianEmail"] }, (old) => {
+        if (!old?.data) return old;
+        return { ...old, data: old.data.map((l) => (l.id === data.id ? { ...l, portalOnboardingCompletedAt: data.portalOnboardingCompletedAt } : l)) };
+      });
     },
   });
 }
