@@ -475,5 +475,32 @@
     "id": "8bb4adc6-406d-4d0c-b9ec-6514abc01a81",
     "createdAt": "2026-07-30T06:42:11.442Z",
     "updatedAt": "2026-07-30T06:42:11.442Z"
+  },
+  {
+    "name": "Test Guardian",
+    "email": "janee@digifunzi.com",
+    "passwordHash": "$2b$10$1soBiuFSLsJ.bi/f3g1vDep1.f0N4DddNyyuBNpItHLXaMHOTEMM.",
+    "role": "learner",
+    "id": "50bec7ef-bbe9-4b24-b7c5-ff2f0fbb5c7d",
+    "createdAt": "2026-07-30T06:50:54.125Z",
+    "updatedAt": "2026-07-30T06:50:54.125Z"
+  },
+  {
+    "name": "faith",
+    "email": "faith@digifunzi.com",
+    "passwordHash": "$2b$10$nJEqyngilp60w96OZ/g0VuKjyFtN5wV8av3WBS8PIi25jSadQfQr6",
+    "role": "learner",
+    "id": "844a98eb-a7fd-44e2-96ed-cc3141404378",
+    "createdAt": "2026-07-30T07:14:37.143Z",
+    "updatedAt": "2026-07-30T07:14:37.143Z"
+  },
+  {
+    "name": "Test Guardian",
+    "email": "james@digifunzi.com",
+    "passwordHash": "$2b$10$qc8wHozWQX2MTy5iLk9iLeUcPJbkXSzFCVPOsGTEb0/H.8R0WNn4O",
+    "role": "learner",
+    "id": "1a868e3a-6c79-4fb6-9692-2b111d7f2191",
+    "createdAt": "2026-07-30T07:31:29.997Z",
+    "updatedAt": "2026-07-30T07:31:29.997Z"
   }
 ]

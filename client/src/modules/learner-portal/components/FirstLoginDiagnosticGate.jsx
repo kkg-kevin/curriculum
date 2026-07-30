@@ -100,27 +100,53 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
 
-  // Runs whenever hub or cls changes — once hub and cls are loaded, ensure diagnostics are issued.
-  // If learner has no class yet, just mark ensured=true so the gate releases immediately.
+  // Runs once when hub and cls first load — ensure diagnostics are issued server-side.
   useEffect(() => {
-    if (!hub || !cls) return; // Wait for hub/cls to load
-    if (hasEnsured.current) return;
+    console.log('[GATE] Init effect: hub=', !!hub, 'cls=', !!cls);
+    if (!hub?.id || !cls?.id) {
+      console.log('[GATE] Hub or class not ready');
+      return;
+    }
+    if (hasEnsured.current) {
+      console.log('[GATE] Already ran ensureIssued');
+      return;
+    }
+    console.log('[GATE] First time: hub/cls loaded, calling ensureIssued');
     hasEnsured.current = true;
-    ensureIssued({ learnerId: learner.id, hubId: hub.id }, { onSettled: () => { setEnsured(true); refetch(); } });
-  }, [hub, cls, learner.id, ensureIssued, refetch]);
+    ensureIssued({ learnerId: learner.id, hubId: hub.id }, {
+      onSuccess: () => {
+        console.log('[GATE] ensureIssued succeeded');
+        setEnsured(true);
+        // The diagnostics query should already be running - just let it finish loading
+      },
+      onError: (err) => {
+        console.log('[GATE] ensureIssued failed:', err);
+        // Even if ensure fails, proceed - maybe diagnostics were already issued
+        setEnsured(true);
+      }
+    });
+  }, [hub?.id, cls?.id]);
 
   const rows = rowsData || [];
   const outstanding = rows.filter(isOutstanding);
   if (totalRef.current === null && outstanding.length > 0) totalRef.current = outstanding.length;
 
+  console.log('[GATE] State: ensured=', ensured, 'rowsLoading=', rowsLoading, 'rows=', rows.length, 'outstanding=', outstanding.length);
+
   const nothingToShow = ensured && !rowsLoading && outstanding.length === 0;
   useEffect(() => {
-    if (nothingToShow && !completing) markComplete(learner.id, { onSuccess: onComplete });
+    if (nothingToShow && !completing) {
+      console.log('[GATE] Nothing to show, marking complete');
+      markComplete(learner.id, { onSuccess: onComplete });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nothingToShow]);
 
   // Still loading data, or waiting for ensurance check to complete
-  if (!ensured || rowsLoading) return <LoadingState />;
+  if (!ensured || rowsLoading) {
+    console.log('[GATE] Returning LoadingState (ensured=', ensured, 'rowsLoading=', rowsLoading, ')');
+    return <LoadingState />;
+  }
 
   // Nothing to show — markComplete effect should have already fired, layout will refresh
   // when learner record updates. Don't render anything here.

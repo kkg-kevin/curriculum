@@ -81,8 +81,19 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.333Z",
-    "updatedAt": "2026-07-29T10:11:13.066Z",
-    "diagnosticAssessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95"
+    "updatedAt": "2026-07-30T07:34:46.149Z",
+    "diagnosticAssessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+    "courseSequence": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "order": 1,
+        "defaultForStages": [
+          "79e1f87e-0601-40a5-968d-106b0f1739fb",
+          "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
+          "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930"
+        ]
+      }
+    ]
   },
   {
     "id": "436142c5-7ebe-4c79-8fd8-808dab8873f7",
@@ -119,9 +130,19 @@
     "courses": [
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
-    "courseSequence": [],
-    "diagnosticAssessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "courseSequence": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "order": 1,
+        "defaultForStages": [
+          "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51",
+          "84f50dc0-d8ba-460b-8ab6-ced9834d800f",
+          "9fa8af55-0d19-4e6e-bc57-69f1e674807b"
+        ]
+      }
+    ],
+    "diagnosticAssessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
     "createdAt": "2026-07-29T14:08:04.023Z",
-    "updatedAt": "2026-07-29T14:08:04.023Z"
+    "updatedAt": "2026-07-30T07:34:00.634Z"
   }
 ]
