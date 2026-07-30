@@ -124,8 +124,9 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // Still loading data, or waiting for ensurance check to complete
   if (!ensured || rowsLoading) return <LoadingState />;
 
-  // All diagnostics completed or none to show — gate releases and onboarding is marked complete
-  if (nothingToShow) return <LoadingState />;
+  // Nothing to show — markComplete effect should have already fired, layout will refresh
+  // when learner record updates. Don't render anything here.
+  if (nothingToShow) return null;
 
   const total = totalRef.current || outstanding.length;
   const doneCount = total - outstanding.length;
