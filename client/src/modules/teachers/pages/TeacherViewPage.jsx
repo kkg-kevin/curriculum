@@ -64,7 +64,7 @@ function AssignCourseControl({ teacherId, hubs }) {
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", selectedHubId],
-    queryFn:  () => classApi.getAll({ schoolId: selectedHubId, status: "active" }),
+    queryFn:  () => classApi.getAll({ schoolId: selectedHubId }),
     enabled:  !!selectedHubId,
   });
   const classes = classesData?.data || [];

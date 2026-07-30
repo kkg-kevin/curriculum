@@ -342,7 +342,7 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
     queryFn:  () => classApi.getAll({ schoolId: enrollment.id }),
     enabled:  isAdmin,
   });
-  const classes = (classesData?.data || []).filter((c) => c.status === "active");
+  const classes = classesData?.data || [];
   const statusStyle = STATUS_STYLES[enrollment.status] || STATUS_STYLES.inactive;
 
   return (
@@ -406,7 +406,7 @@ function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
     queryFn:  () => classApi.getAll({ schoolId: selectedHubId }),
     enabled:  !!selectedHubId,
   });
-  const classes = (classesData?.data || []).filter((c) => c.status === "active");
+  const classes = classesData?.data || [];
 
   return (
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", gap: 8, flexWrap: "wrap" }}>
