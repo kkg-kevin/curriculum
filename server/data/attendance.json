@@ -218,5 +218,38 @@
     "markedBy": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-28T06:59:06.261Z",
     "updatedAt": "2026-07-28T06:59:06.261Z"
+  },
+  {
+    "id": "edfda3b0-a9ca-4cfc-ac68-132f8fe35acc",
+    "classId": "test-class-001",
+    "date": "2026-07-30",
+    "learnerId": "a5ced6b9-379e-4ee4-9b7e-ffe21a357c1a",
+    "status": "present",
+    "notes": "",
+    "markedBy": "e80b730e-0888-40fa-a38d-c568ec24253c",
+    "createdAt": "2026-07-30T09:15:27.513Z",
+    "updatedAt": "2026-07-30T09:15:27.513Z"
+  },
+  {
+    "id": "e3956342-85e1-4ad9-9dd1-00e34eba5eac",
+    "classId": "test-class-001",
+    "date": "2026-07-30",
+    "learnerId": "eae585c5-e65d-408f-a677-a753a3ca7b52",
+    "status": "present",
+    "notes": "",
+    "markedBy": "e80b730e-0888-40fa-a38d-c568ec24253c",
+    "createdAt": "2026-07-30T09:15:27.513Z",
+    "updatedAt": "2026-07-30T09:15:27.513Z"
+  },
+  {
+    "id": "27b70fba-5210-40f4-951a-7582034b2766",
+    "classId": "test-class-001",
+    "date": "2026-07-30",
+    "learnerId": "c4137f7f-3f1c-46b4-999f-c551ba4b9248",
+    "status": "present",
+    "notes": "",
+    "markedBy": "e80b730e-0888-40fa-a38d-c568ec24253c",
+    "createdAt": "2026-07-30T09:15:27.513Z",
+    "updatedAt": "2026-07-30T09:15:27.513Z"
   }
 ]

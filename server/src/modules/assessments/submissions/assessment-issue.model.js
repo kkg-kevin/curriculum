@@ -57,9 +57,18 @@ const AssessmentIssueModel = {
 
   // Idempotency check for a standalone diagnostic issue (see issueDiagnostic in
   // assessment-submission.service.js) — keyed by learner instead of class/session, since it
-  // bypasses course/session attachment entirely.
-  findOneStandalone({ assessmentId, learnerId }) {
-    return readAll().find((r) => r.assessmentId === assessmentId && r.learnerId === learnerId) || null;
+  // bypasses course/session attachment entirely. Also keyed by learningAreaId/ageCategoryId
+  // (both default null, matching course-progress issues which never set either): the same
+  // sample assessment is sometimes reused as the configured diagnostic for more than one
+  // Learning Area, so matching on assessmentId+learnerId alone would wrongly treat a diagnostic
+  // already issued for one area as satisfying a different area that happens to share it.
+  findOneStandalone({ assessmentId, learnerId, learningAreaId = null, ageCategoryId = null }) {
+    return readAll().find((r) =>
+      r.assessmentId === assessmentId &&
+      r.learnerId === learnerId &&
+      (r.learningAreaId || null) === learningAreaId &&
+      (r.ageCategoryId || null) === ageCategoryId
+    ) || null;
   },
 
   update(id, data) {

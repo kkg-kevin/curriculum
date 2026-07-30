@@ -116,7 +116,7 @@ router.route("/:id").get(authorize("admin", "school", "teacher", "curriculumAdmi
 router.route("/:id/versions/current/courses").get(authorize("admin", "school", "teacher", "learner"), getCurrentCourses);
 router.route("/:id/competencies/links").get(authorize("admin", "learner"), getCurriculumCompetencies);
 router.route("/:id/competencies/ladder").get(authorize("admin", "school"), ownCurriculumOnly, getLadder);
-router.route("/:id/competencies/learning-areas").get(authorize("admin", "school"), ownCurriculumOnly, getLearningAreas);
+router.route("/:id/competencies/learning-areas").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearningAreas);
 router.route("/:id/competencies/age-categories").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getAgeCategories);
 // Progress Levels — plain name/description/score-range lookup, same non-sensitive posture as
 // age-categories above. Needed by the learner Dashboard to map an averaged competency score onto

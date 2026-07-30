@@ -30,7 +30,17 @@ const learningAreaCourseSequenceEntrySchema = z.object({
   defaultForStages: z.array(z.string().min(1)).optional().default([]),
 });
 
-const createLearningAreaSchema = z.object({
+const ageRangeRefinement = (data) =>
+  data.minAge == null || data.maxAge == null || data.maxAge >= data.minAge;
+const ageRangeRefinementOptions = {
+  message: "Maximum age must be greater than or equal to minimum age",
+  path:    ["maxAge"],
+};
+
+// Kept as a plain (unrefined) object, same reason as ageCategoryFields below — Zod can't
+// .partial() a schema that already has .refine() attached, so create/update each apply their
+// own refine on top of these raw fields instead of one refining the other.
+const learningAreaFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
   color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
@@ -44,9 +54,16 @@ const createLearningAreaSchema = z.object({
   // Placement Thresholds (Performance Bands with learningAreaId+courseId set) — see
   // CompetencyService.placeLearnerFromLearningAreaDiagnostic.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
+  // Which learners this area's diagnostic even applies to, by age — same open-ended-range
+  // shape as AgeCategory's minAge/maxAge. Both null (the default) means every age, which is
+  // also today's behavior for every pre-existing area — see maybeAutoIssueLearningAreaDiagnostics
+  // in learner.service.js for where this actually gates issuance.
+  minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
 });
 
-const updateLearningAreaSchema = createLearningAreaSchema.partial();
+const createLearningAreaSchema = learningAreaFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
+const updateLearningAreaSchema = learningAreaFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
 
 const importLearningAreaSchema = z.object({
   learningAreaId: z.string().min(1, "learningAreaId is required"),
@@ -79,13 +96,6 @@ const ageCategoryFields = z.object({
   // class.classTeacherId / curriculum.curriculumAdminId.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
 });
-
-const ageRangeRefinement = (data) =>
-  data.minAge == null || data.maxAge == null || data.maxAge >= data.minAge;
-const ageRangeRefinementOptions = {
-  message: "Maximum age must be greater than or equal to minimum age",
-  path:    ["maxAge"],
-};
 
 const createAgeCategorySchema = ageCategoryFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
 const updateAgeCategorySchema = ageCategoryFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);

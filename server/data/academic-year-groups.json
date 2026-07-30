@@ -133,5 +133,14 @@
     "endDate": "2026-12-31",
     "createdAt": "2026-07-15T08:50:02.262Z",
     "updatedAt": "2026-07-15T08:50:02.262Z"
+  },
+  {
+    "id": "38aa250e-b2d0-4b90-8443-78cf07311895",
+    "curriculumId": "7ec6c32d-855c-46b8-ad18-d98da1a788cc",
+    "label": "2026 academic year",
+    "startDate": "",
+    "endDate": "",
+    "createdAt": "2026-07-29T13:28:55.667Z",
+    "updatedAt": "2026-07-29T13:28:55.667Z"
   }
 ]

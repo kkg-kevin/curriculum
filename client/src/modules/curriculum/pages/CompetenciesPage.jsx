@@ -111,13 +111,48 @@ const CSS = `
   }
   .cp-course-list { display:flex; flex-direction:column; gap:5px; }
   .cp-course-row {
-    display:flex; align-items:center; gap:8px;
+    display:flex; align-items:center; gap:9px;
     padding:6px 10px; border-radius:8px; background:#fff;
     border:1px solid #EEF0F2; transition:border-color 0.12s, background 0.12s;
   }
   .cp-course-row:hover { background:#FAFCFF; }
   .cp-course-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .cp-course-index {
+    width:19px; height:19px; border-radius:6px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:800;
+  }
   .cp-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
+  .cp-course-meta { font-size:10.5px; font-weight:600; color:#9CA3AF; flex-shrink:0; white-space:nowrap; }
+
+  /* Diagnostic Assessment section (Learning Areas) — violet accent, matches LearnerViewPage */
+  .cp-diag-section {
+    margin-top:10px; padding:11px 12px; border-radius:10px;
+    background:#FAF8FF; border:1px solid #E9DFFC;
+  }
+  .cp-diag-header { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .cp-diag-title {
+    font-size:11.5px; font-weight:800; color:#7C3AED;
+    text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .cp-diag-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .cp-diag-name { font-size:12.5px; font-weight:700; color:#111827; }
+  .cp-diag-empty { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .cp-diag-hint { font-size:11.5px; color:#9CA3AF; font-style:italic; }
+  .cp-diag-actions { display:flex; gap:6px; flex-shrink:0; }
+  .cp-diag-btn {
+    padding:5px 11px; border-radius:7px; font-size:11.5px; font-weight:700;
+    font-family:Inter,sans-serif; cursor:pointer; white-space:nowrap; transition:all 0.12s;
+  }
+  .cp-diag-btn-assign { background:#7C3AED; color:#fff; border:none; }
+  .cp-diag-btn-assign:hover { background:#6D28D9; }
+  .cp-diag-btn-change { background:#fff; color:#7C3AED; border:1.5px solid #D8C7F8; }
+  .cp-diag-btn-change:hover { background:#F3EBFF; }
+  .cp-diag-btn-clear { background:#fff; color:#9CA3AF; border:1.5px solid #E5E7EB; }
+  .cp-diag-btn-clear:hover { color:#DC2626; border-color:#FCA5A5; background:#FEF2F2; }
+  .cp-diag-picker { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
 
   .cp-course-wrap { display:flex; flex-wrap:wrap; gap:7px; }
   .cp-course-chip {
@@ -447,6 +482,16 @@ function StepIndicator({ current }) {
 
 /* ── LearningAreasPanel ─────────────────────────────────────────────────── */
 
+// Shared by LearningAreasPanel (course rows on each area card) and LearningJourneyPanel
+// (Course Sequence editor) — an area's course order comes from courseSequence when set,
+// falling back to courses for anything not yet sequenced there.
+function sequenceFor(area) {
+  const seq = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
+  const seqIds = seq.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
+  const extras = (area.courses || []).filter((id) => !seqIds.includes(id));
+  return [...seqIds, ...extras];
+}
+
 function ImportLearningAreaDropdown({ available, onImport, isPending }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -497,7 +542,7 @@ function LearningAreasPanel({ curriculumId }) {
   const { mutate: importArea, isPending: importing } = useImportLearningArea(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
-  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
+  const courseById = new Map(allCourses.map((c) => [c.id, c]));
   const { data: assessmentsData } = useAssessmentsQuery();
   const assessments = assessmentsData?.data || [];
   const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
@@ -512,23 +557,51 @@ function LearningAreasPanel({ curriculumId }) {
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
   const [courses,  setCourses]    = useState([]);
+  const [minAge,   setMinAge]     = useState("");
+  const [maxAge,   setMaxAge]     = useState("");
   const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
+
+  // Quick diagnostic assign/change — separate from the create/edit form so it can be set
+  // directly from the card without opening full edit mode (see openDiagPicker/saveDiagPicker).
+  const [diagPickerAreaId, setDiagPickerAreaId] = useState(null);
+  const [diagPickerValue,  setDiagPickerValue]  = useState("");
+
+  function openDiagPicker(area) {
+    setDiagPickerAreaId(area.id);
+    setDiagPickerValue(area.diagnosticAssessmentId || "");
+  }
+  function closeDiagPicker() { setDiagPickerAreaId(null); }
+  function saveDiagPicker(area) {
+    update({ id: area.id, data: { diagnosticAssessmentId: diagPickerValue || null } }, { onSuccess: closeDiagPicker });
+  }
+  function clearDiagnostic(area) {
+    update({ id: area.id, data: { diagnosticAssessmentId: null } });
+  }
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]); setDiagnosticAssessmentId(""); setShowForm(true);
+    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]);
+    setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
-    setCourses(area.courses || []); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
+    setCourses(area.courses || []);
+    setMinAge(area.minAge ?? ""); setMaxAge(area.maxAge ?? ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
+  const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
+
   function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), color, courses, diagnosticAssessmentId: diagnosticAssessmentId || null };
+    if (!name.trim() || ageRangeInvalid) return;
+    const data = {
+      name: name.trim(), description: desc.trim(), color, courses,
+      minAge: minAge === "" ? null : Number(minAge),
+      maxAge: maxAge === "" ? null : Number(maxAge),
+      diagnosticAssessmentId: diagnosticAssessmentId || null,
+    };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
@@ -613,22 +686,55 @@ function LearningAreasPanel({ curriculumId }) {
           </div>
 
           <div style={{ marginTop: "12px" }}>
-            <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
+            <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
             <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-              Auto-issued once to a learner whose class exposes one of this area's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
+              Only learners in this age range are auto-issued this area's diagnostic. Leave blank to apply to every age.
             </p>
-            <select
-              className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-              value={diagnosticAssessmentId}
-              onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
-            >
-              <option value="">— None —</option>
-              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                <input
+                  type="number" min="0" max="120" className="cp-comp-config-input"
+                  placeholder="Min" value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                />
+              </div>
+              <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
+                <input
+                  type="number" min="0" max="120" className="cp-comp-config-input"
+                  placeholder="Max" value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                />
+              </div>
+              <span style={{ color: "#9CA3AF", fontSize: "12px" }}>years</span>
+            </div>
+            {ageRangeInvalid && (
+              <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
+            )}
           </div>
 
+          {/* Existing areas set/change their diagnostic from the dedicated section on the card
+              instead (see the "Diagnostic Assessment" cp-diag-section below) — kept here only
+              for create, since a brand-new area has no card yet to attach that to. */}
+          {!editId && (
+            <div style={{ marginTop: "12px" }}>
+              <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                Auto-issued once to a learner whose class exposes one of this area's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
+              </p>
+              <select
+                className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+                value={diagnosticAssessmentId}
+                onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
+              >
+                <option value="">— None —</option>
+                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim()}>
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || ageRangeInvalid}>
               {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
@@ -654,9 +760,13 @@ function LearningAreasPanel({ curriculumId }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cp-item-name">{area.name}</div>
                     {area.description && <div className="cp-item-sub">{area.description}</div>}
-                    {area.diagnosticAssessmentId && (
-                      <p style={{ margin: "4px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669" }}>
-                        🩺 {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
+                    {(area.minAge != null || area.maxAge != null) && (
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
+                        {area.minAge != null && area.maxAge != null
+                          ? `${area.minAge}–${area.maxAge} yrs`
+                          : area.minAge != null
+                          ? `${area.minAge}+ yrs`
+                          : `up to ${area.maxAge} yrs`}
                       </p>
                     )}
                   </div>
@@ -683,15 +793,56 @@ function LearningAreasPanel({ curriculumId }) {
                       </span>
                     </div>
                     <div className="cp-course-list">
-                      {area.courses.map((id) => (
-                        <div key={id} className="cp-course-row">
-                          <span className="cp-course-dot" style={{ backgroundColor: areaColor }} />
-                          <span className="cp-course-name">{courseNameById.get(id) || "Unknown course"}</span>
-                        </div>
-                      ))}
+                      {sequenceFor(area).map((id, i) => {
+                        const c = courseById.get(id);
+                        const sessionCount = c?.sessionCount ?? 0;
+                        return (
+                          <div key={id} className="cp-course-row">
+                            <span className="cp-course-index" style={{ backgroundColor: `${areaColor}15`, color: areaColor }}>{i + 1}</span>
+                            <span className="cp-course-name">{c?.name || "Unknown course"}</span>
+                            <span className="cp-course-meta">{sessionCount} lesson{sessionCount !== 1 ? "s" : ""}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
+
+                <div className="cp-diag-section">
+                  <div className="cp-diag-header">
+                    <span className="cp-diag-title">🩺 Diagnostic Assessment</span>
+                  </div>
+
+                  {diagPickerAreaId === area.id ? (
+                    <div className="cp-diag-picker">
+                      <select
+                        className="cp-select" style={{ flex: 1, minWidth: "160px" }}
+                        value={diagPickerValue}
+                        onChange={(e) => setDiagPickerValue(e.target.value)}
+                      >
+                        <option value="">— None —</option>
+                        {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                      <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={() => saveDiagPicker(area)} disabled={updating}>
+                        {updating ? "Saving…" : "Save"}
+                      </button>
+                      <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={closeDiagPicker}>Cancel</button>
+                    </div>
+                  ) : area.diagnosticAssessmentId ? (
+                    <div className="cp-diag-row">
+                      <span className="cp-diag-name">{assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}</span>
+                      <div className="cp-diag-actions">
+                        <button type="button" className="cp-diag-btn cp-diag-btn-change" onClick={() => openDiagPicker(area)}>Change</button>
+                        <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => clearDiagnostic(area)} disabled={updating}>Clear</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="cp-diag-empty">
+                      <span className="cp-diag-hint">Auto-issued once a learner's class exposes one of this area's courses.</span>
+                      <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={() => openDiagPicker(area)}>+ Assign</button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -726,13 +877,6 @@ function LearningJourneyPanel({ curriculumId }) {
   const areasWithCourses = areas.filter((a) => (a.courses || []).length > 0);
 
   if (areasLoading || stagesLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
-
-  function sequenceFor(area) {
-    const seq = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
-    const seqIds = seq.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
-    const extras = (area.courses || []).filter((id) => !seqIds.includes(id));
-    return [...seqIds, ...extras];
-  }
 
   // Reused by moveCourse and setStageDefaultCourse — every rewrite of courseSequence must
   // carry each entry's existing defaultForStages through, or reordering would silently wipe them.

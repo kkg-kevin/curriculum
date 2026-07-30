@@ -73,7 +73,7 @@
     ],
     "id": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "createdAt": "2026-06-25T09:29:38.606Z",
-    "updatedAt": "2026-07-29T13:25:40.466Z",
+    "updatedAt": "2026-07-30T06:41:23.396Z",
     "competencyWeights": [],
     "curriculumAdminId": "5497cd8a-1e9e-4a08-97b5-f0bbb40f13cf",
     "isProgram": false
@@ -134,11 +134,18 @@
         "systemLevelId": "88a11253-a024-462e-a4d0-8199576f71c6",
         "shortLabel": "G6",
         "developmentalStageId": "9fa8af55-0d19-4e6e-bc57-69f1e674807b"
+      },
+      {
+        "id": "16a43715-dd1b-47e6-a442-92bad2371446",
+        "name": "Level 9",
+        "systemLevelId": "4b3954ab-2c69-4871-801f-1c69a21b662d",
+        "shortLabel": "",
+        "developmentalStageId": null
       }
     ],
     "id": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "createdAt": "2026-07-13T10:06:59.915Z",
-    "updatedAt": "2026-07-29T13:17:12.558Z",
+    "updatedAt": "2026-07-30T08:02:48.918Z",
     "competencyWeights": [],
     "isProgram": false,
     "curriculumAdminId": "30ae06e1-f88b-4474-b11f-9ccfa801fe4f"
@@ -274,75 +281,5 @@
     "id": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
     "createdAt": "2026-07-24T12:07:44.959Z",
     "updatedAt": "2026-07-24T12:08:04.818Z"
-  },
-  {
-    "name": "Digifunzi school 101",
-    "code": "DS1",
-    "academicYear": "",
-    "description": "bnwrufubwuebfcvh",
-    "status": "draft",
-    "educationLevel": "",
-    "gradeFrom": "",
-    "gradeTo": "",
-    "framework": "",
-    "curriculumType": "",
-    "isProgram": false,
-    "academicCycleModel": "terms",
-    "periods": [
-      {
-        "name": "Term 1",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      },
-      {
-        "name": "Term 2",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      },
-      {
-        "name": "Term 3",
-        "startDate": "",
-        "endDate": "",
-        "breakStartDate": "",
-        "breakEndDate": ""
-      }
-    ],
-    "classes": [
-      {
-        "id": "9db35b67-95a0-48e7-a3d4-34685d0665fd",
-        "name": "Class 1",
-        "systemLevelId": "a44094a4-019f-4704-aaae-8079ed445eff",
-        "shortLabel": "",
-        "developmentalStageId": null
-      },
-      {
-        "id": "5c420bae-c288-49b3-ac7b-f75861ef958d",
-        "name": "Class 2",
-        "systemLevelId": "55fe4e93-b7cc-4fd1-8693-9ef97a7ef65f",
-        "shortLabel": "",
-        "developmentalStageId": null
-      },
-      {
-        "id": "0f7f4945-c506-4b8c-8a36-79a7aa2bfa21",
-        "name": "Class 3",
-        "systemLevelId": "8709f6c6-a7be-4c1c-a180-80e146c8cee9",
-        "shortLabel": "",
-        "developmentalStageId": null
-      },
-      {
-        "id": "82f408a5-4592-4796-be7f-3cc06a3901b5",
-        "name": "Class 4",
-        "systemLevelId": "86e0254c-ef76-4b63-b7a4-92d0eb59f13e",
-        "shortLabel": "",
-        "developmentalStageId": null
-      }
-    ],
-    "id": "78a3b693-ab54-4473-a27a-bf1d43536c44",
-    "createdAt": "2026-07-29T13:02:43.151Z",
-    "updatedAt": "2026-07-29T13:26:03.594Z"
   }
 ]

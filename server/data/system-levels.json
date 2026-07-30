@@ -96,5 +96,12 @@
     "name": "Level 14",
     "createdAt": "2026-07-29T12:01:16.733Z",
     "updatedAt": "2026-07-29T12:01:16.733Z"
+  },
+  {
+    "id": "45b4bfa1-9c6a-4a40-bac4-10976a642772",
+    "sequence": 15,
+    "name": "Level 15",
+    "createdAt": "2026-07-29T13:43:59.703Z",
+    "updatedAt": "2026-07-29T13:43:59.703Z"
   }
 ]

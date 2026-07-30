@@ -82,6 +82,10 @@ export function useSubmitAssessment() {
     onSuccess: (submission) => {
       qc.setQueryData(KEYS.submission(submission.id), submission);
       qc.invalidateQueries({ queryKey: KEYS.issuedLearner() });
+      // Covers both KEYS.diagnostic(learnerId) and KEYS.learningAreaDiagnostics(learnerId) —
+      // a submitted diagnostic needs to drop out of the first-login gate's outstanding list
+      // immediately, not just after the next full page load.
+      qc.invalidateQueries({ queryKey: ["assessment-issues", "diagnostic"] });
       toast.success(submission.status === "graded" ? "Submitted — graded automatically!" : "Submitted — your teacher will grade it soon");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to submit"),

@@ -866,5 +866,19 @@
     "id": "b49462a3-bba1-4cef-8ca9-a377dcf577b5",
     "createdAt": "2026-07-29T08:14:09.720Z",
     "updatedAt": "2026-07-29T08:14:09.720Z"
+  },
+  {
+    "schoolId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+    "gradeName": "Grade 1",
+    "academicYear": "2026",
+    "capacity": 25,
+    "status": "active",
+    "tag": null,
+    "streamName": null,
+    "id": "test-class-001",
+    "createdAt": "2026-07-30T09:00:00.000Z",
+    "updatedAt": "2026-07-30T09:00:00.000Z"
   }
 ]
