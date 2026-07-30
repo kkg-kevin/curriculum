@@ -3,6 +3,8 @@ const AssessmentSubmissionModel = require("./assessment-submission.model");
 const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const ClassModel = require("../../classes/class.model");
+const LearningAreaModel = require("../../curriculum/competency-framework/learning-area.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const CompetencyModel = require("../../settings/competencies/competency.model");
 const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
@@ -98,7 +100,7 @@ const AssessmentSubmissionService = {
   // learner.service.js's maybeAutoIssueDiagnostic for the caller(s).
   issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, learningAreaId = null }) {
     loadAssessmentOrThrow(assessmentId);
-    const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId });
+    const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId, learningAreaId, ageCategoryId });
     if (existing) return existing;
     return AssessmentIssueModel.create({
       assessmentId, learnerId, ageCategoryId, learningAreaId,
@@ -145,10 +147,27 @@ const AssessmentSubmissionService = {
 
   // Every Learning-Area diagnostic this learner currently holds (one per area their class's
   // courses expose, per learner.service.js's maybeAutoIssueDiagnostic) — plural counterpart to
-  // getDiagnosticForLearner above, since a learner can hold several of these at once.
+  // getDiagnosticForLearner above, since a learner can hold several of these at once. Scoped to
+  // two things so old housekeeping never blocks the first-login gate forever: (1) the area's
+  // curriculum has to be one the learner is CURRENTLY actively enrolled under — an issue left
+  // over from a hub/curriculum the learner has since moved on from is stale, not outstanding;
+  // (2) the issue's assessmentId has to match the area's CURRENTLY configured
+  // diagnosticAssessmentId — if an admin swaps which assessment an area uses for its
+  // diagnostic, the learner's old issue against the previous assessment is stale too, not a
+  // second diagnostic to take.
   getLearningAreaDiagnosticsForLearner(learnerId) {
+    const activeCurriculumIds = new Set(
+      LearnerHubLinkModel.findByLearnerId(learnerId)
+        .filter((link) => link.status === "active" && link.classId)
+        .map((link) => ClassModel.findById(link.classId)?.curriculumId)
+        .filter(Boolean)
+    );
     return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
-      .filter((row) => !!row.issue.learningAreaId);
+      .filter((row) => !!row.issue.learningAreaId)
+      .filter((row) => {
+        const area = LearningAreaModel.findById(row.issue.learningAreaId);
+        return !!area && activeCurriculumIds.has(area.curriculumId) && area.diagnosticAssessmentId === row.issue.assessmentId;
+      });
   },
 
   revokeIssue(issueId) {

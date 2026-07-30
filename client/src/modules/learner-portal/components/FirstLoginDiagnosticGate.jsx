@@ -91,7 +91,12 @@ function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
 // every diagnostic or by there being none to take), it never reappears for this learner again.
 export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete = () => {} }) {
   const hasEnsured = useRef(false);
-  const [ensured, setEnsured] = useState(false);
+  // Separate from rowsLoading on purpose: this only ever tracks whether the one-time
+  // "ensure diagnostics are issued" background call has settled (or wasn't needed at all), so a
+  // hung/slow network call can't itself block the spinner past its own axios timeout — the gate
+  // renders off whatever useLearningAreaDiagnosticsForLearner already knows the instant that
+  // query resolves, with or without ensure having finished.
+  const [ensureSettled, setEnsureSettled] = useState(false);
   const totalRef = useRef(null);
 
   const { mutate: ensureIssued } = useEnsureDiagnosticsIssued();
@@ -100,57 +105,44 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
 
-  // Runs once when hub and cls first load — ensure diagnostics are issued server-side.
+  // Fires once, the first time hub/cls resolve — a best-effort top-up for any diagnostic the
+  // enrollment-time write missed (see learner.service.js's ensureDiagnosticsIssued). No class
+  // yet means nothing to ensure, so that path settles immediately instead of waiting forever.
   useEffect(() => {
-    console.log('[GATE] Init effect: hub=', !!hub, 'cls=', !!cls);
-    if (!hub?.id || !cls?.id) {
-      console.log('[GATE] Hub or class not ready');
-      return;
-    }
-    if (hasEnsured.current) {
-      console.log('[GATE] Already ran ensureIssued');
-      return;
-    }
-    console.log('[GATE] First time: hub/cls loaded, calling ensureIssued');
+    if (!hub?.id || !cls?.id) { setEnsureSettled(true); return; }
+    if (hasEnsured.current) return;
     hasEnsured.current = true;
-    ensureIssued({ learnerId: learner.id, hubId: hub.id }, {
-      onSuccess: () => {
-        console.log('[GATE] ensureIssued succeeded');
-        setEnsured(true);
-        // The diagnostics query should already be running - just let it finish loading
-      },
-      onError: (err) => {
-        console.log('[GATE] ensureIssued failed:', err);
-        // Even if ensure fails, proceed - maybe diagnostics were already issued
-        setEnsured(true);
-      }
-    });
+    ensureIssued(
+      { learnerId: learner.id, hubId: hub.id },
+      { onSettled: () => { setEnsureSettled(true); refetch(); } }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub?.id, cls?.id]);
 
   const rows = rowsData || [];
   const outstanding = rows.filter(isOutstanding);
   if (totalRef.current === null && outstanding.length > 0) totalRef.current = outstanding.length;
 
-  console.log('[GATE] State: ensured=', ensured, 'rowsLoading=', rowsLoading, 'rows=', rows.length, 'outstanding=', outstanding.length);
+  // Already have something outstanding to show? Render it immediately — never wait on the
+  // ensure top-up once real data has arrived, so a slow/failed ensure call can't stall a learner
+  // who already has a diagnostic sitting there waiting for them.
+  const hasOutstanding = !rowsLoading && outstanding.length > 0;
 
-  const nothingToShow = ensured && !rowsLoading && outstanding.length === 0;
+  // Only safe to conclude "nothing to show" once the ensure top-up has actually had its chance
+  // to run — otherwise a brand-new enrollment (rows still empty on the very first fetch) would
+  // release the gate before its diagnostic even got issued.
+  const nothingToShow = ensureSettled && !rowsLoading && outstanding.length === 0;
   useEffect(() => {
-    if (nothingToShow && !completing) {
-      console.log('[GATE] Nothing to show, marking complete');
-      markComplete(learner.id, { onSuccess: onComplete });
-    }
+    if (nothingToShow && !completing) markComplete(learner.id, { onSuccess: onComplete });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nothingToShow]);
 
-  // Still loading data, or waiting for ensurance check to complete
-  if (!ensured || rowsLoading) {
-    console.log('[GATE] Returning LoadingState (ensured=', ensured, 'rowsLoading=', rowsLoading, ')');
-    return <LoadingState />;
+  if (!hasOutstanding) {
+    if (rowsLoading || !ensureSettled) return <LoadingState />;
+    // Nothing to show — markComplete effect above should have already fired; layout will
+    // refresh once the learner record updates. Nothing to render here in the meantime.
+    if (nothingToShow) return null;
   }
-
-  // Nothing to show — markComplete effect should have already fired, layout will refresh
-  // when learner record updates. Don't render anything here.
-  if (nothingToShow) return null;
 
   const total = totalRef.current || outstanding.length;
   const doneCount = total - outstanding.length;

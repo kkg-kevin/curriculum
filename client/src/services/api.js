@@ -4,6 +4,11 @@ import { getActiveLearnerId } from "../modules/learner-portal/utils/activeLearne
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   withCredentials: true,
+  // Without this, a stalled connection (dropped wifi, server restart mid-request) hangs the
+  // request's promise forever — any UI gated on it (e.g. the learner-portal's first-login
+  // diagnostic gate) would then spin indefinitely instead of failing and letting the caller
+  // recover.
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
