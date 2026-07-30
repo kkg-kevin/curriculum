@@ -3,6 +3,7 @@ const {
   issueAssessment,
   getIssuesForClass,
   getSubmissionsNeedingGrading,
+  getStandaloneSubmissionsNeedingGrading,
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
@@ -28,6 +29,9 @@ router.post("/issues", authorize("admin", "school", "teacher"), issueAssessment)
 router.get("/issues", authorize("admin", "school", "teacher"), getIssuesForClass);
 // Cross-cutting "needs grading" queue for a class — see getSubmissionsNeedingGrading.
 router.get("/needs-grading", authorize("admin", "school", "teacher"), getSubmissionsNeedingGrading);
+// Same, but for standalone diagnostic submissions (classId: null) belonging to learners in this
+// class — see getStandaloneSubmissionsNeedingGrading in the service.
+router.get("/diagnostics-needing-grading", authorize("admin", "school", "teacher"), getStandaloneSubmissionsNeedingGrading);
 router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRosterForIssue);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);

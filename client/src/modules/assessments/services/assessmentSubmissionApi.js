@@ -6,6 +6,7 @@ export const assessmentSubmissionApi = {
   issue:              (payload)          => api.post(`${BASE}/issues`, payload).then((r) => r.data.data),
   getIssuesForClass:  (classId)          => api.get(`${BASE}/issues`, { params: { classId } }).then((r) => r.data),
   getNeedsGrading:    (classId)          => api.get(`${BASE}/needs-grading`, { params: { classId } }).then((r) => r.data),
+  getDiagnosticsNeedingGrading: (classId) => api.get(`${BASE}/diagnostics-needing-grading`, { params: { classId } }).then((r) => r.data),
   getRoster:          (issueId)          => api.get(`${BASE}/issues/${issueId}/roster`).then((r) => r.data.data),
   revokeIssue:        (issueId)          => api.delete(`${BASE}/issues/${issueId}`).then((r) => r.data),
 

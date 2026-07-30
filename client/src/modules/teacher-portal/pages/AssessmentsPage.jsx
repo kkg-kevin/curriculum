@@ -16,8 +16,9 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
-import { useIssueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useIssueAssessment, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
+import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = {
   accent: "#25476a",
@@ -202,8 +203,14 @@ function groupAttachmentsByCourse(attachments) {
 
 // Cross-cutting queue of every submitted-but-ungraded submission across the teacher's classes —
 // so pending work is visible without opening each assessment's roster individually to find it.
+// Rows tagged isDiagnostic (see AssessmentsPage's diagnosticNeedsGradingRows) have no class
+// roster to jump into — those grade inline via the same GradingPanel LearnerViewPage.jsx uses,
+// instead of navigating to /teacher-portal/assessments/:issueId.
 function NeedsGradingSection({ rows, navigate }) {
+  const { mutate: grade, isPending: grading } = useGradeSubmission();
+  const [gradeOpenId, setGradeOpenId] = useState(null);
   if (rows.length === 0) return null;
+  const openRow = rows.find((r) => r.submission.id === gradeOpenId) || null;
   return (
     <div style={{ ...cardStyle, overflow: "hidden", border: "1.5px solid #FED7AA" }}>
       <div style={{ padding: "14px 20px", backgroundColor: "#FFF7ED", borderBottom: `1px solid ${T.border}` }}>
@@ -211,17 +218,20 @@ function NeedsGradingSection({ rows, navigate }) {
         <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{rows.length} submission{rows.length === 1 ? "" : "s"} awaiting your review</p>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {rows.map(({ submission, issue, assessment, learner, className }) => (
+        {rows.map(({ submission, issue, assessment, learner, className, isDiagnostic }) => (
           <div key={submission.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: `1px solid #F9FAFB`, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 8 }}>
+                {learner.firstName} {learner.lastName}
+                {isDiagnostic && <span style={badgeStyle("#D97706")}>Diagnostic</span>}
+              </p>
               <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
                 {assessment.name}{className ? ` · ${className}` : ""} · Submitted {new Date(submission.submittedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
+              onClick={() => (isDiagnostic ? setGradeOpenId(submission.id) : navigate(`/teacher-portal/assessments/${issue.id}`))}
               style={{ padding: "7px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Grade →
@@ -229,6 +239,23 @@ function NeedsGradingSection({ rows, navigate }) {
           </div>
         ))}
       </div>
+
+      {openRow && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Grade Diagnostic — {openRow.assessment.name}</h3>
+              <button type="button" onClick={() => setGradeOpenId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
+            </div>
+            <GradingPanel
+              assessment={openRow.assessment}
+              submission={openRow.submission}
+              isSaving={grading}
+              onSave={(payload) => grade({ id: openRow.submission.id, ...payload }, { onSuccess: () => setGradeOpenId(null) })}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -310,14 +337,30 @@ export default function AssessmentsPage() {
       enabled: !!cls.id,
     })),
   });
+  // Standalone diagnostic submissions (classId: null) for learners in the teacher's classes —
+  // invisible to getSubmissionsNeedingGrading above since that's filtered by submission.classId.
+  // See getStandaloneSubmissionsNeedingGrading in the service for the class-scoping rationale.
+  const diagnosticsNeedingGradingResults = useQueries({
+    queries: myClasses.map((cls) => ({
+      queryKey: ["assessment-submissions", "diagnostics-needing-grading", cls.id],
+      queryFn: () => assessmentSubmissionApi.getDiagnosticsNeedingGrading(cls.id),
+      enabled: !!cls.id,
+    })),
+  });
+
   const needsGradingRows = useMemo(() => {
     const classById = new Map(myClasses.map((c) => [c.id, c]));
     const rows = [];
     needsGradingResults.forEach((r) => (r.data?.data || []).forEach((row) => {
       rows.push({ ...row, className: classById.get(row.submission.classId)?.gradeName });
     }));
+    // A diagnostic issue has no classId of its own to look a class up by — attach the class
+    // this particular query was scoped to instead (the loop below is per-class, same as above).
+    diagnosticsNeedingGradingResults.forEach((r, i) => (r.data?.data || []).forEach((row) => {
+      rows.push({ ...row, className: myClasses[i]?.gradeName, isDiagnostic: true });
+    }));
     return rows.sort((a, b) => new Date(a.submission.submittedAt || 0) - new Date(b.submission.submittedAt || 0));
-  }, [needsGradingResults, myClasses]);
+  }, [needsGradingResults, diagnosticsNeedingGradingResults, myClasses]);
 
   const attachments = useMemo(() => {
     const rows = [];

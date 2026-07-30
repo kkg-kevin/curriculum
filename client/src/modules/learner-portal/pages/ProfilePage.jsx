@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useUpdateLearner } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { useCompetencies, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { useCompetencies, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 
 import { T, cardStyle } from "../components/profile/theme";
@@ -18,6 +18,7 @@ import BadgesCertificatesCard from "../components/profile/BadgesCertificatesCard
 import SummaryRow from "../components/profile/SummaryRow";
 import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
+import LearningJourneyTabContent from "../components/profile/LearningJourneyTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
 
@@ -43,6 +44,8 @@ export default function ProfilePage() {
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+  const { data: performanceBands = [] } = usePerformanceBands(cls?.curriculumId);
+  const band = performanceBands.find((b) => b.id === learner?.currentBandId) || null;
 
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
@@ -71,7 +74,7 @@ export default function ProfilePage() {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
-        <ProfileIdentityCard learner={learner} stage={stage} onEdit={() => setIsEditOpen(true)} />
+        <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setIsEditOpen(true)} />
         <PortfolioSnapshot coursesCompleted={progressSummary.completed} />
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
@@ -94,11 +97,15 @@ export default function ProfilePage() {
         <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
       )}
 
+      {activeTab === "Learning Journey" && (
+        <LearningJourneyTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
+      )}
+
       {activeTab === "Assessments" && <AssessmentsOverview classId={cls?.id} />}
 
       {activeTab === "Reports" && <ReportsOverview />}
 
-      {!["Overview", "Competencies", "Assessments", "Reports"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
+      {!["Overview", "Competencies", "Learning Journey", "Assessments", "Reports"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
 
       <SummaryRow classId={cls?.id} />
 
