@@ -11,7 +11,7 @@ import { classApi } from "../../classes/services/classApi";
 import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
-import GradingPanel from "../../assessments/components/GradingPanel";
+import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
@@ -153,20 +153,14 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
       )}
 
       {gradeOpen && row && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Grade Diagnostic — {row.assessment.name}</h3>
-              <button type="button" onClick={() => setGradeOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
-            </div>
-            <GradingPanel
-              assessment={row.assessment}
-              submission={row.submission}
-              isSaving={grading}
-              onSave={(payload) => grade({ id: row.submission.id, ...payload }, { onSuccess: () => setGradeOpen(false) })}
-            />
-          </div>
-        </div>
+        <DiagnosticGradingModal
+          title={`Grade Diagnostic — ${row.assessment.name}`}
+          assessment={row.assessment}
+          submission={row.submission}
+          isSaving={grading}
+          onSave={(payload) => grade({ id: row.submission.id, ...payload }, { onSuccess: () => setGradeOpen(false) })}
+          onClose={() => setGradeOpen(false)}
+        />
       )}
     </div>
   );
@@ -217,20 +211,14 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
       </div>
 
       {openRow && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>Grade Diagnostic — {openRow.assessment.name}</h3>
-              <button type="button" onClick={() => setGradeOpenId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
-            </div>
-            <GradingPanel
-              assessment={openRow.assessment}
-              submission={openRow.submission}
-              isSaving={grading}
-              onSave={(payload) => grade({ id: openRow.submission.id, ...payload }, { onSuccess: () => setGradeOpenId(null) })}
-            />
-          </div>
-        </div>
+        <DiagnosticGradingModal
+          title={`Grade Diagnostic — ${openRow.assessment.name}`}
+          assessment={openRow.assessment}
+          submission={openRow.submission}
+          isSaving={grading}
+          onSave={(payload) => grade({ id: openRow.submission.id, ...payload }, { onSuccess: () => setGradeOpenId(null) })}
+          onClose={() => setGradeOpenId(null)}
+        />
       )}
     </div>
   );
