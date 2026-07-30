@@ -193,5 +193,43 @@
     "createdAt": "2026-07-27T09:03:32.142Z",
     "updatedAt": "2026-07-27T09:05:06.513Z",
     "branchId": "ca2e5536-f084-4931-9f6a-e40518d8a0a4"
+  },
+  {
+    "name": "Test ",
+    "hubType": "school",
+    "code": "TES",
+    "email": "test@digifunzi.com",
+    "phone": "+254727496461",
+    "contactPerson": "Kevin Githinji",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Baringo"
+    },
+    "mapLink": "https://www.google.com/search?q=google+maps&oq=goo&gs_lcrp=EgZjaHJvbWUqBggCECMYJzIGCAAQRRg5MhMIARAuGIMBGMcBGLEDGNEDGIAEMgYIAhAjGCcyBggDECMYJzINCAQQABiDARixAxiABDIGCAUQRRg8MgYIBhBFGDwyBggHEEUYQdIBCDMyOTJqMGo3qAIIsAIB8QUS5XPkwp2z3w&sourceid=chrome&source=chrome.ob&ie=UTF-8",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "branchId": null,
+    "status": "active",
+    "description": "description test",
+    "photos": [
+      "http://localhost:5000/uploads/5ea13d3f-5262-4aa1-9807-7d345058757b.jpg"
+    ],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "food_available",
+      "coffee_available",
+      "projector",
+      "desks"
+    ],
+    "operatingHours": {
+      "opensAt": "",
+      "closesAt": "",
+      "days": []
+    },
+    "spaces": [],
+    "id": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "createdAt": "2026-07-29T14:10:28.255Z",
+    "updatedAt": "2026-07-29T14:10:28.255Z"
   }
 ]

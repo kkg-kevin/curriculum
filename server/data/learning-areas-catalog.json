@@ -42,6 +42,17 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-20T12:17:13.557Z",
-    "updatedAt": "2026-07-20T12:17:13.557Z"
+    "updatedAt": "2026-07-29T13:41:10.294Z"
+  },
+  {
+    "id": "aa13c9c1-3ef1-4ae5-8f58-fa3687f4b79c",
+    "name": "Test Learning Area",
+    "description": "test test test",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-07-29T14:08:04.197Z",
+    "updatedAt": "2026-07-29T14:08:04.197Z"
   }
 ]

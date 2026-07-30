@@ -156,6 +156,21 @@ const unenrollLearnerHub = asyncHandler(async (req, res) => {
   res.json({ success: true, data: hubs });
 });
 
+// Learner-portal-only: fired once from the first-login diagnostic gate before it reads this
+// learner's Learning-Area diagnostics, so an enrollment whose issuance was missed/incomplete
+// still gets caught before the gate decides there's nothing to show.
+const ensureDiagnosticsIssued = asyncHandler(async (req, res) => {
+  assertOwn(req.params.id === req.ownLearner?.id);
+  const { hubId } = req.body;
+  if (!hubId) {
+    const err = new Error("hubId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  await LearnerService.ensureDiagnosticsIssued(req.params.id, hubId);
+  res.json({ success: true });
+});
+
 module.exports = {
   createLearner,
   getAllLearners,
@@ -166,4 +181,5 @@ module.exports = {
   enrollLearnerHub,
   updateLearnerHubLink,
   unenrollLearnerHub,
+  ensureDiagnosticsIssued,
 };

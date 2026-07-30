@@ -438,5 +438,38 @@
     ],
     "createdAt": "2026-07-15T08:50:02.267Z",
     "updatedAt": "2026-07-15T08:50:03.601Z"
+  },
+  {
+    "id": "8bc2f0c2-39ed-4ec1-8fdf-4125f28108cf",
+    "yearGroupId": "38aa250e-b2d0-4b90-8443-78cf07311895",
+    "curriculumId": "7ec6c32d-855c-46b8-ad18-d98da1a788cc",
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 3",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "createdAt": "2026-07-29T13:28:55.672Z",
+    "updatedAt": "2026-07-29T13:28:58.332Z"
   }
 ]

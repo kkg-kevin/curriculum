@@ -326,11 +326,11 @@
   {
     "name": "Ahmed Hassan",
     "email": "ahmed.hassan@gmail.com",
-    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
+    "passwordHash": "$2b$10$U8vE2ScuHUq2.1KjuAkkROTFbFnwAjzdgaEonAK2bCDXZq5WA5U46",
     "role": "learner",
     "id": "44cbbc6c-0b83-480f-97d6-471c4a1bf7dd",
     "createdAt": "2026-07-23T06:30:25.701Z",
-    "updatedAt": "2026-07-23T06:30:25.701Z"
+    "updatedAt": "2026-07-29T13:45:46.446Z"
   },
   {
     "name": "Faith Wanjiru",
@@ -412,5 +412,68 @@
     "id": "55716a43-8aba-4969-a5d4-014bd4d52daa",
     "createdAt": "2026-07-29T10:12:24.612Z",
     "updatedAt": "2026-07-29T10:12:24.612Z"
+  },
+  {
+    "name": "Test ",
+    "email": "test@digifunzi.com",
+    "passwordHash": "$2b$10$w1b.s61mET9RucIX/RILbuqnH2eqiE.Peo.VrVL0DQ9kh.yZfb1RC",
+    "role": "school",
+    "id": "095c2148-f661-4b6b-b116-8156c0c0a65c",
+    "createdAt": "2026-07-29T14:10:28.250Z",
+    "updatedAt": "2026-07-29T14:10:28.250Z"
+  },
+  {
+    "name": "test test",
+    "email": "stest@digifunzi.com",
+    "passwordHash": "$2b$10$7BrPhdAGydJPYmoK36CZ3eL8Tha005aUtmMxiDneYzXBmBMdridra",
+    "role": "teacher",
+    "id": "4a4b7c44-ec68-4f3a-b881-5a8c6aba15fc",
+    "createdAt": "2026-07-29T14:11:58.882Z",
+    "updatedAt": "2026-07-29T14:11:58.882Z"
+  },
+  {
+    "name": "Test Guardian",
+    "email": "ttest@digifunzi.com",
+    "passwordHash": "$2b$10$CDBSUck2LmLrCnxljfuS.Ov/rZfTszns5wK7Mf1DE8DTHyt96r8We",
+    "role": "learner",
+    "id": "60232b75-be99-4fc4-b470-d52f35be1918",
+    "createdAt": "2026-07-29T14:13:04.692Z",
+    "updatedAt": "2026-07-29T14:13:04.692Z"
+  },
+  {
+    "name": "Gate Guardian",
+    "email": "gate-test-guardian@example.com",
+    "passwordHash": "$2b$10$sJpCeaIGvui5WlylH4351OQzSN0NTMYBwNzHpykTWtLvxNdkxukVa",
+    "role": "learner",
+    "id": "24e72852-6481-4c98-b1e5-a6dc2fb7155d",
+    "createdAt": "2026-07-29T14:25:13.878Z",
+    "updatedAt": "2026-07-29T14:25:13.878Z"
+  },
+  {
+    "name": "jus",
+    "email": "jus@digifunzi.com",
+    "passwordHash": "$2b$10$qpJxHCQg3yidDdTPDUsCPu9mDzLVAdThSZn4VNpAMHv/f6EVX1CZW",
+    "role": "learner",
+    "id": "972d76af-1fbf-479d-a1eb-e4a1fa7c3a45",
+    "createdAt": "2026-07-30T06:16:50.383Z",
+    "updatedAt": "2026-07-30T06:16:50.383Z"
+  },
+  {
+    "name": "teacher 1 teacher 1",
+    "email": "teacher1@digifunzi.com",
+    "passwordHash": "$2b$10$M7P4jj4v8oAF1PodUen0FuQnxCGzAU0xXmzs8ENC/qiQZYu5teVkq",
+    "role": "teacher",
+    "id": "e80b730e-0888-40fa-a38d-c568ec24253c",
+    "createdAt": "2026-07-30T06:25:16.425Z",
+    "updatedAt": "2026-07-30T06:25:16.425Z"
+  },
+  {
+    "name": "kevv",
+    "email": "kevv@digifunzi.com",
+    "passwordHash": "$2b$10$ST2eOR4nWbMuYRiiczp7gOXVbeCeDTrqzdRVTajvPyPLaGR7tOo3a",
+    "role": "learner",
+    "id": "8bb4adc6-406d-4d0c-b9ec-6514abc01a81",
+    "createdAt": "2026-07-30T06:42:11.442Z",
+    "updatedAt": "2026-07-30T06:42:11.442Z"
   }
 ]

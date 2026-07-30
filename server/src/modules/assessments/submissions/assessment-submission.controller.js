@@ -153,9 +153,15 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
 });
 
 // Same access shape as getDiagnosticForLearner, plural — this learner's Learning-Area
-// diagnostics, for the Learning Journey section of LearnerViewPage.
+// diagnostics, for the Learning Journey section of LearnerViewPage. Also readable by the
+// learner themselves (their own record only) — the learner-portal's first-login diagnostic
+// gate uses this same endpoint rather than a separate one.
 const getLearningAreaDiagnosticsForLearner = asyncHandler(async (req, res) => {
-  assertLearnerHubAccess(req, req.params.learnerId);
+  if (req.user.role === "learner") {
+    assertOwn(req.params.learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, req.params.learnerId);
+  }
   const rows = AssessmentSubmissionService.getLearningAreaDiagnosticsForLearner(req.params.learnerId);
   res.json({ success: true, data: rows, count: rows.length });
 });

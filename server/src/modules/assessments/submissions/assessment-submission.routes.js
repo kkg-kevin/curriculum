@@ -37,8 +37,10 @@ router.post("/submissions/:id/publish-report", authorize("admin", "school", "tea
 
 // Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class involved).
 router.get("/diagnostic/:learnerId", authorize("admin", "school"), getDiagnosticForLearner);
-// Same, plural — every Learning-Area diagnostic this learner currently holds.
-router.get("/diagnostic/learning-areas/:learnerId", authorize("admin", "school"), getLearningAreaDiagnosticsForLearner);
+// Same, plural — every Learning-Area diagnostic this learner currently holds. Also learner-
+// facing (own record only, enforced in the controller) — the portal's first-login gate reads
+// this directly rather than duplicating the query.
+router.get("/diagnostic/learning-areas/:learnerId", authorize("admin", "school", "learner"), getLearningAreaDiagnosticsForLearner);
 
 // A learner's own accumulating competency progress, or an admin/school reviewing it.
 router.get("/learner/:learnerId/competency-progress", authorize("admin", "school", "learner"), getLearnerIndicatorProgress);

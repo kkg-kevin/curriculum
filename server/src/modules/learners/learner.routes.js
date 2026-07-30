@@ -9,6 +9,7 @@ const {
   enrollLearnerHub,
   updateLearnerHubLink,
   unenrollLearnerHub,
+  ensureDiagnosticsIssued,
 } = require("./learner.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -37,5 +38,8 @@ router.route("/:id/hubs/links")
 router.route("/:id/hubs/links/:hubId")
   .put(authorize("admin", "school", "branchAdmin"), updateLearnerHubLink)
   .delete(authorize("admin", "school", "branchAdmin"), unenrollLearnerHub);
+
+// Learner-portal-only safety net — see ensureDiagnosticsIssued's comment in the controller.
+router.post("/:id/ensure-diagnostics", authorize("learner"), ensureDiagnosticsIssued);
 
 module.exports = router;

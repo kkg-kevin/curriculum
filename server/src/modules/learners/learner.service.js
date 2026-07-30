@@ -197,7 +197,9 @@ const LearnerService = {
     }
 
     let cls = null;
+    let resolvedClassId = classId;
     let resolvedHubId = hubId;
+
     if (classId) {
       cls = ClassModel.findById(classId);
       if (!cls) {
@@ -211,6 +213,14 @@ const LearnerService = {
         throw err;
       }
       resolvedHubId = cls.schoolId;
+    } else {
+      // If no class specified, auto-assign to first active class at this hub
+      const hubClasses = ClassModel.findAll({ schoolId: hubId });
+      cls = hubClasses.find((c) => c.status === "active");
+      if (cls) {
+        resolvedClassId = cls.id;
+        resolvedHubId = cls.schoolId;
+      }
     }
 
     const existing = LearnerHubLinkModel.findOne(learnerId, resolvedHubId);
@@ -218,7 +228,7 @@ const LearnerService = {
 
     const year = cls?.academicYear || String(new Date().getFullYear());
     const admissionNumber = generateAdmissionNumber(hub.code, year);
-    LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId, admissionNumber, status });
+    LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId: resolvedClassId || "", admissionNumber, status });
     if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
     return LearnerService.getLearnerHubs(learnerId);
   },
@@ -247,6 +257,19 @@ const LearnerService = {
   async unenrollFromHub(learnerId, hubId) {
     LearnerHubLinkModel.unlink(learnerId, hubId);
     return LearnerService.getLearnerHubs(learnerId);
+  },
+
+  // Safety-net for the learner-portal's first-login diagnostic gate: enrollInHub/
+  // updateEnrollment above already auto-issue on every admin-side enrollment write, but a
+  // learner enrolled before their class/curriculum data was complete (or moved outside those
+  // two call sites) would otherwise never get one. Re-running is always safe — issueDiagnostic
+  // is idempotent per (assessment, learner), so this never creates a duplicate of anything
+  // already issued.
+  async ensureDiagnosticsIssued(learnerId, hubId) {
+    const link = LearnerHubLinkModel.findOne(learnerId, hubId);
+    if (!link?.classId) return;
+    const cls = ClassModel.findById(link.classId);
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
   },
 };
 

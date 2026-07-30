@@ -8,10 +8,11 @@
     "guardianEmail": "guardian@gmail.com",
     "id": "54a57ad0-0ac1-4b06-b897-d5b7c6870736",
     "createdAt": "2026-06-20T14:13:16.226Z",
-    "updatedAt": "2026-07-16T13:29:09.653Z",
+    "updatedAt": "2026-07-29T14:23:11.312Z",
     "currentRungId": null,
     "currentStageId": null,
-    "registrationNumber": "REG-000001"
+    "registrationNumber": "REG-000001",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Ali",
@@ -22,8 +23,13 @@
     "guardianEmail": "ahmed.hassan@gmail.com",
     "id": "8c2d4a71-e305-4f97-b260-1a3e5c8d0f92",
     "createdAt": "2026-06-20T14:37:00.000Z",
-    "updatedAt": "2026-06-20T14:37:00.000Z",
-    "registrationNumber": "REG-000002"
+    "updatedAt": "2026-07-29T14:23:11.311Z",
+    "registrationNumber": "REG-000002",
+    "dateOfBirth": "",
+    "nationality": "",
+    "languages": "",
+    "username": "Ali",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Amina",
@@ -34,8 +40,9 @@
     "guardianEmail": "josephine.waweru@gmail.com",
     "id": "3e7f1b04-a296-4d53-9e80-5c2a8d4f1b37",
     "createdAt": "2026-06-20T14:37:30.000Z",
-    "updatedAt": "2026-06-20T14:37:30.000Z",
-    "registrationNumber": "REG-000003"
+    "updatedAt": "2026-07-29T14:23:11.308Z",
+    "registrationNumber": "REG-000003",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Brian",
@@ -46,8 +53,9 @@
     "guardianEmail": "patrick.ochieng@gmail.com",
     "id": "6a4c8e52-d179-4b30-8f15-9e1c3d7b2a04",
     "createdAt": "2026-06-20T14:38:00.000Z",
-    "updatedAt": "2026-06-20T14:38:00.000Z",
-    "registrationNumber": "REG-000004"
+    "updatedAt": "2026-07-29T14:23:11.306Z",
+    "registrationNumber": "REG-000004",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Cynthia",
@@ -58,8 +66,9 @@
     "guardianEmail": "elizabeth.mutua@gmail.com",
     "id": "2f9e3d06-c481-4a75-b382-4d8c0e5f1a29",
     "createdAt": "2026-06-20T14:38:30.000Z",
-    "updatedAt": "2026-06-20T14:38:30.000Z",
-    "registrationNumber": "REG-000005"
+    "updatedAt": "2026-07-29T14:23:11.305Z",
+    "registrationNumber": "REG-000005",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Daniel",
@@ -70,8 +79,9 @@
     "guardianEmail": "korir.chepkwony@gmail.com",
     "id": "7b1f5c83-e240-4d96-a071-8f3d2c4e9b50",
     "createdAt": "2026-06-20T14:39:00.000Z",
-    "updatedAt": "2026-06-20T14:39:00.000Z",
-    "registrationNumber": "REG-000006"
+    "updatedAt": "2026-07-29T14:23:11.303Z",
+    "registrationNumber": "REG-000006",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Esther",
@@ -82,8 +92,9 @@
     "guardianEmail": "margaret.njeri@gmail.com",
     "id": "4d8b0e27-f193-4c64-9a38-2e7f5b1d3c80",
     "createdAt": "2026-06-20T14:39:30.000Z",
-    "updatedAt": "2026-06-20T14:39:30.000Z",
-    "registrationNumber": "REG-000007"
+    "updatedAt": "2026-07-29T14:23:11.302Z",
+    "registrationNumber": "REG-000007",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Francis",
@@ -94,8 +105,9 @@
     "guardianEmail": "george.otieno@gmail.com",
     "id": "9e3c6d14-a058-4b82-8f50-7d2c9e4b1a36",
     "createdAt": "2026-06-20T14:40:00.000Z",
-    "updatedAt": "2026-06-20T14:40:00.000Z",
-    "registrationNumber": "REG-000008"
+    "updatedAt": "2026-07-29T14:23:11.300Z",
+    "registrationNumber": "REG-000008",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Gloria",
@@ -106,8 +118,9 @@
     "guardianEmail": "alice.kamau@gmail.com",
     "id": "1a7f4e82-d396-4c50-b179-5e8a0d2c3f64",
     "createdAt": "2026-06-20T14:40:30.000Z",
-    "updatedAt": "2026-06-20T14:40:30.000Z",
-    "registrationNumber": "REG-000009"
+    "updatedAt": "2026-07-29T14:23:11.297Z",
+    "registrationNumber": "REG-000009",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Henry",
@@ -118,8 +131,9 @@
     "guardianEmail": "samuel.mwangi@gmail.com",
     "id": "5c0b9d38-f274-4e61-a403-9f1d5b8c2e07",
     "createdAt": "2026-06-20T14:41:00.000Z",
-    "updatedAt": "2026-06-20T14:41:00.000Z",
-    "registrationNumber": "REG-000010"
+    "updatedAt": "2026-07-29T14:23:11.294Z",
+    "registrationNumber": "REG-000010",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Irene",
@@ -130,8 +144,9 @@
     "guardianEmail": "grace.akinyi@gmail.com",
     "id": "2d5f7a09-c183-4b94-8e26-3c8a4d1e6f50",
     "createdAt": "2026-06-20T14:41:30.000Z",
-    "updatedAt": "2026-06-20T14:41:30.000Z",
-    "registrationNumber": "REG-000011"
+    "updatedAt": "2026-07-29T14:23:11.292Z",
+    "registrationNumber": "REG-000011",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "James",
@@ -142,8 +157,9 @@
     "guardianEmail": "peter.kariuki@gmail.com",
     "id": "8a1e4c60-b392-4d75-9f08-6c3b7a0d2e41",
     "createdAt": "2026-06-20T14:42:00.000Z",
-    "updatedAt": "2026-06-20T14:42:00.000Z",
-    "registrationNumber": "REG-000012"
+    "updatedAt": "2026-07-29T14:23:11.290Z",
+    "registrationNumber": "REG-000012",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Kathleen",
@@ -154,8 +170,9 @@
     "guardianEmail": "dorothy.oduya@gmail.com",
     "id": "3f8c1d97-e450-4b23-a086-7e2f4d5c8b16",
     "createdAt": "2026-06-20T14:42:30.000Z",
-    "updatedAt": "2026-06-20T14:42:30.000Z",
-    "registrationNumber": "REG-000013"
+    "updatedAt": "2026-07-29T14:23:11.288Z",
+    "registrationNumber": "REG-000013",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Kevin",
@@ -166,8 +183,9 @@
     "guardianEmail": "faith@faith.com",
     "id": "c65260fb-4a2d-4455-969f-9e912473b2dc",
     "createdAt": "2026-06-22T09:08:16.129Z",
-    "updatedAt": "2026-06-22T09:08:16.129Z",
-    "registrationNumber": "REG-000014"
+    "updatedAt": "2026-07-29T14:23:11.286Z",
+    "registrationNumber": "REG-000014",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Test",
@@ -180,12 +198,13 @@
     "currentStageId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
     "id": "e36d2244-627b-4b29-a5a8-7a60af39674e",
     "createdAt": "2026-07-16T07:43:57.452Z",
-    "updatedAt": "2026-07-24T08:13:29.372Z",
+    "updatedAt": "2026-07-29T14:23:11.285Z",
     "dateOfBirth": "2015-06-20",
     "nationality": "Kenyan (Admin Edit)",
     "languages": "English, Kiswahili, French",
     "username": "grace_test_learner",
-    "registrationNumber": "REG-000015"
+    "registrationNumber": "REG-000015",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "MARY",
@@ -198,8 +217,9 @@
     "currentStageId": null,
     "id": "8e745b53-b69a-46cf-af4f-207fcbd0077e",
     "createdAt": "2026-07-17T12:45:51.536Z",
-    "updatedAt": "2026-07-17T12:45:51.536Z",
-    "registrationNumber": "REG-000016"
+    "updatedAt": "2026-07-29T14:23:11.283Z",
+    "registrationNumber": "REG-000016",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "wev",
@@ -212,8 +232,9 @@
     "currentStageId": null,
     "id": "237993bb-87c9-4f33-a500-4cdce3d735e9",
     "createdAt": "2026-07-17T12:58:21.117Z",
-    "updatedAt": "2026-07-17T12:58:21.117Z",
-    "registrationNumber": "REG-000017"
+    "updatedAt": "2026-07-29T14:23:11.281Z",
+    "registrationNumber": "REG-000017",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Zzz-Test",
@@ -226,8 +247,9 @@
     "currentStageId": null,
     "id": "96024e19-0ec2-4df2-bc51-d7075c7d790c",
     "createdAt": "2026-07-23T06:12:04.870Z",
-    "updatedAt": "2026-07-23T06:12:04.870Z",
-    "registrationNumber": "REG-000018"
+    "updatedAt": "2026-07-29T14:23:11.279Z",
+    "registrationNumber": "REG-000018",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "PW-Multi",
@@ -240,8 +262,9 @@
     "currentStageId": null,
     "id": "1bf69a21-d2f2-4624-85bf-26616ec595b4",
     "createdAt": "2026-07-23T07:03:12.076Z",
-    "updatedAt": "2026-07-23T17:57:56.272Z",
-    "registrationNumber": "REG-000019"
+    "updatedAt": "2026-07-29T14:23:11.276Z",
+    "registrationNumber": "REG-000019",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "Derrick",
@@ -254,12 +277,13 @@
     "currentStageId": "6805c454-20a6-4a2e-9843-aa67ba98fae8",
     "id": "2fd4b582-a004-4c75-9022-e5817ace5f4b",
     "createdAt": "2026-07-23T07:14:30.442Z",
-    "updatedAt": "2026-07-24T12:20:26.743Z",
+    "updatedAt": "2026-07-29T14:23:11.274Z",
     "dateOfBirth": "2010-02-01",
     "nationality": "Kenyan",
     "languages": "English, Kiswahili",
     "username": "Derrick",
-    "registrationNumber": "REG-000020"
+    "registrationNumber": "REG-000020",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "john",
@@ -277,8 +301,9 @@
     "currentBandId": null,
     "id": "41a99e78-8b05-4fb9-a1d4-f93762bca4fb",
     "createdAt": "2026-07-27T11:36:12.129Z",
-    "updatedAt": "2026-07-27T11:36:12.129Z",
-    "registrationNumber": "REG-000021"
+    "updatedAt": "2026-07-29T14:23:11.271Z",
+    "registrationNumber": "REG-000021",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
   },
   {
     "firstName": "mark",
@@ -297,6 +322,79 @@
     "registrationNumber": "REG-000022",
     "id": "de980950-d443-4a1e-a26e-d40d21f360de",
     "createdAt": "2026-07-29T10:12:24.618Z",
-    "updatedAt": "2026-07-29T10:12:43.844Z"
+    "updatedAt": "2026-07-29T14:23:11.269Z",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
+  },
+  {
+    "firstName": "ttest",
+    "lastName": "test",
+    "gender": "male",
+    "guardianName": "Test Guardian",
+    "guardianPhone": "4848484",
+    "guardianEmail": "ttest@digifunzi.com",
+    "dateOfBirth": "2000-01-01",
+    "nationality": "Kenyan",
+    "languages": "English, Kiswahili",
+    "username": "ttest",
+    "currentRungId": null,
+    "currentStageId": null,
+    "currentBandId": null,
+    "registrationNumber": "REG-000023",
+    "id": "44dfafa1-f9fe-4dad-bed3-40f9c51ebf7b",
+    "createdAt": "2026-07-29T14:13:04.699Z",
+    "updatedAt": "2026-07-29T14:23:11.266Z",
+    "portalOnboardingCompletedAt": "2026-07-29T14:23:11.264Z"
+  },
+  {
+    "firstName": "Gate",
+    "lastName": "Tester",
+    "gender": "other",
+    "guardianName": "Gate Guardian",
+    "guardianPhone": "0700000000",
+    "guardianEmail": "gate-test-guardian@example.com",
+    "registrationNumber": "REG-000024",
+    "id": "e1ff7c86-e0b2-44b7-8df1-ad1fec1d1c37",
+    "createdAt": "2026-07-29T14:25:13.791Z",
+    "updatedAt": "2026-07-29T14:25:13.792Z"
+  },
+  {
+    "firstName": "jus",
+    "lastName": "jus",
+    "gender": "other",
+    "guardianName": "jus",
+    "guardianPhone": "+254727496461",
+    "guardianEmail": "jus@digifunzi.com",
+    "dateOfBirth": "2005-01-01",
+    "nationality": "Kenyan",
+    "languages": "English, Kiswahili",
+    "username": "jus",
+    "currentRungId": null,
+    "currentStageId": null,
+    "currentBandId": null,
+    "portalOnboardingCompletedAt": "2026-07-30T06:17:04.453Z",
+    "registrationNumber": "REG-000025",
+    "id": "6b714373-16a0-4778-b975-988d5d1719a5",
+    "createdAt": "2026-07-30T06:16:50.397Z",
+    "updatedAt": "2026-07-30T06:17:04.480Z"
+  },
+  {
+    "firstName": "kev",
+    "lastName": "kev",
+    "gender": "other",
+    "guardianName": "kevv",
+    "guardianPhone": "599",
+    "guardianEmail": "kevv@digifunzi.com",
+    "dateOfBirth": "2001-01-01",
+    "nationality": "Kenyan",
+    "languages": "English, Kiswahili",
+    "username": "kev",
+    "currentRungId": null,
+    "currentStageId": null,
+    "currentBandId": null,
+    "portalOnboardingCompletedAt": null,
+    "registrationNumber": "REG-000026",
+    "id": "38dfa678-7239-400e-b804-8a50a3161159",
+    "createdAt": "2026-07-30T06:42:11.455Z",
+    "updatedAt": "2026-07-30T06:42:11.455Z"
   }
 ]
