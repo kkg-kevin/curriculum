@@ -47,7 +47,8 @@
     "maxAge": 9,
     "order": 1,
     "createdAt": "2026-07-29T11:33:02.709Z",
-    "updatedAt": "2026-07-29T11:33:02.709Z"
+    "updatedAt": "2026-07-31T12:20:00.159Z",
+    "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da"
   },
   {
     "id": "84f50dc0-d8ba-460b-8ab6-ced9834d800f",
@@ -58,7 +59,8 @@
     "maxAge": 10,
     "order": 2,
     "createdAt": "2026-07-29T11:33:02.713Z",
-    "updatedAt": "2026-07-29T11:33:02.713Z"
+    "updatedAt": "2026-07-31T12:19:54.961Z",
+    "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da"
   },
   {
     "id": "9fa8af55-0d19-4e6e-bc57-69f1e674807b",
@@ -69,6 +71,7 @@
     "maxAge": 12,
     "order": 3,
     "createdAt": "2026-07-29T11:33:02.716Z",
-    "updatedAt": "2026-07-29T11:33:02.716Z"
+    "updatedAt": "2026-07-31T12:19:32.119Z",
+    "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da"
   }
 ]

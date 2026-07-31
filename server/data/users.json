@@ -11,11 +11,11 @@
   {
     "name": "Teacher ",
     "email": "teacher@digifunzi.com",
-    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
+    "passwordHash": "$2b$10$dXOxLwpXyfOOvvt3csiYqeSn1wsSoJfM/aDgIbPTr/tX823wvX5FC",
     "role": "teacher",
     "id": "67bdca6d-fa58-4dab-b94e-f52f4c493258",
     "createdAt": "2026-07-09T07:54:00.373Z",
-    "updatedAt": "2026-07-20T13:31:57.218Z"
+    "updatedAt": "2026-07-31T12:04:20.225Z"
   },
   {
     "name": "School",
@@ -560,11 +560,11 @@
   {
     "name": "Mama jane ",
     "email": "she@digifunzi.com",
-    "passwordHash": "$2b$10$CBmr6UWUABW7OHQDVMhvOurbWfJ0B/Cxy0VscWtvsQyeNv.Z84dj.",
+    "passwordHash": "$2b$10$PiinL8WYfraOmFMymm/beuGB2e2l7Qh3.xaR.urIIMuWXMuJT2.YG",
     "role": "learner",
     "id": "e22ef095-c884-4837-b12d-5cf3783bfdec",
     "createdAt": "2026-07-30T10:16:45.648Z",
-    "updatedAt": "2026-07-31T09:21:30.607Z"
+    "updatedAt": "2026-07-31T12:04:20.124Z"
   },
   {
     "name": "Mama kevin",

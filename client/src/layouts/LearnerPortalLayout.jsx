@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import LearnerSidebar from "../modules/learner-portal/components/LearnerSidebar";
 import Header from "../components/ui/Header";
@@ -7,10 +8,26 @@ import FirstLoginDiagnosticGate from "../modules/learner-portal/components/First
 import { useLearnerPortalScope } from "../modules/learner-portal/hooks/useLearnerPortalScope";
 
 const SIDEBAR_WIDTH = 260;
+const MOBILE_BREAKPOINT = 900;
 
 function LearnerPortalLayout() {
   const scope = useLearnerPortalScope();
   const { hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(false);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   // HubSwitcher only needs {id, name} shaped items and renders nothing for a single entry — the
   // same generic component doubles as a child switcher for a guardian with more than one
   // linked learner, no separate component needed.
@@ -25,14 +42,16 @@ function LearnerPortalLayout() {
   // thing reachable; Header stays so the learner can still sign out.
   const gateActive = !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
 
+  const sidebarReserved = !gateActive && !isMobile;
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      {!gateActive && <LearnerSidebar />}
+      {!gateActive && <LearnerSidebar isMobile={isMobile} isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
       <div
         style={{
-          marginLeft: gateActive ? 0 : SIDEBAR_WIDTH,
-          width: gateActive ? "100vw" : `calc(100vw - ${SIDEBAR_WIDTH}px)`,
+          marginLeft: sidebarReserved ? SIDEBAR_WIDTH : 0,
+          width: sidebarReserved ? `calc(100vw - ${SIDEBAR_WIDTH}px)` : "100vw",
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
@@ -40,9 +59,9 @@ function LearnerPortalLayout() {
           overflow: "hidden",
         }}
       >
-        <Header />
+        <Header isMobile={isMobile && !gateActive} onMenuClick={() => setSidebarOpen(true)} />
 
-        <main style={{ flex: 1, padding: "28px 32px", minWidth: 0 }}>
+        <main style={{ flex: 1, padding: isMobile ? "20px 16px 28px" : "28px 32px", minWidth: 0, overflowX: "hidden" }}>
           {gateActive ? (
             <FirstLoginDiagnosticGate learner={learner} hub={selectedHub} cls={cls} />
           ) : (
