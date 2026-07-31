@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
       {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}
 
-      {activeTab === "Reports" && <ReportsOverview />}
+      {activeTab === "Reports" && <ReportsOverview hubId={selectedHub?.id} />}
 
       {cls ? <SummaryRow classId={cls.id} /> : <NoClassNotice />}
 

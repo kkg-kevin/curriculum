@@ -271,5 +271,22 @@
     ],
     "createdAt": "2026-07-31T10:47:33.706Z",
     "updatedAt": "2026-07-31T10:47:33.706Z"
+  },
+  {
+    "id": "e293ee52-8819-4c63-bcac-c6dd33defa0e",
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "learningAreaId": "436142c5-7ebe-4c79-8fd8-808dab8873f7",
+    "currentCourseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "history": [
+      {
+        "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+        "reachedAt": "2026-07-31T11:38:50.190Z",
+        "reason": "diagnostic",
+        "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da"
+      }
+    ],
+    "createdAt": "2026-07-31T11:38:50.190Z",
+    "updatedAt": "2026-07-31T11:38:50.190Z"
   }
 ]

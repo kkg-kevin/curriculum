@@ -35,15 +35,25 @@ function assertLearnerOwnsReport(req, report) {
   }
 }
 
+// Accepts either one courseId (data = rows[]) or a comma-separated courseIds list
+// (data = { [courseId]: rows[] }) — the batched form lets the teacher's Reports page paint every
+// course in a class from a single request instead of one per class×course pair.
 const getReadiness = asyncHandler(async (req, res) => {
-  const { classId, courseId } = req.query;
-  if (!classId || !courseId) {
-    const err = new Error("classId and courseId are required");
+  const { classId, courseId, courseIds } = req.query;
+  if (!classId || (!courseId && !courseIds)) {
+    const err = new Error("classId and either courseId or courseIds are required");
     err.statusCode = 400;
     throw err;
   }
   const cls = ClassModel.findById(classId);
   assertClassAccess(req, cls);
+
+  if (courseIds) {
+    const ids = courseIds.split(",").map((s) => s.trim()).filter(Boolean);
+    const byCourse = ReportService.getReadinessForClassCourses(classId, ids);
+    return res.json({ success: true, data: byCourse, count: ids.length });
+  }
+
   const rows = ReportService.getReadinessForClassCourse(classId, courseId);
   res.json({ success: true, data: rows, count: rows.length });
 });
@@ -72,7 +82,8 @@ const listReportsForClassCourse = asyncHandler(async (req, res) => {
 const listReportsForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
-  const reports = ReportService.listForLearner(learner.id);
+  // hubId comes from the portal's hub switcher — scopes the list to the hub being viewed.
+  const reports = ReportService.listForLearner(learner.id, req.query.hubId || null);
   res.json({ success: true, data: reports, count: reports.length });
 });
 
@@ -92,20 +103,36 @@ const getReport = asyncHandler(async (req, res) => {
   res.json({ success: true, data: report });
 });
 
-const updateRemarks = asyncHandler(async (req, res) => {
+// Shared by updateRemarks/publishReport — resolves the report and proves this caller owns the
+// class it belongs to. Checks the report's own existence first so a bad id reports "Report not
+// found" rather than falling through to assertClassAccess and blaming a missing class.
+function loadOwnedReportOrThrow(req) {
   const report = ReportService.getById(req.params.id);
-  const cls = ClassModel.findById(report?.classId);
-  assertClassAccess(req, cls);
+  if (!report) {
+    const err = new Error("Report not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  assertClassAccess(req, ClassModel.findById(report.classId));
+  return report;
+}
+
+const updateRemarks = asyncHandler(async (req, res) => {
+  loadOwnedReportOrThrow(req);
   const { remarks } = updateRemarksSchema.parse(req.body);
   const updated = ReportService.updateRemarks(req.params.id, remarks);
   res.json({ success: true, data: updated });
 });
 
 const publishReport = asyncHandler(async (req, res) => {
-  const report = ReportService.getById(req.params.id);
-  const cls = ClassModel.findById(report?.classId);
-  assertClassAccess(req, cls);
+  loadOwnedReportOrThrow(req);
   const updated = ReportService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
+  res.json({ success: true, data: updated });
+});
+
+const unpublishReport = asyncHandler(async (req, res) => {
+  loadOwnedReportOrThrow(req);
+  const updated = ReportService.unpublishReport(req.params.id);
   res.json({ success: true, data: updated });
 });
 
@@ -117,4 +144,5 @@ module.exports = {
   getReport,
   updateRemarks,
   publishReport,
+  unpublishReport,
 };

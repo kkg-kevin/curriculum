@@ -2,6 +2,7 @@ const ReportModel = require("./report.model");
 const SessionModel = require("../courses/session.model");
 const { getSessionAssessmentIds } = require("../courses/sessionAssessment.utils");
 const ClassModel = require("../classes/class.model");
+const CourseModel = require("../courses/course.model");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
@@ -23,10 +24,23 @@ function notFound(message) {
 // dead reference as "required" would make the course permanently unable to reach "ready" for any
 // learner, since a deleted assessment can never be graded.
 function getCourseRequiredAssessmentIds(courseId) {
+  return getCourseAssessmentCounts(courseId).requiredIds;
+}
+
+// Both the attached ids and the subset that still resolves to a real assessment. Callers that
+// only need the requirement use getCourseRequiredAssessmentIds above; the readiness view also
+// wants `attachedCount` so it can explain a course whose requirement silently shrank (or hit
+// zero) because assessments were deleted out from under its sessions.
+function getCourseAssessmentCounts(courseId) {
   const sessions = SessionModel.findByCourseId(courseId);
   const ids = new Set();
   sessions.forEach((session) => getSessionAssessmentIds(session).forEach((id) => ids.add(id)));
-  return [...ids].filter((id) => !!AssessmentModel.findById(id));
+  const attachedIds = [...ids];
+  return {
+    attachedIds,
+    attachedCount: attachedIds.length,
+    requiredIds: attachedIds.filter((id) => !!AssessmentModel.findById(id)),
+  };
 }
 
 // A submission only counts toward a course report once its own report has been published to the
@@ -40,7 +54,7 @@ function getPublishedGradedAssessmentIds(learnerId) {
   );
 }
 
-function buildReportContent(learnerId, requiredAssessmentIds, curriculumId) {
+function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId) {
   const publishedIds = getPublishedGradedAssessmentIds(learnerId);
   const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" })
     .filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId));
@@ -76,14 +90,20 @@ function buildReportContent(learnerId, requiredAssessmentIds, curriculumId) {
     requiredAssessmentIds
   );
 
-  // The curriculum's own weighted Evidence Type → Assessment Type → Engine verdict for this
-  // learner (score/level/band per competency) — a different number from the flat indicatorBreakdown
-  // above, same pair shown together on the graded assessment view and the Profile Competencies tab.
+  // The curriculum's own score/level/band per competency — a different number from the flat
+  // indicatorBreakdown above, same pair shown together on the graded assessment view and the
+  // Profile Competencies tab. Scoped to THIS course's assessments, matching indicatorBreakdown:
+  // a course report shouldn't fold in competency standing the learner earned on other courses.
   const competencyScores = curriculumId
-    ? CompetencyService.getLearnerCompetencyScores(curriculumId, learnerId)
+    ? CompetencyService.getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, requiredAssessmentIds)
     : [];
 
-  return { assessments, overall, indicatorBreakdown, competencyScores };
+  // Snapshotted at generate time like everything else here, so neither the learner's report list
+  // nor the report itself has to fetch the course separately just to render its name — and a
+  // course later renamed or deleted doesn't retitle/blank an already-published report.
+  const courseName = courseId ? CourseModel.findById(courseId)?.name || null : null;
+
+  return { assessments, overall, indicatorBreakdown, competencyScores, courseName };
 }
 
 const ReportService = {
@@ -92,7 +112,7 @@ const ReportService = {
   // learner), and any report that already exists for them — one call gives the teacher's Reports
   // page everything it needs per learner.
   getReadinessForClassCourse(classId, courseId) {
-    const requiredAssessmentIds = getCourseRequiredAssessmentIds(courseId);
+    const { attachedCount, requiredIds: requiredAssessmentIds } = getCourseAssessmentCounts(courseId);
     const learnerIds = LearnerHubLinkModel.findByClassId(classId)
       .filter((l) => l.status === "active")
       .map((l) => l.learnerId);
@@ -102,15 +122,30 @@ const ReportService = {
       const gradedIds = getPublishedGradedAssessmentIds(learner.id);
       const gradedCount = requiredAssessmentIds.filter((id) => gradedIds.has(id)).length;
       const ready = requiredAssessmentIds.length > 0 && gradedCount === requiredAssessmentIds.length;
-      const report = ReportModel.findOne({ learnerId: learner.id, courseId });
+      const report = ReportModel.findOne({ learnerId: learner.id, courseId, classId });
       return {
         learner,
         requiredCount: requiredAssessmentIds.length,
+        // How many assessments the course's sessions reference at all — larger than requiredCount
+        // when some of those assessments have since been deleted. The UI needs both to explain
+        // why a course shows fewer (or zero) required assessments than its content implies.
+        attachedCount,
         gradedCount,
         ready,
         report,
       };
     });
+  },
+
+  // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,
+  // replacing the per-(class × course) request fan-out the teacher's Reports page used to issue
+  // (a teacher with 5 classes × 10 courses fired 50 parallel requests just to paint the page).
+  getReadinessForClassCourses(classId, courseIds) {
+    const result = {};
+    courseIds.forEach((courseId) => {
+      result[courseId] = ReportService.getReadinessForClassCourse(classId, courseId);
+    });
+    return result;
   },
 
   // Idempotent: re-generating an already-existing report updates its draft snapshot instead of
@@ -132,9 +167,9 @@ const ReportService = {
     }
 
     const cls = ClassModel.findById(classId);
-    const content = buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId);
+    const content = buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId, courseId);
 
-    const existing = ReportModel.findOne({ learnerId, courseId });
+    const existing = ReportModel.findOne({ learnerId, courseId, classId });
     if (existing) return ReportModel.update(existing.id, { content });
 
     return ReportModel.create({
@@ -167,13 +202,26 @@ const ReportService = {
 
     const requiredAssessmentIds = getCourseRequiredAssessmentIds(report.courseId);
     const cls = ClassModel.findById(report.classId);
-    const content = buildReportContent(report.learnerId, requiredAssessmentIds, cls?.curriculumId);
+    const content = buildReportContent(report.learnerId, requiredAssessmentIds, cls?.curriculumId, report.courseId);
     return ReportModel.update(id, {
       content,
       status: "published",
       publishedAt: new Date().toISOString(),
       publishedBy,
     });
+  },
+
+  // Withdraws an already-published report back to draft, hiding it from the learner/guardian
+  // again. Deliberately a status reversal rather than a delete: a report published in error (wrong
+  // learner, scores that turned out to need re-grading) needs to be retractable, but destroying
+  // the record would also lose the remarks and the generation history. Re-publishing afterwards
+  // re-snapshots content, so any grading corrected in between is picked up. No-op if it's already
+  // a draft, mirroring publishReport's own idempotency.
+  unpublishReport(id) {
+    const report = ReportModel.findById(id);
+    if (!report) notFound("Report not found");
+    if (report.status !== "published") return report;
+    return ReportModel.update(id, { status: "draft", publishedAt: null, publishedBy: null });
   },
 
   getById(id) {
@@ -184,8 +232,13 @@ const ReportService = {
     return ReportModel.findAll({ classId, courseId });
   },
 
-  listForLearner(learnerId) {
-    return ReportModel.findAll({ learnerId, status: "published" });
+  // Optional hubId scopes to the hub the learner-portal switcher is currently on — a learner
+  // enrolled at several hubs shouldn't see another hub's reports mixed into this one's list, the
+  // same scoping every other portal surface (courses, competencies, assessments) already applies.
+  // Omitted, returns every published report across all hubs.
+  listForLearner(learnerId, hubId = null) {
+    const reports = ReportModel.findAll({ learnerId, status: "published" });
+    return hubId ? reports.filter((r) => r.hubId === hubId) : reports;
   },
 };
 

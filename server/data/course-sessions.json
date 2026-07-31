@@ -1194,7 +1194,8 @@
       {
         "id": "1098e752-85ef-4dcd-9eed-387680d66694",
         "title": "Tobi",
-        "content": "<h3><strong>Tobi animation</strong></h3><p>Create a project of walking Tobi animation: In this activity, students will be aware of the instruction related to motion and control palette and they are giving the codes (instruction) to a character (sprite) named Tobi. And that Tobi will perform accordingly.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2020/03/Walking-4.gif\" width=\"600\" height=\"450\"><p><strong>One-Time Display</strong>&nbsp;–Let’s make a script in PictoBlox to display emotions on Quarky’s matrix!</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Happy.gif\" alt=\"Happy\" width=\"600\" height=\"338\"><p></p>"
+        "content": "<h3><strong>Tobi animation</strong></h3><p>Create a project of walking Tobi animation: In this activity, students will be aware of the instruction related to motion and control palette and they are giving the codes (instruction) to a character (sprite) named Tobi. And that Tobi will perform accordingly.</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2020/03/Walking-4.gif\" width=\"600\" height=\"450\"><p><strong>One-Time Display</strong>&nbsp;–Let’s make a script in PictoBlox to display emotions on Quarky’s matrix!</p><p></p><p></p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2022/03/Happy.gif\" alt=\"Happy\" width=\"600\" height=\"338\"><p></p>",
+        "mode": "individual"
       }
     ],
     "notes": [
@@ -1222,7 +1223,7 @@
     ],
     "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
     "createdAt": "2026-07-10T12:19:32.616Z",
-    "updatedAt": "2026-07-20T12:39:16.187Z",
+    "updatedAt": "2026-07-31T11:35:55.736Z",
     "assessmentIds": [
       "fa98f60a-0e29-4d5d-b080-c4db39b55667"
     ],

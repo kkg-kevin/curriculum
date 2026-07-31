@@ -7,6 +7,7 @@ const {
   getReport,
   updateRemarks,
   publishReport,
+  unpublishReport,
 } = require("./report.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -19,6 +20,8 @@ router.post("/", authorize("admin", "school", "teacher"), generateReport);
 router.get("/", authorize("admin", "school", "teacher"), listReportsForClassCourse);
 router.patch("/:id", authorize("admin", "school", "teacher"), updateRemarks);
 router.post("/:id/publish", authorize("admin", "school", "teacher"), publishReport);
+// Withdraws a published report back to draft — see unpublishReport in report.service.js.
+router.post("/:id/unpublish", authorize("admin", "school", "teacher"), unpublishReport);
 
 // Learner-facing: this learner's own published reports.
 router.get("/learner/mine", authorize("learner"), listReportsForLearner);

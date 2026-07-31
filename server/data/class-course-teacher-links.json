@@ -6,5 +6,13 @@
     "teacherId": "16403871-86c8-4f27-a692-6843965f4c37",
     "isPrimary": true,
     "createdAt": "2026-07-30T06:39:34.187Z"
+  },
+  {
+    "id": "af9b7f09-6ad4-4ad1-8845-dec3d7d23471",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "16403871-86c8-4f27-a692-6843965f4c37",
+    "isPrimary": true,
+    "createdAt": "2026-07-31T11:38:11.155Z"
   }
 ]
