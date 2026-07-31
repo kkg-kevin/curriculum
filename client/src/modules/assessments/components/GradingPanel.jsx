@@ -19,6 +19,11 @@ function formatResponse(response) {
     }
     return response.join(", ");
   }
+  // File-upload items and project deliverables store {url, filename, mimeType, size} — every
+  // other kind stores a string or string[] (see grading.utils.js's response contract).
+  if (typeof response === "object" && response.url) {
+    return <a href={response.url} target="_blank" rel="noopener noreferrer" style={{ color: T.accent, fontWeight: 600 }}>{response.filename || "View uploaded file"}</a>;
+  }
   return String(response);
 }
 
@@ -82,6 +87,27 @@ function ManualGradeRow({ index, item, response, feedback, indicatorNameById, on
   );
 }
 
+// Read-only — a project's deliverables carry no marks field of their own (see
+// assessment.validation.js's deliverableSchema); a project is scored entirely through its
+// rubric (see the Rubric section below), so this just surfaces what the learner attached
+// while the teacher scores that rubric.
+function DeliverableRow({ index, deliverable, response }) {
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}>
+          <p style={{ margin: 0, fontWeight: 700, color: T.ink }}>{deliverable.name}</p>
+          {deliverable.description && <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{deliverable.description}</p>}
+        </div>
+      </div>
+      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.ink, backgroundColor: "#fff", border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px" }}>
+        {formatResponse(response)}
+      </p>
+    </div>
+  );
+}
+
 function RubricRow({ criterion, feedback, indicatorNameById, onChange }) {
   return (
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -100,6 +126,7 @@ function RubricRow({ criterion, feedback, indicatorNameById, onChange }) {
 export default function GradingPanel({ assessment, submission, onSave, isSaving }) {
   const items = useMemo(() => (assessment.items || []).map(normalizeLegacyItem), [assessment.items]);
   const rubric = assessment.rubric || [];
+  const deliverables = assessment.deliverables || [];
   const answersByItem = useMemo(() => new Map((submission.answers || []).map((a) => [a.itemId, a.response])), [submission.answers]);
   const autoByItem = useMemo(() => new Map((submission.autoItemResults || []).map((r) => [r.itemId, r])), [submission.autoItemResults]);
 
@@ -182,6 +209,19 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
                 indicatorNameById={indicatorNameById}
                 onChange={(f) => setFeedback(item.id, f)}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {deliverables.length > 0 && (
+        <div>
+          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Submitted Deliverables
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {deliverables.map((d, i) => (
+              <DeliverableRow key={d.id} index={i} deliverable={d} response={answersByItem.get(d.id)} />
             ))}
           </div>
         </div>

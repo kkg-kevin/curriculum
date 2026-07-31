@@ -5404,5 +5404,927 @@
         "marksPossible": 1
       }
     ]
+  },
+  {
+    "issueId": "3c7227a8-392d-498f-a1c5-7437994b0a32",
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": null,
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "q1",
+        "response": "12"
+      },
+      {
+        "itemId": "q2",
+        "response": "E"
+      },
+      {
+        "itemId": "q3",
+        "response": "Orange"
+      },
+      {
+        "itemId": "q4",
+        "response": "Tree"
+      },
+      {
+        "itemId": "q5",
+        "response": "7"
+      }
+    ],
+    "autoScore": 4,
+    "autoMax": 5,
+    "autoItemResults": [
+      {
+        "itemId": "q1",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q2",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q3",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q4",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q5",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 4,
+    "maxScore": 5,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T12:36:04.205Z",
+    "gradedAt": "2026-07-31T12:36:04.205Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:36:04.205Z",
+    "reportPublishedBy": null,
+    "id": "b2101821-5212-45d4-80d5-b915840b9885",
+    "createdAt": "2026-07-31T12:35:46.207Z",
+    "updatedAt": "2026-07-31T12:36:04.208Z",
+    "indicatorBreakdown": []
+  },
+  {
+    "issueId": "3f417f7f-b9fb-4a43-9b2a-191d13376423",
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": null,
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "q1",
+        "response": "12"
+      },
+      {
+        "itemId": "q2",
+        "response": "E"
+      },
+      {
+        "itemId": "q3",
+        "response": "Orange"
+      },
+      {
+        "itemId": "q4",
+        "response": "Tree"
+      },
+      {
+        "itemId": "q5",
+        "response": "7"
+      }
+    ],
+    "autoScore": 4,
+    "autoMax": 5,
+    "autoItemResults": [
+      {
+        "itemId": "q1",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q2",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q3",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q4",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q5",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 4,
+    "maxScore": 5,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T12:36:25.342Z",
+    "gradedAt": "2026-07-31T12:36:25.342Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:36:25.342Z",
+    "reportPublishedBy": null,
+    "id": "1d78ade7-ddf1-4c41-bd18-7c1bc4f55188",
+    "createdAt": "2026-07-31T12:36:13.335Z",
+    "updatedAt": "2026-07-31T12:36:25.345Z",
+    "indicatorBreakdown": []
+  },
+  {
+    "issueId": "f7e4263b-e6f9-47fa-91d1-573c51376c3c",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": "test-class-001",
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "response": "12"
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "response": "Recieve"
+      },
+      {
+        "itemId": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "response": "True"
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "response": "10"
+      },
+      {
+        "itemId": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "response": [
+          "cold"
+        ]
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "response": [
+          {
+            "left": "Kenya",
+            "right": "Nairobi"
+          },
+          {
+            "left": "France",
+            "right": "Paris"
+          },
+          {
+            "left": "Japan",
+            "right": "Tokyo"
+          }
+        ]
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "response": "Triangle"
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "response": "True"
+      }
+    ],
+    "autoScore": 11,
+    "autoMax": 13,
+    "autoItemResults": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "correct": true,
+        "marksAwarded": 3,
+        "maxMarks": 3
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 11,
+    "maxScore": 13,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T12:38:03.635Z",
+    "gradedAt": "2026-07-31T12:38:03.635Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:38:03.635Z",
+    "reportPublishedBy": null,
+    "id": "6f1dd272-e7b6-4de1-b55c-762e925f1d3b",
+    "createdAt": "2026-07-31T12:36:31.368Z",
+    "updatedAt": "2026-07-31T12:38:03.638Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 1,
+        "marksPossible": 2
+      },
+      {
+        "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+        "marksEarned": 0,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+        "marksEarned": 1,
+        "marksPossible": 1
+      }
+    ]
+  },
+  {
+    "issueId": "8a914cde-347b-4e8c-bfce-fd4ed078c724",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": "test-class-001",
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "response": "12"
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "response": "Receive"
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "response": "10"
+      },
+      {
+        "itemId": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "response": [
+          "cold"
+        ]
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "response": [
+          {
+            "left": "Kenya",
+            "right": "Nairobi"
+          },
+          {
+            "left": "France",
+            "right": "Paris"
+          },
+          {
+            "left": "Japan",
+            "right": "Tokyo"
+          }
+        ]
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "response": "Triangle"
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "response": "True"
+      }
+    ],
+    "autoScore": 12,
+    "autoMax": 13,
+    "autoItemResults": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "correct": true,
+        "marksAwarded": 3,
+        "maxMarks": 3
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 12,
+    "maxScore": 13,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T12:37:27.958Z",
+    "gradedAt": "2026-07-31T12:37:27.958Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:37:27.958Z",
+    "reportPublishedBy": null,
+    "id": "1a89bc7a-4403-4033-96a8-6b798b6a58a3",
+    "createdAt": "2026-07-31T12:36:55.078Z",
+    "updatedAt": "2026-07-31T12:37:27.960Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 4,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 2,
+        "marksPossible": 2
+      },
+      {
+        "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+        "marksEarned": 1,
+        "marksPossible": 1
+      }
+    ]
+  },
+  {
+    "issueId": "c18a5660-fa2b-4b94-8c4c-025f953e3e5b",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": "test-class-001",
+    "status": "graded",
+    "answers": [],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": 58,
+    "totalScore": 58,
+    "maxScore": 70,
+    "requiresManualGrading": true,
+    "itemFeedback": [
+      {
+        "itemId": "rubric:pr1",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr2",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr3",
+        "marks": 8,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr4",
+        "marks": 7,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr5",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr6",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr7",
+        "marks": 7,
+        "comment": "",
+        "indicatorMarks": []
+      }
+    ],
+    "overallFeedback": "Good work flow ",
+    "submittedAt": "2026-07-31T12:40:53.828Z",
+    "gradedAt": "2026-07-31T12:41:52.023Z",
+    "gradedBy": "422b906c-7950-43f1-ab08-c93e880b9400",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:41:52.774Z",
+    "reportPublishedBy": "422b906c-7950-43f1-ab08-c93e880b9400",
+    "id": "ed164ad1-68cc-4eb0-9a92-78e3c07daf7f",
+    "createdAt": "2026-07-31T12:40:42.892Z",
+    "updatedAt": "2026-07-31T12:41:52.776Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 9,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 9,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "marksEarned": 4,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 4,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "marksEarned": 3.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 3.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+        "marksEarned": 9,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+        "marksEarned": 4.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+        "marksEarned": 4.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+        "marksEarned": 7,
+        "marksPossible": 10
+      }
+    ]
+  },
+  {
+    "issueId": "0d697caf-962d-42d4-8e81-977c362fa475",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": "test-class-001",
+    "status": "graded",
+    "answers": [],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": 58,
+    "totalScore": 58,
+    "maxScore": 70,
+    "requiresManualGrading": true,
+    "itemFeedback": [
+      {
+        "itemId": "rubric:pr1",
+        "marks": 6,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr2",
+        "marks": 10,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr3",
+        "marks": 10,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr4",
+        "marks": 10,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr5",
+        "marks": 6,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr6",
+        "marks": 7,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "rubric:pr7",
+        "marks": 9,
+        "comment": "",
+        "indicatorMarks": []
+      }
+    ],
+    "overallFeedback": "haredfb",
+    "submittedAt": "2026-07-31T12:43:01.525Z",
+    "gradedAt": "2026-07-31T12:47:34.879Z",
+    "gradedBy": "422b906c-7950-43f1-ab08-c93e880b9400",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:47:43.844Z",
+    "reportPublishedBy": "422b906c-7950-43f1-ab08-c93e880b9400",
+    "id": "7b10e754-2c71-4edb-9b64-ff6e44d96b63",
+    "createdAt": "2026-07-31T12:43:00.272Z",
+    "updatedAt": "2026-07-31T12:47:43.847Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 6,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 10,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+        "marksEarned": 6,
+        "marksPossible": 10
+      },
+      {
+        "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+        "marksEarned": 3.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+        "marksEarned": 3.5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+        "marksEarned": 9,
+        "marksPossible": 10
+      }
+    ]
+  },
+  {
+    "issueId": "a3139f72-2fc6-4f1e-8ca2-7647ef1ed101",
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "learnerId": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "classId": "test-class-001",
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "response": "12"
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "response": "Receive"
+      },
+      {
+        "itemId": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "response": "True"
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "response": "10"
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "response": [
+          {
+            "left": "Kenya",
+            "right": "Nairobi"
+          },
+          {
+            "left": "France",
+            "right": "Paris"
+          },
+          {
+            "left": "Japan",
+            "right": "Tokyo"
+          }
+        ]
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "response": "Triangle"
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "response": "True"
+      }
+    ],
+    "autoScore": 12,
+    "autoMax": 13,
+    "autoItemResults": [
+      {
+        "itemId": "eaf1c005-47d7-440c-8615-b1813d7a7577",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "81dfc81b-0bfb-4028-b91a-89a962e221a6",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "0523cf4d-09b9-4765-8b14-d17f6013292a",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "3641488c-8cb0-4997-b825-833bbaf0dfef",
+        "correct": true,
+        "marksAwarded": 2,
+        "maxMarks": 2
+      },
+      {
+        "itemId": "ec80dd71-aa76-48e6-a5a2-dfcc5aa8ba9b",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "040b9741-b55d-41e0-9a8a-4ca881a60bb5",
+        "correct": true,
+        "marksAwarded": 3,
+        "maxMarks": 3
+      },
+      {
+        "itemId": "2ba68339-1836-4b01-93a5-848b1eadbe83",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "b78863ad-f221-4d93-ab53-4bf55f05ec49",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 12,
+    "maxScore": 13,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T12:43:58.116Z",
+    "gradedAt": "2026-07-31T12:43:58.116Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-07-31T12:43:58.116Z",
+    "reportPublishedBy": null,
+    "id": "bb2fc6d9-234f-4a78-99c9-a7ed0f39b775",
+    "createdAt": "2026-07-31T12:43:36.175Z",
+    "updatedAt": "2026-07-31T12:43:58.119Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 5,
+        "marksPossible": 5
+      },
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 2,
+        "marksPossible": 2
+      },
+      {
+        "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 0,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+        "marksEarned": 1,
+        "marksPossible": 1
+      }
+    ]
+  },
+  {
+    "issueId": "0d697caf-962d-42d4-8e81-977c362fa475",
+    "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+    "learnerId": "31e5b9c3-1363-448c-8b75-0ab0a9035146",
+    "classId": "test-class-001",
+    "status": "submitted",
+    "answers": [
+      {
+        "itemId": "d1",
+        "response": {
+          "url": "http://localhost:5000/uploads/424890ce-9f84-4a48-8c24-32210cb69481.txt",
+          "filename": "test-upload.txt",
+          "mimeType": "text/plain",
+          "size": 18
+        }
+      }
+    ],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": null,
+    "totalScore": null,
+    "maxScore": 70,
+    "requiresManualGrading": true,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-07-31T13:18:25.443Z",
+    "gradedAt": null,
+    "gradedBy": null,
+    "reportPublished": false,
+    "reportPublishedAt": null,
+    "reportPublishedBy": null,
+    "id": "54bd8cdd-6b6e-4675-8327-6d63934fe7a1",
+    "createdAt": "2026-07-31T13:17:05.191Z",
+    "updatedAt": "2026-07-31T13:18:25.444Z",
+    "indicatorBreakdown": []
   }
 ]

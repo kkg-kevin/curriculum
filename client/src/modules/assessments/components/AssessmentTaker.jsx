@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { normalizeLegacyItem } from "../schemas/assessment.schema";
+import { normalizeLegacyItem, ITEM_KIND_LABELS } from "../schemas/assessment.schema";
+import { uploadApi } from "../../../services/uploadApi";
 import RichContent from "./RichContent";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tintBg: "#e8f5fb", tintBorder: "#a8d5ee" };
@@ -22,6 +23,85 @@ function QuestionShell({ index, item, children }) {
         </div>
       </div>
       <div style={{ marginLeft: 22 }}>{children}</div>
+    </div>
+  );
+}
+
+function DeliverableShell({ index, deliverable, children }) {
+  return (
+    <div style={{ padding: "16px 18px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: T.accent, flexShrink: 0 }}>{index + 1}.</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: "0 0 2px", fontSize: 14, fontWeight: 700, color: T.ink }}>{deliverable.name}</p>
+          {deliverable.description ? <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted }}>{deliverable.description}</p> : null}
+        </div>
+      </div>
+      <div style={{ marginLeft: 22 }}>{children}</div>
+    </div>
+  );
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Uploads through the same /api/uploads/document endpoint already used by course/curriculum
+// authoring (uploadApi.uploadDocument) — its multer filter already accepts documents, images,
+// audio, video, and zip archives, which covers every file-upload item kind and every project
+// deliverable's submissionKinds. `value` is the stored response shape: {url, filename, mimeType,
+// size} once uploaded, undefined/null before that.
+function FileUploadField({ value, onChange, accept, hint }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const uploaded = await uploadApi.uploadDocument(file);
+      onChange({ url: uploaded.url, filename: uploaded.filename, mimeType: uploaded.mimeType, size: uploaded.size });
+    } catch (err) {
+      setError(err?.response?.data?.message || "Upload failed — try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {value?.url ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", backgroundColor: "#F7FEFB", border: "1px solid #A7F3D0", borderRadius: 9, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#059669" }}>✓</span>
+          <a href={value.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: T.accent, textDecoration: "underline", wordBreak: "break-all" }}>
+            {value.filename || "Uploaded file"}
+          </a>
+          {value.size ? <span style={{ fontSize: 11.5, color: T.inkFaint }}>{formatFileSize(value.size)}</span> : null}
+          <label style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: T.accent, cursor: uploading ? "not-allowed" : "pointer" }}>
+            {uploading ? "Uploading…" : "Replace"}
+            <input type="file" accept={accept} onChange={handleFile} disabled={uploading} style={{ display: "none" }} />
+          </label>
+        </div>
+      ) : (
+        <label
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", padding: "9px 16px",
+            backgroundColor: uploading ? "#b8d9ee" : T.accent, color: "#fff", borderRadius: 9, fontSize: 13, fontWeight: 700,
+            cursor: uploading ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif",
+          }}
+        >
+          {uploading ? "Uploading…" : "Choose file"}
+          <input type="file" accept={accept} onChange={handleFile} disabled={uploading} style={{ display: "none" }} />
+        </label>
+      )}
+      {hint && !value?.url ? <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{hint}</p> : null}
+      {error ? <p style={{ margin: 0, fontSize: 11.5, color: "#DC2626" }}>{error}</p> : null}
     </div>
   );
 }
@@ -170,23 +250,21 @@ function ItemField({ item, value, onChange }) {
   if (item.kind === "survey") return <ScaleField item={item} value={value} onChange={onChange} />;
   if (item.kind === "externalLink") return <TextField value={value} onChange={onChange} placeholder="Paste a link…" />;
   if (FILE_KINDS.includes(item.kind)) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={{ margin: 0, fontSize: 11.5, color: "#B45309", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: "6px 10px" }}>
-          File upload isn't available yet — describe your submission or paste a link instead, and check in with your teacher.
-        </p>
-        <TextField value={value} onChange={onChange} placeholder="Describe your submission, or paste a link…" />
-      </div>
-    );
+    const accept = item.acceptedFileTypes?.length ? item.acceptedFileTypes.join(",") : undefined;
+    const hint = item.acceptedFileTypes?.length ? `Accepted formats: ${item.acceptedFileTypes.join(", ")}` : "";
+    return <FileUploadField value={value} onChange={onChange} accept={accept} hint={hint} />;
   }
   if (TEXT_KINDS.includes(item.kind)) return <TextField value={value} onChange={onChange} placeholder="Type your answer…" />;
   return <TextField value={value} onChange={onChange} placeholder="Type your answer…" />;
 }
 
-// Interactive item-answering surface for the learner "take assessment" flow. Deliberately
-// covers only what has an unambiguous response shape the server's grading.utils.js already
-// knows how to read (see that file's AUTO_GRADABLE_KINDS + the response contract documented
-// there) — file-upload kinds get an honest "not supported yet" note rather than a fake widget.
+// Interactive item-answering surface for the learner "take assessment" flow. Covers every item
+// kind with an unambiguous response shape the server's grading.utils.js already knows how to
+// read (see that file's AUTO_GRADABLE_KINDS + the response contract documented there), plus
+// file-upload kinds (via FileUploadField) and project deliverables (which live on
+// `assessment.deliverables`, not `items` — a project's BUILDER_REGISTRY entry sets
+// supportsItems: false). Observation assessments are graded entirely from the teacher's own
+// in-class review, so they're deliberately left with no learner input here.
 export default function AssessmentTaker({ assessment, initialAnswers = [], onChange }) {
   const [answers, setAnswers] = useState(() => {
     const map = new Map((initialAnswers || []).map((a) => [a.itemId, a.response]));
@@ -194,6 +272,7 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
   });
 
   const items = (assessment.items || []).map(normalizeLegacyItem);
+  const deliverables = assessment.deliverables || [];
 
   const setResponse = (itemId, response) => {
     const next = new Map(answers);
@@ -202,11 +281,11 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
     onChange?.([...next.entries()].map(([id, resp]) => ({ itemId: id, response: resp })));
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && deliverables.length === 0) {
     return (
       <div style={{ padding: "18px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 12 }}>
         <p style={{ margin: 0, fontSize: 13.5, color: T.accent }}>
-          This assessment doesn't have questions to answer here — it's graded from your teacher's own review (a project, deliverable, or in-class observation). Submit when you're ready for your teacher to grade it.
+          This assessment doesn't have questions to answer here — it's graded from your teacher's own in-class observation. Submit when you're ready for your teacher to grade it.
         </p>
       </div>
     );
@@ -218,6 +297,15 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
         <QuestionShell key={item.id} index={i} item={item}>
           <ItemField item={item} value={answers.get(item.id)} onChange={(v) => setResponse(item.id, v)} />
         </QuestionShell>
+      ))}
+      {deliverables.map((d, i) => (
+        <DeliverableShell key={d.id} index={items.length + i} deliverable={d}>
+          <FileUploadField
+            value={answers.get(d.id)}
+            onChange={(v) => setResponse(d.id, v)}
+            hint={d.submissionKinds?.length ? `Accepted: ${d.submissionKinds.map((k) => ITEM_KIND_LABELS[k] || k).join(", ")}` : ""}
+          />
+        </DeliverableShell>
       ))}
     </div>
   );

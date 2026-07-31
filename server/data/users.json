@@ -610,5 +610,23 @@
     "id": "9639405c-2b18-47a9-83e7-5438ea8a1b21",
     "createdAt": "2026-07-31T10:46:53.217Z",
     "updatedAt": "2026-07-31T10:46:53.217Z"
+  },
+  {
+    "name": "Parent test",
+    "email": "parenttest@digifunzi.com",
+    "passwordHash": "$2b$10$9aoTWFdrtVX/tsAju8oeT.g7HEq40Tfz5E8/nbA9sK569W478Mb/K",
+    "role": "learner",
+    "id": "7cb06a5f-79ed-4a2f-a867-ae8bc23ae77f",
+    "createdAt": "2026-07-31T12:32:21.933Z",
+    "updatedAt": "2026-07-31T12:32:21.934Z"
+  },
+  {
+    "name": "Test Teacher",
+    "email": "testteacher@digifunzi.com",
+    "passwordHash": "$2b$10$r0gwvXBuQasMk9fXXlR.NeBOZ7.P5G.qD28DPDsMOnLuDMxQNJObq",
+    "role": "teacher",
+    "id": "666490d3-7a2e-4293-a712-842a72a1a27f",
+    "createdAt": "2026-07-31T12:34:13.644Z",
+    "updatedAt": "2026-07-31T12:34:13.644Z"
   }
 ]

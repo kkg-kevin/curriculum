@@ -173,5 +173,22 @@
     "id": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
     "createdAt": "2026-07-31T10:46:53.252Z",
     "updatedAt": "2026-07-31T10:48:58.271Z"
+  },
+  {
+    "firstName": "Test",
+    "lastName": "Learner",
+    "gender": "male",
+    "guardianName": "Parent test",
+    "guardianPhone": "4644699365959",
+    "guardianEmail": "parenttest@digifunzi.com",
+    "dateOfBirth": "2016-01-20",
+    "nationality": "kenyan",
+    "languages": "English, Kiswahili, French",
+    "username": "testlearner",
+    "currentRungId": "ac07c48b-a493-4dd2-a927-d37999dcf64c",
+    "registrationNumber": "REG-000015",
+    "id": "05a0d328-5bdc-40e4-bfeb-b9674bfdbb51",
+    "createdAt": "2026-07-31T12:32:21.952Z",
+    "updatedAt": "2026-07-31T12:33:25.615Z"
   }
 ]
