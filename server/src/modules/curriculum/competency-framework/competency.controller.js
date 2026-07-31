@@ -380,7 +380,13 @@ exports.getLearnerBandProgress = asyncHandler(async (req, res) => {
 /* ── Learning Journey ────────────────────────────────────────────────────── */
 
 exports.getLearningJourney = asyncHandler(async (req, res) => {
-  const data = CompetencyService.getLearningJourney(req.params.id, req.params.learnerId);
+  const learnerId = req.params.learnerId;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, learnerId);
+  }
+  const data = CompetencyService.getLearningJourney(req.params.id, learnerId);
   res.json({ success: true, data });
 });
 

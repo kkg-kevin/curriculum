@@ -7,9 +7,7 @@
     "admissionNumber": "SS-2026-001",
     "status": "active",
     "createdAt": "2026-07-30T07:35:24.972Z",
-    "updatedAt": "2026-07-31T07:15:35.732Z",
-    "currentStageId": "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51",
-    "currentBandId": null
+    "updatedAt": "2026-07-30T07:35:24.972Z"
   },
   {
     "id": "55c24408-6487-4f61-8a2f-fb02f1a60dcf",
@@ -30,10 +28,8 @@
     "admissionNumber": "SS-2026-002",
     "status": "active",
     "createdAt": "2026-07-30T08:04:30.982Z",
-    "updatedAt": "2026-07-31T07:15:35.734Z",
-    "onboardingCompletedAt": "2026-07-30T08:15:00.000Z",
-    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
-    "currentBandId": null
+    "updatedAt": "2026-07-30T11:34:45.351Z",
+    "onboardingCompletedAt": "2026-07-30T08:15:00.000Z"
   },
   {
     "id": "4de91ed5-5e38-4033-8042-a01824143333",
@@ -75,10 +71,8 @@
     "admissionNumber": "SS-2026-003",
     "status": "active",
     "createdAt": "2026-07-30T10:25:23.102Z",
-    "updatedAt": "2026-07-31T07:15:35.735Z",
-    "onboardingCompletedAt": "2026-07-30T10:27:11.706Z",
-    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
-    "currentBandId": null
+    "updatedAt": "2026-07-30T11:34:45.339Z",
+    "onboardingCompletedAt": "2026-07-30T10:27:11.706Z"
   },
   {
     "id": "925267ca-b1d9-471d-bf3f-00af1d1ddc8c",
@@ -110,8 +104,6 @@
     "admissionNumber": "SS-2026-004",
     "status": "active",
     "createdAt": "2026-07-30T12:29:15.585Z",
-    "updatedAt": "2026-07-31T07:15:35.734Z",
-    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
-    "currentBandId": null
+    "updatedAt": "2026-07-30T12:29:15.585Z"
   }
 ]

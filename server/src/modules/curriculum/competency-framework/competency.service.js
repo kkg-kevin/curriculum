@@ -22,6 +22,8 @@ const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-com
 const CurriculumVersionModel         = require("../versions/curriculum-versions.model");
 const LearnerJourneyModel            = require("./learner-journey.model");
 const LearnerModel                   = require("../../learners/learner.model");
+const LearnerHubLinkModel            = require("../../learners/learner-hub-link.model");
+const ClassModel                     = require("../../classes/class.model");
 // Required lazily (inside the functions that use it, not here) — assessment-submission.service.js
 // already requires this file back (for diagnostic placement), and capturing a top-level reference
 // to it here would risk resolving to a stale/incomplete export depending on which module happens
@@ -948,8 +950,13 @@ const CompetencyService = {
   // record, or (if they've never been placed) a computed default that isn't saved until
   // placeLearner is called.
   getLearningJourney(curriculumId, learnerId) {
-    const learner = LearnerModel.findById(learnerId);
-    const stage = learner?.currentStageId ? AgeCategoryModel.findById(learner.currentStageId) : null;
+    // Stage placement lives on the hub-enrollment link, not the learner record (a learner
+    // enrolled at several hubs can be running a different curriculum at each) — find the one
+    // link whose class resolves to THIS curriculum. See maybeAutoIssueDiagnostic's comment in
+    // learner.service.js for why.
+    const link = LearnerHubLinkModel.findByLearnerId(learnerId)
+      .find((l) => l.classId && ClassModel.findById(l.classId)?.curriculumId === curriculumId);
+    const stage = link?.currentStageId ? AgeCategoryModel.findById(link.currentStageId) : null;
     const areas = LearningAreaModel.findByCurriculumId(curriculumId);
 
     return areas.map((area) => {
@@ -1036,15 +1043,18 @@ const CompetencyService = {
   // Identity Matrix preview describes, now persisted for the first time on a real learner.
   // Mirrors calculateScore's own band match (strict minScore/maxScore range) rather than
   // resolvePlacementFromScore's "highest cleared" rule, since that rule is specific to a
-  // Learning Area's course ladder.
-  placeLearnerFromDiagnostic(learnerId, ageCategoryId, scorePercent) {
+  // Learning Area's course ladder. `hubId` is the enrollment this diagnostic was issued for
+  // (see issueDiagnostic) — placement is written onto that hub's link, not the learner record,
+  // so a learner enrolled at several hubs keeps a separate placement at each.
+  placeLearnerFromDiagnostic(learnerId, hubId, ageCategoryId, scorePercent) {
     const category = AgeCategoryModel.findById(ageCategoryId);
     if (!category) return null;
     const bands = PerformanceBandModel.findByCurriculum(category.curriculumId).filter((b) => !b.learningAreaId);
     const band = [...bands]
       .sort((a, b) => a.minScore - b.minScore)
       .find((b) => scorePercent >= b.minScore && scorePercent <= b.maxScore) || null;
-    LearnerModel.update(learnerId, { currentStageId: ageCategoryId, currentBandId: band?.id ?? null });
+    const link = LearnerHubLinkModel.findOne(learnerId, hubId);
+    if (link) LearnerHubLinkModel.update(link.id, { currentStageId: ageCategoryId, currentBandId: band?.id ?? null });
     return { stageId: ageCategoryId, band };
   },
 

@@ -10,6 +10,12 @@ function genId() {
   catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
 }
 
+// LEGACY / NOT WIRED INTO SCORING: this is a plain name+type+description record, no
+// items/rubric/indicatorMarks, so it can never feed the competency/Progress-Arc engines
+// (grep-confirmed: nothing in scoring-engines.js or AssessmentSubmissionService reads it).
+// It also shares this same data/assessments.json file with the real assessment authoring
+// system (modules/assessments/assessment.model.js — the one with indicator-linked items),
+// just filtered differently, so don't confuse the two. Real assessments live there.
 const AssessmentModel = {
   findByCurriculumId(curriculumId) {
     return read()

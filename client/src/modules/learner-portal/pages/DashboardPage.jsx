@@ -78,9 +78,12 @@ export default function DashboardPage() {
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
   // Same stage lookup ProfilePage.jsx uses for ProfileIdentityCard's "Developmental Academy"
-  // pill — kept in sync here so the dashboard's snapshot card shows the same placement.
+  // pill — kept in sync here so the dashboard's snapshot card shows the same placement. Stage
+  // is hub-specific (see selectedHub.currentStageId's comment in learner.service.js), not a
+  // flat learner field, since a learner running two curricula at two hubs has a different one
+  // at each.
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
-  const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+  const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
 
   // Aggregate "current level" for the Developmental Snapshot card — averages this learner's own
   // weighted competency scores (Evidence Type -> Assessment Type -> Engine pipeline, same data as

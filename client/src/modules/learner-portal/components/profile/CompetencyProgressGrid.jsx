@@ -17,7 +17,7 @@ function BandBadge({ band }) {
 
 export default function CompetencyProgressGrid({ competencies, isLoading, learnerId, curriculumId }) {
   const items = (competencies || []).slice(0, 8);
-  const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId);
+  const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId, curriculumId);
   const progressByIndicator = new Map(progressRows.map((r) => [r.indicatorId, r]));
   const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
   const scoreByCompetencyId = new Map(scoreRows.map((r) => [r.competencyId, r]));

@@ -208,7 +208,7 @@ const getLearnerIndicatorProgress = asyncHandler(async (req, res) => {
   } else {
     assertLearnerHubAccess(req, learnerId);
   }
-  const rows = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId);
+  const rows = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, req.query.curriculumId || null);
   res.json({ success: true, data: rows, count: rows.length });
 });
 

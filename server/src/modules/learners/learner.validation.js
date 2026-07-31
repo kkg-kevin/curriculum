@@ -30,17 +30,6 @@ const baseLearnerSchema = z.object({
   // Learning Journey (see currentStageId + learner-journey.model.js) but left as-is since
   // the old ladder UI/data still exists; not read by anything new.
   currentRungId: z.string().optional().nullable().default(null),
-  // Which Developmental Stage (Progress Arc age category) this learner is in — set
-  // automatically from their age once a class enrollment resolves a curriculum (see
-  // learner.service.js's maybeAutoIssueDiagnostic), or manually by a teacher/admin. Used by
-  // Learning Journey to resolve a default starting course per Learning Area when no
-  // placement/diagnostic result exists yet.
-  currentStageId: z.string().optional().nullable().default(null),
-  // Which curriculum-wide Performance Band ("Progress Arc") this learner last placed into —
-  // set automatically when their auto-issued diagnostic is graded (see
-  // CompetencyService.placeLearnerFromDiagnostic). Combined with currentStageId, this is the
-  // learner's full "stage + band" placement identity.
-  currentBandId: z.string().optional().nullable().default(null),
 });
 
 const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {
@@ -64,6 +53,15 @@ const enrollLearnerSchema = z.object({
 const updateEnrollmentSchema = z.object({
   classId: z.string().optional(),
   status:  z.enum(["active", "inactive", "transferred", "graduated"]).optional(),
+  // Which Developmental Stage (Progress Arc age category) and curriculum-wide Performance Band
+  // this learner is placed at, WITHIN THIS HUB — live here rather than on the learner record
+  // because a learner enrolled at several hubs can be running a different curriculum (and so a
+  // different set of stages/bands) at each one. Set automatically from age once this
+  // enrollment resolves a class (see learner.service.js's maybeAutoIssueDiagnostic) or once a
+  // standalone diagnostic issued for this hub is graded (see
+  // CompetencyService.placeLearnerFromDiagnostic), or manually by a teacher/admin here.
+  currentStageId: z.string().optional().nullable(),
+  currentBandId:  z.string().optional().nullable(),
 });
 
 module.exports = { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema };

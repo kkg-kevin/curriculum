@@ -5,6 +5,7 @@ import {
   useLearnerQuery, useDeleteLearner, useUpdateLearner,
   useLearnerHubsQuery, useEnrollLearnerHub, useUpdateLearnerHubLink, useUnenrollLearnerHub,
 } from "../hooks/useLearners";
+
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
@@ -227,14 +228,16 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
 // Per-Learning-Area course placement — where the learner currently sits in each
 // area's course sequence (Robotics 1 → 2 → 3 → 4, etc.), and which developmental
 // stage they're in (used to resolve a default placement when nothing else has
-// placed them yet — diagnostic assessment or manual override, set below).
-function LearningJourneyCard({ learnerId, currentStageId, curriculumId }) {
+// placed them yet — diagnostic assessment or manual override, set below). Stage lives on the
+// hub enrollment link (`hubId`), not the learner record — see maybeAutoIssueDiagnostic's
+// comment in learner.service.js.
+function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId }) {
   const { data: journey = [], isLoading: journeyLoading } = useLearningJourney(curriculumId, learnerId);
   const { data: areas = [] } = useLearningAreas(curriculumId);
   const { data: stages = [] } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { mutate: place, isPending: placing } = usePlaceLearner(curriculumId, learnerId);
-  const { mutate: updateLearner, isPending: savingStage } = useUpdateLearner();
+  const { mutate: updateHubLink, isPending: savingStage } = useUpdateLearnerHubLink();
 
   if (!curriculumId || journeyLoading) return null;
   if (journey.length === 0) return null;
@@ -255,8 +258,8 @@ function LearningJourneyCard({ learnerId, currentStageId, curriculumId }) {
           <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>Developmental Stage:</span>
           <select
             value={currentStageId || ""}
-            disabled={savingStage}
-            onChange={(e) => updateLearner({ id: learnerId, data: { currentStageId: e.target.value || null } })}
+            disabled={savingStage || !hubId}
+            onChange={(e) => updateHubLink({ learnerId, hubId, data: { currentStageId: e.target.value || null } })}
             style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#111827" }}
           >
             <option value="">Not set</option>
@@ -544,11 +547,11 @@ export default function LearnerViewPage() {
 
         {(isAdmin || isSchool) && curriculumId && (
           <>
-            <DiagnosticAssessmentCard learnerId={id} currentStageId={learner.currentStageId} currentBandId={learner.currentBandId} curriculumId={curriculumId} />
+            <DiagnosticAssessmentCard learnerId={id} currentStageId={primary?.currentStageId} currentBandId={primary?.currentBandId} curriculumId={curriculumId} />
             <LearningAreaDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
           </>
         )}
-        <LearningJourneyCard learnerId={id} currentStageId={learner.currentStageId} curriculumId={curriculumId} />
+        <LearningJourneyCard learnerId={id} hubId={primary?.id} currentStageId={primary?.currentStageId} curriculumId={curriculumId} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} />
       </div>
 

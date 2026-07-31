@@ -9,7 +9,7 @@ const KEYS = {
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId) => ["assessment-issues", "diagnostic", learnerId],
   learningAreaDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "learning-areas", learnerId],
-  indicatorProgress: (learnerId) => ["assessment-issues", "indicator-progress", learnerId],
+  indicatorProgress: (learnerId, curriculumId) => ["assessment-issues", "indicator-progress", learnerId, curriculumId || null],
 };
 
 export function useIssueAssessment() {
@@ -115,10 +115,13 @@ export function useLearningAreaDiagnosticsForLearner(learnerId) {
 // A learner's accumulating competency progress — sums earned/possible marks per indicator
 // across every graded assessment they've ever had (see CompetencyService's
 // getLearnerIndicatorProgress). Usable by the learner themselves or an admin/school reviewing it.
-export function useLearnerIndicatorProgress(learnerId) {
+// Optional curriculumId narrows this to one curriculum's reachable assessments — pass the
+// active hub's curriculumId so a learner enrolled at several hubs doesn't see another hub's
+// indicator marks bleed into this one's Competencies tab.
+export function useLearnerIndicatorProgress(learnerId, curriculumId = null) {
   return useQuery({
-    queryKey: KEYS.indicatorProgress(learnerId),
-    queryFn:  () => assessmentSubmissionApi.getLearnerIndicatorProgress(learnerId),
+    queryKey: KEYS.indicatorProgress(learnerId, curriculumId),
+    queryFn:  () => assessmentSubmissionApi.getLearnerIndicatorProgress(learnerId, curriculumId),
     enabled:  !!learnerId,
   });
 }

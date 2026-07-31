@@ -128,7 +128,7 @@ router.route("/:id/competencies/levels").get(authorize("admin", "school", "learn
 // the blanket admin/curriculumAdmin gate below, same as the other learner-reachable reads above.
 router.route("/:id/competencies/scores/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerCompetencyScores);
 router.route("/:id/competencies/bands/progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerBandProgress);
-router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school"), ownCurriculumOnly, getLearningJourney);
+router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearningJourney);
 router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
 // Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
 // stay global-admin-only actions; a curriculumAdmin only ever manages content *within* their

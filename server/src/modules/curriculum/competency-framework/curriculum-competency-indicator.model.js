@@ -12,6 +12,10 @@ function genId() {
 
 // Indicators describe how THIS curriculum evaluates a competency it has adopted —
 // two curricula using the same global competency can define different indicators.
+// NOT WIRED INTO SCORING: records here get fresh ids (see .create() below), disconnected
+// from the global Competency.indicators[] ids that assessment indicatorMarks, Performance
+// Bands, and the scoring engines actually key off. No client UI reads this model today —
+// see the matching note on the client hooks in modules/curriculum/hooks/useCompetencies.js.
 const CurriculumCompetencyIndicatorModel = {
   findByLink(curriculumId, competencyId) {
     return read().filter((i) => i.curriculumId === curriculumId && i.competencyId === competencyId);

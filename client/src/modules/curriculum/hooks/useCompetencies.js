@@ -72,7 +72,12 @@ export function useUpdateCompetencyLink(curriculumId) {
   });
 }
 
-/* ── Competency Indicators (how THIS curriculum evaluates an adopted competency) ── */
+/* ── Competency Indicators (how THIS curriculum evaluates an adopted competency) ──
+   NOT WIRED INTO SCORING: no component calls these hooks today, and records created
+   here get fresh IDs disconnected from the global Competency.indicators[] ids that
+   assessment indicatorMarks / Performance Bands / the scoring engines all key off.
+   Don't build a UI on top of this without first re-pointing it at the global indicator
+   ids, or it'll look like it affects competency scores when it doesn't. ── */
 
 export function useCompetencyIndicators(curriculumId, competencyId, enabled = true) {
   return useQuery({
@@ -336,7 +341,12 @@ export function useProgressLevels(curriculumId) {
   });
 }
 
-/* ── Assessments ────────────────────────────────────────────────────────── */
+/* ── Assessments (legacy simple list — name/type/description only) ────────
+   NOT WIRED INTO SCORING: no component calls these hooks today. This model has no
+   items/rubric/indicatorMarks, so even if a UI were built on it, entries created
+   here could never feed the competency/Progress-Arc engines. Real assessment
+   authoring (with indicator-linked items) lives in the Assessment Builder —
+   see modules/assessments/hooks/useAssessment.js — use that instead. ── */
 
 export function useCreateAssessment(curriculumId) {
   const qc = useQueryClient();
