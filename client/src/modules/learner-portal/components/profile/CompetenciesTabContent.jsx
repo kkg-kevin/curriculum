@@ -136,7 +136,7 @@ function BandProgressSection({ curriculumId, learnerId }) {
 // competency/indicator with no attempts yet simply shows no percent.
 export default function CompetenciesTabContent({ competencies, isLoading, learnerId, curriculumId }) {
   const [openId, setOpenId] = useState(null);
-  const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId);
+  const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId, curriculumId);
   const progressByIndicator = useMemo(() => new Map(progressRows.map((r) => [r.indicatorId, r])), [progressRows]);
 
   // The curriculum's own weighted Evidence/Assessment-Type score + band per competency — a

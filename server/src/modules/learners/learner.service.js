@@ -24,20 +24,24 @@ function computeAge(dateOfBirth) {
 // stage has a diagnostic assessment configured, auto-issues it (see
 // AssessmentSubmissionService.issueDiagnostic, idempotent per learner+assessment). An existing
 // manual/diagnostic placement is never overwritten by this age guess — only fills in
-// currentStageId when it's still unset. Also auto-issues one diagnostic per Learning Area the
-// class's courses actually expose (see maybeAutoIssueLearningAreaDiagnostics below) — a
-// separate placement identity (starting course per area) from the stage/band one above.
-function maybeAutoIssueDiagnostic(learnerId, cls) {
+// currentStageId when it's still unset. Placement lives on THIS hub's enrollment link, not the
+// learner record — a learner enrolled at several hubs can run a different curriculum (and so a
+// different stage/band) at each one, hence the required `hubId`. Also auto-issues one
+// diagnostic per Learning Area the class's courses actually expose (see
+// maybeAutoIssueLearningAreaDiagnostics below) — a separate placement identity (starting course
+// per area) from the stage/band one above.
+function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
   if (!cls?.curriculumId) return;
   const learner = LearnerModel.findById(learnerId);
+  const link = LearnerHubLinkModel.findOne(learnerId, hubId);
   const age = computeAge(learner?.dateOfBirth);
   if (age !== null) {
     const category = AgeCategoryModel.findByCurriculumId(cls.curriculumId)
       .find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
     if (category) {
-      if (!learner.currentStageId) LearnerModel.update(learnerId, { currentStageId: category.id });
+      if (link && !link.currentStageId) LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
       if (category.diagnosticAssessmentId) {
-        AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id });
+        AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id, hubId });
       }
     }
   }
@@ -190,6 +194,10 @@ const LearnerService = {
           // learner enrolled at several hubs needs the first-login diagnostic gate to
           // re-trigger for a hub they haven't cleared yet, even after clearing another one.
           onboardingCompletedAt: link.onboardingCompletedAt || null,
+          // This hub's own Developmental Stage / Performance Band placement — see
+          // maybeAutoIssueDiagnostic's comment for why this lives per-hub, not on the learner.
+          currentStageId: link.currentStageId || null,
+          currentBandId: link.currentBandId || null,
         };
       })
       .filter(Boolean);
@@ -241,7 +249,7 @@ const LearnerService = {
     const year = cls?.academicYear || String(new Date().getFullYear());
     const admissionNumber = generateAdmissionNumber(hub.code, year);
     LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId: resolvedClassId || "", admissionNumber, status });
-    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls, resolvedHubId);
     return LearnerService.getLearnerHubs(learnerId);
   },
 
@@ -262,7 +270,7 @@ const LearnerService = {
       }
     }
     LearnerHubLinkModel.update(link.id, data);
-    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls, hubId);
     return LearnerService.getLearnerHubs(learnerId);
   },
 
@@ -281,7 +289,7 @@ const LearnerService = {
     const link = LearnerHubLinkModel.findOne(learnerId, hubId);
     if (!link?.classId) return;
     const cls = ClassModel.findById(link.classId);
-    if (cls) maybeAutoIssueDiagnostic(learnerId, cls);
+    if (cls) maybeAutoIssueDiagnostic(learnerId, cls, hubId);
   },
 
   // Clears the first-login diagnostic gate for this one hub only — fired once the gate

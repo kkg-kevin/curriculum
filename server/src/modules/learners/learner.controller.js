@@ -91,9 +91,9 @@ const getLearnerById = asyncHandler(async (req, res) => {
 const updateLearner = asyncHandler(async (req, res) => {
   const { password, ...parsed } = updateLearnerSchema.parse(req.body);
   // .partial() still applies each field's .default() when it's absent from the request body
-  // (currentRungId/currentStageId both default to null) — without this filter, a PUT that
-  // only sends identity fields (e.g. the learner-portal profile edit form) would silently wipe
-  // whatever placement a teacher/admin had already set. Only keys the caller actually sent survive.
+  // (currentRungId defaults to null) — without this filter, a PUT that only sends identity
+  // fields (e.g. the learner-portal profile edit form) would silently wipe whatever placement a
+  // teacher/admin had already set. Only keys the caller actually sent survive.
   const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
     const existing = await LearnerService.getLearnerById(req.params.id);

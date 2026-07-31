@@ -12,7 +12,7 @@ import SideRail from "../components/SideRail";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import ProfileTabs from "../components/profile/ProfileTabs";
 import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
-import LearningJourneyCard from "../components/profile/LearningJourneyCard";
+import MyCoursesCard from "../components/profile/MyCoursesCard";
 import RecentEvidenceCard from "../components/profile/RecentEvidenceCard";
 import BadgesCertificatesCard from "../components/profile/BadgesCertificatesCard";
 import SummaryRow from "../components/profile/SummaryRow";
@@ -31,21 +31,36 @@ function ComingSoonPanel({ tab }) {
   );
 }
 
+// classId-scoped components (AssessmentsOverview, SummaryRow) fall back to showing the
+// learner's ENTIRE cross-hub assessment history when classId is undefined — correct for a
+// caller that truly wants no scoping, but wrong here: this hub just hasn't had a class
+// assigned to this learner yet, so show an explicit empty state instead of leaking other hubs' data.
+function NoClassNotice() {
+  return (
+    <div style={{ ...cardStyle(), padding: "32px 24px", textAlign: "center" }}>
+      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</p>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
+  const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
   const { mutate: updateLearner, isPending: isSaving } = useUpdateLearner();
   const [activeTab, setActiveTab] = useState("Overview");
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Curriculum-scoped content (courses, competencies) follows whichever hub the portal-wide
-  // switcher is currently on — the identity card and hub/teacher rail below deliberately don't,
-  // since those are meant to always show this learner's whole record, not just one hub's slice.
+  // switcher is currently on — the guardian/identity fields and hub/teacher rail below
+  // deliberately don't, since those are meant to always show this learner's whole record, not
+  // just one hub's slice. Stage/band ARE hub-specific (see selectedHub.currentStageId's own
+  // comment in learner.service.js) — a learner running two different curricula at two hubs
+  // genuinely has a different Developmental Stage/Performance Band at each.
   const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
-  const stage = ageCategories.find((s) => s.id === learner?.currentStageId) || null;
+  const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
   const { data: performanceBands = [] } = usePerformanceBands(cls?.curriculumId);
-  const band = performanceBands.find((b) => b.id === learner?.currentBandId) || null;
+  const band = performanceBands.find((b) => b.id === selectedHub?.currentBandId) || null;
 
   const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
 
@@ -86,7 +101,7 @@ export default function ProfilePage() {
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-            <LearningJourneyCard courses={courses} email={user?.email} isLoading={coursesLoading} />
+            <MyCoursesCard courses={courses} email={user?.email} isLoading={coursesLoading} />
             <RecentEvidenceCard />
             <BadgesCertificatesCard />
           </div>
@@ -101,13 +116,13 @@ export default function ProfilePage() {
         <LearningJourneyTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
       )}
 
-      {activeTab === "Assessments" && <AssessmentsOverview classId={cls?.id} />}
+      {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}
 
       {activeTab === "Reports" && <ReportsOverview />}
 
       {!["Overview", "Competencies", "Learning Journey", "Assessments", "Reports"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
 
-      <SummaryRow classId={cls?.id} />
+      {cls ? <SummaryRow classId={cls.id} /> : <NoClassNotice />}
 
       <FrameworkLegend />
 

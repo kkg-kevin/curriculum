@@ -24,7 +24,13 @@ export default function LearnerAssessmentsPage() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 2, minWidth: 340 }}>
-          <AssessmentsOverview classId={cls?.id} />
+          {cls ? (
+            <AssessmentsOverview classId={cls.id} />
+          ) : (
+            <div style={{ padding: "32px 24px", textAlign: "center", background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB" }}>
+              <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</p>
+            </div>
+          )}
         </div>
         <div style={{ flex: 1, minWidth: 280 }}>
           <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />

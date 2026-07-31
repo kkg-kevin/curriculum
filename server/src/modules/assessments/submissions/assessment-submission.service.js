@@ -75,7 +75,7 @@ function maybePlaceFromDiagnostic(submission) {
   if (!issue?.learnerId) return;
   const scorePercent = submission.maxScore > 0 ? (submission.totalScore / submission.maxScore) * 100 : 0;
   if (issue.ageCategoryId) {
-    CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.ageCategoryId, scorePercent);
+    CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.hubId, issue.ageCategoryId, scorePercent);
   } else if (issue.learningAreaId) {
     CompetencyService.placeLearnerFromLearningAreaDiagnostic(issue.learnerId, issue.learningAreaId, scorePercent, issue.assessmentId);
   }
@@ -96,14 +96,17 @@ const AssessmentSubmissionService = {
   // (unlike issueAssessment above), since a diagnostic is meant to run before any course is
   // even assigned. Idempotent per (assessment, learner): re-triggering (e.g. re-enrolling)
   // never creates a duplicate. Pass exactly one of ageCategoryId/learningAreaId — which one is
-  // set is what maybePlaceFromDiagnostic branches on at grading time. See
-  // learner.service.js's maybeAutoIssueDiagnostic for the caller(s).
-  issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, learningAreaId = null }) {
+  // set is what maybePlaceFromDiagnostic branches on at grading time. `hubId` is only ever set
+  // alongside ageCategoryId — it's what lets maybePlaceFromDiagnostic write the resulting
+  // stage/band placement back onto the correct hub enrollment once this is graded (see
+  // CompetencyService.placeLearnerFromDiagnostic). See learner.service.js's
+  // maybeAutoIssueDiagnostic for the caller(s).
+  issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, learningAreaId = null, hubId = null }) {
     loadAssessmentOrThrow(assessmentId);
     const existing = AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId, learningAreaId, ageCategoryId });
     if (existing) return existing;
     return AssessmentIssueModel.create({
-      assessmentId, learnerId, ageCategoryId, learningAreaId,
+      assessmentId, learnerId, ageCategoryId, learningAreaId, hubId,
       sessionId: null, courseId: null, classId: null,
       issuedBy: "system", dueDate: null,
     });
@@ -431,8 +434,19 @@ const AssessmentSubmissionService = {
   // snapshot. This is what finally gives the Progress Arc's indicator engine real per-learner
   // data (see CompetencyService.calculateIndicatorProgress) instead of the empty, manually-set
   // achievement store it had before.
-  getLearnerIndicatorProgress(learnerId) {
-    return summarizeIndicatorProgress(AssessmentSubmissionModel.findAll({ learnerId, status: "graded" }));
+  // Optional curriculumId narrows this down to assessments reachable from that curriculum
+  // (same reachability CompetencyService.getPopulatedIndicators uses) — a learner enrolled at
+  // several hubs can have indicator marks from more than one curriculum, and a hub's
+  // Competencies tab should only reflect its own. Omitted, this stays the full cross-hub view,
+  // which existing internal callers (getLearnerEvidenceTypeScores/getLearnerBandProgress —
+  // already curriculum-scoped further downstream through their own Assessment-Type config) rely on.
+  getLearnerIndicatorProgress(learnerId, curriculumId = null) {
+    let submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
+    if (curriculumId) {
+      const assessmentIds = CompetencyService.getAttachedAssessmentIds(curriculumId);
+      submissions = submissions.filter((s) => assessmentIds.has(s.assessmentId));
+    }
+    return summarizeIndicatorProgress(submissions);
   },
 
   // Same aggregation, narrowed to one course's worth of assessments — the reports module's

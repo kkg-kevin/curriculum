@@ -6,7 +6,7 @@ import { getCourseCompletionPercent } from "../../utils/progressStorage";
 const SUB_TABS = ["active", "upcoming", "completed"];
 const SUB_TAB_LABELS = { active: "Active", upcoming: "Upcoming", completed: "Completed" };
 
-export default function LearningJourneyCard({ courses, email, isLoading }) {
+export default function MyCoursesCard({ courses, email, isLoading }) {
   const navigate = useNavigate();
   const [subTab, setSubTab] = useState("active");
 
@@ -26,7 +26,7 @@ export default function LearningJourneyCard({ courses, email, isLoading }) {
   return (
     <div style={{ ...cardStyle(), padding: 20, flex: 1, minWidth: 260, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 style={sectionHeaderStyle()}>My Learning Journey</h2>
+        <h2 style={sectionHeaderStyle()}>My Courses</h2>
         <button
           type="button"
           onClick={() => navigate("/learner-portal/courses")}
