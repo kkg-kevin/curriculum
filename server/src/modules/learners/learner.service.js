@@ -7,6 +7,12 @@ const AgeCategoryModel = require("../curriculum/competency-framework/age-categor
 const LearningAreaModel = require("../curriculum/competency-framework/learning-area.model");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
+// Models, not services, for the delete cascade below — these are dependency-free fs wrappers, so
+// requiring them here can't reintroduce the circular-require chain the services already dance
+// around (report.service → assessment-submission.service → competency.service → back here).
+const ReportModel = require("../reports/report.model");
+const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
+const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -174,6 +180,14 @@ const LearnerService = {
     }
     LearnerJourneyModel.deleteByLearnerId(id);
     LearnerHubLinkModel.deleteByLearnerId(id);
+    // Everything else keyed to this learner goes too. Without this the records survive as
+    // permanently unreachable rows — every read path resolves the learner first, so an orphaned
+    // report/submission can never be opened, listed, or cleaned up again. Only learner-targeted
+    // issues are removed: a class-issued assessment has learnerId null and belongs to the class,
+    // not to any one learner, so it correctly stays put.
+    ReportModel.deleteByLearnerId(id);
+    AssessmentSubmissionModel.findAll({ learnerId: id }).forEach((s) => AssessmentSubmissionModel.delete(s.id));
+    AssessmentIssueModel.findAll({ learnerId: id }).forEach((i) => AssessmentIssueModel.delete(i.id));
     return { message: "Learner deleted successfully" };
   },
 

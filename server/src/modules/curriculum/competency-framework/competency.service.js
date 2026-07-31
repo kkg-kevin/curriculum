@@ -793,6 +793,17 @@ const CompetencyService = {
     return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
   },
 
+  // Same pipeline as getLearnerCompetencyScores, narrowed to one specific set of assessments —
+  // used by a course report, where "competency standing" should reflect the work that report
+  // actually covers, not everything the learner has ever been graded on curriculum-wide. Only
+  // counts assessments whose own report has been published to the learner, matching the
+  // indicator breakdown shown alongside it (see getLearnerIndicatorProgressForAssessments).
+  getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, assessmentIds) {
+    const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
+    const rows = AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds);
+    return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
+  },
+
   // Live-data sibling of calculateIndicatorProgress — driven by what's actually persisted
   // instead of requiring the caller to construct the whole indicatorAchievements payload. This
   // is the curriculum-admin preview (shared manual store) — see getLearnerBandProgress for the

@@ -1,24 +1,29 @@
 import { useNavigate } from "react-router-dom";
 import { FiAward, FiFileText } from "react-icons/fi";
 import { useMyReports } from "../../reports/hooks/useReports";
-import { useCourseQuery } from "../../courses/hooks/useCourse";
 import { T, cardStyle } from "./profile/theme";
 
-function ReportCourseName({ courseId }) {
-  const { data: course } = useCourseQuery(courseId);
-  return course?.name || "Course";
-}
-
 // Shared between the standalone Reports page and the Profile page's Reports tab, same pattern
-// as AssessmentsOverview being reused in both places.
-export default function ReportsOverview({ limit } = {}) {
+// as AssessmentsOverview being reused in both places. `hubId` scopes the list to the hub the
+// portal switcher is on, matching every other surface here (courses, competencies, assessments).
+export default function ReportsOverview({ limit, hubId } = {}) {
   const navigate = useNavigate();
-  const { data, isLoading } = useMyReports();
+  const { data, isLoading, isError } = useMyReports(hubId);
   const rows = data?.data || [];
   const visibleRows = limit ? rows.slice(0, limit) : rows;
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>;
+  }
+
+  // Kept distinct from the "No reports yet" empty state below — a failed request otherwise tells
+  // the learner their teacher hasn't published anything, which may simply be untrue.
+  if (isError) {
+    return (
+      <div style={{ ...cardStyle(), padding: "16px 18px", border: "1px solid #FECACA", backgroundColor: "#FEF2F2", color: "#B91C1C", fontSize: 13 }}>
+        Couldn't load your reports — try refreshing the page.
+      </div>
+    );
   }
 
   if (rows.length === 0) {
@@ -42,10 +47,10 @@ export default function ReportsOverview({ limit } = {}) {
               </div>
               <div style={{ minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  <ReportCourseName courseId={report.courseId} />
+                  {report.content?.courseName || "Course"}
                 </p>
                 <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>
-                  {report.content.overall.totalScore}/{report.content.overall.maxScore} · {report.content.overall.percent}%
+                  {report.content?.overall?.totalScore ?? 0}/{report.content?.overall?.maxScore ?? 0} · {report.content?.overall?.percent ?? 0}%
                   {report.publishedAt ? ` · Published ${new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" })}` : ""}
                 </p>
               </div>

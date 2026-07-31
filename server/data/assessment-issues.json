@@ -1769,5 +1769,57 @@
     "dueDate": null,
     "id": "5100ebf9-c727-493c-a6a4-f3f5a0e1bdeb",
     "issuedAt": "2026-07-31T10:47:05.120Z"
+  },
+  {
+    "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+    "sessionId": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "test-class-001",
+    "issuedBy": "16403871-86c8-4f27-a692-6843965f4c37",
+    "dueDate": null,
+    "id": "8a914cde-347b-4e8c-bfce-fd4ed078c724",
+    "issuedAt": "2026-07-31T11:33:43.411Z"
+  },
+  {
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "22dff1ef-f874-43c2-8c72-223d8d17b99a",
+    "ageCategoryId": null,
+    "learningAreaId": "499a258f-91a9-43c6-b581-8937d5cb9b05",
+    "hubId": null,
+    "sessionId": null,
+    "courseId": null,
+    "classId": null,
+    "issuedBy": "system",
+    "dueDate": null,
+    "id": "11af80d8-b1fb-46c9-a518-044bbec13fc0",
+    "issuedAt": "2026-07-31T11:37:05.301Z"
+  },
+  {
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "ageCategoryId": "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930",
+    "learningAreaId": null,
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "sessionId": null,
+    "courseId": null,
+    "classId": null,
+    "issuedBy": "system",
+    "dueDate": null,
+    "id": "3692a4c2-86bb-4640-9de4-53f05488f7d2",
+    "issuedAt": "2026-07-31T11:37:43.006Z"
+  },
+  {
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "ageCategoryId": null,
+    "learningAreaId": "436142c5-7ebe-4c79-8fd8-808dab8873f7",
+    "hubId": null,
+    "sessionId": null,
+    "courseId": null,
+    "classId": null,
+    "issuedBy": "system",
+    "dueDate": null,
+    "id": "dbece555-554d-4aac-a001-3fd24d88ace2",
+    "issuedAt": "2026-07-31T11:37:43.034Z"
   }
 ]

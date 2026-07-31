@@ -60,7 +60,11 @@ function ReportRow({ row, cls, course, onGenerate, isGenerating, navigate }) {
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid #F9FAFB` }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
-        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{course.name} · {row.gradedCount}/{row.requiredCount} assessments graded</p>
+        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
+          {course.name} · {row.requiredCount === 0
+            ? "no assessments to report on"
+            : `${row.gradedCount}/${row.requiredCount} assessments graded`}
+        </p>
       </div>
       <StatusBadge status={status} />
       {status === "ready" && (
@@ -90,7 +94,7 @@ export default function ReportsPage() {
   const navigate = useNavigate();
   const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
-  const { data: classesData, isLoading: classesLoading } = useQuery({
+  const { data: classesData, isLoading: classesLoading, isError: classesError } = useQuery({
     queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
     queryFn:  () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled:  !!teacher?.id && !!selectedHubId,
@@ -108,16 +112,38 @@ export default function ReportsPage() {
     return pairs;
   }, [myClasses, coursesByGrade]);
 
+  // One batched request per class (returning { [courseId]: rows }) rather than one per
+  // class × course pair — a teacher with several classes each exposing several courses was
+  // firing dozens of parallel requests just to paint this page.
+  const courseIdsByClass = useMemo(() => {
+    const map = new Map();
+    classCoursePairs.forEach(({ cls, course }) => {
+      if (!map.has(cls.id)) map.set(cls.id, []);
+      map.get(cls.id).push(course.id);
+    });
+    return map;
+  }, [classCoursePairs]);
+
+  const classIdsWithCourses = [...courseIdsByClass.keys()];
   const readinessResults = useQueries({
-    queries: classCoursePairs.map(({ cls, course }) => ({
-      queryKey: ["reports", "readiness", cls.id, course.id],
-      queryFn:  () => reportApi.getReadiness(cls.id, course.id),
-      enabled:  !!cls.id && !!course.id,
-    })),
+    queries: classIdsWithCourses.map((classId) => {
+      const courseIds = courseIdsByClass.get(classId);
+      return {
+        queryKey: ["reports", "readiness", "batch", classId, [...courseIds].sort().join(",")],
+        queryFn:  () => reportApi.getReadinessBatch(classId, courseIds),
+        enabled:  courseIds.length > 0,
+      };
+    }),
   });
 
-  const sections = classCoursePairs.map(({ cls, course }, index) => ({
-    cls, course, rows: readinessResults[index]?.data?.data || [],
+  const readinessByClass = useMemo(() => {
+    const map = new Map();
+    classIdsWithCourses.forEach((classId, i) => map.set(classId, readinessResults[i]?.data?.data || {}));
+    return map;
+  }, [classIdsWithCourses, readinessResults]);
+
+  const sections = classCoursePairs.map(({ cls, course }) => ({
+    cls, course, rows: readinessByClass.get(cls.id)?.[course.id] || [],
   })).filter((s) => s.rows.length > 0);
 
   const allRows = sections.flatMap((s) => s.rows.map((r) => ({ ...r, cls: s.cls, course: s.course })));
@@ -126,16 +152,30 @@ export default function ReportsPage() {
   const publishedCount = allRows.filter((r) => rowStatus(r) === "published").length;
 
   const { mutate: generateReport, isPending: generating, variables: generatingVars } = useGenerateReport();
-  const isGeneratingRow = (row) => generating && generatingVars?.learnerId === row.learner.id && generatingVars?.courseId === row.course.id;
+  // courseId is passed in explicitly rather than read off `row` — the readiness rows the server
+  // returns are {learner, requiredCount, gradedCount, ready, report} with no course on them (only
+  // the derived `allRows` above attaches one, and that's used purely for the KPI counts), so
+  // reaching for row.course.id here threw the moment a teacher actually clicked Generate.
+  const isGeneratingRow = (row, courseId) => generating && generatingVars?.learnerId === row.learner.id && generatingVars?.courseId === courseId;
 
   const handleGenerate = (payload) => {
     generateReport(payload, { onSuccess: (report) => navigate(`/teacher-portal/reports/${report.id}`) });
   };
 
   const isLoading = teacherLoading || (!!teacher && (classesLoading || readinessResults.some((r) => r.isLoading)));
+  const isError = classesError || readinessResults.some((r) => r.isError);
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
+  }
+  // Distinct from the empty state below — a failed request otherwise renders as "no learners
+  // eligible yet", which reads as a real (and wrong) answer rather than a problem to retry.
+  if (isError) {
+    return (
+      <div style={{ ...cardStyle, padding: "16px 18px", margin: "8px 0", border: "1px solid #FECACA", backgroundColor: "#FEF2F2", color: "#B91C1C", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+        Couldn't load report readiness — try refreshing the page.
+      </div>
+    );
   }
 
   return (
@@ -162,7 +202,11 @@ export default function ReportsPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Reports appear here once your classes' courses have at least one attached assessment.</p>
         </div>
       ) : (
-        sections.map(({ cls, course, rows }) => (
+        sections.map(({ cls, course, rows }) => {
+          // requiredCount/attachedCount are per course, identical across the class's rows.
+          const { requiredCount = 0, attachedCount = 0 } = rows[0] || {};
+          const missingCount = attachedCount - requiredCount;
+          return (
           <div key={`${cls.id}:${course.id}`} style={{ ...cardStyle, overflow: "hidden" }}>
             <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
               <AssignmentIcon sx={{ fontSize: 18, color: T.accentLight }} />
@@ -171,6 +215,16 @@ export default function ReportsPage() {
                 <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{cls.gradeName || cls.name}</p>
               </div>
             </div>
+            {/* A course's sessions can keep referencing assessments that were later deleted —
+                those can never be graded, so they're excluded from the requirement. Without
+                saying so, the count silently disagrees with the course's own content. */}
+            {missingCount > 0 && (
+              <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid #FDE68A`, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
+                {requiredCount === 0
+                  ? `All ${attachedCount} assessment${attachedCount === 1 ? "" : "s"} attached to this course have been deleted — there's nothing left to report on.`
+                  : `${missingCount} of ${attachedCount} attached assessment${attachedCount === 1 ? " has" : "s have"} been deleted and ${missingCount === 1 ? "is" : "are"} excluded from the ${requiredCount} required here.`}
+              </div>
+            )}
             {rows.map((row) => (
               <ReportRow
                 key={row.learner.id}
@@ -178,12 +232,13 @@ export default function ReportsPage() {
                 cls={cls}
                 course={course}
                 onGenerate={handleGenerate}
-                isGenerating={isGeneratingRow(row)}
+                isGenerating={isGeneratingRow(row, course.id)}
                 navigate={navigate}
               />
             ))}
           </div>
-        ))
+          );
+        })
       )}
     </div>
   );

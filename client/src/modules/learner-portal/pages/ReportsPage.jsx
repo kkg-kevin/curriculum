@@ -10,7 +10,7 @@ const T = {
 };
 
 export default function ReportsPage() {
-  const { hubs, hubsLoading, mentors, mentorsLoading } = useOutletContext();
+  const { hubs, hubsLoading, mentors, mentorsLoading, selectedHubId } = useOutletContext();
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -24,7 +24,7 @@ export default function ReportsPage() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 2, minWidth: 340 }}>
-          <ReportsOverview />
+          <ReportsOverview hubId={selectedHubId} />
         </div>
         <div style={{ flex: 1, minWidth: 280 }}>
           <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
