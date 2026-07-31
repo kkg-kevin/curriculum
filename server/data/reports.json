@@ -229,5 +229,1095 @@
     "id": "0e2568e9-a707-425a-887c-107fc4d0a9a1",
     "createdAt": "2026-07-28T10:32:16.996Z",
     "updatedAt": "2026-07-28T12:34:18.002Z"
+  },
+  {
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "status": "published",
+    "generatedAt": "2026-07-31T12:15:06.259Z",
+    "generatedBy": "16403871-86c8-4f27-a692-6843965f4c37",
+    "publishedAt": "2026-07-31T12:15:19.851Z",
+    "publishedBy": "16403871-86c8-4f27-a692-6843965f4c37",
+    "remarks": "",
+    "content": {
+      "assessments": [
+        {
+          "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+          "name": "Computational Thinking & Programming Fundamentals",
+          "type": "quiz",
+          "totalScore": 6,
+          "maxScore": 20,
+          "percent": 30,
+          "gradedAt": "2026-07-31T11:48:41.220Z"
+        },
+        {
+          "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+          "name": "Collaboration & Digital Citizenship — Classroom Observation",
+          "type": "observation",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-31T11:41:19.955Z"
+        },
+        {
+          "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+          "name": "Collaboration & Digital Citizenship — Classroom Observation",
+          "type": "observation",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-31T11:41:06.449Z"
+        },
+        {
+          "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+          "name": "Digital Creativity Capstone: Build a Mini App or Game",
+          "type": "project",
+          "totalScore": 57,
+          "maxScore": 70,
+          "percent": 81,
+          "gradedAt": "2026-07-31T11:40:36.383Z"
+        },
+        {
+          "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+          "name": "Foundational Skills Diagnostic (Sample)",
+          "type": "quiz",
+          "totalScore": 11,
+          "maxScore": 13,
+          "percent": 85,
+          "gradedAt": "2026-07-31T11:34:21.619Z"
+        }
+      ],
+      "overall": {
+        "totalScore": 74,
+        "maxScore": 103,
+        "percent": 72
+      },
+      "indicatorBreakdown": [
+        {
+          "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Breaks down problems",
+          "marksEarned": 14,
+          "marksPossible": 18,
+          "percent": 78
+        },
+        {
+          "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Designs step-by-step solutions",
+          "marksEarned": 8,
+          "marksPossible": 13,
+          "percent": 62
+        },
+        {
+          "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Evaluates solution efficiency",
+          "marksEarned": 0,
+          "marksPossible": 1,
+          "percent": 0
+        },
+        {
+          "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Identifies patterns",
+          "marksEarned": 1,
+          "marksPossible": 5,
+          "percent": 20
+        },
+        {
+          "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Debugs errors",
+          "marksEarned": 5.5,
+          "marksPossible": 6.5,
+          "percent": 85
+        },
+        {
+          "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Tests program output",
+          "marksEarned": 6.5,
+          "marksPossible": 7.5,
+          "percent": 87
+        },
+        {
+          "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Uses core programming constructs",
+          "marksEarned": 4.5,
+          "marksPossible": 9,
+          "percent": 50
+        },
+        {
+          "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Writes organized, readable code",
+          "marksEarned": 8.5,
+          "marksPossible": 9,
+          "percent": 94
+        },
+        {
+          "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Completes a functional project",
+          "marksEarned": 3,
+          "marksPossible": 5,
+          "percent": 60
+        },
+        {
+          "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Generates original project ideas",
+          "marksEarned": 7,
+          "marksPossible": 10,
+          "percent": 70
+        },
+        {
+          "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Integrates multiple concepts",
+          "marksEarned": 3,
+          "marksPossible": 5,
+          "percent": 60
+        },
+        {
+          "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Uses tools and features effectively",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        },
+        {
+          "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "competencyName": "4. AI & Data Literacy Awareness",
+          "indicatorName": "Interacts with AI tools",
+          "marksEarned": 0,
+          "marksPossible": 1,
+          "percent": 0
+        },
+        {
+          "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "competencyName": "4. AI & Data Literacy Awareness",
+          "indicatorName": "Recognizes the role of data",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        },
+        {
+          "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+          "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+          "competencyName": "5. Collaboration, Communication & Digital Citizenship",
+          "indicatorName": "Collaborates on shared tasks",
+          "marksEarned": 10,
+          "marksPossible": 10,
+          "percent": 100
+        },
+        {
+          "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+          "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+          "competencyName": "Computational Thinking",
+          "indicatorName": "Abstraction",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        }
+      ],
+      "competencyScores": [
+        {
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "name": "1. Computational Thinking & Problem Decomposition",
+          "score": 62.2,
+          "level": {
+            "id": "a1ef77ba-1bf7-487c-9f8c-c72bb1e6718e",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Application",
+            "description": "The learner independently applies acquired knowledge and skills to solve problems and create functional outputs. They can adapt learned concepts to new situations, make decisions during implementation, and demonstrate understanding through projects or real-world tasks.",
+            "minScore": 60,
+            "maxScore": 74,
+            "order": 3,
+            "createdAt": "2026-06-25T10:53:46.415Z",
+            "updatedAt": "2026-06-25T10:53:46.415Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        },
+        {
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "name": "2. Programming & Implementation Skills",
+          "score": 78.1,
+          "level": {
+            "id": "7eb0b888-2fe0-4678-ad51-81fc10ac5019",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Mastery",
+            "description": "The learner demonstrates a high level of proficiency, accuracy, and efficiency in applying skills. They can handle complex problems, optimize solutions, debug effectively, and explain their reasoning clearly, showing deep understanding and consistent performance.",
+            "minScore": 75,
+            "maxScore": 89,
+            "order": 4,
+            "createdAt": "2026-06-25T10:54:01.898Z",
+            "updatedAt": "2026-06-25T10:54:01.898Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        },
+        {
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "name": "3. Digital Creativity & Project Development",
+          "score": 66.7,
+          "level": {
+            "id": "a1ef77ba-1bf7-487c-9f8c-c72bb1e6718e",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Application",
+            "description": "The learner independently applies acquired knowledge and skills to solve problems and create functional outputs. They can adapt learned concepts to new situations, make decisions during implementation, and demonstrate understanding through projects or real-world tasks.",
+            "minScore": 60,
+            "maxScore": 74,
+            "order": 3,
+            "createdAt": "2026-06-25T10:53:46.415Z",
+            "updatedAt": "2026-06-25T10:53:46.415Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        },
+        {
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "name": "4. AI & Data Literacy Awareness",
+          "score": 50,
+          "level": {
+            "id": "f61c2d99-aa59-4a91-bfbd-12efd5f1b6a7",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Practice",
+            "description": "The learner begins to actively engage with concepts through repetition and guided tasks. They develop foundational skills by following instructions, completing structured exercises, and applying basic logic, gradually building confidence and consistency in execution.",
+            "minScore": 40,
+            "maxScore": 59,
+            "order": 2,
+            "createdAt": "2026-06-25T10:53:28.485Z",
+            "updatedAt": "2026-06-25T10:53:28.485Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        },
+        {
+          "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+          "name": "5. Collaboration, Communication & Digital Citizenship",
+          "score": 100,
+          "level": {
+            "id": "ad6b53f2-1146-4bf2-aeca-6acef417dc6b",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Specialization",
+            "description": "The learner develops advanced expertise in specific areas of interest, such as AI, software development, or robotics. They work on complex, self-driven projects, explore advanced concepts, and demonstrate innovation, critical thinking, and the ability to extend beyond the standard curriculum.",
+            "minScore": 90,
+            "maxScore": 100,
+            "order": 5,
+            "createdAt": "2026-06-25T10:54:27.566Z",
+            "updatedAt": "2026-06-25T10:54:27.566Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        },
+        {
+          "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+          "name": "Computational Thinking",
+          "score": 100,
+          "level": {
+            "id": "ad6b53f2-1146-4bf2-aeca-6acef417dc6b",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Specialization",
+            "description": "The learner develops advanced expertise in specific areas of interest, such as AI, software development, or robotics. They work on complex, self-driven projects, explore advanced concepts, and demonstrate innovation, critical thinking, and the ability to extend beyond the standard curriculum.",
+            "minScore": 90,
+            "maxScore": 100,
+            "order": 5,
+            "createdAt": "2026-06-25T10:54:27.566Z",
+            "updatedAt": "2026-06-25T10:54:27.566Z"
+          },
+          "band": {
+            "id": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+            "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+            "name": "Explorer",
+            "description": "explorer stage 2",
+            "criteria": [],
+            "minScore": 0,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 20
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 30
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 40
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 10
+              }
+            ],
+            "advancementThreshold": 90,
+            "order": 1,
+            "createdAt": "2026-07-10T12:16:34.454Z",
+            "learningAreaId": null,
+            "courseId": null
+          }
+        }
+      ],
+      "courseName": "Level 1: Code Foundations"
+    },
+    "id": "f7f83d00-dbe6-48e0-afd3-182aaf286a2c",
+    "createdAt": "2026-07-31T12:15:06.261Z",
+    "updatedAt": "2026-07-31T12:15:19.853Z"
+  },
+  {
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "classId": "test-class-001",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "status": "published",
+    "generatedAt": "2026-07-31T12:15:28.861Z",
+    "generatedBy": "16403871-86c8-4f27-a692-6843965f4c37",
+    "publishedAt": "2026-07-31T12:15:41.124Z",
+    "publishedBy": "16403871-86c8-4f27-a692-6843965f4c37",
+    "remarks": "",
+    "content": {
+      "assessments": [
+        {
+          "assessmentId": "1a9cc836-a4cd-4daf-b1e4-0d7742f28e95",
+          "name": "Computational Thinking & Programming Fundamentals",
+          "type": "quiz",
+          "totalScore": 6,
+          "maxScore": 20,
+          "percent": 30,
+          "gradedAt": "2026-07-31T11:48:41.220Z"
+        },
+        {
+          "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+          "name": "Collaboration & Digital Citizenship — Classroom Observation",
+          "type": "observation",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-31T11:41:19.955Z"
+        },
+        {
+          "assessmentId": "e25bb6fe-7042-42ff-83fc-3718331f9d69",
+          "name": "Collaboration & Digital Citizenship — Classroom Observation",
+          "type": "observation",
+          "totalScore": 0,
+          "maxScore": 0,
+          "percent": 0,
+          "gradedAt": "2026-07-31T11:41:06.449Z"
+        },
+        {
+          "assessmentId": "17c0f6ae-e418-4a7d-986e-ac526b0083f4",
+          "name": "Digital Creativity Capstone: Build a Mini App or Game",
+          "type": "project",
+          "totalScore": 57,
+          "maxScore": 70,
+          "percent": 81,
+          "gradedAt": "2026-07-31T11:40:36.383Z"
+        },
+        {
+          "assessmentId": "0c25da97-17cf-4d05-ac57-0b6364933618",
+          "name": "Foundational Skills Diagnostic (Sample)",
+          "type": "quiz",
+          "totalScore": 11,
+          "maxScore": 13,
+          "percent": 85,
+          "gradedAt": "2026-07-31T11:34:21.619Z"
+        }
+      ],
+      "overall": {
+        "totalScore": 74,
+        "maxScore": 103,
+        "percent": 72
+      },
+      "indicatorBreakdown": [
+        {
+          "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Breaks down problems",
+          "marksEarned": 14,
+          "marksPossible": 18,
+          "percent": 78
+        },
+        {
+          "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Designs step-by-step solutions",
+          "marksEarned": 8,
+          "marksPossible": 13,
+          "percent": 62
+        },
+        {
+          "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Evaluates solution efficiency",
+          "marksEarned": 0,
+          "marksPossible": 1,
+          "percent": 0
+        },
+        {
+          "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "competencyName": "1. Computational Thinking & Problem Decomposition",
+          "indicatorName": "Identifies patterns",
+          "marksEarned": 1,
+          "marksPossible": 5,
+          "percent": 20
+        },
+        {
+          "indicatorId": "c8f1569f-8945-4c02-8a7d-a70bac24aea4",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Debugs errors",
+          "marksEarned": 5.5,
+          "marksPossible": 6.5,
+          "percent": 85
+        },
+        {
+          "indicatorId": "bbe35b8e-df25-4106-abd5-429a9bc189d6",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Tests program output",
+          "marksEarned": 6.5,
+          "marksPossible": 7.5,
+          "percent": 87
+        },
+        {
+          "indicatorId": "9d3880d3-ece0-40da-88de-9dd5019707f0",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Uses core programming constructs",
+          "marksEarned": 4.5,
+          "marksPossible": 9,
+          "percent": 50
+        },
+        {
+          "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "competencyName": "2. Programming & Implementation Skills",
+          "indicatorName": "Writes organized, readable code",
+          "marksEarned": 8.5,
+          "marksPossible": 9,
+          "percent": 94
+        },
+        {
+          "indicatorId": "bef9080f-d582-4251-a0f1-fe382605c4d3",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Completes a functional project",
+          "marksEarned": 3,
+          "marksPossible": 5,
+          "percent": 60
+        },
+        {
+          "indicatorId": "ab3d2c5a-9a73-44c8-992f-65478e005309",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Generates original project ideas",
+          "marksEarned": 7,
+          "marksPossible": 10,
+          "percent": 70
+        },
+        {
+          "indicatorId": "58e0dd6b-a78a-4029-a399-739eb3d77de0",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Integrates multiple concepts",
+          "marksEarned": 3,
+          "marksPossible": 5,
+          "percent": 60
+        },
+        {
+          "indicatorId": "1532d350-b895-4cac-b619-2d1eaf85e50a",
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "competencyName": "3. Digital Creativity & Project Development",
+          "indicatorName": "Uses tools and features effectively",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        },
+        {
+          "indicatorId": "0c6dddad-eae7-4f05-8d2a-4fba9a6c88a7",
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "competencyName": "4. AI & Data Literacy Awareness",
+          "indicatorName": "Interacts with AI tools",
+          "marksEarned": 0,
+          "marksPossible": 1,
+          "percent": 0
+        },
+        {
+          "indicatorId": "085e8a30-a58d-4d12-a2ce-dcae0b0c6d28",
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "competencyName": "4. AI & Data Literacy Awareness",
+          "indicatorName": "Recognizes the role of data",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        },
+        {
+          "indicatorId": "325e3232-5bda-43de-a1fb-010f486181aa",
+          "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+          "competencyName": "5. Collaboration, Communication & Digital Citizenship",
+          "indicatorName": "Collaborates on shared tasks",
+          "marksEarned": 10,
+          "marksPossible": 10,
+          "percent": 100
+        },
+        {
+          "indicatorId": "f8593068-7181-4eb0-9726-9f8829e31f90",
+          "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+          "competencyName": "Computational Thinking",
+          "indicatorName": "Abstraction",
+          "marksEarned": 1,
+          "marksPossible": 1,
+          "percent": 100
+        }
+      ],
+      "competencyScores": [
+        {
+          "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+          "name": "1. Computational Thinking & Problem Decomposition",
+          "score": 62.2,
+          "level": {
+            "id": "6f1a63bb-84de-4bee-b4b0-26dd9877d4aa",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Developing",
+            "description": "Building confidence.",
+            "minScore": 41,
+            "maxScore": 70,
+            "order": 2,
+            "createdAt": "2026-07-13T10:07:00.240Z",
+            "updatedAt": "2026-07-13T10:07:00.240Z"
+          },
+          "band": {
+            "id": "325c2837-4592-42a2-8b9a-1e878da78213",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Developing",
+            "description": "Applies computational thinking with some independence.",
+            "minScore": 40,
+            "maxScore": 64,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 65,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 4,
+            "createdAt": "2026-07-29T11:33:02.728Z"
+          }
+        },
+        {
+          "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
+          "name": "2. Programming & Implementation Skills",
+          "score": 78.1,
+          "level": {
+            "id": "3793331c-c44a-486c-9015-fa20f65f0582",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Mastery",
+            "description": "Consistently independent.",
+            "minScore": 71,
+            "maxScore": 100,
+            "order": 3,
+            "createdAt": "2026-07-13T10:07:00.251Z",
+            "updatedAt": "2026-07-13T10:07:00.251Z"
+          },
+          "band": {
+            "id": "9e7a4cca-a79a-4b66-84e4-6f2aa1d2889a",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Proficient",
+            "description": "Consistently applies computational thinking independently.",
+            "minScore": 65,
+            "maxScore": 84,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 85,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 5,
+            "createdAt": "2026-07-29T11:33:02.730Z"
+          }
+        },
+        {
+          "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
+          "name": "3. Digital Creativity & Project Development",
+          "score": 66.7,
+          "level": {
+            "id": "6f1a63bb-84de-4bee-b4b0-26dd9877d4aa",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Developing",
+            "description": "Building confidence.",
+            "minScore": 41,
+            "maxScore": 70,
+            "order": 2,
+            "createdAt": "2026-07-13T10:07:00.240Z",
+            "updatedAt": "2026-07-13T10:07:00.240Z"
+          },
+          "band": {
+            "id": "9e7a4cca-a79a-4b66-84e4-6f2aa1d2889a",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Proficient",
+            "description": "Consistently applies computational thinking independently.",
+            "minScore": 65,
+            "maxScore": 84,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 85,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 5,
+            "createdAt": "2026-07-29T11:33:02.730Z"
+          }
+        },
+        {
+          "competencyId": "c3d95126-1121-4de8-bdab-14adbf00d218",
+          "name": "4. AI & Data Literacy Awareness",
+          "score": 50,
+          "level": {
+            "id": "6f1a63bb-84de-4bee-b4b0-26dd9877d4aa",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Developing",
+            "description": "Building confidence.",
+            "minScore": 41,
+            "maxScore": 70,
+            "order": 2,
+            "createdAt": "2026-07-13T10:07:00.240Z",
+            "updatedAt": "2026-07-13T10:07:00.240Z"
+          },
+          "band": {
+            "id": "325c2837-4592-42a2-8b9a-1e878da78213",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Developing",
+            "description": "Applies computational thinking with some independence.",
+            "minScore": 40,
+            "maxScore": 64,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 65,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 4,
+            "createdAt": "2026-07-29T11:33:02.728Z"
+          }
+        },
+        {
+          "competencyId": "63cbde7f-7823-4abf-96ff-3ee3d9fcac4c",
+          "name": "5. Collaboration, Communication & Digital Citizenship",
+          "score": 100,
+          "level": {
+            "id": "3793331c-c44a-486c-9015-fa20f65f0582",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Mastery",
+            "description": "Consistently independent.",
+            "minScore": 71,
+            "maxScore": 100,
+            "order": 3,
+            "createdAt": "2026-07-13T10:07:00.251Z",
+            "updatedAt": "2026-07-13T10:07:00.251Z"
+          },
+          "band": {
+            "id": "afe35c68-c0a7-43f7-ad19-27b3898a562c",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Advanced",
+            "description": "Applies computational thinking flexibly to novel problems.",
+            "minScore": 85,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 100,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 6,
+            "createdAt": "2026-07-29T11:33:02.732Z"
+          }
+        },
+        {
+          "competencyId": "da5e907c-aa2f-4a9e-8124-f1b80b93bdb5",
+          "name": "Computational Thinking",
+          "score": 100,
+          "level": {
+            "id": "3793331c-c44a-486c-9015-fa20f65f0582",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Mastery",
+            "description": "Consistently independent.",
+            "minScore": 71,
+            "maxScore": 100,
+            "order": 3,
+            "createdAt": "2026-07-13T10:07:00.251Z",
+            "updatedAt": "2026-07-13T10:07:00.251Z"
+          },
+          "band": {
+            "id": "afe35c68-c0a7-43f7-ad19-27b3898a562c",
+            "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+            "name": "Advanced",
+            "description": "Applies computational thinking flexibly to novel problems.",
+            "minScore": 85,
+            "maxScore": 100,
+            "competencyIds": [
+              "976629f0-c49e-45d8-a3bd-d44719972d09"
+            ],
+            "indicatorContributions": [
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+                "percentage": 25
+              },
+              {
+                "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
+                "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+                "percentage": 25
+              }
+            ],
+            "advancementThreshold": 100,
+            "learningAreaId": null,
+            "courseId": null,
+            "order": 6,
+            "createdAt": "2026-07-29T11:33:02.732Z"
+          }
+        }
+      ],
+      "courseName": "Level 1: Code Foundations"
+    },
+    "id": "b0e2008b-0f1f-4bdd-86aa-13f9a43db3e5",
+    "createdAt": "2026-07-31T12:15:28.862Z",
+    "updatedAt": "2026-07-31T12:15:41.126Z"
   }
 ]
