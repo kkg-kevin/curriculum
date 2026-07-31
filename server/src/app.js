@@ -70,7 +70,9 @@ app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubm
 // Course reports read off graded submissions above — same not-authoring, multi-role,
 // attachOwnRecords-scoped shape.
 app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
-app.use("/api/uploads", protect, authorize("admin"), uploadRoutes);
+// Learner access is scoped to assessment-submission file uploads (documentUpload/imageUpload/
+// videoUpload/audioUpload/codeUpload items and project deliverables) — see AssessmentTaker.jsx.
+app.use("/api/uploads", protect, authorize("admin", "learner"), uploadRoutes);
 app.use("/api/programs", protect, authorize("admin"), programRoutes);
 app.use("/api/branches", protect, attachOwnRecords, branchRoutes);
 

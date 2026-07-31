@@ -18,6 +18,11 @@ function formatResponse(response) {
     if (response.length && typeof response[0] === "object") return response.map((p) => `${p.left} → ${p.right}`).join(", ");
     return response.join(", ");
   }
+  // File-upload items and project deliverables store {url, filename, mimeType, size} — every
+  // other kind stores a string or string[] (see grading.utils.js's response contract).
+  if (typeof response === "object" && response.url) {
+    return <a href={response.url} target="_blank" rel="noopener noreferrer" style={{ color: T.accent, fontWeight: 600 }}>{response.filename || "View uploaded file"}</a>;
+  }
   return String(response);
 }
 
@@ -72,6 +77,7 @@ export default function AssessmentDetailPage() {
   const submission = activeSubmission || row?.submission;
   const items = useMemo(() => (row?.assessment?.items || []).map(normalizeLegacyItem), [row?.assessment?.items]);
   const rubric = row?.assessment?.rubric || [];
+  const deliverables = row?.assessment?.deliverables || [];
   const autoByItem = useMemo(() => new Map((submission?.autoItemResults || []).map((r) => [r.itemId, r])), [submission?.autoItemResults]);
   const feedbackByKey = useMemo(() => new Map((submission?.itemFeedback || []).map((f) => [f.itemId, f])), [submission?.itemFeedback]);
   const answersByItem = useMemo(() => new Map((submission?.answers || []).map((a) => [a.itemId, a.response])), [submission?.answers]);
@@ -129,7 +135,9 @@ export default function AssessmentDetailPage() {
           <div style={{ width: 56, height: 56, borderRadius: 16, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: T.accent, fontSize: 24 }}><FiSend /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>Ready when you are</h3>
           <p style={{ margin: "0 0 20px", fontSize: 13, color: T.inkMuted, maxWidth: 420, marginInline: "auto" }}>
-            {items.length > 0 ? `${items.length} question${items.length === 1 ? "" : "s"}. ` : ""}You can save your progress and come back before submitting.
+            {items.length > 0 ? `${items.length} question${items.length === 1 ? "" : "s"}. ` : ""}
+            {deliverables.length > 0 ? `${deliverables.length} deliverable${deliverables.length === 1 ? "" : "s"} to submit. ` : ""}
+            You can save your progress and come back before submitting.
           </p>
           <button type="button" onClick={handleStart} disabled={starting} style={{ padding: "12px 28px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: starting ? "not-allowed" : "pointer" }}>
             {starting ? "Starting…" : "Start Assessment"}
@@ -223,6 +231,18 @@ export default function AssessmentDetailPage() {
                   autoResult={autoByItem.get(item.id)}
                   feedback={feedbackByKey.get(item.id)}
                 />
+              ))}
+            </div>
+          )}
+
+          {deliverables.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Your Deliverables</p>
+              {deliverables.map((d) => (
+                <div key={d.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{d.name}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 12.5, color: T.inkMuted }}>{formatResponse(answersByItem.get(d.id))}</p>
+                </div>
               ))}
             </div>
           )}
