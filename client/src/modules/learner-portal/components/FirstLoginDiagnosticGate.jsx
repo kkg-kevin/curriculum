@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FiActivity, FiSend } from "react-icons/fi";
-import { useLearningAreas } from "../../curriculum/hooks/useCompetencies";
-import { useLearningAreaDiagnosticsForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
+import { useLearningAreaDiagnosticsForLearner, useDiagnosticForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import { useEnsureDiagnosticsIssued, useMarkHubOnboardingComplete } from "../hooks/usePortalOnboarding";
 
@@ -57,7 +57,7 @@ function AwaitingGradingState({ count }) {
 // useSubmitAssessment's diagnostic-query invalidation; from there the exported component's
 // AwaitingGradingState or markComplete effect takes over). Keyed by issue.id at the call site so
 // remounting between steps resets local state for free instead of manual bookkeeping.
-function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
+function DiagnosticStep({ row, index, total, contextLabel, onDone }) {
   const { issue, assessment, submission: initialSubmission } = row;
   const [activeSubmission, setActiveSubmission] = useState(initialSubmission.id ? initialSubmission : null);
   const [draftAnswers, setDraftAnswers] = useState(null);
@@ -78,7 +78,7 @@ function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
         <span style={{ fontSize: 11, fontWeight: 800, color: T.accent, backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, padding: "3px 11px" }}>
           Diagnostic {index + 1} of {total}
         </span>
-        {learningAreaName && <span style={{ fontSize: 12.5, fontWeight: 600, color: T.inkMuted }}>{learningAreaName}</span>}
+        {contextLabel && <span style={{ fontSize: 12.5, fontWeight: 600, color: T.inkMuted }}>{contextLabel}</span>}
       </div>
 
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "22px 26px" }}>
@@ -114,14 +114,16 @@ function DiagnosticStep({ row, index, total, learningAreaName, onDone }) {
   );
 }
 
-// Blocks the rest of the learner-portal behind this until every Learning-Area diagnostic the
-// learner's current hub/curriculum owes them has been GRADED — not merely submitted. A
-// manually-graded diagnostic only sets the learner's placement (Performance Band / starting
-// course, see maybePlaceFromDiagnostic in assessment-submission.service.js) once a teacher
-// grades it, so releasing the gate on submit alone would let a learner into a portal whose
-// placement hasn't landed yet. This is the very first thing a learner sees the first time they
-// visit a given hub's portal, per the product decision this was built for. Only ever active
-// while the CURRENTLY SELECTED hub's onboardingCompletedAt (see LearnerPortalLayout's
+// Blocks the rest of the learner-portal behind this until every diagnostic the learner's
+// current hub/curriculum owes them has been GRADED — not merely submitted — whether that's
+// their Developmental Stage diagnostic (age-category based, sets currentStageId/currentBandId),
+// any Learning-Area diagnostics (sets a starting course per area), or both; a curriculum only
+// ever configuring one of the two still reliably gates. A manually-graded diagnostic only sets
+// the learner's placement (see maybePlaceFromDiagnostic in assessment-submission.service.js)
+// once a teacher grades it, so releasing the gate on submit alone would let a learner into a
+// portal whose placement hasn't landed yet. This is the very first thing a learner sees the
+// first time they visit a given hub's portal, per the product decision this was built for. Only
+// ever active while the CURRENTLY SELECTED hub's onboardingCompletedAt (see LearnerPortalLayout's
 // gateActive, LearnerHubLinkModel) is unset; once cleared (here, once every diagnostic is
 // graded, or there being none to take), it never reappears for that hub again — even if a new
 // diagnostic is added to the curriculum later. Scoped per hub rather than per learner so a
@@ -142,10 +144,31 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // forever). Driving ensureSettled off the Promise itself, resolved into a plain setState,
   // sidesteps that subscription entirely.
   const { mutateAsync: ensureIssuedAsync } = useEnsureDiagnosticsIssued();
-  const { mutate: markComplete, isPending: completing } = useMarkHubOnboardingComplete();
-  const { data: rowsData, isLoading: rowsLoading, refetch } = useLearningAreaDiagnosticsForLearner(learner.id);
-  const { data: areas = [] } = useLearningAreas(cls?.curriculumId);
+  const { mutateAsync: markCompleteAsync } = useMarkHubOnboardingComplete();
+  const hasMarkedComplete = useRef(false);
+  const { data: rowsData, isLoading: areaRowsLoading, refetch: refetchAreaRows } = useLearningAreaDiagnosticsForLearner(learner.id);
+  // The Developmental Stage diagnostic (age-category based) — a SEPARATE mechanism from
+  // Learning-Area diagnostics (sets currentStageId/currentBandId instead of a starting course),
+  // that this gate previously never checked at all. A curriculum that only configures a Stage
+  // diagnostic (no Learning-Area ones) would otherwise let every new learner straight into the
+  // portal, unplaced, with nothing ever gating them — merged into the same pending/actionable
+  // list below so either mechanism (or both) reliably blocks the gate until graded.
+  const { data: stageRow, isLoading: stageRowLoading, refetch: refetchStageRow } = useDiagnosticForLearner(learner.id, cls?.curriculumId);
+  const { data: areas = [], isLoading: areasLoading } = useLearningAreas(cls?.curriculumId);
+  const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
+  const stageNameById = new Map(ageCategories.map((s) => [s.id, s.name]));
+
+  // areasLoading matters here too, not just the two diagnostic queries — areaIds (below) is
+  // derived from `areas`, and filters areaRows down before anything else sees them. If areas
+  // resolves slower than the diagnostic queries, a render could see rowsLoading as "done" while
+  // areaIds is still the pre-load empty set, silently dropping every Learning-Area diagnostic
+  // for that one render — exactly enough to lock totalRef.current (below) at an undercount.
+  const rowsLoading = areaRowsLoading || stageRowLoading || areasLoading;
+  // Stable identity (unlike an inline arrow function) — the polling effect below depends on
+  // this reference staying the same across renders, or it would tear down and restart its
+  // interval on every unrelated re-render instead of actually waiting out the full 15s.
+  const refetch = useCallback(() => { refetchAreaRows(); refetchStageRow(); }, [refetchAreaRows, refetchStageRow]);
 
   // Fires once, the first time hub/cls resolve — a best-effort top-up for any diagnostic the
   // enrollment-time write missed (see learner.service.js's ensureDiagnosticsIssued). No class
@@ -164,15 +187,22 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // the learner is active at, not just this one (the admin-facing LearnerViewPage wants that
   // full picture) — filtered down here to just the areas belonging to the CURRENTLY SELECTED
   // hub's curriculum, so a learner gated for this hub only ever sees this hub's diagnostics,
-  // never one left outstanding at a different hub they haven't switched to yet.
+  // never one left outstanding at a different hub they haven't switched to yet. The Stage
+  // diagnostic is already curriculum-scoped server-side (see useDiagnosticForLearner), so it's
+  // just merged straight in.
   const areaIds = new Set(areas.map((a) => a.id));
-  const rows = (rowsData || []).filter((row) => areaIds.has(row.issue.learningAreaId));
+  const areaRows = (rowsData || []).filter((row) => areaIds.has(row.issue.learningAreaId));
+  const rows = stageRow ? [stageRow, ...areaRows] : areaRows;
   // "pending" = still blocks the gate (not yet graded). "actionable" = the subset the learner
   // can actually do something with right now; the rest ("submitted") is waiting on a teacher.
   const pending = rows.filter((row) => !isGraded(row));
   const actionable = pending.filter(needsLearnerAction);
   const awaitingGradingCount = pending.length - actionable.length;
-  if (totalRef.current === null && pending.length > 0) totalRef.current = pending.length;
+  // Gated on !rowsLoading (both the Stage and Learning-Area queries, not just one) — otherwise,
+  // since they resolve independently, a render where only one has landed yet would lock in a
+  // count that undercounts the other, permanently showing "Diagnostic 1 of 1" for a learner who
+  // actually has 2 outstanding.
+  if (totalRef.current === null && !rowsLoading && pending.length > 0) totalRef.current = pending.length;
 
   // Already have something pending to show (actionable or awaiting grading)? Render it
   // immediately — never wait on the ensure top-up once real data has arrived, so a slow/failed
@@ -183,10 +213,21 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   // to run — otherwise a brand-new enrollment (rows still empty on the very first fetch) would
   // release the gate before its diagnostic even got issued.
   const nothingToShow = ensureSettled && !rowsLoading && pending.length === 0;
+  // Same StrictMode subscription hazard as ensureIssuedAsync above: driving this off mutate()'s
+  // own onSuccess left a real, reproduced bug — the POST lands and the hub's
+  // onboardingCompletedAt genuinely gets set server-side, but the dev-mode mount→cleanup→remount
+  // cycle can tear this component down before that onSuccess (and so the cache patch that would
+  // release the gate) is delivered, leaving the learner staring at this component's `return null`
+  // below forever, with no error anywhere, until a manual reload happens to catch the now-true
+  // server state. mutateAsync + a plain Promise chain sidesteps that subscription entirely.
   useEffect(() => {
-    if (nothingToShow && !completing && hub?.id) markComplete({ learnerId: learner.id, hubId: hub.id }, { onSuccess: onComplete });
+    if (!nothingToShow || hasMarkedComplete.current || !hub?.id) return;
+    hasMarkedComplete.current = true;
+    markCompleteAsync({ learnerId: learner.id, hubId: hub.id })
+      .then(() => onComplete())
+      .catch(() => { hasMarkedComplete.current = false; });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nothingToShow]);
+  }, [nothingToShow, hub?.id]);
 
   // Nothing left for the learner to act on, but at least one diagnostic is still waiting on a
   // teacher's grade — poll in the background so the gate clears itself the moment grading
@@ -226,7 +267,7 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
         row={current}
         index={doneCount}
         total={total}
-        learningAreaName={areaNameById.get(current.issue.learningAreaId)}
+        contextLabel={current.issue.learningAreaId ? areaNameById.get(current.issue.learningAreaId) : stageNameById.get(current.issue.ageCategoryId)}
         onDone={() => refetch()}
       />
     </div>

@@ -7,7 +7,7 @@ const KEYS = {
   roster:         (issueId)   => ["assessment-issues", issueId, "roster"],
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   submission:     (id)        => ["assessment-submissions", id],
-  diagnostic:     (learnerId) => ["assessment-issues", "diagnostic", learnerId],
+  diagnostic:     (learnerId, curriculumId) => ["assessment-issues", "diagnostic", learnerId, curriculumId || null],
   learningAreaDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "learning-areas", learnerId],
   indicatorProgress: (learnerId, curriculumId) => ["assessment-issues", "indicator-progress", learnerId, curriculumId || null],
 };
@@ -92,12 +92,14 @@ export function useSubmitAssessment() {
   });
 }
 
-// Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class
-// involved) — drives the Diagnostic Assessment card on LearnerViewPage.
-export function useDiagnosticForLearner(learnerId) {
+// A specific learner's auto-issued Stage diagnostic (standalone, no class involved) — drives
+// the Diagnostic Assessment card on LearnerViewPage (unscoped there, matching its single-hub
+// view), and the learner-portal's first-login gate (curriculumId passed so a Stage diagnostic
+// from a different hub never leaks into the wrong hub's gate).
+export function useDiagnosticForLearner(learnerId, curriculumId = null) {
   return useQuery({
-    queryKey: KEYS.diagnostic(learnerId),
-    queryFn:  () => assessmentSubmissionApi.getDiagnosticForLearner(learnerId),
+    queryKey: KEYS.diagnostic(learnerId, curriculumId),
+    queryFn:  () => assessmentSubmissionApi.getDiagnosticForLearner(learnerId, curriculumId),
     enabled:  !!learnerId,
   });
 }

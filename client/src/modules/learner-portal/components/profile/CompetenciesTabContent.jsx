@@ -4,29 +4,23 @@ import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { iconFor } from "./competencyIcons";
 import { useLearnerIndicatorProgress } from "../../../assessments/hooks/useAssessmentSubmission";
 import { useLearnerCompetencyScores, useLearnerBandProgress } from "../../../curriculum/hooks/useCompetencies";
-import { competencyPercent } from "../../utils/competencyProgress";
 
+// percent is null (renders "Not yet scored") until the curriculum's Assessment Types have real
+// competencyMappings configured on their Score Evidence panel (Engine 2 has nothing to
+// distribute yet) — that's a real, honest state, not a bug, so it's shown rather than hidden.
 function ProgressBadge({ percent }) {
-  if (percent == null) return null;
-  const color = percent >= 60 ? "#059669" : "#DC2626";
+  const color = percent == null ? T.inkFaint : percent >= 60 ? "#059669" : "#DC2626";
   return (
-    <span style={{ fontSize: 11.5, fontWeight: 700, color, backgroundColor: `${color}12`, border: `1px solid ${color}35`, borderRadius: 20, padding: "2px 9px", whiteSpace: "nowrap", flexShrink: 0 }}>
-      {percent}%
+    <span style={{ fontSize: 11.5, fontWeight: 700, color, backgroundColor: percent == null ? "transparent" : `${color}12`, border: percent == null ? "none" : `1px solid ${color}35`, borderRadius: 20, padding: percent == null ? 0 : "2px 9px", whiteSpace: "nowrap", flexShrink: 0 }}>
+      {percent == null ? "Not yet scored" : `${percent}%`}
     </span>
   );
 }
 
-// The curriculum's own weighted score for this competency (Evidence Type → Assessment Type →
-// Engine 1/2/5 → Engine 3's band), a different number from ProgressBadge's flat indicator-marks
-// pool above — shows nothing if the curriculum hasn't configured competency mappings on any
-// Assessment Type yet (Engine 2 has nothing to distribute), rather than a misleading 0%.
 function BandBadge({ scoreEntry }) {
   if (!scoreEntry?.band) return null;
   return (
-    <span
-      title={`Curriculum score: ${scoreEntry.score}%`}
-      style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0 }}
-    >
+    <span style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0 }}>
       {scoreEntry.band.name}
     </span>
   );
@@ -35,7 +29,11 @@ function BandBadge({ scoreEntry }) {
 function CompetencyRow({ competency, isOpen, onToggle, progressByIndicator, scoreEntry }) {
   const Icon = iconFor(competency.name);
   const indicators = competency.indicators || [];
-  const overallPercent = competencyPercent(indicators, progressByIndicator);
+  // The curriculum's own weighted score (Evidence Type → Assessment Type → scoring engines,
+  // configured on the curriculum's Score Evidence panel) — the only source of truth for this
+  // header percent. Per-indicator raw marks are still shown below when expanded, but must never
+  // be averaged back into an overall percent here — that bypasses the curriculum's weighting.
+  const overallPercent = scoreEntry?.score ?? null;
 
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
@@ -130,18 +128,17 @@ function BandProgressSection({ curriculumId, learnerId }) {
 }
 
 // The full competency taxonomy for this learner's curriculum — names, descriptions, and base
-// indicators are real (from the global competency catalog), each now paired with this
-// learner's real accumulating progress: marks earned vs. possible per indicator, summed across
-// every graded assessment that tagged it (see server's getLearnerIndicatorProgress) — a
-// competency/indicator with no attempts yet simply shows no percent.
+// indicators are real (from the global competency catalog). Each competency's headline percent
+// (CompetencyRow's ProgressBadge/BandBadge) is the curriculum's own weighted score — computed
+// server-side from this learner's graded work via the curriculum's configured Evidence Weights
+// → Assessment Type Weights → scoring engines (see competency.service.js). The raw per-indicator
+// marks fetched below are shown only in each row's expanded detail, never averaged into the
+// headline percent — that would bypass the curriculum's configured weighting.
 export default function CompetenciesTabContent({ competencies, isLoading, learnerId, curriculumId }) {
   const [openId, setOpenId] = useState(null);
   const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId, curriculumId);
   const progressByIndicator = useMemo(() => new Map(progressRows.map((r) => [r.indicatorId, r])), [progressRows]);
 
-  // The curriculum's own weighted Evidence/Assessment-Type score + band per competency — a
-  // second, genuinely different number from the flat indicator-marks pool above. Empty until
-  // the curriculum's Assessment Types have real competencyMappings configured (see BandBadge).
   const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
   const scoreByCompetencyId = useMemo(() => new Map(scoreRows.map((r) => [r.competencyId, r])), [scoreRows]);
 

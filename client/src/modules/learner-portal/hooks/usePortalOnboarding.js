@@ -29,9 +29,11 @@ export function useMarkHubOnboardingComplete() {
       // of the hub still shows onboardingCompletedAt unset, rendering neither the gate nor the
       // real portal until that refetch happens to land. Patching the cache directly with the
       // already-known result closes that window instead of hoping the refetch is fast.
+      // learnerApi.getHubs already unwraps the response to a plain array (`r.data.data`), so the
+      // cached value here IS that array — not an envelope with its own `.data` — map it directly.
       qc.setQueryData(LEARNER_KEYS.hubs(learnerId), (old) => {
-        if (!old?.data) return old;
-        return { ...old, data: old.data.map((h) => (h.id === hubId ? { ...h, onboardingCompletedAt: new Date().toISOString() } : h)) };
+        if (!Array.isArray(old)) return old;
+        return old.map((h) => (h.id === hubId ? { ...h, onboardingCompletedAt: new Date().toISOString() } : h));
       });
     },
   });

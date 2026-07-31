@@ -1,6 +1,6 @@
 import { T } from "./theme";
 
-export const PROFILE_TABS = ["Overview", "Competencies", "Learning Journey", "Evidence Portfolio", "Assessments", "Reports", "Badges", "Timeline"];
+export const PROFILE_TABS = ["Overview", "Competencies", "Learning Journey", "Assessments", "Reports"];
 
 export default function ProfileTabs({ active, onChange }) {
   return (

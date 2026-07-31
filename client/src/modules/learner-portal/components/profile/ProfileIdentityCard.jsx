@@ -1,4 +1,4 @@
-import { FiEdit2, FiStar, FiZap } from "react-icons/fi";
+import { FiEdit2, FiStar } from "react-icons/fi";
 import { T, cardStyle, NotOnRecord } from "./theme";
 import Avatar from "../../../../components/ui/Avatar";
 
@@ -23,15 +23,6 @@ function StatusPill({ eyebrow, value, sub, icon }) {
   );
 }
 
-// DCF ID is a real, deterministic value derived from this learner's actual record (creation
-// year + a slice of their real database id) — not a fabricated external registry number, just
-// a friendlier display format for data that already exists.
-function deriveDcfId(learner) {
-  if (!learner?.id) return null;
-  const year = learner.createdAt ? new Date(learner.createdAt).getFullYear() : new Date().getFullYear();
-  return `DCF-${year}-${learner.id.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
-}
-
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
   const dob = new Date(dateOfBirth);
@@ -44,7 +35,6 @@ function computeAge(dateOfBirth) {
 }
 
 export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
-  const dcfId = deriveDcfId(learner);
   const age = computeAge(learner.dateOfBirth);
 
   return (
@@ -73,7 +63,7 @@ export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
           </h1>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px 20px" }}>
             <MetaRow label="Age" value={age != null ? age : <NotOnRecord />} />
-            <MetaRow label="DCF ID" value={dcfId || <NotOnRecord />} />
+            <MetaRow label="DCF ID" value={learner.registrationNumber || <NotOnRecord />} />
             <MetaRow label="Nationality" value={learner.nationality || <NotOnRecord />} />
             <MetaRow label="Languages" value={learner.languages || <NotOnRecord />} />
             <MetaRow label="Username" value={learner.username || <NotOnRecord />} />
@@ -88,7 +78,6 @@ export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
           sub={stage?.ageRange ? `(${stage.ageRange})` : "Set by a teacher or admin"}
         />
         <StatusPill eyebrow="Current Level Summary" value={band?.name || "Not yet available"} icon={<FiStar size={13} />} />
-        <StatusPill eyebrow="Learning Streak" value="Not tracked yet" icon={<FiZap size={13} />} />
       </div>
     </div>
   );

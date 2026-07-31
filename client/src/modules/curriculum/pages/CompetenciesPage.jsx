@@ -32,7 +32,6 @@ import {
   useDeletePerformanceBand,
   useReorderPerformanceBands,
   usePopulatedIndicators,
-  useCompetencyScores,
   useBandProgress,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
@@ -41,6 +40,38 @@ import { learningAreasApi as catalogLearningAreasApi } from "../../settings/lear
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CoursePickerField from "../../courses/components/CoursePickerField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
+import ConfirmDialog from "../components/ConfirmDialog";
+
+/* ── Shared delete-confirmation helper ─────────────────────────────────────
+   Every panel on this page fires its delete mutation straight from the trash
+   icon with no confirmation — used in each panel below so a mis-click can't
+   silently destroy configuration. */
+function useConfirmDelete() {
+  const [target, setTarget] = useState(null); // { title, message, onConfirm }
+  const confirmDialog = (
+    <ConfirmDialog
+      isOpen={!!target}
+      title={target?.title || ""}
+      message={target?.message || ""}
+      confirmLabel="Delete"
+      variant="danger"
+      onConfirm={() => { target?.onConfirm(); setTarget(null); }}
+      onCancel={() => setTarget(null)}
+    />
+  );
+  return { requestDelete: setTarget, confirmDialog };
+}
+
+// Shown wherever a query fails, in place of the panel's usual empty state — without this, a
+// failed request (network drop, expired session, 500) renders identically to "nothing
+// configured yet," and an admin has no way to tell the difference.
+function ErrorNotice({ message = "Couldn't load this — try refreshing the page." }) {
+  return (
+    <div style={{ padding: "16px 18px", borderRadius: 10, backgroundColor: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", fontSize: 13 }}>
+      {message}
+    </div>
+  );
+}
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 
@@ -534,10 +565,11 @@ function ImportLearningAreaDropdown({ available, onImport, isPending }) {
 }
 
 function LearningAreasPanel({ curriculumId }) {
-  const { data: areas = [], isLoading } = useLearningAreas(curriculumId);
+  const { data: areas = [], isLoading, isError } = useLearningAreas(curriculumId);
   const { mutate: create, isPending: creating } = useCreateLearningArea(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateLearningArea(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteLearningArea(curriculumId);
+  const { requestDelete, confirmDialog } = useConfirmDelete();
   const { data: catalogAreas = [] } = useCatalogLearningAreas();
   const { mutate: importArea, isPending: importing } = useImportLearningArea(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
@@ -624,9 +656,11 @@ function LearningAreasPanel({ curriculumId }) {
   }
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
+  if (isError) return <ErrorNotice message="Couldn't load Learning Areas — try refreshing the page." />;
 
   return (
     <div className="cp-card">
+      {confirmDialog}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Areas</h2>
@@ -773,7 +807,17 @@ function LearningAreasPanel({ curriculumId }) {
                   <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
-                  <button type="button" className="cp-icon-btn danger" onClick={() => remove(area.id)} disabled={deleting} title="Delete">
+                  <button
+                    type="button"
+                    className="cp-icon-btn danger"
+                    onClick={() => requestDelete({
+                      title: `Delete "${area.name}"?`,
+                      message: "This learning area will be permanently removed, along with its course sequence and placement thresholds. This cannot be undone.",
+                      onConfirm: () => remove(area.id),
+                    })}
+                    disabled={deleting}
+                    title="Delete"
+                  >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                 </div>
@@ -864,11 +908,11 @@ function LearningAreasPanel({ curriculumId }) {
  * placement dropdown). */
 
 function LearningJourneyPanel({ curriculumId }) {
-  const { data: areas = [], isLoading: areasLoading } = useLearningAreas(curriculumId);
+  const { data: areas = [], isLoading: areasLoading, isError: areasError } = useLearningAreas(curriculumId);
   const { mutate: updateArea } = useUpdateLearningArea(curriculumId);
-  const { data: stages = [], isLoading: stagesLoading } = useAgeCategories(curriculumId);
+  const { data: stages = [], isLoading: stagesLoading, isError: stagesError } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
-  const { data: allBands = [], isLoading: bandsLoading } = usePerformanceBands(curriculumId);
+  const { data: allBands = [], isLoading: bandsLoading, isError: bandsError } = usePerformanceBands(curriculumId);
   const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
   const { mutate: removeBand, isPending: deletingBand } = useDeletePerformanceBand(curriculumId);
   const allCourses = coursesResponse?.data || [];
@@ -877,6 +921,7 @@ function LearningJourneyPanel({ curriculumId }) {
   const areasWithCourses = areas.filter((a) => (a.courses || []).length > 0);
 
   if (areasLoading || stagesLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
+  if (areasError || stagesError || bandsError) return <ErrorNotice message="Couldn't load Learning Journey — try refreshing the page." />;
 
   // Reused by moveCourse and setStageDefaultCourse — every rewrite of courseSequence must
   // carry each entry's existing defaultForStages through, or reordering would silently wipe them.
@@ -1032,6 +1077,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
   const [adding, setAdding]     = useState(false);
   const [courseId, setCourseId] = useState(ids[0] || "");
   const [minScore, setMinScore] = useState("");
+  const { requestDelete, confirmDialog } = useConfirmDelete();
   const areaColor = area.color || "#25476a";
   const sorted = [...bands].sort((a, b) => a.minScore - b.minScore);
 
@@ -1047,6 +1093,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
 
   return (
     <div style={{ border: "1px solid #EEF1F5", borderRadius: "12px", padding: "14px 16px" }}>
+      {confirmDialog}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor }} />
@@ -1071,7 +1118,17 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", background: "#FAFCFF" }}>
               <span style={{ fontSize: "11px", fontWeight: "800", color: areaColor, minWidth: "56px" }}>{b.minScore}%+</span>
               <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#1F2937" }}>{courseNameById.get(b.courseId) || "Unknown course"}</span>
-              <button type="button" className="cp-icon-btn danger" disabled={deleting} onClick={() => onDelete(b.id)} title="Remove threshold">
+              <button
+                type="button"
+                className="cp-icon-btn danger"
+                disabled={deleting}
+                onClick={() => requestDelete({
+                  title: "Remove this placement threshold?",
+                  message: `Learners will no longer be placed into "${courseNameById.get(b.courseId) || "this course"}" at ${b.minScore}%+ on this area's diagnostic. This cannot be undone.`,
+                  onConfirm: () => onDelete(b.id),
+                })}
+                title="Remove threshold"
+              >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
@@ -1109,8 +1166,12 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
 
 /* ── CardKebab ──────────────────────────────────────────────────────────── */
 
-function CardKebab({ onEdit, onDelete, disabled }) {
+// `itemLabel`/`itemType` (e.g. "Continuous Assessment" / "assessment type") drive the delete
+// confirmation copy — every caller of this kebab previously fired onDelete() straight from the
+// menu click with no confirmation at all, so a mis-click permanently destroyed configuration.
+function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item" }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -1149,7 +1210,7 @@ function CardKebab({ onEdit, onDelete, disabled }) {
           <button
             type="button"
             className="cp-card-menu-item cp-card-menu-item--danger"
-            onClick={() => { setOpen(false); onDelete(); }}
+            onClick={() => { setOpen(false); setConfirming(true); }}
             disabled={disabled}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
@@ -1162,6 +1223,16 @@ function CardKebab({ onEdit, onDelete, disabled }) {
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirming}
+        title={`Delete "${itemLabel}"?`}
+        message={`This ${itemType} will be permanently removed. This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => { setConfirming(false); onDelete(); }}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }
@@ -1251,8 +1322,9 @@ function AddCompetencyDropdown({ available, onAdd, isPending }) {
   );
 }
 
-function CompetencyRemoveMenu({ onRemove }) {
+function CompetencyRemoveMenu({ onRemove, competencyName }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -1274,7 +1346,7 @@ function CompetencyRemoveMenu({ onRemove }) {
           <button
             type="button"
             className="cp-card-menu-item cp-card-menu-item--danger"
-            onClick={() => { setOpen(false); onRemove(); }}
+            onClick={() => { setOpen(false); setConfirming(true); }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
               <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1283,23 +1355,31 @@ function CompetencyRemoveMenu({ onRemove }) {
           </button>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={confirming}
+        title={`Remove "${competencyName}"?`}
+        message="This competency will no longer be used in this curriculum — any Performance Band or Assessment Type configuration tied to it here will lose that link. This cannot be undone."
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => { setConfirming(false); onRemove(); }}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }
 
 function CompetencyPickerPanel({ curriculumId }) {
-  const { data: allComps = [], isLoading: loadingAll } = useGlobalCompetencies();
-  const { data: linkedComps = [], isLoading: loadingLinked } = useCompetencies(curriculumId);
+  const { data: allComps = [], isLoading: loadingAll, isError: errorAll } = useGlobalCompetencies();
+  const { data: linkedComps = [], isLoading: loadingLinked, isError: errorLinked } = useCompetencies(curriculumId);
   const { mutate: link, isPending: linking } = useLinkCompetency(curriculumId);
   const { mutate: unlink } = useUnlinkCompetency(curriculumId);
-  const { data: competencyScores = [] } = useCompetencyScores(curriculumId);
-  const scoreByCompetencyId = new Map(competencyScores.map((s) => [s.competencyId, s]));
 
   const linkedIds = new Set(linkedComps.map((c) => c.id));
   const availableComps = allComps.filter((c) => !linkedIds.has(c.id));
   const isLoading = loadingAll || loadingLinked;
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (errorAll || errorLinked) return <ErrorNotice message="Couldn't load Competencies — try refreshing the page." />;
 
   return (
     <div className="cp-card">
@@ -1343,7 +1423,6 @@ function CompetencyPickerPanel({ curriculumId }) {
               comp={comp}
               color={COMP_PALETTE[idx % COMP_PALETTE.length]}
               onRemove={() => unlink(comp.id)}
-              score={scoreByCompetencyId.get(comp.id)}
             />
           ))}
         </div>
@@ -1352,7 +1431,7 @@ function CompetencyPickerPanel({ curriculumId }) {
   );
 }
 
-function LinkedCompetencyCard({ comp, color, onRemove, score }) {
+function LinkedCompetencyCard({ comp, color, onRemove }) {
   const initial = comp.name.charAt(0).toUpperCase();
   const indicators = comp.indicators || [];
   const [open, setOpen] = useState(false);
@@ -1372,36 +1451,8 @@ function LinkedCompetencyCard({ comp, color, onRemove, score }) {
           <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35, wordBreak: "break-word" }}>
             {comp.name}
           </p>
-          {score ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginTop: "5px" }}>
-              <span style={{
-                display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: "20px",
-                fontSize: "11px", fontWeight: "800", color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
-              }}>
-                {score.score}%
-              </span>
-              {score.level && (
-                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>{score.level.name}</span>
-              )}
-              {score.band && (
-                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>· {score.band.name}</span>
-              )}
-            </div>
-          ) : (
-            <div style={{ marginTop: "5px" }}>
-              <span
-                style={{
-                  display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: "20px",
-                  fontSize: "11px", fontWeight: "800", color: "#9CA3AF", background: "#F3F4F6", border: "1.5px solid #E5E7EB",
-                }}
-                title="No score yet — set up this curriculum's Assessment Framework (Evidence Type categories + competency mappings) and enter indicator marks to compute one"
-              >
-                — %
-              </span>
-            </div>
-          )}
         </div>
-        <CompetencyRemoveMenu onRemove={onRemove} />
+        <CompetencyRemoveMenu onRemove={onRemove} competencyName={comp.name} />
       </div>
 
       <div style={{ flex: 1 }}>
@@ -1449,8 +1500,9 @@ function LinkedCompetencyCard({ comp, color, onRemove, score }) {
 
 /* ── Assessment Framework helpers ───────────────────────────────────────── */
 
-function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, onAdd, renderCard, mode, formContent }) {
+function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel, items, isLoading, isError, onAdd, renderCard, mode, formContent }) {
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (isError) return <ErrorNotice message={`Couldn't load ${title} — try refreshing the page.`} />;
   return (
     <div>
       {/* ── Modal overlay for add / edit form ── */}
@@ -1512,7 +1564,7 @@ const BEHAVIOR_OPTIONS = [
 const BEHAVIOR_COLORS = { diagnostic: "#feb139", formative: "#38aae1", summative: "#25476a" };
 
 function AssessmentTypesSubPanel({ curriculumId }) {
-  const { data: types = [], isLoading } = useAssessmentTypes(curriculumId);
+  const { data: types = [], isLoading, isError } = useAssessmentTypes(curriculumId);
   const { data: evidences = [] }        = useEvidenceTypes(curriculumId);
   const { data: areas = [] }            = useLearningAreas(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
@@ -1620,7 +1672,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
   return (
     <CrudPanel
       title="Assessment Types" subtitle={types.length === 0 ? "Define the categories of assessment used in this curriculum" : `${types.length} type${types.length !== 1 ? "s" : ""} defined`}
-      emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types}
+      emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types} isLoading={isLoading} isError={isError}
       emptyText="Create assessment types like 'Continuous Assessment' or 'End of Term Test'."
       renderCard={(t, idx) => {
         const color = BEHAVIOR_COLORS[t.behaviorType] || "#25476a";
@@ -1653,7 +1705,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                   )}
                 </div>
               </div>
-              <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} />
+              <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} itemLabel={t.name} itemType="assessment type" />
             </div>
             <div style={{ flex: 1 }}>
               {t.description && (
@@ -1734,7 +1786,7 @@ const EVIDENCE_CATEGORY_OPTIONS = [
 ];
 
 function EvidenceTypesSubPanel({ curriculumId }) {
-  const { data: evidences = [], isLoading } = useEvidenceTypes(curriculumId);
+  const { data: evidences = [], isLoading, isError } = useEvidenceTypes(curriculumId);
   const { data: types = [] }               = useAssessmentTypes(curriculumId);
   const { mutate: create, isPending: creating } = useCreateEvidenceType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateEvidenceType(curriculumId);
@@ -1834,7 +1886,7 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   return (
     <CrudPanel
       title="Evidence Types" subtitle={evidences.length === 0 ? "Define the evidence methods used to assess learning" : `${evidences.length} evidence type${evidences.length !== 1 ? "s" : ""} defined`}
-      emptyIcon="🔬" emptyTitle="No evidence types yet" addLabel="Add Evidence Type" mode={mode} onAdd={openAdd} formContent={form} items={evidences}
+      emptyIcon="🔬" emptyTitle="No evidence types yet" addLabel="Add Evidence Type" mode={mode} onAdd={openAdd} formContent={form} items={evidences} isLoading={isLoading} isError={isError}
       emptyText="Add evidence types like Quiz, Assignment, Project, or Teacher Observation."
       renderCard={(e, idx) => {
         const color = EVIDENCE_PALETTE[idx % EVIDENCE_PALETTE.length];
@@ -1864,7 +1916,7 @@ function EvidenceTypesSubPanel({ curriculumId }) {
                   )}
                 </div>
               </div>
-              <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} />
+              <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} itemLabel={e.name} itemType="evidence type" />
             </div>
             <div style={{ flex: 1 }}>
               {e.description && (
@@ -1918,8 +1970,8 @@ function EvidenceTypesSubPanel({ curriculumId }) {
 /* ── ScoreEvidenceSubPanel ──────────────────────────────────────────────── */
 
 function ScoreEvidenceSubPanel({ curriculumId }) {
-  const { data: types     = [], isLoading: typesLoading } = useAssessmentTypes(curriculumId);
-  const { data: evidences = [], isLoading: evLoading } = useEvidenceTypes(curriculumId);
+  const { data: types     = [], isLoading: typesLoading, isError: typesError } = useAssessmentTypes(curriculumId);
+  const { data: evidences = [], isLoading: evLoading, isError: evError } = useEvidenceTypes(curriculumId);
   const { mutate: saveGlobal, isPending: saving }         = useUpdateGlobalScoring(curriculumId);
 
   // typeConfigs: { [atId]: { [etId]: { selected: bool, contribution } } }
@@ -2019,6 +2071,7 @@ function ScoreEvidenceSubPanel({ curriculumId }) {
 
 
   if (typesLoading || evLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (typesError || evError) return <ErrorNotice message="Couldn't load Score Evidence — try refreshing the page." />;
   if (types.length === 0) return (
     <div className="cp-empty">
       <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Assessment Types Yet</p>
@@ -2393,7 +2446,7 @@ function AssessmentsPanel({ curriculumId }) {
 const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
 
 function AgeCategoriesPanel({ curriculumId }) {
-  const { data: cats = [], isLoading } = useAgeCategories(curriculumId);
+  const { data: cats = [], isLoading, isError } = useAgeCategories(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAgeCategory(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
@@ -2440,6 +2493,7 @@ function AgeCategoriesPanel({ curriculumId }) {
   }
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (isError) return <ErrorNotice message="Couldn't load Developmental Stages — try refreshing the page." />;
 
   return (
     <div>
@@ -2493,7 +2547,7 @@ function AgeCategoriesPanel({ curriculumId }) {
             <div>
               <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                The age range of learners in this stage — used to build the Identity Matrix below.
+                A learner whose age falls in this range is auto-placed at this stage, and auto-issued its diagnostic assessment below (if one is set). Leave blank to match every age.
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
@@ -2570,7 +2624,7 @@ function AgeCategoriesPanel({ curriculumId }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{cat.name}</p>
-                    {(cat.minAge != null || cat.maxAge != null) && (
+                    {cat.minAge != null || cat.maxAge != null ? (
                       <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
                         {cat.minAge != null && cat.maxAge != null
                           ? `${cat.minAge}–${cat.maxAge} yrs`
@@ -2578,9 +2632,13 @@ function AgeCategoriesPanel({ curriculumId }) {
                           ? `${cat.minAge}+ yrs`
                           : `up to ${cat.maxAge} yrs`}
                       </p>
+                    ) : (
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706" }}>
+                        ⚠ No age range set — matches every learner's age
+                      </p>
                     )}
                   </div>
-                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} />
+                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
                 </div>
                 <div style={{ flex: 1 }}>
                   {cat.description ? (
@@ -2591,9 +2649,13 @@ function AgeCategoriesPanel({ curriculumId }) {
                     <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
                   )}
                 </div>
-                {cat.diagnosticAssessmentId && (
+                {cat.diagnosticAssessmentId ? (
                   <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669" }}>
                     🩺 {assessmentNameById[cat.diagnosticAssessmentId] || "Diagnostic assigned"}
+                  </p>
+                ) : (
+                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706" }}>
+                    ⚠ No diagnostic attached — learners entering this stage won't be issued anything
                   </p>
                 )}
               </div>
@@ -2771,7 +2833,7 @@ function PerformanceBandsPanel({ curriculumId }) {
   // Learning Journey reuses this same model for per-Learning-Area placement thresholds
   // (learningAreaId set) — exclude those here so this curriculum-wide Progress Arc view
   // only ever shows its own bands.
-  const { data: allBands = [], isLoading }         = usePerformanceBands(curriculumId);
+  const { data: allBands = [], isLoading, isError } = usePerformanceBands(curriculumId);
   const bands = allBands.filter((b) => !b.learningAreaId);
   const { mutate: create, isPending: creating }    = useCreatePerformanceBand(curriculumId);
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
@@ -2883,6 +2945,7 @@ function PerformanceBandsPanel({ curriculumId }) {
   }
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (isError) return <ErrorNotice message="Couldn't load Performance Bands — try refreshing the page." />;
 
   return (
     <div>
@@ -3121,7 +3184,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                           );
                         })()}
                       </div>
-                      <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} />
+                      <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} itemLabel={band.name} itemType="performance band" />
                     </div>
 
                     {band.description && (

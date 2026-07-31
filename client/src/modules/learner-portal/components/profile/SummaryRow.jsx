@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { FiCheckCircle, FiClock, FiSend, FiShare2 } from "react-icons/fi";
+import { FiCheckCircle, FiClock } from "react-icons/fi";
 import { useIssuedForLearner } from "../../../assessments/hooks/useAssessmentSubmission";
-import { T, cardStyle, sectionHeaderStyle, PreviewTag } from "./theme";
+import { T, cardStyle, sectionHeaderStyle } from "./theme";
 
 function Stage({ label, sub, done }) {
   return (
@@ -80,24 +80,6 @@ export default function SummaryRow({ classId } = {}) {
             <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: T.accent }}>{avgScore}%</p>
           </>
         )}
-      </div>
-
-      {/* Share & Verify — cosmetic placeholder, no verification backend exists yet */}
-      <div style={{ ...cardStyle(), padding: 20, flex: 1, minWidth: 260, opacity: 0.7 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <h2 style={sectionHeaderStyle()}>Share & Verify</h2>
-          <PreviewTag />
-        </div>
-        <p style={{ margin: "0 0 16px", fontSize: 12.5, color: T.inkMuted, lineHeight: 1.5 }}>
-          Employers and institutions will be able to verify this profile using a DCF Passport, once that feature ships.
-        </p>
-        <button
-          type="button"
-          disabled
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", backgroundColor: "#E5E7EB", color: T.inkMuted, border: "none", borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: "not-allowed" }}
-        >
-          <FiShare2 size={14} /> Coming soon
-        </button>
       </div>
     </div>
   );
