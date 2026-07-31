@@ -12,7 +12,7 @@ const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
-const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine, combineAssessmentTypeScores } = require("./scoring-engines");
+const { runAssessmentEngine, runCompetencyEngine, runProgressArcEngine, runIndicatorProgressEngine } = require("./scoring-engines");
 const IndicatorAchievementModel = require("./indicator-achievement.model");
 const SessionModel                   = require("../../courses/session.model");
 const { getSessionAssessmentIds } = require("../../courses/sessionAssessment.utils");
@@ -738,99 +738,59 @@ const CompetencyService = {
     return IndicatorAchievementModel.upsert(curriculumId, competencyId, indicatorId, marksEarned);
   },
 
-  // Shared by getEvidenceTypeScores (curriculum-wide manual earned map) and
-  // getLearnerEvidenceTypeScores (real per-learner earned map, see below) — everything about
-  // "possible" marks per Evidence Type is identical either way; only where "earned" comes from
-  // differs, so that's the one thing callers pass in.
-  _evidenceTypeScoresFromEarnedMap(curriculumId, earnedByIndicator) {
-    const evidenceTypes = EvidenceTypeModel.findByCurriculumId(curriculumId);
-    const assessmentIds = this.getAttachedAssessmentIds(curriculumId);
-
-    return evidenceTypes.map((et) => {
-      if (!et.category) return { evidenceTypeId: et.id, score: 0 };
-
-      let possible = 0;
-      const seenIndicatorIds = new Set();
-      assessmentIds.forEach((aid) => {
-        const assessment = BuilderAssessmentModel.findById(aid);
-        if (!assessment || assessment.type !== et.category) return;
-        const scoredEntries = [...(assessment.items || []), ...(assessment.rubric || [])];
-        scoredEntries.forEach((entry) => {
-          (entry.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
-            possible += Number(marks) || 0;
-            seenIndicatorIds.add(indicatorId);
-          });
-        });
-      });
-
-      const earned = [...seenIndicatorIds].reduce((sum, indId) => sum + (earnedByIndicator.get(indId) || 0), 0);
-      const score = possible > 0 ? Math.min(100, Math.round((earned / possible) * 100 * 10) / 10) : 0;
-      return { evidenceTypeId: et.id, score };
-    });
-  },
-
-  // Auto-computed score per Evidence Type (0-100) — pools indicator marks (earned vs. possible)
-  // across every assessment attached to this curriculum whose type matches the Evidence Type's
-  // category. `possible` is recomputed here filtered to that category (NOT the same as
-  // getPopulatedIndicators' marksPossible, which pools every category together); `earned`
-  // reuses the same curriculum-wide, category-agnostic achievement value per indicator that
-  // also drives Progress Arc. This is the curriculum-admin preview — every learner gets the
-  // same number from this one. See getLearnerEvidenceTypeScores for the real per-learner version.
-  getEvidenceTypeScores(curriculumId) {
-    const earnedByIndicator = new Map(
-      IndicatorAchievementModel.findByCurriculumId(curriculumId).map((a) => [a.indicatorId, a.marksEarned])
-    );
-    return this._evidenceTypeScoresFromEarnedMap(curriculumId, earnedByIndicator);
-  },
-
-  // Real per-learner sibling of getEvidenceTypeScores — "earned" comes from this specific
-  // learner's actual graded submissions (AssessmentSubmissionService.getLearnerIndicatorProgress,
-  // the same live source already feeding the Competencies tab's flat indicator view) instead of
-  // the curriculum-wide manually-set achievement store, so every learner gets their own real score.
-  getLearnerEvidenceTypeScores(curriculumId, learnerId) {
-    // Required lazily — see the note near the top of this file on why (circular require with
-    // assessment-submission.service.js, which requires this file back for diagnostic placement).
-    const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
-    const progress = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId);
-    const earnedByIndicator = new Map(progress.map((p) => [p.indicatorId, p.marksEarned]));
-    return this._evidenceTypeScoresFromEarnedMap(curriculumId, earnedByIndicator);
-  },
-
-  // Shared by getCompetencyScores and getLearnerCompetencyScores — takes already-resolved
-  // evidence scores (curriculum-wide manual, or real per-learner) through the curriculum's
-  // actual Assessment Framework config: Engine 1 → Engine 2 per Assessment Type, combined across
-  // every Assessment Type by its own typeWeight (Engine 5), then resolved to a Progress Level +
-  // Performance Band (Engine 3).
-  _competencyScoresFromEvidenceScores(curriculumId, evidenceScores) {
+  // Shared by getCompetencyScores (curriculum-wide manual preview) and getLearnerCompetencyScores
+  // (real per-learner) — a competency's score is simply the % of its indicators' possible marks
+  // earned, classified into this curriculum's Progress Level + Performance Band (Engine 3). No
+  // separate evidence-to-competency mapping step is needed: an indicator belongs to exactly one
+  // competency (it's nested under one in the global catalog), and which indicators an assessment
+  // counts toward is already fixed at assessment-authoring time via indicatorMarks tagging — that
+  // tagging IS the competency mapping. `indicatorRows` is either getIndicatorAchievements' shared
+  // manual values (preview) or a real learner's getLearnerIndicatorProgress (live).
+  _competencyScoresFromIndicatorMarks(curriculumId, indicatorRows) {
     const competencies     = this.getCurriculumCompetencies(curriculumId);
-    const assessmentTypes  = AssessmentTypeModel.findByCurriculumId(curriculumId);
     const performanceBands = PerformanceBandModel.findByCurriculum(curriculumId).filter((b) => !b.learningAreaId);
     const progressLevels   = ProgressLevelModel.findByCurriculumId(curriculumId);
 
-    const perTypeResults = assessmentTypes.map((at) => {
-      const config = at.evidenceWeights || [];
-      const { breakdown } = runAssessmentEngine(evidenceScores, config);
-      const competencyScores = runCompetencyEngine(breakdown, config, competencies);
-      return { typeWeight: at.typeWeight || 0, competencyScores };
+    const byCompetency = new Map();
+    indicatorRows.forEach(({ competencyId, marksEarned, marksPossible }) => {
+      if (!competencyId) return;
+      const cur = byCompetency.get(competencyId) || { marksEarned: 0, marksPossible: 0 };
+      cur.marksEarned   += marksEarned || 0;
+      cur.marksPossible += marksPossible || 0;
+      byCompetency.set(competencyId, cur);
     });
 
-    const overall = combineAssessmentTypeScores(perTypeResults);
-    return runProgressArcEngine(overall, progressLevels, performanceBands);
+    // Only competencies with at least one attempted indicator get a score — the rest simply
+    // aren't in the returned array (the frontend shows "Not yet scored" for those), rather than a
+    // misleading 0%.
+    const competencyScores = competencies
+      .filter((c) => byCompetency.has(c.id))
+      .map((c) => {
+        const { marksEarned, marksPossible } = byCompetency.get(c.id);
+        const score = marksPossible > 0 ? Math.min(100, Math.round((marksEarned / marksPossible) * 100 * 10) / 10) : 0;
+        return { competencyId: c.id, name: c.name, score };
+      });
+
+    return runProgressArcEngine(competencyScores, progressLevels, performanceBands);
   },
 
-  // Real competency score pipeline (curriculum-admin preview — see getLearnerCompetencyScores
-  // for the real per-learner version): auto-computed Evidence Type scores (from real assessment
-  // marks) run through the curriculum's actual Assessment Framework config. Score Evidence's
-  // weights stay manually configured; only the evidence score itself is automatic.
+  // Curriculum-admin preview — every learner would see the same number from this one, since
+  // "earned" comes from the shared manually-set IndicatorAchievementModel store rather than any
+  // real learner's grading. See getLearnerCompetencyScores for the real per-learner version.
   getCompetencyScores(curriculumId) {
-    return this._competencyScoresFromEvidenceScores(curriculumId, this.getEvidenceTypeScores(curriculumId));
+    return this._competencyScoresFromIndicatorMarks(curriculumId, this.getIndicatorAchievements(curriculumId));
   },
 
-  // Real per-learner sibling of getCompetencyScores — the number this learner should actually
-  // see on their profile: their own graded work run through the curriculum's real Evidence Type
-  // → Assessment Type → Engine 1/2/5/3 pipeline, instead of the shared manual preview value.
+  // Real per-learner competency score — the number this learner should actually see on their
+  // profile: their own graded work (AssessmentSubmissionService.getLearnerIndicatorProgress, the
+  // same live source feeding the Competencies tab's flat indicator view), aggregated per
+  // competency and classified via Engine 3, instead of the shared manual preview value.
   getLearnerCompetencyScores(curriculumId, learnerId) {
-    return this._competencyScoresFromEvidenceScores(curriculumId, this.getLearnerEvidenceTypeScores(curriculumId, learnerId));
+    // Required lazily — see the note near the top of this file on why (circular require with
+    // assessment-submission.service.js, which requires this file back for diagnostic placement).
+    const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
+    const rows = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, curriculumId);
+    return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
   },
 
   // Live-data sibling of calculateIndicatorProgress — driven by what's actually persisted

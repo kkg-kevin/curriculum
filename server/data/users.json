@@ -560,11 +560,11 @@
   {
     "name": "Mama jane ",
     "email": "she@digifunzi.com",
-    "passwordHash": "$2b$10$.ivIOnRDw4Nntf6hcjh7ouw9nKSrxSksqW/oqkywpoPCw9eQUeSGa",
+    "passwordHash": "$2b$10$CBmr6UWUABW7OHQDVMhvOurbWfJ0B/Cxy0VscWtvsQyeNv.Z84dj.",
     "role": "learner",
     "id": "e22ef095-c884-4837-b12d-5cf3783bfdec",
     "createdAt": "2026-07-30T10:16:45.648Z",
-    "updatedAt": "2026-07-30T10:16:45.648Z"
+    "updatedAt": "2026-07-31T09:21:30.607Z"
   },
   {
     "name": "Mama kevin",
@@ -574,5 +574,41 @@
     "id": "250199eb-beb6-469c-8c10-2e8cbc4b9a50",
     "createdAt": "2026-07-30T10:25:15.110Z",
     "updatedAt": "2026-07-30T10:25:15.110Z"
+  },
+  {
+    "name": "kihara parent",
+    "email": "kiharaparent@digifunzi.com",
+    "passwordHash": "$2b$10$0IYwV.g6wEzPftuN2/p1Su0UwwRxdWJufAk7AKmHFn9lvdV.clmXu",
+    "role": "learner",
+    "id": "a4685f6b-a4b9-4ec7-a2e7-cb5d4046f71a",
+    "createdAt": "2026-07-31T09:46:40.747Z",
+    "updatedAt": "2026-07-31T09:46:40.747Z"
+  },
+  {
+    "name": "him parent ",
+    "email": "him@digifunzi.com",
+    "passwordHash": "$2b$10$kCZAiRy88cjoGIeOPZQSVeT7U0Hi8WLZz2G/FMODh8esfkfdYvw8y",
+    "role": "learner",
+    "id": "61343032-8fe4-460f-92da-f607039aade0",
+    "createdAt": "2026-07-31T09:52:49.328Z",
+    "updatedAt": "2026-07-31T09:52:49.328Z"
+  },
+  {
+    "name": "Test Guardian Gatecheck",
+    "email": "gatecheck@digifunzi.com",
+    "passwordHash": "$2b$10$PgCcdxz0RLHjoSBKIub0e./AQ/b/Iol9HgXH2K/ef8GOx.PGyGM4O",
+    "role": "learner",
+    "id": "a3cf03d8-1863-4149-b8bd-6d7d4daf2ab7",
+    "createdAt": "2026-07-31T10:14:11.695Z",
+    "updatedAt": "2026-07-31T10:14:11.695Z"
+  },
+  {
+    "name": "ali",
+    "email": "ali@digifunzi.com",
+    "passwordHash": "$2b$10$IA73POSAB9Ri4rE51KAonuRf59lWa8jk1mqTAgRFL2L3i5eqnqtZO",
+    "role": "learner",
+    "id": "9639405c-2b18-47a9-83e7-5438ea8a1b21",
+    "createdAt": "2026-07-31T10:46:53.217Z",
+    "updatedAt": "2026-07-31T10:46:53.217Z"
   }
 ]

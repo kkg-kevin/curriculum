@@ -113,5 +113,65 @@
     "updatedAt": "2026-07-31T07:15:35.734Z",
     "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
     "currentBandId": null
+  },
+  {
+    "id": "67f4c827-57ad-4e8a-98e0-64bf97f88ad3",
+    "learnerId": "31e5b9c3-1363-448c-8b75-0ab0a9035146",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "25595068-3131-425b-9843-6267d37982e4",
+    "admissionNumber": "SS-2026-005",
+    "status": "active",
+    "createdAt": "2026-07-31T09:02:16.035Z",
+    "updatedAt": "2026-07-31T09:43:17.969Z",
+    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
+    "onboardingCompletedAt": "2026-07-31T09:43:17.968Z"
+  },
+  {
+    "id": "ac3f616b-fa50-4f16-846f-2ff67a212e46",
+    "learnerId": "1bb83def-72c5-4903-ab5b-8eae7a2c36ea",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-007",
+    "status": "active",
+    "createdAt": "2026-07-31T09:52:57.962Z",
+    "updatedAt": "2026-07-31T09:53:13.864Z",
+    "currentStageId": "8f56e5ce-76e8-4696-a7d9-ae10fd5c6e51"
+  },
+  {
+    "id": "5e3e33fb-56d7-43ca-9a6f-98ba3e425ce6",
+    "learnerId": "1bb83def-72c5-4903-ab5b-8eae7a2c36ea",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "admissionNumber": "SS-2026-006",
+    "status": "active",
+    "createdAt": "2026-07-31T09:53:01.691Z",
+    "updatedAt": "2026-07-31T09:53:27.944Z",
+    "currentStageId": "79e1f87e-0601-40a5-968d-106b0f1739fb",
+    "onboardingCompletedAt": "2026-07-31T09:53:27.943Z"
+  },
+  {
+    "id": "7dc859b6-f84f-425d-9ad1-0c65e115cf17",
+    "learnerId": "bad63f69-da76-47d3-bd8d-4ea86692110b",
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "classId": "25595068-3131-425b-9843-6267d37982e4",
+    "admissionNumber": "SS-2026-007",
+    "status": "active",
+    "createdAt": "2026-07-31T10:14:11.708Z",
+    "updatedAt": "2026-07-31T10:41:23.262Z",
+    "currentStageId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
+    "currentBandId": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+    "onboardingCompletedAt": "2026-07-31T10:41:23.261Z"
+  },
+  {
+    "id": "5f48e9a8-922d-4fe4-b182-027e2911213e",
+    "learnerId": "c8fba42c-2285-4082-bb24-f9d5ea76014c",
+    "hubId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "classId": "test-class-001",
+    "admissionNumber": "TES-2026-008",
+    "status": "active",
+    "createdAt": "2026-07-31T10:47:05.058Z",
+    "updatedAt": "2026-07-31T10:48:50.930Z",
+    "onboardingCompletedAt": "2026-07-31T10:47:33.823Z",
+    "currentStageId": "9fa8af55-0d19-4e6e-bc57-69f1e674807b"
   }
 ]

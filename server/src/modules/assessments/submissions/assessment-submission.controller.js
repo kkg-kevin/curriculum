@@ -178,10 +178,16 @@ const getIssuedForLearner = asyncHandler(async (req, res) => {
 });
 
 // Admin/school-facing: this learner's auto-issued diagnostic (if any), for the Diagnostic
-// Assessment card on LearnerViewPage.
+// Assessment card on LearnerViewPage. Also learner-facing (own record only) — the learner-
+// portal's first-login diagnostic gate reads this directly, scoped to its own curriculum via
+// ?curriculumId, so a learner's Stage diagnostic from a different hub never leaks in.
 const getDiagnosticForLearner = asyncHandler(async (req, res) => {
-  assertLearnerHubAccess(req, req.params.learnerId);
-  const row = AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId);
+  if (req.user.role === "learner") {
+    assertOwn(req.params.learnerId === req.ownLearner?.id);
+  } else {
+    assertLearnerHubAccess(req, req.params.learnerId);
+  }
+  const row = AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId, req.query.curriculumId || null);
   res.json({ success: true, data: row });
 });
 

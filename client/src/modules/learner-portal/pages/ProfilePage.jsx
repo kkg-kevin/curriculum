@@ -13,23 +13,12 @@ import EditProfileModal from "../components/profile/EditProfileModal";
 import ProfileTabs from "../components/profile/ProfileTabs";
 import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
 import MyCoursesCard from "../components/profile/MyCoursesCard";
-import RecentEvidenceCard from "../components/profile/RecentEvidenceCard";
-import BadgesCertificatesCard from "../components/profile/BadgesCertificatesCard";
 import SummaryRow from "../components/profile/SummaryRow";
 import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
 import LearningJourneyTabContent from "../components/profile/LearningJourneyTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
-
-function ComingSoonPanel({ tab }) {
-  return (
-    <div style={{ ...cardStyle(), padding: "60px 24px", textAlign: "center" }}>
-      <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>{tab} is coming soon</h3>
-      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>This section isn't built yet — check the Overview tab for what's live today.</p>
-    </div>
-  );
-}
 
 // classId-scoped components (AssessmentsOverview, SummaryRow) fall back to showing the
 // learner's ENTIRE cross-hub assessment history when classId is undefined — correct for a
@@ -90,7 +79,7 @@ export default function ProfilePage() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setIsEditOpen(true)} />
-        <PortfolioSnapshot coursesCompleted={progressSummary.completed} />
+        <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
 
@@ -102,8 +91,6 @@ export default function ProfilePage() {
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             <MyCoursesCard courses={courses} email={user?.email} isLoading={coursesLoading} />
-            <RecentEvidenceCard />
-            <BadgesCertificatesCard />
           </div>
         </>
       )}
@@ -119,8 +106,6 @@ export default function ProfilePage() {
       {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}
 
       {activeTab === "Reports" && <ReportsOverview />}
-
-      {!["Overview", "Competencies", "Learning Journey", "Assessments", "Reports"].includes(activeTab) && <ComingSoonPanel tab={activeTab} />}
 
       {cls ? <SummaryRow classId={cls.id} /> : <NoClassNotice />}
 

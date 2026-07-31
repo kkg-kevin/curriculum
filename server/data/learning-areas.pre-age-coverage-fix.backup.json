@@ -81,7 +81,7 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.333Z",
-    "updatedAt": "2026-07-31T10:11:37.565Z",
+    "updatedAt": "2026-07-30T11:19:55.308Z",
     "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
     "courseSequence": [
       {
@@ -94,7 +94,7 @@
         ]
       }
     ],
-    "minAge": null,
+    "minAge": 5,
     "maxAge": 10
   },
   {
@@ -107,10 +107,10 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.342Z",
-    "updatedAt": "2026-07-31T10:11:37.565Z",
+    "updatedAt": "2026-07-30T11:20:09.504Z",
     "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
-    "minAge": 11,
-    "maxAge": 19
+    "minAge": 10,
+    "maxAge": 15
   },
   {
     "id": "499a258f-91a9-43c6-b581-8937d5cb9b05",
@@ -122,10 +122,10 @@
       "2329640b-8fb9-4ec7-8251-6d922ab1586d"
     ],
     "createdAt": "2026-07-27T13:02:25.345Z",
-    "updatedAt": "2026-07-31T10:11:37.565Z",
+    "updatedAt": "2026-07-30T11:20:24.942Z",
     "diagnosticAssessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
     "minAge": 20,
-    "maxAge": null
+    "maxAge": 25
   },
   {
     "id": "ef10c937-18b6-4b8d-8037-2f63c9296dd4",

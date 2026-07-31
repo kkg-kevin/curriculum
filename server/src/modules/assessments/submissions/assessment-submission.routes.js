@@ -39,8 +39,10 @@ router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), 
 // grading itself, see publishReport in assessment-submission.service.js.
 router.post("/submissions/:id/publish-report", authorize("admin", "school", "teacher"), publishSubmissionReport);
 
-// Admin/school-facing: a specific learner's auto-issued diagnostic (standalone, no class involved).
-router.get("/diagnostic/:learnerId", authorize("admin", "school"), getDiagnosticForLearner);
+// A specific learner's auto-issued Stage diagnostic (standalone, no class involved). Also
+// learner-facing (own record only, enforced in the controller) — the portal's first-login gate
+// reads this directly, scoped to its own curriculum via ?curriculumId.
+router.get("/diagnostic/:learnerId", authorize("admin", "school", "learner"), getDiagnosticForLearner);
 // Same, plural — every Learning-Area diagnostic this learner currently holds. Also learner-
 // facing (own record only, enforced in the controller) — the portal's first-login gate reads
 // this directly rather than duplicating the query.

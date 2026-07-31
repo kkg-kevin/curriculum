@@ -5,6 +5,7 @@ const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassModel = require("../../classes/class.model");
 const LearningAreaModel = require("../../curriculum/competency-framework/learning-area.model");
+const AgeCategoryModel = require("../../curriculum/competency-framework/age-category.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const CompetencyModel = require("../../settings/competencies/competency.model");
 const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
@@ -142,10 +143,17 @@ const AssessmentSubmissionService = {
   // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
   // Assessment" card on LearnerViewPage. Filtered to ageCategoryId specifically, since a
   // learner can now also hold course-progress-triggered standalone issues (see
-  // issueOnSessionComplete above) that share the same learnerId-keyed issue shape.
-  getDiagnosticForLearner(learnerId) {
-    return AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
-      .find((row) => !!row.issue.ageCategoryId) || null;
+  // issueOnSessionComplete above) that share the same learnerId-keyed issue shape. Optional
+  // curriculumId narrows to the one belonging to that curriculum — a learner enrolled at
+  // several hubs can hold a Stage diagnostic from each; the learner-portal's first-login gate
+  // needs only the one for the hub it's currently gating (see FirstLoginDiagnosticGate.jsx).
+  // Omitted, this preserves the old unscoped "first one found" behavior for LearnerViewPage's
+  // admin card, which only ever shows one hub's context anyway.
+  getDiagnosticForLearner(learnerId, curriculumId = null) {
+    const rows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
+      .filter((row) => !!row.issue.ageCategoryId);
+    if (!curriculumId) return rows[0] || null;
+    return rows.find((row) => AgeCategoryModel.findById(row.issue.ageCategoryId)?.curriculumId === curriculumId) || null;
   },
 
   // Every Learning-Area diagnostic this learner currently holds (one per area their class's
