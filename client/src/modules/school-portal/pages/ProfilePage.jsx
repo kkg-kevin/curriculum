@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers } from "react-icons/fi";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../../context/AuthContext";
+import ImageUploadField from "../../../components/ImageUploadField";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useUpdateLearningHub as useUpdateSchool, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
@@ -140,6 +142,91 @@ function EditForm({ school, onDone, onCancel }) {
   );
 }
 
+// Auto-saves on change (no separate "Save" step) — matches the teacher/admin photo popovers.
+// Portals into document.body with fixed positioning computed from the trigger's own
+// getBoundingClientRect, same pattern as CurriculumCard's kebab menu: rendered inline instead,
+// this gets clipped by the hero's own `overflow: hidden`. onSaved is expected to refetch the
+// school query — useUpdateSchool's cache invalidation doesn't cover this page's own
+// ["schools", "byEmail", ...] query key.
+function SchoolPhotoEditor({ school, onSaved }) {
+  const { mutate: updateSchool, isPending } = useUpdateSchool();
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const openPopover = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 8, left: rect.left });
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !popoverRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+
+  const handleChange = (photo) => {
+    updateSchool({ id: school.id, data: { photo } }, { onSuccess: onSaved });
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => (open ? setOpen(false) : openPopover())}
+        aria-label="Edit school photo"
+        style={{ width: 56, height: 56, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", flexShrink: 0, overflow: "hidden", border: "none", cursor: "pointer", padding: 0, position: "relative" }}
+      >
+        {school.photo ? (
+          <img src={school.photo} alt={school.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (school.name?.[0]?.toUpperCase() || "S")}
+        <span
+          style={{
+            position: "absolute", bottom: -2, right: -2, width: 20, height: 20,
+            borderRadius: "50%", backgroundColor: "#fff", border: "1.5px solid #E5E7EB",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+          }}
+        >
+          <svg width="60%" height="60%" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="#25476a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#25476a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </span>
+      </button>
+
+      {open && createPortal(
+        <div
+          ref={popoverRef}
+          style={{
+            position: "fixed", top: pos.top, left: pos.left, zIndex: 9999,
+            backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+            padding: "14px", width: "220px", fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "700", color: "#374151" }}>School Photo</p>
+          <ImageUploadField value={school.photo || null} onChange={handleChange} width="100%" height="130px" />
+          {isPending && <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Saving…</p>}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 const iconMail = <FiMail size={14} strokeWidth={2} />;
 const iconPhone = <FiPhone size={14} strokeWidth={2} />;
 const iconPin = <FiMapPin size={14} strokeWidth={2} />;
@@ -206,9 +293,7 @@ export default function ProfilePage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <div style={{ width: 56, height: 56, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-            {school.name?.[0]?.toUpperCase() || "S"}
-          </div>
+          <SchoolPhotoEditor school={school} onSaved={refetch} />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>{school.name}</h1>

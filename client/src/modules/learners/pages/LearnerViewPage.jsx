@@ -34,8 +34,11 @@ const STATUS_STYLES = {
   graduated:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
 };
 
-function Avatar({ firstName, lastName, size = 64 }) {
+function Avatar({ firstName, lastName, photo, size = 64 }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
+  if (photo) {
+    return <img src={photo} alt={`${firstName || ""} ${lastName || ""}`.trim()} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />;
+  }
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${GRAD_FROM}, ${GRAD_TO})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#ffffff", flexShrink: 0 }}>
       {initials || "?"}
@@ -480,7 +483,7 @@ export default function LearnerViewPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <Avatar firstName={learner.firstName} lastName={learner.lastName} />
+            <Avatar firstName={learner.firstName} lastName={learner.lastName} photo={learner.photo} />
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{learner.firstName} {learner.lastName}</h1>

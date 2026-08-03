@@ -43,6 +43,7 @@ export default function EditLearningHubPage() {
         branchId: hub.branchId || "",
         status: hub.status || "active",
         description: hub.description || "",
+        photo: hub.photo || null,
         photos: hub.photos || [],
         amenities: hub.amenities || [],
         operatingHours: {

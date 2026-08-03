@@ -8,6 +8,7 @@ import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
 import { useAllLearningHubsQuery } from "../../../learning-hubs/hooks/useLearningHub";
 import { useBranchesQuery } from "../../../branches/hooks/useBranch";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
+import ImageUploadField from "../../../../components/ImageUploadField";
 
 const ACCENT = "#25476a";
 
@@ -449,6 +450,14 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
               placeholder="Describe the learning hub, its atmosphere, and what makes it suitable for learning sessions…"
               rows={4}
               style={{ ...inputBaseStyle(false), resize: "vertical", fontFamily: "Inter, sans-serif" }}
+            />
+          </Field>
+
+          <Field label="Profile Photo">
+            <Controller
+              name="photo"
+              control={control}
+              render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="180px" height="120px" />}
             />
           </Field>
 

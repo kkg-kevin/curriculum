@@ -13,8 +13,8 @@ import ConfirmDialog from "../components/ConfirmDialog";
 
 const STEPS = [
   { n: 1, label: "Basic Info" },
-  { n: 2, label: "Structure" },
-  { n: 3, label: "Competencies" },
+  { n: 2, label: "Competencies" },
+  { n: 3, label: "Structure" },
   { n: 4, label: "Version Control" },
 ];
 
@@ -100,7 +100,7 @@ export default function CreateCurriculumPage() {
 
   const onSubmit = (data) => {
     createCurriculum(data, {
-      onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/structure`),
+      onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/competencies`),
     });
   };
 
@@ -174,7 +174,7 @@ export default function CreateCurriculumPage() {
           </div>
           <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Create Curriculum</h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
-            Enter basic details — you'll configure structure and academic periods in the next steps.
+            Enter basic details — you'll configure competencies and structure in the next steps.
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export default function CreateCurriculumPage() {
               transition: "background-color 0.15s",
             }}
           >
-            {isPending ? <><Spinner /> Creating…</> : "Next: Structure →"}
+            {isPending ? <><Spinner /> Creating…</> : "Next: Competencies →"}
           </button>
         </div>
       </div>

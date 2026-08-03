@@ -137,8 +137,17 @@ const STATUS_STYLES = {
 };
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
 
-function Avatar({ firstName, lastName, size = 64 }) {
+function Avatar({ firstName, lastName, photo, size = 64 }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={`${firstName || ""} ${lastName || ""}`.trim()}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.3)", flexShrink: 0 }}
+      />
+    );
+  }
   return (
     <div
       style={{
@@ -256,7 +265,7 @@ export default function TeacherViewPage() {
 
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Avatar firstName={teacher.firstName} lastName={teacher.lastName} size={64} />
+              <Avatar firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} size={64} />
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
                   <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>

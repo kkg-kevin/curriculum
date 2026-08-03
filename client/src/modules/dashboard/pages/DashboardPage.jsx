@@ -272,23 +272,27 @@ function RecentRow({ avatar, primary, secondary, badge, badgeColor, badgeBg, bad
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
     >
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: "50%",
-          background: avatar.gradient,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: avatar.emoji ? 16 : 12,
-          fontWeight: 700,
-          color: "#fff",
-          flexShrink: 0,
-        }}
-      >
-        {avatar.emoji || avatar.initials}
-      </div>
+      {avatar.photo ? (
+        <img src={avatar.photo} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+      ) : (
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: avatar.gradient,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: avatar.emoji ? 16 : 12,
+            fontWeight: 700,
+            color: "#fff",
+            flexShrink: 0,
+          }}
+        >
+          {avatar.emoji || avatar.initials}
+        </div>
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {primary}
@@ -736,7 +740,7 @@ export default function DashboardPage() {
                   return (
                     <RecentRow
                       key={s.id}
-                      avatar={{ icon: <SchoolIcon fontSize="small" />, gradient: "linear-gradient(135deg, #38aae1, #25476a)" }}
+                      avatar={{ icon: <SchoolIcon fontSize="small" />, photo: s.photo, gradient: "linear-gradient(135deg, #38aae1, #25476a)" }}
                       primary={s.name}
                       secondary={s.code + (s.address?.county ? ` · ${s.address.county}` : "")}
                       badge={s.status}
@@ -774,7 +778,7 @@ export default function DashboardPage() {
                   return (
                     <RecentRow
                       key={l.id}
-                      avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), gradient: "linear-gradient(135deg, #1a3550, #25476a)" }}
+                      avatar={{ initials: (l.firstName?.[0] || "") + (l.lastName?.[0] || ""), photo: l.photo, gradient: "linear-gradient(135deg, #1a3550, #25476a)" }}
                       primary={`${l.firstName} ${l.lastName}`}
                       secondary={l.admissionNumber || (l.hubCount > 0 ? `${l.hubCount} hub${l.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
                       badge={l.status}

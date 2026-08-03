@@ -29,6 +29,7 @@ export default function CreateTeacherPage() {
       email: "", password: "", phone: "",
       status: "active",
       employmentType: null, teacherLevel: null, paymentTerms: null,
+      photo: null,
     },
     mode: "onTouched",
   });

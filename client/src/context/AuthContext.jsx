@@ -31,8 +31,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Shallow-merges a patch into the current session's user — e.g. after the header avatar
+  // popover uploads a new photo, so the rest of the app reflects it immediately without a
+  // refetch (there's no persisted session to refetch from anyway; see the logout-on-mount above).
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

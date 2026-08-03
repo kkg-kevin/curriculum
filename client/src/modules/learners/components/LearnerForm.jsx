@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
+import ImageUploadField from "../../../components/ImageUploadField";
 
 // Mirrors client/src/modules/learner-portal/components/profile/ProfileIdentityCard.jsx's
 // computeAge — display-only, derived live from whatever date of birth is currently typed in.
@@ -72,6 +73,14 @@ export default function LearnerForm() {
       <div style={S.section}>
         <p style={S.heading}>Personal Information</p>
         <hr style={S.divider} />
+        <div style={S.field}>
+          <label style={S.label}>Photo</label>
+          <Controller
+            name="photo"
+            control={control}
+            render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="140px" height="140px" />}
+          />
+        </div>
         <div style={S.row}>
           <div style={S.field}>
             <label style={S.label}>First Name <span style={{ color: "#DC2626" }}>*</span></label>

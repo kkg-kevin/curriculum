@@ -88,6 +88,16 @@ const AuthService = {
     }
     return sanitize(user);
   },
+
+  updateMe(id, data) {
+    const user = UserModel.update(id, data);
+    if (!user) {
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return sanitize(user);
+  },
 };
 
 module.exports = AuthService;

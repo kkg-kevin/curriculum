@@ -1,10 +1,115 @@
-﻿import { FiBell, FiMenu } from "react-icons/fi";
+﻿import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { FiBell, FiMenu } from "react-icons/fi";
 import { useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
+import { authApi } from "../../modules/auth/services/authApi";
+import ImageUploadField from "../ImageUploadField";
 
-function Header({ isMobile = false, onMenuClick = () => {} }) {
+// Admin is the only role with no dedicated "My Profile" page (Learner/Teacher/School each have
+// their own portal profile page where photo upload lives instead) — so this popover is admin's
+// only way to set one. Portals into document.body with fixed positioning computed from the
+// trigger's getBoundingClientRect (same pattern as CurriculumCard's kebab menu) — rendered
+// inline instead, this gets clipped/invisible: MainLayout wraps Header in an `overflow: hidden`
+// container, which silently ate the old absolutely-positioned version.
+function AdminAvatarPopover({ user, initial, onPhotoChange }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const openPopover = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !popoverRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+
+  const handleChange = async (url) => {
+    setSaving(true);
+    try {
+      await authApi.updateMe({ photo: url });
+      onPhotoChange(url);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Failed to update photo");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => (open ? setOpen(false) : openPopover())}
+        aria-label="Edit profile photo"
+        style={{
+          width: "40px", height: "40px", borderRadius: "50%",
+          backgroundColor: "#25476a", color: "#fff", border: "none", padding: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontWeight: "600", flexShrink: 0, cursor: "pointer", overflow: "hidden",
+        }}
+      >
+        {user?.photo ? (
+          <img src={user.photo} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : initial}
+      </button>
+
+      {open && createPortal(
+        <div
+          ref={popoverRef}
+          style={{
+            position: "fixed", top: pos.top, right: pos.right, zIndex: 9999,
+            backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+            padding: "14px", width: "240px", fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "700", color: "#374151" }}>Profile Photo</p>
+          <ImageUploadField
+            value={user?.photo || null}
+            onChange={handleChange}
+            width="100%"
+            height="140px"
+          />
+          {saving && <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Saving…</p>}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+// `photo` is an optional override: the logged-in `user` object is the generic auth account
+// record (name/email/role), which never carries a photo for teacher/school/learner — each of
+// those roles' actual photo lives on their own Teacher/LearningHub/Learner entity instead. The
+// portal layouts already fetch that entity for their own purposes (HubSwitcher, sidebars, etc.)
+// and pass its `.photo` down here, so this doesn't fire a second fetch just for the header.
+// Admin has no such split (its own User record *is* the entity with `.photo`), so it's left
+// unset and falls back to `user?.photo`.
+function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const avatarPhoto = photo ?? user?.photo;
 
   const initial = user?.name?.trim()?.[0]?.toUpperCase() || "?";
   // "teacher" is still the underlying role value (auth, permissions, users.json) — only the
@@ -141,22 +246,29 @@ function Header({ isMobile = false, onMenuClick = () => {} }) {
             gap: "10px",
           }}
         >
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "#25476a",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "600",
-              flexShrink: 0,
-            }}
-          >
-            {initial}
-          </div>
+          {user?.role === "admin" ? (
+            <AdminAvatarPopover user={user} initial={initial} onPhotoChange={(photo) => updateUser({ photo })} />
+          ) : (
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                backgroundColor: "#25476a",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "600",
+                flexShrink: 0,
+                overflow: "hidden",
+              }}
+            >
+              {avatarPhoto ? (
+                <img src={avatarPhoto} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : initial}
+            </div>
+          )}
 
           {!isMobile ? (
             <div>

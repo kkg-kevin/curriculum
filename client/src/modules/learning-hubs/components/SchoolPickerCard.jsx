@@ -2,7 +2,10 @@ import { useState } from "react";
 
 const ACCENT = "#25476a";
 
-function SchoolAvatar({ name, size = 46 }) {
+function SchoolAvatar({ name, photo, size = 46 }) {
+  if (photo) {
+    return <img src={photo} alt={name} style={{ width: size, height: size, borderRadius: size * 0.27, objectFit: "cover", flexShrink: 0, boxShadow: "0 2px 8px rgba(37,71,106,0.25)" }} />;
+  }
   return (
     <div style={{ width: size, height: size, borderRadius: size * 0.27, background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.4, fontWeight: 800, color: "#fff", flexShrink: 0, boxShadow: "0 2px 8px rgba(37,71,106,0.25)" }}>
       {name?.[0]?.toUpperCase() || "S"}
@@ -33,7 +36,7 @@ export default function SchoolPickerCard({ school, icon, count, countLabel, subS
     >
       <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <SchoolAvatar name={school.name} />
+          <SchoolAvatar name={school.name} photo={school.photo} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{ margin: "0 0 3px", fontSize: 15, fontWeight: 700, color: hovered ? ACCENT : "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", transition: "color 0.15s" }}>
               {school.name}

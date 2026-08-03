@@ -38,6 +38,7 @@ export default function EditTeacherPage() {
         employmentType: teacher.employmentType ?? null,
         teacherLevel:   teacher.teacherLevel   ?? null,
         paymentTerms:   teacher.paymentTerms   ?? null,
+        photo:          teacher.photo ?? null,
       });
     }
   }, [teacher, reset]);

@@ -41,7 +41,7 @@ export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
     <div style={{ ...cardStyle(), padding: 24, display: "flex", flexDirection: "column", gap: 20, flex: 2, minWidth: 320 }}>
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <Avatar firstName={learner.firstName} lastName={learner.lastName} size={96} />
+          <Avatar firstName={learner.firstName} lastName={learner.lastName} photo={learner.photo} size={96} />
           <button
             type="button"
             onClick={onEdit}

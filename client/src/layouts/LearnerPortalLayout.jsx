@@ -59,7 +59,7 @@ function LearnerPortalLayout() {
           overflow: "hidden",
         }}
       >
-        <Header isMobile={isMobile && !gateActive} onMenuClick={() => setSidebarOpen(true)} />
+        <Header isMobile={isMobile && !gateActive} onMenuClick={() => setSidebarOpen(true)} photo={learner?.photo} />
 
         <main style={{ flex: 1, padding: isMobile ? "20px 16px 28px" : "28px 32px", minWidth: 0, overflowX: "hidden" }}>
           {gateActive ? (

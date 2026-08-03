@@ -86,11 +86,15 @@ const getTeacherById = asyncHandler(async (req, res) => {
 // against. Hub assignment itself never goes through this route at all (see the dedicated
 // /hubs/links routes, which are never authorized for the "teacher" role) — this allowlist is
 // a second layer of defense, not the only one.
-const TEACHER_SELF_EDIT_FIELDS = ["phone"];
+const TEACHER_SELF_EDIT_FIELDS = ["phone", "photo"];
 
 const updateTeacher = asyncHandler(async (req, res) => {
   const parsed = updateTeacherSchema.parse(req.body);
-  const { password, ...data } = parsed;
+  // .partial() still materializes each field's .default(...) when it's absent from the request
+  // body (e.g. status defaults back to "active", phone to "") — same bug class already fixed in
+  // learner.controller.js/learning-hub.controller.js. Only keys the caller actually sent survive.
+  const present = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
+  const { password, ...data } = present;
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(isLinkedToOwnHub(req, existing.id));

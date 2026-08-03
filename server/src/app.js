@@ -72,7 +72,10 @@ app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubm
 app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 // Learner access is scoped to assessment-submission file uploads (documentUpload/imageUpload/
 // videoUpload/audioUpload/codeUpload items and project deliverables) — see AssessmentTaker.jsx.
-app.use("/api/uploads", protect, authorize("admin", "learner"), uploadRoutes);
+// teacher/school/branchAdmin need this too, for their own profile-photo uploads (teacher-portal/
+// school-portal profile pages, and the admin-side Teacher/LearningHub forms a branchAdmin can
+// also reach).
+app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "branchAdmin", "learner"), uploadRoutes);
 app.use("/api/programs", protect, authorize("admin"), programRoutes);
 app.use("/api/branches", protect, attachOwnRecords, branchRoutes);
 

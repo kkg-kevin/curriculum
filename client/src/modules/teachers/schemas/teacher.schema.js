@@ -33,6 +33,7 @@ export const teacherSchema = z
     employmentType: z.enum(["part_time", "full_time"]).nullable().default(null),
     teacherLevel:   z.number().int().min(1).max(5).nullable().default(null),
     paymentTerms:   z.enum(["hourly", "daily"]).nullable().default(null),
+    photo: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.password && !data.email) {

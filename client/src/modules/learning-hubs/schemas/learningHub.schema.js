@@ -113,6 +113,8 @@ export const learningHubSchema = z
     // "active", at which point they appear in the Learning Hubs module and every other consumer.
     status: z.enum(["draft", "active", "inactive"]).default("draft"),
     description: z.string().max(1000, "Max 1000 characters").default(""),
+    // Single profile/logo image — distinct from the `photos` gallery below.
+    photo: z.string().optional().nullable(),
     photos: z.array(z.string()).default([]),
     amenities: z.array(z.string()).default([]),
     operatingHours: operatingHoursSchema.default({}),
@@ -140,6 +142,7 @@ export const learningHubProfileSchema = z.object({
   email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   phone: z.string().max(20, "Max 20 characters").default(""),
   address: addressSchema,
+  photo: z.string().optional().nullable(),
 });
 
 // Derives a short uppercase code from a name's word initials (or the first few letters of a

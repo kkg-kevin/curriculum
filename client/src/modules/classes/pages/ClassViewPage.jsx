@@ -286,9 +286,13 @@ export default function ClassViewPage() {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                      {(l.firstName?.[0] || "") + (l.lastName?.[0] || "")}
-                    </div>
+                    {l.photo ? (
+                      <img src={l.photo} alt={`${l.firstName} ${l.lastName}`} style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg, #1a3550, #25476a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                        {(l.firstName?.[0] || "") + (l.lastName?.[0] || "")}
+                      </div>
+                    )}
                     <div>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#111827" }}>{l.firstName} {l.lastName}</p>
                       <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>{l.admissionNumber}</p>

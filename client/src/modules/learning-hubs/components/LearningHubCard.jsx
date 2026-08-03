@@ -85,8 +85,10 @@ export function LearningHubCard({ hub, curriculaMap }) {
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #1a3550, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
-              {hub.hubType === "school" ? <SchoolIcon fontSize="small" /> : (hub.name?.[0]?.toUpperCase() || <LocationOnIcon fontSize="small" />)}
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #1a3550, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0, overflow: "hidden" }}>
+              {hub.photo ? (
+                <img src={hub.photo} alt={hub.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : hub.hubType === "school" ? <SchoolIcon fontSize="small" /> : (hub.name?.[0]?.toUpperCase() || <LocationOnIcon fontSize="small" />)}
             </div>
             <div style={{ minWidth: 0 }}>
               <h3

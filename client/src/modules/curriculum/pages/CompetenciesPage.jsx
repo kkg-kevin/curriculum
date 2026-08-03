@@ -77,8 +77,8 @@ function ErrorNotice({ message = "Couldn't load this — try refreshing the page
 
 const STEPS = [
   { n: 1, label: "Basic Info" },
-  { n: 2, label: "Structure" },
-  { n: 3, label: "Competencies" },
+  { n: 2, label: "Competencies" },
+  { n: 3, label: "Structure" },
   { n: 4, label: "Version Control" },
 ];
 
@@ -3324,16 +3324,16 @@ export default function CompetenciesPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>Pick which competencies this curriculum uses, and configure its progress arc and assessments.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          <button type="button" className="cp-btn-secondary" onClick={() => navigate(`/curriculum/${id}/structure`)}>
-            ← Structure
+          <button type="button" onClick={() => navigate("/curriculum")} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            Done
           </button>
-          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/versions`)}>
-            Next: Version Control →
+          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/structure`)}>
+            Next: Structure →
           </button>
         </div>
       </div>
 
-      <StepIndicator current={3} />
+      <StepIndicator current={2} />
 
       {/* ── Panel navigation ────────────────────────────────────────── */}
       <div className="cp-nav">

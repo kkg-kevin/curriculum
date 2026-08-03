@@ -9,4 +9,5 @@ export const authApi = {
   login: (identifier, password) => api.post(`${ENDPOINT}/login`, { identifier, password }).then((r) => r.data.data),
   logout: () => api.post(`${ENDPOINT}/logout`).then((r) => r.data),
   me: () => api.get(`${ENDPOINT}/me`).then((r) => r.data.data),
+  updateMe: (data) => api.put(`${ENDPOINT}/me`, data).then((r) => r.data.data),
 };
