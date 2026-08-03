@@ -615,11 +615,11 @@
   {
     "name": "Parent test",
     "email": "parenttest@digifunzi.com",
-    "passwordHash": "$2b$10$9aoTWFdrtVX/tsAju8oeT.g7HEq40Tfz5E8/nbA9sK569W478Mb/K",
+    "passwordHash": "$2b$10$nNeDK4YNXs/4QAz5ApCkreRGHPm169KMmUBL4ihoPEsdpbm/JTvMW",
     "role": "learner",
     "id": "7cb06a5f-79ed-4a2f-a867-ae8bc23ae77f",
     "createdAt": "2026-07-31T12:32:21.933Z",
-    "updatedAt": "2026-07-31T12:32:21.934Z"
+    "updatedAt": "2026-08-03T09:49:22.389Z"
   },
   {
     "name": "Test Teacher",
@@ -629,5 +629,23 @@
     "id": "666490d3-7a2e-4293-a712-842a72a1a27f",
     "createdAt": "2026-07-31T12:34:13.644Z",
     "updatedAt": "2026-07-31T12:34:13.644Z"
+  },
+  {
+    "name": "Test Learner",
+    "username": "testlearner",
+    "passwordHash": "$2b$10$F1NwXF2F4tCf5ym3hmwa9eeumeHz1027bm6LxC6FwSOxfptfy68L2",
+    "role": "learner",
+    "id": "ffa547df-2e7c-4e81-a5b9-a6d2ad52814e",
+    "createdAt": "2026-08-03T09:49:22.487Z",
+    "updatedAt": "2026-08-03T09:49:22.487Z"
+  },
+  {
+    "name": "Test Guardian",
+    "email": "testparent@digifunzi.com",
+    "passwordHash": "$2b$10$CDFRMwE3eBaiA5f/Stg00.3qKS9hkvRN73iG0JsH4vGkF7sNq323W",
+    "role": "learner",
+    "id": "2b3b04cd-9b02-4435-ba13-25851a35e4f9",
+    "createdAt": "2026-08-03T09:54:27.792Z",
+    "updatedAt": "2026-08-03T09:54:27.792Z"
   }
 ]

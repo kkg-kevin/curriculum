@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiEye, FiEyeOff } from "react-icons/fi";
 import { T } from "./theme";
 import ImageUploadField from "../../../../components/ImageUploadField";
 import MultiSelectChips from "../../../../components/MultiSelectChips";
@@ -17,6 +17,11 @@ const inputStyle = (hasError) => ({
 
 const labelStyle = { display: "block", marginBottom: 6, fontSize: 13, fontWeight: 700, color: T.ink };
 
+// The LEARNER's own identity — separate from EditGuardianProfileModal now that the learner can
+// have their own dedicated login distinct from the guardian's (see auth.service.js's
+// setOrCreatePasswordByUsername). Saving here never touches guardianName/guardianPhone/
+// guardianEmail/the guardian's own password — they simply aren't part of this form's payload,
+// and the server's partial-update filter only ever touches keys actually present in the body.
 export default function EditProfileModal({ learner, isSaving, onSave, onClose }) {
   const [formData, setFormData] = useState({
     photo: null,
@@ -27,11 +32,10 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     nationality: "",
     languages: "",
     username: "",
-    guardianName: "",
-    guardianPhone: "",
-    guardianEmail: "",
+    learnerPassword: "",
   });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (learner) {
@@ -44,9 +48,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         nationality: learner.nationality || "",
         languages: learner.languages || "",
         username: learner.username || "",
-        guardianName: learner.guardianName || "",
-        guardianPhone: learner.guardianPhone || "",
-        guardianEmail: learner.guardianEmail || "",
+        learnerPassword: "",
       });
     }
   }, [learner]);
@@ -63,13 +65,12 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     if (!formData.firstName.trim()) nextErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) nextErrors.lastName = "Last name is required";
     if (!formData.gender) nextErrors.gender = "Gender is required";
-    if (!formData.guardianName.trim()) nextErrors.guardianName = "Guardian name is required";
-    if (!formData.guardianPhone.trim()) nextErrors.guardianPhone = "Guardian phone is required";
-    if (formData.guardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guardianEmail)) {
-      nextErrors.guardianEmail = "Enter a valid email";
-    }
     if (formData.username && !/^[a-zA-Z0-9._-]{3,30}$/.test(formData.username)) {
       nextErrors.username = "3-30 characters — letters, numbers, dots, underscores, and hyphens only";
+    }
+    if (formData.learnerPassword) {
+      if (formData.learnerPassword.length < 8) nextErrors.learnerPassword = "Must be at least 8 characters";
+      if (!formData.username.trim()) nextErrors.username = "Username is required to set a learner-portal password";
     }
 
     setErrors(nextErrors);
@@ -97,7 +98,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: `1px solid ${T.border}` }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.ink }}>Edit profile</h2>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.ink }}>Edit Learner Profile</h2>
           <button
             type="button"
             onClick={onClose}
@@ -171,26 +172,33 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
             <input name="username" value={formData.username} onChange={handleChange} placeholder="e.g. grace.wambui" style={inputStyle(errors.username)} />
             {errors.username
               ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.username}</p>
-              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — lets your child log in with a username instead of your email, into this same account.</p>}
+              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — a login name. Without a learner-portal password below, it logs into the guardian's account; with one, it's a separate login.</p>}
           </div>
 
           <div>
-            <label style={labelStyle}>Guardian name</label>
-            <input name="guardianName" value={formData.guardianName} onChange={handleChange} style={inputStyle(errors.guardianName)} />
-            {errors.guardianName && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianName}</p>}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Guardian phone</label>
-              <input name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} style={inputStyle(errors.guardianPhone)} />
-              {errors.guardianPhone && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianPhone}</p>}
+            <label style={labelStyle}>Learner Portal Password</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="learnerPassword"
+                autoComplete="new-password"
+                value={formData.learnerPassword}
+                onChange={handleChange}
+                placeholder="At least 8 characters"
+                style={{ ...inputStyle(errors.learnerPassword), paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.inkMuted, cursor: "pointer", display: "flex" }}
+              >
+                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
             </div>
-            <div>
-              <label style={labelStyle}>Guardian email</label>
-              <input name="guardianEmail" type="email" value={formData.guardianEmail} onChange={handleChange} style={inputStyle(errors.guardianEmail)} />
-              {errors.guardianEmail && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.guardianEmail}</p>}
-            </div>
+            {errors.learnerPassword
+              ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.learnerPassword}</p>
+              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — sets up or resets this learner's OWN separate login (not the guardian's). Leave blank to make no change.</p>}
           </div>
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>

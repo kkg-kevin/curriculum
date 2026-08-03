@@ -35,7 +35,10 @@ export default function MyCoursesPage() {
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
   const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
 
-  const stats = useMemo(() => summarizeCoursesProgress(user?.email, courses), [courses, user?.email]);
+  // A learner's own dedicated login has no email — fall back to username so progress storage
+  // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
+  const progressKey = user?.email || user?.username;
+  const stats = useMemo(() => summarizeCoursesProgress(progressKey, courses), [courses, progressKey]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>

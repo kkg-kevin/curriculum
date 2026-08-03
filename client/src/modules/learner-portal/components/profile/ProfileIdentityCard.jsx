@@ -1,8 +1,8 @@
 import { FiEdit2, FiStar } from "react-icons/fi";
-import { T, cardStyle, NotOnRecord } from "./theme";
+import { T, cardStyle, sectionHeaderStyle, NotOnRecord } from "./theme";
 import Avatar from "../../../../components/ui/Avatar";
 
-function MetaRow({ label, value }) {
+export function MetaRow({ label, value }) {
   return (
     <div>
       <p style={{ margin: "0 0 1px", fontSize: 11, fontWeight: 600, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
@@ -39,6 +39,7 @@ export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
 
   return (
     <div style={{ ...cardStyle(), padding: 24, display: "flex", flexDirection: "column", gap: 20, flex: 2, minWidth: 320 }}>
+      <p style={sectionHeaderStyle()}>Learner Profile</p>
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
           <Avatar firstName={learner.firstName} lastName={learner.lastName} photo={learner.photo} size={96} />

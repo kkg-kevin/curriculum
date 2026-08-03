@@ -17,7 +17,7 @@ function protect(req, res, next) {
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = { id: payload.sub, role: payload.role, email: payload.email };
+    req.user = { id: payload.sub, role: payload.role, email: payload.email, username: payload.username };
     next();
   } catch {
     const err = new Error("Invalid or expired session");

@@ -44,7 +44,9 @@ function CatalogCard({ role, course }) {
   const [hovered, setHovered] = useState(false);
   const sessionCount = course.sessionCount ?? 0;
   const isLearner = role === "learner";
-  const percent = isLearner ? getCourseCompletionPercent(user?.email, course.id, sessionCount) : 0;
+  // A learner's own dedicated login has no email — fall back to username so progress storage
+  // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
+  const percent = isLearner ? getCourseCompletionPercent(user?.email || user?.username, course.id, sessionCount) : 0;
 
   return (
     <div

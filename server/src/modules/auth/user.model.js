@@ -42,7 +42,15 @@ const UserModel = {
   },
 
   findByEmail(email) {
-    return readAll().find((u) => u.email.toLowerCase() === email.toLowerCase()) || null;
+    return readAll().find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null;
+  },
+
+  // A learner's own dedicated login (see auth.service.js's setOrCreatePasswordByUsername) has no
+  // email at all — matched by username instead, same null-safe shape as
+  // learner.model.js's findByUsername.
+  findByUsername(username) {
+    if (!username) return null;
+    return readAll().find((u) => u.username?.toLowerCase() === username.toLowerCase()) || null;
   },
 
   update(id, data) {

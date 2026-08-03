@@ -7,9 +7,12 @@ import { summarizeCoursesProgress } from "../utils/progressStorage";
 
 import { T, cardStyle } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
+import GuardianProfileCard from "../components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
 import SideRail from "../components/SideRail";
 import EditProfileModal from "../components/profile/EditProfileModal";
+import EditGuardianProfileModal from "../components/profile/EditGuardianProfileModal";
+import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import ProfileTabs from "../components/profile/ProfileTabs";
 import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
 import MyCoursesCard from "../components/profile/MyCoursesCard";
@@ -36,7 +39,13 @@ export default function ProfilePage() {
   const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
   const { mutate: updateLearner, isPending: isSaving } = useUpdateLearner();
   const [activeTab, setActiveTab] = useState("Overview");
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // null | "learner" | "guardian" — which of the two now-separate edit modals is open.
+  const [editing, setEditing] = useState(null);
+  // { password, name } — shown once after a save that included a new password (learner's own or
+  // the guardian's own); only one of the two modals ever sets a password per submit, so a single
+  // slot (not a queue) is enough here, unlike CreateLearnerPage/EditLearnerPage which can set both
+  // in one go.
+  const [passwordReveal, setPasswordReveal] = useState(null);
 
   // Curriculum-scoped content (courses, competencies) follows whichever hub the portal-wide
   // switcher is currently on — the guardian/identity fields and hub/teacher rail below
@@ -51,10 +60,31 @@ export default function ProfilePage() {
   const { data: performanceBands = [] } = usePerformanceBands(cls?.curriculumId);
   const band = performanceBands.find((b) => b.id === selectedHub?.currentBandId) || null;
 
-  const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
+  // A learner's own dedicated login has no email — fall back to username so progress storage
+  // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
+  const progressKey = user?.email || user?.username;
+  const progressSummary = useMemo(() => summarizeCoursesProgress(progressKey, courses), [progressKey, courses]);
 
-  const handleSave = (formData) => {
-    updateLearner({ id: learner.id, data: formData }, { onSuccess: () => setIsEditOpen(false) });
+  const handleSaveLearner = (formData) => {
+    updateLearner({ id: learner.id, data: formData }, {
+      onSuccess: () => {
+        if (formData.learnerPassword) {
+          setPasswordReveal({ password: formData.learnerPassword, name: `${learner.firstName} ${learner.lastName} (learner login)` });
+        }
+        setEditing(null);
+      },
+    });
+  };
+
+  const handleSaveGuardian = (formData) => {
+    updateLearner({ id: learner.id, data: formData }, {
+      onSuccess: () => {
+        if (formData.password) {
+          setPasswordReveal({ password: formData.password, name: formData.guardianName || learner.guardianName });
+        }
+        setEditing(null);
+      },
+    });
   };
 
   if (isLoading) {
@@ -78,7 +108,8 @@ export default function ProfilePage() {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
-        <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setIsEditOpen(true)} />
+        <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setEditing("learner")} />
+        <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
         <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
@@ -90,7 +121,7 @@ export default function ProfilePage() {
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-            <MyCoursesCard courses={courses} email={user?.email} isLoading={coursesLoading} />
+            <MyCoursesCard courses={courses} email={progressKey} isLoading={coursesLoading} />
           </div>
         </>
       )}
@@ -111,9 +142,19 @@ export default function ProfilePage() {
 
       <FrameworkLegend />
 
-      {isEditOpen && (
-        <EditProfileModal learner={learner} isSaving={isSaving} onSave={handleSave} onClose={() => setIsEditOpen(false)} />
+      {editing === "learner" && (
+        <EditProfileModal learner={learner} isSaving={isSaving} onSave={handleSaveLearner} onClose={() => setEditing(null)} />
       )}
+      {editing === "guardian" && (
+        <EditGuardianProfileModal learner={learner} isSaving={isSaving} onSave={handleSaveGuardian} onClose={() => setEditing(null)} />
+      )}
+
+      <PasswordRevealDialog
+        isOpen={!!passwordReveal}
+        password={passwordReveal?.password}
+        subjectName={passwordReveal?.name}
+        onClose={() => setPasswordReveal(null)}
+      />
     </div>
   );
 }

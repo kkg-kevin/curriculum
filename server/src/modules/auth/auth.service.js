@@ -13,7 +13,7 @@ function sanitize(user) {
 }
 
 function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ sub: user.id, role: user.role, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
 const AuthService = {
@@ -54,12 +54,46 @@ const AuthService = {
     return this.createUser({ name, email, password, role });
   },
 
-  // `identifier` is either an account's own email (admin/school/teacher, or a guardian logging
-  // in directly) or a learner's chosen username — the student's own way into the exact same
-  // guardian-owned account, not a separate identity. Username resolution goes through the
-  // learner record it belongs to, then that learner's guardianEmail, then the account itself.
+  // Mints/resets a learner's OWN dedicated portal login — distinct from setOrCreatePassword
+  // above, which is always the GUARDIAN's account. Keyed by username instead of email, and the
+  // resulting User row never has an email at all. Same existing-row conflict shape as
+  // setOrCreatePassword: reset in place if the role matches, otherwise 409.
+  async setOrCreatePasswordByUsername({ name, username, password, role }) {
+    const existing = UserModel.findByUsername(username);
+    if (existing) {
+      if (existing.role !== role) {
+        const err = new Error(`This username is already registered as a ${existing.role} account`);
+        err.statusCode = 409;
+        throw err;
+      }
+      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      return sanitize(UserModel.update(existing.id, { passwordHash }));
+    }
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    return sanitize(UserModel.create({ name, username, passwordHash, role }));
+  },
+
+  // Keeps a learner's own dedicated login attached to their current username when it's renamed
+  // elsewhere (see learner.controller.js's updateLearner) — without this the login would still
+  // work but silently become unreachable under the old username. No-ops if there's no dedicated
+  // login to move (most learners don't have one) or no new username to move it to.
+  async renameUsernameAccount(oldUsername, newUsername) {
+    if (!oldUsername || oldUsername === newUsername) return;
+    const existing = UserModel.findByUsername(oldUsername);
+    if (!existing || !newUsername) return;
+    UserModel.update(existing.id, { username: newUsername });
+  },
+
+  // `identifier` may be: an account's own email (admin/school/teacher/branchAdmin/curriculumAdmin,
+  // or a guardian logging in directly); a learner's own dedicated username (a genuinely separate
+  // account/password from the guardian's — see setOrCreatePasswordByUsername); or, for a learner
+  // who has a username but no dedicated login yet, that same username resolved the original way —
+  // through the learner record it belongs to, then that learner's guardianEmail, then the
+  // guardian's own account. `Learner.username` is regex-restricted to exclude "@", so it can never
+  // collide with an email-shaped identifier — these three branches are mutually exclusive.
   async login(identifier, password) {
     let user = UserModel.findByEmail(identifier);
+    if (!user) user = UserModel.findByUsername(identifier);
     if (!user) {
       const learner = LearnerModel.findByUsername(identifier);
       if (learner?.guardianEmail) user = UserModel.findByEmail(learner.guardianEmail);

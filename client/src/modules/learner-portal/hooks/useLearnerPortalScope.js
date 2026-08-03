@@ -18,10 +18,14 @@ export function useLearnerPortalScope() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // A learner's own dedicated login (see auth.service.js's setOrCreatePasswordByUsername) has no
+  // email at all — the server ignores this guardianEmail param for that login anyway (scoped
+  // server-side off req.ownLearner instead), but the query must still be enabled and keyed
+  // distinctly for it, or a username-only login would never fetch its own record at all.
   const { data: learnersData, isLoading: learnerLoading } = useQuery({
-    queryKey: ["learners", "byGuardianEmail", user?.email],
-    queryFn: () => learnerApi.getAll({ guardianEmail: user.email }),
-    enabled: !!user?.email,
+    queryKey: ["learners", "byGuardianEmail", user?.email, user?.username],
+    queryFn: () => learnerApi.getAll(user?.email ? { guardianEmail: user.email } : {}),
+    enabled: !!(user?.email || user?.username),
   });
   const learners = learnersData?.data || [];
 
