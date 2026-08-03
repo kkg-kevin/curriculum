@@ -198,7 +198,10 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
   const milestones = assessment.milestones || [];
   const registry = BUILDER_REGISTRY[type];
 
-  const totalItemPoints = !isObservation ? entries.reduce((sum, e) => sum + entryMarks(e), 0) : 0;
+  // A "note"-kind observation indicator is a freeform comment, not a judgment — excluded from the
+  // total the same way grading.utils.js's computeMaxScore excludes it. Non-observation entries
+  // never carry kind "note", so the filter is a no-op for every other assessment type.
+  const totalItemPoints = entries.filter((e) => e.kind !== "note").reduce((sum, e) => sum + entryMarks(e), 0);
   const totalRubricPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
 
   return (
@@ -221,7 +224,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
         )}
 
         {registry?.supportsItems !== false && (
-          <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length}${!isObservation ? ` · ${totalItemPoints} pts` : ""}` : ""}`}>
+          <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length} · ${totalItemPoints} pts` : ""}`}>
             <StructureSection sections={sections} entries={entries} />
           </Section>
         )}

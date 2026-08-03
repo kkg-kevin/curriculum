@@ -56,7 +56,7 @@ function MyClassGroup({ classId, courseIds, teacherId, canManage }) {
 // linked to (you can't teach a class at a hub you're not even part of). A course can have more
 // than one co-equal educator, so "linking" here is hub → class → course → assign, one step
 // deeper than the old single-class-teacher picker.
-function AssignCourseControl({ teacherId, hubs }) {
+function AssignCourseControl({ teacherId, hubs, qualifiedCourseIds }) {
   const [selectedHubId, setSelectedHubId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -72,7 +72,13 @@ function AssignCourseControl({ teacherId, hubs }) {
 
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
   const { data: existingLinks = [] } = useClassCourseTeachers(selectedClassId);
-  const availableCourses = courses.filter((c) => !existingLinks.some((l) => l.courseId === c.id && l.teacherId === teacherId));
+  // An empty/unset qualifiedCourseIds means unrestricted (see teacher.validation.js) — mirrors
+  // the server-side gate in class.controller.js's assignCourseTeacher and ClassViewPage.jsx's
+  // own picker, so this dropdown never offers a course the server would reject.
+  const availableCourses = courses.filter((c) =>
+    !existingLinks.some((l) => l.courseId === c.id && l.teacherId === teacherId) &&
+    (!qualifiedCourseIds?.length || qualifiedCourseIds.includes(c.id))
+  );
 
   return (
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -322,7 +328,7 @@ export default function TeacherViewPage() {
                 ))}
               </div>
             )}
-            {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} />}
+            {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
           </Section>
         </div>
 

@@ -9,10 +9,13 @@ function isAutoGradableItem(item) {
 }
 
 // Whether any part of this assessment needs a teacher's eyes before it can be released — a
-// rubric, an observation/project type, or a single non-auto-gradable item is enough to hold the
-// whole submission for manual review (see the release-together decision this was built around).
+// rubric, a project type, or a single non-auto-gradable item is enough to hold the whole
+// submission for manual review (see the release-together decision this was built around).
+// Teacher Observation now authors real items exactly like quiz/exam (structured/unstructured),
+// so it's judged by the same generic rule below rather than always forced to manual — an
+// all-structured observation auto-grades just like an all-structured quiz would.
 function requiresManualGrading(assessment) {
-  if (assessment.type === "observation" || assessment.type === "project") return true;
+  if (assessment.type === "project") return true;
   if ((assessment.rubric || []).length > 0) return true;
   return (assessment.items || []).some((item) => !isAutoGradableItem(item));
 }
@@ -89,10 +92,14 @@ function computeAutoScore(assessment, answers) {
 
 // Total possible marks across the whole assessment — items (or indicators for observation) plus
 // rubric, the same accounting AssessmentContent.jsx already surfaces to a teacher/admin.
+// A "note"-kind observation indicator is a freeform comment, not a judgment to score — excluded
+// from the sum the same way a plain comment would be, regardless of whatever `points` it
+// happens to carry.
 function computeMaxScore(assessment) {
   const isObservation = assessment.type === "observation";
-  const entries = (isObservation ? assessment.indicators : assessment.items) || [];
-  const itemMax = !isObservation ? entries.reduce((sum, e) => sum + computeEntryMarks(e), 0) : 0;
+  const entries = ((isObservation ? assessment.indicators : assessment.items) || [])
+    .filter((e) => e.kind !== "note");
+  const itemMax = entries.reduce((sum, e) => sum + computeEntryMarks(e), 0);
   const rubricMax = (assessment.rubric || []).reduce((sum, c) => sum + computeEntryMarks(c), 0);
   return itemMax + rubricMax;
 }
@@ -148,6 +155,9 @@ function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
 
   (assessment.items || []).forEach((item) => applyEntry(item, item.id));
   (assessment.rubric || []).forEach((c) => applyEntry(c, `rubric:${c.id}`));
+  // Observation indicators score through the exact same applyEntry path as items/rubric — a
+  // "note"-kind entry is a freeform comment, not a judgment, so it's excluded here too.
+  (assessment.indicators || []).filter((i) => i.kind !== "note").forEach((ind) => applyEntry(ind, ind.id));
 
   return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => ({
     indicatorId,

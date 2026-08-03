@@ -23,6 +23,12 @@ const baseTeacherSchema = z.object({
   teacherLevel:   z.number().int().min(1).max(5).optional().nullable().default(null),
   paymentTerms:   z.enum(PAYMENT_TERMS).optional().nullable().default(null),
   photo: z.string().optional().nullable().default(null),
+  // Which Course records this teacher may be assigned to teach (see class.controller.js's
+  // assignCourseTeacher) — Course ids are global, never scoped per curriculum/grade, so this is
+  // unambiguous system-wide. Empty means unrestricted: a teacher with no qualifications tagged
+  // can still be assigned to any course, exactly like before this field existed. The restriction
+  // only activates once an admin gives a teacher a specific, non-empty list.
+  qualifiedCourseIds: z.array(z.string()).default([]),
 });
 
 const createTeacherSchema = baseTeacherSchema.superRefine((data, ctx) => {

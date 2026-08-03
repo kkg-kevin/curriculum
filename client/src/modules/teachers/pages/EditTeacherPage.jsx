@@ -39,6 +39,7 @@ export default function EditTeacherPage() {
         teacherLevel:   teacher.teacherLevel   ?? null,
         paymentTerms:   teacher.paymentTerms   ?? null,
         photo:          teacher.photo ?? null,
+        qualifiedCourseIds: teacher.qualifiedCourseIds || [],
       });
     }
   }, [teacher, reset]);

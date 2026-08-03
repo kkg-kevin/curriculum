@@ -2,6 +2,7 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { TEACHER_STATUSES, EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
 import ImageUploadField from "../../../components/ImageUploadField";
+import CoursePickerField from "../../courses/components/CoursePickerField";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -161,13 +162,28 @@ export default function TeacherForm() {
 
       {/* Employment — placeholder classification fields; the full employment/payroll feature
           (rates, computed pay, etc.) isn't built yet, this just holds the data for it. */}
-      <div style={{ padding: "20px 24px" }}>
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Employment</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
           <NullableSelect name="employmentType" label="Employment Type" options={EMPLOYMENT_TYPES} />
           <NullableSelect name="teacherLevel" label="Educator Level" options={TEACHER_LEVELS} numeric />
           <NullableSelect name="paymentTerms" label="Payment Terms" options={PAYMENT_TERMS} />
         </div>
+      </div>
+
+      {/* Qualifications — which courses this educator may be assigned to teach (see
+          class.controller.js's assignCourseTeacher). Empty means unrestricted: this educator can
+          still be assigned to any course, exactly like before this field existed. */}
+      <div style={{ padding: "20px 24px" }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Qualifications</h3>
+        <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>
+          Which courses can this educator be assigned to teach? Leave empty to allow any course.
+        </p>
+        <Controller
+          name="qualifiedCourseIds"
+          control={control}
+          render={({ field }) => <CoursePickerField value={field.value || []} onChange={field.onChange} />}
+        />
       </div>
     </div>
   );

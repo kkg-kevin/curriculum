@@ -374,13 +374,11 @@ function entryLabel(entry) {
 /* ── Item palette ───────────────────────────────────────────────────────── */
 
 function ItemPalette({ type, structureType, onAdd }) {
-  const groups = type === "observation"
-    ? ["observation"]
-    : structureType === "structured"
-      ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "structured")
-      : structureType === "unstructured"
-        ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
-        : (BUILDER_REGISTRY[type]?.itemGroups || []);
+  const groups = structureType === "structured"
+    ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "structured")
+    : structureType === "unstructured"
+      ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
+      : (BUILDER_REGISTRY[type]?.itemGroups || []);
 
   // Groups always start collapsed on a fresh create/edit visit — opt-in (not opt-out) so any
   // group that only appears after switching structure type also starts collapsed.
@@ -506,7 +504,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
           {ITEM_KIND_LABELS[entry.kind]}
         </span>
         <span className="tb-entry-text">{stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
-        {!OBSERVATION_ITEM_KINDS.includes(entry.kind) && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
+        {entry.kind !== "note" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
         <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete">✕</button>
@@ -537,6 +535,10 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
 function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
   const set = (key, val) => onChange({ ...entry, [key]: val });
   const isObservation = OBSERVATION_ITEM_KINDS.includes(entry.kind);
+  // A "note"-kind observation indicator is a freeform comment, not a judgment — the only entry
+  // kind with nothing to score or tag. Every other kind (including every other observation kind)
+  // now shares the exact same IndicatorPicker + Marks UI every item/rubric criterion already uses.
+  const isNote = entry.kind === "note";
   const supportsTasks = BUILDER_REGISTRY[type]?.supportsTasks && !isObservation;
   const indicatorMarks = entry.indicatorMarks || [];
 
@@ -547,13 +549,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <RichTextEditor value={entryLabel(entry)} onChange={(html) => set(isObservation ? "text" : "question", html)} minHeight={90} maxHeight={220} />
       </div>
 
-      {isObservation ? (
-        <IndicatorPicker
-          options={indicatorOptions}
-          selectedIds={entry.competencyIndicatorIds || []}
-          onChange={(ids) => set("competencyIndicatorIds", ids)}
-        />
-      ) : (
+      {!isNote && (
         <IndicatorPicker
           options={indicatorOptions}
           selectedIds={indicatorMarks.map((m) => m.indicatorId)}
@@ -561,7 +557,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         />
       )}
 
-      {!isObservation && (
+      {!isNote && (
         indicatorMarks.length === 0 ? (
           <div>
             <Label>Marks</Label>
@@ -1211,11 +1207,13 @@ export default function AssessmentBuilderPage() {
   }
 
   const type = form.type;
-  const isObservation = type === "observation";
-  const entries = isObservation ? form.indicators : form.items;
+  // Teacher Observation authors real items now, exactly like quiz/exam — `form.indicators`
+  // (the old checklist/rating-only content model) is no longer edited via the builder at all,
+  // just passed through unchanged on save (see buildPayload) so a legacy assessment authored
+  // before this change keeps its content instead of it being silently wiped.
+  const entries = form.items;
   const setEntries = (updater) => {
-    const key = isObservation ? "indicators" : "items";
-    setForm((f) => ({ ...f, [key]: typeof updater === "function" ? updater(f[key]) : updater }));
+    setForm((f) => ({ ...f, items: typeof updater === "function" ? updater(f.items) : updater }));
   };
   const selectedEntry = entries.find((e) => e.id === selectedId) || null;
 
@@ -1291,8 +1289,11 @@ export default function AssessmentBuilderPage() {
       sections: form.sections.map((s, i) => ({ ...s, order: i })),
     };
     if (registry?.supportsDeliverables) payload.overview = form.overview.trim();
-    payload.items = isObservation || registry?.supportsItems === false ? [] : form.items;
-    payload.indicators = isObservation ? form.indicators : [];
+    payload.items = registry?.supportsItems === false ? [] : form.items;
+    // Always passed through unchanged, never edited here anymore — preserves a legacy Teacher
+    // Observation assessment's old checklist/rating content across a save instead of wiping it
+    // (every other type's form.indicators is always [] anyway, so this is a no-op for them).
+    payload.indicators = form.indicators;
     payload.rubric = registry?.supportsRubric ? form.rubric : [];
     if (registry?.supportsDeliverables) payload.deliverables = form.deliverables;
     if (registry?.supportsMilestones) payload.milestones = form.milestones;
@@ -1451,7 +1452,7 @@ export default function AssessmentBuilderPage() {
                 />
                 <RightPanel form={form} selectedEntry={selectedEntry} onUpdateEntry={updateEntry} indicatorOptions={indicatorOptions} />
               </div>
-              {!isObservation && <IndicatorStatsPanel stats={indicatorStats} />}
+              <IndicatorStatsPanel stats={indicatorStats} />
             </>
           )}
 

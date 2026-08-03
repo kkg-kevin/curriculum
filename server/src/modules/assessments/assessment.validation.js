@@ -72,6 +72,10 @@ const rubricCriterionSchema = z.object({
 
 // Teacher Observation content — a checklist of observable items. `kind` defaults to
 // "rating" so legacy data authored before this field existed keeps validating unchanged.
+// `points`/`indicatorMarks` mirror itemSchema/rubricCriterionSchema exactly — an observation
+// indicator is scored the same way any other entry is (a flat total, optionally split across
+// tagged competency indicators). `competencyIndicatorIds` is kept only so old records authored
+// before indicatorMarks existed still parse; the builder no longer writes it.
 const indicatorSchema = z.object({
   id:          z.string().optional(),
   text:        z.string().max(20000),
@@ -79,6 +83,8 @@ const indicatorSchema = z.object({
   ratingScale: z.array(z.string().min(1)).min(2).optional().default(DEFAULT_RATING_SCALE),
   sectionId:   z.string().optional().nullable().default(null),
   competencyIndicatorIds: z.array(z.string()).optional().default([]),
+  points:      z.number().min(0).optional().default(1),
+  indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
 }).refine((d) => hasRichContent(d.text), { message: "Indicator text is required", path: ["text"] });
 
 const deliverableSchema = z.object({

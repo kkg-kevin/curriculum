@@ -34,6 +34,9 @@ export const teacherSchema = z
     teacherLevel:   z.number().int().min(1).max(5).nullable().default(null),
     paymentTerms:   z.enum(["hourly", "daily"]).nullable().default(null),
     photo: z.string().optional().nullable(),
+    // Which courses this educator may be assigned to teach — empty means unrestricted (see
+    // teacher.validation.js on the server for the full rationale).
+    qualifiedCourseIds: z.array(z.string()).default([]),
   })
   .superRefine((data, ctx) => {
     if (data.password && !data.email) {
