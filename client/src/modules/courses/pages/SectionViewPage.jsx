@@ -399,6 +399,10 @@ export default function SectionViewPage() {
   const { user } = useAuth();
   const role = user?.role;
   const isLearner = role === "learner";
+  // Progress storage is keyed per-learner locally — a learner's own dedicated login (see
+  // auth.service.js's setOrCreatePasswordByUsername) has no email at all, so fall back to
+  // username to keep each such login's progress in its own bucket instead of a shared "guest" one.
+  const progressKey = user?.email || user?.username;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
@@ -410,8 +414,8 @@ export default function SectionViewPage() {
   // with no reader) to make the just-completed checkmark appear immediately, not on next nav.
   const [, forceRerender] = useState(0);
   useEffect(() => {
-    if (!isLearner || !user?.email || !id || !sessionId || !sectionKey) return;
-    markSectionComplete(user.email, id, sessionId, sectionKey);
+    if (!isLearner || !progressKey || !id || !sessionId || !sectionKey) return;
+    markSectionComplete(progressKey, id, sessionId, sectionKey);
     forceRerender((v) => v + 1);
 
     // Once every OTHER section of this session is done, whatever assessment is attached to it
@@ -420,7 +424,7 @@ export default function SectionViewPage() {
     // classmates' own progress. Re-checked on every section visit within this session; the
     // server call is idempotent per (assessment, learner), so re-firing once already issued is
     // a harmless no-op.
-    if (sectionKey !== "assessments" && areNonAssessmentSectionsComplete(user.email, id, sessionId)) {
+    if (sectionKey !== "assessments" && areNonAssessmentSectionsComplete(progressKey, id, sessionId)) {
       const currentSession = sessions.find((s) => s.id === sessionId);
       const attached = currentSession?.attachedAssessments || [];
       attached.forEach((a) => {
@@ -429,10 +433,10 @@ export default function SectionViewPage() {
           .catch(() => {});
       });
     }
-  }, [isLearner, user?.email, id, sessionId, sectionKey, sessions, queryClient]);
+  }, [isLearner, progressKey, id, sessionId, sectionKey, sessions, queryClient]);
 
-  const sectionProgress = isLearner ? getCourseSectionProgress(user.email, id) : null;
-  const sessionCompletion = isLearner && sessionId ? getSessionCompletion(user.email, id, sessionId) : null;
+  const sectionProgress = isLearner ? getCourseSectionProgress(progressKey, id) : null;
+  const sessionCompletion = isLearner && sessionId ? getSessionCompletion(progressKey, id, sessionId) : null;
 
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);

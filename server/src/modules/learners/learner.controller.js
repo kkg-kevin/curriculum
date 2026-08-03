@@ -38,13 +38,25 @@ function anyEnrollmentTaughtByTeacher(learnerId, teacherId) {
 
 const createLearner = asyncHandler(async (req, res) => {
   const { hubId, classId } = req.body;
-  const { password, ...data } = createLearnerSchema.parse(req.body);
+  const { password, learnerPassword, ...data } = createLearnerSchema.parse(req.body);
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a learner record with no login.
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.guardianName, email: data.guardianEmail, password, role: "learner" });
   }
   const record = await LearnerService.createLearner(data);
+  // The learner's OWN dedicated login is minted only after the record — createLearner's own
+  // username-uniqueness check (assertUsernameAvailable) has to throw first, so a colliding/
+  // typo'd username can never silently reset a different learner's own login before this
+  // record is even confirmed valid.
+  if (learnerPassword) {
+    await AuthService.setOrCreatePasswordByUsername({
+      name: `${record.firstName} ${record.lastName}`.trim(),
+      username: record.username,
+      password: learnerPassword,
+      role: "learner",
+    });
+  }
   // A learner is never linked to a hub as part of its own identity — hubId here is purely an
   // optional one-shot convenience (e.g. "Enroll Learner" clicked from within a school's own
   // page), a second write after the learner already exists, same as createTeacher.
@@ -74,7 +86,11 @@ const getAllLearners = asyncHandler(async (req, res) => {
     }
   } else if (req.user.role === "learner") {
     if (!req.ownLearner) return res.json({ success: true, data: [], count: 0 });
-    filters.guardianEmail = req.ownLearner.guardianEmail;
+    // The learner's own dedicated login only ever sees itself, never siblings — the
+    // guardian-mediated login is the one that broadens to every learner sharing its email
+    // (see the sibling-switcher this feeds in the learner-portal).
+    if (req.user.username) filters.ids = [req.ownLearner.id];
+    else filters.guardianEmail = req.ownLearner.guardianEmail;
   }
   const records = await LearnerService.getAllLearners(filters);
   res.json({ success: true, data: records, count: records.length });
@@ -88,28 +104,67 @@ const getLearnerById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+// Self-service fields the learner's OWN dedicated login (as opposed to the guardian-mediated
+// one) may change on the record — deliberately excludes guardianName/guardianPhone/
+// guardianEmail: those are the GUARDIAN's own profile, edited only from the guardian's login.
+// The guardian's own `password` is likewise never honored from this login (see below) — only
+// `learnerPassword`, the learner's own credential, ever is.
+const LEARNER_SELF_EDIT_FIELDS = ["firstName", "lastName", "gender", "dateOfBirth", "nationality", "languages", "photo", "username"];
+
 const updateLearner = asyncHandler(async (req, res) => {
-  const { password, ...parsed } = updateLearnerSchema.parse(req.body);
+  const { password, learnerPassword, ...parsed } = updateLearnerSchema.parse(req.body);
   // .partial() still applies each field's .default() when it's absent from the request body
   // (currentRungId defaults to null) — without this filter, a PUT that only sends identity
   // fields (e.g. the learner-portal profile edit form) would silently wipe whatever placement a
   // teacher/admin had already set. Only keys the caller actually sent survive.
   const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
+  // Fetched unconditionally (not just for school/branchAdmin) — the username-rename sync below
+  // needs the pre-update value regardless of who's making the change.
+  const before = await LearnerService.getLearnerById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
-    const existing = await LearnerService.getLearnerById(req.params.id);
-    assertOwn(isLinkedToOwnHub(req, existing.id));
+    assertOwn(isLinkedToOwnHub(req, before.id));
   }
-  // "learner" (guardian-mediated login) may only ever update its own linked record — the
-  // learner-portal profile edit form, never an arbitrary id.
-  if (req.user.role === "learner") assertOwn(req.params.id === req.ownLearner?.id);
+  // A learner's own dedicated login may only touch its own identity fields + its own login
+  // password — guardian contact info and the guardian's own password stay guardian-login-only,
+  // enforced here (not just hidden client-side) since a determined caller could otherwise still
+  // PUT those fields directly. The guardian-mediated login (req.user.username absent) keeps full
+  // write access to everything, exactly as before this change.
+  let allowGuardianPassword = true;
+  if (req.user.role === "learner") {
+    // "learner" (either login) may only ever update its own linked record — the learner-portal
+    // profile edit form, never an arbitrary id.
+    assertOwn(req.params.id === req.ownLearner?.id);
+    if (req.user.username) {
+      Object.keys(data).forEach((key) => { if (!LEARNER_SELF_EDIT_FIELDS.includes(key)) delete data[key]; });
+      allowGuardianPassword = false;
+    }
+  }
   const record = await LearnerService.updateLearner(req.params.id, data);
-  if (password) {
+  if (password && allowGuardianPassword) {
     if (!record.guardianEmail) {
       const err = new Error("This learner needs a guardian email before a password can be set");
       err.statusCode = 400;
       throw err;
     }
     await AuthService.setOrCreatePassword({ name: record.guardianName, email: record.guardianEmail, password, role: "learner" });
+  }
+  // Keeps the learner's own dedicated login (if any) attached to their current username when
+  // it's renamed — otherwise it'd still work but silently become unreachable under the old one.
+  if ("username" in data && before.username && before.username !== data.username) {
+    await AuthService.renameUsernameAccount(before.username, data.username || null);
+  }
+  if (learnerPassword) {
+    if (!record.username) {
+      const err = new Error("This learner needs a username before a learner-portal password can be set");
+      err.statusCode = 400;
+      throw err;
+    }
+    await AuthService.setOrCreatePasswordByUsername({
+      name: `${record.firstName} ${record.lastName}`.trim(),
+      username: record.username,
+      password: learnerPassword,
+      role: "learner",
+    });
   }
   res.json({ success: true, data: record });
 });

@@ -50,7 +50,8 @@ const baseLearnerSchema = z.object({
   dateOfBirth:   z.string().optional().or(z.literal("")),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
-  // Lets the learner log into the same guardian-owned account by username instead of email.
+  // The learner's own login identifier — either logs into the guardian-owned account (if no
+  // dedicated learnerPassword has been set yet) or their own separate account (once one has).
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed")
     .optional().or(z.literal("")),
@@ -62,6 +63,9 @@ const baseLearnerSchema = z.object({
   // Transient — never stored on the learner record. When present, creates or resets the
   // matching guardian's learner-portal login for guardianEmail.
   password:      z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
+  // Transient — never stored. When present, creates or resets the LEARNER's OWN separate
+  // portal login (distinct from the guardian's `password` above), keyed by username.
+  learnerPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
   photo: z.string().optional().nullable(),
 });
@@ -69,6 +73,9 @@ const baseLearnerSchema = z.object({
 export const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {
   if (data.password && !data.guardianEmail) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["guardianEmail"], message: "Guardian email is required to set a password" });
+  }
+  if (data.learnerPassword && !data.username) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["username"], message: "Username is required to set a learner-portal password" });
   }
 });
 

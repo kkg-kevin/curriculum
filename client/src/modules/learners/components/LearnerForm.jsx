@@ -63,6 +63,38 @@ function GuardianPasswordField() {
   );
 }
 
+// Sets up (or resets) the LEARNER's OWN separate portal login, keyed by their username instead
+// of the guardian's email — a genuinely different credential from GuardianPasswordField above,
+// not another way into the same account. Requires a username to be set.
+function LearnerPasswordField() {
+  const { register, formState: { errors } } = useFormContext();
+  const [show, setShow] = useState(false);
+  const error = errors?.learnerPassword?.message;
+
+  return (
+    <div style={S.field}>
+      <label style={S.label}>Learner Portal Password</label>
+      <div style={{ position: "relative" }}>
+        <input
+          type={show ? "text" : "password"}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          {...register("learnerPassword")}
+          style={{ ...S.input, width: "100%", boxSizing: "border-box", paddingRight: 52 }}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", padding: 4 }}
+        >
+          {show ? "Hide" : "Show"}
+        </button>
+      </div>
+      {error ? <span style={S.error}>{error}</span> : <span style={S.hint}>Optional — sets up or resets the learner's OWN separate login (not the guardian's). Requires a username. Leave blank to make no change.</span>}
+    </div>
+  );
+}
+
 // A learner is an independent identity, same as a teacher — no school/class field lives here.
 // Enrollment (which hub, which class, admission number, status) is managed separately, per
 // hub, from the learner's own detail page (see the "Learning Hubs" section on LearnerViewPage).
@@ -166,13 +198,19 @@ export default function LearnerForm() {
           </div>
         </div>
         <GuardianPasswordField />
+      </div>
+
+      <div style={S.section}>
+        <p style={S.heading}>Learner Portal Login</p>
+        <hr style={S.divider} />
         <div style={S.field}>
           <label style={S.label}>Student Username</label>
           <input {...register("username")} placeholder="e.g. grace.wambui" style={S.input} />
           {errors.username
             ? <span style={S.error}>{errors.username.message}</span>
-            : <span style={S.hint}>Optional — lets the learner log into this same account with a username instead of typing the guardian's email.</span>}
+            : <span style={S.hint}>Optional — lets the learner log in with a username. Without their own password below, it logs into the guardian's account above; with one, it's their own separate login.</span>}
         </div>
+        <LearnerPasswordField />
       </div>
     </div>
   );

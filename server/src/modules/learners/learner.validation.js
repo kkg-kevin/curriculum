@@ -26,6 +26,10 @@ const baseLearnerSchema = z.object({
   // guardian's learner-portal login for guardianEmail (see auth.service.js's
   // setOrCreatePassword), then gets stripped before the learner record is saved.
   password:      z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
+  // Transient — never persisted. When present, creates or resets the LEARNER's OWN separate
+  // portal login (distinct from the guardian's `password` above), keyed by `username` instead
+  // of email — see auth.service.js's setOrCreatePasswordByUsername.
+  learnerPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   // Which Progression Ladder rung this learner is currently placed at — superseded by
   // Learning Journey (see currentStageId + learner-journey.model.js) but left as-is since
   // the old ladder UI/data still exists; not read by anything new.
@@ -38,6 +42,9 @@ const baseLearnerSchema = z.object({
 const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {
   if (data.password && !data.guardianEmail) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["guardianEmail"], message: "Guardian email is required to set a password" });
+  }
+  if (data.learnerPassword && !data.username) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["username"], message: "Username is required to set a learner-portal password" });
   }
 });
 

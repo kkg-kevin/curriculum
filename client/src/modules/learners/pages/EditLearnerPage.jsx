@@ -19,13 +19,15 @@ export default function EditLearnerPage() {
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { mutate: updateLearner, isPending } = useUpdateLearner();
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const [passwordReveal, setPasswordReveal] = useState(null);
+  // A guardian password and a learner password can both be set in the same submit —
+  // PasswordRevealDialog only shows one at a time, so queue them and pop one per close.
+  const [revealQueue, setRevealQueue] = useState([]);
 
   const methods = useForm({
     resolver: zodResolver(updateLearnerSchema),
     defaultValues: {
       firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
-      guardianName: "", guardianPhone: "", guardianEmail: "", password: "", photo: null,
+      guardianName: "", guardianPhone: "", guardianEmail: "", password: "", learnerPassword: "", photo: null,
     },
     mode: "onTouched",
   });
@@ -46,6 +48,7 @@ export default function EditLearnerPage() {
         guardianPhone: learner.guardianPhone || "",
         guardianEmail: learner.guardianEmail || "",
         password:      "",
+        learnerPassword: "",
         photo:         learner.photo || null,
       });
     }
@@ -55,11 +58,11 @@ export default function EditLearnerPage() {
     const viewPath = learnerPath(user?.role, id, "view");
     updateLearner({ id, data }, {
       onSuccess: () => {
-        if (data.password) {
-          setPasswordReveal({ password: data.password, name: data.guardianName || `${learner.firstName} ${learner.lastName}`, navigateTo: viewPath });
-        } else {
-          navigate(viewPath);
-        }
+        const queue = [];
+        if (data.password) queue.push({ password: data.password, name: data.guardianName || `${learner.firstName} ${learner.lastName}` });
+        if (data.learnerPassword) queue.push({ password: data.learnerPassword, name: `${learner.firstName} ${learner.lastName} (learner login)` });
+        if (queue.length) setRevealQueue(queue.map((q) => ({ ...q, navigateTo: viewPath })));
+        else navigate(viewPath);
       },
     });
   };
@@ -126,10 +129,14 @@ export default function EditLearnerPage() {
       />
 
       <PasswordRevealDialog
-        isOpen={!!passwordReveal}
-        password={passwordReveal?.password}
-        subjectName={passwordReveal?.name}
-        onClose={() => { navigate(passwordReveal.navigateTo); setPasswordReveal(null); }}
+        isOpen={revealQueue.length > 0}
+        password={revealQueue[0]?.password}
+        subjectName={revealQueue[0]?.name}
+        onClose={() => {
+          const [current, ...rest] = revealQueue;
+          setRevealQueue(rest);
+          if (rest.length === 0) navigate(current.navigateTo);
+        }}
       />
     </div>
   );

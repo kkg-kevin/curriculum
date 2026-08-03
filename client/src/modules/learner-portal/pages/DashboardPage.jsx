@@ -75,7 +75,10 @@ export default function DashboardPage() {
   const school = selectedHub || null;
 
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
-  const progressSummary = useMemo(() => summarizeCoursesProgress(user?.email, courses), [user?.email, courses]);
+  // A learner's own dedicated login has no email — fall back to username so progress storage
+  // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
+  const progressKey = user?.email || user?.username;
+  const progressSummary = useMemo(() => summarizeCoursesProgress(progressKey, courses), [progressKey, courses]);
 
   // Same stage lookup ProfilePage.jsx uses for ProfileIdentityCard's "Developmental Academy"
   // pill — kept in sync here so the dashboard's snapshot card shows the same placement. Stage
@@ -163,8 +166,9 @@ export default function DashboardPage() {
           <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px", color: T.accent }}><FiUserCheck /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No learner profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.6, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-            Your account ({user?.email}) isn't linked to a learner profile yet. Ask your school to record this same
-            email address as the guardian email on your learner record.
+            {user?.email
+              ? <>Your account ({user.email}) isn't linked to a learner profile yet. Ask your school to record this same email address as the guardian email on your learner record.</>
+              : <>Your account ({user?.username}) isn't linked to a learner profile yet. Ask your guardian or school to check your learner record's username.</>}
           </p>
         </div>
       ) : (
