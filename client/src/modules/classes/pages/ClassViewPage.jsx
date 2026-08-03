@@ -28,7 +28,13 @@ function DetailRow({ label, value, empty = "—" }) {
 function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUnassign, onSetPrimary, isAssigning, isSettingPrimary }) {
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const assignedIds = new Set(links.map((l) => l.teacherId));
-  const available = (hubTeachers || []).filter((t) => !assignedIds.has(t.id));
+  // An empty/unset qualifiedCourseIds means unrestricted (see teacher.validation.js) — only
+  // exclude a teacher here once they've been given a specific, non-empty list that doesn't
+  // include this course. Mirrors the server-side gate in class.controller.js's
+  // assignCourseTeacher exactly, so the picker never offers a choice the server would reject.
+  const available = (hubTeachers || []).filter((t) =>
+    !assignedIds.has(t.id) && (!t.qualifiedCourseIds?.length || t.qualifiedCourseIds.includes(course.id))
+  );
   const sortedLinks = [...links].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
 
   return (

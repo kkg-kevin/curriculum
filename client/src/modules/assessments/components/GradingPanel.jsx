@@ -5,6 +5,7 @@ import RichContent from "./RichContent";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+const OBSERVATION_KIND_LABELS = { checklist: "Checklist", rating: "Rating", practicalSkill: "Practical Skill", behaviour: "Behaviour", note: "Note" };
 
 const fieldStyle = {
   boxSizing: "border-box", padding: "7px 10px", borderRadius: 8,
@@ -118,6 +119,45 @@ function RubricRow({ criterion, feedback, indicatorNameById, onChange }) {
   );
 }
 
+// A Teacher Observation indicator — no learner response to show (it's the teacher's own direct
+// judgment, not something a learner submitted), so this shows the indicator's own text/kind/
+// rating-scale context instead of a response line, then the same shared MarksInputs every other
+// scored entry uses.
+function ObservationRow({ index, indicator, feedback, indicatorNameById, onChange }) {
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={indicator.text} /></div>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: T.accentLight, backgroundColor: `${T.accentLight}15`, border: `1px solid ${T.accentLight}35`, padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap" }}>
+          {OBSERVATION_KIND_LABELS[indicator.kind] || indicator.kind}
+        </span>
+      </div>
+      {indicator.ratingScale?.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginLeft: 20 }}>
+          {indicator.ratingScale.map((r) => (
+            <span key={r} style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: `${T.accent}12`, border: `1px solid ${T.accent}35`, borderRadius: 20, padding: "2px 8px" }}>{r}</span>
+          ))}
+        </div>
+      )}
+      <div style={{ marginLeft: 20 }}>
+        <MarksInputs entry={indicator} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
+      </div>
+    </div>
+  );
+}
+
+// A "note"-kind observation indicator is a freeform comment, not a judgment — read-only here,
+// same reasoning as DeliverableRow (nothing to score, just something to see).
+function ObservationNoteRow({ index, indicator }) {
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+      <div style={{ flex: 1, fontSize: 13 }}><RichContent html={indicator.text} /></div>
+    </div>
+  );
+}
+
 // Teacher's grading surface for one learner's submission. Auto-gradable items are shown
 // read-only (already scored server-side at submit time — see grading.utils.js); everything else
 // — short-answer/unstructured/submission items and every rubric criterion — gets a marks input
@@ -127,6 +167,14 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const items = useMemo(() => (assessment.items || []).map(normalizeLegacyItem), [assessment.items]);
   const rubric = assessment.rubric || [];
   const deliverables = assessment.deliverables || [];
+  // Teacher Observation scores through its own `indicators` array instead of `items` — a
+  // "note"-kind indicator is a freeform comment (no judgment to score), so it's split out and
+  // shown read-only instead. `items`/`rubric`/`deliverables` are always empty for this type, so
+  // this is purely additive — nothing above changes for any other assessment type.
+  const isObservation = assessment.type === "observation";
+  const indicators = assessment.indicators || [];
+  const scorableIndicators = isObservation ? indicators.filter((i) => i.kind !== "note") : [];
+  const noteIndicators = isObservation ? indicators.filter((i) => i.kind === "note") : [];
   const answersByItem = useMemo(() => new Map((submission.answers || []).map((a) => [a.itemId, a.response])), [submission.answers]);
   const autoByItem = useMemo(() => new Map((submission.autoItemResults || []).map((r) => [r.itemId, r])), [submission.autoItemResults]);
 
@@ -157,6 +205,10 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
       map.set(key, { marks: existing?.marks ?? 0 });
+    });
+    scorableIndicators.forEach((ind) => {
+      const existing = existingFeedback.get(ind.id);
+      map.set(ind.id, { marks: existing?.marks ?? 0 });
     });
     return map;
   });
@@ -193,7 +245,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
         </div>
       )}
 
-      {manualItems.length > 0 && (
+      {(manualItems.length > 0 || scorableIndicators.length > 0) && (
         <div>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Needs grading
@@ -210,6 +262,27 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
                 onChange={(f) => setFeedback(item.id, f)}
               />
             ))}
+            {scorableIndicators.map((ind, i) => (
+              <ObservationRow
+                key={ind.id}
+                index={i}
+                indicator={ind}
+                feedback={itemFeedback.get(ind.id) || { marks: 0 }}
+                indicatorNameById={indicatorNameById}
+                onChange={(f) => setFeedback(ind.id, f)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {noteIndicators.length > 0 && (
+        <div>
+          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Observation Notes
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {noteIndicators.map((ind, i) => <ObservationNoteRow key={ind.id} index={i} indicator={ind} />)}
           </div>
         </div>
       )}

@@ -99,6 +99,13 @@ const assignCourseTeacher = asyncHandler(async (req, res) => {
   if (!courseId || !teacherId) return res.status(400).json({ success: false, message: "courseId and teacherId are required" });
   const record = await ClassService.getClassById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  // An empty/unset qualifiedCourseIds means unrestricted — the gate only activates once a
+  // teacher has been given a specific, non-empty list (see teacher.validation.js).
+  const teacher = TeacherModel.findById(teacherId);
+  if (!teacher) return res.status(404).json({ success: false, message: "Teacher not found" });
+  if (teacher.qualifiedCourseIds?.length > 0 && !teacher.qualifiedCourseIds.includes(courseId)) {
+    return res.status(400).json({ success: false, message: "This educator isn't qualified to teach this course." });
+  }
   const link = ClassCourseTeacherLinkModel.link(req.params.id, courseId, teacherId);
   res.status(201).json({ success: true, data: link });
 });

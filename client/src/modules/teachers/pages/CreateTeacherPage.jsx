@@ -30,6 +30,7 @@ export default function CreateTeacherPage() {
       status: "active",
       employmentType: null, teacherLevel: null, paymentTerms: null,
       photo: null,
+      qualifiedCourseIds: [],
     },
     mode: "onTouched",
   });
