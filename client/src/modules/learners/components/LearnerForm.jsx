@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import ImageUploadField from "../../../components/ImageUploadField";
+import MultiSelectChips from "../../../components/MultiSelectChips";
+import { NATIONALITIES, LANGUAGES } from "../schemas/learner.schema";
 
 // Mirrors client/src/modules/learner-portal/components/profile/ProfileIdentityCard.jsx's
 // computeAge — display-only, derived live from whatever date of birth is currently typed in.
@@ -118,17 +120,28 @@ export default function LearnerForm() {
               : age !== null && <span style={S.hint}>Age: {age} year{age !== 1 ? "s" : ""}</span>}
           </div>
         </div>
-        <div style={S.row}>
-          <div style={S.field}>
-            <label style={S.label}>Nationality</label>
-            <input {...register("nationality")} placeholder="e.g. Kenyan" style={S.input} />
-            {errors.nationality && <span style={S.error}>{errors.nationality.message}</span>}
-          </div>
-          <div style={S.field}>
-            <label style={S.label}>Languages</label>
-            <input {...register("languages")} placeholder="e.g. English, Kiswahili" style={S.input} />
-            {errors.languages && <span style={S.error}>{errors.languages.message}</span>}
-          </div>
+        <div style={S.field}>
+          <label style={S.label}>Nationality</label>
+          <select {...register("nationality")} style={S.select}>
+            <option value="">— Select nationality —</option>
+            {NATIONALITIES.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          {errors.nationality && <span style={S.error}>{errors.nationality.message}</span>}
+        </div>
+        <div style={S.field}>
+          <label style={S.label}>Languages</label>
+          <Controller
+            name="languages"
+            control={control}
+            render={({ field }) => (
+              <MultiSelectChips
+                options={LANGUAGES}
+                value={field.value ? field.value.split(",").map((v) => v.trim()).filter(Boolean) : []}
+                onChange={(next) => field.onChange(next.join(", "))}
+              />
+            )}
+          />
+          {errors.languages && <span style={S.error}>{errors.languages.message}</span>}
         </div>
       </div>
 
