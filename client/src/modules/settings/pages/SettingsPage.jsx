@@ -5,7 +5,6 @@ import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel"
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
-import BranchesPanel from "../../branches/components/BranchesPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -254,21 +253,12 @@ const TABS = [
   { key: "learning-hubs", label: "Learning Hubs" },
 ];
 
-// Branches groups related Learning Hubs under one centralized admin — nested here as a sub-tab
-// of Learning Hubs rather than its own top-level Settings tab, since it's a view onto the same
-// hub network, not an independent catalog.
-const HUB_SUB_TABS = [
-  { key: "hubs", label: "Hubs" },
-  { key: "branches", label: "Branches" },
-];
-
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
     TABS.some((t) => t.key === requestedTab) ? requestedTab : "competencies"
   );
-  const [hubSub, setHubSub] = useState("hubs");
 
   useEffect(() => {
     const el = document.createElement("style");
@@ -305,22 +295,7 @@ export default function SettingsPage() {
         {activeTab === "learning-areas" && <LearningAreasPanel />}
         {activeTab === "system-levels" && <SystemLevelsPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
-        {activeTab === "learning-hubs" && (
-          <div>
-            <div className="stg-tabs" style={{ marginBottom: "18px" }}>
-              {HUB_SUB_TABS.map((tab) => (
-                <button
-                  key={tab.key} type="button"
-                  className={`stg-tab-btn${hubSub === tab.key ? " active" : ""}`}
-                  onClick={() => setHubSub(tab.key)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            {hubSub === "hubs" ? <LearningHubsPanel /> : <BranchesPanel />}
-          </div>
-        )}
+        {activeTab === "learning-hubs" && <LearningHubsPanel />}
       </div>
     </div>
   );
