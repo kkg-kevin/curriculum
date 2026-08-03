@@ -1276,5 +1276,855 @@
     "createdAt": "2026-07-10T12:19:32.648Z",
     "updatedAt": "2026-07-16T11:29:43.777Z",
     "assessmentIds": []
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 1,
+    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "f2a69e96-7bf2-4bdf-a646-067ff949fad1",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "9260f265-cd32-4f0b-ae37-a600bbdbd129",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "640f962d-3de8-404e-8376-e1dcdfdcaffe",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "6232d2ba-cca0-480e-a6e4-f73c34fdefdb",
+    "createdAt": "2026-08-03T06:38:45.489Z",
+    "updatedAt": "2026-08-03T06:38:45.489Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 2,
+    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "cbc43817-560f-4d66-90f1-4d6108b39f2c",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "da5063b6-2795-45d1-b9c5-7b33c5f89360",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "f16ee16a-b388-4f0f-b03a-5d30093be88b",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "c75e5da6-7721-4a0c-af7d-0072a925e523",
+    "createdAt": "2026-08-03T06:38:45.489Z",
+    "updatedAt": "2026-08-03T06:38:45.489Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 3,
+    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "a9a85ee3-192e-4bfe-83e5-545959e54291",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "e216d427-08df-4d88-8965-a9a106f4b69b",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "af8469e3-f775-4712-9720-1c1f7a7bc983",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "cac1abc9-0e84-4cef-b8fc-9156773ca40b",
+    "createdAt": "2026-08-03T06:38:45.489Z",
+    "updatedAt": "2026-08-03T06:38:45.489Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 4,
+    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "50b49e02-6332-4ead-a90b-12b731888977",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "e1dcc1db-fe87-438e-9ef6-d3aa3361c53d",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "6531ef12-e9b4-4198-8742-9576ae5600d1",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "396049d8-ecaf-403c-bf1f-aaa3e68056f4",
+    "createdAt": "2026-08-03T06:38:45.489Z",
+    "updatedAt": "2026-08-03T06:38:45.489Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 5,
+    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "d9e33734-b096-4001-a14d-a8141dde6264",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ce6b0e10-6453-4105-8e9a-ddeb1b4e7f6a",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "7fb61169-5ec4-41fa-a913-be1f7c1300bb",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "981f74ba-3c5d-4e5f-a82b-43571271f47a",
+    "createdAt": "2026-08-03T06:38:45.489Z",
+    "updatedAt": "2026-08-03T06:38:45.489Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 6,
+    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "f251dba0-1591-4a02-aeeb-12e428aa7f60",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "06c75ed7-3dfe-42ed-9119-dc18cbe388c9",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "9f40f4aa-6d9a-4249-aa06-818d58235f48",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "101e882d-ae3a-411f-bb4a-2367f3ff8d67",
+    "createdAt": "2026-08-03T06:38:45.537Z",
+    "updatedAt": "2026-08-03T06:38:45.537Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 7,
+    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "ae910b66-1a41-4af2-b833-d7c27ec2236a",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "dfab55c6-6512-4ae5-a256-59f1a9a654b0",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "9a30cd6f-97e4-43a1-a98d-83c2c5a38381",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "9076df6b-42f0-46eb-baf2-dfd9f755aaf9",
+    "createdAt": "2026-08-03T06:38:45.537Z",
+    "updatedAt": "2026-08-03T06:38:45.537Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 8,
+    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "4f6f691c-1743-4be8-ba79-893df523390d",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "929be66b-6105-45f4-84dd-7b7ab049f0bf",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "84acbb72-d221-4dda-9e2d-9c5f0ae6b468",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "05409b14-c660-4945-a328-ea1ac70eff70",
+    "createdAt": "2026-08-03T06:38:45.537Z",
+    "updatedAt": "2026-08-03T06:38:45.537Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 9,
+    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "52eeaf3c-a751-43fa-b480-c67fd7cd80aa",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "9461c66b-6e2b-4aa5-bde9-a1a73c50bf73",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "ca15cc93-1260-490f-a7db-f0fe67b63f35",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "4270c4c5-4c12-4fb9-ba49-3a119a5134f3",
+    "createdAt": "2026-08-03T06:38:45.537Z",
+    "updatedAt": "2026-08-03T06:38:45.537Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 10,
+    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "d10f1c39-1764-434a-abbf-566f6709af7f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "52b2fc79-208f-4dab-b35c-bfb466ff5515",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "1dfbaec8-d3d0-4af5-8386-bf57bd101884",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "04b7a8f2-7344-4385-b42a-3119a7c27cd9",
+    "createdAt": "2026-08-03T06:38:45.537Z",
+    "updatedAt": "2026-08-03T06:38:45.537Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 11,
+    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "8a3cb83b-8d58-4cc2-8071-ad17018d9f50",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "a1b3ba8c-de38-4979-be79-13bfc653605a",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "ad321a32-d48d-4993-b571-f84f9dd6fb7e",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "b1cb1e6e-0273-4e84-a7f1-0b3cdb80fd4f",
+    "createdAt": "2026-08-03T06:38:45.642Z",
+    "updatedAt": "2026-08-03T06:38:45.642Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 12,
+    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "4d297058-e36e-4d87-b912-9bc82d313195",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "4d289a16-b29a-48f6-ac69-3a9f17dcdf73",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "24e76eda-b87f-4117-aead-7945260d6f34",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "22808c23-8e01-4b7f-8132-27e240c90565",
+    "createdAt": "2026-08-03T06:38:45.642Z",
+    "updatedAt": "2026-08-03T06:38:45.642Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 13,
+    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "1cfb642d-7faa-43ba-829b-ebf658026fbe",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "3104fbcb-1807-4e77-bdb9-b85b6621b39f",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "eabfb501-47bf-442f-8be2-8e88ae063ade",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "cdc43597-3e79-4cb5-97bb-3b97f32c54cd",
+    "createdAt": "2026-08-03T06:38:45.642Z",
+    "updatedAt": "2026-08-03T06:38:45.642Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 14,
+    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "cd8b0841-63c3-476c-847c-d1e0fce8aa6e",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ba750fff-65c3-42ba-942c-5fc1e60e89d1",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "d3954501-7434-4cbe-8cf3-47e3fdbde504",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "d1c7c829-ae4f-4b7f-86fd-a03393d599d9",
+    "createdAt": "2026-08-03T06:38:45.642Z",
+    "updatedAt": "2026-08-03T06:38:45.642Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 15,
+    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "a6330390-0849-4deb-a6f7-3a6afef0200f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "d5637c44-2f51-42df-b1e1-aed3cd1de37d",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "3aff4b81-d935-413e-a908-f81a6d5f4908",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "efa3dad8-cd7c-4702-a752-e190e12bf6c6",
+    "createdAt": "2026-08-03T06:38:45.642Z",
+    "updatedAt": "2026-08-03T06:38:45.642Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 16,
+    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "f7982fab-4e04-497a-9ae4-0b3d077447f4",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "1a834313-235a-46f9-9a89-fbe9fdc5318e",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "00ea2cdb-ff54-44a7-8f76-8389865d2493",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "4c4095a1-ca8a-4fd6-9d6f-8c200cdd0e87",
+    "createdAt": "2026-08-03T06:38:45.706Z",
+    "updatedAt": "2026-08-03T06:38:45.706Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 17,
+    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "395d2f0b-482e-4617-b4f8-8eb7bbbb6f4f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "a9b20901-b8e4-4d7f-b0b1-a891a6451325",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "aebed79e-824c-49ea-a1f3-0a8e092cb650",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "7b2b6c2c-4313-4e6f-8671-1ac58b4d94b8",
+    "createdAt": "2026-08-03T06:38:45.706Z",
+    "updatedAt": "2026-08-03T06:38:45.706Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 18,
+    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "85d66436-7e16-4376-bfc1-a1aa440a9e4a",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "0a69d8b4-283b-461f-b11c-217c0241dbf0",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "008e15c4-d5a9-4d8b-a077-03118f193214",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "0de97fb2-a00f-4302-8834-1365554618b8",
+    "createdAt": "2026-08-03T06:38:45.706Z",
+    "updatedAt": "2026-08-03T06:38:45.706Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 19,
+    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "af9a9bdd-ca36-4003-937c-7dd7c8095166",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "0e3680a7-de41-4ac8-af17-a01d40e45426",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "aa1481a6-7ee4-4d1b-950c-f366102450d7",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "8e9fb612-a0be-46ee-97c5-ff3de988f197",
+    "createdAt": "2026-08-03T06:38:45.706Z",
+    "updatedAt": "2026-08-03T06:38:45.706Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 20,
+    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "558188be-7bd9-4165-8b2a-8efc967e92fa",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "ba6c3d63-897f-4475-bf25-2dacdc6e0ac3",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "4582a7b5-a516-48cd-bb5c-3f46fd7cda4a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "803da66c-6d1a-4646-b87a-37f5acd76998",
+    "createdAt": "2026-08-03T06:38:45.706Z",
+    "updatedAt": "2026-08-03T06:38:45.706Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 21,
+    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "3ca0fbc1-fa1e-472a-9244-ca14d4d20395",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "f35614e0-9037-4031-81d6-0775a4da47a6",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "1362347a-6951-4338-b5cc-a1b74338f46d",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "e80b9762-a8bc-4121-aa11-7b51b4cc0d4c",
+    "createdAt": "2026-08-03T06:38:45.770Z",
+    "updatedAt": "2026-08-03T06:38:45.770Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 22,
+    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "8d8ab56c-6d04-45ea-8161-2bbd67117ab8",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "395b3bdd-81ee-4a97-9215-84df8d8f3c5b",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "57771d3a-815b-444e-9f4b-cd4458aa424a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "29d07414-9ada-434b-a76d-a99e30d5f3bc",
+    "createdAt": "2026-08-03T06:38:45.770Z",
+    "updatedAt": "2026-08-03T06:38:45.770Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 23,
+    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "2175d4f6-c13a-4ca0-be77-8746005781fc",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "0a511782-d4b4-4b19-8598-e4b4e249e04d",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "53cfbf2f-f905-4e1c-ba5f-b39aa4af83c9",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "eb03cc29-b671-45ed-82e4-c17940e527f0",
+    "createdAt": "2026-08-03T06:38:45.770Z",
+    "updatedAt": "2026-08-03T06:38:45.770Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 24,
+    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "eeb21605-cfe3-43ee-b492-6342a7bb74a1",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "2fd797cd-661f-4e4d-a395-6d7c2be0a8e2",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "928470af-2b35-46e3-866c-40b592efa179",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "e8256204-f246-423e-b888-5975952c9c00",
+    "createdAt": "2026-08-03T06:38:45.770Z",
+    "updatedAt": "2026-08-03T06:38:45.770Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "title": "",
+    "order": 25,
+    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "outcomes": [],
+    "introduction": "",
+    "mainConcepts": [
+      {
+        "id": "b43975ca-aab2-450e-9771-dd74dc71bb3f",
+        "title": "Introduction",
+        "content": ""
+      }
+    ],
+    "activities": [
+      {
+        "id": "329a9c6e-6a84-461f-ba38-f94a8bd2d031",
+        "title": "",
+        "content": "",
+        "mode": "individual"
+      }
+    ],
+    "notes": [
+      {
+        "id": "3e3c581c-d186-4d26-a150-3a1061b8819a",
+        "title": "",
+        "content": ""
+      }
+    ],
+    "resources": [],
+    "id": "052f10b7-7d90-4139-9302-226518a59099",
+    "createdAt": "2026-08-03T06:38:45.770Z",
+    "updatedAt": "2026-08-03T06:38:45.770Z"
   }
 ]

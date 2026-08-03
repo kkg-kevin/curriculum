@@ -25,7 +25,7 @@ export default function EditLearnerPage() {
     resolver: zodResolver(updateLearnerSchema),
     defaultValues: {
       firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
-      guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
+      guardianName: "", guardianPhone: "", guardianEmail: "", password: "", photo: null,
     },
     mode: "onTouched",
   });
@@ -46,6 +46,7 @@ export default function EditLearnerPage() {
         guardianPhone: learner.guardianPhone || "",
         guardianEmail: learner.guardianEmail || "",
         password:      "",
+        photo:         learner.photo || null,
       });
     }
   }, [learner, reset]);

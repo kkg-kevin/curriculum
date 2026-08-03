@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiCalendar, FiClock, FiHome, FiMail, FiPhone, FiUserCheck } from "react-icons/fi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
 import { classApi } from "../../classes/services/classApi";
-import Avatar from "../../../components/ui/Avatar";
+import AvatarPhotoEditor from "../../../components/ui/AvatarPhotoEditor";
 
 const ACCENT = "#25476a";
 
@@ -90,7 +90,13 @@ export default function ProfilePage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <Avatar firstName={teacher.firstName} lastName={teacher.lastName} borderColor="rgba(255,255,255,0.3)" />
+          <AvatarPhotoEditor
+            firstName={teacher.firstName}
+            lastName={teacher.lastName}
+            photo={teacher.photo}
+            borderColor="rgba(255,255,255,0.3)"
+            onChange={(photo) => updateTeacher({ id: teacher.id, data: { photo } })}
+          />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>{teacher.firstName} {teacher.lastName}</h1>

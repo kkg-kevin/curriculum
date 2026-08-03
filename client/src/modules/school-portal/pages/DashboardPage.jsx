@@ -164,8 +164,8 @@ export default function DashboardPage() {
   const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity || 0), 0);
 
   const recentActivity = [
-    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), name: `${t.firstName} ${t.lastName}`, sub: "Educator added", createdAt: t.createdAt })),
-    ...learners.map((l) => ({ id: `l-${l.id}`, initials: `${l.firstName?.[0] || ""}${l.lastName?.[0] || ""}`.toUpperCase(), name: `${l.firstName} ${l.lastName}`, sub: `Enrolled — ${classesMap[l.classId]?.gradeName || "No class"}`, createdAt: l.createdAt })),
+    ...teachers.map((t) => ({ id: `t-${t.id}`, initials: `${t.firstName?.[0] || ""}${t.lastName?.[0] || ""}`.toUpperCase(), photo: t.photo, name: `${t.firstName} ${t.lastName}`, sub: "Educator added", createdAt: t.createdAt })),
+    ...learners.map((l) => ({ id: `l-${l.id}`, initials: `${l.firstName?.[0] || ""}${l.lastName?.[0] || ""}`.toUpperCase(), photo: l.photo, name: `${l.firstName} ${l.lastName}`, sub: `Enrolled — ${classesMap[l.classId]?.gradeName || "No class"}`, createdAt: l.createdAt })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
   if (!schoolLoading && !school) {
@@ -194,8 +194,10 @@ export default function DashboardPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap", position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-              {school.name?.[0]?.toUpperCase() || "S"}
+            <div style={{ width: 56, height: 56, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "#fff", flexShrink: 0, overflow: "hidden" }}>
+              {school.photo ? (
+                <img src={school.photo} alt={school.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (school.name?.[0]?.toUpperCase() || "S")}
             </div>
             <div>
               <h1 style={{ margin: "0 0 6px", fontSize: 25, fontWeight: 800, color: "#fff", letterSpacing: "-0.3px" }}>{school.name}</h1>
@@ -350,9 +352,13 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {recentActivity.map((a) => (
                 <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 4px" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})` }}>
-                    {a.initials || "?"}
-                  </div>
+                  {a.photo ? (
+                    <img src={a.photo} alt={a.name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", background: `linear-gradient(135deg, ${T.accentDeep}, ${T.accentMid})` }}>
+                      {a.initials || "?"}
+                    </div>
+                  )}
                   <div>
                     <p style={{ margin: 0, fontSize: 12.5 }}><span style={{ fontWeight: 700, color: T.ink }}>{a.name}</span> {a.sub.startsWith("Enrolled") ? `— ${a.sub.replace("Enrolled — ", "enrolled — ")}` : `— ${a.sub}`}</p>
                     <p style={{ margin: "1px 0 0", fontSize: 11, color: T.inkFaint }}>{timeAgo(a.createdAt)}</p>

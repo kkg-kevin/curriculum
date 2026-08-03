@@ -128,8 +128,10 @@ export default function LearningHubViewPage() {
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
-              {isSchool ? <SchoolIcon fontSize="large" /> : <LocationOnIcon fontSize="large" />}
+            <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0, overflow: "hidden" }}>
+              {hub.photo ? (
+                <img src={hub.photo} alt={hub.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : isSchool ? <SchoolIcon fontSize="large" /> : <LocationOnIcon fontSize="large" />}
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>

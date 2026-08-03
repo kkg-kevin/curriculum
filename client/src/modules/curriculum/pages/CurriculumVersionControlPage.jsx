@@ -15,8 +15,8 @@ import { courseApi } from "../../courses/services/courseApi";
 
 const STEPS = [
   { n: 1, label: "Basic Info" },
-  { n: 2, label: "Structure" },
-  { n: 3, label: "Competencies" },
+  { n: 2, label: "Competencies" },
+  { n: 3, label: "Structure" },
   { n: 4, label: "Version Control" },
 ];
 
@@ -961,7 +961,7 @@ export default function CurriculumVersionControlPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>{subtitleMap[mode]}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} className="vc-btn-secondary">← Competencies</button>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)} className="vc-btn-secondary">← Structure</button>
           <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-primary">Done</button>
         </div>
       </div>

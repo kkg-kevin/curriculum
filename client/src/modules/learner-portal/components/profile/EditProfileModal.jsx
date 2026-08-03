@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { T } from "./theme";
+import ImageUploadField from "../../../../components/ImageUploadField";
 
 const inputStyle = (hasError) => ({
   width: "100%",
@@ -16,6 +17,7 @@ const labelStyle = { display: "block", marginBottom: 6, fontSize: 13, fontWeight
 
 export default function EditProfileModal({ learner, isSaving, onSave, onClose }) {
   const [formData, setFormData] = useState({
+    photo: null,
     firstName: "",
     lastName: "",
     gender: "",
@@ -32,6 +34,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
   useEffect(() => {
     if (learner) {
       setFormData({
+        photo: learner.photo || null,
         firstName: learner.firstName || "",
         lastName: learner.lastName || "",
         gender: learner.gender || "",
@@ -104,6 +107,16 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <label style={labelStyle}>Photo</label>
+            <ImageUploadField
+              value={formData.photo}
+              onChange={(url) => setFormData((prev) => ({ ...prev, photo: url }))}
+              width="140px"
+              height="140px"
+            />
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
             <div>
               <label style={labelStyle}>First name</label>

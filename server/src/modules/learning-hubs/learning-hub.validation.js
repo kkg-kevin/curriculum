@@ -77,6 +77,8 @@ const baseLearningHubSchema = z.object({
   // consumer (Teachers/Classes/Learners pickers, curriculum view, dashboard, etc).
   status: z.enum(["draft", "active", "inactive"]).default("draft"),
   description: z.string().max(1000, "Max 1000 characters").default(""),
+  // Single profile/logo image — distinct from the `photos` gallery below.
+  photo: z.string().optional().nullable().default(null),
   photos: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
   operatingHours: operatingHoursSchema.default({}),

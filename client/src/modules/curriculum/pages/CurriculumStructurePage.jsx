@@ -22,8 +22,8 @@ const CYCLE_OPTIONS = [
 
 const STEPS = [
   { n: 1, label: "Basic Info" },
-  { n: 2, label: "Structure" },
-  { n: 3, label: "Competencies" },
+  { n: 2, label: "Competencies" },
+  { n: 3, label: "Structure" },
   { n: 4, label: "Version Control" },
 ];
 
@@ -380,17 +380,20 @@ export default function CurriculumStructurePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+          <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            ← Competencies
+          </button>
           <button type="button" onClick={() => handleSave(exitPath)} disabled={isPending} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}>
             Done
           </button>
-          <button type="button" onClick={() => handleSave(`/curriculum/${id}/competencies`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
-            {isPending ? <><Spinner /> Saving…</> : "Next: Competencies →"}
+          <button type="button" onClick={() => handleSave(`/curriculum/${id}/versions`)} disabled={isPending} style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.15s" }}>
+            {isPending ? <><Spinner /> Saving…</> : "Next: Version Control →"}
           </button>
         </div>
       </div>
 
       {/* ── Step indicator ─────────────────────────────────────────────── */}
-      <StepIndicator current={2} />
+      <StepIndicator current={3} />
 
       {/* ── Body ───────────────────────────────────────────────────────── */}
       <div className="csp-layout">

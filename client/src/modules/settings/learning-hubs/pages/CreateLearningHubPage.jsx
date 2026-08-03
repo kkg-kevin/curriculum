@@ -25,7 +25,7 @@ export default function CreateLearningHubPage() {
       mapLink: "",
       contactPerson: "", email: "", password: "", phone: "",
       curriculumId: "", branchId: "", status: "draft",
-      description: "", photos: [], amenities: [],
+      description: "", photo: null, photos: [], amenities: [],
       operatingHours: { opensAt: "", closesAt: "", days: [] },
       spaces: [],
     },

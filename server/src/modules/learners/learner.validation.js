@@ -30,6 +30,9 @@ const baseLearnerSchema = z.object({
   // Learning Journey (see currentStageId + learner-journey.model.js) but left as-is since
   // the old ladder UI/data still exists; not read by anything new.
   currentRungId: z.string().optional().nullable().default(null),
+  // Profile photo — set via the shared upload pipeline (see uploads module); a bare URL string,
+  // not managed as a file upload itself.
+  photo: z.string().optional().nullable().default(null),
 });
 
 const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {

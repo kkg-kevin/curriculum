@@ -80,9 +80,13 @@ export function TeacherCard({ teacher }) {
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-              {initials || "?"}
-            </div>
+            {teacher.photo ? (
+              <img src={teacher.photo} alt={`${teacher.firstName} ${teacher.lastName}`} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                {initials || "?"}
+              </div>
+            )}
             <div style={{ minWidth: 0 }}>
               <h3
                 onClick={() => navigate(teacherPath(user?.role, teacher.id, "view"))}

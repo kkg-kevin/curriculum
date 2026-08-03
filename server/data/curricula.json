@@ -281,5 +281,54 @@
     "id": "4e4b1434-2298-47fc-bcc3-980dd5b3c6fa",
     "createdAt": "2026-07-24T12:07:44.959Z",
     "updatedAt": "2026-07-24T12:08:04.818Z"
+  },
+  {
+    "name": "Sample school program",
+    "code": "SSP",
+    "academicYear": "",
+    "description": "description ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "custom",
+    "periods": [
+      {
+        "name": "Period 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      {
+        "id": "732cc0b1-44e1-4328-b2b4-87f64776a841",
+        "name": "Level 1",
+        "systemLevelId": "a44094a4-019f-4704-aaae-8079ed445eff",
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "3187c949-615d-4849-b5e9-fa3dd307f866",
+        "name": "Level 2",
+        "systemLevelId": "55fe4e93-b7cc-4fd1-8693-9ef97a7ef65f",
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "7421ae45-cbf4-4253-9e3a-716d936461be",
+        "name": "Level 3",
+        "systemLevelId": "8709f6c6-a7be-4c1c-a180-80e146c8cee9",
+        "shortLabel": "",
+        "developmentalStageId": null
+      }
+    ],
+    "id": "bd8e1a51-a6f7-4072-9679-3706caadca15",
+    "createdAt": "2026-08-03T06:17:51.790Z",
+    "updatedAt": "2026-08-03T06:33:03.923Z"
   }
 ]

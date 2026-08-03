@@ -26,7 +26,7 @@ export default function CreateLearnerPage() {
     resolver: zodResolver(createLearnerSchema),
     defaultValues: {
       firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
-      guardianName: "", guardianPhone: "", guardianEmail: "", password: "",
+      guardianName: "", guardianPhone: "", guardianEmail: "", password: "", photo: null,
     },
     mode: "onTouched",
   });

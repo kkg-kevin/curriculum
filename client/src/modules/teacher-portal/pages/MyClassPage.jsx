@@ -26,9 +26,13 @@ function LearnerRow({ learner }) {
   const initials = `${learner.firstName?.[0] ?? ""}${learner.lastName?.[0] ?? ""}`.toUpperCase();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #F9FAFB" }}>
-      <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-        {initials || "?"}
-      </div>
+      {learner.photo ? (
+        <img src={learner.photo} alt={`${learner.firstName} ${learner.lastName}`} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          {initials || "?"}
+        </div>
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{learner.firstName} {learner.lastName}</p>
         <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{learner.admissionNumber || "No ID"}</p>

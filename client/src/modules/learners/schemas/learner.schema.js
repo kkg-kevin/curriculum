@@ -20,6 +20,7 @@ const baseLearnerSchema = z.object({
   // matching guardian's learner-portal login for guardianEmail.
   password:      z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
+  photo: z.string().optional().nullable(),
 });
 
 export const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {

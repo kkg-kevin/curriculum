@@ -29,10 +29,18 @@ const createUserSchema = z.object({
   role: z.enum(USER_ROLES).default("admin"),
 });
 
+// Self-service account update — deliberately just the photo for now (no self-service page for
+// name/email/password exists yet). No .default() on purpose: an absent key must stay undefined
+// so a PUT that only sends `photo` can't zero out anything else added here later.
+const updateMeSchema = z.object({
+  photo: z.string().optional().nullable(),
+});
+
 module.exports = {
   USER_ROLES,
   PUBLIC_SIGNUP_ROLES,
   loginSchema,
   signupSchema,
   createUserSchema,
+  updateMeSchema,
 };

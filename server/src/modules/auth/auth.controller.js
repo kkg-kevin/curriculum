@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
-const { loginSchema, signupSchema } = require("./auth.validation");
+const { loginSchema, signupSchema, updateMeSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 
 const cookieOptions = {
@@ -33,4 +33,11 @@ const me = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-module.exports = { signup, login, logout, me };
+const updateMe = asyncHandler(async (req, res) => {
+  const parsed = updateMeSchema.parse(req.body);
+  const data = Object.fromEntries(Object.entries(parsed).filter(([, v]) => v !== undefined));
+  const user = AuthService.updateMe(req.user.id, data);
+  res.json({ success: true, data: user });
+});
+
+module.exports = { signup, login, logout, me, updateMe };

@@ -94,7 +94,7 @@ export default function DashboardPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {teacher && <Avatar firstName={teacher.firstName} lastName={teacher.lastName} size={64} borderColor="rgba(255,255,255,0.3)" />}
+            {teacher && <Avatar firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} size={64} borderColor="rgba(255,255,255,0.3)" />}
             <div>
               <h1 style={{ margin: "0 0 6px 0", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
                 Welcome back{user?.name ? `, ${user.name}` : ""}

@@ -30,5 +30,45 @@
     "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
     "createdAt": "2026-07-10T12:19:32.629Z",
     "updatedAt": "2026-07-10T12:19:32.629Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "name": "Robotics 1",
+    "order": 1,
+    "id": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+    "createdAt": "2026-08-03T06:38:45.455Z",
+    "updatedAt": "2026-08-03T06:38:45.455Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "name": "Robotics 2",
+    "order": 2,
+    "id": "648bc349-9b4d-4871-a301-02e38fd4088d",
+    "createdAt": "2026-08-03T06:38:45.504Z",
+    "updatedAt": "2026-08-03T06:38:45.504Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "name": "Robotics 3",
+    "order": 3,
+    "id": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+    "createdAt": "2026-08-03T06:38:45.609Z",
+    "updatedAt": "2026-08-03T06:38:45.609Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "name": "Robotics 4",
+    "order": 4,
+    "id": "332fd342-7220-41d1-bf79-b20365c33bce",
+    "createdAt": "2026-08-03T06:38:45.670Z",
+    "updatedAt": "2026-08-03T06:38:45.670Z"
+  },
+  {
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "name": "Robotics 5",
+    "order": 5,
+    "id": "40d50543-ec1d-4883-999b-9daa19ccf901",
+    "createdAt": "2026-08-03T06:38:45.726Z",
+    "updatedAt": "2026-08-03T06:38:45.726Z"
   }
 ]

@@ -6,7 +6,8 @@
     "role": "admin",
     "id": "e8cc7387-d36b-4101-98d8-dcea02b885ac",
     "createdAt": "2026-07-08T11:20:18.637Z",
-    "updatedAt": "2026-07-29T08:34:38.167Z"
+    "updatedAt": "2026-08-03T07:20:53.475Z",
+    "photo": "http://localhost:5000/uploads/a33667ef-9c84-4096-90cb-2b52e139f793.jpeg"
   },
   {
     "name": "Teacher ",

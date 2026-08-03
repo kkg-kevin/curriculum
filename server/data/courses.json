@@ -22,5 +22,17 @@
     "updatedAt": "2026-07-15T08:45:56.152Z",
     "status": "active",
     "code": "SC"
+  },
+  {
+    "name": "Robotics",
+    "code": "ROB",
+    "status": "active",
+    "description": "<p>Robotics description sample </p>",
+    "coverImage": "http://localhost:5000/uploads/1e79dbb9-004c-47d8-b56f-46432a8ef749.png",
+    "ageMin": 5,
+    "ageMax": 18,
+    "id": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "createdAt": "2026-08-03T06:38:45.309Z",
+    "updatedAt": "2026-08-03T06:38:45.309Z"
   }
 ]

@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, Controller } from "react-hook-form";
 import { TEACHER_STATUSES, EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
+import ImageUploadField from "../../../components/ImageUploadField";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -109,7 +110,7 @@ function NullableSelect({ name, label, options, numeric = false, hint }) {
 /* ── Main form ────────────────────────────────────────────────────────── */
 
 export default function TeacherForm() {
-  const { register, formState: { errors } } = useFormContext();
+  const { register, control, formState: { errors } } = useFormContext();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0", backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
@@ -118,6 +119,13 @@ export default function TeacherForm() {
       <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Personal Information</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <Field label="Photo">
+            <Controller
+              name="photo"
+              control={control}
+              render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="140px" height="140px" />}
+            />
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <TextInput name="firstName" label="First Name" placeholder="e.g. Jane" required />
             <TextInput name="lastName"  label="Last Name"  placeholder="e.g. Mwangi" required />

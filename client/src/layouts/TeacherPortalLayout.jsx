@@ -10,7 +10,7 @@ const MOBILE_BREAKPOINT = 900;
 
 function TeacherPortalLayout() {
   const scope = useTeacherPortalScope();
-  const { hubs, selectedHubId, setSelectedHubId, hasNoHubs } = scope;
+  const { teacher, hubs, selectedHubId, setSelectedHubId, hasNoHubs } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -32,7 +32,7 @@ function TeacherPortalLayout() {
       <TeacherSidebar isMobile={isMobile} isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="teacher-shell__content" style={{ marginLeft: isMobile ? 0 : 260, width: isMobile ? "100%" : "calc(100vw - 260px)" }}>
-        <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} />
+        <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} photo={teacher?.photo} />
 
         <main className="teacher-shell__main" style={{ padding: isMobile ? "20px 16px 24px" : "28px 32px 36px" }}>
           <div className="teacher-shell__main-inner">

@@ -15,7 +15,8 @@
     "status": "active",
     "id": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
     "createdAt": "2026-07-09T06:39:37.766Z",
-    "updatedAt": "2026-07-17T07:50:38.163Z"
+    "updatedAt": "2026-08-03T08:22:05.436Z",
+    "photo": "http://localhost:5000/uploads/9b3a0a08-90a0-4c9a-837a-6f822721f2f1.jpeg"
   },
   {
     "name": "Test ",
