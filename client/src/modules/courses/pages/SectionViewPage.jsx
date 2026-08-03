@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCourseQuery, useSessions } from "../hooks/useCourse";
+import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
 import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
-import { markSectionComplete, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete } from "../../learner-portal/utils/progressStorage";
+import { markSectionComplete, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete, isModuleSessionsComplete } from "../../learner-portal/utils/progressStorage";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -59,6 +59,17 @@ function SectionIcon() {
   );
 }
 
+// A locked module's sessions render with this instead of the usual chevron/CompletionDot —
+// learner-only, mirrors CompletionDot's "only meaningful for the browsing learner" scoping.
+function LockIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
 // Green check = viewed/complete, hollow ring = not yet visited — only ever shown to the
 // learner role (progress is tracked per-browsing-learner, not meaningful for staff roles).
 function CompletionDot({ done }) {
@@ -73,13 +84,32 @@ function CompletionDot({ done }) {
 
 /* ── Left sidebar: course-wide session/section navigator ─────────────── */
 
-function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSectionKey, activeItemId, onLeafSelect, sectionProgress }) {
+function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, lockedByModuleName, activeSessionId, activeSectionKey, activeItemId, onLeafSelect, sectionProgress }) {
   const showProgress = role === "learner";
   const isSessionDone = (sessionId) => {
     const done = sectionProgress?.[sessionId];
     return !!done && SECTIONS.every((s) => done[s.key]);
   };
   const isSectionDone = (sessionId, sectionKey) => !!sectionProgress?.[sessionId]?.[sectionKey];
+
+  // Same grouping shape CourseViewPage.jsx's admin authoring view already uses: each module in
+  // order, holding just the sessions that resolve to it, then an "Ungrouped" bucket for anything
+  // left over (no moduleId, or pointing at a module that's since been deleted). A course that
+  // doesn't use modules at all just renders one bucket with every session in it, unchanged from
+  // before this feature existed. `idx` (used for sessionLabel's continuous numbering) is looked
+  // up from the whole-course index, not recomputed per group, so numbering doesn't change.
+  const globalIndexById = new Map(sessions.map((s, i) => [s.id, i]));
+  const sortedModules = [...(modules || [])].sort((a, b) => a.order - b.order);
+  const sessionsByModuleId = new Map(sortedModules.map((m) => [m.id, []]));
+  const ungroupedSessions = [];
+  sessions.forEach((s) => {
+    if (s.moduleId && sessionsByModuleId.has(s.moduleId)) sessionsByModuleId.get(s.moduleId).push(s);
+    else ungroupedSessions.push(s);
+  });
+  const groups = [
+    ...sortedModules.map((m) => ({ id: m.id, name: m.name, sessions: sessionsByModuleId.get(m.id) })),
+    ...(ungroupedSessions.length > 0 ? [{ id: null, name: null, sessions: ungroupedSessions }] : []),
+  ];
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -133,10 +163,38 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {sessions.map((session, idx) => {
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+      {groups.map((group) => (
+        <div key={group.id ?? "ungrouped"} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {group.name && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "6px 10px" }}>
+              <span style={{ fontSize: "11.5px", fontWeight: "800", color: "#0F2645", textTransform: "uppercase", letterSpacing: "0.04em" }}>{group.name}</span>
+              {showProgress && (
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "#25476a" }}>
+                  {group.sessions.filter((s) => isSessionDone(s.id)).length}/{group.sessions.length} done
+                </span>
+              )}
+            </div>
+          )}
+          {group.sessions.map((session) => {
+        const idx = globalIndexById.get(session.id);
         const isCurrentSession = session.id === activeSessionId;
         const expanded = expandedIds.has(session.id);
+        const locked = showProgress && lockedSessionIds?.has(session.id);
+        if (locked) {
+          const blockingName = lockedByModuleName?.get(session.id);
+          return (
+            <div key={session.id} style={{ backgroundColor: "#F9FAFB", borderRadius: "10px", border: "1px solid #E5E7EB", overflow: "hidden", opacity: 0.6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px" }} title={blockingName ? `Finish "${blockingName}" first` : "Finish the previous module first"}>
+                <LockIcon />
+                <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {sessionLabel(session, idx)}
+                </span>
+                <span style={{ fontSize: "10.5px", color: "#9CA3AF", flexShrink: 0 }}>Locked</span>
+              </div>
+            </div>
+          );
+        }
         return (
           <div key={session.id} style={{ backgroundColor: "#ffffff", borderRadius: "10px", border: "1px solid #E5E7EB", overflow: "hidden" }}>
             <div
@@ -304,7 +362,9 @@ function SessionSidebar({ role, courseId, sessions, activeSessionId, activeSecti
             )}
           </div>
         );
-      })}
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -406,6 +466,7 @@ export default function SectionViewPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
+  const { data: modules = [] } = useModules(id);
   const queryClient = useQueryClient();
 
   // Auto-completion is passive: just opening a section is what marks it done for the
@@ -438,6 +499,27 @@ export default function SectionViewPage() {
   const sectionProgress = isLearner ? getCourseSectionProgress(progressKey, id) : null;
   const sessionCompletion = isLearner && sessionId ? getSessionCompletion(progressKey, id, sessionId) : null;
 
+  // Which sessions are locked behind an unfinished earlier module — learner-only. A session with
+  // no resolvable module is exempt (always accessible), and a course using no modules at all
+  // locks nothing, since sortedModules is then empty and the loop below never runs.
+  // lockedByModuleName names the specific module that's blocking each locked session, fixed to
+  // whichever module first failed the completeness check (not re-updated per subsequent module),
+  // so every session locked by the same gap points back to the same one to finish.
+  const lockedSessionIds = new Set();
+  const lockedByModuleName = new Map();
+  if (isLearner) {
+    const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+    let blockingModuleName = null;
+    sortedModules.forEach((m) => {
+      const moduleSessionIds = sessions.filter((s) => s.moduleId === m.id).map((s) => s.id);
+      if (blockingModuleName) {
+        moduleSessionIds.forEach((sid) => { lockedSessionIds.add(sid); lockedByModuleName.set(sid, blockingModuleName); });
+      } else if (!isModuleSessionsComplete(progressKey, id, moduleSessionIds)) {
+        blockingModuleName = m.name;
+      }
+    });
+  }
+
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);
   const isAssessmentsSection = sectionKey === "assessments";
@@ -451,8 +533,12 @@ export default function SectionViewPage() {
 
   // Flatten (session, section[, item]) triples across the whole course, in order, for Prev/Next.
   // Repeatable sections contribute one entry per item (or a single item-less placeholder if
-  // empty) instead of one entry for the whole section.
-  const flat = sessions.flatMap((s) =>
+  // empty) instead of one entry for the whole section. Locked sessions are dropped entirely for
+  // a learner, so Next naturally stops at the boundary of the last unlocked session — no separate
+  // "don't cross into a locked module" check needed beyond this filter.
+  const flat = sessions
+    .filter((s) => !isLearner || !lockedSessionIds.has(s.id))
+    .flatMap((s) =>
     SECTIONS.flatMap((sec) => {
       if (isRepeatableSection(sec.key)) {
         const secItems = s[sec.key]?.length ? s[sec.key] : [{ id: null }];
@@ -484,6 +570,26 @@ export default function SectionViewPage() {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
         ⚠ Section not found.
+      </div>
+    );
+  }
+
+  // Closes the one gap the sidebar/Prev-Next filtering above doesn't cover on its own: a learner
+  // navigating straight to a locked session's URL (typed, bookmarked, or via browser back/forward).
+  if (isLearner && lockedSessionIds.has(sessionId)) {
+    const blockingName = lockedByModuleName.get(sessionId);
+    return (
+      <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px", padding: "24px", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "16px", color: "#B45309" }}>
+        <span style={{ fontSize: "14px" }}>
+          🔒 This session is locked{blockingName ? ` — finish "${blockingName}" first.` : " — finish the previous module first."}
+        </span>
+        <button
+          type="button"
+          onClick={() => navigate(courseHomePath(role, id))}
+          style={{ padding: "8px 16px", backgroundColor: "#fff", border: "1.5px solid #FDE68A", borderRadius: "20px", color: "#B45309", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          ← Back to Course
+        </button>
       </div>
     );
   }
@@ -526,6 +632,9 @@ export default function SectionViewPage() {
             role={role}
             courseId={id}
             sessions={sessions}
+            modules={modules}
+            lockedSessionIds={lockedSessionIds}
+            lockedByModuleName={lockedByModuleName}
             activeSessionId={sessionId}
             activeSectionKey={sectionKey}
             activeItemId={effectiveItemId}

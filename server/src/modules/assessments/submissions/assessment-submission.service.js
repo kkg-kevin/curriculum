@@ -140,6 +140,19 @@ const AssessmentSubmissionService = {
     }).filter((row) => !!row.assessment);
   },
 
+  // Every assessment issued to this learner, class-issued and standalone combined, diagnostics
+  // excluded (see getIssuedForLearner in the controller, which this was extracted from) — the
+  // one shared source the learner-portal listing builds on.
+  getIssuedRowsForLearner(learnerId) {
+    const classIds = LearnerHubLinkModel.findByLearnerId(learnerId)
+      .filter((l) => l.classId && l.status === "active")
+      .map((l) => l.classId);
+    const classRows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learnerId));
+    const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId)
+      .filter((row) => !row.issue.ageCategoryId && !row.issue.learningAreaId);
+    return [...standaloneRows, ...classRows];
+  },
+
   // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
   // Assessment" card on LearnerViewPage. Filtered to ageCategoryId specifically, since a
   // learner can now also hold course-progress-triggered standalone issues (see
@@ -378,10 +391,11 @@ const AssessmentSubmissionService = {
 
   // Teacher's grading pass — supplies marks/feedback for whatever the learner's answers didn't
   // already auto-grade (rubric criteria, short-answer items, observation indicators, deliverables).
-  // Combines with any stored auto-score. A class-issued submission's grade is saved here but kept
-  // hidden from the learner until the teacher explicitly calls publishReport — a standalone
-  // submission (diagnostic/course-progress-triggered) has no roster UI built around that extra
-  // step, so it keeps releasing instantly like before.
+  // Combines with any stored auto-score. Releases to the learner in the same instant — grading IS
+  // reporting, for every submission regardless of classId (this used to gate class-issued
+  // submissions behind a separate manual publishReport() step; that was easy to forget, leaving
+  // graded work invisible to the learner indefinitely, so it's now unconditional here — see
+  // publishReport below, kept only as a manual override).
   grade(submissionId, { itemFeedback = [], overallFeedback = "", manualScore = 0, gradedBy }) {
     const submission = AssessmentSubmissionModel.findById(submissionId);
     if (!submission) {
@@ -392,7 +406,6 @@ const AssessmentSubmissionService = {
     const assessment = loadAssessmentOrThrow(submission.assessmentId);
     const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
     const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);
-    const isStandalone = !submission.classId;
 
     const graded = AssessmentSubmissionModel.update(submissionId, {
       itemFeedback,
@@ -403,15 +416,18 @@ const AssessmentSubmissionService = {
       gradedAt: new Date().toISOString(),
       gradedBy,
       indicatorBreakdown,
-      ...(isStandalone ? { reportPublished: true, reportPublishedAt: new Date().toISOString(), reportPublishedBy: gradedBy } : {}),
+      reportPublished: true,
+      reportPublishedAt: new Date().toISOString(),
+      reportPublishedBy: gradedBy,
     });
     maybePlaceFromDiagnostic(graded);
     return graded;
   },
 
-  // Releases an already-graded, class-issued submission's score/feedback to the learner — a
-  // separate step from grade() so a teacher can grade privately, review, then choose when the
-  // learner actually sees it. Idempotent: publishing an already-published report is a no-op.
+  // Manual override, not part of the normal flow anymore — grade() above now releases every
+  // submission the instant it's graded. Kept for the rare case a submission ends up graded but
+  // unpublished (e.g. legacy data from before that change) and to flip it back on by hand.
+  // Idempotent: publishing an already-published report is a no-op.
   publishReport(submissionId, publishedBy) {
     const submission = AssessmentSubmissionModel.findById(submissionId);
     if (!submission) {

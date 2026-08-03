@@ -162,18 +162,8 @@ const revokeIssue = asyncHandler(async (req, res) => {
 const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
-  const classIds = LearnerHubLinkModel.findByLearnerId(learner.id)
-    .filter((l) => l.classId && l.status === "active")
-    .map((l) => l.classId);
-  const classRows = classIds.flatMap((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learner.id));
-  // Standalone issues (e.g. a course-progress-triggered one) target the learner directly, with
-  // no class involved at all — merged in alongside the class-issued ones. Diagnostics
-  // (ageCategoryId/learningAreaId set) are excluded: those are exclusively the first-login
-  // gate's concern (FirstLoginDiagnosticGate.jsx) and, once taken, shouldn't resurface as a
-  // regular assessment in the learner's portal.
-  const standaloneRows = AssessmentSubmissionService.getStandaloneIssuedAssessments(learner.id)
-    .filter((row) => !row.issue.ageCategoryId && !row.issue.learningAreaId);
-  const rows = [...standaloneRows, ...classRows].map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
+  const rows = AssessmentSubmissionService.getIssuedRowsForLearner(learner.id)
+    .map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
   res.json({ success: true, data: rows, count: rows.length });
 });
 

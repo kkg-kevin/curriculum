@@ -81,6 +81,65 @@ function CardKebab({ onEdit, onDelete }) {
   );
 }
 
+// Editing in place — not delete-then-re-add — matters because an existing indicator's `id` (and
+// server-derived `code`) must survive the edit: CompetencyModel.update keeps an indicator's id
+// stable as long as one is present on the object it's given (see competency.model.js's
+// normalizeIndicators), but assessments/grading already reference indicators by id, so deleting
+// and re-adding would silently orphan that data instead of just renaming it.
+function IndicatorRow({ ind, competencyName, onSave, onRemove }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(ind.name);
+  const [description, setDescription] = useState(ind.description || "");
+  const previewCode = previewIndicatorCode(competencyName, name);
+
+  const save = () => {
+    if (!name.trim()) return;
+    onSave({ ...ind, name: name.trim(), description: description.trim() });
+    setEditing(false);
+  };
+  const cancel = () => {
+    setName(ind.name);
+    setDescription(ind.description || "");
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="stg-ind-row" style={{ flexDirection: "column", alignItems: "stretch" }}>
+        <input className="stg-input stg-ind-add-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Indicator name" autoFocus />
+        {previewCode && (
+          <p style={{ margin: 0, fontSize: "11.5px", color: "#6B7280" }}>
+            Code preview: <strong style={{ color: "#25476a" }}>{previewCode}</strong>
+          </p>
+        )}
+        <input className="stg-input stg-ind-add-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" />
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <button type="button" className="stg-btn-secondary" onClick={cancel}>Cancel</button>
+          <button type="button" className="stg-btn-primary" onClick={save} disabled={!name.trim()}>Save</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stg-ind-row">
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
+          {ind.code && <span className="stg-code-pill stg-code-pill--small">{ind.code}</span>}
+        </div>
+        {ind.description && (
+          <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
+        )}
+      </div>
+      <button type="button" className="stg-kebab-btn" onClick={() => setEditing(true)} title="Edit indicator">
+        <FiEdit2 size={13} strokeWidth={2} />
+      </button>
+      <button type="button" className="stg-ind-x" onClick={onRemove}>×</button>
+    </div>
+  );
+}
+
 function IndicatorsEditor({ competencyName, indicators, onChange }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -94,6 +153,7 @@ function IndicatorsEditor({ competencyName, indicators, onChange }) {
   };
 
   const removeIndicator = (idx) => onChange(indicators.filter((_, i) => i !== idx));
+  const saveIndicator = (idx, updated) => onChange(indicators.map((ind, i) => (i === idx ? updated : ind)));
 
   return (
     <div>
@@ -105,18 +165,13 @@ function IndicatorsEditor({ competencyName, indicators, onChange }) {
       {indicators.length > 0 && (
         <div style={{ marginBottom: "10px" }}>
           {indicators.map((ind, idx) => (
-            <div key={ind.id || idx} className="stg-ind-row">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>{ind.name}</p>
-                  {ind.code && <span className="stg-code-pill stg-code-pill--small">{ind.code}</span>}
-                </div>
-                {ind.description && (
-                  <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{ind.description}</p>
-                )}
-              </div>
-              <button type="button" className="stg-ind-x" onClick={() => removeIndicator(idx)}>×</button>
-            </div>
+            <IndicatorRow
+              key={ind.id || idx}
+              ind={ind}
+              competencyName={competencyName}
+              onSave={(updated) => saveIndicator(idx, updated)}
+              onRemove={() => removeIndicator(idx)}
+            />
           ))}
         </div>
       )}

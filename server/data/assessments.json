@@ -992,5 +992,147 @@
     "id": "4f36eae5-ee73-4f92-8218-404ae7e575da",
     "createdAt": "2026-07-30T10:37:27.041Z",
     "updatedAt": "2026-07-30T10:37:27.042Z"
+  },
+  {
+    "name": "Sample Assignment: Short Answer & Essay Practice",
+    "type": "assignment",
+    "description": "<p>A sample assignment demonstrating typed-response question types &mdash; short answer and essay.</p>",
+    "instructions": "<p>Read each question carefully and type your response in the box provided. Short-answer questions expect a brief, direct answer; essay questions expect a fuller, well-organized response.</p>",
+    "structureType": "mixed",
+    "overview": "",
+    "sections": [],
+    "items": [
+      {
+        "id": "7aef118e-ddd6-4635-a6f2-714f46c5b291",
+        "question": "<p>What is the capital city of Kenya?</p>",
+        "kind": "shortAnswer",
+        "sectionId": null,
+        "points": 2,
+        "options": [],
+        "correctAnswer": "Nairobi",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 2
+          },
+          {
+            "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "id": "a0dfd99c-d39d-467c-a816-1df98a0d02b3",
+        "question": "<p>In one or two sentences, define what a \"variable\" means in the context of programming.</p>",
+        "kind": "shortAnswer",
+        "sectionId": null,
+        "points": 3,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": "written",
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 3
+          },
+          {
+            "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+            "marks": 1.5
+          },
+          {
+            "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "id": "fe2cbf86-7c08-4378-9140-c500438406b0",
+        "question": "<p>Write a short essay (150–250 words) describing a time you solved a challenging problem. Explain the steps you took and what you learned from the experience.</p>",
+        "kind": "essay",
+        "sectionId": null,
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+            "marks": 10
+          }
+        ]
+      },
+      {
+        "id": "f29720cd-0382-44d1-a0e3-b8fa474abd50",
+        "question": "<p>Discuss the importance of teamwork in achieving a shared goal. Support your answer with at least one example from your own experience.</p>",
+        "kind": "essay",
+        "sectionId": null,
+        "points": 10,
+        "options": [],
+        "correctAnswer": "",
+        "pairs": [],
+        "blanks": [],
+        "sequence": [],
+        "ratingScale": [
+          "Strongly Disagree",
+          "Disagree",
+          "Neutral",
+          "Agree",
+          "Strongly Agree"
+        ],
+        "acceptedFileTypes": [],
+        "taskType": null,
+        "submissionKinds": [],
+        "indicatorMarks": [
+          {
+            "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+            "marks": 10
+          }
+        ]
+      }
+    ],
+    "rubric": [],
+    "indicators": [],
+    "deliverables": [],
+    "milestones": [],
+    "id": "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3",
+    "createdAt": "2026-08-03T10:02:36.777Z",
+    "updatedAt": "2026-08-03T10:06:55.196Z"
   }
 ]

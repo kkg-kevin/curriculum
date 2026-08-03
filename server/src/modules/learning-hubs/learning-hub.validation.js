@@ -11,10 +11,10 @@ const KENYA_COUNTIES = [
 ];
 
 // "school" is the original, fully-built hub type (its own required Code, login-matching
-// via email). The other 3 are places a curriculum can also be assigned to — differentiated
+// via email). The others are places a curriculum can also be assigned to — differentiated
 // required fields/behavior per type is deferred; for now they all share this one schema.
 const LEARNING_HUB_TYPES = [
-  "school", "co_working_space", "innovation_lab", "makerspace",
+  "school", "co_working_space", "innovation_lab", "makerspace", "tech_club",
 ];
 
 const addressSchema = z.object({

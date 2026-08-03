@@ -647,5 +647,41 @@
     "id": "2b3b04cd-9b02-4435-ba13-25851a35e4f9",
     "createdAt": "2026-08-03T09:54:27.792Z",
     "updatedAt": "2026-08-03T09:54:27.792Z"
+  },
+  {
+    "name": "Liza Wamuyu",
+    "email": "wamuyu@digifunzi.com",
+    "passwordHash": "$2b$10$.zdbsBzhGT8bJtG/Bi/ose.rQS8vd1L01juTz9YVZV4xtKHHdJwFu",
+    "role": "learner",
+    "id": "d6044e87-7d69-4c4f-a216-b0c248102ab0",
+    "createdAt": "2026-08-03T10:12:11.458Z",
+    "updatedAt": "2026-08-03T10:12:11.458Z"
+  },
+  {
+    "name": "June june",
+    "username": "june",
+    "passwordHash": "$2b$10$RymUTvdatvbgNrI0xfPDdu87HBphGiPgWopHQ4yNr9pai6ANVyhJG",
+    "role": "learner",
+    "id": "0c3c63ad-d6c3-4eeb-8517-c22b2d26fd61",
+    "createdAt": "2026-08-03T10:12:11.571Z",
+    "updatedAt": "2026-08-03T10:12:11.571Z"
+  },
+  {
+    "name": "Parent test",
+    "email": "qwer@digifunzi.com",
+    "passwordHash": "$2b$10$sTF8X7Ma0G5CWMvuQ3NdV.5aKkZL4sjfOvMOqwWfkxP5yeH8nNqQa",
+    "role": "learner",
+    "id": "a49c06f9-7f81-4a04-8772-5a041e4ac831",
+    "createdAt": "2026-08-03T11:52:34.343Z",
+    "updatedAt": "2026-08-03T11:52:34.343Z"
+  },
+  {
+    "name": "may may",
+    "username": "may",
+    "passwordHash": "$2b$10$I8r8.9/XYYZl6o4RQ2wuZevy6wCQ5RKDNHe7f2c8Sio8Gdd3oxyta",
+    "role": "learner",
+    "id": "1dad922d-ae49-4740-964d-6b8a4bdcf40b",
+    "createdAt": "2026-08-03T11:52:34.463Z",
+    "updatedAt": "2026-08-03T11:52:34.463Z"
   }
 ]

@@ -10,7 +10,7 @@ export const KENYA_COUNTIES = [
   "Uasin Gishu","Vihiga","Wajir","West Pokot",
 ];
 
-// "school" is the original, fully-built hub type. The other 3 are places a curriculum can
+// "school" is the original, fully-built hub type. The others are places a curriculum can
 // also be assigned to — differentiated required fields/behavior per type is deferred, so they
 // all share this one form/schema for now.
 export const LEARNING_HUB_TYPES = [
@@ -18,6 +18,7 @@ export const LEARNING_HUB_TYPES = [
   { value: "co_working_space", label: "Co-working Space" },
   { value: "innovation_lab",   label: "Innovation Lab" },
   { value: "makerspace",       label: "Makerspace" },
+  { value: "tech_club",        label: "Tech Club" },
 ];
 
 export const AMENITY_OPTIONS = [
