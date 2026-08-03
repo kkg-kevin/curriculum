@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { T } from "./theme";
 import ImageUploadField from "../../../../components/ImageUploadField";
+import MultiSelectChips from "../../../../components/MultiSelectChips";
+import { NATIONALITIES, LANGUAGES } from "../../../learners/schemas/learner.schema";
 
 const inputStyle = (hasError) => ({
   width: "100%",
@@ -148,13 +150,20 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
             </div>
             <div>
               <label style={labelStyle}>Nationality</label>
-              <input name="nationality" value={formData.nationality} onChange={handleChange} placeholder="e.g. Kenyan" style={inputStyle(false)} />
+              <select name="nationality" value={formData.nationality} onChange={handleChange} style={{ ...inputStyle(false), backgroundColor: "#fff" }}>
+                <option value="">— Select nationality —</option>
+                {NATIONALITIES.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
             </div>
           </div>
 
           <div>
             <label style={labelStyle}>Languages</label>
-            <input name="languages" value={formData.languages} onChange={handleChange} placeholder="e.g. English, Kiswahili" style={inputStyle(false)} />
+            <MultiSelectChips
+              options={LANGUAGES}
+              value={formData.languages ? formData.languages.split(",").map((v) => v.trim()).filter(Boolean) : []}
+              onChange={(next) => setFormData((prev) => ({ ...prev, languages: next.join(", ") }))}
+            />
           </div>
 
           <div>

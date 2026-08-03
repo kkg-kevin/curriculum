@@ -880,5 +880,19 @@
     "id": "test-class-001",
     "createdAt": "2026-07-30T09:00:00.000Z",
     "updatedAt": "2026-07-30T09:00:00.000Z"
+  },
+  {
+    "schoolId": "6fa39732-660c-4106-8433-87bcfee2de85",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+    "gradeName": "Grade 6",
+    "academicYear": "2026",
+    "capacity": 20,
+    "status": "active",
+    "tag": "Thrive 202",
+    "streamName": "Blue",
+    "id": "ab6b5d49-34a0-4e0f-9865-ccf793bf2253",
+    "createdAt": "2026-08-03T08:40:04.820Z",
+    "updatedAt": "2026-08-03T08:40:04.820Z"
   }
 ]

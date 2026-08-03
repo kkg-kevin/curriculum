@@ -22,5 +22,13 @@
     "teacherId": "422b906c-7950-43f1-ab08-c93e880b9400",
     "isPrimary": false,
     "createdAt": "2026-07-31T12:34:29.952Z"
+  },
+  {
+    "id": "f9a8b4b8-66ba-4819-8652-5a20dee0132e",
+    "classId": "ab6b5d49-34a0-4e0f-9865-ccf793bf2253",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "16403871-86c8-4f27-a692-6843965f4c37",
+    "isPrimary": true,
+    "createdAt": "2026-08-03T08:40:11.487Z"
   }
 ]
