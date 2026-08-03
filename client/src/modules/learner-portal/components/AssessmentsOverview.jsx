@@ -125,7 +125,9 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
                     </button>
                   </div>
                 </div>
-                {issue.dueDate && <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>Due {new Date(issue.dueDate).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}</p>}
+                {issue.dueDate && (
+                  <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>Due {new Date(issue.dueDate).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}</p>
+                )}
               </div>
             );
           })}

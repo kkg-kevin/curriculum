@@ -18,10 +18,12 @@ const readAll = () => {
 const writeAll = (data) =>
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
 
-// One record per (learner, course, class) — a teacher-published, point-in-time snapshot of that
-// learner's graded assessments for the course, plus their indicator breakdown and any remarks.
-// "draft" is visible only to admin/school/teacher (so a teacher can review before publishing);
-// "published" additionally becomes visible to the learner/guardian.
+// One record per (learner, course, class, sessionId) — a point-in-time snapshot of that learner's
+// graded assessments, plus their indicator breakdown and any remarks. sessionId is null for a
+// course-level "final" report (combines every session) and a real id for a single session's own
+// report. "draft" is visible only to admin/school/teacher (so a teacher can review before
+// publishing); "published" additionally becomes visible to the learner/guardian — session reports
+// are always created already published (see report.service.js's generateSessionReport).
 //
 // classId is part of the identity, not just a field: a learner can be enrolled at several hubs at
 // once (see learner-hub-link.model.js), and two of those classes can each run the same course. On
@@ -50,10 +52,11 @@ const ReportModel = {
     return all.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   },
 
-  // classId is required — see the identity note above. Legacy rows written before classId joined
-  // the key still match here, since every report has always carried a classId field.
-  findOne({ learnerId, courseId, classId }) {
-    return readAll().find((r) => r.learnerId === learnerId && r.courseId === courseId && r.classId === classId) || null;
+  // classId is required — see the identity note above. sessionId defaults to null (the course-
+  // level final report); pass a session's id to look up that session's own report instead. Rows
+  // written before sessionId existed have no such key, so `r.sessionId || null` still matches null.
+  findOne({ learnerId, courseId, classId, sessionId = null }) {
+    return readAll().find((r) => r.learnerId === learnerId && r.courseId === courseId && r.classId === classId && (r.sessionId || null) === sessionId) || null;
   },
 
   findById(id) {

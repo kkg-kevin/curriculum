@@ -10,12 +10,17 @@ const fieldStyle = { boxSizing: "border-box", padding: "7px 10px", borderRadius:
 
 function ScoreRow({ item }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-      <div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
-        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{item.gradedAt ? new Date(item.gradedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : ""}</p>
+    <div style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
+          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{item.gradedAt ? new Date(item.gradedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : ""}</p>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>{item.totalScore}/{item.maxScore} · {item.percent}%</p>
       </div>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>{item.totalScore}/{item.maxScore} · {item.percent}%</p>
+      {item.feedback && (
+        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
+      )}
     </div>
   );
 }
@@ -28,6 +33,15 @@ function IndicatorRow({ ind }) {
         <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.accent }}>{ind.marksEarned}/{ind.marksPossible} · {ind.percent}%</p>
       </div>
       <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{ind.competencyName}</p>
+    </div>
+  );
+}
+
+function SessionSummaryRow({ item }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.sessionTitle || "Untitled session"}</p>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>{item.totalScore}/{item.maxScore} · {item.percent}%</p>
     </div>
   );
 }
@@ -95,7 +109,7 @@ export default function ReportEditorPage() {
             {learner ? `${learner.firstName} ${learner.lastName}` : "Course Report"}
           </h1>
           <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-            {content.courseName || course?.name || "Course report"}
+            {report.sessionId ? `Session Report — ${content.sessionName || "Session"}` : (content.courseName || course?.name || "Course report")}
           </p>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
             {overall.totalScore}/{overall.maxScore} overall · {overall.percent}% · {isPublished ? "Published" : "Draft — not yet visible to the learner"}
@@ -104,6 +118,17 @@ export default function ReportEditorPage() {
       </div>
 
       <div style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 18 }}>
+        {content.sessionReports?.length > 0 && (
+          <div>
+            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Built from {content.sessionReports.length} session{content.sessionReports.length === 1 ? "" : "s"}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {content.sessionReports.map((item) => <SessionSummaryRow key={item.sessionId} item={item} />)}
+            </div>
+          </div>
+        )}
+
         <div>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Assessments</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

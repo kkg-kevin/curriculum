@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiCheckCircle, FiClock, FiSend } from "react-icons/fi";
-import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
 import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
@@ -59,8 +59,17 @@ function FeedbackRow({ index, item, response, autoResult, feedback }) {
 export default function AssessmentDetailPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
+  const { cls, learner } = useOutletContext();
   const { data, isLoading } = useIssuedForLearner();
-  const row = (data?.data || []).find((r) => r.issue.id === issueId);
+  // A Developmental Stage or Learning-Area diagnostic never shows up in useIssuedForLearner()
+  // above — getIssuedRowsForLearner (server) deliberately excludes them, since the general "My
+  // Assessments" list they normally feed isn't where diagnostics belong. But once graded, a
+  // diagnostic's own result page still needs to resolve here — it's what the Reports list's
+  // "Diagnostics" section (see ReportsOverview.jsx's DiagnosticRow) links to.
+  const { data: stageRow, isLoading: stageLoading } = useDiagnosticForLearner(learner?.id, cls?.curriculumId);
+  const { data: areaRows = [], isLoading: areaLoading } = useLearningAreaDiagnosticsForLearner(learner?.id);
+  const diagnosticRows = [stageRow, ...areaRows].filter(Boolean);
+  const row = (data?.data || []).find((r) => r.issue.id === issueId) || diagnosticRows.find((r) => r.issue.id === issueId);
 
   const { mutate: startSubmission, isPending: starting } = useStartSubmission();
   const { mutate: saveDraft, isPending: saving } = useSaveDraft();
@@ -95,11 +104,10 @@ export default function AssessmentDetailPage() {
   // Real per-learner score/band per competency (Evidence Type → Assessment Type → Engine
   // pipeline) — shown alongside each indicator's flat marks so a learner can see how this one
   // graded assessment connects to their overall standing on that competency.
-  const { cls, learner } = useOutletContext();
   const { data: scoreRows = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id);
   const scoreByCompetencyId = useMemo(() => new Map(scoreRows.map((r) => [r.competencyId, r])), [scoreRows]);
 
-  if (isLoading) {
+  if (isLoading || stageLoading || areaLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
   }
   if (!row) {

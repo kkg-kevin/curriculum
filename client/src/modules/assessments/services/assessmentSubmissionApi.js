@@ -20,5 +20,4 @@ export const assessmentSubmissionApi = {
   submit:              (id, answers)     => api.post(`${BASE}/submissions/${id}/submit`, { answers }).then((r) => r.data.data),
   getSubmission:       (id)              => api.get(`${BASE}/submissions/${id}`).then((r) => r.data.data),
   grade:               (id, payload)     => api.patch(`${BASE}/submissions/${id}/grade`, payload).then((r) => r.data.data),
-  publishReport:       (id)              => api.post(`${BASE}/submissions/${id}/publish-report`).then((r) => r.data.data),
 };

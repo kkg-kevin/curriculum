@@ -79,6 +79,20 @@ export function getSessionCompletion(email, courseId, sessionId) {
   return { completed, total: SECTIONS.length, percent: Math.round((completed / SECTIONS.length) * 100) };
 }
 
+// Whether every one of the given sessions is fully done (every section tab opened) — the same
+// "every SECTIONS key done" check SectionViewPage.jsx's SessionSidebar computes per-session for
+// its own checkmark, generalized to a list so a module's completion (all of its sessions) and a
+// single session's completion can share one implementation. An empty list (a module with no
+// sessions yet) is trivially complete — nothing in it to block on.
+export function isModuleSessionsComplete(email, courseId, sessionIds) {
+  if (sessionIds.length === 0) return true;
+  const courseProgress = getCourseSectionProgress(email, courseId);
+  return sessionIds.every((sessionId) => {
+    const sessionProgress = courseProgress[sessionId];
+    return !!sessionProgress && SECTIONS.every((s) => sessionProgress[s.key]);
+  });
+}
+
 const NON_ASSESSMENT_SECTIONS = SECTIONS.filter((s) => s.key !== "assessments");
 
 // Whether a session's content (everything except its own Assessments tab) is fully done —

@@ -38,7 +38,9 @@ export default function ReportDetailPage() {
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "24px 28px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
-          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: "#fff" }}>{content.courseName || course?.name || "Course Report"}</h1>
+          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: "#fff" }}>
+            {report.sessionId ? `Session Report — ${content.sessionName || "Session"}` : (content.courseName || course?.name || "Course Report")}
+          </h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
             Published {report.publishedAt ? new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : ""}
           </p>
@@ -60,13 +62,34 @@ export default function ReportDetailPage() {
         </div>
       )}
 
+      {content.sessionReports?.length > 0 && (
+        <div style={{ ...cardStyle, padding: "16px 20px" }}>
+          <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Built from {content.sessionReports.length} session{content.sessionReports.length === 1 ? "" : "s"}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {content.sessionReports.map((item) => (
+              <div key={item.sessionId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.sessionTitle || "Untitled session"}</p>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ ...cardStyle, padding: "16px 20px" }}>
         <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Assessments</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {assessments.map((item) => (
-            <div key={item.assessmentId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
+            <div key={item.assessmentId} style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
+              </div>
+              {item.feedback && (
+                <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
+              )}
             </div>
           ))}
         </div>

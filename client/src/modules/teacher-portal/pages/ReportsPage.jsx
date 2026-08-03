@@ -54,6 +54,66 @@ function KpiTile({ icon, num, label, sub }) {
   );
 }
 
+// One learner's status for whichever session is currently selected in the navigator below — a
+// plain row (name + status + View once published) rather than a per-learner chip stack, so every
+// student's standing for THAT session reads as a single grouped list, the same shape the
+// learner's own "My Reports" list uses per report (see ReportRow in ReportsOverview.jsx).
+function SessionLearnerRow({ learner, session, navigate }) {
+  const published = session?.report?.status === "published";
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px", borderBottom: `1px solid #F9FAFB` }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
+        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
+          {!session || session.requiredCount === 0 ? "no assessments to report on" : `${session.gradedCount}/${session.requiredCount} assessments graded`}
+        </p>
+      </div>
+      <StatusBadge status={published ? "published" : "not_ready"} />
+      {published && (
+        <button
+          type="button"
+          onClick={() => navigate(`/teacher-portal/reports/${session.report.id}`)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          <VisibilityIcon sx={{ fontSize: 13 }} /> View
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Prev/next between a course's sessions — 16 tabs would be unusable, so this pages one session
+// at a time instead, same pattern as any paginated list.
+function SessionNavigator({ sessions, index, onChange }) {
+  const current = sessions[index];
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 16px", backgroundColor: "#FAFBFF", borderBottom: `1px solid ${T.border}` }}>
+      <button
+        type="button"
+        onClick={() => onChange(index - 1)}
+        disabled={index === 0}
+        style={{ padding: "6px 12px", backgroundColor: "#fff", color: index === 0 ? T.inkFaint : T.accent, border: `1.5px solid ${T.border}`, borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: index === 0 ? "not-allowed" : "pointer" }}
+      >
+        ‹ Prev
+      </button>
+      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink, textAlign: "center" }}>
+        Session {index + 1} of {sessions.length}{current?.sessionTitle ? ` — ${current.sessionTitle}` : ""}
+      </p>
+      <button
+        type="button"
+        onClick={() => onChange(index + 1)}
+        disabled={index === sessions.length - 1}
+        style={{ padding: "6px 12px", backgroundColor: "#fff", color: index === sessions.length - 1 ? T.inkFaint : T.accent, border: `1.5px solid ${T.border}`, borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: index === sessions.length - 1 ? "not-allowed" : "pointer" }}
+      >
+        Next ›
+      </button>
+    </div>
+  );
+}
+
+// The course-level final report row — Generate/Review/View, unchanged logic from before the
+// per-session breakdown existed; session status now lives in the navigator above instead of
+// nested under each learner here.
 function ReportRow({ row, cls, course, onGenerate, isGenerating, navigate }) {
   const status = rowStatus(row);
   return (
@@ -86,6 +146,68 @@ function ReportRow({ row, cls, course, onGenerate, isGenerating, navigate }) {
           <VisibilityIcon sx={{ fontSize: 13 }} /> {status === "draft" ? "Review" : "View"}
         </button>
       )}
+    </div>
+  );
+}
+
+// One (class, course) card — a session browser (all learners' standing for one session at a
+// time, paged via SessionNavigator) sitting above the existing per-learner final-report list.
+// Session identity/order is the same across every learner's row, so it's read off the first row.
+function CourseReportCard({ cls, course, rows, onGenerate, isGeneratingRow, navigate }) {
+  const { requiredCount = 0, attachedCount = 0 } = rows[0] || {};
+  const missingCount = attachedCount - requiredCount;
+  const sessions = (rows[0]?.sessions || []).filter((s) => s.requiredCount > 0);
+  const [sessionIndex, setSessionIndex] = useState(0);
+  const activeSession = sessions[Math.min(sessionIndex, sessions.length - 1)];
+
+  return (
+    <div style={{ ...cardStyle, overflow: "hidden" }}>
+      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+        <AssignmentIcon sx={{ fontSize: 18, color: T.accentLight }} />
+        <div>
+          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{course.name}</p>
+          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{cls.gradeName || cls.name}</p>
+        </div>
+      </div>
+      {/* A course's sessions can keep referencing assessments that were later deleted —
+          those can never be graded, so they're excluded from the requirement. Without
+          saying so, the count silently disagrees with the course's own content. */}
+      {missingCount > 0 && (
+        <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid #FDE68A`, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
+          {requiredCount === 0
+            ? `All ${attachedCount} assessment${attachedCount === 1 ? "" : "s"} attached to this course have been deleted — there's nothing left to report on.`
+            : `${missingCount} of ${attachedCount} attached assessment${attachedCount === 1 ? " has" : "s have"} been deleted and ${missingCount === 1 ? "is" : "are"} excluded from the ${requiredCount} required here.`}
+        </div>
+      )}
+
+      {sessions.length > 0 && (
+        <>
+          <SessionNavigator sessions={sessions} index={Math.min(sessionIndex, sessions.length - 1)} onChange={setSessionIndex} />
+          {rows.map((row) => (
+            <SessionLearnerRow
+              key={row.learner.id}
+              learner={row.learner}
+              session={row.sessions?.find((s) => s.sessionId === activeSession?.sessionId)}
+              navigate={navigate}
+            />
+          ))}
+        </>
+      )}
+
+      <div style={{ padding: "10px 20px", backgroundColor: "#F9FAFB", borderTop: sessions.length > 0 ? `1px solid ${T.border}` : "none", borderBottom: `1px solid ${T.border}` }}>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Final Combined Report</p>
+      </div>
+      {rows.map((row) => (
+        <ReportRow
+          key={row.learner.id}
+          row={row}
+          cls={cls}
+          course={course}
+          onGenerate={onGenerate}
+          isGenerating={isGeneratingRow(row, course.id)}
+          navigate={navigate}
+        />
+      ))}
     </div>
   );
 }
@@ -185,7 +307,7 @@ export default function ReportsPage() {
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Course Reports</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
-            Once every assessment in a course is graded for a learner, generate their report card here, add remarks, then publish it for the learner and guardian to see.
+            Each session's report publishes automatically once its assessments are graded — no action needed. Once every session is ready, generate the course's final combined report card here, add remarks, then publish it for the learner and guardian to see.
           </p>
         </div>
       </div>
@@ -202,43 +324,17 @@ export default function ReportsPage() {
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Reports appear here once your classes' courses have at least one attached assessment.</p>
         </div>
       ) : (
-        sections.map(({ cls, course, rows }) => {
-          // requiredCount/attachedCount are per course, identical across the class's rows.
-          const { requiredCount = 0, attachedCount = 0 } = rows[0] || {};
-          const missingCount = attachedCount - requiredCount;
-          return (
-          <div key={`${cls.id}:${course.id}`} style={{ ...cardStyle, overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
-              <AssignmentIcon sx={{ fontSize: 18, color: T.accentLight }} />
-              <div>
-                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{course.name}</p>
-                <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{cls.gradeName || cls.name}</p>
-              </div>
-            </div>
-            {/* A course's sessions can keep referencing assessments that were later deleted —
-                those can never be graded, so they're excluded from the requirement. Without
-                saying so, the count silently disagrees with the course's own content. */}
-            {missingCount > 0 && (
-              <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid #FDE68A`, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
-                {requiredCount === 0
-                  ? `All ${attachedCount} assessment${attachedCount === 1 ? "" : "s"} attached to this course have been deleted — there's nothing left to report on.`
-                  : `${missingCount} of ${attachedCount} attached assessment${attachedCount === 1 ? " has" : "s have"} been deleted and ${missingCount === 1 ? "is" : "are"} excluded from the ${requiredCount} required here.`}
-              </div>
-            )}
-            {rows.map((row) => (
-              <ReportRow
-                key={row.learner.id}
-                row={row}
-                cls={cls}
-                course={course}
-                onGenerate={handleGenerate}
-                isGenerating={isGeneratingRow(row, course.id)}
-                navigate={navigate}
-              />
-            ))}
-          </div>
-          );
-        })
+        sections.map(({ cls, course, rows }) => (
+          <CourseReportCard
+            key={`${cls.id}:${course.id}`}
+            cls={cls}
+            course={course}
+            rows={rows}
+            onGenerate={handleGenerate}
+            isGeneratingRow={isGeneratingRow}
+            navigate={navigate}
+          />
+        ))
       )}
     </div>
   );

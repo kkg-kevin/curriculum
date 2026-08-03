@@ -4,6 +4,7 @@ import { useLearningAreas, useAgeCategories } from "../../curriculum/hooks/useCo
 import { useLearningAreaDiagnosticsForLearner, useDiagnosticForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import { useEnsureDiagnosticsIssued, useMarkHubOnboardingComplete } from "../hooks/usePortalOnboarding";
+import LogoutButton from "../../../components/ui/LogoutButton";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tintBg: "#e8f5fb", tintBorder: "#a8d5ee" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -46,6 +47,12 @@ function AwaitingGradingState({ count }) {
       </div>
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
         <span style={{ width: 22, height: 22, border: `3px solid ${T.border}`, borderTopColor: T.accent, borderRadius: "50%", display: "inline-block", animation: "fldg-spin 0.7s linear infinite" }} />
+      </div>
+      {/* The sidebar (where every other portal's Log Out button lives) is hidden while this gate
+          is active, and the header has no logout of its own for a learner — without this, there's
+          genuinely no way out of this screen short of waiting for a teacher. */}
+      <div style={{ textAlign: "center" }}>
+        <LogoutButton variant="light" />
       </div>
     </div>
   );
@@ -270,6 +277,12 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
         contextLabel={current.issue.learningAreaId ? areaNameById.get(current.issue.learningAreaId) : stageNameById.get(current.issue.ageCategoryId)}
         onDone={() => refetch()}
       />
+
+      {/* Same reasoning as AwaitingGradingState — no sidebar while this gate is active, so this
+          is the only way to sign out of the wrong account or step away mid-diagnostic. */}
+      <div style={{ textAlign: "center" }}>
+        <LogoutButton variant="light" />
+      </div>
     </div>
   );
 }
