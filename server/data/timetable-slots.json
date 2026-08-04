@@ -142,5 +142,53 @@
     "id": "894f89da-c1d7-47d3-9091-3073f8fd1f77",
     "createdAt": "2026-08-04T09:30:53.676Z",
     "updatedAt": "2026-08-04T09:30:53.676Z"
+  },
+  {
+    "classId": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "monday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "52c40271-c3be-4623-a63f-dc5d0f968dce",
+    "createdAt": "2026-08-04T13:29:23.198Z",
+    "updatedAt": "2026-08-04T13:29:23.198Z"
+  },
+  {
+    "classId": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "tuesday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "dc4e7ab8-2c3e-41e8-b00f-ef6b43f582da",
+    "createdAt": "2026-08-04T13:29:35.254Z",
+    "updatedAt": "2026-08-04T13:29:35.254Z"
+  },
+  {
+    "classId": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "wednesday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "ceb8e86f-45a6-405c-a2d2-ccdb6429635c",
+    "createdAt": "2026-08-04T13:29:46.218Z",
+    "updatedAt": "2026-08-04T13:29:46.218Z"
+  },
+  {
+    "classId": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "thursday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "f7f84fdf-c802-45f9-8cdf-30b15911485f",
+    "createdAt": "2026-08-04T13:29:56.356Z",
+    "updatedAt": "2026-08-04T13:29:56.356Z"
   }
 ]

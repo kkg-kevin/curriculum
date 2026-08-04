@@ -2052,23 +2052,27 @@
   },
   {
     "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
-    "title": "",
+    "title": " Introduction to Pictoblox and Coding",
     "order": 2,
     "moduleId": "2f95dc53-1400-489a-a811-1e5d331c2e1f",
-    "outcomes": [],
-    "introduction": "",
+    "outcomes": [
+      "Understanding the fundamentals of programming, from its core concepts and its importance in real world implementation.",
+      "Interacting with the Pictoblox application to understand its fundamentals, including its interface, basic features, and how it can be used as a visual programming tool to introduce learners to coding concepts.",
+      "Making your first piece simple and fun piece of code to better understand programming concepts and fundamentals of Pictoblox."
+    ],
+    "introduction": "<p>In this lesson, you will learn the fundamentals of programming, including its core concepts and importance. You will interact with the Pictoblox interface, a user-friendly platform for coding. By the end of the session, you will create a simple yet fun piece of code, allowing you to apply what you've learned and experience the joy of bringing your ideas to life through programming. This hands-on approach will build your confidence and spark your creativity.</p>",
     "mainConcepts": [
       {
         "id": "3b53fefd-f2af-497e-be84-5b78f2fc37b1",
         "title": "Introduction",
-        "content": ""
+        "content": "<p>In this session, you will get an introduction to the fundamentals of programming and the PictoBlox software.</p><p></p><p>First, you'll learn what a program is by exploring examples from everyday life, such as games and traffic lights. You'll also learn that programming involves planning, writing, and debugging code, and that the order of instructions is crucial for a program to work correctly.</p><p></p><p>Next, you will be introduced to the PictoBlox interface and its main components. You'll discover the purpose of the Stage, Sprites (like Tobi the bear), and Blocks, which are the building blocks of your programs. You'll also learn that a script is a pr</p><video src=\"http://localhost:5000/uploads/47d1f872-7aa8-439d-a040-8d4a13b69f4c.mp4\" controls=\"controls\"></video><p></p>"
       }
     ],
     "activities": [
       {
         "id": "ccd2f48c-7607-4e58-b4f8-2b7688e50a0e",
         "title": "",
-        "content": "",
+        "content": "<h4><a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://lms.digifunzi.com/dashboard/courses#\"><br>Class Activity 20 Mins</a></h4><p><strong>Let’s make Tobi walk</strong>&nbsp;– In this activity, we will learn to make Tobi walk on the stage.</p><img src=\"https://ai.thestempedia.com/wp-content/uploads/2020/03/Walking-4.gif\" width=\"600\" height=\"450\"><p></p>",
         "mode": "individual"
       }
     ],
@@ -2076,13 +2080,27 @@
       {
         "id": "319418ef-8a99-442c-9e04-1b1060b394e8",
         "title": "",
-        "content": ""
+        "content": "<p>Now that you're familiar with the PictoBlox interface and the basics of coding, let's create a fun animation. We'll add a dove, give it a beautiful forest background, and then code it to move across the screen!As you complete this assignment, you will learn important programming ideas like following steps in order, using loops to repeat actions, and starting your code with events. You’ll be using the PictoBlox program to do all of this!</p><p></p><p><strong>Steps to Complete the Project</strong></p><p>Open PictoBlox Software on the blocks Interface by clicking Blocks.</p><p></p><img src=\"https://lh7-rt.googleusercontent.com/docsz/AD_4nXdfJ4RIvOsMFMLxQpxtxas8RSHKhyUQ9l9tXomlcTTu_rcIp38ON7-ZIkr2MbtoetVDt6tqKN5jYEyKxafXiXM4CB7TSCKqlwfmceTANlbhHoQdnfBdDU4y-dk_bv9nFjkIJFbJzMFJ0lICq9ld32iDbvZE?key=A5DWk6V0vkcWULOY2L3AxXJQ\" width=\"624\" height=\"309\"><p></p><p><strong>Set Up The Environment</strong></p><p><strong>Delete Tobi</strong>&nbsp;by clicking the little 'x' on his picture.</p><p><br></p>"
       }
     ],
     "resources": [],
     "id": "93d8106b-5d77-4107-9cde-579db04373b7",
     "createdAt": "2026-08-04T09:52:55.280Z",
-    "updatedAt": "2026-08-04T09:52:55.280Z"
+    "updatedAt": "2026-08-04T12:25:36.450Z",
+    "assessmentIds": [
+      "4f36eae5-ee73-4f92-8218-404ae7e575da",
+      "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3"
+    ],
+    "assessmentAttachments": [
+      {
+        "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+        "mode": "individual"
+      },
+      {
+        "assessmentId": "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3",
+        "mode": "individual"
+      }
+    ]
   },
   {
     "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
@@ -2095,7 +2113,7 @@
       {
         "id": "993ebfe4-0fc5-4deb-8621-78b8fc490386",
         "title": "Introduction",
-        "content": ""
+        "content": "<video src=\"http://localhost:5000/uploads/e70f2764-935f-4b8f-95aa-c627c4ce8259.mp4\" controls=\"controls\"></video><p></p>"
       }
     ],
     "activities": [
@@ -2116,7 +2134,9 @@
     "resources": [],
     "id": "564c3b2b-29fc-42ac-8d56-5ef0fb5bd6f3",
     "createdAt": "2026-08-04T09:52:55.338Z",
-    "updatedAt": "2026-08-04T09:52:55.338Z"
+    "updatedAt": "2026-08-04T12:26:57.331Z",
+    "assessmentIds": [],
+    "assessmentAttachments": []
   },
   {
     "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",

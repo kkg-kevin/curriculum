@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
+  breakBg: "#FEF2F2", breakBorder: "#FCA5A5", breakText: "#B91C1C",
 };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
@@ -41,6 +42,11 @@ function weekDays(anchor) {
   const start = startOfWeekMonday(anchor);
   return [0, 1, 2, 3, 4].map((i) => start.add(i, "day"));
 }
+// Break dates are plain "YYYY-MM-DD" strings, so lexical comparison already matches chronological
+// order — no date parsing needed here.
+function breakOnDate(dateStr, breaks) {
+  return (breaks || []).find((b) => dateStr >= b.start && dateStr <= b.end) || null;
+}
 function monthGrid(anchor) {
   const monthStart = anchor.startOf("month");
   const monthEnd = anchor.endOf("month");
@@ -64,7 +70,7 @@ const HOUR_PX = 52;
  * drives it off `onRangeChange`, which fires on mount and whenever navigation changes the visible
  * date range.
  */
-export default function CalendarView({ events, isLoading, resolveCourseName, resolveTeacherLabel, onRangeChange, emptyMessage }) {
+export default function CalendarView({ events, breaks, isLoading, resolveCourseName, resolveTeacherLabel, onRangeChange, emptyMessage }) {
   const [anchor, setAnchor] = useState(() => dayjs());
   const [mode, setMode] = useState("week");
 
@@ -119,9 +125,9 @@ export default function CalendarView({ events, isLoading, resolveCourseName, res
       {isLoading ? (
         <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading calendar…</div>
       ) : mode === "week" ? (
-        <WeekGrid days={weekDays(anchor)} eventsByDate={eventsByDate} resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} emptyMessage={emptyMessage} />
+        <WeekGrid days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} emptyMessage={emptyMessage} />
       ) : (
-        <MonthGrid weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} resolveCourseName={resolveCourseName} emptyMessage={emptyMessage} />
+        <MonthGrid weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} emptyMessage={emptyMessage} />
       )}
     </div>
   );
@@ -134,8 +140,9 @@ function btnStyle(active) {
   };
 }
 
-function WeekGrid({ days, eventsByDate, resolveCourseName, resolveTeacherLabel, emptyMessage }) {
+function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, emptyMessage }) {
   const allEvents = days.flatMap((d) => eventsByDate[d.format("YYYY-MM-DD")] || []);
+  const anyBreakInView = days.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks));
   const gridStartMin = Math.min(DEFAULT_START_MIN, ...allEvents.map((e) => toMinutes(e.startTime)));
   const gridEndMin = Math.max(DEFAULT_END_MIN, ...allEvents.map((e) => toMinutes(e.endTime)));
   const gridStartHour = Math.floor(gridStartMin / 60);
@@ -148,7 +155,10 @@ function WeekGrid({ days, eventsByDate, resolveCourseName, resolveTeacherLabel, 
   const top = (time) => ((toMinutes(time) - gridStartHour * 60) / totalMinutes) * gridHeight;
   const height = (start, end) => Math.max(((toMinutes(end) - toMinutes(start)) / totalMinutes) * gridHeight, 22);
 
-  if (allEvents.length === 0) {
+  // A week with a break but zero events would otherwise show a generic "Nothing scheduled"
+  // message, which reads as broken rather than "this is a break" — so breaks alone keep the grid
+  // (and its shaded/labeled break days) rendered instead of falling into the empty state.
+  if (allEvents.length === 0 && !anyBreakInView) {
     return (
       <div style={{ ...cardStyle, textAlign: "center", padding: "50px 24px" }}>
         <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{emptyMessage || "Nothing scheduled this week."}</p>
@@ -160,12 +170,16 @@ function WeekGrid({ days, eventsByDate, resolveCourseName, resolveTeacherLabel, 
     <div style={{ ...cardStyle, overflow: "hidden" }}>
       <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", borderBottom: `1px solid ${T.border}` }}>
         <div />
-        {days.map((d) => (
-          <div key={d.format("YYYY-MM-DD")} style={{ padding: "10px 8px", textAlign: "center", borderLeft: `1px solid ${T.border}` }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>{d.format("ddd")}</p>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: d.isSame(dayjs(), "day") ? T.accent : T.ink }}>{d.format("D")}</p>
-          </div>
-        ))}
+        {days.map((d) => {
+          const brk = breakOnDate(d.format("YYYY-MM-DD"), breaks);
+          return (
+            <div key={d.format("YYYY-MM-DD")} style={{ padding: "10px 8px", textAlign: "center", borderLeft: `1px solid ${T.border}`, backgroundColor: brk ? T.breakBg : undefined }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>{d.format("ddd")}</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: d.isSame(dayjs(), "day") ? T.accent : T.ink }}>{d.format("D")}</p>
+              {brk && <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: T.breakText }} title={brk.label}>{brk.label}</p>}
+            </div>
+          );
+        })}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", position: "relative" }}>
         <div>
@@ -178,8 +192,9 @@ function WeekGrid({ days, eventsByDate, resolveCourseName, resolveTeacherLabel, 
         {days.map((d) => {
           const dateKey = d.format("YYYY-MM-DD");
           const dayEvents = eventsByDate[dateKey] || [];
+          const brk = breakOnDate(dateKey, breaks);
           return (
-            <div key={dateKey} style={{ position: "relative", borderLeft: `1px solid ${T.border}`, height: gridHeight }}>
+            <div key={dateKey} style={{ position: "relative", borderLeft: `1px solid ${T.border}`, height: gridHeight, backgroundColor: brk ? T.breakBg : undefined }}>
               {hours.map((h) => (
                 <div key={h} style={{ position: "absolute", top: (h - gridStartHour) * HOUR_PX, left: 0, right: 0, height: 0, borderTop: `1px solid ${T.border}` }} />
               ))}
@@ -215,9 +230,10 @@ function WeekGrid({ days, eventsByDate, resolveCourseName, resolveTeacherLabel, 
   );
 }
 
-function MonthGrid({ weeks, anchor, eventsByDate, resolveCourseName, emptyMessage }) {
+function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, emptyMessage }) {
   const hasAny = weeks.some((w) => w.some((d) => (eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0));
-  if (!hasAny) {
+  const anyBreakInView = weeks.some((w) => w.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks)));
+  if (!hasAny && !anyBreakInView) {
     return (
       <div style={{ ...cardStyle, textAlign: "center", padding: "50px 24px" }}>
         <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{emptyMessage || "Nothing scheduled this month."}</p>
@@ -239,12 +255,21 @@ function MonthGrid({ weeks, anchor, eventsByDate, resolveCourseName, emptyMessag
             const dateKey = d.format("YYYY-MM-DD");
             const dayEvents = eventsByDate[dateKey] || [];
             const inMonth = d.month() === anchor.month();
+            const brk = breakOnDate(dateKey, breaks);
             const visible = dayEvents.slice(0, 3);
             const overflow = dayEvents.length - visible.length;
             return (
-              <div key={dateKey} style={{ minHeight: 92, padding: "6px 6px", borderLeft: `1px solid ${T.border}`, opacity: inMonth ? 1 : 0.4 }}>
+              <div key={dateKey} style={{ minHeight: 92, padding: "6px 6px", borderLeft: `1px solid ${T.border}`, opacity: inMonth ? 1 : 0.4, backgroundColor: brk ? T.breakBg : undefined }}>
                 <p style={{ margin: "0 0 4px", fontSize: 11.5, fontWeight: 800, color: d.isSame(dayjs(), "day") ? T.accent : T.ink }}>{d.format("D")}</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {brk && (
+                    <div
+                      title={brk.label}
+                      style={{ backgroundColor: "#fff", border: `1px solid ${T.breakBorder}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: T.breakText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
+                      {brk.label}
+                    </div>
+                  )}
                   {visible.map((e) => {
                     const color = colorForCourse(e.courseId);
                     return (

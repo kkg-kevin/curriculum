@@ -13,7 +13,9 @@ export const timetableApi = {
   getCourseSchedules: (classId) => api.get(`${BASE}/course-schedule`, { params: { classId } }).then((r) => r.data.data),
   setCourseSchedule:  (data)    => api.put(`${BASE}/course-schedule`, data).then((r) => r.data.data),
 
-  getClassCalendar:      (classId, from, to) => api.get(`${BASE}/calendar`, { params: { classId, from, to } }).then((r) => r.data.data),
-  getMyTeacherCalendar:  (from, to)          => api.get(`${BASE}/teacher/mine/calendar`, { params: { from, to } }).then((r) => r.data.data),
-  getMyLearnerCalendar:  (from, to)          => api.get(`${BASE}/learner/mine/calendar`, { params: { from, to } }).then((r) => r.data.data),
+  // Full response body ({data: events, breaks, count}), not just r.data.data — callers need the
+  // sibling `breaks` array (curriculum break windows overlapping the range) alongside events.
+  getClassCalendar:      (classId, from, to) => api.get(`${BASE}/calendar`, { params: { classId, from, to } }).then((r) => r.data),
+  getMyTeacherCalendar:  (from, to)          => api.get(`${BASE}/teacher/mine/calendar`, { params: { from, to } }).then((r) => r.data),
+  getMyLearnerCalendar:  (from, to)          => api.get(`${BASE}/learner/mine/calendar`, { params: { from, to } }).then((r) => r.data),
 };
