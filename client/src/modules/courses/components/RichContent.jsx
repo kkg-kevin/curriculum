@@ -2,7 +2,7 @@
 // strip tags before deciding whether there's anything to show.
 export function isEmptyHtml(html) {
   if (!html) return true;
-  if (/<img[\s>]/i.test(html)) return false;
+  if (/<(img|video)[\s>]/i.test(html)) return false;
   return html.replace(/<[^>]*>/g, "").trim().length === 0;
 }
 
@@ -20,6 +20,7 @@ export default function RichContent({ html, emptyText }) {
         .course-rich-content p:last-child { margin-bottom: 0; }
         .course-rich-content ul, .course-rich-content ol { margin: 0 0 10px; padding-left: 22px; }
         .course-rich-content img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
+        .course-rich-content video { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; background: #000; }
         .course-rich-content strong { font-weight: 700; }
         .course-rich-content h2 { font-size: 1.3em; font-weight: 800; margin: 0 0 10px; color: #111827; }
         .course-rich-content h3 { font-size: 1.12em; font-weight: 700; margin: 0 0 8px; color: #111827; }

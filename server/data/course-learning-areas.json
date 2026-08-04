@@ -34,5 +34,11 @@
     "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
     "learningAreaId": "aa13c9c1-3ef1-4ae5-8f58-fa3687f4b79c",
     "createdAt": "2026-08-03T06:38:45.400Z"
+  },
+  {
+    "id": "d8e4dd76-1dd0-43d3-8ed3-d790d096ab57",
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "learningAreaId": "4f939fe5-7d76-4b09-afe8-5bd975ca7f2f",
+    "createdAt": "2026-08-04T09:52:55.197Z"
   }
 ]
