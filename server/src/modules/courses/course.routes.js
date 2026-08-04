@@ -12,6 +12,9 @@ const {
   getCourseLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
+  getCourseInventory,
+  linkInventoryItem,
+  unlinkInventoryItem,
   getCourseCurricula,
   getAssessmentScoring,
   getSessions,
@@ -47,6 +50,11 @@ router.route("/:id/competencies/links/:competencyId").delete(authorize("admin"),
 // Learning Areas — this course's tagged learning areas (authored globally under /api/learning-areas)
 router.route("/:id/learning-areas/links").get(authorize("admin"), getCourseLearningAreas).post(authorize("admin"), linkLearningArea);
 router.route("/:id/learning-areas/links/:learningAreaId").delete(authorize("admin"), unlinkLearningArea);
+
+// Inventory — this course's linked materials, each with a quantity (authored globally under
+// /api/inventory), same shape/authoring posture as a Project assessment's own inventory links.
+router.route("/:id/inventory/links").get(authorize("admin"), getCourseInventory).post(authorize("admin"), linkInventoryItem);
+router.route("/:id/inventory/links/:inventoryItemId").delete(authorize("admin"), unlinkInventoryItem);
 
 // Curricula — read-only here; a course is added to a curriculum from the curriculum side
 // (see curriculum.routes.js's /:id/courses/links), not from the course itself.

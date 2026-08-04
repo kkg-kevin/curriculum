@@ -21,6 +21,7 @@ import {
 import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import AddModuleModal from "../components/AddModuleModal";
+import CourseInventoryPanel from "../components/CourseInventoryPanel";
 import RichContent from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
@@ -669,6 +670,10 @@ export default function CourseViewPage() {
               )}
             </div>
           )}
+
+          <div style={{ marginTop: "16px" }}>
+            <CourseInventoryPanel courseId={id} />
+          </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -775,6 +780,22 @@ export default function CourseViewPage() {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Requirements</h3>
+            {(course.requirements || []).length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                None listed.{" "}
+                <Link to={`/courses/${id}/edit`} style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Add some →</Link>
+              </p>
+            ) : (
+              <ul style={{ margin: 0, padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                {course.requirements.map((r, idx) => (
+                  <li key={idx} style={{ fontSize: "12.5px", color: "#374151" }}>{r}</li>
+                ))}
+              </ul>
             )}
           </div>
 

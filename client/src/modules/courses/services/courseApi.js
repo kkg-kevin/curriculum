@@ -30,6 +30,16 @@ export const courseApi = {
   unlinkLearningArea: (courseId, learningAreaId) =>
     api.delete(`${ENDPOINT}/${courseId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
 
+  /* Inventory — this course's linked materials, each with a quantity (authored globally in Settings) */
+  getCourseInventory: (courseId) =>
+    api.get(`${ENDPOINT}/${courseId}/inventory/links`).then((r) => r.data.data),
+
+  linkInventoryItem: (courseId, inventoryItemId, quantity) =>
+    api.post(`${ENDPOINT}/${courseId}/inventory/links`, { inventoryItemId, quantity }).then((r) => r.data.data),
+
+  unlinkInventoryItem: (courseId, inventoryItemId) =>
+    api.delete(`${ENDPOINT}/${courseId}/inventory/links/${inventoryItemId}`).then((r) => r.data.data),
+
   /* Curricula — read-only here; a course is added to a curriculum from the curriculum side */
   getCourseCurricula: (courseId) =>
     api.get(`${ENDPOINT}/${courseId}/curricula/links`).then((r) => r.data.data),

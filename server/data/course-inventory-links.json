@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1ae08bc7-3897-4755-a24f-7b077630d167",
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "inventoryItemId": "b49267f8-33b0-4626-a1ba-f4c4d4e3191f",
+    "quantity": 1,
+    "createdAt": "2026-08-04T11:41:40.329Z"
+  },
+  {
+    "id": "0150f4eb-71a8-403c-9c87-a51105d8149f",
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "inventoryItemId": "f4500d0c-99d2-421a-8e6a-cdca4df4df8d",
+    "quantity": 1,
+    "createdAt": "2026-08-04T11:41:42.797Z"
+  }
+]

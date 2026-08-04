@@ -12,6 +12,11 @@ const createCourseSchema = z.object({
   coverImage:  z.string().nullable().optional().default(null),
   ageMin:      z.number().int().min(0).max(120).nullable().optional().default(null),
   ageMax:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  // Freeform typed requirements (e.g. "internet access", "printed worksheets") — not tied to
+  // any catalog, just plain strings on the course record itself, same shape as Session's
+  // existing outcomes[]. Materials from the Inventory catalog are a separate link table
+  // (course-inventory-link.model.js), attached from the course's own page.
+  requirements: z.array(z.string().min(1)).optional().default([]),
 });
 
 const updateCourseSchema = createCourseSchema.partial();
@@ -86,6 +91,11 @@ const linkLearningAreaSchema = z.object({
   learningAreaId: z.string().min(1, "learningAreaId is required"),
 });
 
+const linkInventoryItemSchema = z.object({
+  inventoryItemId: z.string().min(1, "inventoryItemId is required"),
+  quantity:        z.number().min(1, "Quantity must be at least 1").optional().default(1),
+});
+
 module.exports = {
   createCourseSchema,
   updateCourseSchema,
@@ -96,4 +106,5 @@ module.exports = {
   updateModuleSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
+  linkInventoryItemSchema,
 };

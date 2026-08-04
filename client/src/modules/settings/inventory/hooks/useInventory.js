@@ -10,6 +10,7 @@ export const INVENTORY_KEYS = {
 
 const CROSS_MODULE_KEYS = [
   ["assessments", "inventory"],
+  ["courses", "inventory"],
 ];
 
 function invalidateEverywhere(qc) {

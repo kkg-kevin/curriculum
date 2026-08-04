@@ -1,5 +1,6 @@
 const InventoryModel = require("./inventory.model");
 const AssessmentInventoryLinkModel = require("../../assessments/assessment-inventory-link.model");
+const CourseInventoryLinkModel = require("../../courses/course-inventory-link.model");
 
 const InventoryService = {
   getInventoryItems() {
@@ -42,9 +43,10 @@ const InventoryService = {
       throw err;
     }
     InventoryModel.delete(id);
-    // Projects only ever reference the catalog by id (never copy it), so those
+    // Projects and courses only ever reference the catalog by id (never copy it), so those
     // references must be cleaned up here or they'd point at a dead id.
     AssessmentInventoryLinkModel.deleteByInventoryItemId(id);
+    CourseInventoryLinkModel.deleteByInventoryItemId(id);
   },
 };
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
-import { Input, Field, SectionHeader, AgeRangeField } from "./formFields";
+import { Input, Field, SectionHeader, AgeRangeField, ListField } from "./formFields";
 import RichTextEditor from "./RichTextEditor";
 import CoverImageField from "./CoverImageField";
 import LearningAreasField from "./LearningAreasField";
@@ -88,6 +88,11 @@ export default function CourseForm({ autoGenerateCode = false }) {
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
         <SectionHeader title="Learning Areas" subtitle="Tag which learning areas this course falls under." />
         <LearningAreasField name="learningAreaIds" hint="Pick from the shared catalog defined in Settings." />
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
+        <SectionHeader title="Requirements" subtitle="Freeform requirements for this course — e.g. internet access, printed worksheets. Materials from the Inventory catalog are attached separately, from the course's own page." />
+        <ListField name="requirements" label="Requirements" hint="Press Enter or Add after each one." placeholder="e.g. Internet access" />
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ const CompetencyModel = require("../settings/competencies/competency.model");
 const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
 const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
 const CourseCurriculumLinkModel = require("./course-curriculum-link.model");
+const CourseInventoryLinkModel = require("./course-inventory-link.model");
+const InventoryModel = require("../settings/inventory/inventory.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const CurriculumService = require("../curriculum/curriculum.service");
 const AssessmentModel = require("../assessments/assessment.model");
@@ -135,6 +137,7 @@ const CourseService = {
     CourseCompetencyLinkModel.deleteByCourseId(id);
     CourseLearningAreaLinkModel.deleteByCourseId(id);
     CourseCurriculumLinkModel.deleteByCourseId(id);
+    CourseInventoryLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
   },
 
@@ -252,6 +255,44 @@ const CourseService = {
   async unlinkLearningArea(courseId, learningAreaId) {
     CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
     return this.getCourseLearningAreas(courseId);
+  },
+
+  /* ── Inventory (authored globally in Settings, linked onto a course with a quantity) —
+     same pattern as a Project assessment's own inventory links, see
+     assessment.service.js's getAssessmentInventory/linkInventoryItem/unlinkInventoryItem ── */
+
+  async getCourseInventory(courseId) {
+    const links = CourseInventoryLinkModel.findByCourseId(courseId);
+    const items = InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
+    const itemsById = new Map(items.map((i) => [i.id, i]));
+    return links
+      .map((link) => {
+        const item = itemsById.get(link.inventoryItemId);
+        return item ? { ...item, quantity: link.quantity } : null;
+      })
+      .filter(Boolean);
+  },
+
+  async linkInventoryItem(courseId, inventoryItemId, quantity) {
+    const course = CourseModel.findById(courseId);
+    if (!course) {
+      const err = new Error("Course not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const item = InventoryModel.findById(inventoryItemId);
+    if (!item) {
+      const err = new Error("Inventory item not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    CourseInventoryLinkModel.link(courseId, inventoryItemId, quantity);
+    return this.getCourseInventory(courseId);
+  },
+
+  async unlinkInventoryItem(courseId, inventoryItemId) {
+    CourseInventoryLinkModel.unlink(courseId, inventoryItemId);
+    return this.getCourseInventory(courseId);
   },
 
   /* ── Curricula (a course stays independent — this just records where it's currently used) ── */
