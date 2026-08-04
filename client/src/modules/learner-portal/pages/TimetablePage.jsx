@@ -16,7 +16,9 @@ export default function TimetablePage() {
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
-  const { data: events = [], isLoading: calendarLoading } = useMyLearnerCalendar(calendarRange?.from, calendarRange?.to);
+  const { data: calendarData, isLoading: calendarLoading } = useMyLearnerCalendar(calendarRange?.from, calendarRange?.to);
+  const events = calendarData?.data || [];
+  const breaks = calendarData?.breaks || [];
 
   if (scopeLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -31,6 +33,7 @@ export default function TimetablePage() {
 
       <CalendarView
         events={events}
+        breaks={breaks}
         isLoading={calendarLoading}
         resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
         onRangeChange={onRangeChange}

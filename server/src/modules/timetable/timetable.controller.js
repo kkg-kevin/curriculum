@@ -113,22 +113,22 @@ const getClassCalendar = asyncHandler(async (req, res) => {
   const cls = ClassModel.findById(classId);
   assertClassAccess(req, cls);
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const events = TimetableService.resolveCalendar({ classId, from, to });
-  res.json({ success: true, data: events, count: events.length });
+  const { events, breaks } = TimetableService.resolveCalendar({ classId, from, to });
+  res.json({ success: true, data: events, breaks, count: events.length });
 });
 
 const getMyTeacherCalendar = asyncHandler(async (req, res) => {
-  if (!req.ownTeacher) return res.json({ success: true, data: [] });
+  if (!req.ownTeacher) return res.json({ success: true, data: [], breaks: [] });
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const events = TimetableService.resolveTeacherCalendar(req.ownTeacher.id, from, to);
-  res.json({ success: true, data: events, count: events.length });
+  const { events, breaks } = TimetableService.resolveTeacherCalendar(req.ownTeacher.id, from, to);
+  res.json({ success: true, data: events, breaks, count: events.length });
 });
 
 const getMyLearnerCalendar = asyncHandler(async (req, res) => {
-  if (!req.ownLearner) return res.json({ success: true, data: [] });
+  if (!req.ownLearner) return res.json({ success: true, data: [], breaks: [] });
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const events = TimetableService.resolveLearnerCalendar(req.ownLearner.id, from, to);
-  res.json({ success: true, data: events, count: events.length });
+  const { events, breaks } = TimetableService.resolveLearnerCalendar(req.ownLearner.id, from, to);
+  res.json({ success: true, data: events, breaks, count: events.length });
 });
 
 module.exports = {

@@ -34,7 +34,9 @@ export default function TimetablePage() {
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
-  const { data: events = [], isLoading: calendarLoading } = useMyTeacherCalendar(calendarRange?.from, calendarRange?.to);
+  const { data: calendarData, isLoading: calendarLoading } = useMyTeacherCalendar(calendarRange?.from, calendarRange?.to);
+  const events = calendarData?.data || [];
+  const breaks = calendarData?.breaks || [];
 
   const isLoading = teacherLoading || classesLoading;
 
@@ -51,6 +53,7 @@ export default function TimetablePage() {
 
       <CalendarView
         events={events}
+        breaks={breaks}
         isLoading={calendarLoading}
         resolveCourseName={resolveCourseName}
         resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}

@@ -330,5 +330,24 @@
     "id": "bd8e1a51-a6f7-4072-9679-3706caadca15",
     "createdAt": "2026-08-03T06:17:51.790Z",
     "updatedAt": "2026-08-03T06:33:03.923Z"
+  },
+  {
+    "name": "temnzdg",
+    "code": "T",
+    "academicYear": "",
+    "description": "dgxcn",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": false,
+    "academicCycleModel": "terms",
+    "periods": [],
+    "classes": [],
+    "id": "ea6b5ae7-5087-4fa5-8559-1db712115b5e",
+    "createdAt": "2026-08-04T12:35:04.596Z",
+    "updatedAt": "2026-08-04T12:35:04.596Z"
   }
 ]

@@ -5,6 +5,7 @@ import { learningHubApi as schoolApi } from "../../learning-hubs/services/learni
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
   useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar,
@@ -175,14 +176,32 @@ function DaySlotRow({ slot, teacherLabel, courseName, onEdit, onDelete }) {
   );
 }
 
+// A date not covered by any curriculum period, or covered but inside that period's break, isn't
+// wrong to anchor on — the calendar engine already skips forward to the next valid schedulable
+// day on its own (see isDateSchedulable/resolveCoursePlacements in timetable.service.js) — this
+// is purely a clarity signal so the school isn't left wondering why Session 1 didn't land where
+// they expected.
+function describeNonSchedulable(dateStr, periods) {
+  if (!dateStr || !periods.length) return null;
+  const covering = periods.find((p) => p.startDate && p.endDate && dateStr >= p.startDate && dateStr <= p.endDate);
+  if (covering) {
+    if (covering.breakStartDate && covering.breakEndDate && dateStr >= covering.breakStartDate && dateStr <= covering.breakEndDate) {
+      return `Falls in ${covering.name || "a"} break — first session will land after it ends.`;
+    }
+    return null;
+  }
+  return "Falls outside any configured term — sessions will only start once a term covers this date.";
+}
+
 // A course's Sessions only start landing on the calendar once its start date is set — this row
 // is how a school anchors "Session 1 lines up with this date" for a course that already has
 // weekday slots configured above.
-function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [] }) {
+function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [] }) {
   const [value, setValue] = useState(startDate || "");
   const [applyToClassIds, setApplyToClassIds] = useState([]);
   useEffect(() => setValue(startDate || ""), [startDate]);
   const dirty = value !== (startDate || "");
+  const hint = describeNonSchedulable(value, periods);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -201,6 +220,7 @@ function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingCl
           {isSaving ? "Saving…" : startDate ? "Update" : "Set start date"}{applyToClassIds.length > 0 ? ` (${applyToClassIds.length + 1} classes)` : ""}
         </button>
       </div>
+      {hint && <p style={{ margin: 0, fontSize: 11, color: "#B91C1C" }}>{hint}</p>}
       <ClassMultiPicker
         siblings={siblingClasses}
         selectedIds={applyToClassIds}
@@ -256,9 +276,22 @@ export default function TimetablePage() {
   });
 
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
+  const { data: selectedCurriculum } = useCurriculumQuery(selectedClass?.curriculumId);
+  const periods = selectedCurriculum?.periods || [];
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
   const slots = slotsData?.data || [];
+
+  // Once a class's weekly pattern is already configured, the day-by-day editor collapses down to
+  // a summary by default — nothing left to set up, no reason to take up the page. A class with no
+  // slots yet (or one just switched to) opens straight into the editor since there's actually
+  // something to do. Re-derives on every class switch once that class's slots have loaded, but not
+  // on every add/edit refetch within the same class (isLoading only flips on the first fetch).
+  const [slotsExpanded, setSlotsExpanded] = useState(false);
+  useEffect(() => {
+    if (!slotsLoading) setSlotsExpanded(slots.length === 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClassId, slotsLoading]);
 
   const { mutate: createSlot, isPending: creating } = useCreateSlot(selectedClassId);
   const { mutate: createSlotsBulk, isPending: creatingBulk } = useCreateSlotsBulk();
@@ -273,13 +306,16 @@ export default function TimetablePage() {
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
-  const { data: calendarEvents = [], isLoading: calendarLoading } = useClassCalendar(selectedClassId, calendarRange?.from, calendarRange?.to);
+  const { data: calendarData, isLoading: calendarLoading } = useClassCalendar(selectedClassId, calendarRange?.from, calendarRange?.to);
+  const calendarEvents = calendarData?.data || [];
+  const calendarBreaks = calendarData?.breaks || [];
 
   const courseNameById = new Map(courses.map((c) => [c.id, c.name]));
   const slotsByDay = DAYS_OF_WEEK.map((day) => ({
     day,
     slots: slots.filter((s) => s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime)),
   }));
+  const daysCovered = new Set(slots.map((s) => s.dayOfWeek)).size;
   const handleCreate = ({ applyToClassIds = [], ...data }) => {
     if (applyToClassIds.length === 0) {
       createSlot({ ...data, classId: selectedClassId }, { onSuccess: () => setAddingDay(null) });
@@ -347,7 +383,30 @@ export default function TimetablePage() {
             </select>
           </div>
 
-          {slotsLoading ? (
+          <div
+            style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, cursor: "pointer" }}
+            onClick={() => setSlotsExpanded((v) => !v)}
+          >
+            <div>
+              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: T.ink }}>Weekly Timetable</p>
+              <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>
+                {slotsLoading
+                  ? "Loading…"
+                  : slots.length === 0
+                  ? "No slots configured yet"
+                  : `${slots.length} slot${slots.length === 1 ? "" : "s"} across ${daysCovered} day${daysCovered === 1 ? "" : "s"}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setSlotsExpanded((v) => !v); }}
+              style={{ padding: "6px 14px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}
+            >
+              {slotsExpanded ? "Hide" : "Edit"}
+            </button>
+          </div>
+
+          {slotsExpanded && (slotsLoading ? (
             <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading timetable…</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -402,7 +461,7 @@ export default function TimetablePage() {
                 </div>
               ))}
             </div>
-          )}
+          ))}
 
           {!slotsLoading && courseIdsWithSlots.length > 0 && (
             <div style={{ ...cardStyle, overflow: "hidden" }}>
@@ -418,6 +477,7 @@ export default function TimetablePage() {
                     startDate={startDateByCourseId.get(courseId)}
                     isSaving={savingSchedule || savingScheduleBulk}
                     siblingClasses={siblingClasses}
+                    periods={periods}
                     onSave={(startDate, applyToClassIds) => handleSaveCourseSchedule(courseId, startDate, applyToClassIds)}
                   />
                 ))}
@@ -428,6 +488,7 @@ export default function TimetablePage() {
           {!slotsLoading && (
             <CalendarView
               events={calendarEvents}
+              breaks={calendarBreaks}
               isLoading={calendarLoading}
               resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
               resolveTeacherLabel={(event) => resolveTeacherLabel(event, courseLinks)}

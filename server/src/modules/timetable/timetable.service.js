@@ -1,8 +1,10 @@
 const TimetableModel = require("./timetable.model");
 const CourseScheduleModel = require("./course-schedule.model");
 const SessionModel = require("../courses/session.model");
+const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const CurriculumModel = require("../curriculum/curriculum.model");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
 
 function notFound(message) {
@@ -53,12 +55,46 @@ function weekdayOf(dateStr) {
   return WEEKDAY_BY_INDEX[new Date(toUtcMs(dateStr)).getUTCDay()];
 }
 
+// A class's academic-calendar terms/breaks live on its Curriculum, not on the class itself —
+// resolved fresh on every read rather than cached, same "nothing persisted" approach as the rest
+// of this engine. Missing class/curriculum, or a curriculum that hasn't configured periods yet,
+// all degrade to [] (unrestricted — see isDateSchedulable).
+function getPeriodsForClass(classId) {
+  const cls = ClassModel.findById(classId);
+  if (!cls?.curriculumId) return [];
+  const curriculum = CurriculumModel.findById(cls.curriculumId);
+  return curriculum?.periods || [];
+}
+
+// A date only counts as in-session if it falls inside some period's [startDate, endDate] and
+// outside that period's own break window. Curricula that haven't configured periods yet (still
+// common — this is opt-in, not required) impose no restriction at all, preserving the engine's
+// original unrestricted behavior. A date not covered by ANY period — before/after the
+// curriculum's span, or an unconfigured gap between two periods — is treated as not schedulable,
+// same as an explicit break.
+function isDateSchedulable(date, periods) {
+  if (!periods.length) return true;
+  const ms = toUtcMs(date);
+  return periods.some((p) => {
+    if (!p.startDate || !p.endDate) return false;
+    if (ms < toUtcMs(p.startDate) || ms > toUtcMs(p.endDate)) return false;
+    if (p.breakStartDate && p.breakEndDate && ms >= toUtcMs(p.breakStartDate) && ms <= toUtcMs(p.breakEndDate)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 // Walks a single (classId, courseId) pair's Sessions onto the calendar: starting at its
 // start-date anchor, every date whose weekday matches one of that course's configured slot
-// weekdays consumes the next Session in order. Nothing is persisted — this is recomputed from
-// the anchor + current slots + current Sessions on every call, so editing any of those three
-// inputs is reflected immediately with no sync/migration code.
-function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to }) {
+// weekdays AND falls within the curriculum's term calendar (not a break, not outside any period)
+// consumes the next Session in order. A non-schedulable date is skipped outright — the cursor
+// doesn't advance — so the Session that would have landed there simply lands on the next valid
+// occurrence instead: scheduling pauses through a break and resumes right after. Nothing is
+// persisted — this is recomputed from the anchor + current slots + current Sessions + current
+// curriculum periods on every call, so editing any of those inputs is reflected immediately with
+// no sync/migration code.
+function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods }) {
   const sessions = SessionModel.findByCourseId(courseId);
   if (sessions.length === 0) return [];
   const events = [];
@@ -72,6 +108,7 @@ function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, fro
     const day = weekdayOf(date);
     const slot = slotsByDay[day];
     if (!slot) continue;
+    if (!isDateSchedulable(date, periods)) continue;
     const session = sessions[cursor];
     cursor += 1;
     if (toUtcMs(date) < toUtcMs(walkStart)) continue;
@@ -82,6 +119,23 @@ function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, fro
     });
   }
   return events;
+}
+
+// Break windows (from periods that have one set) overlapping [from, to] — surfaced separately
+// from events so the calendar UI can shade/label them even on days with no session at all.
+function breaksInRange(periods, from, to) {
+  const fromMs = toUtcMs(from);
+  const toMs = toUtcMs(to);
+  return periods
+    .filter((p) => p.breakStartDate && p.breakEndDate)
+    .filter((p) => toUtcMs(p.breakStartDate) <= toMs && toUtcMs(p.breakEndDate) >= fromMs)
+    .map((p) => ({ start: p.breakStartDate, end: p.breakEndDate, label: p.name ? `${p.name} Break` : "Break" }));
+}
+
+function dedupeBreaks(breaks) {
+  const seen = new Map();
+  for (const b of breaks) seen.set(`${b.start}:${b.end}:${b.label}`, b);
+  return [...seen.values()];
 }
 
 const TimetableService = {
@@ -99,7 +153,8 @@ const TimetableService = {
 
   // The read-time scheduling engine: every configured course for this class, walked onto real
   // dates between `from` and `to`. Courses with slots but no start-date anchor yet are silently
-  // excluded — the UI is responsible for prompting the school to set one.
+  // excluded — the UI is responsible for prompting the school to set one. Also returns this
+  // class's curriculum break windows overlapping the range, so the UI can explain empty days.
   resolveCalendar({ classId, from, to }) {
     const slots = TimetableModel.findAll({ classId });
     const slotsByCourse = {};
@@ -111,28 +166,36 @@ const TimetableService = {
       if (!slotsByCourse[slot.courseId][slot.dayOfWeek]) slotsByCourse[slot.courseId][slot.dayOfWeek] = slot;
     }
 
+    const periods = getPeriodsForClass(classId);
     const anchors = CourseScheduleModel.findByClassId(classId);
     const events = [];
     for (const anchor of anchors) {
       const slotsByDay = slotsByCourse[anchor.courseId];
       if (!slotsByDay) continue;
       events.push(...resolveCoursePlacements({
-        classId, courseId: anchor.courseId, slotsByDay, startDate: anchor.startDate, from, to,
+        classId, courseId: anchor.courseId, slotsByDay, startDate: anchor.startDate, from, to, periods,
       }));
     }
-    return events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+    return {
+      events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
+      breaks: breaksInRange(periods, from, to),
+    };
   },
 
   // Same class-resolution as listForTeacher, but returning calendar events instead of slots.
+  // Classes can sit on different curricula (different term calendars), so breaks are merged
+  // across every linked class rather than assumed to be one shared calendar.
   resolveTeacherCalendar(teacherId, from, to) {
     const links = ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
     const pairKey = (classId, courseId) => `${classId}:${courseId}`;
     const linkedPairs = new Set(links.map((l) => pairKey(l.classId, l.courseId)));
     const classIds = [...new Set(links.map((l) => l.classId))];
-    return classIds
-      .flatMap((classId) => TimetableService.resolveCalendar({ classId, from, to }))
+    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+    const events = results
+      .flatMap((r) => r.events)
       .filter((e) => linkedPairs.has(pairKey(e.classId, e.courseId)))
       .filter((e) => !e.teacherId || e.teacherId === teacherId);
+    return { events, breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
   },
 
   // Same class-resolution as listForLearner, but returning calendar events instead of slots.
@@ -140,7 +203,8 @@ const TimetableService = {
     const classIds = LearnerHubLinkModel.findByLearnerId(learnerId)
       .filter((l) => l.classId && l.status === "active")
       .map((l) => l.classId);
-    return classIds.flatMap((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
   },
 
   // Every slot belonging to a (classId, courseId) pair this teacher is actually linked to (see
