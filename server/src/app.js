@@ -15,6 +15,7 @@ const classRoutes = require("./modules/classes/class.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
+const timetableRoutes = require("./modules/timetable/timetable.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const reportRoutes = require("./modules/reports/report.routes");
@@ -61,6 +62,8 @@ app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
+// Same shape as attendance — a timetable slot belongs to a Class, ownership resolved through it.
+app.use("/api/timetable", protect, attachOwnRecords, timetableRoutes);
 // Authoring stays admin-only, but one read (an assessment's linked competencies) is needed by
 // teacher/school too, when grading — see assessment.routes.js for the per-route split.
 app.use("/api/assessments", protect, assessmentRoutes);

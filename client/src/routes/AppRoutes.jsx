@@ -19,10 +19,12 @@ import TeacherAssessmentRosterPage from "../modules/teacher-portal/pages/Assessm
 import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
 import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
+import TeacherTimetablePage from "../modules/teacher-portal/pages/TimetablePage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
 import SchoolAttendancePage from "../modules/school-portal/pages/AttendancePage";
+import SchoolTimetablePage from "../modules/school-portal/pages/TimetablePage";
 import SchoolProfilePage from "../modules/school-portal/pages/ProfilePage";
 import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
@@ -31,6 +33,7 @@ import LearnerAssessmentDetailPage from "../modules/learner-portal/pages/Assessm
 import LearnerReportsPage from "../modules/learner-portal/pages/ReportsPage";
 import LearnerReportDetailPage from "../modules/learner-portal/pages/ReportDetailPage";
 import LearnerProgressPage from "../modules/learner-portal/pages/ProgressPage";
+import LearnerTimetablePage from "../modules/learner-portal/pages/TimetablePage";
 import LearnerProfilePage from "../modules/learner-portal/pages/ProfilePage";
 import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
@@ -188,6 +191,7 @@ export default function AppRoutes() {
           <Route path="reports" element={<TeacherReportsPage />} />
           <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
+          <Route path="timetable" element={<TeacherTimetablePage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
       </Route>
@@ -213,6 +217,7 @@ export default function AppRoutes() {
           <Route path="learners/:id/view" element={<LearnerViewPage />} />
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="attendance" element={<SchoolAttendancePage />} />
+          <Route path="timetable" element={<SchoolTimetablePage />} />
           <Route path="reports" element={<ComingSoon name="Reports" />} />
           <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
@@ -230,6 +235,7 @@ export default function AppRoutes() {
           <Route path="reports" element={<LearnerReportsPage />} />
           <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
           <Route path="progress" element={<LearnerProgressPage />} />
+          <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
         </Route>
       </Route>

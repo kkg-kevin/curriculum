@@ -389,7 +389,7 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
 }
 
 function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
-  const { data: allHubsData } = useAllLearningHubsQuery({ hubType: "school", status: "active" });
+  const { data: allHubsData } = useAllLearningHubsQuery({ status: "active" });
   const availableHubs = (allHubsData?.data || []).filter((h) => !enrolledHubIds.includes(h.id));
   const [selectedHubId, setSelectedHubId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");

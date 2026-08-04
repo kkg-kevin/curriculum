@@ -227,5 +227,23 @@
     "id": "79c17d31-337a-4678-9116-c58c63febbd0",
     "createdAt": "2026-08-03T11:52:34.355Z",
     "updatedAt": "2026-08-03T12:01:07.064Z"
+  },
+  {
+    "firstName": "jan",
+    "lastName": "jan",
+    "gender": "male",
+    "guardianName": "GUARDIAN",
+    "guardianPhone": "21649494964646",
+    "guardianEmail": "monalisa@digifunzi.comm",
+    "dateOfBirth": "2013-12-02",
+    "nationality": "Kenyan",
+    "languages": "English, Spanish, French",
+    "username": "jan",
+    "currentRungId": "8cc7bd2d-8dfb-4b42-a27a-f1a6bab958f3",
+    "photo": "http://localhost:5000/uploads/a957fc8d-960a-4bd0-828f-a71bc0d00823.jpeg",
+    "registrationNumber": "REG-000018",
+    "id": "77773b20-d329-41cb-88cf-1739b90cffb7",
+    "createdAt": "2026-08-04T08:05:00.151Z",
+    "updatedAt": "2026-08-04T08:54:04.983Z"
   }
 ]

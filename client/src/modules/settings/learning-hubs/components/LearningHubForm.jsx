@@ -439,10 +439,10 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
             label="Email Address"
             placeholder="info@hub.ac.ke"
             type="email"
-            hint={isSchool ? "The school-portal login for this learning hub is matched to this email." : undefined}
+            hint="This hub's portal login is matched to this email."
           />
 
-          {isSchool && <PasswordField />}
+          <PasswordField />
 
           <Field label="Description">
             <textarea

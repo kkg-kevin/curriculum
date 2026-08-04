@@ -55,5 +55,49 @@
     "id": "6fa39732-660c-4106-8433-87bcfee2de85",
     "createdAt": "2026-07-29T14:10:28.255Z",
     "updatedAt": "2026-07-29T14:10:28.255Z"
+  },
+  {
+    "name": "Hub",
+    "hubType": "tech_club",
+    "code": "TH",
+    "email": "testhub@digifunzi.com",
+    "phone": "114949496599",
+    "contactPerson": "Test contact",
+    "address": {
+      "street": "Test Area",
+      "city": "Test town",
+      "county": "Nairobi"
+    },
+    "mapLink": "https://www.google.com/search?q=test+hub+school&sca_esv=e678d1468e4dc1b3&udm=2&biw=1920&bih=957&sxsrf=APpeQns09JQ8-UDCqLP5MtIIMS9D_lY6dg%3A1785830404809&ei=BJxxatCFMb-hkdUPseuBoQI&ved=0ahUKEwjQl6HXwIaWAxW_UKQEHbF1ICQQ4dUDCBE&uact=5&oq=test+hub+school&gs_lp=Egtnd3Mtd2l6LWltZyIPdGVzdCBodWIgc2Nob29sMgYQABgIGB5I6Q5Q-gRY0QxwAXgAkAEAmAHBA6ABiw6qAQkwLjIuMy4xLjG4AQPIAQD4AQGYAgigAqsOwgIHECMYyQIYJ8ICBhAAGAcYHsICBRAAGIAEwgIEEAAYHsICCBAAGAUYHhgKwgIGEAAYBRgemAMAiAYBkgcJMS4xLjQuMS4xoAfxFrIHCTAuMS40LjEuMbgHoQ7CBwcxLjUuMS4xyAcXgAgB&sclient=gws-wiz-img",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "branchId": null,
+    "status": "active",
+    "description": "Test hub is a tech drive hub that we are using for testing purposes.",
+    "photo": "http://localhost:5000/uploads/ad5da5be-bb28-42a7-82c0-82a4658fa863.png",
+    "photos": [
+      "http://localhost:5000/uploads/12627055-3ff9-4367-a0c1-1021d3cf2b36.jpeg",
+      "http://localhost:5000/uploads/f5e8d0da-e212-4b82-88de-f8aacc1297ef.png"
+    ],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "projector",
+      "charging_ports"
+    ],
+    "operatingHours": {
+      "opensAt": "07:00",
+      "closesAt": "17:00",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Friday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    "spaces": [],
+    "id": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "createdAt": "2026-08-04T08:02:57.106Z",
+    "updatedAt": "2026-08-04T08:34:43.516Z"
   }
 ]

@@ -38,5 +38,45 @@
     "teacherId": "422b906c-7950-43f1-ab08-c93e880b9400",
     "isPrimary": false,
     "createdAt": "2026-08-03T11:53:05.127Z"
+  },
+  {
+    "id": "3fcc8d88-8427-435e-89f7-824dd06b10c8",
+    "classId": "93baa7db-caa1-4b7e-a17e-38245deb1b1c",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "059f7162-30cf-4413-9944-65e742119b32",
+    "isPrimary": true,
+    "createdAt": "2026-08-04T08:57:46.766Z"
+  },
+  {
+    "id": "713869f4-fb83-4dec-a2e8-52a160024067",
+    "classId": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "059f7162-30cf-4413-9944-65e742119b32",
+    "isPrimary": true,
+    "createdAt": "2026-08-04T08:59:51.947Z"
+  },
+  {
+    "id": "48fb88f5-ede5-42cb-b86a-27a4c7e9718c",
+    "classId": "2deaa005-d669-4261-addd-65a14dcb5208",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "059f7162-30cf-4413-9944-65e742119b32",
+    "isPrimary": true,
+    "createdAt": "2026-08-04T08:59:59.750Z"
+  },
+  {
+    "id": "fabae915-415a-4126-9da6-c50a456561ce",
+    "classId": "test-class-001",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "059f7162-30cf-4413-9944-65e742119b32",
+    "isPrimary": false,
+    "createdAt": "2026-08-04T09:16:06.205Z"
+  },
+  {
+    "id": "dd5fa40e-d631-49f9-8b12-8fad482d0892",
+    "classId": "5a2daed4-36d9-4d44-8dbb-26a7a74e2197",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": "059f7162-30cf-4413-9944-65e742119b32",
+    "isPrimary": false,
+    "createdAt": "2026-08-04T09:16:20.818Z"
   }
 ]

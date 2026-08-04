@@ -120,7 +120,7 @@ export default function ClassViewPage() {
   const { user } = useAuth();
   const { data: cls, isLoading } = useClassQuery(id);
   const { mutate: deleteClass } = useDeleteClass();
-  const { data: schoolsData } = useAllLearningHubsQuery({ hubType: "school" });
+  const { data: schoolsData } = useAllLearningHubsQuery();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: curriculum }   = useCurriculumQuery(cls?.curriculumId);

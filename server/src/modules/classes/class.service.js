@@ -1,6 +1,8 @@
 const ClassModel   = require("./class.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
+const TimetableModel = require("../timetable/timetable.model");
+const CourseScheduleModel = require("../timetable/course-schedule.model");
 
 // Tag is unique across every class, system-wide (not just within one hub) — it's how a specific
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
@@ -116,6 +118,8 @@ const ClassService = {
     // Learners enrolled here stay enrolled at the hub, just no longer placed in a class.
     LearnerHubLinkModel.clearClassId(id);
     ClassCourseTeacherLinkModel.deleteByClassId(id);
+    TimetableModel.deleteByClassId(id);
+    CourseScheduleModel.deleteByClassId(id);
     return { message: "Class deleted successfully" };
   },
 };
