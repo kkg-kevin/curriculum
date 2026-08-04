@@ -70,5 +70,29 @@
     "id": "40d50543-ec1d-4883-999b-9daa19ccf901",
     "createdAt": "2026-08-03T06:38:45.726Z",
     "updatedAt": "2026-08-03T06:38:45.726Z"
+  },
+  {
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "name": "SWE 101",
+    "order": 1,
+    "id": "2f95dc53-1400-489a-a811-1e5d331c2e1f",
+    "createdAt": "2026-08-04T09:52:55.241Z",
+    "updatedAt": "2026-08-04T09:52:55.241Z"
+  },
+  {
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "name": "SWE 202",
+    "order": 2,
+    "id": "2135ac43-e09d-40b7-bf38-513287b31f53",
+    "createdAt": "2026-08-04T09:52:55.305Z",
+    "updatedAt": "2026-08-04T09:52:55.305Z"
+  },
+  {
+    "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
+    "name": "SWE 303",
+    "order": 3,
+    "id": "beb7f86f-c1cf-4526-a5a7-dc9c18794716",
+    "createdAt": "2026-08-04T09:52:55.352Z",
+    "updatedAt": "2026-08-04T09:52:55.352Z"
   }
 ]

@@ -122,5 +122,65 @@
     "updatedAt": "2026-08-03T11:50:48.848Z",
     "minAge": 5,
     "maxAge": 18
+  },
+  {
+    "id": "daffa0bf-e2c5-4047-ba8a-28d32752af26",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-08-04T09:46:32.955Z",
+    "updatedAt": "2026-08-04T09:46:32.955Z"
+  },
+  {
+    "id": "9c2affe9-b2ba-4066-8dad-5f3bac266677",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-08-04T09:46:32.963Z",
+    "updatedAt": "2026-08-04T09:46:32.963Z"
+  },
+  {
+    "id": "1f564707-607f-4a24-b56f-181192327e39",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "sample",
+    "description": "sample learning areas 101",
+    "color": "#DC2626",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-08-04T09:46:32.986Z",
+    "updatedAt": "2026-08-04T09:46:32.986Z"
+  },
+  {
+    "id": "a4f0614b-fc72-4857-becc-febef7bde403",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "Robotics & Automation",
+    "description": "Hands-on building and programming of robots and automated systems.",
+    "color": "#7C3AED",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-08-04T09:46:32.991Z",
+    "updatedAt": "2026-08-04T09:46:32.991Z"
+  },
+  {
+    "id": "872d81b0-7e1b-42d0-9a2e-0e0e53ffd0ff",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "name": "buwegyg",
+    "description": "fnbvuasfub",
+    "color": "#25476a",
+    "courses": [
+      "2329640b-8fb9-4ec7-8251-6d922ab1586d"
+    ],
+    "createdAt": "2026-08-04T09:46:32.996Z",
+    "updatedAt": "2026-08-04T09:46:32.996Z"
   }
 ]
