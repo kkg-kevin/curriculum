@@ -17,6 +17,7 @@ const DEFAULT_VALUES = {
   ageMin: "",
   ageMax: "",
   learningAreaIds: [],
+  requirements: [],
 };
 
 function genRowId() {

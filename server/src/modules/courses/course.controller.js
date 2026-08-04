@@ -10,7 +10,24 @@ const {
   updateModuleSchema,
   linkCompetencySchema,
   linkLearningAreaSchema,
+  linkInventoryItemSchema,
 } = require("./course.validation");
+
+// updateCourseSchema is createCourseSchema.partial(), but zod still materializes a field's
+// .default(...) when its key is simply absent from the request body — e.g. an update body that
+// only sends { description } comes back from .parse() with code:"", status:"draft", etc.,
+// silently wiping every other field (same fix as learning-hub.controller.js's pickPresent).
+function pickPresent(parsed, raw) {
+  if (raw === null || typeof raw !== "object") return parsed;
+  const result = {};
+  for (const key of Object.keys(raw)) {
+    if (parsed[key] === undefined) continue;
+    result[key] = (typeof parsed[key] === "object" && parsed[key] !== null && !Array.isArray(parsed[key]))
+      ? pickPresent(parsed[key], raw[key])
+      : parsed[key];
+  }
+  return result;
+}
 
 const createCourse = asyncHandler(async (req, res) => {
   const data = createCourseSchema.parse(req.body);
@@ -29,7 +46,7 @@ const getCourseById = asyncHandler(async (req, res) => {
 });
 
 const updateCourse = asyncHandler(async (req, res) => {
-  const data = updateCourseSchema.parse(req.body);
+  const data = pickPresent(updateCourseSchema.parse(req.body), req.body);
   const course = await CourseService.updateCourse(req.params.id, data);
   res.json({ success: true, data: course });
 });
@@ -77,6 +94,24 @@ const linkLearningArea = asyncHandler(async (req, res) => {
 
 const unlinkLearningArea = asyncHandler(async (req, res) => {
   const data = await CourseService.unlinkLearningArea(req.params.id, req.params.learningAreaId);
+  res.json({ success: true, data });
+});
+
+/* ── Inventory ───────────────────────────────────────────────────────────── */
+
+const getCourseInventory = asyncHandler(async (req, res) => {
+  const data = await CourseService.getCourseInventory(req.params.id);
+  res.json({ success: true, data });
+});
+
+const linkInventoryItem = asyncHandler(async (req, res) => {
+  const { inventoryItemId, quantity } = linkInventoryItemSchema.parse(req.body);
+  const data = await CourseService.linkInventoryItem(req.params.id, inventoryItemId, quantity);
+  res.status(201).json({ success: true, data });
+});
+
+const unlinkInventoryItem = asyncHandler(async (req, res) => {
+  const data = await CourseService.unlinkInventoryItem(req.params.id, req.params.inventoryItemId);
   res.json({ success: true, data });
 });
 
@@ -162,6 +197,9 @@ module.exports = {
   getCourseLearningAreas,
   linkLearningArea,
   unlinkLearningArea,
+  getCourseInventory,
+  linkInventoryItem,
+  unlinkInventoryItem,
   getCourseCurricula,
   getAssessmentScoring,
   getSessions,

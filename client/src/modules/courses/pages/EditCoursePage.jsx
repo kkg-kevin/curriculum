@@ -36,6 +36,7 @@ export default function EditCoursePage() {
         ageMin: course.ageMin ?? "",
         ageMax: course.ageMax ?? "",
         learningAreaIds: linkedLearningAreas.map((a) => a.id),
+        requirements: course.requirements || [],
       });
     }
   }, [course, linkedLearningAreas, reset]);

@@ -9,11 +9,11 @@
     "resources": [],
     "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
     "createdAt": "2026-07-03T08:03:21.533Z",
-    "updatedAt": "2026-08-04T09:48:14.578Z",
+    "updatedAt": "2026-08-04T10:34:54.146Z",
     "mainConcepts": [],
     "assessmentIds": [],
     "activities": [],
-    "moduleId": null,
+    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154",
     "assessmentAttachments": []
   },
   {
@@ -2018,7 +2018,7 @@
     "courseId": "aedfe626-2a16-4c58-87f8-388e37a556d3",
     "title": "",
     "order": 1,
-    "moduleId": "2f95dc53-1400-489a-a811-1e5d331c2e1f",
+    "moduleId": "beb7f86f-c1cf-4526-a5a7-dc9c18794716",
     "outcomes": [],
     "introduction": "",
     "mainConcepts": [
@@ -2046,7 +2046,7 @@
     "resources": [],
     "id": "fd45432d-c474-4952-86d0-c5efe76c9186",
     "createdAt": "2026-08-04T09:52:55.280Z",
-    "updatedAt": "2026-08-04T10:08:45.451Z",
+    "updatedAt": "2026-08-04T10:39:34.850Z",
     "assessmentIds": [],
     "assessmentAttachments": []
   },

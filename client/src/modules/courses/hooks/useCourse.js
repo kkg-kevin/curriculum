@@ -9,6 +9,7 @@ export const COURSE_KEYS = {
   modules: (courseId) => ["courses", "modules", courseId],
   competencies: (courseId) => ["courses", "competencies", courseId],
   learningAreas: (courseId) => ["courses", "learning-areas", courseId],
+  inventory: (courseId) => ["courses", "inventory", courseId],
   curricula: (courseId) => ["courses", "curricula", courseId],
   assessmentScoring: (courseId, assessmentId, curriculumId) => ["courses", "assessment-scoring", courseId, assessmentId, curriculumId],
 };
@@ -102,6 +103,40 @@ export function useCourseLearningAreas(courseId) {
     queryKey: COURSE_KEYS.learningAreas(courseId),
     queryFn: () => courseApi.getCourseLearningAreas(courseId),
     enabled: !!courseId,
+  });
+}
+
+/* ── Inventory (authored globally in Settings, linked onto a course with a quantity here) ── */
+
+export function useCourseInventory(courseId) {
+  return useQuery({
+    queryKey: COURSE_KEYS.inventory(courseId),
+    queryFn: () => courseApi.getCourseInventory(courseId),
+    enabled: !!courseId,
+  });
+}
+
+export function useLinkCourseInventory(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ inventoryItemId, quantity }) => courseApi.linkInventoryItem(courseId, inventoryItemId, quantity),
+    onSuccess: (data) => {
+      queryClient.setQueryData(COURSE_KEYS.inventory(courseId), data);
+      toast.success("Material added");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to add material"),
+  });
+}
+
+export function useUnlinkCourseInventory(courseId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inventoryItemId) => courseApi.unlinkInventoryItem(courseId, inventoryItemId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(COURSE_KEYS.inventory(courseId), data);
+      toast.success("Material removed");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove material"),
   });
 }
 

@@ -5,11 +5,12 @@
     "coverImage": "http://localhost:5000/uploads/59083a4b-036e-4396-bda6-48242d61aa6a.png",
     "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
     "createdAt": "2026-07-03T08:03:21.515Z",
-    "updatedAt": "2026-07-17T05:41:56.066Z",
+    "updatedAt": "2026-08-04T11:30:17.309Z",
     "ageMin": 2,
     "ageMax": 3,
     "status": "active",
-    "code": "L1CF"
+    "code": "L1CF",
+    "requirements": []
   },
   {
     "name": "sample course ",
