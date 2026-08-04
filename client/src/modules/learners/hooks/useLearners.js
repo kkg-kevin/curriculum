@@ -68,6 +68,18 @@ export function useLearnerHubsQuery(learnerId) {
   });
 }
 
+// One-shot exact-username search, used to find a learner already enrolled at a DIFFERENT hub so
+// they can be enrolled here too (see EnrollExistingLearner in SchoolLearnersPage.jsx) — a
+// mutation rather than a query since it's fired on demand by a search button, not something that
+// should refetch reactively. Server returns at most one match (or none); a hubCount is included
+// but never the other hub's identity (see learner.controller.js's getAllLearners).
+export function useLookupLearnerByUsername() {
+  return useMutation({
+    mutationFn: (username) => learnerApi.getAll({ username }).then((r) => r.data?.[0] || null),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Lookup failed"),
+  });
+}
+
 export function useEnrollLearnerHub() {
   const qc = useQueryClient();
   return useMutation({

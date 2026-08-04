@@ -32,7 +32,7 @@ export default function LearnersPage() {
   const [search, setSearch] = useState("");
   const [schoolFilter, setSchoolFilter] = useState(searchParams.get("schoolId") || "");
 
-  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllLearningHubsQuery({ hubType: "school" });
+  const { data: schoolsData,  isLoading: schoolsLoading  } = useAllLearningHubsQuery();
   const { data: learnersData, isLoading: learnersLoading } = useAllLearnersQuery();
 
   // A learner can now be enrolled at several hubs, so "filter by school" resolves through the

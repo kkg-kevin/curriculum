@@ -443,7 +443,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const { data: curriculaData, isLoading: curriculaLoading } = useCurriculaQuery();
-  const { data: schoolsData,   isLoading: schoolsLoading }   = useAllLearningHubsQuery({ hubType: "school" });
+  const { data: schoolsData,   isLoading: schoolsLoading }   = useAllLearningHubsQuery();
   const { data: learnersData,  isLoading: learnersLoading }  = useAllLearnersQuery();
   const { data: teachersData,  isLoading: teachersLoading }  = useAllTeachersQuery();
   const { data: classesData,   isLoading: classesLoading }   = useAllClassesQuery();

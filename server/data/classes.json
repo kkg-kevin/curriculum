@@ -894,5 +894,61 @@
     "id": "ab6b5d49-34a0-4e0f-9865-ccf793bf2253",
     "createdAt": "2026-08-03T08:40:04.820Z",
     "updatedAt": "2026-08-03T08:40:04.820Z"
+  },
+  {
+    "schoolId": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "ba2692ec-14b3-4892-9e6d-e218ea4e17e8",
+    "gradeName": "Grade 4",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": null,
+    "id": "93baa7db-caa1-4b7e-a17e-38245deb1b1c",
+    "createdAt": "2026-08-04T08:28:27.479Z",
+    "updatedAt": "2026-08-04T08:28:27.479Z"
+  },
+  {
+    "schoolId": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "9cf4359e-85f1-4e6b-ba70-5458f3d1e666",
+    "gradeName": "Grade 5",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": null,
+    "id": "5c0001b9-5038-4984-89a6-b778487bff2b",
+    "createdAt": "2026-08-04T08:28:36.742Z",
+    "updatedAt": "2026-08-04T08:28:36.742Z"
+  },
+  {
+    "schoolId": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "efa4fe91-ce3f-4b49-8601-2277a64fd2f4",
+    "gradeName": "Grade 6",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": null,
+    "id": "2deaa005-d669-4261-addd-65a14dcb5208",
+    "createdAt": "2026-08-04T08:28:36.748Z",
+    "updatedAt": "2026-08-04T08:28:36.748Z"
+  },
+  {
+    "schoolId": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "gradeId": "16a43715-dd1b-47e6-a442-92bad2371446",
+    "gradeName": "Level 9",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "tag": null,
+    "streamName": null,
+    "id": "0fc0c843-be9c-4c50-8019-57f4287a8b11",
+    "createdAt": "2026-08-04T08:28:36.751Z",
+    "updatedAt": "2026-08-04T08:28:36.751Z"
   }
 ]

@@ -22,6 +22,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     { name: "Educators", path: `/school-portal/teachers/${schoolId}`, end: false, enabled: !!schoolId },
     { name: "Learners",    path: `/school-portal/learners/${schoolId}`,   end: false, enabled: !!schoolId },
     { name: "Attendance",  path: "/school-portal/attendance",             end: false, enabled: !!schoolId },
+    { name: "Timetable",   path: "/school-portal/timetable",              end: false, enabled: true },
     { name: "Reports",     path: "/school-portal/reports", end: false, enabled: true },
     { name: "Profile",     path: "/school-portal/profile", end: false, enabled: true },
   ];

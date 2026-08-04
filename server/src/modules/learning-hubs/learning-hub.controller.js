@@ -112,8 +112,8 @@ const updateLearningHub = asyncHandler(async (req, res) => {
   }
   const record = await LearningHubService.updateLearningHub(req.params.id, data);
   if (password) {
-    if (record.hubType !== "school" || !record.email) {
-      const err = new Error("A password can only be set for a school-type learning hub with an email address");
+    if (!record.email) {
+      const err = new Error("An email address is required to set a password");
       err.statusCode = 400;
       throw err;
     }

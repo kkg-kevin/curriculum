@@ -22,7 +22,7 @@ function SkeletonCard() {
 
 export default function ClassesPage() {
   const navigate = useNavigate();
-  const { data: schoolsData, isLoading: schoolsLoading } = useAllLearningHubsQuery({ hubType: "school" });
+  const { data: schoolsData, isLoading: schoolsLoading } = useAllLearningHubsQuery();
   const { data: classesData, isLoading: classesLoading } = useAllClassesQuery();
 
   const schools = schoolsData?.data || [];

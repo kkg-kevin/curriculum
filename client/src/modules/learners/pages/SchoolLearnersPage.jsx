@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerCreatePath } from "../../../routes/portalPaths";
@@ -8,19 +8,105 @@ import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks
 import { learnerApi } from "../services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
 import { LearnerCard } from "../components/LearnerCard";
+import { formatClassName } from "../../classes/utils/classDisplay";
+import { useLookupLearnerByUsername, useEnrollLearnerHub } from "../hooks/useLearners";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 
+// Finds a learner already enrolled at a DIFFERENT hub (by their exact username) and enrolls them
+// here too — the only path a school/branchAdmin has for this, since they can't otherwise view or
+// search a learner outside their own hub at all. Exact match only, so a hub can't browse the
+// platform's full learner list — you have to already know the learner's username.
+function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {
+  const [username, setUsername] = useState("");
+  const [result, setResult] = useState(undefined); // undefined = not searched, null = not found, object = match
+  const [classId, setClassId] = useState("");
+  const { mutate: lookup, isPending: searching } = useLookupLearnerByUsername();
+  const { mutate: enroll, isPending: enrolling } = useEnrollLearnerHub();
+
+  const search = () => {
+    const trimmed = username.trim();
+    if (!trimmed) return;
+    lookup(trimmed, { onSuccess: (learner) => { setResult(learner); setClassId(""); } });
+  };
+
+  const handleEnroll = () => {
+    if (!result) return;
+    enroll(
+      { learnerId: result.id, data: { hubId: schoolId, classId, status: "active" } },
+      { onSuccess: () => { setUsername(""); setResult(undefined); onEnrolled?.(); } },
+    );
+  };
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "16px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: "#111827" }}>Add an existing learner</p>
+        <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Close</button>
+      </div>
+      <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
+        Search by the learner's exact username to find them if they're already enrolled at another hub.
+      </p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input
+          value={username}
+          onChange={(e) => { setUsername(e.target.value); setResult(undefined); }}
+          onKeyDown={(e) => e.key === "Enter" && search()}
+          placeholder="Learner's username"
+          style={{ flex: 1, minWidth: 180, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+        />
+        <button
+          type="button"
+          onClick={search}
+          disabled={!username.trim() || searching}
+          style={{ padding: "8px 16px", backgroundColor: !username.trim() || searching ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !username.trim() || searching ? "not-allowed" : "pointer" }}
+        >
+          {searching ? "Searching…" : "Search"}
+        </button>
+      </div>
+
+      {result === null && (
+        <p style={{ margin: 0, fontSize: 12.5, color: "#B91C1C" }}>No learner found with that exact username.</p>
+      )}
+
+      {result && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", borderRadius: 10 }}>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{result.firstName} {result.lastName}</p>
+            <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
+              {result.hubCount > 0 ? `Already enrolled at ${result.hubCount} other hub${result.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
+            </p>
+          </div>
+          <select value={classId} onChange={(e) => setClassId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
+            <option value="">— No class yet —</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={handleEnroll}
+            disabled={enrolling}
+            style={{ padding: "8px 16px", backgroundColor: enrolling ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: enrolling ? "not-allowed" : "pointer" }}
+          >
+            {enrolling ? "Enrolling…" : "Enroll here"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SchoolLearnersPage() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { user } = useAuth();
   const backPath  = user?.role === "school" ? "/school-portal" : "/learners";
   const backLabel = user?.role === "school" ? "Dashboard" : "Learners";
   const [statusFilter, setStatusFilter] = useState("");
+  const [showAddExisting, setShowAddExisting] = useState(false);
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
 
@@ -76,15 +162,36 @@ export default function SchoolLearnersPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate(learnerCreatePath(user?.role, schoolId))}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
-          >
-            + Enrol Learner
-          </button>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setShowAddExisting((s) => !s)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              + Add Existing Learner
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(learnerCreatePath(user?.role, schoolId))}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(254,177,57,0.35)", whiteSpace: "nowrap" }}
+            >
+              + Enrol Learner
+            </button>
+          </div>
         </div>
       </div>
+
+      {showAddExisting && (
+        <AddExistingLearnerPanel
+          schoolId={schoolId}
+          classes={classes}
+          onClose={() => setShowAddExisting(false)}
+          onEnrolled={() => {
+            setShowAddExisting(false);
+            qc.invalidateQueries({ queryKey: ["learners", "bySchool", schoolId] });
+          }}
+        />
+      )}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>

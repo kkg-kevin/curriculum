@@ -25,5 +25,20 @@
     "createdAt": "2026-07-31T12:34:13.652Z",
     "updatedAt": "2026-08-03T08:21:38.331Z",
     "photo": "http://localhost:5000/uploads/5986dbbb-cb2e-44db-9032-48be1887af09.jpeg"
+  },
+  {
+    "firstName": "jan",
+    "lastName": "jan",
+    "email": "jan@digifunzi.com",
+    "phone": "44848484848",
+    "status": "active",
+    "employmentType": "full_time",
+    "teacherLevel": 4,
+    "paymentTerms": "hourly",
+    "photo": "http://localhost:5000/uploads/e2eb5452-efea-46fd-9389-decaebdb5d52.jpeg",
+    "qualifiedCourseIds": [],
+    "id": "059f7162-30cf-4413-9944-65e742119b32",
+    "createdAt": "2026-08-04T08:06:52.890Z",
+    "updatedAt": "2026-08-04T08:06:52.890Z"
   }
 ]

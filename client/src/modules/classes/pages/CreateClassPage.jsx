@@ -53,8 +53,8 @@ export default function CreateClassPage() {
   // Only needed for the admin no-schoolId case (school picker dropdown below) — skip the
   // fetch entirely when a school is already locked in via the query string.
   const { data: allSchoolsData } = useQuery({
-    queryKey: ["learningHubs", "all", "school"],
-    queryFn: () => schoolApi.getAll({ hubType: "school" }),
+    queryKey: ["learningHubs", "all"],
+    queryFn: () => schoolApi.getAll(),
     enabled: !lockedSchoolId,
   });
   const schools = allSchoolsData?.data || [];

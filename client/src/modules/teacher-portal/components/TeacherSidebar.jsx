@@ -8,6 +8,7 @@ const menuItems = [
   { name: "Assessments",     path: "/teacher-portal/assessments" },
   { name: "Reports",         path: "/teacher-portal/reports" },
   { name: "Attendance",      path: "/teacher-portal/attendance" },
+  { name: "Timetable",       path: "/teacher-portal/timetable" },
   { name: "My Profile",      path: "/teacher-portal/profile" },
 ];
 

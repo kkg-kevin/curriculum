@@ -125,13 +125,8 @@ export const learningHubSchema = z
     if (data.hubType === "school" && !data.code) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["code"], message: "School code is required" });
     }
-    if (data.password) {
-      if (!data.email) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
-      }
-      if (data.hubType !== "school") {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["password"], message: "Password can only be set for the School type" });
-      }
+    if (data.password && !data.email) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
     }
   });
 

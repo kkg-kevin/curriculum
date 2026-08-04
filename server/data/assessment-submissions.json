@@ -6974,5 +6974,175 @@
     "createdAt": "2026-08-03T12:00:08.159Z",
     "updatedAt": "2026-08-03T12:00:26.838Z",
     "indicatorBreakdown": []
+  },
+  {
+    "issueId": "672dce48-77c5-458c-bae8-72716484bfc8",
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "77773b20-d329-41cb-88cf-1739b90cffb7",
+    "classId": null,
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "q1",
+        "response": "12"
+      },
+      {
+        "itemId": "q3",
+        "response": "Orange"
+      },
+      {
+        "itemId": "q4",
+        "response": "Tree"
+      },
+      {
+        "itemId": "q5",
+        "response": "7"
+      }
+    ],
+    "autoScore": 3,
+    "autoMax": 5,
+    "autoItemResults": [
+      {
+        "itemId": "q1",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q2",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q3",
+        "correct": false,
+        "marksAwarded": 0,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q4",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      },
+      {
+        "itemId": "q5",
+        "correct": true,
+        "marksAwarded": 1,
+        "maxMarks": 1
+      }
+    ],
+    "manualScore": null,
+    "totalScore": 3,
+    "maxScore": 5,
+    "requiresManualGrading": false,
+    "itemFeedback": [],
+    "overallFeedback": "",
+    "submittedAt": "2026-08-04T08:54:56.927Z",
+    "gradedAt": "2026-08-04T08:54:56.927Z",
+    "gradedBy": null,
+    "reportPublished": true,
+    "reportPublishedAt": "2026-08-04T08:54:56.927Z",
+    "reportPublishedBy": null,
+    "id": "d9a4a682-4e5f-41cc-bf4e-fb9f125c337b",
+    "createdAt": "2026-08-04T08:54:45.365Z",
+    "updatedAt": "2026-08-04T08:54:56.933Z",
+    "indicatorBreakdown": []
+  },
+  {
+    "issueId": "5f470afb-32de-41e8-9a1f-256eaea8a37e",
+    "assessmentId": "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3",
+    "learnerId": "77773b20-d329-41cb-88cf-1739b90cffb7",
+    "classId": null,
+    "status": "graded",
+    "answers": [
+      {
+        "itemId": "7aef118e-ddd6-4635-a6f2-714f46c5b291",
+        "response": "wegs"
+      },
+      {
+        "itemId": "a0dfd99c-d39d-467c-a816-1df98a0d02b3",
+        "response": "gnsgjni"
+      },
+      {
+        "itemId": "fe2cbf86-7c08-4378-9140-c500438406b0",
+        "response": "gdnsd"
+      },
+      {
+        "itemId": "f29720cd-0382-44d1-a0e3-b8fa474abd50",
+        "response": "dng bd"
+      }
+    ],
+    "autoScore": 0,
+    "autoMax": 0,
+    "autoItemResults": [],
+    "manualScore": 12,
+    "totalScore": 12,
+    "maxScore": 28.5,
+    "requiresManualGrading": true,
+    "itemFeedback": [
+      {
+        "itemId": "7aef118e-ddd6-4635-a6f2-714f46c5b291",
+        "marks": 3,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "a0dfd99c-d39d-467c-a816-1df98a0d02b3",
+        "marks": 3,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "fe2cbf86-7c08-4378-9140-c500438406b0",
+        "marks": 4,
+        "comment": "",
+        "indicatorMarks": []
+      },
+      {
+        "itemId": "f29720cd-0382-44d1-a0e3-b8fa474abd50",
+        "marks": 2,
+        "comment": "",
+        "indicatorMarks": []
+      }
+    ],
+    "overallFeedback": "Good job ",
+    "submittedAt": "2026-08-04T08:55:07.443Z",
+    "gradedAt": "2026-08-04T09:26:58.356Z",
+    "gradedBy": "059f7162-30cf-4413-9944-65e742119b32",
+    "reportPublished": true,
+    "reportPublishedAt": "2026-08-04T09:26:58.356Z",
+    "reportPublishedBy": "059f7162-30cf-4413-9944-65e742119b32",
+    "id": "014cfe87-2f66-4241-819a-b1b53e226d9c",
+    "createdAt": "2026-08-04T08:54:58.737Z",
+    "updatedAt": "2026-08-04T09:26:58.359Z",
+    "indicatorBreakdown": [
+      {
+        "indicatorId": "f5175bcb-0b4d-4a3f-9b3a-3b06922bc09a",
+        "marksEarned": 5.64,
+        "marksPossible": 15
+      },
+      {
+        "indicatorId": "9bb73790-dc33-4e8e-84a6-966f758d53b0",
+        "marksEarned": 1,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f0c20318-5f55-4b15-8303-7ea24092f191",
+        "marksEarned": 0.82,
+        "marksPossible": 1.5
+      },
+      {
+        "indicatorId": "0431502c-8319-484f-910b-996422bee428",
+        "marksEarned": 0.55,
+        "marksPossible": 1
+      },
+      {
+        "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
+        "marksEarned": 4,
+        "marksPossible": 10
+      }
+    ]
   }
 ]

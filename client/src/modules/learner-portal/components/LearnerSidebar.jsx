@@ -8,6 +8,7 @@ const menuItems = [
   { name: "Assessments",  path: "/learner-portal/assessments" },
   { name: "Reports",      path: "/learner-portal/reports" },
   { name: "Progress",     path: "/learner-portal/progress" },
+  { name: "Timetable",    path: "/learner-portal/timetable" },
   { name: "Profile",      path: "/learner-portal/profile" },
 ];
 

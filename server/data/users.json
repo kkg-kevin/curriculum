@@ -683,5 +683,41 @@
     "id": "1dad922d-ae49-4740-964d-6b8a4bdcf40b",
     "createdAt": "2026-08-03T11:52:34.463Z",
     "updatedAt": "2026-08-03T11:52:34.463Z"
+  },
+  {
+    "name": "GUARDIAN",
+    "email": "monalisa@digifunzi.comm",
+    "passwordHash": "$2b$10$eEm.hDfYa0GlQeSvfgwuk.wb702ozxwpoL0TSEBkmntT3Uf95Ee6W",
+    "role": "learner",
+    "id": "94ca04a0-d246-4424-aecc-5c56b33ab66e",
+    "createdAt": "2026-08-04T08:05:00.141Z",
+    "updatedAt": "2026-08-04T08:05:00.141Z"
+  },
+  {
+    "name": "jan jan",
+    "username": "jan",
+    "passwordHash": "$2b$10$AJvlONx9zJsciLKG62Z91OBELde110yCn52oHTk0PJebBYspt1nDK",
+    "role": "learner",
+    "id": "b0e050fa-b765-454e-acb4-57e8ccd45518",
+    "createdAt": "2026-08-04T08:05:00.270Z",
+    "updatedAt": "2026-08-04T08:05:00.270Z"
+  },
+  {
+    "name": "jan jan",
+    "email": "jan@digifunzi.com",
+    "passwordHash": "$2b$10$1ToA2N13FJT2rE6R.SGIeevn6YTHWqwg69oJsRw9k2iD29d6yDABK",
+    "role": "teacher",
+    "id": "3e6633db-9174-462a-92f1-3bf06db47ccd",
+    "createdAt": "2026-08-04T08:06:52.885Z",
+    "updatedAt": "2026-08-04T08:06:52.885Z"
+  },
+  {
+    "name": "Hub",
+    "email": "testhub@digifunzi.com",
+    "passwordHash": "$2b$10$/RZ1F/8pKde3anCCqlZ7EeULikc7uLaxzF4q9AbGuAHe6fdE9B8Sm",
+    "role": "school",
+    "id": "813a2dd1-bbed-4b87-aaa2-7ec58ed883e2",
+    "createdAt": "2026-08-04T08:25:08.260Z",
+    "updatedAt": "2026-08-04T08:34:43.667Z"
   }
 ]
