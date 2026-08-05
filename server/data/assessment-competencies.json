@@ -106,17 +106,5 @@
     "assessmentId": "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3",
     "competencyId": "01004522-fa4f-4068-aef8-bfe34c93cbb2",
     "createdAt": "2026-08-03T10:06:55.351Z"
-  },
-  {
-    "id": "2df1967a-ab85-4789-9eb7-8b8ee9ae0a1a",
-    "assessmentId": "ba2dcbcf-90aa-43b8-bebe-830d2b159102",
-    "competencyId": "976629f0-c49e-45d8-a3bd-d44719972d09",
-    "createdAt": "2026-08-03T13:35:57.612Z"
-  },
-  {
-    "id": "6c992766-09e7-4948-a45c-a2b9df853d5d",
-    "assessmentId": "ba2dcbcf-90aa-43b8-bebe-830d2b159102",
-    "competencyId": "18a32d96-c77e-4ab1-8cf7-5840b74a5d58",
-    "createdAt": "2026-08-03T13:35:57.637Z"
   }
 ]

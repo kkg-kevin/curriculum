@@ -244,8 +244,10 @@
     "admissionNumber": "SS-2026-010",
     "status": "active",
     "createdAt": "2026-08-04T09:02:38.386Z",
-    "updatedAt": "2026-08-04T09:02:38.398Z",
-    "currentStageId": "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930"
+    "updatedAt": "2026-08-05T09:30:31.128Z",
+    "currentStageId": "7d5dd921-182c-4a6c-b0a8-ba4b2f88f930",
+    "currentBandId": "b490ed11-bb14-4c52-aef8-89a77cd11c64",
+    "onboardingCompletedAt": "2026-08-05T09:30:31.124Z"
   },
   {
     "id": "b134d229-dd8a-4f43-a628-33e46cb1d259",
