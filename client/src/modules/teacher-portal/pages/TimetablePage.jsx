@@ -57,6 +57,7 @@ export default function TimetablePage() {
         isLoading={calendarLoading}
         resolveCourseName={resolveCourseName}
         resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
+        resolveClassLabel={(classId) => classNameById.get(classId)}
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
       />

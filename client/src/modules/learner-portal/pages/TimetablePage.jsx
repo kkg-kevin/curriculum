@@ -10,9 +10,17 @@ const T = {
 };
 
 export default function TimetablePage() {
-  const { cls, isLoading: scopeLoading } = useOutletContext();
+  const { cls, hubs, isLoading: scopeLoading } = useOutletContext();
   const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const courseNameById = new Map(courses.map((c) => [c.id, c.name]));
+
+  // A learner can be actively enrolled at more than one hub at once (see resolveLearnerCalendar
+  // in timetable.service.js), each possibly on a different curriculum with its own independent
+  // term calendar — this is what lets a break shown in the merged calendar below name which of
+  // the learner's hubs it actually belongs to, rather than reading as if it applies to all of them.
+  const classNameById = new Map(
+    (hubs || []).filter((h) => h.class).map((h) => [h.class.id, `${h.class.gradeName}${h.class.streamName ? ` — ${h.class.streamName}` : ""}`])
+  );
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
@@ -36,6 +44,7 @@ export default function TimetablePage() {
         breaks={breaks}
         isLoading={calendarLoading}
         resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
+        resolveClassLabel={(classId) => classNameById.get(classId)}
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — your school hasn't published a timetable for your class."
       />

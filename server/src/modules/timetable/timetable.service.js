@@ -145,18 +145,32 @@ function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, fro
 
 // Break windows (from periods that have one set) overlapping [from, to] — surfaced separately
 // from events so the calendar UI can shade/label them even on days with no session at all.
-function breaksInRange(periods, from, to) {
+// classIds tags which class this break actually belongs to — a break is a property of a whole
+// curriculum/program (every class within it shares the exact same dates), but a merged teacher/
+// learner calendar (see resolveTeacherCalendar/resolveLearnerCalendar) can span several different
+// curricula at once, each with its own independent calendar. Without this tag the UI has no way
+// to tell "every class is on break today" apart from "only some of the classes I'm looking at
+// are" — see dedupeBreaks below for how these get merged across classes.
+function breaksInRange(periods, from, to, classId) {
   const fromMs = toUtcMs(from);
   const toMs = toUtcMs(to);
   return periods
     .filter((p) => p.breakStartDate && p.breakEndDate)
     .filter((p) => toUtcMs(p.breakStartDate) <= toMs && toUtcMs(p.breakEndDate) >= fromMs)
-    .map((p) => ({ start: p.breakStartDate, end: p.breakEndDate, label: p.name ? `${p.name} Break` : "Break" }));
+    .map((p) => ({ start: p.breakStartDate, end: p.breakEndDate, label: p.name ? `${p.name} Break` : "Break", classIds: [classId] }));
 }
 
+// Two classes on the same curriculum produce identical {start,end,label} breaks — those merge
+// into one entry with both classIds, rather than the dedupe silently keeping only the last one
+// seen and losing track of who else it applies to.
 function dedupeBreaks(breaks) {
   const seen = new Map();
-  for (const b of breaks) seen.set(`${b.start}:${b.end}:${b.label}`, b);
+  for (const b of breaks) {
+    const key = `${b.start}:${b.end}:${b.label}`;
+    const existing = seen.get(key);
+    if (existing) existing.classIds = [...new Set([...existing.classIds, ...b.classIds])];
+    else seen.set(key, { ...b, classIds: [...b.classIds] });
+  }
   return [...seen.values()];
 }
 
@@ -200,7 +214,7 @@ const TimetableService = {
     }
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
-      breaks: breaksInRange(periods, from, to),
+      breaks: breaksInRange(periods, from, to, classId),
     };
   },
 

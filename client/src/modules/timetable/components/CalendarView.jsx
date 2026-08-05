@@ -47,6 +47,20 @@ function weekDays(anchor) {
 function breakOnDate(dateStr, breaks) {
   return (breaks || []).find((b) => dateStr >= b.start && dateStr <= b.end) || null;
 }
+
+// A break is a property of one whole curriculum/program — every class within it shares the same
+// dates — but a merged teacher/learner calendar can span several different curricula at once,
+// each on its own independent calendar (see resolveTeacherCalendar/resolveLearnerCalendar in
+// timetable.service.js). Without naming which class(es) a given break actually belongs to, it
+// reads as if it applies to every class shown that day — including ones on an unrelated
+// curriculum whose sessions are correctly still running. resolveClassLabel is optional: the
+// single-class school-portal view doesn't need this disambiguation, so its breaks render
+// unqualified same as before.
+function breakLabel(brk, resolveClassLabel) {
+  if (!resolveClassLabel || !brk.classIds?.length) return brk.label;
+  const names = [...new Set(brk.classIds.map((id) => resolveClassLabel(id)).filter(Boolean))];
+  return names.length ? `${brk.label} — ${names.join(", ")}` : brk.label;
+}
 function monthGrid(anchor) {
   const monthStart = anchor.startOf("month");
   const monthEnd = anchor.endOf("month");
@@ -70,7 +84,7 @@ const HOUR_PX = 52;
  * drives it off `onRangeChange`, which fires on mount and whenever navigation changes the visible
  * date range.
  */
-export default function CalendarView({ events, breaks, isLoading, resolveCourseName, resolveTeacherLabel, onRangeChange, emptyMessage }) {
+export default function CalendarView({ events, breaks, isLoading, resolveCourseName, resolveTeacherLabel, resolveClassLabel, onRangeChange, emptyMessage }) {
   const [anchor, setAnchor] = useState(() => dayjs());
   const [mode, setMode] = useState("week");
 
@@ -125,9 +139,9 @@ export default function CalendarView({ events, breaks, isLoading, resolveCourseN
       {isLoading ? (
         <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading calendar…</div>
       ) : mode === "week" ? (
-        <WeekGrid days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} emptyMessage={emptyMessage} />
+        <WeekGrid days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel} emptyMessage={emptyMessage} />
       ) : (
-        <MonthGrid weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} emptyMessage={emptyMessage} />
+        <MonthGrid weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} resolveCourseName={resolveCourseName} resolveClassLabel={resolveClassLabel} emptyMessage={emptyMessage} />
       )}
     </div>
   );
@@ -140,7 +154,7 @@ function btnStyle(active) {
   };
 }
 
-function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, emptyMessage }) {
+function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage }) {
   const allEvents = days.flatMap((d) => eventsByDate[d.format("YYYY-MM-DD")] || []);
   const anyBreakInView = days.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks));
   const gridStartMin = Math.min(DEFAULT_START_MIN, ...allEvents.map((e) => toMinutes(e.startTime)));
@@ -176,7 +190,7 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
             <div key={d.format("YYYY-MM-DD")} style={{ padding: "10px 8px", textAlign: "center", borderLeft: `1px solid ${T.border}`, backgroundColor: brk ? T.breakBg : undefined }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>{d.format("ddd")}</p>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: d.isSame(dayjs(), "day") ? T.accent : T.ink }}>{d.format("D")}</p>
-              {brk && <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: T.breakText }} title={brk.label}>{brk.label}</p>}
+              {brk && <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: T.breakText }} title={breakLabel(brk, resolveClassLabel)}>{breakLabel(brk, resolveClassLabel)}</p>}
             </div>
           );
         })}
@@ -230,7 +244,7 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
   );
 }
 
-function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, emptyMessage }) {
+function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, resolveClassLabel, emptyMessage }) {
   const hasAny = weeks.some((w) => w.some((d) => (eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0));
   const anyBreakInView = weeks.some((w) => w.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks)));
   if (!hasAny && !anyBreakInView) {
@@ -264,10 +278,10 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, emp
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {brk && (
                     <div
-                      title={brk.label}
+                      title={breakLabel(brk, resolveClassLabel)}
                       style={{ backgroundColor: "#fff", border: `1px solid ${T.breakBorder}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: T.breakText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                     >
-                      {brk.label}
+                      {breakLabel(brk, resolveClassLabel)}
                     </div>
                   )}
                   {visible.map((e) => {
