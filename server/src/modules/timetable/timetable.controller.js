@@ -131,9 +131,27 @@ const getMyLearnerCalendar = asyncHandler(async (req, res) => {
   res.json({ success: true, data: events, breaks, count: events.length });
 });
 
+// The click/hover-through detail behind one calendar event — same class-ownership posture as
+// every other read here (teacher must actually teach that class, school/branchAdmin must own its
+// hub). classId and date come from the calendar event the client already has in hand (see
+// resolveCalendar), not re-derived server-side.
+const getSessionSummary = asyncHandler(async (req, res) => {
+  const { classId, date } = req.query;
+  if (!classId || !date) {
+    const err = new Error("classId and date are required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = ClassModel.findById(classId);
+  assertClassAccess(req, cls);
+  const summary = TimetableService.getSessionSummary({ classId, sessionId: req.params.sessionId, date });
+  res.json({ success: true, data: summary });
+});
+
 module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar,
+  getSessionSummary,
 };

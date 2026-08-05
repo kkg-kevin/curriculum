@@ -10,6 +10,7 @@ const TIMETABLE_KEYS = {
   calendar: (classId, from, to) => ["timetable", "calendar", "class", classId, from, to],
   calendarMineTeacher: (from, to) => ["timetable", "calendar", "mine", "teacher", from, to],
   calendarMineLearner: (from, to) => ["timetable", "calendar", "mine", "learner", from, to],
+  sessionSummary: (sessionId, classId, date) => ["timetable", "session-summary", sessionId, classId, date],
 };
 
 export function useClassTimetable(classId) {
@@ -156,5 +157,17 @@ export function useMyLearnerCalendar(from, to) {
     queryKey: TIMETABLE_KEYS.calendarMineLearner(from, to),
     queryFn:  () => timetableApi.getMyLearnerCalendar(from, to),
     enabled:  !!from && !!to,
+  });
+}
+
+// enabled lets callers gate the request separately from "do we have the ids" — used for the
+// hover preview, which should only actually fire after a short hover delay, not on every
+// mouseenter (see SessionHoverCard in CalendarView.jsx).
+export function useSessionSummary(sessionId, classId, date, enabled = true) {
+  return useQuery({
+    queryKey: TIMETABLE_KEYS.sessionSummary(sessionId, classId, date),
+    queryFn:  () => timetableApi.getSessionSummary(sessionId, classId, date),
+    enabled:  !!sessionId && !!classId && !!date && enabled,
+    staleTime: 30_000,
   });
 }

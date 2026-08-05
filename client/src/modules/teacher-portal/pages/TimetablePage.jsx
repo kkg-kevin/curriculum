@@ -60,6 +60,7 @@ export default function TimetablePage() {
         resolveClassLabel={(classId) => classNameById.get(classId)}
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
+        enableSessionDetail
       />
     </div>
   );

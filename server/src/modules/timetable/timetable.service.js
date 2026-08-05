@@ -1,12 +1,17 @@
 const TimetableModel = require("./timetable.model");
 const CourseScheduleModel = require("./course-schedule.model");
 const SessionModel = require("../courses/session.model");
+const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const LearnerModel = require("../learners/learner.model");
+const TeacherModel = require("../teachers/teacher.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const ProgramModel = require("../programs/program.model");
 const AcademicYearVersionModel = require("../curriculum/academic-years/academic-year-versions.model");
+const AttendanceModel = require("../attendance/attendance.model");
+const ReportService = require("../reports/report.service");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
 
 function notFound(message) {
@@ -286,6 +291,59 @@ const TimetableService = {
     const deleted = TimetableModel.delete(id);
     if (!deleted) notFound("Timetable slot not found");
     return { message: "Timetable slot deleted" };
+  },
+
+  // "What happened in this session" — the click-through detail behind a single calendar event.
+  // classId+date (not just sessionId) are required because the same session can land on
+  // different real dates in different classes running the same course; attendance in particular
+  // is keyed by exactly that pair (see attendance.model.js). Resolved fresh from Attendance +
+  // Reports on every call, same "nothing persisted, nothing cached" posture as the rest of this
+  // engine — a session viewed again after attendance is marked or grading finishes just reflects
+  // the current state, no invalidation needed.
+  getSessionSummary({ classId, sessionId, date }) {
+    const session = SessionModel.findById(sessionId);
+    if (!session) notFound("Session not found");
+    const cls = ClassModel.findById(classId);
+    if (!cls) notFound("Class not found");
+    const course = CourseModel.findById(session.courseId);
+    const totalSessions = SessionModel.findByCourseId(session.courseId).length;
+
+    // Same teacher-resolution order as TimetablePage.jsx's resolveTeacherLabel: an explicit
+    // override on that day's slot wins, otherwise whichever educator is primary for this course
+    // in this class.
+    const dayOfWeek = weekdayOf(date);
+    const slot = TimetableModel.findAll({ classId }).find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek);
+    const courseLinks = ClassCourseTeacherLinkModel.findByClassId(classId).filter((l) => l.courseId === session.courseId);
+    const primaryLink = courseLinks.find((l) => l.isPrimary) || courseLinks[0] || null;
+    const teacherId = slot?.teacherId || primaryLink?.teacherId || null;
+    const teacher = teacherId ? TeacherModel.findById(teacherId) : null;
+
+    // Attendance is recorded per classId+date, not per course/session — a class only ever runs
+    // one session on a given date in practice, so this date's attendance IS this session's
+    // attendance (see attendance.model.js's own key).
+    const enrolledLinks = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active");
+    const learnersById = new Map(LearnerModel.findAll({ ids: enrolledLinks.map((l) => l.learnerId) }).map((l) => [l.id, l]));
+    const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+    const counts = { present: 0, absent: 0, late: 0, excused: 0 };
+    const records = attendanceRecords.map((a) => {
+      if (counts[a.status] !== undefined) counts[a.status] += 1;
+      return { learnerId: a.learnerId, learner: learnersById.get(a.learnerId) || null, status: a.status, notes: a.notes || "" };
+    });
+
+    return {
+      session: { id: session.id, title: session.title, order: session.order, totalSessions },
+      course: course ? { id: course.id, name: course.name } : null,
+      class: { id: cls.id, gradeName: cls.gradeName, streamName: cls.streamName || "" },
+      date,
+      teacher: teacher ? { id: teacher.id, name: `${teacher.firstName} ${teacher.lastName}` } : null,
+      attendance: {
+        marked: attendanceRecords.length > 0,
+        enrolledCount: enrolledLinks.length,
+        counts,
+        records,
+      },
+      grading: ReportService.getSessionSummaryForClass(classId, sessionId),
+    };
   },
 };
 

@@ -18,4 +18,9 @@ export const timetableApi = {
   getClassCalendar:      (classId, from, to) => api.get(`${BASE}/calendar`, { params: { classId, from, to } }).then((r) => r.data),
   getMyTeacherCalendar:  (from, to)          => api.get(`${BASE}/teacher/mine/calendar`, { params: { from, to } }).then((r) => r.data),
   getMyLearnerCalendar:  (from, to)          => api.get(`${BASE}/learner/mine/calendar`, { params: { from, to } }).then((r) => r.data),
+
+  // Click/hover-through detail for one calendar event: attendance + grading progress for that
+  // exact (class, session, date). Teacher/hub level only — see timetable.routes.js.
+  getSessionSummary: (sessionId, classId, date) =>
+    api.get(`${BASE}/sessions/${sessionId}/summary`, { params: { classId, date } }).then((r) => r.data.data),
 };

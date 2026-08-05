@@ -523,6 +523,7 @@ export default function TimetablePage() {
               resolveTeacherLabel={(event) => resolveTeacherLabel(event, courseLinks)}
               onRangeChange={onRangeChange}
               emptyMessage={courseIdsWithSlots.length === 0 ? "Add weekday slots above to start building this class's calendar." : "No sessions land in this range yet — set a course start date above."}
+              enableSessionDetail
             />
           )}
         </>
