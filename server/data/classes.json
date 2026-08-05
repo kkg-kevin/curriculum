@@ -950,5 +950,41 @@
     "id": "0fc0c843-be9c-4c50-8019-57f4287a8b11",
     "createdAt": "2026-08-04T08:28:36.751Z",
     "updatedAt": "2026-08-04T08:28:36.751Z"
+  },
+  {
+    "schoolId": "8e79fd94-7475-4619-add1-19b26633a798",
+    "curriculumId": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "gradeId": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+    "gradeName": "Bootcamp 101",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "id": "276b0cf2-4ef8-4a51-bb4e-59df5af11aaa",
+    "createdAt": "2026-08-05T06:55:14.470Z",
+    "updatedAt": "2026-08-05T06:55:14.470Z"
+  },
+  {
+    "schoolId": "8e79fd94-7475-4619-add1-19b26633a798",
+    "curriculumId": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "gradeId": "457c4b78-ab4d-401d-b33e-8eba0da95929",
+    "gradeName": "Bootcamp 202",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "id": "75e7b9a0-17a9-4337-ad86-fb9698a7465d",
+    "createdAt": "2026-08-05T06:55:14.474Z",
+    "updatedAt": "2026-08-05T06:55:14.474Z"
+  },
+  {
+    "schoolId": "9d26fcc0-c947-4e32-9f5b-486774671dab",
+    "curriculumId": "1782e9af-5f89-4222-90fa-f4f7f642fe91",
+    "gradeId": "ab946f66-23f4-4f03-8857-66f9a810b46a",
+    "gradeName": "Bootcamp Cohort 1",
+    "academicYear": "2026",
+    "capacity": null,
+    "status": "active",
+    "id": "fddc3448-cea0-40cd-b74a-2b39de057246",
+    "createdAt": "2026-08-05T07:58:36.998Z",
+    "updatedAt": "2026-08-05T07:58:36.998Z"
   }
 ]

@@ -5,6 +5,8 @@ const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
+const ProgramModel = require("../programs/program.model");
+const AcademicYearVersionModel = require("../curriculum/academic-years/academic-year-versions.model");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
 
 function notFound(message) {
@@ -55,15 +57,35 @@ function weekdayOf(dateStr) {
   return WEEKDAY_BY_INDEX[new Date(toUtcMs(dateStr)).getUTCDay()];
 }
 
-// A class's academic-calendar terms/breaks live on its Curriculum, not on the class itself —
-// resolved fresh on every read rather than cached, same "nothing persisted" approach as the rest
-// of this engine. Missing class/curriculum, or a curriculum that hasn't configured periods yet,
-// all degrade to [] (unrestricted — see isDateSchedulable).
+// A class's academic-calendar terms/breaks are resolved fresh on every read rather than cached
+// or duplicated anywhere, same "nothing persisted" approach as the rest of this engine — so
+// scheduling always reflects whatever the two date sources below currently say, with nothing to
+// keep in sync. `curriculum.periods` itself never enters into this: it only ever holds period
+// *names* (set on the curriculum's Structure step, used to scaffold the course-structure content
+// by period) and never gets real dates written onto it by anything in the app.
+//
+// - A Program curriculum never has (or can have — Academic Year setup is hidden for it, see
+//   CurriculumViewPage) dated periods of its own: it runs on the fixed startDate/endDate set on
+//   its Program deployment instead of an academic-year cycle. So for those, the deployment's own
+//   dates stand in as a single implicit period.
+// - Every other curriculum's real period dates+breaks live on whichever Academic Year version is
+//   currently published for it (see academic-years.service.js) — that's the one and only source
+//   with actual dates a school ever fills in.
+// Missing class/curriculum, a Program with no deployment yet, or a curriculum with no published
+// Academic Year, all degrade to [] (unrestricted — see isDateSchedulable) rather than blocking
+// scheduling outright — dates are opt-in constraints, not a prerequisite for having a timetable.
 function getPeriodsForClass(classId) {
   const cls = ClassModel.findById(classId);
   if (!cls?.curriculumId) return [];
   const curriculum = CurriculumModel.findById(cls.curriculumId);
-  return curriculum?.periods || [];
+  if (!curriculum) return [];
+  if (curriculum.isProgram) {
+    const program = ProgramModel.findByClassId(classId);
+    if (!program?.startDate || !program?.endDate) return [];
+    return [{ name: curriculum.name, startDate: program.startDate, endDate: program.endDate, breakStartDate: "", breakEndDate: "" }];
+  }
+  const publishedVersion = AcademicYearVersionModel.findPublished(curriculum.id);
+  return publishedVersion?.periods || [];
 }
 
 // A date only counts as in-session if it falls inside some period's [startDate, endDate] and

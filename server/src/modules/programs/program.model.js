@@ -36,6 +36,14 @@ const ProgramModel = {
     return readAll().find((p) => p.id === id) || null;
   },
 
+  // The deployment that generated a given auto-created Class, if any — a Class has no back-
+  // reference of its own (see program.service.js's createProgram), so this scans the other
+  // direction over each program's classIds. Used by the timetable engine to find a Program's
+  // running dates for a class belonging to it.
+  findByClassId(classId) {
+    return readAll().find((p) => (p.classIds || []).includes(classId)) || null;
+  },
+
   update(id, data) {
     const all = readAll();
     const idx = all.findIndex((p) => p.id === id);

@@ -349,5 +349,61 @@
     "id": "ea6b5ae7-5087-4fa5-8559-1db712115b5e",
     "createdAt": "2026-08-04T12:35:04.596Z",
     "updatedAt": "2026-08-04T12:35:04.596Z"
+  },
+  {
+    "name": "Kkg",
+    "code": "K",
+    "academicYear": "",
+    "description": "KKG - PROGRAM Description ",
+    "status": "draft",
+    "educationLevel": "",
+    "gradeFrom": "",
+    "gradeTo": "",
+    "framework": "",
+    "curriculumType": "",
+    "isProgram": true,
+    "academicCycleModel": "terms",
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 2",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      },
+      {
+        "name": "Term 3",
+        "startDate": "",
+        "endDate": "",
+        "breakStartDate": "",
+        "breakEndDate": ""
+      }
+    ],
+    "classes": [
+      {
+        "id": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+        "name": "Bootcamp 101",
+        "systemLevelId": "a44094a4-019f-4704-aaae-8079ed445eff",
+        "shortLabel": "",
+        "developmentalStageId": null
+      },
+      {
+        "id": "457c4b78-ab4d-401d-b33e-8eba0da95929",
+        "name": "Bootcamp 202",
+        "systemLevelId": "55fe4e93-b7cc-4fd1-8693-9ef97a7ef65f",
+        "shortLabel": "",
+        "developmentalStageId": null
+      }
+    ],
+    "id": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "createdAt": "2026-08-05T06:34:17.474Z",
+    "updatedAt": "2026-08-05T06:37:47.612Z"
   }
 ]
