@@ -1134,54 +1134,5 @@
     "id": "fc45e8b5-fdfa-45ea-b8ed-6dc87d73b0b3",
     "createdAt": "2026-08-03T10:02:36.777Z",
     "updatedAt": "2026-08-03T10:06:55.196Z"
-  },
-  {
-    "name": "dsc",
-    "type": "observation",
-    "description": "<p>eqcA</p>",
-    "instructions": "<p>CASDG3RG</p>",
-    "structureType": "mixed",
-    "overview": "",
-    "sections": [
-      {
-        "id": "5aa96417-5762-4fc1-a6c4-eb045de0310a",
-        "name": "Section 1",
-        "order": 0
-      }
-    ],
-    "items": [
-      {
-        "id": "c3b83f0e-330f-4173-9668-2733d9621068",
-        "question": "<p>GWSG</p>",
-        "kind": "mcqSingle",
-        "sectionId": "5aa96417-5762-4fc1-a6c4-eb045de0310a",
-        "points": 1,
-        "options": [
-          "NDGN",
-          "GXCN"
-        ],
-        "correctAnswer": "",
-        "pairs": [],
-        "blanks": [],
-        "sequence": [],
-        "ratingScale": [],
-        "acceptedFileTypes": [],
-        "taskType": null,
-        "submissionKinds": [],
-        "indicatorMarks": [
-          {
-            "indicatorId": "f22ef693-0720-469c-9227-e74bac7464dd",
-            "marks": 5
-          }
-        ]
-      }
-    ],
-    "rubric": [],
-    "indicators": [],
-    "deliverables": [],
-    "milestones": [],
-    "id": "ba2dcbcf-90aa-43b8-bebe-830d2b159102",
-    "createdAt": "2026-08-03T13:35:57.586Z",
-    "updatedAt": "2026-08-03T13:35:57.586Z"
   }
 ]

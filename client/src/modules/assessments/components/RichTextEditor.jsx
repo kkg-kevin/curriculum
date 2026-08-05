@@ -4,6 +4,9 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/uploadApi";
+import Video from "./VideoExtension";
+
+const VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
 function ToolbarButton({ onClick, disabled, active, title, children }) {
   return (
@@ -77,8 +80,10 @@ function LinkPopover({ editor, onClose }) {
 
 export default function RichTextEditor({ value, onChange, minHeight = 120, maxHeight = 260 }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   // Tracks the HTML this editor itself last emitted via onUpdate — lets the sync effect below
   // tell apart "value changed because we typed" from "value changed externally" (e.g. switching
   // to a different item). Resetting the doc from HTML on every keystroke wipes TipTap's stored
@@ -87,7 +92,7 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
   const lastEmitted = useRef(value || "");
 
   const editor = useEditor({
-    extensions: [StarterKit, Image],
+    extensions: [StarterKit, Image, Video],
     content: value || "",
     // Every instance shares the `.asm-rte-content` class for its shape/typography rules (below),
     // but min/max-height must NOT live in that shared class — each instance injects its own
@@ -149,6 +154,23 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
     }
   };
 
+  // Videos go through the document upload pipeline (already accepts mp4/webm/quicktime up to
+  // 50MB — see server/src/modules/uploads/upload.middleware.js) rather than the 5MB image one.
+  const handleVideoFilePicked = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !editor) return;
+    setUploadingVideo(true);
+    try {
+      const { url } = await uploadApi.uploadDocument(file);
+      editor.chain().focus().setVideo({ src: url }).run();
+    } catch (err) {
+      toast.error(err.message || "Failed to upload video");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   if (!editor) return null;
 
   return (
@@ -159,6 +181,7 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
         .asm-rte-content p:last-child { margin-bottom: 0; }
         .asm-rte-content ul, .asm-rte-content ol { margin: 0 0 10px; padding-left: 22px; }
         .asm-rte-content img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
+        .asm-rte-content video { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; background: #000; }
         .asm-rte-content strong { font-weight: 700; }
         .asm-rte-content h2 { font-size: 1.25em; font-weight: 800; margin: 4px 0 8px; color: #111827; }
         .asm-rte-content h3 { font-size: 1.1em; font-weight: 700; margin: 4px 0 6px; color: #111827; }
@@ -206,7 +229,15 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           )}
         </ToolbarButton>
+        <ToolbarButton title="Insert video" disabled={uploadingVideo} onClick={() => videoInputRef.current?.click()}>
+          {uploadingVideo ? (
+            <span style={{ width: "12px", height: "12px", border: "2px solid rgba(37,71,106,0.3)", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "asm-rte-spin 0.7s linear infinite" }} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>
+          )}
+        </ToolbarButton>
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleFilePicked} style={{ display: "none" }} />
+        <input ref={videoInputRef} type="file" accept={VIDEO_MIME_TYPES.join(",")} onChange={handleVideoFilePicked} style={{ display: "none" }} />
       </div>
 
       <EditorContent editor={editor} />

@@ -253,7 +253,7 @@
     "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
     "versionNumber": 1,
     "status": "published",
-    "isCurrent": true,
+    "isCurrent": false,
     "periods": [
       {
         "name": "Semester 1",
@@ -271,7 +271,7 @@
       }
     ],
     "createdAt": "2026-06-25T09:32:30.217Z",
-    "updatedAt": "2026-07-01T09:37:26.275Z"
+    "updatedAt": "2026-08-05T09:36:57.304Z"
   },
   {
     "id": "0eb0abd9-65c8-4ce8-9381-30dd9b7fd80b",
@@ -537,5 +537,57 @@
     ],
     "createdAt": "2026-08-05T08:08:05.127Z",
     "updatedAt": "2026-08-05T08:08:05.127Z"
+  },
+  {
+    "id": "671f64f5-03a4-40f7-8dd1-1d8126455369",
+    "yearGroupId": "4ecc7bba-36e1-4327-a52b-638fb6229652",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "versionNumber": 2,
+    "status": "draft",
+    "isCurrent": false,
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-02-01",
+        "endDate": "2026-06-30",
+        "breakStartDate": "2026-03-01",
+        "breakEndDate": "2026-03-30"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-07-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-09-01",
+        "breakEndDate": "2026-09-20"
+      }
+    ],
+    "createdAt": "2026-08-05T09:36:31.818Z",
+    "updatedAt": "2026-08-05T09:36:57.304Z"
+  },
+  {
+    "id": "e69cccfa-01d3-47e7-8eb2-a326910c66b4",
+    "yearGroupId": "4ecc7bba-36e1-4327-a52b-638fb6229652",
+    "curriculumId": "c47a17de-9d41-4dcf-8e5f-249d16f461ef",
+    "versionNumber": 3,
+    "status": "draft",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Semester 1",
+        "startDate": "2026-02-01",
+        "endDate": "2026-06-30",
+        "breakStartDate": "2026-03-01",
+        "breakEndDate": "2026-03-30"
+      },
+      {
+        "name": "Semester 2",
+        "startDate": "2026-07-01",
+        "endDate": "2026-11-30",
+        "breakStartDate": "2026-09-01",
+        "breakEndDate": "2026-09-20"
+      }
+    ],
+    "createdAt": "2026-08-05T09:36:57.308Z",
+    "updatedAt": "2026-08-05T09:36:57.308Z"
   }
 ]

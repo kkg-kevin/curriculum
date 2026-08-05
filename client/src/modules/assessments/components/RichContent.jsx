@@ -2,7 +2,7 @@
 // strip tags before deciding whether there's anything to show.
 export function isEmptyHtml(html) {
   if (!html) return true;
-  if (/<img[\s>]/i.test(html)) return false;
+  if (/<(img|video)[\s>]/i.test(html)) return false;
   return html.replace(/<[^>]*>/g, "").trim().length === 0;
 }
 
@@ -27,6 +27,7 @@ export default function RichContent({ html, emptyText }) {
         .asm-rich-content p:last-child { margin-bottom: 0; }
         .asm-rich-content ul, .asm-rich-content ol { margin: 0 0 10px; padding-left: 22px; }
         .asm-rich-content img { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; }
+        .asm-rich-content video { max-width: 100%; border-radius: 8px; margin: 8px 0; display: block; background: #000; }
         .asm-rich-content strong { font-weight: 700; }
         .asm-rich-content h2 { font-size: 1.25em; font-weight: 800; margin: 0 0 10px; color: #111827; }
         .asm-rich-content h3 { font-size: 1.1em; font-weight: 700; margin: 0 0 8px; color: #111827; }

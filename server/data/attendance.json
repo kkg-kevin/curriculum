@@ -317,5 +317,16 @@
     "markedBy": "e80b730e-0888-40fa-a38d-c568ec24253c",
     "createdAt": "2026-07-31T08:18:41.095Z",
     "updatedAt": "2026-07-31T08:18:41.095Z"
+  },
+  {
+    "id": "f4cc6931-1ed7-4beb-be62-c870d9047074",
+    "classId": "75e7b9a0-17a9-4337-ad86-fb9698a7465d",
+    "date": "2026-08-05",
+    "learnerId": "c4137f7f-3f1c-46b4-999f-c551ba4b9248",
+    "status": "present",
+    "notes": "",
+    "markedBy": "3e6633db-9174-462a-92f1-3bf06db47ccd",
+    "createdAt": "2026-08-05T09:14:54.240Z",
+    "updatedAt": "2026-08-05T09:14:54.240Z"
   }
 ]
