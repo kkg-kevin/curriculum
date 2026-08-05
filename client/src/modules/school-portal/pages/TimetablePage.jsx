@@ -6,6 +6,8 @@ import { classApi } from "../../classes/services/classApi";
 import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { useAcademicYears } from "../../curriculum/hooks/useAcademicYear";
+import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
   useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar,
@@ -32,6 +34,10 @@ function formatTime(t) {
   const period = h >= 12 ? "PM" : "AM";
   const hour12 = h % 12 === 0 ? 12 : h % 12;
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+function fmtShort(d) {
+  return d ? new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
 }
 
 // A slot's teacherId is an optional override — when unset, it's implicitly whichever educator(s)
@@ -180,28 +186,34 @@ function DaySlotRow({ slot, teacherLabel, courseName, onEdit, onDelete }) {
 // wrong to anchor on — the calendar engine already skips forward to the next valid schedulable
 // day on its own (see isDateSchedulable/resolveCoursePlacements in timetable.service.js) — this
 // is purely a clarity signal so the school isn't left wondering why Session 1 didn't land where
-// they expected.
-function describeNonSchedulable(dateStr, periods) {
+// they expected, and points at exactly where to go to change it. isProgram picks the wording
+// (and where to fix it) since a Program's one window comes from its deployment dates, while every
+// other curriculum's terms/breaks come from its published Academic Year.
+function describeNonSchedulable(dateStr, periods, isProgram) {
   if (!dateStr || !periods.length) return null;
   const covering = periods.find((p) => p.startDate && p.endDate && dateStr >= p.startDate && dateStr <= p.endDate);
   if (covering) {
     if (covering.breakStartDate && covering.breakEndDate && dateStr >= covering.breakStartDate && dateStr <= covering.breakEndDate) {
-      return `Falls in ${covering.name || "a"} break — first session will land after it ends.`;
+      return `Falls inside ${covering.name || "a"} break (${fmtShort(covering.breakStartDate)} – ${fmtShort(covering.breakEndDate)}) — Session 1 will automatically land on the next open day after it. No action needed, unless the break dates themselves are wrong — fix those in ${isProgram ? "Programs" : "Academic Year"}.`;
     }
     return null;
   }
-  return "Falls outside any configured term — sessions will only start once a term covers this date.";
+  if (isProgram) {
+    const { startDate, endDate } = periods[0];
+    return `Falls outside this program's run (${fmtShort(startDate)} – ${fmtShort(endDate)}) — pick a date in that range, or change the run's dates from Programs.`;
+  }
+  return "Falls outside any configured term — pick a date covered by a published Academic Year term, or go to Academic Year to add/extend one.";
 }
 
 // A course's Sessions only start landing on the calendar once its start date is set — this row
 // is how a school anchors "Session 1 lines up with this date" for a course that already has
 // weekday slots configured above.
-function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [] }) {
+function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isProgram = false }) {
   const [value, setValue] = useState(startDate || "");
   const [applyToClassIds, setApplyToClassIds] = useState([]);
   useEffect(() => setValue(startDate || ""), [startDate]);
   const dirty = value !== (startDate || "");
-  const hint = describeNonSchedulable(value, periods);
+  const hint = describeNonSchedulable(value, periods, isProgram);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -277,7 +289,23 @@ export default function TimetablePage() {
 
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
   const { data: selectedCurriculum } = useCurriculumQuery(selectedClass?.curriculumId);
-  const periods = selectedCurriculum?.periods || [];
+
+  // A Program curriculum has no dated periods of its own (Academic Year setup is hidden for
+  // it — see CurriculumViewPage) — it runs on the fixed startDate/endDate of its Program
+  // deployment instead. Every other curriculum's real term/break dates live on whichever Academic
+  // Year version is currently published for it — curriculum.periods itself only ever holds period
+  // *names*, never dates (see getPeriodsForClass in timetable.service.js for the server-side
+  // mirror of both these sources — this must agree with it or the hint below would lie about what
+  // the server is actually going to schedule).
+  const isProgram = !!selectedCurriculum?.isProgram;
+  const { data: curriculumPrograms = [] } = useProgramsByCurriculumQuery(isProgram ? selectedClass?.curriculumId : undefined);
+  const { data: ayData } = useAcademicYears(!isProgram && selectedCurriculum ? selectedClass?.curriculumId : undefined);
+  const deployedProgram = isProgram
+    ? curriculumPrograms.find((p) => (p.classes || []).some((c) => c.id === selectedClassId))
+    : null;
+  const periods = deployedProgram
+    ? [{ name: selectedCurriculum.name, startDate: deployedProgram.startDate, endDate: deployedProgram.endDate, breakStartDate: "", breakEndDate: "" }]
+    : ayData?.publishedVersion?.periods || [];
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
   const slots = slotsData?.data || [];
@@ -478,6 +506,7 @@ export default function TimetablePage() {
                     isSaving={savingSchedule || savingScheduleBulk}
                     siblingClasses={siblingClasses}
                     periods={periods}
+                    isProgram={isProgram}
                     onSave={(startDate, applyToClassIds) => handleSaveCourseSchedule(courseId, startDate, applyToClassIds)}
                   />
                 ))}

@@ -99,5 +99,49 @@
     "id": "9d26fcc0-c947-4e32-9f5b-486774671dab",
     "createdAt": "2026-08-04T08:02:57.106Z",
     "updatedAt": "2026-08-04T08:34:43.516Z"
+  },
+  {
+    "name": "Program hub",
+    "hubType": "innovation_lab",
+    "code": "PH",
+    "email": "programhub@digifunzi.com",
+    "phone": "6615151",
+    "contactPerson": "Program hub contact",
+    "address": {
+      "street": "usiu-road",
+      "city": "Nairobi",
+      "county": "Nairobi"
+    },
+    "mapLink": "https://www.google.com/search?sca_esv=5cd892c2b13a5520&sxsrf=APpeQns_64s8GoQVYt9Meb-2P-9lCarWSA:1785912217613&udm=2&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832QGGMdFXpDyzkQgEdtB8w9w-GD6PIjvNPpUnrx3WoOVIInBEEy-eiFZv8B5rS4maeNBTNEIYkmKln-7huzj-TXuWUBV83lgqsIThlapGBHts9-P4pLX0m7Ho-lzEsp-YlOu0sz9zZMrjbvpwSEEjwHRScn1_a_1VN1KPFzpgTUFScXT4fQ&q=program+hub+image&sa=X&ved=2ahUKEwjlwNK68YiWAxUbUKQEHQWuMhsQtKgLegQIGRAB&biw=1920&bih=957&dpr=1",
+    "curriculumId": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "branchId": null,
+    "status": "active",
+    "description": "Test program hub ",
+    "photo": "http://localhost:5000/uploads/762f40d4-26fb-4b5e-b80e-c63df05dc064.jpeg",
+    "photos": [
+      "http://localhost:5000/uploads/ba555509-c6eb-4bd3-973f-b58f9b99eacc.jpeg",
+      "http://localhost:5000/uploads/41b183a1-e86f-441e-8040-44071e18b59f.png"
+    ],
+    "amenities": [
+      "wifi",
+      "whiteboard",
+      "charging_ports",
+      "projector"
+    ],
+    "operatingHours": {
+      "opensAt": "07:00",
+      "closesAt": "04:00",
+      "days": [
+        "Monday",
+        "Wednesday",
+        "Thursday",
+        "Tuesday",
+        "Friday"
+      ]
+    },
+    "spaces": [],
+    "id": "8e79fd94-7475-4619-add1-19b26633a798",
+    "createdAt": "2026-08-05T06:45:47.513Z",
+    "updatedAt": "2026-08-05T06:45:47.513Z"
   }
 ]

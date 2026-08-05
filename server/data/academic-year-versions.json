@@ -411,8 +411,8 @@
     "yearGroupId": "9f2e985d-9e24-4382-83ed-44ea9bc18340",
     "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
     "versionNumber": 1,
-    "status": "published",
-    "isCurrent": true,
+    "status": "inactive",
+    "isCurrent": false,
     "periods": [
       {
         "name": "Term 1",
@@ -437,7 +437,7 @@
       }
     ],
     "createdAt": "2026-07-15T08:50:02.267Z",
-    "updatedAt": "2026-07-15T08:50:03.601Z"
+    "updatedAt": "2026-08-05T08:08:05.124Z"
   },
   {
     "id": "8bc2f0c2-39ed-4ec1-8fdf-4125f28108cf",
@@ -471,5 +471,71 @@
     ],
     "createdAt": "2026-07-29T13:28:55.672Z",
     "updatedAt": "2026-07-29T13:28:58.332Z"
+  },
+  {
+    "id": "1e6e8cc5-ce25-4091-ab27-00104dde076b",
+    "yearGroupId": "9f2e985d-9e24-4382-83ed-44ea9bc18340",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "versionNumber": 2,
+    "status": "published",
+    "isCurrent": false,
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-10",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "breakStartDate": "2026-05-01",
+        "breakEndDate": "2026-05-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-08-01",
+        "endDate": "2026-10-30",
+        "breakStartDate": "2026-09-01",
+        "breakEndDate": "2026-09-10"
+      }
+    ],
+    "createdAt": "2026-08-05T06:49:59.044Z",
+    "updatedAt": "2026-08-05T08:08:05.124Z"
+  },
+  {
+    "id": "abd2a463-c60f-401c-aab7-ee8afb6b48ed",
+    "yearGroupId": "9f2e985d-9e24-4382-83ed-44ea9bc18340",
+    "curriculumId": "d9b3650b-6f0f-46d5-8967-fdd99dc9ca24",
+    "versionNumber": 3,
+    "status": "draft",
+    "isCurrent": true,
+    "periods": [
+      {
+        "name": "Term 1",
+        "startDate": "2026-01-10",
+        "endDate": "2026-03-31",
+        "breakStartDate": "2026-02-01",
+        "breakEndDate": "2026-02-10"
+      },
+      {
+        "name": "Term 2",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "breakStartDate": "2026-05-01",
+        "breakEndDate": "2026-05-10"
+      },
+      {
+        "name": "Term 3",
+        "startDate": "2026-08-01",
+        "endDate": "2026-10-30",
+        "breakStartDate": "2026-09-01",
+        "breakEndDate": "2026-09-10"
+      }
+    ],
+    "createdAt": "2026-08-05T08:08:05.127Z",
+    "updatedAt": "2026-08-05T08:08:05.127Z"
   }
 ]

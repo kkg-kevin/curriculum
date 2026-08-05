@@ -719,5 +719,14 @@
     "id": "813a2dd1-bbed-4b87-aaa2-7ec58ed883e2",
     "createdAt": "2026-08-04T08:25:08.260Z",
     "updatedAt": "2026-08-04T08:34:43.667Z"
+  },
+  {
+    "name": "Program hub",
+    "email": "programhub@digifunzi.com",
+    "passwordHash": "$2b$10$UtFnTUKGOiFVgkd4OhiOkO1/U8XxGzhIq03dusHKDsX0/xiPi9rcS",
+    "role": "school",
+    "id": "bfbd84d1-c86c-4b42-85b8-b5e0402a6604",
+    "createdAt": "2026-08-05T06:45:47.506Z",
+    "updatedAt": "2026-08-05T06:45:47.507Z"
   }
 ]

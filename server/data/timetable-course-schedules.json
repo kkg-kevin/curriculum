@@ -38,5 +38,53 @@
     "startDate": "2026-02-01",
     "createdAt": "2026-08-04T13:30:18.382Z",
     "updatedAt": "2026-08-04T13:31:43.479Z"
+  },
+  {
+    "id": "73dd0963-4a63-41cd-b717-d7e3fb62be50",
+    "classId": "276b0cf2-4ef8-4a51-bb4e-59df5af11aaa",
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "startDate": "2026-08-06",
+    "createdAt": "2026-08-05T07:03:11.365Z",
+    "updatedAt": "2026-08-05T07:52:16.334Z"
+  },
+  {
+    "id": "9980fe31-bcc0-4ddd-b943-250be101cada",
+    "classId": "276b0cf2-4ef8-4a51-bb4e-59df5af11aaa",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "startDate": "2026-08-05",
+    "createdAt": "2026-08-05T07:03:18.825Z",
+    "updatedAt": "2026-08-05T07:03:18.825Z"
+  },
+  {
+    "id": "4e955316-fa1f-465b-a97b-7a59dd6c950a",
+    "classId": "276b0cf2-4ef8-4a51-bb4e-59df5af11aaa",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "startDate": "2026-08-05",
+    "createdAt": "2026-08-05T07:03:24.882Z",
+    "updatedAt": "2026-08-05T07:03:24.882Z"
+  },
+  {
+    "id": "f17a91f4-e9b4-45c2-8dc1-13f8da289217",
+    "classId": "75e7b9a0-17a9-4337-ad86-fb9698a7465d",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "startDate": "2026-08-05",
+    "createdAt": "2026-08-05T07:40:04.238Z",
+    "updatedAt": "2026-08-05T07:54:11.221Z"
+  },
+  {
+    "id": "a556902d-83e1-424a-a380-17462768c96d",
+    "classId": "75e7b9a0-17a9-4337-ad86-fb9698a7465d",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "startDate": "2026-08-05",
+    "createdAt": "2026-08-05T07:40:14.859Z",
+    "updatedAt": "2026-08-05T07:55:22.374Z"
+  },
+  {
+    "id": "9b62dcfe-5c50-4c4f-bf65-b4cfa848ebc2",
+    "classId": "fddc3448-cea0-40cd-b74a-2b39de057246",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "startDate": "2026-01-10",
+    "createdAt": "2026-08-05T08:00:35.303Z",
+    "updatedAt": "2026-08-05T08:01:47.956Z"
   }
 ]

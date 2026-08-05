@@ -258,5 +258,26 @@
     "updatedAt": "2026-08-04T09:27:24.565Z",
     "currentStageId": "9fa8af55-0d19-4e6e-bc57-69f1e674807b",
     "onboardingCompletedAt": "2026-08-04T09:27:24.564Z"
+  },
+  {
+    "id": "96170e98-faee-44c2-8fc6-2a55e73ae743",
+    "learnerId": "77773b20-d329-41cb-88cf-1739b90cffb7",
+    "hubId": "8e79fd94-7475-4619-add1-19b26633a798",
+    "classId": "276b0cf2-4ef8-4a51-bb4e-59df5af11aaa",
+    "admissionNumber": "PH-2026-001",
+    "status": "active",
+    "createdAt": "2026-08-05T07:22:30.768Z",
+    "updatedAt": "2026-08-05T07:56:03.450Z",
+    "onboardingCompletedAt": "2026-08-05T07:56:03.449Z"
+  },
+  {
+    "id": "406df138-bbbe-4a7d-9abf-8f3a14188e46",
+    "learnerId": "c4137f7f-3f1c-46b4-999f-c551ba4b9248",
+    "hubId": "8e79fd94-7475-4619-add1-19b26633a798",
+    "classId": "75e7b9a0-17a9-4337-ad86-fb9698a7465d",
+    "admissionNumber": "PH-2026-002",
+    "status": "active",
+    "createdAt": "2026-08-05T07:22:55.724Z",
+    "updatedAt": "2026-08-05T07:22:55.724Z"
   }
 ]

@@ -8398,5 +8398,582 @@
     ],
     "createdAt": "2026-07-28T06:29:04.389Z",
     "updatedAt": "2026-07-28T06:29:05.386Z"
+  },
+  {
+    "id": "0a736121-fcab-47b8-b9aa-bd95eb093323",
+    "curriculumId": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "academicYearId": null,
+    "versionNumber": 1,
+    "status": "published",
+    "isCurrent": true,
+    "versionOf": null,
+    "content": [
+      {
+        "periodName": "Term 1",
+        "classes": [
+          {
+            "classId": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+            "className": "Bootcamp 101",
+            "courses": [
+              {
+                "id": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+                "name": "Robotics",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd",
+                    "name": "Robotics 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "648bc349-9b4d-4871-a301-02e38fd4088d",
+                    "name": "Robotics 2",
+                    "order": 2
+                  },
+                  {
+                    "id": "7a4d88a2-bb11-4fee-8fc3-65545db31792",
+                    "name": "Robotics 3",
+                    "order": 3
+                  },
+                  {
+                    "id": "332fd342-7220-41d1-bf79-b20365c33bce",
+                    "name": "Robotics 4",
+                    "order": 4
+                  },
+                  {
+                    "id": "40d50543-ec1d-4883-999b-9daa19ccf901",
+                    "name": "Robotics 5",
+                    "order": 5
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "6232d2ba-cca0-480e-a6e4-f73c34fdefdb",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd"
+                  },
+                  {
+                    "id": "c75e5da6-7721-4a0c-af7d-0072a925e523",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd"
+                  },
+                  {
+                    "id": "cac1abc9-0e84-4cef-b8fc-9156773ca40b",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd"
+                  },
+                  {
+                    "id": "396049d8-ecaf-403c-bf1f-aaa3e68056f4",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd"
+                  },
+                  {
+                    "id": "981f74ba-3c5d-4e5f-a82b-43571271f47a",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "61ab28b1-a923-4ac1-a3b4-0ca98ff3b2fd"
+                  },
+                  {
+                    "id": "101e882d-ae3a-411f-bb4a-2367f3ff8d67",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d"
+                  },
+                  {
+                    "id": "9076df6b-42f0-46eb-baf2-dfd9f755aaf9",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d"
+                  },
+                  {
+                    "id": "05409b14-c660-4945-a328-ea1ac70eff70",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d"
+                  },
+                  {
+                    "id": "4270c4c5-4c12-4fb9-ba49-3a119a5134f3",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d"
+                  },
+                  {
+                    "id": "04b7a8f2-7344-4385-b42a-3119a7c27cd9",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "648bc349-9b4d-4871-a301-02e38fd4088d"
+                  },
+                  {
+                    "id": "b1cb1e6e-0273-4e84-a7f1-0b3cdb80fd4f",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792"
+                  },
+                  {
+                    "id": "22808c23-8e01-4b7f-8132-27e240c90565",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792"
+                  },
+                  {
+                    "id": "cdc43597-3e79-4cb5-97bb-3b97f32c54cd",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792"
+                  },
+                  {
+                    "id": "d1c7c829-ae4f-4b7f-86fd-a03393d599d9",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792"
+                  },
+                  {
+                    "id": "efa3dad8-cd7c-4702-a752-e190e12bf6c6",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "7a4d88a2-bb11-4fee-8fc3-65545db31792"
+                  },
+                  {
+                    "id": "4c4095a1-ca8a-4fd6-9d6f-8c200cdd0e87",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce"
+                  },
+                  {
+                    "id": "7b2b6c2c-4313-4e6f-8671-1ac58b4d94b8",
+                    "title": "",
+                    "order": 17,
+                    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce"
+                  },
+                  {
+                    "id": "0de97fb2-a00f-4302-8834-1365554618b8",
+                    "title": "",
+                    "order": 18,
+                    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce"
+                  },
+                  {
+                    "id": "8e9fb612-a0be-46ee-97c5-ff3de988f197",
+                    "title": "",
+                    "order": 19,
+                    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce"
+                  },
+                  {
+                    "id": "803da66c-6d1a-4646-b87a-37f5acd76998",
+                    "title": "",
+                    "order": 20,
+                    "moduleId": "332fd342-7220-41d1-bf79-b20365c33bce"
+                  },
+                  {
+                    "id": "e80b9762-a8bc-4121-aa11-7b51b4cc0d4c",
+                    "title": "",
+                    "order": 21,
+                    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901"
+                  },
+                  {
+                    "id": "29d07414-9ada-434b-a76d-a99e30d5f3bc",
+                    "title": "",
+                    "order": 22,
+                    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901"
+                  },
+                  {
+                    "id": "eb03cc29-b671-45ed-82e4-c17940e527f0",
+                    "title": "",
+                    "order": 23,
+                    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901"
+                  },
+                  {
+                    "id": "e8256204-f246-423e-b888-5975952c9c00",
+                    "title": "",
+                    "order": 24,
+                    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901"
+                  },
+                  {
+                    "id": "052f10b7-7d90-4139-9302-226518a59099",
+                    "title": "",
+                    "order": 25,
+                    "moduleId": "40d50543-ec1d-4883-999b-9daa19ccf901"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:28.842Z"
+              }
+            ]
+          },
+          {
+            "classId": "457c4b78-ab4d-401d-b33e-8eba0da95929",
+            "className": "Bootcamp 202",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:32.120Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 2",
+        "classes": [
+          {
+            "classId": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+            "className": "Bootcamp 101",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:35.639Z"
+              }
+            ]
+          },
+          {
+            "classId": "457c4b78-ab4d-401d-b33e-8eba0da95929",
+            "className": "Bootcamp 202",
+            "courses": [
+              {
+                "id": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+                "name": "sample course ",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "04718356-7f07-449c-885e-3cd78bbcc5ac",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "9e08ee96-486d-472c-9398-95db7dc355c7",
+                    "title": "Introduction to Quarky and Pictoblox",
+                    "order": 1,
+                    "moduleId": "04718356-7f07-449c-885e-3cd78bbcc5ac"
+                  },
+                  {
+                    "id": "7d93612b-edf8-4236-b168-b20050de177a",
+                    "title": " Introduction and Application of Sensors",
+                    "order": 2,
+                    "moduleId": "36a7bb9f-ecf6-42da-9b32-c67e9fe8c7d2"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:38.672Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "periodName": "Term 3",
+        "classes": [
+          {
+            "classId": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+            "className": "Bootcamp 101",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:41.391Z"
+              }
+            ]
+          },
+          {
+            "classId": "457c4b78-ab4d-401d-b33e-8eba0da95929",
+            "className": "Bootcamp 202",
+            "courses": [
+              {
+                "id": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+                "name": "Level 1: Code Foundations",
+                "code": "",
+                "modulesSnapshot": [
+                  {
+                    "id": "9ae3f982-a0dc-4337-94d5-afec0a351154",
+                    "name": "Module 1",
+                    "order": 1
+                  },
+                  {
+                    "id": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad",
+                    "name": "Module 2",
+                    "order": 2
+                  }
+                ],
+                "sessionsSnapshot": [
+                  {
+                    "id": "c9401c25-c212-4d86-a5ac-49c25112f8ab",
+                    "title": "",
+                    "order": 1,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "bd207980-3d5b-4cc3-8330-faecfc674c37",
+                    "title": "",
+                    "order": 2,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3df31b82-a3cd-4f64-8ab7-1abc0c466204",
+                    "title": "",
+                    "order": 3,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7e29ac4a-1fa1-4127-b822-8340ff0c675f",
+                    "title": "",
+                    "order": 4,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "77ff0042-ffd3-4d1a-ae8b-642015262548",
+                    "title": "",
+                    "order": 5,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "76a530cc-9f57-4f11-bea1-ea3ea933faed",
+                    "title": "",
+                    "order": 6,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "f7bdd47c-aec8-4b75-afda-1af21acc902c",
+                    "title": "",
+                    "order": 7,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3381de92-11a3-4c2d-b029-b214fb3c2569",
+                    "title": "",
+                    "order": 8,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "21c53d7b-a5f6-4e84-816d-fe175d3c7844",
+                    "title": "",
+                    "order": 9,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "ba38e533-a9b2-41e2-845f-1de5e89fe389",
+                    "title": "",
+                    "order": 10,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "3e8b65c2-e5cd-4f91-91a8-e942b72e5224",
+                    "title": "",
+                    "order": 11,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "7510214e-e2c5-450a-aa4b-bbdce7315f37",
+                    "title": "",
+                    "order": 12,
+                    "moduleId": "9ae3f982-a0dc-4337-94d5-afec0a351154"
+                  },
+                  {
+                    "id": "63050af6-72ba-4528-bdd7-fabac0556784",
+                    "title": "",
+                    "order": 13,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "6e2acd76-e16c-4450-b1a4-c13aae4cdc17",
+                    "title": "",
+                    "order": 14,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "eb13438b-f556-4308-8e43-3879907e0b03",
+                    "title": "",
+                    "order": 15,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  },
+                  {
+                    "id": "553491ba-73d2-4bc3-b12f-9c3d8d390d80",
+                    "title": "",
+                    "order": 16,
+                    "moduleId": "0ac26351-ac2d-4426-bbf3-9020e7cb77ad"
+                  }
+                ],
+                "snapshotAt": "2026-08-05T06:35:43.267Z"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-08-05T06:35:44.482Z",
+    "updatedAt": "2026-08-05T06:35:45.414Z"
   }
 ]
