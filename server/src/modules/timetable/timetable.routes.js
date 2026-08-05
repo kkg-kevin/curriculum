@@ -4,7 +4,7 @@ const {
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar,
-  getSessionSummary,
+  getSessionSummary, getSessionStatusBulk,
 } = require("./timetable.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -28,6 +28,7 @@ router.get("/learner/mine/calendar", authorize("learner"), getMyLearnerCalendar)
 // session. Teacher and hub level only (not learner) — it surfaces every enrolled learner's
 // attendance and scores, not just the viewer's own.
 router.get("/sessions/:sessionId/summary", authorize("admin", "school", "branchAdmin", "teacher"), getSessionSummary);
+router.post("/sessions/status", authorize("admin", "school", "branchAdmin", "teacher"), getSessionStatusBulk);
 
 // Teacher/learner-facing: their own timetable, resolved from their own linked classes.
 router.get("/teacher/mine", authorize("teacher"), getMyTeacherTimetable);

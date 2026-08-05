@@ -1,11 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
-import { useSessionSummary } from "../hooks/useTimetable";
+import { useSessionSummary, useSessionStatusBulk } from "../hooks/useTimetable";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
   breakBg: "#FEF2F2", breakBorder: "#FCA5A5", breakText: "#B91C1C",
 };
+
+// One shared read on "is this number good, needs watching, or needs attention" — used for both
+// the small status dot on a calendar card and the coloring of stat tiles in the hover/detail
+// views, so the same underlying numbers always read the same color everywhere they show up.
+const HEALTH = {
+  good:      { text: "#047857", bg: "#D1FAE5", border: "#6EE7B7", dot: "#10B981" },
+  warning:   { text: "#92400E", bg: "#FEF3C7", border: "#FCD34D", dot: "#F59E0B" },
+  attention: { text: "#B91C1C", bg: "#FEE2E2", border: "#FCA5A5", dot: "#EF4444" },
+  neutral:   { text: T.inkMuted, bg: "#F3F4F6", border: T.border, dot: "#D1D5DB" },
+};
+
+// Future sessions get "neutral" — attendance/grading isn't expected yet, so there's nothing to
+// judge. Past/today sessions: unmarked attendance or very low turnout is worth flagging outright;
+// an assessment still being graded is a lesser "in progress" state, not a problem by itself.
+function sessionHealth({ isFuture, attendanceMarked, attendancePercent, gradingRequired, gradingComplete }) {
+  if (isFuture) return "neutral";
+  if (!attendanceMarked) return "attention";
+  if (attendancePercent !== null && attendancePercent < 50) return "attention";
+  if (gradingRequired && !gradingComplete) return "warning";
+  return "good";
+}
 
 // A stable identity for one calendar occurrence — course+session alone isn't unique enough for a
 // merged teacher/learner view, where the same course can run in more than one of their classes
@@ -13,6 +34,61 @@ const T = {
 function eventKey(e) {
   return `${e.classId}-${e.courseId}-${e.sessionId}-${e.date}-${e.startTime}`;
 }
+// Matches the server's own bulk-status map key exactly (see getSessionStatusBulk in
+// timetable.service.js) — deliberately without startTime, since a (class, session, date) triple
+// is already a unique calendar occurrence on its own.
+function statusKey(e) {
+  return `${e.classId}-${e.sessionId}-${e.date}`;
+}
+
+function StatusDot({ health, title }) {
+  const c = HEALTH[health] || HEALTH.neutral;
+  return (
+    <span
+      title={title}
+      style={{
+        position: "absolute", top: 3, right: 3, width: 7, height: 7, borderRadius: "50%",
+        backgroundColor: c.dot, border: "1.5px solid #fff", boxShadow: `0 0 0 1px ${c.dot}66`,
+      }}
+    />
+  );
+}
+
+function ProgressBar({ percent, color }) {
+  const pct = Math.max(0, Math.min(100, percent ?? 0));
+  return (
+    <div style={{ height: 5, borderRadius: 3, backgroundColor: "#EEF1F5", overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${pct}%`, backgroundColor: color, borderRadius: 3, transition: "width 0.3s ease" }} />
+    </div>
+  );
+}
+
+function IconAttendance({ color, size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="8" r="3.2" stroke={color} strokeWidth="2" />
+      <path d="M3.3 20c0-3.3 2.6-5.7 5.7-5.7s5.7 2.4 5.7 5.7" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="18" cy="9" r="2.3" stroke={color} strokeWidth="1.8" />
+      <path d="M14.8 20c.3-2.5 2-4.1 4.1-4.1" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconGrading({ color, size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="3.5" width="14" height="17" rx="2" stroke={color} strokeWidth="2" />
+      <path d="M9 12l2.2 2.2L15.5 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconScore({ color, size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
 const EVENT_COLORS = [
@@ -128,6 +204,22 @@ export default function CalendarView({ events, breaks, isLoading, resolveCourseN
     return map;
   }, [events]);
 
+  // One batched status lookup for every occurrence currently on screen, powering the small
+  // health dot on each card — see the enableSessionDetail doc comment for why this (like the
+  // hover/click detail) is fetched here rather than pushed up to the parent page.
+  const occurrences = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    for (const e of events || []) {
+      const k = statusKey(e);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      list.push({ classId: e.classId, sessionId: e.sessionId, date: e.date });
+    }
+    return list;
+  }, [events]);
+  const { data: statusByKey = {} } = useSessionStatusBulk(occurrences, enableSessionDetail);
+
   const navigate = (dir) => setAnchor((a) => a.add(dir, mode === "month" ? "month" : "week"));
   const goToday = () => setAnchor(dayjs());
 
@@ -140,6 +232,10 @@ export default function CalendarView({ events, breaks, isLoading, resolveCourseN
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 12 }}>
+      <style>{`
+        @keyframes cv-fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes cv-modal-in { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+      `}</style>
       <div style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button type="button" onClick={goToday} style={btnStyle(false)}>Today</button>
@@ -159,13 +255,13 @@ export default function CalendarView({ events, breaks, isLoading, resolveCourseN
         <WeekGrid
           days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks}
           resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel}
-          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
+          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent} statusByKey={statusByKey}
         />
       ) : (
         <MonthGrid
           weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks}
           resolveCourseName={resolveCourseName} resolveClassLabel={resolveClassLabel}
-          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
+          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent} statusByKey={statusByKey}
         />
       )}
 
@@ -183,7 +279,8 @@ function btnStyle(active) {
   };
 }
 
-function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail }) {
+function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, statusByKey }) {
+  const today = dayjs();
   const allEvents = days.flatMap((d) => eventsByDate[d.format("YYYY-MM-DD")] || []);
   const anyBreakInView = days.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks));
 
@@ -271,6 +368,8 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
                 const color = colorForCourse(e.courseId);
                 const key = eventKey(e);
                 const isHovered = enableSessionDetail && hoverKey === key;
+                const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
+                const health = status ? sessionHealth({ isFuture: dayjs(e.date).isAfter(today, "day"), ...status }) : null;
                 return (
                   <div
                     key={key}
@@ -281,9 +380,12 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
                     style={{
                       position: "absolute", top: top(e.startTime), height: height(e.startTime, e.endTime), left: 4, right: 4,
                       backgroundColor: color.bg, border: `1px solid ${isHovered ? color.text : color.border}`, borderRadius: 8, padding: "4px 6px", overflow: "hidden", boxSizing: "border-box",
-                      cursor: enableSessionDetail ? "pointer" : "default", zIndex: isHovered ? 2 : 1,
+                      cursor: enableSessionDetail ? "pointer" : "default", zIndex: isHovered ? 2 : 1, transition: "border-color 0.15s ease",
                     }}
                   >
+                    {health && health !== "neutral" && (
+                      <StatusDot health={health} title={health === "attention" ? "Needs attention" : health === "warning" ? "Grading in progress" : "All good"} />
+                    )}
                     <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
                     <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: color.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{resolveCourseName(e.courseId)}</p>
                     <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -308,7 +410,8 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
   );
 }
 
-function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail }) {
+function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, statusByKey }) {
+  const today = dayjs();
   const hasAny = weeks.some((w) => w.some((d) => (eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0));
   const anyBreakInView = weeks.some((w) => w.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks)));
   if (!hasAny && !anyBreakInView) {
@@ -350,16 +453,21 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, res
                   )}
                   {visible.map((e) => {
                     const color = colorForCourse(e.courseId);
+                    const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
+                    const health = status ? sessionHealth({ isFuture: dayjs(e.date).isAfter(today, "day"), ...status }) : null;
                     return (
                       <div
                         key={eventKey(e)}
                         title={`${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}`}
                         onClick={() => enableSessionDetail && onOpenDetail(e)}
                         style={{
-                          backgroundColor: color.bg, border: `1px solid ${color.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: color.text,
+                          position: "relative", backgroundColor: color.bg, border: `1px solid ${color.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: color.text,
                           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: enableSessionDetail ? "pointer" : "default",
                         }}
                       >
+                        {health && health !== "neutral" && (
+                          <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", backgroundColor: HEALTH[health].dot, marginRight: 4 }} />
+                        )}
                         {resolveCourseName(e.courseId)}
                       </div>
                     );
@@ -376,57 +484,109 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, res
 }
 
 // Quick-glance preview on hover — the headline numbers only (see SessionDetailModal for the full
-// roster). Rendered as a child of the hovered event card itself so it's automatically positioned
-// right below it with no coordinate math; the card's own z-index (set where it's rendered above)
-// lifts it above neighboring days' events.
+// roster). Rendered as a child of the hovered event card itself so it's naturally anchored to it
+// with no coordinate math for the common case; the ref+layout-effect below only kicks in to flip
+// the card to the opposite side when the default placement would run off the viewport (e.g. a
+// session near the bottom or right edge of the visible grid).
 function SessionHoverCard({ summary, isLoading }) {
+  const ref = useRef(null);
+  const [placement, setPlacement] = useState({ vertical: "bottom", horizontal: "left" });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vertical = rect.bottom > window.innerHeight - 8 ? "top" : "bottom";
+    const horizontal = rect.right > window.innerWidth - 8 ? "right" : "left";
+    setPlacement((p) => (p.vertical === vertical && p.horizontal === horizontal ? p : { vertical, horizontal }));
+  }, [isLoading, summary]);
+
+  const posStyle = placement.vertical === "bottom" ? { top: "100%", marginTop: 4 } : { bottom: "100%", marginBottom: 4 };
+  const horizStyle = placement.horizontal === "left" ? { left: 0 } : { right: 0 };
+  const baseStyle = {
+    position: "absolute", ...posStyle, ...horizStyle, zIndex: 30, width: 216,
+    backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 10,
+    boxShadow: "0 10px 28px rgba(15,38,69,0.18), 0 2px 8px rgba(0,0,0,0.08)", padding: "12px 13px",
+    cursor: "default", fontFamily: "Inter, sans-serif", animation: "cv-fadein 0.15s ease",
+  };
+
+  if (isLoading || !summary) {
+    return (
+      <div ref={ref} style={baseStyle}>
+        <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>Loading…</p>
+      </div>
+    );
+  }
+
+  const attendancePercent = summary.attendance.marked && summary.attendance.enrolledCount > 0
+    ? Math.round((summary.attendance.counts.present / summary.attendance.enrolledCount) * 100) : null;
+  const gradingPercent = summary.grading.totalLearners > 0
+    ? Math.round((summary.grading.fullyGradedCount / summary.grading.totalLearners) * 100) : null;
+  const gradingComplete = summary.grading.requiredCount > 0 && summary.grading.fullyGradedCount === summary.grading.totalLearners;
+  const health = sessionHealth({
+    isFuture: dayjs(summary.date).isAfter(dayjs(), "day"),
+    attendanceMarked: summary.attendance.marked,
+    attendancePercent,
+    gradingRequired: summary.grading.requiredCount > 0,
+    gradingComplete,
+  });
+  const hc = HEALTH[health];
+
+  return (
+    <div ref={ref} style={baseStyle}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+        <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, color: T.ink }}>
+          Session {summary.session.order} of {summary.session.totalSessions}
+        </p>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: hc.dot, flexShrink: 0 }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <HoverStatBar
+          icon={<IconAttendance color={T.inkMuted} />} label="Attendance"
+          value={summary.attendance.marked ? `${summary.attendance.counts.present}/${summary.attendance.enrolledCount}` : "Not marked"}
+          percent={attendancePercent}
+          barColor={!summary.attendance.marked || (attendancePercent !== null && attendancePercent < 50) ? HEALTH.attention.dot : HEALTH.good.dot}
+        />
+        <HoverStatBar
+          icon={<IconGrading color={T.inkMuted} />} label="Grading"
+          value={summary.grading.requiredCount > 0 ? `${summary.grading.fullyGradedCount}/${summary.grading.totalLearners}` : "No assessment"}
+          percent={summary.grading.requiredCount > 0 ? gradingPercent : null}
+          barColor={gradingComplete ? HEALTH.good.dot : HEALTH.warning.dot}
+        />
+        {summary.grading.averagePercent !== null && (
+          <HoverStatBar icon={<IconScore color={T.inkMuted} />} label="Avg score" value={`${summary.grading.averagePercent}%`} percent={summary.grading.averagePercent} barColor={T.accentMid} />
+        )}
+      </div>
+      <p style={{ margin: "9px 0 0", fontSize: 9.5, fontWeight: 700, color: T.accentMid }}>Click for full detail →</p>
+    </div>
+  );
+}
+
+function HoverStatBar({ icon, label, value, percent, barColor }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: T.inkMuted }}>{icon}{label}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: T.ink }}>{value}</span>
+      </div>
+      {percent !== null && <ProgressBar percent={percent} color={barColor} />}
+    </div>
+  );
+}
+
+function StatTile({ label, value, sub, health, icon }) {
+  const hc = health ? HEALTH[health] : null;
   return (
     <div
       style={{
-        position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 30, width: 208,
-        backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 10,
-        boxShadow: "0 10px 28px rgba(15,38,69,0.18), 0 2px 8px rgba(0,0,0,0.08)", padding: "10px 12px",
-        cursor: "default", fontFamily: "Inter, sans-serif",
+        padding: "11px 12px", backgroundColor: hc ? hc.bg : "#F8FAFF", border: `1px solid ${hc ? hc.border : T.border}`,
+        borderRadius: 10, textAlign: "center", transition: "background-color 0.2s ease",
       }}
     >
-      {isLoading || !summary ? (
-        <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>Loading…</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, color: T.ink }}>
-            Session {summary.session.order} of {summary.session.totalSessions}
-          </p>
-          <HoverStatRow
-            label="Attendance"
-            value={summary.attendance.marked ? `${summary.attendance.counts.present}/${summary.attendance.enrolledCount} present` : "Not marked"}
-          />
-          <HoverStatRow
-            label="Grading"
-            value={summary.grading.requiredCount > 0 ? `${summary.grading.fullyGradedCount}/${summary.grading.totalLearners} graded` : "No assessment"}
-          />
-          {summary.grading.averagePercent !== null && <HoverStatRow label="Avg score" value={`${summary.grading.averagePercent}%`} />}
-          <p style={{ margin: "3px 0 0", fontSize: 9.5, fontWeight: 700, color: T.accentMid }}>Click for full detail →</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function HoverStatRow({ label, value }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 10.5 }}>
-      <span style={{ color: T.inkMuted }}>{label}</span>
-      <span style={{ fontWeight: 700, color: T.ink }}>{value}</span>
-    </div>
-  );
-}
-
-function StatTile({ label, value, sub }) {
-  return (
-    <div style={{ padding: "10px 12px", backgroundColor: "#F8FAFF", border: `1px solid ${T.border}`, borderRadius: 10, textAlign: "center" }}>
-      <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.ink }}>{value}</p>
-      <p style={{ margin: "2px 0 0", fontSize: 10, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
-      {sub && <p style={{ margin: "1px 0 0", fontSize: 9.5, color: T.inkMuted }}>{sub}</p>}
+      {icon && <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>{icon}</div>}
+      <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: hc ? hc.text : T.ink }}>{value}</p>
+      <p style={{ margin: "2px 0 0", fontSize: 10, fontWeight: 700, color: hc ? hc.text : T.inkFaint, opacity: hc ? 0.75 : 1, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
+      {sub && <p style={{ margin: "1px 0 0", fontSize: 9.5, color: hc ? hc.text : T.inkMuted, opacity: hc ? 0.7 : 1 }}>{sub}</p>}
     </div>
   );
 }
@@ -446,11 +606,34 @@ function AttendanceBadge({ status }) {
   );
 }
 
+// Attendance statuses worth a second look sort first — a teacher/hub admin opening this modal is
+// usually checking "did anything go wrong," not reading an alphabetical roster.
+const ATTENDANCE_SORT_PRIORITY = { absent: 0, late: 1, excused: 2, present: 3 };
+function sortAttendanceRecords(records) {
+  return [...records].sort((a, b) => (ATTENDANCE_SORT_PRIORITY[a.status] ?? 4) - (ATTENDANCE_SORT_PRIORITY[b.status] ?? 4));
+}
+// Same idea for grading: learners still awaiting grading first (least progress first within
+// that group), then completed learners sorted lowest score first — a score that needs follow-up
+// shouldn't be buried below a page of 100%s.
+function sortGradingRows(rows) {
+  return [...rows].sort((a, b) => {
+    if (a.ready !== b.ready) return a.ready ? 1 : -1;
+    if (!a.ready) return a.gradedCount - b.gradedCount;
+    return (a.percent ?? 0) - (b.percent ?? 0);
+  });
+}
+
 // Full click-through detail for one calendar event — attendance roster + per-learner grading
 // progress for that exact (class, session, date). Fetches independently of the calendar's own
 // range query (see the enableSessionDetail doc comment on CalendarView above).
 function SessionDetailModal({ event, resolveCourseName, onClose }) {
   const { data: summary, isLoading } = useSessionSummary(event?.sessionId, event?.classId, event?.date, !!event);
+
+  const attendancePercent = summary?.attendance.marked && summary.attendance.enrolledCount > 0
+    ? Math.round((summary.attendance.counts.present / summary.attendance.enrolledCount) * 100) : null;
+  const gradingComplete = summary && summary.grading.requiredCount > 0 && summary.grading.fullyGradedCount === summary.grading.totalLearners;
+  const attendanceHealth = summary ? (!summary.attendance.marked || (attendancePercent !== null && attendancePercent < 50) ? "attention" : "good") : null;
+  const gradingHealth = summary ? (summary.grading.requiredCount === 0 ? null : gradingComplete ? "good" : "warning") : null;
 
   return (
     <div
@@ -462,7 +645,10 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ backgroundColor: "#fff", borderRadius: 16, maxWidth: 560, width: "100%", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}
+        style={{
+          backgroundColor: "#fff", borderRadius: 16, maxWidth: 560, width: "100%", maxHeight: "85vh", overflowY: "auto",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.25)", animation: "cv-modal-in 0.18s ease",
+        }}
       >
         <div style={{ padding: "18px 22px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
@@ -487,7 +673,7 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
         {isLoading || !summary ? (
           <div style={{ padding: "50px 20px", textAlign: "center", color: T.inkFaint, fontSize: 13 }}>Loading…</div>
         ) : (
-          <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 18, animation: "cv-fadein 0.2s ease" }}>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: T.inkMuted }}>
               <span><strong style={{ color: T.ink }}>Class:</strong> {summary.class.gradeName}{summary.class.streamName ? ` — ${summary.class.streamName}` : ""}</span>
               <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}</span>
@@ -495,16 +681,21 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
               <StatTile
+                icon={<IconAttendance color={attendanceHealth ? HEALTH[attendanceHealth].text : T.inkFaint} size={16} />}
                 label="Attendance"
                 value={summary.attendance.marked ? `${summary.attendance.counts.present}/${summary.attendance.enrolledCount}` : "—"}
                 sub={summary.attendance.marked ? "present" : "not marked"}
+                health={attendanceHealth}
               />
               <StatTile
+                icon={<IconGrading color={gradingHealth ? HEALTH[gradingHealth].text : T.inkFaint} size={16} />}
                 label="Graded"
                 value={summary.grading.requiredCount > 0 ? `${summary.grading.fullyGradedCount}/${summary.grading.totalLearners}` : "—"}
                 sub={summary.grading.requiredCount > 0 ? "learners" : "no assessment"}
+                health={gradingHealth}
               />
               <StatTile
+                icon={<IconScore color={T.inkFaint} size={16} />}
                 label="Avg Score"
                 value={summary.grading.averagePercent !== null ? `${summary.grading.averagePercent}%` : "—"}
                 sub="class average"
@@ -517,7 +708,7 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
                 <p style={{ margin: 0, fontSize: 12.5, color: T.inkFaint, fontStyle: "italic" }}>Not marked for this date yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {summary.attendance.records.map((r) => (
+                  {sortAttendanceRecords(summary.attendance.records).map((r) => (
                     <div key={r.learnerId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 11px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12.5 }}>
                       <span style={{ color: T.ink, fontWeight: 600 }}>{r.learner ? `${r.learner.firstName} ${r.learner.lastName}` : "Unknown learner"}</span>
                       <AttendanceBadge status={r.status} />
@@ -531,12 +722,18 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
               <div>
                 <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 800, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Grading Progress</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {summary.grading.learnerRows.map((r) => (
-                    <div key={r.learner.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 11px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12.5 }}>
-                      <span style={{ color: T.ink, fontWeight: 600 }}>{r.learner.firstName} {r.learner.lastName}</span>
-                      <span style={{ fontWeight: 700, color: r.ready ? "#047857" : T.inkMuted }}>
-                        {r.ready ? `${r.percent}%` : `${r.gradedCount}/${r.requiredCount} graded`}
-                      </span>
+                  {sortGradingRows(summary.grading.learnerRows).map((r) => (
+                    <div key={r.learner.id} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "7px 11px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12.5 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ color: T.ink, fontWeight: 600 }}>{r.learner.firstName} {r.learner.lastName}</span>
+                        <span style={{ fontWeight: 700, color: r.ready ? HEALTH.good.text : HEALTH.warning.text }}>
+                          {r.ready ? `${r.percent}%` : `${r.gradedCount}/${r.requiredCount} graded`}
+                        </span>
+                      </div>
+                      <ProgressBar
+                        percent={r.ready ? r.percent : (r.requiredCount > 0 ? Math.round((r.gradedCount / r.requiredCount) * 100) : 0)}
+                        color={r.ready ? HEALTH.good.dot : HEALTH.warning.dot}
+                      />
                     </div>
                   ))}
                 </div>

@@ -345,6 +345,32 @@ const TimetableService = {
       grading: ReportService.getSessionSummaryForClass(classId, sessionId),
     };
   },
+
+  // Lightweight sibling of getSessionSummary, for the calendar's at-a-glance status badges — one
+  // call for every visible event's (classId, sessionId, date) triple instead of a full-detail
+  // fetch (with learner rosters) per card. Same underlying numbers as getSessionSummary's
+  // attendance/grading blocks, just counts instead of per-learner rows, and silently skips a
+  // triple whose session no longer exists rather than erroring out the whole batch over one
+  // stale card.
+  getSessionStatusBulk(occurrences) {
+    const result = {};
+    for (const { classId, sessionId, date } of occurrences) {
+      const session = SessionModel.findById(sessionId);
+      if (!session) continue;
+      const enrolledCount = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active").length;
+      const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+      const presentCount = attendanceRecords.filter((a) => a.status === "present").length;
+      const grading = ReportService.getSessionSummaryForClass(classId, sessionId);
+      result[`${classId}-${sessionId}-${date}`] = {
+        attendanceMarked: attendanceRecords.length > 0,
+        attendancePercent: enrolledCount > 0 ? Math.round((presentCount / enrolledCount) * 100) : null,
+        gradingRequired: grading.requiredCount > 0,
+        gradingComplete: grading.requiredCount > 0 && grading.fullyGradedCount === grading.totalLearners,
+        gradingPercent: grading.totalLearners > 0 ? Math.round((grading.fullyGradedCount / grading.totalLearners) * 100) : null,
+      };
+    }
+    return result;
+  },
 };
 
 module.exports = TimetableService;

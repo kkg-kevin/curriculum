@@ -23,4 +23,9 @@ export const timetableApi = {
   // exact (class, session, date). Teacher/hub level only — see timetable.routes.js.
   getSessionSummary: (sessionId, classId, date) =>
     api.get(`${BASE}/sessions/${sessionId}/summary`, { params: { classId, date } }).then((r) => r.data.data),
+
+  // Lightweight status for every visible event's (classId, sessionId, date) triple, in one call —
+  // powers the calendar's at-a-glance badges without a full-detail fetch per card.
+  getSessionStatusBulk: (occurrences) =>
+    api.post(`${BASE}/sessions/status`, { occurrences }).then((r) => r.data.data),
 };

@@ -171,3 +171,16 @@ export function useSessionSummary(sessionId, classId, date, enabled = true) {
     staleTime: 30_000,
   });
 }
+
+// Status badges for every event currently on screen, fetched in one batched call keyed off the
+// exact set of occurrences shown — refetches when the visible range (and so the event list)
+// changes, same as the calendar's own event query.
+export function useSessionStatusBulk(occurrences, enabled = true) {
+  const key = occurrences.map((o) => `${o.classId}:${o.sessionId}:${o.date}`).sort().join(",");
+  return useQuery({
+    queryKey: ["timetable", "session-status", key],
+    queryFn:  () => timetableApi.getSessionStatusBulk(occurrences),
+    enabled:  enabled && occurrences.length > 0,
+    staleTime: 30_000,
+  });
+}
