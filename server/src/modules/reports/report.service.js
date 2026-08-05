@@ -205,6 +205,48 @@ function buildCourseReportContent(learnerId, courseId, classId) {
 }
 
 const ReportService = {
+  // Same per-learner readiness getReadinessForClassCourse computes, narrowed to a single session
+  // — built for the timetable's "what happened in this session" summary (see
+  // TimetableService.getSessionSummary), which only ever needs one session's numbers and
+  // shouldn't have to walk every other session in the course (and lazily regenerate their
+  // reports) just to answer a question about this one.
+  getSessionSummaryForClass(classId, sessionId) {
+    const session = SessionModel.findById(sessionId);
+    if (!session) return null;
+    const cls = ClassModel.findById(classId);
+    const requiredIds = getSessionRequiredAssessmentIds(session);
+    const learnerIds = LearnerHubLinkModel.findByClassId(classId)
+      .filter((l) => l.status === "active")
+      .map((l) => l.learnerId);
+    const learners = LearnerModel.findAll({ ids: learnerIds });
+
+    const learnerRows = learners.map((learner) => {
+      // Same lazy generate-on-read trigger getReadinessForClassCourse applies, scoped to just
+      // this session — so opening a session's summary is enough to publish its report the moment
+      // it becomes ready, without waiting for the course's full Reports page to be opened too.
+      generateSessionReport({ learnerId: learner.id, session, classId, curriculumId: cls?.curriculumId });
+      const gradedIds = getPublishedGradedAssessmentIds(learner.id);
+      const gradedCount = requiredIds.filter((id) => gradedIds.has(id)).length;
+      const report = ReportModel.findOne({ learnerId: learner.id, courseId: session.courseId, classId, sessionId });
+      return {
+        learner,
+        requiredCount: requiredIds.length,
+        gradedCount,
+        ready: requiredIds.length > 0 && gradedCount === requiredIds.length,
+        percent: report?.content?.overall?.percent ?? null,
+      };
+    });
+
+    const scored = learnerRows.filter((r) => r.percent !== null);
+    return {
+      requiredCount: requiredIds.length,
+      totalLearners: learnerRows.length,
+      fullyGradedCount: learnerRows.filter((r) => r.ready).length,
+      averagePercent: scored.length ? Math.round(scored.reduce((sum, r) => sum + r.percent, 0) / scored.length) : null,
+      learnerRows,
+    };
+  },
+
   // Every actively-enrolled learner in this class, whether their course report is ready to
   // generate (every session-attached assessment graded AND its own report published to the
   // learner), and any report that already exists for them — one call gives the teacher's Reports

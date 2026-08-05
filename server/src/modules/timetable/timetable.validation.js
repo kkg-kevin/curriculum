@@ -38,7 +38,21 @@ const calendarRangeSchema = z.object({
   to: dateOnly,
 }).refine((d) => d.from <= d.to, { message: "from must not be after to", path: ["to"] });
 
+// Batched status lookup for the calendar's at-a-glance badges — one request for every visible
+// event's (classId, sessionId, date) triple instead of one per card. POST (not a GET with
+// comma-joined ids, unlike report.routes.js's /readiness) because occurrences are structured
+// triples that can span several different classes at once in a merged teacher calendar, not a
+// flat id list under one already-known classId. Capped well above anything a single week/month
+// grid could ever render, just to keep a malformed client payload from forcing a huge read.
+const sessionStatusBulkSchema = z.object({
+  occurrences: z.array(z.object({
+    classId:   z.string().min(1),
+    sessionId: z.string().min(1),
+    date:      dateOnly,
+  })).max(500),
+});
+
 module.exports = {
   createSlotSchema, updateSlotSchema, DAYS_OF_WEEK,
-  setCourseScheduleSchema, calendarRangeSchema,
+  setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema,
 };

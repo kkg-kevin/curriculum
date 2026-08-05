@@ -3,7 +3,7 @@ const TimetableService = require("./timetable.service");
 const TimetableModel = require("./timetable.model");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
-const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema } = require("./timetable.validation");
+const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // Same shape as attendance.controller.js's assertClassAccess — a timetable slot belongs to a
@@ -131,9 +131,51 @@ const getMyLearnerCalendar = asyncHandler(async (req, res) => {
   res.json({ success: true, data: events, breaks, count: events.length });
 });
 
+// The click/hover-through detail behind one calendar event — same class-ownership posture as
+// every other read here (teacher must actually teach that class, school/branchAdmin must own its
+// hub). classId and date come from the calendar event the client already has in hand (see
+// resolveCalendar), not re-derived server-side.
+const getSessionSummary = asyncHandler(async (req, res) => {
+  const { classId, date } = req.query;
+  if (!classId || !date) {
+    const err = new Error("classId and date are required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = ClassModel.findById(classId);
+  assertClassAccess(req, cls);
+  const summary = TimetableService.getSessionSummary({ classId, sessionId: req.params.sessionId, date });
+  res.json({ success: true, data: summary });
+});
+
+// Batched sibling of getSessionSummary for the calendar's at-a-glance badges. Occurrences can
+// span more than one class at once (a teacher's merged calendar), so ownership is checked per
+// unique classId in the batch — any occurrence whose class the caller doesn't own is silently
+// dropped from the response rather than failing the whole request over one bad triple. In
+// practice the client only ever sends occurrences from events it already legitimately fetched
+// from an ownership-scoped calendar endpoint, so this is defense in depth, not the expected path.
+const getSessionStatusBulk = asyncHandler(async (req, res) => {
+  const { occurrences } = sessionStatusBulkSchema.parse(req.body);
+  const classIds = [...new Set(occurrences.map((o) => o.classId))];
+  const accessibleClassIds = new Set(
+    classIds.filter((id) => {
+      try {
+        assertClassAccess(req, ClassModel.findById(id));
+        return true;
+      } catch {
+        return false;
+      }
+    })
+  );
+  const allowed = occurrences.filter((o) => accessibleClassIds.has(o.classId));
+  const statuses = TimetableService.getSessionStatusBulk(allowed);
+  res.json({ success: true, data: statuses });
+});
+
 module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar,
+  getSessionSummary, getSessionStatusBulk,
 };

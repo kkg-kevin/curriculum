@@ -1,12 +1,17 @@
 const TimetableModel = require("./timetable.model");
 const CourseScheduleModel = require("./course-schedule.model");
 const SessionModel = require("../courses/session.model");
+const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const LearnerModel = require("../learners/learner.model");
+const TeacherModel = require("../teachers/teacher.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const ProgramModel = require("../programs/program.model");
 const AcademicYearVersionModel = require("../curriculum/academic-years/academic-year-versions.model");
+const AttendanceModel = require("../attendance/attendance.model");
+const ReportService = require("../reports/report.service");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
 
 function notFound(message) {
@@ -145,18 +150,32 @@ function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, fro
 
 // Break windows (from periods that have one set) overlapping [from, to] — surfaced separately
 // from events so the calendar UI can shade/label them even on days with no session at all.
-function breaksInRange(periods, from, to) {
+// classIds tags which class this break actually belongs to — a break is a property of a whole
+// curriculum/program (every class within it shares the exact same dates), but a merged teacher/
+// learner calendar (see resolveTeacherCalendar/resolveLearnerCalendar) can span several different
+// curricula at once, each with its own independent calendar. Without this tag the UI has no way
+// to tell "every class is on break today" apart from "only some of the classes I'm looking at
+// are" — see dedupeBreaks below for how these get merged across classes.
+function breaksInRange(periods, from, to, classId) {
   const fromMs = toUtcMs(from);
   const toMs = toUtcMs(to);
   return periods
     .filter((p) => p.breakStartDate && p.breakEndDate)
     .filter((p) => toUtcMs(p.breakStartDate) <= toMs && toUtcMs(p.breakEndDate) >= fromMs)
-    .map((p) => ({ start: p.breakStartDate, end: p.breakEndDate, label: p.name ? `${p.name} Break` : "Break" }));
+    .map((p) => ({ start: p.breakStartDate, end: p.breakEndDate, label: p.name ? `${p.name} Break` : "Break", classIds: [classId] }));
 }
 
+// Two classes on the same curriculum produce identical {start,end,label} breaks — those merge
+// into one entry with both classIds, rather than the dedupe silently keeping only the last one
+// seen and losing track of who else it applies to.
 function dedupeBreaks(breaks) {
   const seen = new Map();
-  for (const b of breaks) seen.set(`${b.start}:${b.end}:${b.label}`, b);
+  for (const b of breaks) {
+    const key = `${b.start}:${b.end}:${b.label}`;
+    const existing = seen.get(key);
+    if (existing) existing.classIds = [...new Set([...existing.classIds, ...b.classIds])];
+    else seen.set(key, { ...b, classIds: [...b.classIds] });
+  }
   return [...seen.values()];
 }
 
@@ -200,7 +219,7 @@ const TimetableService = {
     }
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
-      breaks: breaksInRange(periods, from, to),
+      breaks: breaksInRange(periods, from, to, classId),
     };
   },
 
@@ -272,6 +291,85 @@ const TimetableService = {
     const deleted = TimetableModel.delete(id);
     if (!deleted) notFound("Timetable slot not found");
     return { message: "Timetable slot deleted" };
+  },
+
+  // "What happened in this session" — the click-through detail behind a single calendar event.
+  // classId+date (not just sessionId) are required because the same session can land on
+  // different real dates in different classes running the same course; attendance in particular
+  // is keyed by exactly that pair (see attendance.model.js). Resolved fresh from Attendance +
+  // Reports on every call, same "nothing persisted, nothing cached" posture as the rest of this
+  // engine — a session viewed again after attendance is marked or grading finishes just reflects
+  // the current state, no invalidation needed.
+  getSessionSummary({ classId, sessionId, date }) {
+    const session = SessionModel.findById(sessionId);
+    if (!session) notFound("Session not found");
+    const cls = ClassModel.findById(classId);
+    if (!cls) notFound("Class not found");
+    const course = CourseModel.findById(session.courseId);
+    const totalSessions = SessionModel.findByCourseId(session.courseId).length;
+
+    // Same teacher-resolution order as TimetablePage.jsx's resolveTeacherLabel: an explicit
+    // override on that day's slot wins, otherwise whichever educator is primary for this course
+    // in this class.
+    const dayOfWeek = weekdayOf(date);
+    const slot = TimetableModel.findAll({ classId }).find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek);
+    const courseLinks = ClassCourseTeacherLinkModel.findByClassId(classId).filter((l) => l.courseId === session.courseId);
+    const primaryLink = courseLinks.find((l) => l.isPrimary) || courseLinks[0] || null;
+    const teacherId = slot?.teacherId || primaryLink?.teacherId || null;
+    const teacher = teacherId ? TeacherModel.findById(teacherId) : null;
+
+    // Attendance is recorded per classId+date, not per course/session — a class only ever runs
+    // one session on a given date in practice, so this date's attendance IS this session's
+    // attendance (see attendance.model.js's own key).
+    const enrolledLinks = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active");
+    const learnersById = new Map(LearnerModel.findAll({ ids: enrolledLinks.map((l) => l.learnerId) }).map((l) => [l.id, l]));
+    const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+    const counts = { present: 0, absent: 0, late: 0, excused: 0 };
+    const records = attendanceRecords.map((a) => {
+      if (counts[a.status] !== undefined) counts[a.status] += 1;
+      return { learnerId: a.learnerId, learner: learnersById.get(a.learnerId) || null, status: a.status, notes: a.notes || "" };
+    });
+
+    return {
+      session: { id: session.id, title: session.title, order: session.order, totalSessions },
+      course: course ? { id: course.id, name: course.name } : null,
+      class: { id: cls.id, gradeName: cls.gradeName, streamName: cls.streamName || "" },
+      date,
+      teacher: teacher ? { id: teacher.id, name: `${teacher.firstName} ${teacher.lastName}` } : null,
+      attendance: {
+        marked: attendanceRecords.length > 0,
+        enrolledCount: enrolledLinks.length,
+        counts,
+        records,
+      },
+      grading: ReportService.getSessionSummaryForClass(classId, sessionId),
+    };
+  },
+
+  // Lightweight sibling of getSessionSummary, for the calendar's at-a-glance status badges — one
+  // call for every visible event's (classId, sessionId, date) triple instead of a full-detail
+  // fetch (with learner rosters) per card. Same underlying numbers as getSessionSummary's
+  // attendance/grading blocks, just counts instead of per-learner rows, and silently skips a
+  // triple whose session no longer exists rather than erroring out the whole batch over one
+  // stale card.
+  getSessionStatusBulk(occurrences) {
+    const result = {};
+    for (const { classId, sessionId, date } of occurrences) {
+      const session = SessionModel.findById(sessionId);
+      if (!session) continue;
+      const enrolledCount = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active").length;
+      const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+      const presentCount = attendanceRecords.filter((a) => a.status === "present").length;
+      const grading = ReportService.getSessionSummaryForClass(classId, sessionId);
+      result[`${classId}-${sessionId}-${date}`] = {
+        attendanceMarked: attendanceRecords.length > 0,
+        attendancePercent: enrolledCount > 0 ? Math.round((presentCount / enrolledCount) * 100) : null,
+        gradingRequired: grading.requiredCount > 0,
+        gradingComplete: grading.requiredCount > 0 && grading.fullyGradedCount === grading.totalLearners,
+        gradingPercent: grading.totalLearners > 0 ? Math.round((grading.fullyGradedCount / grading.totalLearners) * 100) : null,
+      };
+    }
+    return result;
   },
 };
 
