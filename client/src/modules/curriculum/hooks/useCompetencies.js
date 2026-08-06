@@ -11,7 +11,6 @@ const KEYS = {
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
   progressLevels:   (cid) => ["progress-levels", cid],
-  assessments:      (cid) => ["assessments", cid],
   assessmentTypes:  (cid) => ["assessment-types", cid],
   evidenceTypes:    (cid) => ["evidence-types", cid],
   performanceBands: (cid) => ["performance-bands", cid],
@@ -338,49 +337,6 @@ export function useProgressLevels(curriculumId) {
     queryFn:   () => competenciesApi.getProgressLevels(curriculumId),
     enabled:   !!curriculumId,
     staleTime: STALE,
-  });
-}
-
-/* ── Assessments (legacy simple list — name/type/description only) ────────
-   NOT WIRED INTO SCORING: no component calls these hooks today. This model has no
-   items/rubric/indicatorMarks, so even if a UI were built on it, entries created
-   here could never feed the competency/Progress-Arc engines. Real assessment
-   authoring (with indicator-linked items) lives in the Assessment Builder —
-   see modules/assessments/hooks/useAssessment.js — use that instead. ── */
-
-export function useCreateAssessment(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createAssessment(curriculumId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.assessments(curriculumId) });
-      toast.success("Assessment created");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create assessment"),
-  });
-}
-
-export function useUpdateAssessment(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateAssessment(curriculumId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.assessments(curriculumId) });
-      toast.success("Assessment updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update assessment"),
-  });
-}
-
-export function useDeleteAssessment(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteAssessment(curriculumId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.assessments(curriculumId) });
-      toast.success("Assessment deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete assessment"),
   });
 }
 

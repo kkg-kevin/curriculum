@@ -49,10 +49,6 @@ const {
   createProgressLevel,
   updateProgressLevel,
   deleteProgressLevel,
-  getAssessments,
-  createAssessment,
-  updateAssessment,
-  deleteAssessment,
   getAssessmentTypes,
   createAssessmentType,
   updateAssessmentType,
@@ -203,10 +199,6 @@ router.route("/:id/competencies/age-categories/:acId").put(updateAgeCategory).de
 // Progress Arc — progress levels (GET registered above — learner Dashboard needs it too)
 router.route("/:id/competencies/levels").post(createProgressLevel);
 router.route("/:id/competencies/levels/:plId").put(updateProgressLevel).delete(deleteProgressLevel);
-
-// Assessments (legacy simple list)
-router.route("/:id/competencies/assessments").get(getAssessments).post(createAssessment);
-router.route("/:id/competencies/assessments/:asId").put(updateAssessment).delete(deleteAssessment);
 
 // Assessment Framework — assessment types
 router.route("/:id/assessments/types").get(getAssessmentTypes).post(createAssessmentType);

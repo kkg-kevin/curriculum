@@ -89,6 +89,14 @@ const AssessmentIssueModel = {
     writeAll(all);
     return true;
   },
+
+  // Detaches a deleted teacher's attribution without touching the issue itself — a safe no-op for
+  // records where issuedBy is "system" or an admin's user id rather than this teacher's.
+  clearIssuedBy(teacherId) {
+    const all = readAll();
+    const next = all.map((r) => (r.issuedBy === teacherId ? { ...r, issuedBy: null } : r));
+    writeAll(next);
+  },
 };
 
 module.exports = AssessmentIssueModel;

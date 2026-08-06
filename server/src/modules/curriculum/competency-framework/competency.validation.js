@@ -109,16 +109,6 @@ const createProgressLevelSchema = z.object({
 
 const updateProgressLevelSchema = createProgressLevelSchema.partial();
 
-const ASSESSMENT_TYPES = ["formative", "summative", "diagnostic", "project"];
-
-const createAssessmentSchema = z.object({
-  name:        z.string().min(1, "Name is required").max(150),
-  type:        z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Invalid assessment type" }) }),
-  description: z.string().max(1000).optional().default(""),
-});
-
-const updateAssessmentSchema = createAssessmentSchema.partial();
-
 const BEHAVIOR_TYPES = ["diagnostic", "formative", "summative"];
 
 const createAssessmentTypeSchema = z.object({
@@ -269,8 +259,6 @@ module.exports = {
   updateAgeCategorySchema,
   createProgressLevelSchema,
   updateProgressLevelSchema,
-  createAssessmentSchema,
-  updateAssessmentSchema,
   createAssessmentTypeSchema,
   updateAssessmentTypeSchema,
   updateScoringSchema,

@@ -101,19 +101,6 @@ export const competenciesApi = {
   deleteProgressLevel: (curriculumId, plId) =>
     api.delete(`${base(curriculumId)}/levels/${plId}`).then((r) => r.data),
 
-  /* Assessments */
-  getAssessments: (curriculumId) =>
-    api.get(`${base(curriculumId)}/assessments`).then((r) => r.data.data),
-
-  createAssessment: (curriculumId, data) =>
-    api.post(`${base(curriculumId)}/assessments`, data).then((r) => r.data.data),
-
-  updateAssessment: (curriculumId, asId, data) =>
-    api.put(`${base(curriculumId)}/assessments/${asId}`, data).then((r) => r.data.data),
-
-  deleteAssessment: (curriculumId, asId) =>
-    api.delete(`${base(curriculumId)}/assessments/${asId}`).then((r) => r.data),
-
   /* Assessment Framework — Assessment Types */
   getAssessmentTypes: (curriculumId) =>
     api.get(`/api/curricula/${curriculumId}/assessments/types`).then((r) => r.data.data),

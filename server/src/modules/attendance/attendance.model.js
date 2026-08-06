@@ -58,6 +58,31 @@ const AttendanceModel = {
     writeAll([...all, ...created]);
     return created;
   },
+
+  deleteByLearnerId(learnerId) {
+    const all = readAll();
+    const remaining = all.filter((a) => a.learnerId !== learnerId);
+    writeAll(remaining);
+    return all.length - remaining.length;
+  },
+
+  deleteByClassId(classId) {
+    const all = readAll();
+    const remaining = all.filter((a) => a.classId !== classId);
+    writeAll(remaining);
+    return all.length - remaining.length;
+  },
+
+  // Detaches a deleted teacher's attribution without touching the attendance record itself —
+  // the attendance history is real data and should survive the teacher who marked it leaving.
+  clearMarkedBy(teacherId) {
+    const all = readAll();
+    const now = new Date().toISOString();
+    const next = all.map((a) =>
+      a.markedBy === teacherId ? { ...a, markedBy: null, updatedAt: now } : a
+    );
+    writeAll(next);
+  },
 };
 
 module.exports = AttendanceModel;
