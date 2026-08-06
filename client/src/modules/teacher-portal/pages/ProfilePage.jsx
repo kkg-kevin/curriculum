@@ -46,7 +46,7 @@ const iconClock = <FiClock size={14} strokeWidth={2} />;
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { teacher, teacherLoading, hubs } = useOutletContext();
+  const { teacher, teacherLoading, hubs, email } = useOutletContext();
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState("");
 
@@ -73,7 +73,9 @@ export default function ProfilePage() {
       <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
         <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 16px" }}><FiUserCheck size={28} strokeWidth={1.8} /></div>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No teacher profile linked yet</h3>
-        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your school admin to add you as a teacher using this same email address.</p>
+        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
+          Ask your school admin to add you as a teacher using this same email address{email ? <>: <strong>{email}</strong></> : "."}
+        </p>
       </div>
     );
   }

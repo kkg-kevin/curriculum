@@ -140,7 +140,7 @@ function HistoryRow({ row }) {
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { teacher, teacherLoading, selectedHubId } = useOutletContext();
+  const { teacher, teacherLoading, selectedHubId, email } = useOutletContext();
   const [tab, setTab] = useState("mark");
   const [date, setDate] = useState(todayStr());
   const [draft, setDraft] = useState({});
@@ -249,7 +249,10 @@ export default function AttendancePage() {
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: T.accent }}><SchoolOutlinedIcon fontSize="large" /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No teacher profile linked yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Ask your school admin to add you as a teacher using this same email address.</p>
+          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+            {email ? <>Your account ({email}) isn't linked to a teacher record yet. </> : null}
+            Ask your school admin to add you as a teacher using this same email address.
+          </p>
         </div>
       ) : myClasses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>

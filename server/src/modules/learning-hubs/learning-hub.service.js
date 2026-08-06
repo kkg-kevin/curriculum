@@ -2,6 +2,8 @@ const LearningHubModel = require("./learning-hub.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const TeacherModel = require("../teachers/teacher.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const ClassModel = require("../classes/class.model");
+const ClassService = require("../classes/class.service");
 
 const LearningHubService = {
   async createLearningHub(data) {
@@ -50,6 +52,13 @@ const LearningHubService = {
     }
     TeacherHubLinkModel.deleteByHubId(id);
     LearnerHubLinkModel.deleteByHubId(id);
+    // Classes are keyed by schoolId === this hub's id, with no other owner once the hub is gone —
+    // routed through ClassService.deleteClass (not ClassModel.delete) so every cascade it already
+    // handles (timetable, course schedules, attendance, class-owned assessment issues) runs too,
+    // instead of duplicating that logic here.
+    for (const cls of ClassModel.findAll({ schoolId: id })) {
+      await ClassService.deleteClass(cls.id);
+    }
     return { message: "Learning hub deleted successfully" };
   },
 };

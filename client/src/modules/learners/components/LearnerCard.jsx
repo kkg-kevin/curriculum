@@ -155,11 +155,18 @@ export function LearnerCard({ learner, classMap }) {
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
-          <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
-          <MenuButton
-            icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
-          />
+          {/* Delete is admin-only server-side (learner.routes.js) — school/branchAdmin get "Remove
+              from Hub" instead, from LearnerViewPage, so this menu shouldn't offer an action that's
+              guaranteed to 403 for them. */}
+          {user?.role === "admin" && (
+            <>
+              <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
+              <MenuButton
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
+              />
+            </>
+          )}
         </div>,
         document.body
       )}
