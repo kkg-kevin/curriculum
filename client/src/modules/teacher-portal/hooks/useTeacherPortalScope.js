@@ -43,5 +43,8 @@ export function useTeacherPortalScope() {
 
   const hasNoHubs = !teacherLoading && !hubsLoading && !!teacher && hubs.length === 0;
 
-  return { teacher, teacherLoading, hubs, hubsLoading, selectedHub, selectedHubId, setSelectedHubId, hasNoHubs };
+  // Threaded through to every page's "No teacher profile linked yet" empty state so it can name
+  // the actual signed-in email — without it, that dead end gives nobody (teacher or admin) any
+  // way to tell which email needs fixing on the Teacher record.
+  return { teacher, teacherLoading, hubs, hubsLoading, selectedHub, selectedHubId, setSelectedHubId, hasNoHubs, email: user?.email || null };
 }

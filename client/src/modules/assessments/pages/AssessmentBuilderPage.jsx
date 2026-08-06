@@ -1374,7 +1374,7 @@ export default function AssessmentBuilderPage() {
         <div className="tb-rail">
           <div>
             <p className="tb-rail-section-title">New Assessment</p>
-            {Object.keys(TYPE_LABELS).filter((t) => t !== "exam").map((t) => (
+            {Object.keys(TYPE_LABELS).map((t) => (
               <button key={t} type="button" className={`tb-rail-link${t === type && !isEdit ? " active" : ""}`} onClick={() => navigate(`/assessments/new/${t}`)}>
                 <span className="tb-rail-dot" style={{ backgroundColor: TYPE_COLORS[t] }} /> {TYPE_LABELS[t]}
               </button>

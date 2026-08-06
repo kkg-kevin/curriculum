@@ -2,6 +2,9 @@ const TeacherModel = require("./teacher.model");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const AttendanceModel = require("../attendance/attendance.model");
+const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
+const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 
 const TeacherService = {
   async createTeacher(data) {
@@ -67,6 +70,12 @@ const TeacherService = {
     }
     TeacherHubLinkModel.deleteByTeacherId(id);
     ClassCourseTeacherLinkModel.deleteByTeacherId(id);
+    // These are attribution fields, not ownership — the underlying attendance/submission/issue
+    // records are real data that outlives the teacher who marked/graded/issued them, so only the
+    // stale reference is cleared, never the record.
+    AttendanceModel.clearMarkedBy(id);
+    AssessmentSubmissionModel.clearGradedBy(id);
+    AssessmentIssueModel.clearIssuedBy(id);
     return { message: "Teacher deleted successfully" };
   },
 };

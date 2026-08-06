@@ -86,7 +86,7 @@ function NewAssessmentMenu({ onPick }) {
           ref={dropdownRef}
           style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9999, background: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px", boxShadow: "0 8px 28px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)", minWidth: "190px", padding: "6px" }}
         >
-          {Object.entries(TYPE_LABELS).filter(([t]) => t !== "exam").map(([t, label]) => (
+          {Object.entries(TYPE_LABELS).map(([t, label]) => (
             <button
               key={t} type="button" onClick={() => { setOpen(false); onPick(t); }}
               style={{ display: "flex", alignItems: "center", gap: "9px", width: "100%", padding: "9px 10px", border: "none", borderRadius: "8px", background: "transparent", fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif", color: "#374151", textAlign: "left", cursor: "pointer" }}

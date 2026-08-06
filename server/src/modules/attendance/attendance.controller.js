@@ -25,7 +25,7 @@ const markAttendance = asyncHandler(async (req, res) => {
   const { classId, date, records } = markAttendanceSchema.parse(req.body);
   const cls = ClassModel.findById(classId);
   assertClassAccess(req, cls);
-  const result = await AttendanceService.markAttendance(classId, date, records, req.user.id);
+  const result = await AttendanceService.markAttendance(classId, date, records, req.ownTeacher?.id || req.user.id);
   res.status(201).json({ success: true, data: result });
 });
 

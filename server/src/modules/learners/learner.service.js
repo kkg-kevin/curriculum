@@ -13,6 +13,7 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 const ReportModel = require("../reports/report.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
+const AttendanceModel = require("../attendance/attendance.model");
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -188,6 +189,7 @@ const LearnerService = {
     ReportModel.deleteByLearnerId(id);
     AssessmentSubmissionModel.findAll({ learnerId: id }).forEach((s) => AssessmentSubmissionModel.delete(s.id));
     AssessmentIssueModel.findAll({ learnerId: id }).forEach((i) => AssessmentIssueModel.delete(i.id));
+    AttendanceModel.deleteByLearnerId(id);
     return { message: "Learner deleted successfully" };
   },
 

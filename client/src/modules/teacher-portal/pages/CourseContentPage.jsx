@@ -118,7 +118,7 @@ function ClassCard({ cls, courses, teacherName, isOpen, onToggleOpen, showFullCa
 
 export default function CourseContentPage() {
   const navigate = useNavigate();
-  const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
+  const { teacher, teacherLoading, selectedHub, selectedHubId, email } = useOutletContext();
 
   // A curriculum's courses are assigned per grade (see Curriculum Version Control) — so a
   // teacher only ever sees the courses for the grade(s) of the class(es) they're the class
@@ -172,7 +172,10 @@ export default function CourseContentPage() {
       ) : !teacher ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No teacher profile linked yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your school admin to add you as a teacher using this same email address.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
+            {email ? <>Your account ({email}) isn't linked to a teacher record yet. </> : null}
+            Ask your school admin to add you as a teacher using this same email address.
+          </p>
         </div>
       ) : !selectedHub?.curriculumId ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>

@@ -283,7 +283,7 @@ function CourseSection({ group, isCollapsed, onToggle, issuesByKey, onIssue, iss
 
 export default function AssessmentsPage() {
   const navigate = useNavigate();
-  const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
+  const { teacher, teacherLoading, selectedHub, selectedHubId, email } = useOutletContext();
   const [collapsedCourseIds, setCollapsedCourseIds] = useState(() => new Set());
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
@@ -411,7 +411,10 @@ export default function AssessmentsPage() {
     return (
       <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No teacher profile linked yet</h3>
-        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Ask your school admin to add you as a teacher using this same email address.</p>
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+          {email ? <>Your account ({email}) isn't linked to a teacher record yet. </> : null}
+          Ask your school admin to add you as a teacher using this same email address.
+        </p>
       </div>
     );
   }

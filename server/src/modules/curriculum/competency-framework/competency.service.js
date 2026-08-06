@@ -8,7 +8,6 @@ const CompetencyModel        = require("../../settings/competencies/competency.m
 const ProgressionLadderModel = require("./progression-ladder.model");
 const AgeCategoryModel       = require("./age-category.model");
 const ProgressLevelModel     = require("./progress-level.model");
-const AssessmentModel        = require("./assessment.model");
 const AssessmentTypeModel    = require("./assessment-type.model");
 const EvidenceTypeModel      = require("./evidence-type.model");
 const PerformanceBandModel   = require("./performance-band.model");
@@ -343,36 +342,6 @@ const CompetencyService = {
       throw err;
     }
     ProgressLevelModel.delete(id);
-  },
-
-  /* ── Assessments ────────────────────────────────────────────────────── */
-
-  getAssessments(curriculumId) {
-    return AssessmentModel.findByCurriculumId(curriculumId);
-  },
-
-  createAssessment(curriculumId, data) {
-    return AssessmentModel.create({ curriculumId, ...data });
-  },
-
-  updateAssessment(curriculumId, id, data) {
-    const item = AssessmentModel.findById(id);
-    if (!item || item.curriculumId !== curriculumId) {
-      const err = new Error("Assessment not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    return AssessmentModel.update(id, data);
-  },
-
-  deleteAssessment(curriculumId, id) {
-    const item = AssessmentModel.findById(id);
-    if (!item || item.curriculumId !== curriculumId) {
-      const err = new Error("Assessment not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    AssessmentModel.delete(id);
   },
 
   /* ── Assessment Types ───────────────────────────────────────────────── */

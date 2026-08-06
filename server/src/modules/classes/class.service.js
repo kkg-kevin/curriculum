@@ -3,6 +3,8 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 const TimetableModel = require("../timetable/timetable.model");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
+const AttendanceModel = require("../attendance/attendance.model");
+const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 
 // Tag is unique across every class, system-wide (not just within one hub) — it's how a specific
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
@@ -120,6 +122,15 @@ const ClassService = {
     ClassCourseTeacherLinkModel.deleteByClassId(id);
     TimetableModel.deleteByClassId(id);
     CourseScheduleModel.deleteByClassId(id);
+    AttendanceModel.deleteByClassId(id);
+    // Only class-owned issues (no learnerId — see AssessmentIssueModel's own comment) go with the
+    // class, mirroring learner.service.js's deleteLearner doing the exact opposite: it removes
+    // learner-targeted issues and leaves class-owned ones alone. Learner-targeted submissions/issues
+    // that merely reference this classId are real graded work belonging to a learner, not the class,
+    // so they're deliberately left in place — same tolerance already relied on by revokeIssue().
+    AssessmentIssueModel.findAll({ classId: id })
+      .filter((i) => i.learnerId == null)
+      .forEach((i) => AssessmentIssueModel.delete(i.id));
     return { message: "Class deleted successfully" };
   },
 };

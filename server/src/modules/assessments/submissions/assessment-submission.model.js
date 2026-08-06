@@ -69,6 +69,22 @@ const AssessmentSubmissionModel = {
     writeAll(all);
     return true;
   },
+
+  // Detaches a deleted teacher's attribution without touching the graded submission itself —
+  // gradedBy and reportPublishedBy are independently settable (see grade()/publishReport() in
+  // assessment-submission.service.js), so each is only cleared where it actually matches.
+  clearGradedBy(teacherId) {
+    const all = readAll();
+    const next = all.map((r) => {
+      if (r.gradedBy !== teacherId && r.reportPublishedBy !== teacherId) return r;
+      return {
+        ...r,
+        gradedBy: r.gradedBy === teacherId ? null : r.gradedBy,
+        reportPublishedBy: r.reportPublishedBy === teacherId ? null : r.reportPublishedBy,
+      };
+    });
+    writeAll(next);
+  },
 };
 
 module.exports = AssessmentSubmissionModel;
