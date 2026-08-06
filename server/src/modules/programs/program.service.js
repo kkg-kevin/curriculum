@@ -1,6 +1,7 @@
 const ProgramModel = require("./program.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const ClassModel = require("../classes/class.model");
+const ClassService = require("../classes/class.service");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 
@@ -46,7 +47,10 @@ const ProgramService = {
     // Course-educator assignment and capacity are per-class decisions, made afterward from the
     // Classes module — a deployment can create several classes at once (one per cohort), so
     // there's no single sensible value to apply to all of them here.
-    const classes = curriculumClasses.map((cls) => ClassModel.create({
+    // Routed through ClassService (same path as "Set Up Year") so the tag/stream uniqueness
+    // checks run here too — creating straight off ClassModel skipped them, letting deployment
+    // create classes the Classes screen itself would have rejected as duplicates.
+    const classes = await ClassService.bulkCreateClasses(curriculumClasses.map((cls) => ({
       schoolId: hub.id,
       curriculumId: curriculum.id,
       gradeId: cls.id,
@@ -54,7 +58,7 @@ const ProgramService = {
       academicYear: String(new Date(data.startDate).getFullYear()),
       capacity: null,
       status: "active",
-    }));
+    })));
 
     const program = ProgramModel.create({
       curriculumId: curriculum.id,

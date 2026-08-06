@@ -104,9 +104,18 @@ export function areNonAssessmentSectionsComplete(email, courseId, sessionId) {
   return NON_ASSESSMENT_SECTIONS.every((s) => !!sessionProgress[s.key]);
 }
 
+// Filtered against the current SECTIONS keys (same posture as getSessionCompletion /
+// isModuleSessionsComplete below) rather than trusting whatever's stored — a section key that's
+// since been renamed/removed in sectionConfig.js would otherwise still count here even though
+// it no longer corresponds to anything the learner sees, silently inflating this course's
+// completion percent above what getSessionCompletion would report for the same sessions.
 export function countCompletedSections(email, courseId) {
   const courseProgress = getCourseSectionProgress(email, courseId);
-  return Object.values(courseProgress).reduce((sum, sessionMap) => sum + Object.keys(sessionMap).length, 0);
+  const validKeys = new Set(SECTIONS.map((s) => s.key));
+  return Object.values(courseProgress).reduce(
+    (sum, sessionMap) => sum + Object.keys(sessionMap).filter((k) => validKeys.has(k)).length,
+    0
+  );
 }
 
 export function getCourseCompletionPercent(email, courseId, sessionCount) {

@@ -1,5 +1,6 @@
 const CurriculumModel          = require("./curriculum.model");
 const UserModel = require("../auth/user.model");
+const ClassModel = require("../classes/class.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
@@ -144,13 +145,33 @@ const CurriculumService = {
   },
 
   async updateCurriculum(id, data) {
+    const existing = CurriculumModel.findById(id);
     const curriculum = CurriculumModel.update(id, data);
     if (!curriculum) {
       const err = new Error("Curriculum not found");
       err.statusCode = 404;
       throw err;
     }
+    if (existing && Array.isArray(data.classes)) {
+      this.syncClassGradeNames(id, existing.classes || [], data.classes);
+    }
     return curriculum;
+  },
+
+  // A cohort's `name` here is copied onto Class.gradeName once, at the moment a Class is
+  // created from it (Program deployment / Set Up Year) — never re-read after that. Renaming a
+  // cohort on the curriculum would otherwise leave every already-created Class showing the old
+  // name forever, with nothing to signal the drift. Push the rename onto them here instead.
+  syncClassGradeNames(curriculumId, oldClasses, newClasses) {
+    const oldNameById = new Map(oldClasses.map((c) => [c.id, c.name]));
+    const allClasses = ClassModel.findAll();
+    newClasses.forEach((cls) => {
+      const oldName = oldNameById.get(cls.id);
+      if (oldName === undefined || oldName === cls.name) return;
+      allClasses
+        .filter((c) => c.curriculumId === curriculumId && c.gradeId === cls.id)
+        .forEach((c) => ClassModel.update(c.id, { gradeName: cls.name }));
+    });
   },
 
   // Bypasses updateCurriculumSchema entirely — curriculumAdminId is deliberately never part of

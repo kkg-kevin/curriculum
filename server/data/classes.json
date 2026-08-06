@@ -986,5 +986,19 @@
     "id": "fddc3448-cea0-40cd-b74a-2b39de057246",
     "createdAt": "2026-08-05T07:58:36.998Z",
     "updatedAt": "2026-08-05T07:58:36.998Z"
+  },
+  {
+    "schoolId": "8e79fd94-7475-4619-add1-19b26633a798",
+    "curriculumId": "5f785da0-f7e4-447d-ac13-e693450a4c51",
+    "gradeId": "a35b6f98-0262-48c6-83af-bd688acc6f10",
+    "gradeName": "Bootcamp 101",
+    "academicYear": "2026",
+    "capacity": 20,
+    "status": "active",
+    "tag": "Blue 101",
+    "streamName": "Blue",
+    "id": "21b92da1-58f0-4085-8ed1-7382666c0bc7",
+    "createdAt": "2026-08-06T06:10:03.980Z",
+    "updatedAt": "2026-08-06T06:10:03.980Z"
   }
 ]
