@@ -5,6 +5,7 @@ const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema, assign
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const SchoolModel = require("../learning-hubs/learning-hub.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
+const ProgramModel = require("../programs/program.model");
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);
@@ -32,15 +33,21 @@ const getMyCurriculum = asyncHandler(async (req, res) => {
 
 const getCurriculumById = asyncHandler(async (req, res) => {
   const curriculum = await CurriculumService.getCurriculumById(req.params.id);
-  // A school/teacher only ever reads the curriculum their own school is assigned, and a
-  // curriculumAdmin only ever reads the one curriculum they're assigned to manage — never
-  // another curriculum, even by guessing an id.
+  // A school/teacher reads either their own hub's primary curriculum, OR one deployed onto
+  // that same hub via a Program — a hub isn't limited to a single curriculum once a Program's
+  // in play, so checking only the hub's own curriculumId field (as this used to) 403'd a
+  // school/teacher on their own hub's real, deployed Program curriculum. A curriculumAdmin
+  // only ever reads the one curriculum they're assigned to manage — never another curriculum,
+  // even by guessing an id.
   if (req.user.role === "school") {
-    assertOwn(req.ownSchool?.curriculumId === curriculum.id);
+    const isOwnPrimary = req.ownSchool?.curriculumId === curriculum.id;
+    const isDeployedProgram = ProgramModel.findAll({ curriculumId: curriculum.id }).some((p) => p.hubId === req.ownSchool?.id);
+    assertOwn(isOwnPrimary || isDeployedProgram);
   } else if (req.user.role === "teacher") {
     const hubIds = req.ownTeacher ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).map((l) => l.hubId) : [];
-    const hasThisCurriculum = hubIds.some((hid) => SchoolModel.findById(hid)?.curriculumId === curriculum.id);
-    assertOwn(hasThisCurriculum);
+    const isOwnPrimary = hubIds.some((hid) => SchoolModel.findById(hid)?.curriculumId === curriculum.id);
+    const isDeployedProgram = ProgramModel.findAll({ curriculumId: curriculum.id }).some((p) => hubIds.includes(p.hubId));
+    assertOwn(isOwnPrimary || isDeployedProgram);
   } else if (req.user.role === "curriculumAdmin") {
     assertOwn(req.ownCurriculum?.id === curriculum.id);
   }
