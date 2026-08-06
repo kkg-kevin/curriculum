@@ -3,7 +3,7 @@ const {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
-  getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar,
+  getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
 } = require("./timetable.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -21,6 +21,7 @@ router.put("/course-schedule", authorize("admin", "school", "branchAdmin"), setC
 // Resolved calendar (real dates, Sessions placed onto them) — read-only, same role split as
 // their slot-list equivalents below.
 router.get("/calendar", authorize("admin", "school", "branchAdmin", "teacher"), getClassCalendar);
+router.get("/hub/calendar", authorize("admin", "school", "branchAdmin"), getHubCalendar);
 router.get("/teacher/mine/calendar", authorize("teacher"), getMyTeacherCalendar);
 router.get("/learner/mine/calendar", authorize("learner"), getMyLearnerCalendar);
 

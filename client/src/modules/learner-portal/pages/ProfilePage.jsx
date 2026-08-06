@@ -5,7 +5,8 @@ import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculu
 import { useCompetencies, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 
-import { T, cardStyle } from "../components/profile/theme";
+import { FiClipboard } from "react-icons/fi";
+import { T, cardStyle, EmptyState } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
 import GuardianProfileCard from "../components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
@@ -29,8 +30,8 @@ import ReportsOverview from "../components/ReportsOverview";
 // assigned to this learner yet, so show an explicit empty state instead of leaking other hubs' data.
 function NoClassNotice() {
   return (
-    <div style={{ ...cardStyle(), padding: "32px 24px", textAlign: "center" }}>
-      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</p>
+    <div style={{ ...cardStyle(), padding: "12px 24px" }}>
+      <EmptyState icon={FiClipboard}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</EmptyState>
     </div>
   );
 }
@@ -102,15 +103,17 @@ export default function ProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 900, color: T.ink, letterSpacing: "-0.3px" }}>Learner Profile</h1>
-        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>A lifelong record of learning. Portable. Verifiable. Future Ready.</p>
-      </div>
+      <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setEditing("learner")} />
 
+      {/* Guardian + Portfolio stack into their own column (matching SideRail's own two stacked
+          cards) rather than sitting as three same-row siblings of mismatched height — Guardian
+          Profile and Portfolio Snapshot are both short, so left as flex siblings next to
+          SideRail's taller stacked pair they just left dead space below them. */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
-        <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setEditing("learner")} />
-        <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
-        <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
+          <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
+          <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
+        </div>
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
 

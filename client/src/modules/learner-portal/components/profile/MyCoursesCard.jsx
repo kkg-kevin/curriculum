@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { T, cardStyle, sectionHeaderStyle } from "./theme";
+import { FiBookOpen } from "react-icons/fi";
+import { T, cardStyle, sectionHeaderStyle, EmptyState } from "./theme";
 import { getCourseCompletionPercent } from "../../utils/progressStorage";
 
 const SUB_TABS = ["active", "upcoming", "completed"];
@@ -57,7 +58,7 @@ export default function MyCoursesCard({ courses, email, isLoading }) {
       {isLoading ? (
         <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>Loading…</p>
       ) : visible.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>Nothing here yet.</p>
+        <EmptyState icon={FiBookOpen}>Nothing here yet.</EmptyState>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {visible.slice(0, 3).map((c) => (

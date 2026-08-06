@@ -1,7 +1,8 @@
-import { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import ImageUploadField from "../../../components/ImageUploadField";
 import MultiSelectChips from "../../../components/MultiSelectChips";
+import PortalPasswordField from "../../../components/PortalPasswordField";
+import CollapsibleFormSection from "../../../components/CollapsibleFormSection";
 import { NATIONALITIES, LANGUAGES } from "../schemas/learner.schema";
 
 // Mirrors client/src/modules/learner-portal/components/profile/ProfileIdentityCard.jsx's
@@ -17,81 +18,61 @@ function computeAge(dateOfBirth) {
   return age;
 }
 
-const S = {
-  form:    { display: "flex", flexDirection: "column", gap: 24 },
-  section: { display: "flex", flexDirection: "column", gap: 16 },
-  heading: { fontSize: 13, fontWeight: 600, color: "#25476a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
-  divider: { border: "none", borderTop: "1px solid #a8d5ee", margin: "0 0 8px" },
-  row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
-  field:   { display: "flex", flexDirection: "column", gap: 6 },
-  label:   { fontSize: 13, fontWeight: 500, color: "#374151" },
-  input:   { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
-  select:  { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", cursor: "pointer" },
-  error:   { fontSize: 12, color: "#DC2626" },
-  hint:    { fontSize: 12, color: "#6B7280" },
-};
+// Same visual language as TeacherForm.jsx (bordered card sections, same input/select styling) —
+// kept as local copies rather than a further-shared file since these two forms' field sets don't
+// overlap beyond that; PortalPasswordField/CollapsibleFormSection are the pieces that actually
+// need to behave identically across both, so those are the ones that got extracted.
+const inputStyle = (hasError) => ({
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: `1.5px solid ${hasError ? "#FCA5A5" : "#E5E7EB"}`,
+  fontSize: "14px",
+  fontFamily: "Inter, sans-serif",
+  backgroundColor: hasError ? "#FFF5F5" : "#F9FAFB",
+  color: "#374151",
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+  transition: "border-color 0.15s, background-color 0.15s",
+});
 
-// Sets up (or resets) the guardian's learner-portal login for guardianEmail, right from this
-// form — a shortcut instead of a separate signup. Left blank, nothing about any existing
-// login changes.
-function GuardianPasswordField() {
-  const { register, formState: { errors } } = useFormContext();
-  const [show, setShow] = useState(false);
-  const error = errors?.password?.message;
+const selectStyle = (hasError) => ({
+  ...inputStyle(hasError),
+  appearance: "none",
+  cursor: "pointer",
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  paddingRight: "32px",
+});
 
+function Field({ label, required, error, hint, children }) {
   return (
-    <div style={S.field}>
-      <label style={S.label}>Guardian Portal Password</label>
-      <div style={{ position: "relative" }}>
-        <input
-          type={show ? "text" : "password"}
-          placeholder="At least 8 characters"
-          autoComplete="new-password"
-          {...register("password")}
-          style={{ ...S.input, width: "100%", boxSizing: "border-box", paddingRight: 52 }}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", padding: 4 }}
-        >
-          {show ? "Hide" : "Show"}
-        </button>
-      </div>
-      {error ? <span style={S.error}>{error}</span> : <span style={S.hint}>Optional — sets up or resets this learner's guardian portal login. Leave blank to make no change.</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151", display: "flex", alignItems: "center", gap: "3px" }}>
+        {label}{required && <span style={{ color: "#EF4444" }}>*</span>}
+      </label>
+      {children}
+      {hint && !error && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{hint}</p>}
+      {error && <p style={{ margin: 0, fontSize: "12px", color: "#EF4444" }}>{error}</p>}
     </div>
   );
 }
 
-// Sets up (or resets) the LEARNER's OWN separate portal login, keyed by their username instead
-// of the guardian's email — a genuinely different credential from GuardianPasswordField above,
-// not another way into the same account. Requires a username to be set.
-function LearnerPasswordField() {
+function TextInput({ name, placeholder, type = "text", label, required, hint }) {
   const { register, formState: { errors } } = useFormContext();
-  const [show, setShow] = useState(false);
-  const error = errors?.learnerPassword?.message;
-
+  const error = errors?.[name]?.message;
   return (
-    <div style={S.field}>
-      <label style={S.label}>Learner Portal Password</label>
-      <div style={{ position: "relative" }}>
-        <input
-          type={show ? "text" : "password"}
-          placeholder="At least 8 characters"
-          autoComplete="new-password"
-          {...register("learnerPassword")}
-          style={{ ...S.input, width: "100%", boxSizing: "border-box", paddingRight: 52 }}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", padding: 4 }}
-        >
-          {show ? "Hide" : "Show"}
-        </button>
-      </div>
-      {error ? <span style={S.error}>{error}</span> : <span style={S.hint}>Optional — sets up or resets the learner's OWN separate login (not the guardian's). Requires a username. Leave blank to make no change.</span>}
-    </div>
+    <Field label={label} required={required} error={error} hint={hint}>
+      <input
+        type={type}
+        placeholder={placeholder}
+        {...register(name)}
+        style={inputStyle(!!error)}
+        onFocus={(e)  => { e.target.style.borderColor = "#b8d9ee"; e.target.style.backgroundColor = "#fff"; }}
+        onBlur={(e)   => { e.target.style.borderColor = error ? "#FCA5A5" : "#E5E7EB"; e.target.style.backgroundColor = error ? "#FFF5F5" : "#F9FAFB"; }}
+      />
+    </Field>
   );
 }
 
@@ -103,114 +84,110 @@ export default function LearnerForm() {
   const age = computeAge(watch("dateOfBirth"));
 
   return (
-    <div style={S.form}>
-      <div style={S.section}>
-        <p style={S.heading}>Personal Information</p>
-        <hr style={S.divider} />
-        <div style={S.field}>
-          <label style={S.label}>Photo</label>
-          <Controller
-            name="photo"
-            control={control}
-            render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="140px" height="140px" />}
-          />
-        </div>
-        <div style={S.row}>
-          <div style={S.field}>
-            <label style={S.label}>First Name <span style={{ color: "#DC2626" }}>*</span></label>
-            <input {...register("firstName")} placeholder="e.g. Jane" style={S.input} />
-            {errors.firstName && <span style={S.error}>{errors.firstName.message}</span>}
-          </div>
-          <div style={S.field}>
-            <label style={S.label}>Last Name <span style={{ color: "#DC2626" }}>*</span></label>
-            <input {...register("lastName")} placeholder="e.g. Mwangi" style={S.input} />
-            {errors.lastName && <span style={S.error}>{errors.lastName.message}</span>}
-          </div>
-        </div>
-        <div style={S.row}>
-          <div style={{ ...S.field, maxWidth: 220 }}>
-            <label style={S.label}>Gender <span style={{ color: "#DC2626" }}>*</span></label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0", backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
+
+      {/* Personal info */}
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Personal Information</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <Field label="Photo">
             <Controller
-              name="gender"
+              name="photo"
+              control={control}
+              render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="140px" height="140px" />}
+            />
+          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <TextInput name="firstName" label="First Name" placeholder="e.g. Jane" required />
+            <TextInput name="lastName"  label="Last Name"  placeholder="e.g. Mwangi" required />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "12px" }}>
+            <Field label="Gender" required error={errors?.gender?.message}>
+              <Controller
+                name="gender"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} style={selectStyle(!!errors?.gender)}>
+                    <option value="">— Select gender —</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                )}
+              />
+            </Field>
+            <Field
+              label="Date of Birth"
+              error={errors?.dateOfBirth?.message}
+              hint={age !== null ? `Age: ${age} year${age !== 1 ? "s" : ""}` : undefined}
+            >
+              <input type="date" {...register("dateOfBirth")} style={inputStyle(!!errors?.dateOfBirth)} />
+            </Field>
+          </div>
+          <Field label="Nationality" error={errors?.nationality?.message}>
+            <select {...register("nationality")} style={selectStyle(!!errors?.nationality)}>
+              <option value="">— Select nationality —</option>
+              {NATIONALITIES.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </Field>
+          <Field label="Languages" error={errors?.languages?.message}>
+            <Controller
+              name="languages"
               control={control}
               render={({ field }) => (
-                <select {...field} style={S.select}>
-                  <option value="">— Select gender —</option>
-                  <option value="female">Female</option>
-                  <option value="male">Male</option>
-                  <option value="other">Other</option>
-                </select>
+                <MultiSelectChips
+                  options={LANGUAGES}
+                  value={field.value ? field.value.split(",").map((v) => v.trim()).filter(Boolean) : []}
+                  onChange={(next) => field.onChange(next.join(", "))}
+                />
               )}
             />
-            {errors.gender && <span style={S.error}>{errors.gender.message}</span>}
-          </div>
-          <div style={S.field}>
-            <label style={S.label}>Date of Birth</label>
-            <input {...register("dateOfBirth")} type="date" style={S.input} />
-            {errors.dateOfBirth
-              ? <span style={S.error}>{errors.dateOfBirth.message}</span>
-              : age !== null && <span style={S.hint}>Age: {age} year{age !== 1 ? "s" : ""}</span>}
-          </div>
+          </Field>
         </div>
-        <div style={S.field}>
-          <label style={S.label}>Nationality</label>
-          <select {...register("nationality")} style={S.select}>
-            <option value="">— Select nationality —</option>
-            {NATIONALITIES.map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-          {errors.nationality && <span style={S.error}>{errors.nationality.message}</span>}
+      </div>
+
+      {/* Guardian */}
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Guardian</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <TextInput name="guardianName" label="Guardian Name" placeholder="e.g. John Mwangi" required />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <TextInput name="guardianPhone" label="Guardian Phone" placeholder="+254 7XX XXX XXX" required />
+            <TextInput name="guardianEmail" label="Guardian Email" placeholder="guardian@email.com" type="email" />
+          </div>
+          <CollapsibleFormSection label="Set up guardian portal login">
+            <PortalPasswordField
+              name="password"
+              label="Guardian Portal Password"
+              hint="Optional — sets up or resets this learner's guardian portal login. Leave blank to make no change."
+            />
+          </CollapsibleFormSection>
         </div>
-        <div style={S.field}>
-          <label style={S.label}>Languages</label>
-          <Controller
-            name="languages"
-            control={control}
-            render={({ field }) => (
-              <MultiSelectChips
-                options={LANGUAGES}
-                value={field.value ? field.value.split(",").map((v) => v.trim()).filter(Boolean) : []}
-                onChange={(next) => field.onChange(next.join(", "))}
-              />
-            )}
+      </div>
+
+      {/* Learner's own login — a genuinely separate credential from the guardian's above, most
+          learners don't need one set up right away, so it stays collapsed by default. */}
+      <div style={{ padding: "20px 24px" }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Learner Portal Login</h3>
+        <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>
+          A separate login the learner can use themselves, distinct from the guardian's above.
+        </p>
+        {/* Auto-opens once a username loads on the edit form (see CollapsibleFormSection's own
+            comment) so an already-configured learner login is never hidden by default — only
+            stays collapsed for a genuinely new learner who has none yet. */}
+        <CollapsibleFormSection label="Set up a separate learner login" defaultOpen={!!watch("username")}>
+          <TextInput
+            name="username"
+            label="Student Username"
+            placeholder="e.g. grace.wambui"
+            hint="Without a password below, this username still logs into the guardian's account above; with one, it's the learner's own separate login."
           />
-          {errors.languages && <span style={S.error}>{errors.languages.message}</span>}
-        </div>
-      </div>
-
-      <div style={S.section}>
-        <p style={S.heading}>Guardian</p>
-        <hr style={S.divider} />
-        <div style={S.field}>
-          <label style={S.label}>Guardian Name <span style={{ color: "#DC2626" }}>*</span></label>
-          <input {...register("guardianName")} placeholder="e.g. John Mwangi" style={S.input} />
-          {errors.guardianName && <span style={S.error}>{errors.guardianName.message}</span>}
-        </div>
-        <div style={S.row}>
-          <div style={S.field}>
-            <label style={S.label}>Guardian Phone <span style={{ color: "#DC2626" }}>*</span></label>
-            <input {...register("guardianPhone")} placeholder="+254 7XX XXX XXX" style={S.input} />
-            {errors.guardianPhone && <span style={S.error}>{errors.guardianPhone.message}</span>}
-          </div>
-          <div style={S.field}>
-            <label style={S.label}>Guardian Email</label>
-            <input {...register("guardianEmail")} type="email" placeholder="guardian@email.com" style={S.input} />
-            {errors.guardianEmail && <span style={S.error}>{errors.guardianEmail.message}</span>}
-          </div>
-        </div>
-        <GuardianPasswordField />
-      </div>
-
-      <div style={S.section}>
-        <p style={S.heading}>Learner Portal Login</p>
-        <hr style={S.divider} />
-        <div style={S.field}>
-          <label style={S.label}>Student Username</label>
-          <input {...register("username")} placeholder="e.g. grace.wambui" style={S.input} />
-          {errors.username
-            ? <span style={S.error}>{errors.username.message}</span>
-            : <span style={S.hint}>Optional — lets the learner log in with a username. Without their own password below, it logs into the guardian's account above; with one, it's their own separate login.</span>}
-        </div>
-        <LearnerPasswordField />
+          <PortalPasswordField
+            name="learnerPassword"
+            label="Learner Portal Password"
+            hint="Optional — sets up or resets the learner's OWN separate login (not the guardian's). Requires a username. Leave blank to make no change."
+          />
+        </CollapsibleFormSection>
       </div>
     </div>
   );

@@ -21,11 +21,11 @@
   {
     "name": "School",
     "email": "school@digifunzi.com",
-    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
+    "passwordHash": "$2b$10$FZTEv6.rpffQV5Hae6YWuejOm4Pmq4QuHK21WQmuxWtseUkcUTGoa",
     "role": "school",
     "id": "4a3bcb82-123c-4102-a2b9-a730b5124d11",
     "createdAt": "2026-07-09T08:19:34.545Z",
-    "updatedAt": "2026-07-09T08:19:34.546Z"
+    "updatedAt": "2026-08-06T12:12:46.047Z"
   },
   {
     "name": "Learner ",

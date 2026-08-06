@@ -248,6 +248,15 @@ const TimetableService = {
     return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
   },
 
+  // Same merge pattern as resolveTeacherCalendar/resolveLearnerCalendar above, scoped to every
+  // class at one Learning Hub instead of one person's linked classes — the school-portal's
+  // "All Classes" view.
+  resolveHubCalendar(hubId, from, to) {
+    const classIds = ClassModel.findAll({ schoolId: hubId }).map((c) => c.id);
+    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
+  },
+
   // Every slot belonging to a (classId, courseId) pair this teacher is actually linked to (see
   // class-course-teacher-link.model.js) — a slot with no teacherId override is implied to be
   // taught by whichever educator(s) are linked to that course in that class, not just the

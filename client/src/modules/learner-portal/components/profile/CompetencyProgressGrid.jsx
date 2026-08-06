@@ -1,4 +1,5 @@
-import { T, cardStyle, sectionHeaderStyle } from "./theme";
+import { FiAward } from "react-icons/fi";
+import { T, cardStyle, sectionHeaderStyle, EmptyState } from "./theme";
 import { iconFor } from "./competencyIcons";
 import { useLearnerCompetencyScores } from "../../../curriculum/hooks/useCompetencies";
 
@@ -29,9 +30,7 @@ export default function CompetencyProgressGrid({ competencies, isLoading, learne
       {isLoading ? (
         <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>Loading…</p>
       ) : items.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>
-          No competencies adopted on this learner's curriculum yet.
-        </p>
+        <EmptyState icon={FiAward}>No competencies adopted on this learner's curriculum yet.</EmptyState>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
           {items.map((c) => {

@@ -8,6 +8,7 @@ const TIMETABLE_KEYS = {
   mineLearner: () => ["timetable", "mine", "learner"],
   courseSchedules: (classId) => ["timetable", "course-schedule", classId],
   calendar: (classId, from, to) => ["timetable", "calendar", "class", classId, from, to],
+  calendarHub: (hubId, from, to) => ["timetable", "calendar", "hub", hubId, from, to],
   calendarMineTeacher: (from, to) => ["timetable", "calendar", "mine", "teacher", from, to],
   calendarMineLearner: (from, to) => ["timetable", "calendar", "mine", "learner", from, to],
   sessionSummary: (sessionId, classId, date) => ["timetable", "session-summary", sessionId, classId, date],
@@ -141,6 +142,17 @@ export function useClassCalendar(classId, from, to) {
     queryKey: TIMETABLE_KEYS.calendar(classId, from, to),
     queryFn:  () => timetableApi.getClassCalendar(classId, from, to),
     enabled:  !!classId && !!from && !!to,
+  });
+}
+
+// Every class at one Learning Hub, merged onto a single calendar — the school-portal's
+// "All Classes" view (same shape as useMyTeacherCalendar/useMyLearnerCalendar below, scoped by
+// hub instead of by person).
+export function useHubCalendar(hubId, from, to) {
+  return useQuery({
+    queryKey: TIMETABLE_KEYS.calendarHub(hubId, from, to),
+    queryFn:  () => timetableApi.getHubCalendar(hubId, from, to),
+    enabled:  !!hubId && !!from && !!to,
   });
 }
 

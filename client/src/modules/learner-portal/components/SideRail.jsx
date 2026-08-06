@@ -1,11 +1,14 @@
-import { FiHome, FiMapPin, FiUser, FiMessageCircle } from "react-icons/fi";
-import { T, cardStyle, sectionHeaderStyle } from "./profile/theme";
+import { FiHome, FiMapPin, FiUser, FiUsers, FiMessageCircle } from "react-icons/fi";
+import { T, tintCardStyle, sectionHeaderStyle, EmptyState } from "./profile/theme";
 
 const HUB_ICONS = [FiHome, FiMapPin, FiHome, FiMapPin];
 
+// Tinted rather than plain white — this rail is supporting/reference info (which hubs, who's
+// teaching), not this learner's own profile data, so it deliberately sits a half-step quieter
+// than the Guardian Profile / Portfolio Snapshot cards next to it.
 function RailSection({ title, action, children }) {
   return (
-    <div style={{ ...cardStyle(), padding: 18 }}>
+    <div style={{ ...tintCardStyle(), padding: 18 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <h2 style={sectionHeaderStyle()}>{title}</h2>
         {action}
@@ -26,14 +29,14 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
         {hubsLoading ? (
           <EmptyNote>Loading…</EmptyNote>
         ) : hubs.length === 0 ? (
-          <EmptyNote>Not yet enrolled at any learning hub.</EmptyNote>
+          <EmptyState icon={FiHome}>Not yet enrolled at any learning hub.</EmptyState>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {hubs.map((hub, i) => {
               const Icon = HUB_ICONS[i % HUB_ICONS.length];
               return (
                 <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: T.accent }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#fff", border: `1px solid ${T.tintBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: T.accent }}>
                     <Icon size={16} />
                   </div>
                   <div style={{ minWidth: 0 }}>
@@ -51,7 +54,7 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
         {mentorsLoading ? (
           <EmptyNote>Loading…</EmptyNote>
         ) : mentors.length === 0 ? (
-          <EmptyNote>No teacher assigned to your class yet.</EmptyNote>
+          <EmptyState icon={FiUsers}>No teacher assigned to your class yet.</EmptyState>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mentors.map((m) => (
@@ -63,7 +66,7 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
                   <p style={{ margin: "0 0 1px", fontSize: 13, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {m.teacher.firstName} {m.teacher.lastName}
                   </p>
-                  <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: T.tintBg, color: T.accent, border: `1px solid ${T.tintBorder}` }}>
+                  <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: "#fff", color: T.accent, border: `1px solid ${T.tintBorder}` }}>
                     {m.hubName}
                   </span>
                 </div>
