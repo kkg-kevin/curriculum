@@ -4,13 +4,13 @@ import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useCurriculumCurrentCourses, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAcademicYears } from "../../curriculum/hooks/useAcademicYear";
 import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
-  useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar,
+  useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar, useHubCalendar,
 } from "../../timetable/hooks/useTimetable";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
@@ -248,6 +248,10 @@ export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState("");
   const [addingDay, setAddingDay] = useState(null);
   const [editingSlotId, setEditingSlotId] = useState(null);
+  // "class" = the existing single-class editor + calendar below; "all" = a merged, read-only
+  // calendar across every class at this hub (slot/start-date editing stays class-scoped, since
+  // both inherently apply to one class at a time).
+  const [viewMode, setViewMode] = useState("class");
 
   const { data: schoolsData, isLoading: schoolLoading } = useQuery({
     queryKey: ["schools", "byEmail", user?.email],
@@ -334,9 +338,36 @@ export default function TimetablePage() {
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
-  const { data: calendarData, isLoading: calendarLoading } = useClassCalendar(selectedClassId, calendarRange?.from, calendarRange?.to);
+  const { data: classCalendarData, isLoading: classCalendarLoading } = useClassCalendar(
+    viewMode === "class" ? selectedClassId : undefined, calendarRange?.from, calendarRange?.to
+  );
+  const { data: hubCalendarData, isLoading: hubCalendarLoading } = useHubCalendar(
+    viewMode === "all" ? school?.id : undefined, calendarRange?.from, calendarRange?.to
+  );
+  const calendarData = viewMode === "all" ? hubCalendarData : classCalendarData;
+  const calendarLoading = viewMode === "all" ? hubCalendarLoading : classCalendarLoading;
   const calendarEvents = calendarData?.data || [];
   const calendarBreaks = calendarData?.breaks || [];
+  // Only needed in "All Classes" mode, to label each merged event/break with which class it
+  // belongs to — resolveTeacherLabel doubles as the class label here too (same trade-off
+  // teacher-portal's own merged calendar already makes: showing which class beats showing
+  // nothing, and a per-class course-teacher-link lookup across every class at once isn't
+  // available without fetching each class's links individually).
+  const classNameById = new Map(classes.map((c) => [c.id, `${c.gradeName}${c.streamName ? ` — ${c.streamName}` : ""}`]));
+
+  // Course names across every grade at the hub, for "All Classes" mode — mirrors teacher-portal's
+  // own merged calendar (useCurriculumCoursesByGrade). Program-deployed classes on a different
+  // curriculum than the hub's own aren't covered by this lookup; they just fall back to "Course"
+  // below, same tolerance every other unresolved-name spot in this file already has.
+  const allGradeIds = [...new Set(classes.map((c) => c.gradeId))];
+  const { data: hubCoursesByGrade } = useCurriculumCoursesByGrade(viewMode === "all" ? school?.curriculumId : undefined, allGradeIds);
+  const resolveHubCourseName = (courseId) => {
+    for (const gradeId of allGradeIds) {
+      const found = hubCoursesByGrade?.get(gradeId)?.find((c) => c.id === courseId);
+      if (found) return found.name;
+    }
+    return "Course";
+  };
 
   const courseNameById = new Map(courses.map((c) => [c.id, c.name]));
   const slotsByDay = DAYS_OF_WEEK.map((day) => ({
@@ -405,12 +436,29 @@ export default function TimetablePage() {
       ) : (
         <>
           <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-            <label style={{ fontSize: 12.5, fontWeight: 700, color: T.inkMuted }}>Class</label>
-            <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setAddingDay(null); setEditingSlotId(null); }} style={{ ...selectStyle, minWidth: 220 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 700, color: T.inkMuted }}>Viewing</label>
+            <select
+              value={viewMode === "all" ? "__all__" : selectedClassId}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "__all__") {
+                  setViewMode("all");
+                } else {
+                  setViewMode("class");
+                  setSelectedClassId(val);
+                }
+                setAddingDay(null);
+                setEditingSlotId(null);
+              }}
+              style={{ ...selectStyle, minWidth: 220 }}
+            >
+              <option value="__all__">All Classes</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName}{c.streamName ? ` — ${c.streamName}` : ""}</option>)}
             </select>
           </div>
 
+          {viewMode === "class" && (
+          <>
           <div
             style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, cursor: "pointer" }}
             onClick={() => setSlotsExpanded((v) => !v)}
@@ -513,16 +561,32 @@ export default function TimetablePage() {
               </div>
             </div>
           )}
+          </>
+          )}
 
-          {!slotsLoading && (
+          {viewMode === "class" ? (
+            !slotsLoading && (
+              <CalendarView
+                events={calendarEvents}
+                breaks={calendarBreaks}
+                isLoading={calendarLoading}
+                resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
+                resolveTeacherLabel={(event) => resolveTeacherLabel(event, courseLinks)}
+                onRangeChange={onRangeChange}
+                emptyMessage={courseIdsWithSlots.length === 0 ? "Add weekday slots above to start building this class's calendar." : "No sessions land in this range yet — set a course start date above."}
+                enableSessionDetail
+              />
+            )
+          ) : (
             <CalendarView
               events={calendarEvents}
               breaks={calendarBreaks}
               isLoading={calendarLoading}
-              resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
-              resolveTeacherLabel={(event) => resolveTeacherLabel(event, courseLinks)}
+              resolveCourseName={resolveHubCourseName}
+              resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
+              resolveClassLabel={(classId) => classNameById.get(classId)}
               onRangeChange={onRangeChange}
-              emptyMessage={courseIdsWithSlots.length === 0 ? "Add weekday slots above to start building this class's calendar." : "No sessions land in this range yet — set a course start date above."}
+              emptyMessage="No sessions land in this range across any class yet."
               enableSessionDetail
             />
           )}

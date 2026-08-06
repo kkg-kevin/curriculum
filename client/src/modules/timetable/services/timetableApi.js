@@ -16,6 +16,7 @@ export const timetableApi = {
   // Full response body ({data: events, breaks, count}), not just r.data.data — callers need the
   // sibling `breaks` array (curriculum break windows overlapping the range) alongside events.
   getClassCalendar:      (classId, from, to) => api.get(`${BASE}/calendar`, { params: { classId, from, to } }).then((r) => r.data),
+  getHubCalendar:        (hubId, from, to)   => api.get(`${BASE}/hub/calendar`, { params: { hubId, from, to } }).then((r) => r.data),
   getMyTeacherCalendar:  (from, to)          => api.get(`${BASE}/teacher/mine/calendar`, { params: { from, to } }).then((r) => r.data),
   getMyLearnerCalendar:  (from, to)          => api.get(`${BASE}/learner/mine/calendar`, { params: { from, to } }).then((r) => r.data),
 

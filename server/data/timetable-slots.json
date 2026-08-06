@@ -346,5 +346,65 @@
     "id": "3ef540b8-34e1-49d7-a15c-fb8f02254aa8",
     "createdAt": "2026-08-05T08:00:21.730Z",
     "updatedAt": "2026-08-05T08:00:21.730Z"
+  },
+  {
+    "classId": "8f5da551-36b3-4eb2-8cbd-683c22bb3f10",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "monday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "3bdc1087-832f-4cc7-836c-ca6659430256",
+    "createdAt": "2026-08-06T12:55:41.769Z",
+    "updatedAt": "2026-08-06T12:55:41.769Z"
+  },
+  {
+    "classId": "8f5da551-36b3-4eb2-8cbd-683c22bb3f10",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "wednesday",
+    "startTime": "08:00",
+    "endTime": "09:00",
+    "room": "",
+    "id": "b4361f57-bd73-4246-99c2-49434ce7c50f",
+    "createdAt": "2026-08-06T12:55:54.094Z",
+    "updatedAt": "2026-08-06T12:55:54.094Z"
+  },
+  {
+    "classId": "21b92da1-58f0-4085-8ed1-7382666c0bc7",
+    "courseId": "f1ee9747-ebd0-4cc1-8cb7-9b7f11d71330",
+    "teacherId": null,
+    "dayOfWeek": "monday",
+    "startTime": "10:00",
+    "endTime": "11:00",
+    "room": "",
+    "id": "3a22bfc3-0499-4865-a5d9-d5d1c9eb72b0",
+    "createdAt": "2026-08-06T12:59:05.304Z",
+    "updatedAt": "2026-08-06T12:59:05.304Z"
+  },
+  {
+    "classId": "21b92da1-58f0-4085-8ed1-7382666c0bc7",
+    "courseId": "926dcaeb-3fa1-4412-bd1b-13a99ef01ad4",
+    "teacherId": null,
+    "dayOfWeek": "tuesday",
+    "startTime": "10:00",
+    "endTime": "11:00",
+    "room": "",
+    "id": "e2cb9b20-0f01-426b-af84-0962392a01bd",
+    "createdAt": "2026-08-06T12:59:19.132Z",
+    "updatedAt": "2026-08-06T12:59:19.132Z"
+  },
+  {
+    "classId": "21b92da1-58f0-4085-8ed1-7382666c0bc7",
+    "courseId": "2329640b-8fb9-4ec7-8251-6d922ab1586d",
+    "teacherId": null,
+    "dayOfWeek": "wednesday",
+    "startTime": "11:00",
+    "endTime": "12:00",
+    "room": "",
+    "id": "272f802e-3cb0-4d89-b23a-190c83ff9d29",
+    "createdAt": "2026-08-06T12:59:30.485Z",
+    "updatedAt": "2026-08-06T12:59:30.485Z"
   }
 ]

@@ -131,6 +131,24 @@ const getMyLearnerCalendar = asyncHandler(async (req, res) => {
   res.json({ success: true, data: events, breaks, count: events.length });
 });
 
+// Hub-wide merged calendar — every class at one Learning Hub, for the school-portal's "All
+// Classes" view (same merge pattern as getMyTeacherCalendar/getMyLearnerCalendar, scoped by hub
+// instead of by person). hubId comes from the query string since, unlike a class, there's no
+// single owned record to resolve it from implicitly — ownership is checked the same way
+// assertClassAccess checks a class's own schoolId above.
+const getHubCalendar = asyncHandler(async (req, res) => {
+  const { hubId } = req.query;
+  if (!hubId) {
+    const err = new Error("hubId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, hubId));
+  const { from, to } = calendarRangeSchema.parse(req.query);
+  const { events, breaks } = TimetableService.resolveHubCalendar(hubId, from, to);
+  res.json({ success: true, data: events, breaks, count: events.length });
+});
+
 // The click/hover-through detail behind one calendar event — same class-ownership posture as
 // every other read here (teacher must actually teach that class, school/branchAdmin must own its
 // hub). classId and date come from the calendar event the client already has in hand (see
@@ -176,6 +194,6 @@ module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
-  getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar,
+  getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
 };
