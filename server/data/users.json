@@ -21,20 +21,20 @@
   {
     "name": "School",
     "email": "school@digifunzi.com",
-    "passwordHash": "$2b$10$FZTEv6.rpffQV5Hae6YWuejOm4Pmq4QuHK21WQmuxWtseUkcUTGoa",
+    "passwordHash": "$2b$10$13IUDYF5/E/mFDOJcX7JEuBwf3GsNk2qFXXxGLe1Qs78qoVP9.7gK",
     "role": "school",
     "id": "4a3bcb82-123c-4102-a2b9-a730b5124d11",
     "createdAt": "2026-07-09T08:19:34.545Z",
-    "updatedAt": "2026-08-06T12:12:46.047Z"
+    "updatedAt": "2026-08-06T13:30:00.964Z"
   },
   {
     "name": "Learner ",
     "email": "learner@digifunzi.com",
-    "passwordHash": "$2b$10$oT96Yv/vi/hJvvEinwg1wuZi0lB6T8U8J0I/MBdrAXefd/o6fKMiu",
+    "passwordHash": "$2b$10$o4XeLW8mW239P5w3IIZu.euVZvoZRTb61m5JCrz.unHS8J/HR4aHC",
     "role": "learner",
     "id": "ee4ef989-0569-47ad-9496-d4cfd15c7440",
     "createdAt": "2026-07-09T08:20:23.161Z",
-    "updatedAt": "2026-07-09T08:20:23.161Z"
+    "updatedAt": "2026-08-06T13:30:00.878Z"
   },
   {
     "name": "KEVIN KIHARA",
@@ -462,11 +462,11 @@
   {
     "name": "teacher 1 teacher 1",
     "email": "teacher1@digifunzi.com",
-    "passwordHash": "$2b$10$M7P4jj4v8oAF1PodUen0FuQnxCGzAU0xXmzs8ENC/qiQZYu5teVkq",
+    "passwordHash": "$2b$10$HLGyGD3pJyzmMzoFDGEdk.qgR1wTy3kiLqyNPoN9i33.tDQ3bu8Cm",
     "role": "teacher",
     "id": "e80b730e-0888-40fa-a38d-c568ec24253c",
     "createdAt": "2026-07-30T06:25:16.425Z",
-    "updatedAt": "2026-07-30T06:25:16.425Z"
+    "updatedAt": "2026-08-06T13:30:00.770Z"
   },
   {
     "name": "kevv",
