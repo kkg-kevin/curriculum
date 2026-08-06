@@ -792,7 +792,10 @@ const CompetencyService = {
   // than the shared curriculum-wide manual store.
   getLearnerBandProgress(curriculumId, learnerId) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
-    const progress = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId);
+    // Scoped to this curriculum, matching getLearnerCompetencyScores above — omitting curriculumId
+    // here (as this used to) pulled in a multi-hub/multi-curriculum learner's indicator progress
+    // from every curriculum they've ever been graded under, not just the one being viewed.
+    const progress = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, curriculumId);
     const indicatorAchievements = progress.map((p) => ({
       competencyId: p.competencyId,
       indicatorId:  p.indicatorId,

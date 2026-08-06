@@ -1,6 +1,8 @@
 const CurriculumModel          = require("./curriculum.model");
 const UserModel = require("../auth/user.model");
 const ClassModel = require("../classes/class.model");
+const ClassService = require("../classes/class.service");
+const ProgramModel = require("../programs/program.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
@@ -212,6 +214,20 @@ const CurriculumService = {
     CurriculumVersionModel.deleteByCurriculumId(id);
     LearnerJourneyModel.deleteByCurriculumId(id);
     IndicatorAchievementModel.deleteByCurriculumId(id);
+    // A Program deployed from this curriculum (see program.service.js's createProgram) has no
+    // life outside it either — unlike ProgramModel.delete's own deliberate choice to leave a
+    // program's Classes standing when just the Program record is removed (that's a real cohort's
+    // history surviving an admin un-deploying it), everything the deployed Classes depended on to
+    // function — this curriculum's course list, competency framework, versions — is being wiped
+    // right here, so leaving them behind would just orphan them with nothing left to resolve.
+    for (const program of ProgramModel.findAll({ curriculumId: id })) {
+      // A classId can already be gone (e.g. deleted individually from the Classes page earlier) —
+      // skip those rather than let ClassService.deleteClass's 404 abort the curriculum delete.
+      for (const classId of program.classIds || []) {
+        if (ClassModel.findById(classId)) await ClassService.deleteClass(classId);
+      }
+      ProgramModel.delete(program.id);
+    }
     return { message: "Curriculum deleted successfully" };
   },
 

@@ -60,7 +60,7 @@ app.use("/api/learning-hubs", protect, attachOwnRecords, learningHubRoutes);
 app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
-app.use("/api/courses", protect, courseRoutes);
+app.use("/api/courses", protect, attachOwnRecords, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
 // Same shape as attendance — a timetable slot belongs to a Class, ownership resolved through it.
 app.use("/api/timetable", protect, attachOwnRecords, timetableRoutes);

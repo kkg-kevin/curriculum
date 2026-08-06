@@ -1,5 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const CourseService = require("./course.service");
+const CurriculumService = require("../curriculum/curriculum.service");
+const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const {
   createCourseSchema,
   updateCourseSchema,
@@ -12,6 +17,37 @@ const {
   linkLearningAreaSchema,
   linkInventoryItemSchema,
 } = require("./course.validation");
+
+// A course is reusable across curricula/hubs (see curriculum.service.js's model comment), so
+// "can this caller see this course" can't be answered from the course record alone — it has to
+// trace back through whichever curriculum the caller's own hub/class actually runs, the same way
+// attendance.controller.js's assertClassAccess resolves ownership through a class. Admin is
+// unrestricted; every other role here (teacher/learner/school) previously had no check at all —
+// any authenticated account could fetch any course by id.
+function assertCourseAccess(req, courseId) {
+  if (req.user.role === "admin") return;
+  const curriculumIds = CurriculumService.findCurriculaContainingCourse(courseId);
+
+  if (req.user.role === "school") {
+    assertOwn(!!req.ownSchool?.curriculumId && curriculumIds.includes(req.ownSchool.curriculumId));
+    return;
+  }
+  if (req.user.role === "teacher") {
+    const classCurriculumIds = ClassCourseTeacherLinkModel.findByTeacherId(req.ownTeacher?.id)
+      .map((l) => ClassModel.findById(l.classId)?.curriculumId)
+      .filter(Boolean);
+    assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
+    return;
+  }
+  if (req.user.role === "learner") {
+    const classCurriculumIds = LearnerHubLinkModel.findByLearnerId(req.ownLearner?.id)
+      .map((l) => ClassModel.findById(l.classId)?.curriculumId)
+      .filter(Boolean);
+    assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
+    return;
+  }
+  assertOwn(false);
+}
 
 // updateCourseSchema is createCourseSchema.partial(), but zod still materializes a field's
 // .default(...) when its key is simply absent from the request body — e.g. an update body that
@@ -41,6 +77,7 @@ const getAllCourses = asyncHandler(async (req, res) => {
 });
 
 const getCourseById = asyncHandler(async (req, res) => {
+  assertCourseAccess(req, req.params.id);
   const course = await CourseService.getCourseById(req.params.id);
   res.json({ success: true, data: course });
 });
@@ -133,6 +170,7 @@ const getAssessmentScoring = asyncHandler(async (req, res) => {
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
 const getSessions = asyncHandler(async (req, res) => {
+  assertCourseAccess(req, req.params.id);
   const data = await CourseService.getSessions(req.params.id);
   res.json({ success: true, data });
 });
@@ -163,6 +201,7 @@ const deleteSession = asyncHandler(async (req, res) => {
 /* ── Modules ─────────────────────────────────────────────────────────────── */
 
 const getModules = asyncHandler(async (req, res) => {
+  assertCourseAccess(req, req.params.id);
   const data = await CourseService.getModules(req.params.id);
   res.json({ success: true, data });
 });

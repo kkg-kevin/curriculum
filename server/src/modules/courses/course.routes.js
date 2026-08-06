@@ -36,6 +36,10 @@ const router = express.Router();
 // curriculum's current-courses list) to read its content — never the bare catalog list, which
 // spans every school's curriculum. "school" does need the bare list too — LearnerViewPage's
 // Learning Journey card resolves course names for a learner's placement options from it.
+// getCourseById/getSessions/getModules additionally verify ownership via assertCourseAccess
+// (course.controller.js) — a course is reusable across curricula, so the role check alone isn't
+// enough; it traces back through the caller's own hub/class to confirm the course is actually
+// reachable from a curriculum they belong to.
 router.route("/").get(authorize("admin", "school"), getAllCourses).post(authorize("admin"), createCourse);
 router.route("/:id")
   .get(authorize("admin", "teacher", "learner", "school"), getCourseById)
