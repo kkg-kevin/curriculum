@@ -77,16 +77,17 @@ const getTeacherById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: teacher });
 });
 
-// Self-service fields a teacher may change on their own record — deliberately excludes name,
-// email and status: email doubles as the login-matching key (changing it here would
-// disconnect the account from this very record), and status/hub-links are admin/school
-// -controlled identity/assignment fields, not "my profile" fields. `password` is handled
+// Self-service fields a teacher may change on their own record — deliberately excludes email
+// and status: email doubles as the login-matching key (changing it here would disconnect the
+// account from this very record), and status/hub-links are admin/school-controlled identity/
+// assignment fields, not "my profile" fields. name/phone/photo are plain profile info, same
+// posture as LEARNER_SELF_EDIT_FIELDS in learner.controller.js. `password` is handled
 // separately below (not in this list) — a teacher resetting their own login password is
 // safe to allow since it can't touch email/role, unlike everything else this list guards
 // against. Hub assignment itself never goes through this route at all (see the dedicated
 // /hubs/links routes, which are never authorized for the "teacher" role) — this allowlist is
 // a second layer of defense, not the only one.
-const TEACHER_SELF_EDIT_FIELDS = ["phone", "photo"];
+const TEACHER_SELF_EDIT_FIELDS = ["firstName", "lastName", "phone", "photo"];
 
 const updateTeacher = asyncHandler(async (req, res) => {
   const parsed = updateTeacherSchema.parse(req.body);

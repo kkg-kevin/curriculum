@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiCalendar, FiClock, FiHome, FiMail, FiPhone, FiUserCheck } from "react-icons/fi";
+import { FiCalendar, FiClock, FiEye, FiEyeOff, FiHome, FiMail, FiPhone, FiUser, FiUserCheck } from "react-icons/fi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
 import { classApi } from "../../classes/services/classApi";
 import AvatarPhotoEditor from "../../../components/ui/AvatarPhotoEditor";
@@ -41,14 +41,23 @@ function DetailRow({ icon, label, value, empty = "—" }) {
 
 const iconMail = <FiMail size={14} strokeWidth={2} />;
 const iconPhone = <FiPhone size={14} strokeWidth={2} />;
+const iconUser = <FiUser size={14} strokeWidth={2} />;
 const iconCalendar = <FiCalendar size={14} strokeWidth={2} />;
 const iconClock = <FiClock size={14} strokeWidth={2} />;
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { teacher, teacherLoading, hubs, email } = useOutletContext();
-  const [editingPhone, setEditingPhone] = useState(false);
+  const [editingContact, setEditingContact] = useState(false);
+  const [firstNameDraft, setFirstNameDraft] = useState("");
+  const [lastNameDraft, setLastNameDraft] = useState("");
   const [phoneDraft, setPhoneDraft] = useState("");
+
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordDraft, setPasswordDraft] = useState("");
+  const [confirmDraft, setConfirmDraft] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
   // Unlike the rest of the portal, Profile is identity info, not a workspace view — it always
   // shows every hub the teacher is assigned to, regardless of which one the switcher is
@@ -60,9 +69,15 @@ export default function ProfilePage() {
   });
   const myClasses = classesData?.data || [];
 
-  const { mutate: updateTeacher, isPending: savingPhone } = useUpdateTeacher();
+  const { mutate: updateTeacher, isPending: savingContact } = useUpdateTeacher();
+  const { mutate: changePassword, isPending: savingPassword } = useUpdateTeacher();
 
-  useEffect(() => { if (teacher) setPhoneDraft(teacher.phone || ""); }, [teacher]);
+  useEffect(() => {
+    if (!teacher) return;
+    setFirstNameDraft(teacher.firstName || "");
+    setLastNameDraft(teacher.lastName || "");
+    setPhoneDraft(teacher.phone || "");
+  }, [teacher]);
 
   if (teacherLoading) {
     return <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200, color: "#9CA3AF", fontSize: 14 }}>Loading…</div>;
@@ -82,8 +97,21 @@ export default function ProfilePage() {
 
   const statusStyle = STATUS_STYLES[teacher.status] || STATUS_STYLES.inactive;
 
-  const savePhone = () => {
-    updateTeacher({ id: teacher.id, data: { phone: phoneDraft.trim() } }, { onSuccess: () => setEditingPhone(false) });
+  const saveContact = () => {
+    updateTeacher(
+      { id: teacher.id, data: { firstName: firstNameDraft.trim(), lastName: lastNameDraft.trim(), phone: phoneDraft.trim() } },
+      { onSuccess: () => setEditingContact(false) }
+    );
+  };
+
+  const savePassword = () => {
+    if (passwordDraft.length < 8) { setPasswordError("Must be at least 8 characters"); return; }
+    if (passwordDraft !== confirmDraft) { setPasswordError("Passwords don't match"); return; }
+    setPasswordError("");
+    changePassword(
+      { id: teacher.id, data: { password: passwordDraft } },
+      { onSuccess: () => { setChangingPassword(false); setPasswordDraft(""); setConfirmDraft(""); } }
+    );
   };
 
   return (
@@ -140,39 +168,114 @@ export default function ProfilePage() {
 
           <Section
             title="Contact Details"
-            action={!editingPhone && (
-              <button type="button" onClick={() => setEditingPhone(true)} style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                Edit phone
+            action={!editingContact && (
+              <button type="button" onClick={() => setEditingContact(true)} style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                Edit
               </button>
             )}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <DetailRow icon={iconMail} label="Email" value={teacher.email} />
-              {editingPhone ? (
-                <div>
-                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Phone</p>
+              {editingContact ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>First name</p>
+                      <input
+                        value={firstNameDraft}
+                        onChange={(e) => setFirstNameDraft(e.target.value)}
+                        style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last name</p>
+                      <input
+                        value={lastNameDraft}
+                        onChange={(e) => setLastNameDraft(e.target.value)}
+                        style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Phone</p>
                     <input
                       value={phoneDraft}
                       onChange={(e) => setPhoneDraft(e.target.value)}
                       placeholder="+254 700 000 000"
-                      style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
+                      style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
                     />
-                    <button type="button" onClick={savePhone} disabled={savingPhone} style={{ padding: "8px 14px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: savingPhone ? "not-allowed" : "pointer", opacity: savingPhone ? 0.6 : 1 }}>
-                      {savingPhone ? "Saving…" : "Save"}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={saveContact} disabled={savingContact} style={{ padding: "8px 14px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: savingContact ? "not-allowed" : "pointer", opacity: savingContact ? 0.6 : 1 }}>
+                      {savingContact ? "Saving…" : "Save"}
                     </button>
-                    <button type="button" onClick={() => { setEditingPhone(false); setPhoneDraft(teacher.phone || ""); }} style={{ padding: "8px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    <button type="button" onClick={() => { setEditingContact(false); setFirstNameDraft(teacher.firstName || ""); setLastNameDraft(teacher.lastName || ""); setPhoneDraft(teacher.phone || ""); }} style={{ padding: "8px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <DetailRow icon={iconPhone} label="Phone" value={teacher.phone} />
+                <>
+                  <DetailRow icon={iconUser} label="Name" value={`${teacher.firstName} ${teacher.lastName}`} />
+                  <DetailRow icon={iconPhone} label="Phone" value={teacher.phone} />
+                </>
               )}
               <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-                Name, email, and hub assignment are managed by your administrator.
+                Email and hub assignment are managed by your administrator.
               </p>
             </div>
+          </Section>
+
+          <Section
+            title="Login & Security"
+            action={!changingPassword && (
+              <button type="button" onClick={() => setChangingPassword(true)} style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                Change password
+              </button>
+            )}
+          >
+            {changingPassword ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>New password</p>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      value={passwordDraft}
+                      onChange={(e) => setPasswordDraft(e.target.value)}
+                      placeholder="At least 8 characters"
+                      style={{ width: "100%", boxSizing: "border-box", padding: "8px 36px 8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
+                    />
+                    <button type="button" onClick={() => setShowPassword((s) => !s)} aria-label={showPassword ? "Hide password" : "Show password"}
+                      style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", display: "flex" }}>
+                      {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Confirm password</p>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={confirmDraft}
+                    onChange={(e) => setConfirmDraft(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }}
+                  />
+                </div>
+                {passwordError && <p style={{ margin: 0, fontSize: 12, color: "#EF4444" }}>{passwordError}</p>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={savePassword} disabled={savingPassword} style={{ padding: "8px 14px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: savingPassword ? "not-allowed" : "pointer", opacity: savingPassword ? 0.6 : 1 }}>
+                    {savingPassword ? "Saving…" : "Save"}
+                  </button>
+                  <button type="button" onClick={() => { setChangingPassword(false); setPasswordDraft(""); setConfirmDraft(""); setPasswordError(""); }} style={{ padding: "8px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Set or change the password you use to sign in.</p>
+            )}
           </Section>
         </div>
 

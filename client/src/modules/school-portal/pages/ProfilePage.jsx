@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createPortal } from "react-dom";
@@ -139,6 +139,82 @@ function EditForm({ school, onDone, onCancel }) {
         </div>
       </form>
     </FormProvider>
+  );
+}
+
+// Independent of EditForm's react-hook-form/zod setup above — password isn't part of
+// learningHubProfileSchema, and the server already accepts it unconditionally on this same
+// update route regardless of the "school" role's governance-field lock (see
+// learning-hub.controller.js's updateLearningHub — password is destructured out before that
+// lock is applied), so this only needed a form, no server change.
+function ChangePasswordSection({ school }) {
+  const { mutate: updateSchool, isPending } = useUpdateSchool();
+  const [changing, setChanging] = useState(false);
+  const [passwordDraft, setPasswordDraft] = useState("");
+  const [confirmDraft, setConfirmDraft] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = () => {
+    if (passwordDraft.length < 8) { setError("Must be at least 8 characters"); return; }
+    if (passwordDraft !== confirmDraft) { setError("Passwords don't match"); return; }
+    setError("");
+    updateSchool(
+      { id: school.id, data: { password: passwordDraft } },
+      { onSuccess: () => { setChanging(false); setPasswordDraft(""); setConfirmDraft(""); } }
+    );
+  };
+
+  return (
+    <Section
+      title="Login & Security"
+      action={!changing && (
+        <button type="button" onClick={() => setChanging(true)} style={{ background: "none", border: "none", color: ACCENT, fontWeight: 600, fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          Change password
+        </button>
+      )}
+    >
+      {changing ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <Field label="New password">
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={passwordDraft}
+                onChange={(e) => setPasswordDraft(e.target.value)}
+                placeholder="At least 8 characters"
+                style={{ ...inputStyle(false), paddingRight: 36 }}
+              />
+              <button type="button" onClick={() => setShowPassword((s) => !s)} aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", display: "flex" }}>
+                {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+              </button>
+            </div>
+          </Field>
+          <Field label="Confirm password">
+            <input
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              value={confirmDraft}
+              onChange={(e) => setConfirmDraft(e.target.value)}
+              style={inputStyle(false)}
+            />
+          </Field>
+          {error && <p style={{ margin: 0, fontSize: 12, color: "#EF4444" }}>{error}</p>}
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button type="button" onClick={() => { setChanging(false); setPasswordDraft(""); setConfirmDraft(""); setError(""); }} style={{ padding: "9px 18px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              Cancel
+            </button>
+            <button type="button" onClick={save} disabled={isPending} style={{ padding: "9px 20px", backgroundColor: ACCENT, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", opacity: isPending ? 0.7 : 1 }}>
+              {isPending ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Set or change the password you use to sign in.</p>
+      )}
+    </Section>
   );
 }
 
@@ -344,6 +420,8 @@ export default function ProfilePage() {
               </div>
             )}
           </Section>
+
+          <ChangePasswordSection school={school} />
         </div>
 
         {/* Right */}

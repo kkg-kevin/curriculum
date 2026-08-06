@@ -1,4 +1,4 @@
-import { FiEdit2 } from "react-icons/fi";
+import { FiEdit2, FiUsers } from "react-icons/fi";
 import { T, cardStyle, sectionHeaderStyle, NotOnRecord } from "./theme";
 import { MetaRow } from "./ProfileIdentityCard";
 
@@ -8,9 +8,14 @@ import { MetaRow } from "./ProfileIdentityCard";
 // regardless of which of the two logins is currently active.
 export default function GuardianProfileCard({ learner, onEdit }) {
   return (
-    <div style={{ ...cardStyle(), padding: 24, display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
+    <div style={{ ...cardStyle(), borderTop: `3px solid ${T.accentMid}`, padding: 24, display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={sectionHeaderStyle()}>Guardian Profile</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: T.tintBg, color: T.accentMid, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <FiUsers size={13} />
+          </div>
+          <p style={sectionHeaderStyle()}>Guardian Profile</p>
+        </div>
         <button
           type="button"
           onClick={onEdit}
