@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiArrowRight, FiLayers } from "react-icons/fi";
-import { useProgramQuery, useDeleteProgram } from "../hooks/usePrograms";
+import { FiArrowRight, FiLayers, FiEdit2 } from "react-icons/fi";
+import { useProgramQuery, useDeleteProgram, useUpdateProgram } from "../hooks/usePrograms";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const STATUS_LABEL = { upcoming: "Upcoming", active: "Active", completed: "Completed" };
@@ -25,7 +25,24 @@ export default function ProgramViewPage() {
   const navigate = useNavigate();
   const { data: program, isLoading } = useProgramQuery(id);
   const { mutate: deleteProgram } = useDeleteProgram();
+  const { mutate: updateProgram, isPending: savingDates } = useUpdateProgram();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingDates, setEditingDates] = useState(false);
+  const [startDraft, setStartDraft] = useState("");
+  const [endDraft, setEndDraft] = useState("");
+
+  const beginEditDates = () => {
+    setStartDraft(program.startDate?.slice(0, 10) || "");
+    setEndDraft(program.endDate?.slice(0, 10) || "");
+    setEditingDates(true);
+  };
+
+  const saveDates = () => {
+    updateProgram(
+      { id, data: { startDate: startDraft, endDate: endDraft } },
+      { onSuccess: () => setEditingDates(false) }
+    );
+  };
 
   if (isLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -75,9 +92,46 @@ export default function ProgramViewPage() {
             <DetailRow label="Description"  value={program.description} />
             <DetailRow label="Curriculum"   value={program.curriculumName} />
             <DetailRow label="Learning Hub" value={program.hubName} />
-            <DetailRow label="Start Date"   value={formatDate(program.startDate)} />
-            <DetailRow label="End Date"     value={formatDate(program.endDate)} />
-            <DetailRow label="Status"       value={STATUS_LABEL[program.status] || program.status} />
+
+            {editingDates ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Start Date</span>
+                    <input type="date" value={startDraft} onChange={(e) => setStartDraft(e.target.value)}
+                      style={{ padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }} />
+                  </label>
+                  <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>End Date</span>
+                    <input type="date" value={endDraft} onChange={(e) => setEndDraft(e.target.value)}
+                      style={{ padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={saveDates} disabled={savingDates || !startDraft || !endDraft}
+                    style={{ padding: "7px 16px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: savingDates ? "default" : "pointer", opacity: savingDates ? 0.7 : 1 }}>
+                    {savingDates ? "Saving…" : "Save"}
+                  </button>
+                  <button type="button" onClick={() => setEditingDates(false)} disabled={savingDates}
+                    style={{ padding: "7px 16px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", gap: 24 }}>
+                  <DetailRow label="Start Date" value={formatDate(program.startDate)} />
+                  <DetailRow label="End Date"   value={formatDate(program.endDate)} />
+                </div>
+                <button type="button" onClick={beginEditDates} title="Edit dates"
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                  <FiEdit2 size={12} strokeWidth={2} /> Edit
+                </button>
+              </div>
+            )}
+
+            <DetailRow label="Status" value={STATUS_LABEL[program.status] || program.status} />
           </div>
         </div>
 
