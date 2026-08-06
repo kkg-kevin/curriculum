@@ -2197,5 +2197,19 @@
     "dueDate": null,
     "id": "fb6c3710-ff25-4d30-a492-76407ad39fac",
     "issuedAt": "2026-08-05T09:16:28.260Z"
+  },
+  {
+    "assessmentId": "4f36eae5-ee73-4f92-8218-404ae7e575da",
+    "learnerId": "77773b20-d329-41cb-88cf-1739b90cffb7",
+    "ageCategoryId": "bb6e4f22-f357-44b3-9c69-f7a035f74d84",
+    "learningAreaId": null,
+    "hubId": "c0c4d2e4-90b5-49ad-a3f8-07e5aafdbb44",
+    "sessionId": null,
+    "courseId": null,
+    "classId": null,
+    "issuedBy": "system",
+    "dueDate": null,
+    "id": "b46463c7-bf37-4690-886b-863fc11fccff",
+    "issuedAt": "2026-08-05T13:08:46.660Z"
   }
 ]

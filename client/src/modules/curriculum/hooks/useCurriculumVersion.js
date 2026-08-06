@@ -42,7 +42,15 @@ export function useCurriculumCurrentCoursesForGrades(curriculumId, gradeIds) {
   const byId = new Map();
   results.forEach((r) => (r.data || []).forEach((c) => byId.set(c.id, c)));
 
-  return { data: [...byId.values()], isLoading: results.some((r) => r.isLoading) };
+  // Matches every other hook in this file's shape (data/isLoading/isError/error), even though
+  // this merges several useQueries results — a consumer that copy-pastes the usual destructure
+  // pattern from a sibling hook gets a real isError/error instead of a silent always-undefined.
+  return {
+    data:      [...byId.values()],
+    isLoading: results.some((r) => r.isLoading),
+    isError:   results.some((r) => r.isError),
+    error:     results.find((r) => r.error)?.error || null,
+  };
 }
 
 // Same per-grade queries as above, but kept separate per grade instead of merged — for a
@@ -61,7 +69,13 @@ export function useCurriculumCoursesByGrade(curriculumId, gradeIds) {
   const byGrade = new Map();
   ids.forEach((gradeId, i) => byGrade.set(gradeId, results[i]?.data || []));
 
-  return { data: byGrade, isLoading: results.some((r) => r.isLoading) };
+  // Same shape-parity note as useCurriculumCurrentCoursesForGrades above.
+  return {
+    data:      byGrade,
+    isLoading: results.some((r) => r.isLoading),
+    isError:   results.some((r) => r.isError),
+    error:     results.find((r) => r.error)?.error || null,
+  };
 }
 
 export function useCreateCurriculumVersion(curriculumId) {
