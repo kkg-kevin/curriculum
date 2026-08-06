@@ -12,6 +12,17 @@ function computeStatus(startDate, endDate) {
   return "active";
 }
 
+// Blocks two deployments of the same curriculum to the same hub only when their date ranges
+// actually overlap — re-running the same program at the same hub in a later, non-overlapping
+// term (e.g. "Summer Camp" every year) is expected and stays allowed. Dates are plain YYYY-MM-DD
+// strings throughout this module, which sort lexicographically the same as chronologically, so a
+// direct string comparison is safe here.
+function findOverlappingDeployment(curriculumId, hubId, startDate, endDate, excludeId) {
+  return ProgramModel.findAll({ curriculumId }).find(
+    (p) => p.id !== excludeId && p.hubId === hubId && startDate <= p.endDate && endDate >= p.startDate
+  );
+}
+
 const ProgramService = {
   // Deploys an already-authored program-curriculum (Basic Info -> Structure -> Competencies ->
   // Version Control, same flow as any curriculum, just flagged isProgram: true on the Structure
@@ -41,6 +52,11 @@ const ProgramService = {
     if (curriculumClasses.length === 0) {
       const err = new Error("This program has no cohorts defined yet — add one on its Structure step first");
       err.statusCode = 400;
+      throw err;
+    }
+    if (findOverlappingDeployment(curriculum.id, hub.id, data.startDate, data.endDate)) {
+      const err = new Error("This program is already deployed to this hub for an overlapping period");
+      err.statusCode = 409;
       throw err;
     }
 
@@ -109,12 +125,20 @@ const ProgramService = {
   },
 
   updateProgram(id, data) {
-    const updated = ProgramModel.update(id, data);
-    if (!updated) {
+    const existing = ProgramModel.findById(id);
+    if (!existing) {
       const err = new Error("Program not found");
       err.statusCode = 404;
       throw err;
     }
+    const startDate = data.startDate || existing.startDate;
+    const endDate = data.endDate || existing.endDate;
+    if (findOverlappingDeployment(existing.curriculumId, existing.hubId, startDate, endDate, id)) {
+      const err = new Error("These dates overlap another deployment of this program at this hub");
+      err.statusCode = 409;
+      throw err;
+    }
+    const updated = ProgramModel.update(id, data);
     return this.enrich(updated);
   },
 
