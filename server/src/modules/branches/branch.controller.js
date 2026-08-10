@@ -5,12 +5,12 @@ const { createBranchSchema, updateBranchSchema, assignAdminSchema } = require(".
 
 const createBranch = asyncHandler(async (req, res) => {
   const data = createBranchSchema.parse(req.body);
-  const branch = BranchService.create(data);
+  const branch = await BranchService.create(data);
   res.status(201).json({ success: true, data: branch });
 });
 
 const getAllBranches = asyncHandler(async (req, res) => {
-  const branches = BranchService.getAll();
+  const branches = await BranchService.getAll();
   res.json({ success: true, data: branches, count: branches.length });
 });
 
@@ -22,23 +22,23 @@ const getMyBranch = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  const branch = BranchService.getById(req.ownBranch.id);
+  const branch = await BranchService.getById(req.ownBranch.id);
   res.json({ success: true, data: branch });
 });
 
 const getBranchById = asyncHandler(async (req, res) => {
-  const branch = BranchService.getById(req.params.id);
+  const branch = await BranchService.getById(req.params.id);
   res.json({ success: true, data: branch });
 });
 
 const updateBranch = asyncHandler(async (req, res) => {
   const data = updateBranchSchema.parse(req.body);
-  const branch = BranchService.update(req.params.id, data);
+  const branch = await BranchService.update(req.params.id, data);
   res.json({ success: true, data: branch });
 });
 
 const deleteBranch = asyncHandler(async (req, res) => {
-  const result = BranchService.delete(req.params.id);
+  const result = await BranchService.delete(req.params.id);
   res.json({ success: true, ...result });
 });
 
@@ -47,12 +47,12 @@ const deleteBranch = asyncHandler(async (req, res) => {
 const assignBranchAdmin = asyncHandler(async (req, res) => {
   const { name, email, password } = assignAdminSchema.parse(req.body);
   const user = await AuthService.setOrCreatePassword({ name, email, password, role: "branchAdmin" });
-  const branch = BranchService.setBranchAdmin(req.params.id, user.id);
+  const branch = await BranchService.setBranchAdmin(req.params.id, user.id);
   res.json({ success: true, data: branch });
 });
 
 const unassignBranchAdmin = asyncHandler(async (req, res) => {
-  const branch = BranchService.setBranchAdmin(req.params.id, null);
+  const branch = await BranchService.setBranchAdmin(req.params.id, null);
   res.json({ success: true, data: branch });
 });
 

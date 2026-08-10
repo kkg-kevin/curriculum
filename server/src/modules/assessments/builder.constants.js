@@ -18,7 +18,7 @@ const BUILDER_REGISTRY = {
   exam:        { itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   assignment:  { itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true },
   project:     { itemGroups: ["unstructured", "submission"], supportsItems: false, supportsDeliverables: true, supportsMilestones: true, supportsInventory: true },
-  observation: { itemGroups: ["structured", "unstructured"], supportsSections: true },
+  observation: { itemGroups: ["structured", "unstructured", "observation"], supportsSections: true },
 };
 
 module.exports = {

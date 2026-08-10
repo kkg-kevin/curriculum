@@ -1,50 +1,34 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../config/db");
+const { generateId, firstOrNull } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/course-learning-areas.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "course_learning_area_links";
 
 // Records which global learning areas a course has been tagged with — a course never
 // owns/authors learning areas, it just links to entries from the shared catalog.
 const CourseLearningAreaLinkModel = {
   findByCourseId(courseId) {
-    return read().filter((l) => l.courseId === courseId);
+    return db(TABLE).where({ courseId });
   },
 
-  link(courseId, learningAreaId) {
-    const all = read();
-    const existing = all.find((l) => l.courseId === courseId && l.learningAreaId === learningAreaId);
+  async link(courseId, learningAreaId) {
+    const existing = await firstOrNull(db(TABLE).where({ courseId, learningAreaId }));
     if (existing) return existing;
-    const item = { id: genId(), courseId, learningAreaId, createdAt: new Date().toISOString() };
-    all.push(item);
-    write(all);
+    const item = { id: generateId(), courseId, learningAreaId, createdAt: new Date() };
+    await db(TABLE).insert(item);
     return item;
   },
 
-  unlink(courseId, learningAreaId) {
-    const all      = read();
-    const filtered = all.filter((l) => !(l.courseId === courseId && l.learningAreaId === learningAreaId));
-    if (filtered.length === all.length) return false;
-    write(filtered);
-    return true;
+  async unlink(courseId, learningAreaId) {
+    const count = await db(TABLE).where({ courseId, learningAreaId }).del();
+    return count > 0;
   },
 
   deleteByCourseId(courseId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.courseId !== courseId);
-    write(filtered);
+    return db(TABLE).where({ courseId }).del();
   },
 
   deleteByLearningAreaId(learningAreaId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.learningAreaId !== learningAreaId);
-    write(filtered);
+    return db(TABLE).where({ learningAreaId }).del();
   },
 };
 

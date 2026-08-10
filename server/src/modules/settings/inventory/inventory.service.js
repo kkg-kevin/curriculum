@@ -3,12 +3,12 @@ const AssessmentInventoryLinkModel = require("../../assessments/assessment-inven
 const CourseInventoryLinkModel = require("../../courses/course-inventory-link.model");
 
 const InventoryService = {
-  getInventoryItems() {
+  async getInventoryItems() {
     return InventoryModel.findAll();
   },
 
-  createInventoryItem(data) {
-    const existing = InventoryModel.findAll();
+  async createInventoryItem(data) {
+    const existing = await InventoryModel.findAll();
     if (existing.some((i) => i.name.toLowerCase() === data.name.toLowerCase())) {
       const err = new Error("An inventory item with this name already exists");
       err.statusCode = 409;
@@ -17,15 +17,16 @@ const InventoryService = {
     return InventoryModel.create(data);
   },
 
-  updateInventoryItem(id, data) {
-    const item = InventoryModel.findById(id);
+  async updateInventoryItem(id, data) {
+    const item = await InventoryModel.findById(id);
     if (!item) {
       const err = new Error("Inventory item not found");
       err.statusCode = 404;
       throw err;
     }
     if (data.name) {
-      const others = InventoryModel.findAll().filter((i) => i.id !== id);
+      const all = await InventoryModel.findAll();
+      const others = all.filter((i) => i.id !== id);
       if (others.some((i) => i.name.toLowerCase() === data.name.toLowerCase())) {
         const err = new Error("An inventory item with this name already exists");
         err.statusCode = 409;
@@ -35,18 +36,18 @@ const InventoryService = {
     return InventoryModel.update(id, data);
   },
 
-  deleteInventoryItem(id) {
-    const item = InventoryModel.findById(id);
+  async deleteInventoryItem(id) {
+    const item = await InventoryModel.findById(id);
     if (!item) {
       const err = new Error("Inventory item not found");
       err.statusCode = 404;
       throw err;
     }
-    InventoryModel.delete(id);
+    await InventoryModel.delete(id);
     // Projects and courses only ever reference the catalog by id (never copy it), so those
     // references must be cleaned up here or they'd point at a dead id.
-    AssessmentInventoryLinkModel.deleteByInventoryItemId(id);
-    CourseInventoryLinkModel.deleteByInventoryItemId(id);
+    await AssessmentInventoryLinkModel.deleteByInventoryItemId(id);
+    await CourseInventoryLinkModel.deleteByInventoryItemId(id);
   },
 };
 

@@ -18,13 +18,13 @@ function signToken(user) {
 
 const AuthService = {
   async createUser({ name, email, password, role }) {
-    if (UserModel.findByEmail(email)) {
+    if (await UserModel.findByEmail(email)) {
       const err = new Error("A user with this email already exists");
       err.statusCode = 409;
       throw err;
     }
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = UserModel.create({ name, email, passwordHash, role });
+    const user = await UserModel.create({ name, email, passwordHash, role });
     return sanitize(user);
   },
 
@@ -41,7 +41,7 @@ const AuthService = {
   // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
   // account is created, same as self-signup.
   async setOrCreatePassword({ name, email, password, role }) {
-    const existing = UserModel.findByEmail(email);
+    const existing = await UserModel.findByEmail(email);
     if (existing) {
       if (existing.role !== role) {
         const err = new Error(`This email is already registered as a ${existing.role} account`);
@@ -49,7 +49,7 @@ const AuthService = {
         throw err;
       }
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      return sanitize(UserModel.update(existing.id, { passwordHash }));
+      return sanitize(await UserModel.update(existing.id, { passwordHash }));
     }
     return this.createUser({ name, email, password, role });
   },
@@ -59,7 +59,7 @@ const AuthService = {
   // resulting User row never has an email at all. Same existing-row conflict shape as
   // setOrCreatePassword: reset in place if the role matches, otherwise 409.
   async setOrCreatePasswordByUsername({ name, username, password, role }) {
-    const existing = UserModel.findByUsername(username);
+    const existing = await UserModel.findByUsername(username);
     if (existing) {
       if (existing.role !== role) {
         const err = new Error(`This username is already registered as a ${existing.role} account`);
@@ -67,10 +67,10 @@ const AuthService = {
         throw err;
       }
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      return sanitize(UserModel.update(existing.id, { passwordHash }));
+      return sanitize(await UserModel.update(existing.id, { passwordHash }));
     }
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    return sanitize(UserModel.create({ name, username, passwordHash, role }));
+    return sanitize(await UserModel.create({ name, username, passwordHash, role }));
   },
 
   // Keeps a learner's own dedicated login attached to their current username when it's renamed
@@ -79,9 +79,9 @@ const AuthService = {
   // login to move (most learners don't have one) or no new username to move it to.
   async renameUsernameAccount(oldUsername, newUsername) {
     if (!oldUsername || oldUsername === newUsername) return;
-    const existing = UserModel.findByUsername(oldUsername);
+    const existing = await UserModel.findByUsername(oldUsername);
     if (!existing || !newUsername) return;
-    UserModel.update(existing.id, { username: newUsername });
+    await UserModel.update(existing.id, { username: newUsername });
   },
 
   // `identifier` may be: an account's own email (admin/school/teacher/branchAdmin/curriculumAdmin,
@@ -92,11 +92,11 @@ const AuthService = {
   // guardian's own account. `Learner.username` is regex-restricted to exclude "@", so it can never
   // collide with an email-shaped identifier — these three branches are mutually exclusive.
   async login(identifier, password) {
-    let user = UserModel.findByEmail(identifier);
-    if (!user) user = UserModel.findByUsername(identifier);
+    let user = await UserModel.findByEmail(identifier);
+    if (!user) user = await UserModel.findByUsername(identifier);
     if (!user) {
-      const learner = LearnerModel.findByUsername(identifier);
-      if (learner?.guardianEmail) user = UserModel.findByEmail(learner.guardianEmail);
+      const learner = await LearnerModel.findByUsername(identifier);
+      if (learner?.guardianEmail) user = await UserModel.findByEmail(learner.guardianEmail);
     }
     if (!user) {
       const err = new Error("Invalid email/username or password");
@@ -113,8 +113,8 @@ const AuthService = {
     return { user: sanitize(user), token };
   },
 
-  getById(id) {
-    const user = UserModel.findById(id);
+  async getById(id) {
+    const user = await UserModel.findById(id);
     if (!user) {
       const err = new Error("User not found");
       err.statusCode = 404;
@@ -123,8 +123,8 @@ const AuthService = {
     return sanitize(user);
   },
 
-  updateMe(id, data) {
-    const user = UserModel.update(id, data);
+  async updateMe(id, data) {
+    const user = await UserModel.update(id, data);
     if (!user) {
       const err = new Error("User not found");
       err.statusCode = 404;

@@ -15,16 +15,16 @@ function buildContentScaffold(curriculum) {
 }
 
 const CurriculumVersionService = {
-  getAllForCurriculum(curriculumId) {
-    const all     = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+  async getAllForCurriculum(curriculumId) {
+    const all     = await CurriculumVersionModel.findAllByCurriculumId(curriculumId);
     // published (isCurrent) version is the "current"; everything else is history
     const current = all.find((v) => v.isCurrent) || null;
     const history = all.filter((v) => !v.isCurrent);
     return { current, history };
   },
 
-  create(curriculumId, curriculum, data) {
-    const existing    = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+  async create(curriculumId, curriculum, data) {
+    const existing    = await CurriculumVersionModel.findAllByCurriculumId(curriculumId);
     const nextVersion = existing.length ? Math.max(...existing.map((v) => v.versionNumber)) + 1 : 1;
 
     // New versions are always created as drafts — user explicitly publishes
@@ -38,7 +38,7 @@ const CurriculumVersionService = {
         })
       : scaffold;
 
-    const version = CurriculumVersionModel.create({
+    const version = await CurriculumVersionModel.create({
       curriculumId,
       academicYearId: data.academicYearId || null,
       versionNumber:  nextVersion,
@@ -52,17 +52,17 @@ const CurriculumVersionService = {
     // competencies/learning areas into the curriculum too, same as attaching a course
     // directly (see CurriculumService.autoPopulateFromCourse). Runs on creation rather
     // than waiting for publish, so the curriculum reflects a version as soon as it's built.
-    collectCourseIds(content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+    await Promise.all([...collectCourseIds(content)].map((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId)));
 
     return version;
   },
 
-  edit(curriculumId, versionId, data) {
-    const version = CurriculumVersionModel.findById(versionId);
+  async edit(curriculumId, versionId, data) {
+    const version = await CurriculumVersionModel.findById(versionId);
     if (!version || version.curriculumId !== curriculumId) {
       throw Object.assign(new Error("Version not found"), { statusCode: 404 });
     }
-    const updated = CurriculumVersionModel.update(versionId, {
+    const updated = await CurriculumVersionModel.update(versionId, {
       status:  data.status  || version.status,
       content: data.content || version.content || [],
     });
@@ -71,28 +71,29 @@ const CurriculumVersionService = {
     // competencies/learning areas right away too — not just at create/publish time (see
     // CurriculumService.autoPopulateFromCourse). Idempotent, so re-running for courses
     // already adopted is a harmless no-op.
-    collectCourseIds(updated.content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+    await Promise.all([...collectCourseIds(updated.content)].map((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId)));
 
     return updated;
   },
 
-  changeStatus(curriculumId, versionId, status) {
+  async changeStatus(curriculumId, versionId, status) {
     if (!["draft", "published", "inactive"].includes(status)) {
       throw Object.assign(new Error("Invalid status"), { statusCode: 400 });
     }
     if (status === "published") {
       // Retire every other published/current version for this curriculum
-      const all = CurriculumVersionModel.findAllByCurriculumId(curriculumId);
-      all.forEach((v) => {
+      const all = await CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+      await Promise.all(all.map((v) => {
         if (v.id !== versionId && (v.isCurrent || v.status === "published")) {
-          CurriculumVersionModel.update(v.id, { status: "inactive", isCurrent: false });
+          return CurriculumVersionModel.update(v.id, { status: "inactive", isCurrent: false });
         }
-      });
-      const published = CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
+        return null;
+      }));
+      const published = await CurriculumVersionModel.update(versionId, { status: "published", isCurrent: true });
 
       // Also re-run on publish (in addition to on create) — cheap and idempotent, and
       // covers a version published a while after it was first drafted.
-      collectCourseIds(published.content).forEach((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId));
+      await Promise.all([...collectCourseIds(published.content)].map((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId)));
 
       return published;
     }
@@ -105,8 +106,9 @@ const CurriculumVersionService = {
   // one grade (classId), since the version matrix assigns courses per period+grade and a
   // grade shouldn't see courses assigned only to a different one. Merges across every period
   // (there's no reliable "current term" signal — period dates are optional/often unset).
-  getCurrentCourses(curriculumId, gradeId) {
-    const current = CurriculumVersionModel.findAllByCurriculumId(curriculumId).find((v) => v.isCurrent);
+  async getCurrentCourses(curriculumId, gradeId) {
+    const all = await CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+    const current = all.find((v) => v.isCurrent);
     if (!current) return [];
 
     let content = current.content || [];
@@ -118,10 +120,11 @@ const CurriculumVersionService = {
     }
 
     const countByCourseId = new Map();
-    SessionModel.findAll().forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
+    const sessions = await SessionModel.findAll();
+    sessions.forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
 
-    return [...collectCourseIds(content)]
-      .map((id) => CourseModel.findById(id))
+    const courses = await Promise.all([...collectCourseIds(content)].map((id) => CourseModel.findById(id)));
+    return courses
       .filter(Boolean)
       .map((course) => ({ ...course, sessionCount: countByCourseId.get(course.id) || 0 }));
   },

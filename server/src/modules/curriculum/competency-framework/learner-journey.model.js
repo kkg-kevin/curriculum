@@ -1,14 +1,7 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../../config/db");
+const { generateId, firstOrNull, toJson } = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/learner-journeys.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "learner_journeys";
 
 // A learner's placement timeline, one record per (learner, Learning Area): where they
 // currently stand plus an append-only history of every place they've been placed, so
@@ -16,53 +9,50 @@ function genId() {
 // a single overwritten field.
 const LearnerJourneyModel = {
   findByLearner(learnerId) {
-    return read().filter((j) => j.learnerId === learnerId);
+    return db(TABLE).where({ learnerId });
   },
 
   findOne(learnerId, learningAreaId) {
-    return read().find((j) => j.learnerId === learnerId && j.learningAreaId === learningAreaId) || null;
+    return firstOrNull(db(TABLE).where({ learnerId, learningAreaId }));
   },
 
   // Sets (or moves) a learner's current course in one Learning Area, appending to history
   // rather than overwriting it. Creates the record on first placement.
-  place(learnerId, curriculumId, learningAreaId, courseId, reason, assessmentId = null) {
-    const all = read();
-    const idx = all.findIndex((j) => j.learnerId === learnerId && j.learningAreaId === learningAreaId);
-    const now = new Date().toISOString();
-    const entry = { courseId, reachedAt: now, reason, assessmentId };
+  async place(learnerId, curriculumId, learningAreaId, courseId, reason, assessmentId = null) {
+    const existing = await firstOrNull(db(TABLE).where({ learnerId, learningAreaId }));
+    const now = new Date();
+    const entry = { courseId, reachedAt: now.toISOString(), reason, assessmentId };
 
-    if (idx === -1) {
+    if (!existing) {
       const record = {
-        id: genId(), learnerId, curriculumId, learningAreaId,
+        id: generateId(),
+        learnerId,
+        curriculumId,
+        learningAreaId,
         currentCourseId: courseId,
         history: [entry],
-        createdAt: now, updatedAt: now,
+        createdAt: now,
+        updatedAt: now,
       };
-      all.push(record);
-      write(all);
+      await db(TABLE).insert({ ...record, history: toJson(record.history) });
       return record;
     }
 
-    all[idx] = {
-      ...all[idx],
+    const history = [...(existing.history || []), entry];
+    await db(TABLE).where({ id: existing.id }).update({
       currentCourseId: courseId,
-      history: [...(all[idx].history || []), entry],
+      history: toJson(history),
       updatedAt: now,
-    };
-    write(all);
-    return all[idx];
+    });
+    return { ...existing, currentCourseId: courseId, history, updatedAt: now };
   },
 
   deleteByLearnerId(learnerId) {
-    const all      = read();
-    const filtered = all.filter((j) => j.learnerId !== learnerId);
-    write(filtered);
+    return db(TABLE).where({ learnerId }).del();
   },
 
   deleteByCurriculumId(curriculumId) {
-    const all      = read();
-    const filtered = all.filter((j) => j.curriculumId !== curriculumId);
-    write(filtered);
+    return db(TABLE).where({ curriculumId }).del();
   },
 };
 

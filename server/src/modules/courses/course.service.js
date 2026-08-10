@@ -57,29 +57,29 @@ function assertValidAgeRange(ageMin, ageMax) {
 // longer exists) before either query returns, keeping both queries consistent on first load.
 // Legacy courses that never used modules land here too — a course with sessions always ends
 // up with at least a "Module 1" holding them.
-function ensureSessionsGrouped(courseId) {
-  const sessions = SessionModel.findByCourseId(courseId);
-  const modules = ModuleModel.findByCourseId(courseId);
+async function ensureSessionsGrouped(courseId) {
+  const sessions = await SessionModel.findByCourseId(courseId);
+  const modules = await ModuleModel.findByCourseId(courseId);
   const moduleIds = new Set(modules.map((m) => m.id));
   const orphans = sessions.filter((s) => !s.moduleId || !moduleIds.has(s.moduleId));
   if (orphans.length === 0) return;
 
   const targetModuleId = modules.length > 0
     ? modules[0].id
-    : ModuleModel.create({ courseId, name: "Module 1", order: 1 }).id;
+    : (await ModuleModel.create({ courseId, name: "Module 1", order: 1 })).id;
 
-  orphans.forEach((s) => SessionModel.update(s.id, { moduleId: targetModuleId }));
+  await Promise.all(orphans.map((s) => SessionModel.update(s.id, { moduleId: targetModuleId })));
 }
 
-function buildAssessmentLookup() {
-  return new Map(AssessmentModel.findAll().map((assessment) => [assessment.id, assessment]));
+async function buildAssessmentLookup() {
+  const assessments = await AssessmentModel.findAll();
+  return new Map(assessments.map((assessment) => [assessment.id, assessment]));
 }
 
-function hydrateSessionAssessments(session, assessmentsById = null) {
-  const lookup = assessmentsById || buildAssessmentLookup();
+function hydrateSessionAssessments(session, assessmentsById) {
   const attachedAssessments = normalizeAssessmentAttachments(session)
     .map((attachment) => {
-      const assessment = lookup.get(attachment.assessmentId);
+      const assessment = assessmentsById.get(attachment.assessmentId);
       if (!assessment) return null;
       return { ...assessment, mode: attachment.mode };
     })
@@ -96,15 +96,17 @@ const CourseService = {
 
   async getAllCourses() {
     const countByCourseId = new Map();
-    SessionModel.findAll().forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
-    return CourseModel.findAll().map((course) => ({
+    const sessions = await SessionModel.findAll();
+    sessions.forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
+    const courses = await CourseModel.findAll();
+    return courses.map((course) => ({
       ...course,
       sessionCount: countByCourseId.get(course.id) || 0,
     }));
   },
 
   async getCourseById(id) {
-    const course = CourseModel.findById(id);
+    const course = await CourseModel.findById(id);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
@@ -114,7 +116,7 @@ const CourseService = {
   },
 
   async updateCourse(id, data) {
-    const existing = CourseModel.findById(id);
+    const existing = await CourseModel.findById(id);
     if (!existing) {
       const err = new Error("Course not found");
       err.statusCode = 404;
@@ -126,18 +128,18 @@ const CourseService = {
   },
 
   async deleteCourse(id) {
-    const deleted = CourseModel.delete(id);
+    const deleted = await CourseModel.delete(id);
     if (!deleted) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    SessionModel.deleteByCourseId(id);
-    ModuleModel.deleteByCourseId(id);
-    CourseCompetencyLinkModel.deleteByCourseId(id);
-    CourseLearningAreaLinkModel.deleteByCourseId(id);
-    CourseCurriculumLinkModel.deleteByCourseId(id);
-    CourseInventoryLinkModel.deleteByCourseId(id);
+    await SessionModel.deleteByCourseId(id);
+    await ModuleModel.deleteByCourseId(id);
+    await CourseCompetencyLinkModel.deleteByCourseId(id);
+    await CourseLearningAreaLinkModel.deleteByCourseId(id);
+    await CourseCurriculumLinkModel.deleteByCourseId(id);
+    await CourseInventoryLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
   },
 
@@ -147,16 +149,17 @@ const CourseService = {
   // so it never silently double-books a curriculum the original is already used in. The admin
   // decides where (if anywhere) the copy gets attached.
   async duplicateCourse(id) {
-    const source = CourseModel.findById(id);
+    const source = await CourseModel.findById(id);
     if (!source) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
 
-    const existingCodes = CourseModel.findAll().map((c) => c.code).filter(Boolean);
+    const allCourses = await CourseModel.findAll();
+    const existingCodes = allCourses.map((c) => c.code).filter(Boolean);
     const { id: _id, createdAt, updatedAt, code, status, ...rest } = source;
-    const newCourse = CourseModel.create({
+    const newCourse = await CourseModel.create({
       ...rest,
       name: source.name,
       // Same name as the source, so generateCourseCode's own collision-suffix logic (already
@@ -166,20 +169,22 @@ const CourseService = {
       status: "draft",
     });
 
-    CourseLearningAreaLinkModel.findByCourseId(id)
-      .forEach((l) => CourseLearningAreaLinkModel.link(newCourse.id, l.learningAreaId));
-    CourseCompetencyLinkModel.findByCourseId(id)
-      .forEach((l) => CourseCompetencyLinkModel.link(newCourse.id, l.competencyId));
+    const learningAreaLinks = await CourseLearningAreaLinkModel.findByCourseId(id);
+    await Promise.all(learningAreaLinks.map((l) => CourseLearningAreaLinkModel.link(newCourse.id, l.learningAreaId)));
+    const competencyLinks = await CourseCompetencyLinkModel.findByCourseId(id);
+    await Promise.all(competencyLinks.map((l) => CourseCompetencyLinkModel.link(newCourse.id, l.competencyId)));
 
     const moduleIdMap = new Map();
-    ModuleModel.findByCourseId(id).forEach((m) => {
+    const modules = await ModuleModel.findByCourseId(id);
+    for (const m of modules) {
       const { id: oldModuleId, courseId: _courseId, createdAt: _c, updatedAt: _u, ...moduleRest } = m;
-      const newModule = ModuleModel.create({ ...moduleRest, courseId: newCourse.id });
+      const newModule = await ModuleModel.create({ ...moduleRest, courseId: newCourse.id });
       moduleIdMap.set(oldModuleId, newModule.id);
-    });
+    }
 
     const regenerateItemIds = (items = []) => items.map((item) => ({ ...item, id: generateId() }));
-    const sessionsData = SessionModel.findByCourseId(id).map((s) => {
+    const sourceSessions = await SessionModel.findByCourseId(id);
+    const sessionsData = sourceSessions.map((s) => {
       const { id: _sessionId, courseId: _courseId, createdAt: _c, updatedAt: _u, ...sessionRest } = s;
       return {
         ...sessionRest,
@@ -191,7 +196,7 @@ const CourseService = {
         resources: regenerateItemIds(s.resources),
       };
     });
-    if (sessionsData.length > 0) SessionModel.createMany(sessionsData);
+    if (sessionsData.length > 0) await SessionModel.createMany(sessionsData);
 
     return newCourse;
   },
@@ -199,61 +204,61 @@ const CourseService = {
   /* ── Competencies (authored globally in Settings, tagged onto a course here) ── */
 
   async getCourseCompetencies(courseId) {
-    const links = CourseCompetencyLinkModel.findByCourseId(courseId);
+    const links = await CourseCompetencyLinkModel.findByCourseId(courseId);
     return CompetencyModel.findByIds(links.map((l) => l.competencyId));
   },
 
   async linkCompetency(courseId, competencyId) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const comp = CompetencyModel.findById(competencyId);
+    const comp = await CompetencyModel.findById(competencyId);
     if (!comp) {
       const err = new Error("Competency not found");
       err.statusCode = 404;
       throw err;
     }
-    CourseCompetencyLinkModel.link(courseId, competencyId);
+    await CourseCompetencyLinkModel.link(courseId, competencyId);
     return this.getCourseCompetencies(courseId);
   },
 
   async unlinkCompetency(courseId, competencyId) {
-    CourseCompetencyLinkModel.unlink(courseId, competencyId);
+    await CourseCompetencyLinkModel.unlink(courseId, competencyId);
     return this.getCourseCompetencies(courseId);
   },
 
   /* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
 
   async getCourseLearningAreas(courseId) {
-    const links = CourseLearningAreaLinkModel.findByCourseId(courseId);
+    const links = await CourseLearningAreaLinkModel.findByCourseId(courseId);
     return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
   },
 
   async linkLearningArea(courseId, learningAreaId) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const area = LearningAreaModel.findById(learningAreaId);
+    const area = await LearningAreaModel.findById(learningAreaId);
     if (!area) {
       const err = new Error("Learning area not found");
       err.statusCode = 404;
       throw err;
     }
-    CourseLearningAreaLinkModel.link(courseId, learningAreaId);
+    await CourseLearningAreaLinkModel.link(courseId, learningAreaId);
     // Live-sync: any curriculum this course is already in picks up the new learning area
     // immediately, no re-attach/republish needed.
-    CurriculumService.resyncCourseIntoCurricula(courseId);
+    await CurriculumService.resyncCourseIntoCurricula(courseId);
     return this.getCourseLearningAreas(courseId);
   },
 
   async unlinkLearningArea(courseId, learningAreaId) {
-    CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
+    await CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
     return this.getCourseLearningAreas(courseId);
   },
 
@@ -262,8 +267,8 @@ const CourseService = {
      assessment.service.js's getAssessmentInventory/linkInventoryItem/unlinkInventoryItem ── */
 
   async getCourseInventory(courseId) {
-    const links = CourseInventoryLinkModel.findByCourseId(courseId);
-    const items = InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
+    const links = await CourseInventoryLinkModel.findByCourseId(courseId);
+    const items = await InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
     const itemsById = new Map(items.map((i) => [i.id, i]));
     return links
       .map((link) => {
@@ -274,34 +279,33 @@ const CourseService = {
   },
 
   async linkInventoryItem(courseId, inventoryItemId, quantity) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const item = InventoryModel.findById(inventoryItemId);
+    const item = await InventoryModel.findById(inventoryItemId);
     if (!item) {
       const err = new Error("Inventory item not found");
       err.statusCode = 404;
       throw err;
     }
-    CourseInventoryLinkModel.link(courseId, inventoryItemId, quantity);
+    await CourseInventoryLinkModel.link(courseId, inventoryItemId, quantity);
     return this.getCourseInventory(courseId);
   },
 
   async unlinkInventoryItem(courseId, inventoryItemId) {
-    CourseInventoryLinkModel.unlink(courseId, inventoryItemId);
+    await CourseInventoryLinkModel.unlink(courseId, inventoryItemId);
     return this.getCourseInventory(courseId);
   },
 
   /* ── Curricula (a course stays independent — this just records where it's currently used) ── */
 
   async getCourseCurricula(courseId) {
-    const links = CourseCurriculumLinkModel.findByCourseId(courseId);
-    return links
-      .map((l) => CurriculumModel.findById(l.curriculumId))
-      .filter(Boolean);
+    const links = await CourseCurriculumLinkModel.findByCourseId(courseId);
+    const curricula = await Promise.all(links.map((l) => CurriculumModel.findById(l.curriculumId)));
+    return curricula.filter(Boolean);
   },
 
   /* ── Score Evidence resolution ──────────────────────────────────────────
@@ -319,30 +323,30 @@ const CourseService = {
       throw err;
     }
 
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
 
-    const attached = SessionModel.findByCourseId(courseId)
-      .some((s) => sessionHasAssessment(s, assessmentId));
+    const sessions = await SessionModel.findByCourseId(courseId);
+    const attached = sessions.some((s) => sessionHasAssessment(s, assessmentId));
     if (!attached) {
       const err = new Error("This assessment is not attached to this course");
       err.statusCode = 404;
       throw err;
     }
 
-    const curriculumLinked = CourseCurriculumLinkModel.findByCourseId(courseId)
-      .some((l) => l.curriculumId === curriculumId);
+    const courseCurriculumLinks = await CourseCurriculumLinkModel.findByCourseId(courseId);
+    const curriculumLinked = courseCurriculumLinks.some((l) => l.curriculumId === curriculumId);
     if (!curriculumLinked) {
       const err = new Error("This course is not linked to that curriculum");
       err.statusCode = 404;
       throw err;
     }
 
-    const assessment = AssessmentModel.findById(assessmentId);
+    const assessment = await AssessmentModel.findById(assessmentId);
     if (!assessment) {
       const err = new Error("Assessment not found");
       err.statusCode = 404;
@@ -366,8 +370,8 @@ const CourseService = {
       (assessment.items  || []).reduce((sum, i) => sum + computeEntryMarks(i), 0) +
       (assessment.rubric || []).reduce((sum, r) => sum + computeEntryMarks(r), 0);
 
-    const evidenceType = EvidenceTypeModel.findByCurriculumId(curriculumId)
-      .find((e) => e.category === assessment.type);
+    const evidenceTypes = await EvidenceTypeModel.findByCurriculumId(curriculumId);
+    const evidenceType = evidenceTypes.find((e) => e.category === assessment.type);
 
     if (!evidenceType) {
       return {
@@ -384,7 +388,8 @@ const CourseService = {
     // evidence type hasn't been wired into any Assessment Type yet. An evidence type can be
     // reused across multiple Assessment Types with different overrides, so return every match
     // rather than silently picking one.
-    const usedIn = AssessmentTypeModel.findByCurriculumId(curriculumId)
+    const assessmentTypes = await AssessmentTypeModel.findByCurriculumId(curriculumId);
+    const usedIn = assessmentTypes
       .map((at) => {
         const weight = (at.evidenceWeights || []).find((w) => w.evidenceTypeId === evidenceType.id);
         if (!weight) return null;
@@ -420,40 +425,44 @@ const CourseService = {
   /* ── Sessions ────────────────────────────────────────────────────────── */
 
   async getSessions(courseId) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    ensureSessionsGrouped(courseId);
-    const assessmentsById = buildAssessmentLookup();
-    return SessionModel.findByCourseId(courseId).map((session) => hydrateSessionAssessments(session, assessmentsById));
+    await ensureSessionsGrouped(courseId);
+    const assessmentsById = await buildAssessmentLookup();
+    const sessions = await SessionModel.findByCourseId(courseId);
+    return sessions.map((session) => hydrateSessionAssessments(session, assessmentsById));
   },
 
   async createSession(courseId, data) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const order = data.order ?? SessionModel.findByCourseId(courseId).length + 1;
-    const session = SessionModel.create({ courseId, ...data, order });
+    const existingSessions = await SessionModel.findByCourseId(courseId);
+    const order = data.order ?? existingSessions.length + 1;
+    const session = await SessionModel.create({ courseId, ...data, order });
     // Live-sync: a session created with assessments already attached feeds this course's
     // curricula immediately, same as attaching them via a later update.
-    if (data.assessmentIds?.length || data.assessmentAttachments?.length) CurriculumService.resyncCourseIntoCurricula(courseId);
-    return hydrateSessionAssessments(session);
+    if (data.assessmentIds?.length || data.assessmentAttachments?.length) await CurriculumService.resyncCourseIntoCurricula(courseId);
+    const assessmentsById = await buildAssessmentLookup();
+    return hydrateSessionAssessments(session, assessmentsById);
   },
 
   async createSessionsBulk(courseId, count, moduleId = null) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const startOrder = SessionModel.findByCourseId(courseId).length + 1;
+    const existingSessions = await SessionModel.findByCourseId(courseId);
+    const startOrder = existingSessions.length + 1;
     const sessionsData = Array.from({ length: count }, (_, i) => ({
       courseId,
       title: "",
@@ -466,73 +475,76 @@ const CourseService = {
       notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));
-    const assessmentsById = buildAssessmentLookup();
-    return SessionModel.createMany(sessionsData).map((session) => hydrateSessionAssessments(session, assessmentsById));
+    const assessmentsById = await buildAssessmentLookup();
+    const created = await SessionModel.createMany(sessionsData);
+    return created.map((session) => hydrateSessionAssessments(session, assessmentsById));
   },
 
   async updateSession(courseId, sessionId, data) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const session = SessionModel.findById(sessionId);
+    const session = await SessionModel.findById(sessionId);
     if (!session || session.courseId !== courseId) {
       const err = new Error("Session not found");
       err.statusCode = 404;
       throw err;
     }
-    const updated = SessionModel.update(sessionId, data);
+    const updated = await SessionModel.update(sessionId, data);
     // Live-sync: an assessment newly attached to this session feeds this course's curricula
     // immediately. No diffing needed — resync is idempotent, so this is a no-op if nothing
     // about assessmentIds actually changed.
-    if (data.assessmentIds !== undefined || data.assessmentAttachments !== undefined) CurriculumService.resyncCourseIntoCurricula(courseId);
-    return hydrateSessionAssessments(updated);
+    if (data.assessmentIds !== undefined || data.assessmentAttachments !== undefined) await CurriculumService.resyncCourseIntoCurricula(courseId);
+    const assessmentsById = await buildAssessmentLookup();
+    return hydrateSessionAssessments(updated, assessmentsById);
   },
 
   async deleteSession(courseId, sessionId) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const session = SessionModel.findById(sessionId);
+    const session = await SessionModel.findById(sessionId);
     if (!session || session.courseId !== courseId) {
       const err = new Error("Session not found");
       err.statusCode = 404;
       throw err;
     }
-    SessionModel.delete(sessionId);
+    await SessionModel.delete(sessionId);
   },
 
   /* ── Modules (group this course's Sessions under a named bucket) ───────── */
 
   async getModules(courseId) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    ensureSessionsGrouped(courseId);
+    await ensureSessionsGrouped(courseId);
     return ModuleModel.findByCourseId(courseId);
   },
 
   async createModule(courseId, data) {
-    const course = CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const order = data.order ?? ModuleModel.findByCourseId(courseId).length + 1;
+    const existingModules = await ModuleModel.findByCourseId(courseId);
+    const order = data.order ?? existingModules.length + 1;
     return ModuleModel.create({ courseId, ...data, order });
   },
 
   async updateModule(courseId, moduleId, data) {
-    const courseModule = ModuleModel.findById(moduleId);
+    const courseModule = await ModuleModel.findById(moduleId);
     if (!courseModule || courseModule.courseId !== courseId) {
       const err = new Error("Module not found");
       err.statusCode = 404;
@@ -542,7 +554,7 @@ const CourseService = {
   },
 
   async deleteModule(courseId, moduleId) {
-    const courseModule = ModuleModel.findById(moduleId);
+    const courseModule = await ModuleModel.findById(moduleId);
     if (!courseModule || courseModule.courseId !== courseId) {
       const err = new Error("Module not found");
       err.statusCode = 404;
@@ -550,13 +562,14 @@ const CourseService = {
     }
     // Every session must belong to a module — no "ungrouped" fallback — so a module can
     // only be deleted once it's empty. Move or delete its sessions first.
-    const hasSessions = SessionModel.findByCourseId(courseId).some((s) => s.moduleId === moduleId);
+    const sessions = await SessionModel.findByCourseId(courseId);
+    const hasSessions = sessions.some((s) => s.moduleId === moduleId);
     if (hasSessions) {
       const err = new Error(`"${courseModule.name}" still has sessions in it. Move or delete them before deleting this module.`);
       err.statusCode = 400;
       throw err;
     }
-    ModuleModel.delete(moduleId);
+    await ModuleModel.delete(moduleId);
   },
 };
 

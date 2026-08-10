@@ -15,21 +15,22 @@ const {
 // precision level every teacher-facing ownership check in this file uses, whether the class is
 // known directly (assertClassAccess) or reached indirectly through a learner's enrollment
 // (assertLearnerHubAccess).
-function teacherLinkedToClass(req, classId) {
-  return ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === req.ownTeacher?.id);
+async function teacherLinkedToClass(req, classId) {
+  const links = await ClassCourseTeacherLinkModel.findByClassId(classId);
+  return links.some((l) => l.teacherId === req.ownTeacher?.id);
 }
 
 // Issuing/grading/roster-viewing all revolve around a class — reuse the exact ownership check
 // classes/attendance already apply, so a teacher can only ever touch a class they have at least
 // one course-educator link in, and a school only its own school's classes.
-function assertClassAccess(req, cls) {
+async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
     err.statusCode = 404;
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
-  if (req.user.role === "teacher") assertOwn(teacherLinkedToClass(req, cls.id));
+  if (req.user.role === "teacher") assertOwn(await teacherLinkedToClass(req, cls.id));
 }
 
 // A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)
@@ -38,13 +39,16 @@ function assertClassAccess(req, cls) {
 // their own, so their access comes from the learner's class instead — same "any course-link in
 // the class is enough" precision assertClassAccess already uses for ordinary class-issued
 // grading, not narrowed down to the specific Learning Area's courses.
-function assertLearnerHubAccess(req, learnerId) {
+async function assertLearnerHubAccess(req, learnerId) {
   if (req.user.role === "school") {
-    const hubIds = LearnerHubLinkModel.findByLearnerId(learnerId).map((l) => l.hubId);
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const hubIds = links.map((l) => l.hubId);
     assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
   } else if (req.user.role === "teacher") {
-    const classIds = LearnerHubLinkModel.findByLearnerId(learnerId).filter((l) => l.classId).map((l) => l.classId);
-    assertOwn(classIds.some((classId) => teacherLinkedToClass(req, classId)));
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const classIds = links.filter((l) => l.classId).map((l) => l.classId);
+    const results = await Promise.all(classIds.map((classId) => teacherLinkedToClass(req, classId)));
+    assertOwn(results.some(Boolean));
   }
 }
 
@@ -60,26 +64,26 @@ function assertLearnerOwnsSubmission(req, submission) {
 // Shared by getSubmission/gradeSubmission/publishSubmissionReport — a class-issued submission
 // checks ownership via its class, a standalone one (diagnostic/course-progress, no classId) via
 // the learner's own hub/class links instead.
-function assertSubmissionAccess(req, submission) {
+async function assertSubmissionAccess(req, submission) {
   if (submission.classId) {
-    assertClassAccess(req, ClassModel.findById(submission.classId));
+    await assertClassAccess(req, await ClassModel.findById(submission.classId));
   } else {
-    assertLearnerHubAccess(req, submission.learnerId);
+    await assertLearnerHubAccess(req, submission.learnerId);
   }
 }
 
 // Shared by getIssuesForClass/getSubmissionsNeedingGrading/getStandaloneSubmissionsNeedingGrading
 // — every one of them is "resolve the classId query param, require it, then prove this caller
 // owns that class" before doing anything else.
-function requireOwnedClassFromQuery(req) {
+async function requireOwnedClassFromQuery(req) {
   const { classId } = req.query;
   if (!classId) {
     const err = new Error("classId is required");
     err.statusCode = 400;
     throw err;
   }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
   return cls;
 }
 
@@ -107,51 +111,51 @@ function redactUnpublishedReport(submission) {
 
 const issueAssessment = asyncHandler(async (req, res) => {
   const data = issueAssessmentSchema.parse(req.body);
-  const cls = ClassModel.findById(data.classId);
-  assertClassAccess(req, cls);
-  const issue = AssessmentSubmissionService.issueAssessment({ ...data, issuedBy: req.ownTeacher?.id || req.user.id });
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const issue = await AssessmentSubmissionService.issueAssessment({ ...data, issuedBy: req.ownTeacher?.id || req.user.id });
   res.status(201).json({ success: true, data: issue });
 });
 
 const getIssuesForClass = asyncHandler(async (req, res) => {
-  const cls = requireOwnedClassFromQuery(req);
-  const issues = AssessmentSubmissionService.getIssuesForClass(cls.id);
+  const cls = await requireOwnedClassFromQuery(req);
+  const issues = await AssessmentSubmissionService.getIssuesForClass(cls.id);
   res.json({ success: true, data: issues, count: issues.length });
 });
 
 // The teacher's cross-cutting "needs grading" queue for one class — see
 // getSubmissionsNeedingGrading in the service for why this is separate from a per-issue roster.
 const getSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
-  const cls = requireOwnedClassFromQuery(req);
-  const rows = AssessmentSubmissionService.getSubmissionsNeedingGrading(cls.id);
+  const cls = await requireOwnedClassFromQuery(req);
+  const rows = await AssessmentSubmissionService.getSubmissionsNeedingGrading(cls.id);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
 // Teacher-facing counterpart to getSubmissionsNeedingGrading — see
 // getStandaloneSubmissionsNeedingGrading in the service for why this is separate.
 const getStandaloneSubmissionsNeedingGrading = asyncHandler(async (req, res) => {
-  const cls = requireOwnedClassFromQuery(req);
-  const rows = AssessmentSubmissionService.getStandaloneSubmissionsNeedingGrading(cls.id);
+  const cls = await requireOwnedClassFromQuery(req);
+  const rows = await AssessmentSubmissionService.getStandaloneSubmissionsNeedingGrading(cls.id);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
 const getRosterForIssue = asyncHandler(async (req, res) => {
-  const { issue, assessment, roster } = AssessmentSubmissionService.getRosterForIssue(req.params.id);
-  const cls = ClassModel.findById(issue.classId);
-  assertClassAccess(req, cls);
+  const { issue, assessment, roster } = await AssessmentSubmissionService.getRosterForIssue(req.params.id);
+  const cls = await ClassModel.findById(issue.classId);
+  await assertClassAccess(req, cls);
   res.json({ success: true, data: { issue, assessment, roster } });
 });
 
 const revokeIssue = asyncHandler(async (req, res) => {
-  const issue = AssessmentSubmissionService.getIssue(req.params.id);
+  const issue = await AssessmentSubmissionService.getIssue(req.params.id);
   if (!issue) {
     const err = new Error("Issue not found");
     err.statusCode = 404;
     throw err;
   }
-  const cls = ClassModel.findById(issue.classId);
-  assertClassAccess(req, cls);
-  AssessmentSubmissionService.revokeIssue(req.params.id);
+  const cls = await ClassModel.findById(issue.classId);
+  await assertClassAccess(req, cls);
+  await AssessmentSubmissionService.revokeIssue(req.params.id);
   res.json({ success: true });
 });
 
@@ -162,8 +166,8 @@ const revokeIssue = asyncHandler(async (req, res) => {
 const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
-  const rows = AssessmentSubmissionService.getIssuedRowsForLearner(learner.id)
-    .map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
+  const rawRows = await AssessmentSubmissionService.getIssuedRowsForLearner(learner.id);
+  const rows = rawRows.map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -175,9 +179,9 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") {
     assertOwn(req.params.learnerId === req.ownLearner?.id);
   } else {
-    assertLearnerHubAccess(req, req.params.learnerId);
+    await assertLearnerHubAccess(req, req.params.learnerId);
   }
-  const row = AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId, req.query.curriculumId || null);
+  const row = await AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId, req.query.curriculumId || null);
   res.json({ success: true, data: row });
 });
 
@@ -189,9 +193,9 @@ const getLearningAreaDiagnosticsForLearner = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") {
     assertOwn(req.params.learnerId === req.ownLearner?.id);
   } else {
-    assertLearnerHubAccess(req, req.params.learnerId);
+    await assertLearnerHubAccess(req, req.params.learnerId);
   }
-  const rows = AssessmentSubmissionService.getLearningAreaDiagnosticsForLearner(req.params.learnerId);
+  const rows = await AssessmentSubmissionService.getLearningAreaDiagnosticsForLearner(req.params.learnerId);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -202,9 +206,9 @@ const getLearnerIndicatorProgress = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") {
     assertOwn(learnerId === req.ownLearner?.id);
   } else {
-    assertLearnerHubAccess(req, learnerId);
+    await assertLearnerHubAccess(req, learnerId);
   }
-  const rows = AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, req.query.curriculumId || null);
+  const rows = await AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, req.query.curriculumId || null);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -215,7 +219,7 @@ const issueOnSessionComplete = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   assertOwn(!!learner);
   const data = issueOnSessionCompleteSchema.parse(req.body);
-  const issue = AssessmentSubmissionService.issueOnSessionComplete({ ...data, learnerId: learner.id });
+  const issue = await AssessmentSubmissionService.issueOnSessionComplete({ ...data, learnerId: learner.id });
   res.status(201).json({ success: true, data: issue });
 });
 
@@ -228,28 +232,28 @@ const getOrCreateSubmission = asyncHandler(async (req, res) => {
   }
   const learner = req.ownLearner;
   assertOwn(!!learner);
-  const submission = AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId: learner.id });
+  const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId: learner.id });
   res.status(201).json({ success: true, data: submission });
 });
 
 const saveDraft = asyncHandler(async (req, res) => {
-  const existing = AssessmentSubmissionService.getSubmission(req.params.id);
+  const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   assertLearnerOwnsSubmission(req, existing);
   const { answers } = submitAnswersSchema.parse(req.body);
-  const submission = AssessmentSubmissionService.saveDraft(req.params.id, answers);
+  const submission = await AssessmentSubmissionService.saveDraft(req.params.id, answers);
   res.json({ success: true, data: submission });
 });
 
 const submitAnswers = asyncHandler(async (req, res) => {
-  const existing = AssessmentSubmissionService.getSubmission(req.params.id);
+  const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   assertLearnerOwnsSubmission(req, existing);
   const { answers } = submitAnswersSchema.parse(req.body);
-  const submission = AssessmentSubmissionService.submit(req.params.id, answers);
+  const submission = await AssessmentSubmissionService.submit(req.params.id, answers);
   res.json({ success: true, data: submission });
 });
 
 const getSubmission = asyncHandler(async (req, res) => {
-  const submission = AssessmentSubmissionService.getSubmission(req.params.id);
+  const submission = await AssessmentSubmissionService.getSubmission(req.params.id);
   if (!submission) {
     const err = new Error("Submission not found");
     err.statusCode = 404;
@@ -260,34 +264,34 @@ const getSubmission = asyncHandler(async (req, res) => {
     res.json({ success: true, data: redactUnpublishedReport(submission) });
     return;
   }
-  assertSubmissionAccess(req, submission);
+  await assertSubmissionAccess(req, submission);
   res.json({ success: true, data: submission });
 });
 
 const gradeSubmission = asyncHandler(async (req, res) => {
-  const existing = AssessmentSubmissionService.getSubmission(req.params.id);
+  const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   if (!existing) {
     const err = new Error("Submission not found");
     err.statusCode = 404;
     throw err;
   }
-  assertSubmissionAccess(req, existing);
+  await assertSubmissionAccess(req, existing);
   const data = gradeSubmissionSchema.parse(req.body);
-  const submission = AssessmentSubmissionService.grade(req.params.id, { ...data, gradedBy: req.ownTeacher?.id || req.user.id });
+  const submission = await AssessmentSubmissionService.grade(req.params.id, { ...data, gradedBy: req.ownTeacher?.id || req.user.id });
   res.json({ success: true, data: submission });
 });
 
 // Teacher's explicit "make this grade visible to the learner" action — same ownership shape as
 // gradeSubmission, since only whoever could grade it should be able to release it.
 const publishSubmissionReport = asyncHandler(async (req, res) => {
-  const existing = AssessmentSubmissionService.getSubmission(req.params.id);
+  const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   if (!existing) {
     const err = new Error("Submission not found");
     err.statusCode = 404;
     throw err;
   }
-  assertSubmissionAccess(req, existing);
-  const submission = AssessmentSubmissionService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
+  await assertSubmissionAccess(req, existing);
+  const submission = await AssessmentSubmissionService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
   res.json({ success: true, data: submission });
 });
 

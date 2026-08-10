@@ -41,12 +41,15 @@ const getCurriculumById = asyncHandler(async (req, res) => {
   // even by guessing an id.
   if (req.user.role === "school") {
     const isOwnPrimary = req.ownSchool?.curriculumId === curriculum.id;
-    const isDeployedProgram = ProgramModel.findAll({ curriculumId: curriculum.id }).some((p) => p.hubId === req.ownSchool?.id);
+    const deployedPrograms = await ProgramModel.findAll({ curriculumId: curriculum.id });
+    const isDeployedProgram = deployedPrograms.some((p) => p.hubId === req.ownSchool?.id);
     assertOwn(isOwnPrimary || isDeployedProgram);
   } else if (req.user.role === "teacher") {
-    const hubIds = req.ownTeacher ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).map((l) => l.hubId) : [];
-    const isOwnPrimary = hubIds.some((hid) => SchoolModel.findById(hid)?.curriculumId === curriculum.id);
-    const isDeployedProgram = ProgramModel.findAll({ curriculumId: curriculum.id }).some((p) => hubIds.includes(p.hubId));
+    const hubIds = req.ownTeacher ? (await TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id)).map((l) => l.hubId) : [];
+    const hubs = await Promise.all(hubIds.map((hid) => SchoolModel.findById(hid)));
+    const isOwnPrimary = hubs.some((hub) => hub?.curriculumId === curriculum.id);
+    const deployedPrograms = await ProgramModel.findAll({ curriculumId: curriculum.id });
+    const isDeployedProgram = deployedPrograms.some((p) => hubIds.includes(p.hubId));
     assertOwn(isOwnPrimary || isDeployedProgram);
   } else if (req.user.role === "curriculumAdmin") {
     assertOwn(req.ownCurriculum?.id === curriculum.id);

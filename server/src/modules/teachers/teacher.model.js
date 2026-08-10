@@ -1,68 +1,44 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/teachers.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
+const TABLE = "teachers";
+const JSON_FIELDS = ["qualifiedCourseIds"];
 
 const TeacherModel = {
   create(data) {
-    const all = readAll();
-    const teacher = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(teacher);
-    writeAll(all);
-    return teacher;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  findAll({ ids, status, subject, email } = {}) {
-    let all = readAll();
-    if (ids)      all = all.filter((t) => ids.includes(t.id));
-    if (status)   all = all.filter((t) => t.status === status);
-    if (subject)  all = all.filter((t) => t.subjects?.includes(subject));
-    if (email)    all = all.filter((t) => t.email?.toLowerCase() === email.toLowerCase());
-    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  async findAll({ ids, status, subject, email } = {}) {
+    let query = db(TABLE);
+    if (ids) query = query.whereIn("id", ids);
+    if (status) query = query.where({ status });
+    if (email) query = query.whereRaw("LOWER(email) = ?", [email.toLowerCase()]);
+
+    let rows = await query.orderBy("createdAt", "desc");
+    // `subjects` isn't a real column (dead/legacy filter — teachers.json never had that
+    // field either, superseded by qualifiedCourseIds) — preserved as-is rather than fixed,
+    // same as the JSON-file era: this always filters out every row when `subject` is passed.
+    if (subject) rows = rows.filter((t) => t.subjects?.includes(subject));
+    return rows;
   },
 
   findById(id) {
-    return readAll().find((t) => t.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const index = all.findIndex((t) => t.id === id);
-    if (index === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[index];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {
-    const all = readAll();
-    const index = all.findIndex((t) => t.id === id);
-    if (index === -1) return false;
-    all.splice(index, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 };
 

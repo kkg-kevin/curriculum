@@ -14,9 +14,9 @@ const LearningHubService = {
   // the teacher side, this just reads the same table back out for hub-scoped consumers
   // (e.g. a school portal's "our teachers" list).
   async getHubTeachers(hubId) {
-    return TeacherHubLinkModel.findByHubId(hubId)
-      .map((l) => TeacherModel.findById(l.teacherId))
-      .filter(Boolean);
+    const links = await TeacherHubLinkModel.findByHubId(hubId);
+    const teachers = await Promise.all(links.map((l) => TeacherModel.findById(l.teacherId)));
+    return teachers.filter(Boolean);
   },
 
   async getAllLearningHubs(filters) {
@@ -24,7 +24,7 @@ const LearningHubService = {
   },
 
   async getLearningHubById(id) {
-    const record = LearningHubModel.findById(id);
+    const record = await LearningHubModel.findById(id);
     if (!record) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;
@@ -34,7 +34,7 @@ const LearningHubService = {
   },
 
   async updateLearningHub(id, data) {
-    const record = LearningHubModel.update(id, data);
+    const record = await LearningHubModel.update(id, data);
     if (!record) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;
@@ -44,19 +44,20 @@ const LearningHubService = {
   },
 
   async deleteLearningHub(id) {
-    const deleted = LearningHubModel.delete(id);
+    const deleted = await LearningHubModel.delete(id);
     if (!deleted) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;
       throw err;
     }
-    TeacherHubLinkModel.deleteByHubId(id);
-    LearnerHubLinkModel.deleteByHubId(id);
+    await TeacherHubLinkModel.deleteByHubId(id);
+    await LearnerHubLinkModel.deleteByHubId(id);
     // Classes are keyed by schoolId === this hub's id, with no other owner once the hub is gone —
     // routed through ClassService.deleteClass (not ClassModel.delete) so every cascade it already
     // handles (timetable, course schedules, attendance, class-owned assessment issues) runs too,
     // instead of duplicating that logic here.
-    for (const cls of ClassModel.findAll({ schoolId: id })) {
+    const classes = await ClassModel.findAll({ schoolId: id });
+    for (const cls of classes) {
       await ClassService.deleteClass(cls.id);
     }
     return { message: "Learning hub deleted successfully" };

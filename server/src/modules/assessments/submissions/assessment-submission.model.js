@@ -1,89 +1,55 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/assessment-submissions.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) =>
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+const TABLE = "assessment_submissions";
+const JSON_FIELDS = ["answers", "autoItemResults", "itemFeedback", "indicatorBreakdown"];
 
 // One record per (issue, learner) — a learner's single attempt at an issued assessment.
 const AssessmentSubmissionModel = {
   create(data) {
-    const all = readAll();
-    const record = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(record);
-    writeAll(all);
-    return record;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   findAll({ issueId, assessmentId, learnerId, classId, status } = {}) {
-    let all = readAll();
-    if (issueId)      all = all.filter((r) => r.issueId === issueId);
-    if (assessmentId) all = all.filter((r) => r.assessmentId === assessmentId);
-    if (learnerId)    all = all.filter((r) => r.learnerId === learnerId);
-    if (classId)      all = all.filter((r) => r.classId === classId);
-    if (status)       all = all.filter((r) => r.status === status);
-    return all.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    let query = db(TABLE);
+    if (issueId) query = query.where({ issueId });
+    if (assessmentId) query = query.where({ assessmentId });
+    if (learnerId) query = query.where({ learnerId });
+    if (classId) query = query.where({ classId });
+    if (status) query = query.where({ status });
+    return query.orderBy("updatedAt", "desc");
   },
 
   findById(id) {
-    return readAll().find((r) => r.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   findOne({ issueId, learnerId }) {
-    return readAll().find((r) => r.issueId === issueId && r.learnerId === learnerId) || null;
+    return firstOrNull(db(TABLE).where({ issueId, learnerId }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const idx = all.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[idx] = { ...all[idx], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {
-    const all = readAll();
-    const idx = all.findIndex((r) => r.id === id);
-    if (idx === -1) return false;
-    all.splice(idx, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 
   // Detaches a deleted teacher's attribution without touching the graded submission itself —
   // gradedBy and reportPublishedBy are independently settable (see grade()/publishReport() in
   // assessment-submission.service.js), so each is only cleared where it actually matches.
-  clearGradedBy(teacherId) {
-    const all = readAll();
-    const next = all.map((r) => {
-      if (r.gradedBy !== teacherId && r.reportPublishedBy !== teacherId) return r;
-      return {
-        ...r,
-        gradedBy: r.gradedBy === teacherId ? null : r.gradedBy,
-        reportPublishedBy: r.reportPublishedBy === teacherId ? null : r.reportPublishedBy,
-      };
-    });
-    writeAll(next);
+  async clearGradedBy(teacherId) {
+    await Promise.all([
+      db(TABLE).where({ gradedBy: teacherId }).update({ gradedBy: null }),
+      db(TABLE).where({ reportPublishedBy: teacherId }).update({ reportPublishedBy: null }),
+    ]);
   },
 };
 

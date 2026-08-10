@@ -1,50 +1,34 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../config/db");
+const { generateId, firstOrNull } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/course-competencies.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "course_competency_links";
 
 // Records which global competencies a course has been tagged with — a course never
 // owns/authors competencies, it just links to entries from the shared catalog.
 const CourseCompetencyLinkModel = {
   findByCourseId(courseId) {
-    return read().filter((l) => l.courseId === courseId);
+    return db(TABLE).where({ courseId });
   },
 
-  link(courseId, competencyId) {
-    const all = read();
-    const existing = all.find((l) => l.courseId === courseId && l.competencyId === competencyId);
+  async link(courseId, competencyId) {
+    const existing = await firstOrNull(db(TABLE).where({ courseId, competencyId }));
     if (existing) return existing;
-    const item = { id: genId(), courseId, competencyId, createdAt: new Date().toISOString() };
-    all.push(item);
-    write(all);
+    const item = { id: generateId(), courseId, competencyId, createdAt: new Date() };
+    await db(TABLE).insert(item);
     return item;
   },
 
-  unlink(courseId, competencyId) {
-    const all      = read();
-    const filtered = all.filter((l) => !(l.courseId === courseId && l.competencyId === competencyId));
-    if (filtered.length === all.length) return false;
-    write(filtered);
-    return true;
+  async unlink(courseId, competencyId) {
+    const count = await db(TABLE).where({ courseId, competencyId }).del();
+    return count > 0;
   },
 
   deleteByCourseId(courseId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.courseId !== courseId);
-    write(filtered);
+    return db(TABLE).where({ courseId }).del();
   },
 
   deleteByCompetencyId(competencyId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.competencyId !== competencyId);
-    write(filtered);
+    return db(TABLE).where({ competencyId }).del();
   },
 };
 

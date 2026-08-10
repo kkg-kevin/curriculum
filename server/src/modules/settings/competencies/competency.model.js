@@ -1,24 +1,9 @@
-const fs = require("fs");
-const path = require("path");
+const db = require("../../../config/db");
+const { generateId, filterDefined } = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/competencies.json");
+const TABLE = "competencies";
+const INDICATOR_TABLE = "competency_indicators";
 const STOP_WORDS = new Set(["the", "and", "of", "for", "a", "an", "in", "on", "at", "to", "by", "with", "from", "or"]);
-
-function read() {
-  return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : [];
-}
-
-function write(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-function genId() {
-  try {
-    return require("crypto").randomUUID();
-  } catch {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-}
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -66,123 +51,121 @@ function uniqueCode(baseCode, usedCodes, fallback) {
 function normalizeIndicators(indicators, competencyCode) {
   const list = Array.isArray(indicators) ? indicators : [];
   const usedCodes = new Set();
-  let changed = false;
 
-  const normalized = list.map((indicator) => {
+  return list.map((indicator) => {
     const item = { ...indicator };
-    if (!item.id) {
-      item.id = genId();
-      changed = true;
-    }
+    if (!item.id) item.id = generateId();
 
     const baseCode = `${competencyCode}-${codeFromName(item.name, "IND")}`;
-    const code = uniqueCode(baseCode, usedCodes, `${competencyCode}-IND`);
-    if (code !== item.code) changed = true;
-    item.code = code;
+    item.code = uniqueCode(baseCode, usedCodes, `${competencyCode}-IND`);
     return item;
   });
-
-  return { indicators: normalized, changed };
 }
 
-function normalizeCompetencies(records) {
-  const list = Array.isArray(records) ? records : [];
-  const usedCodes = new Set();
-  let changed = false;
-
-  const normalized = list.map((item) => {
-    const record = { ...item };
-    if (!record.id) {
-      record.id = genId();
-      changed = true;
-    }
-
-    const baseCode = codeFromName(record.name, "COMP");
-    const code = uniqueCode(baseCode, usedCodes, "COMP");
-    if (code !== record.code) changed = true;
-    record.code = code;
-
-    const normalizedIndicators = normalizeIndicators(record.indicators, record.code);
-    record.indicators = normalizedIndicators.indicators;
-    if (normalizedIndicators.changed) changed = true;
-
-    return record;
-  });
-
-  return { normalized, changed };
+// Attaches an `indicators` array (in stored display order) to each competency row — the
+// shape every caller expects, matching the JSON-file era's embedded competencies[].indicators[].
+async function attachIndicators(competencies) {
+  if (!competencies.length) return competencies;
+  const ids = competencies.map((c) => c.id);
+  const indicatorRows = await db(INDICATOR_TABLE).whereIn("competencyId", ids).orderBy("order", "asc");
+  const byCompetency = new Map();
+  for (const row of indicatorRows) {
+    const list = byCompetency.get(row.competencyId) || [];
+    list.push({ id: row.id, name: row.name, description: row.description, code: row.code });
+    byCompetency.set(row.competencyId, list);
+  }
+  return competencies.map((c) => ({ ...c, indicators: byCompetency.get(c.id) || [] }));
 }
 
-function readNormalized() {
-  const records = read();
-  const { normalized, changed } = normalizeCompetencies(records);
-  if (changed) write(normalized);
-  return normalized;
+async function replaceIndicators(trx, competencyId, indicators) {
+  await trx(INDICATOR_TABLE).where({ competencyId }).del();
+  if (!indicators.length) return;
+  const now = new Date();
+  await trx(INDICATOR_TABLE).insert(
+    indicators.map((ind, index) => ({
+      id: ind.id,
+      competencyId,
+      name: ind.name,
+      description: ind.description ?? null,
+      code: ind.code,
+      order: index,
+      createdAt: now,
+      updatedAt: now,
+    }))
+  );
 }
 
 const CompetencyModel = {
-  findAll() {
-    return readNormalized();
+  async findAll() {
+    const rows = await db(TABLE).orderBy("createdAt", "asc");
+    return attachIndicators(rows);
   },
 
-  findByIds(ids) {
-    const idSet = new Set(ids);
-    return readNormalized().filter((c) => idSet.has(c.id));
+  async findByIds(ids) {
+    const rows = await db(TABLE).whereIn("id", ids).orderBy("createdAt", "asc");
+    return attachIndicators(rows);
   },
 
-  findById(id) {
-    return readNormalized().find((c) => c.id === id) || null;
+  async findById(id) {
+    const row = await db(TABLE).where({ id }).first();
+    if (!row) return null;
+    const [withIndicators] = await attachIndicators([row]);
+    return withIndicators;
   },
 
-  create(data) {
-    const all = readNormalized();
-    const now = new Date().toISOString();
+  async create(data) {
+    const { indicators: inputIndicators, ...rest } = data;
+    const existing = await db(TABLE).select("code");
+    const usedCodes = new Set(existing.map((c) => c.code).filter(Boolean));
     const baseCode = codeFromName(data.name, "COMP");
-    const code = uniqueCode(baseCode, new Set(all.map((item) => item.code)), "COMP");
-    const indicators = normalizeIndicators(data.indicators, code).indicators;
-    const item = {
-      ...data,
-      id: genId(),
-      code,
-      indicators,
-      createdAt: now,
-      updatedAt: now,
-    };
-    all.push(item);
-    write(all);
-    return item;
-  },
-
-  update(id, data) {
-    const all = readNormalized();
-    const idx = all.findIndex((c) => c.id === id);
-    if (idx === -1) return null;
-
-    const nextName = typeof data.name === "string" ? data.name : all[idx].name;
-    const baseCode = codeFromName(nextName, "COMP");
-    const usedCodes = new Set(all.filter((item) => item.id !== id).map((item) => item.code));
     const code = uniqueCode(baseCode, usedCodes, "COMP");
-    const indicators = data.indicators
-      ? normalizeIndicators(data.indicators, code).indicators
-      : normalizeIndicators(all[idx].indicators, code).indicators;
+    const indicators = normalizeIndicators(inputIndicators, code);
 
-    all[idx] = {
-      ...all[idx],
-      ...data,
-      code,
-      indicators,
-      id,
-      updatedAt: new Date().toISOString(),
-    };
-    write(all);
-    return all[idx];
+    const now = new Date();
+    const competency = { ...filterDefined(rest), id: generateId(), code, createdAt: now, updatedAt: now };
+
+    await db.transaction(async (trx) => {
+      await trx(TABLE).insert(competency);
+      await replaceIndicators(trx, competency.id, indicators);
+    });
+
+    return { ...competency, indicators };
   },
 
-  delete(id) {
-    const all = readNormalized();
-    const filtered = all.filter((c) => c.id !== id);
-    if (filtered.length === all.length) return false;
-    write(filtered);
-    return true;
+  async update(id, data) {
+    const current = await db(TABLE).where({ id }).first();
+    if (!current) return null;
+
+    const { indicators: inputIndicators, ...rest } = data;
+    const nextName = typeof rest.name === "string" ? rest.name : current.name;
+    const baseCode = codeFromName(nextName, "COMP");
+    const otherCodes = await db(TABLE).where("id", "!=", id).select("code");
+    const usedCodes = new Set(otherCodes.map((c) => c.code).filter(Boolean));
+    const code = uniqueCode(baseCode, usedCodes, "COMP");
+
+    const sourceIndicators = inputIndicators || (await db(INDICATOR_TABLE).where({ competencyId: id }).orderBy("order", "asc"));
+    const indicators = normalizeIndicators(sourceIndicators, code);
+
+    const patch = filterDefined(rest);
+    delete patch.id;
+    patch.code = code;
+    patch.updatedAt = new Date();
+
+    await db.transaction(async (trx) => {
+      await trx(TABLE).where({ id }).update(patch);
+      await replaceIndicators(trx, id, indicators);
+    });
+
+    const updatedRow = await db(TABLE).where({ id }).first();
+    return { ...updatedRow, indicators };
+  },
+
+  async delete(id) {
+    const count = await db.transaction(async (trx) => {
+      await trx(INDICATOR_TABLE).where({ competencyId: id }).del();
+      return trx(TABLE).where({ id }).del();
+    });
+    return count > 0;
   },
 };
 

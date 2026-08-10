@@ -11,12 +11,13 @@ function isAutoGradableItem(item) {
 // Whether any part of this assessment needs a teacher's eyes before it can be released — a
 // rubric, a project type, or a single non-auto-gradable item is enough to hold the whole
 // submission for manual review (see the release-together decision this was built around).
-// Teacher Observation now authors real items exactly like quiz/exam (structured/unstructured),
-// so it's judged by the same generic rule below rather than always forced to manual — an
-// all-structured observation auto-grades just like an all-structured quiz would.
+// Teacher Observation authors real items exactly like quiz/exam (structured/unstructured) plus
+// its own `indicators` (checklist/rating/etc, always filled in by the teacher during grading,
+// never auto-gradable) — any indicators present force manual grading the same way a rubric does.
 function requiresManualGrading(assessment) {
   if (assessment.type === "project") return true;
   if ((assessment.rubric || []).length > 0) return true;
+  if ((assessment.indicators || []).length > 0) return true;
   return (assessment.items || []).some((item) => !isAutoGradableItem(item));
 }
 
@@ -90,15 +91,16 @@ function computeAutoScore(assessment, answers) {
   return { autoScore, autoMax, itemResults };
 }
 
-// Total possible marks across the whole assessment — items (or indicators for observation) plus
-// rubric, the same accounting AssessmentContent.jsx already surfaces to a teacher/admin.
+// Total possible marks across the whole assessment — items plus (for observation) indicators,
+// plus rubric, the same accounting AssessmentContent.jsx already surfaces to a teacher/admin.
 // A "note"-kind observation indicator is a freeform comment, not a judgment to score — excluded
 // from the sum the same way a plain comment would be, regardless of whatever `points` it
 // happens to carry.
 function computeMaxScore(assessment) {
-  const isObservation = assessment.type === "observation";
-  const entries = ((isObservation ? assessment.indicators : assessment.items) || [])
-    .filter((e) => e.kind !== "note");
+  const entries = [
+    ...(assessment.items || []),
+    ...(assessment.type === "observation" ? (assessment.indicators || []) : []),
+  ].filter((e) => e.kind !== "note");
   const itemMax = entries.reduce((sum, e) => sum + computeEntryMarks(e), 0);
   const rubricMax = (assessment.rubric || []).reduce((sum, c) => sum + computeEntryMarks(c), 0);
   return itemMax + rubricMax;

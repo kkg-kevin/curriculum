@@ -1,68 +1,42 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/academic-year-versions.json");
-
-const genId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+const TABLE = "academic_year_versions";
+const JSON_FIELDS = ["periods"];
 
 const AcademicYearVersionModel = {
   findByGroupId(yearGroupId) {
-    return readAll().filter((v) => v.yearGroupId === yearGroupId);
+    return db(TABLE).where({ yearGroupId });
   },
 
   findByCurriculumId(curriculumId) {
-    return readAll().filter((v) => v.curriculumId === curriculumId);
+    return db(TABLE).where({ curriculumId });
   },
 
   findById(id) {
-    return readAll().find((v) => v.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   findPublished(curriculumId) {
-    return readAll().find((v) => v.curriculumId === curriculumId && v.status === "published") || null;
+    return firstOrNull(db(TABLE).where({ curriculumId, status: "published" }));
   },
 
   create(data) {
-    const all = readAll();
-    const record = {
-      id: genId(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    writeAll([...all, record]);
-    return record;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   update(id, changes) {
-    const all = readAll();
-    const idx = all.findIndex((v) => v.id === id);
-    if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...changes, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(changes, JSON_FIELDS));
   },
 
   // Demote all versions in a group to isCurrent: false
   setGroupNotCurrent(yearGroupId) {
-    const all = readAll();
-    writeAll(
-      all.map((v) =>
-        v.yearGroupId === yearGroupId ? { ...v, isCurrent: false, updatedAt: new Date().toISOString() } : v
-      )
-    );
+    return db(TABLE).where({ yearGroupId }).update({ isCurrent: false, updatedAt: new Date() });
   },
 };
 

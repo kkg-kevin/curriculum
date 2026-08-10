@@ -1,76 +1,37 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const { createRecord, updateRecord, deleteRecord, firstOrNull } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/timetable-slots.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
+const TABLE = "timetable_slots";
 
 const TimetableModel = {
   findAll({ classId, teacherId, dayOfWeek } = {}) {
-    let all = readAll();
-    if (classId)   all = all.filter((s) => s.classId === classId);
-    if (teacherId) all = all.filter((s) => s.teacherId === teacherId);
-    if (dayOfWeek) all = all.filter((s) => s.dayOfWeek === dayOfWeek);
-    return all.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    let query = db(TABLE);
+    if (classId) query = query.where({ classId });
+    if (teacherId) query = query.where({ teacherId });
+    if (dayOfWeek) query = query.where({ dayOfWeek });
+    return query.orderBy("startTime", "asc");
   },
 
   findById(id) {
-    return readAll().find((s) => s.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   create(data) {
-    const all = readAll();
-    const record = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(record);
-    writeAll(all);
-    return record;
+    return createRecord(db, TABLE, data);
   },
 
   update(id, data) {
-    const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[index];
+    return updateRecord(db, TABLE, id, data);
   },
 
   delete(id) {
-    const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return false;
-    all.splice(index, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 
   // Called from class.service.js's deleteClass — a class's own timetable has no meaning once
   // the class itself is gone.
   deleteByClassId(classId) {
-    const all = readAll();
-    const filtered = all.filter((s) => s.classId !== classId);
-    if (filtered.length !== all.length) writeAll(filtered);
-    return all.length - filtered.length;
+    return db(TABLE).where({ classId }).del();
   },
 };
 

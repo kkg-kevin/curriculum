@@ -1,88 +1,55 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  firstOrNull,
+  stringifyJsonFields,
+  generateId,
+} = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/course-sessions.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
+const TABLE = "course_sessions";
+const JSON_FIELDS = ["outcomes", "mainConcepts", "activities", "assessmentIds", "assessmentAttachments", "notes", "resources"];
 
 const SessionModel = {
   create(data) {
-    const all = readAll();
-    const session = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(session);
-    writeAll(all);
-    return session;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  createMany(sessionsData) {
-    const all = readAll();
-    const now = new Date().toISOString();
+  async createMany(sessionsData) {
+    const now = new Date();
     const created = sessionsData.map((data) => ({
-      ...data,
+      ...stringifyJsonFields(data, JSON_FIELDS),
       id: generateId(),
       createdAt: now,
       updatedAt: now,
     }));
-    writeAll([...all, ...created]);
-    return created;
+    if (created.length) await db(TABLE).insert(created);
+    return sessionsData.map((data, i) => ({ ...data, id: created[i].id, createdAt: now, updatedAt: now }));
   },
 
   findAll() {
-    return readAll();
+    return db(TABLE);
   },
 
   findByCourseId(courseId) {
-    return readAll()
-      .filter((s) => s.courseId === courseId)
-      .sort((a, b) => a.order - b.order);
+    return db(TABLE).where({ courseId }).orderBy("order", "asc");
   },
 
   findById(id) {
-    return readAll().find((s) => s.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[index];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {
-    const all = readAll();
-    const index = all.findIndex((s) => s.id === id);
-    if (index === -1) return false;
-    all.splice(index, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 
   deleteByCourseId(courseId) {
-    const all = readAll();
-    const filtered = all.filter((s) => s.courseId !== courseId);
-    writeAll(filtered);
+    return db(TABLE).where({ courseId }).del();
   },
 };
 

@@ -7,8 +7,8 @@ const LearningAreaModel = require("../settings/learning-areas/learning-area.mode
 const AssessmentInventoryLinkModel = require("./assessment-inventory-link.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
 
-function requireAssessment(id) {
-  const assessment = AssessmentModel.findById(id);
+async function requireAssessment(id) {
+  const assessment = await AssessmentModel.findById(id);
   if (!assessment) {
     const err = new Error("Assessment not found");
     err.statusCode = 404;
@@ -31,79 +31,79 @@ const AssessmentService = {
   },
 
   async updateAssessment(id, data) {
-    requireAssessment(id);
+    await requireAssessment(id);
     return AssessmentModel.update(id, data);
   },
 
   async deleteAssessment(id) {
-    const deleted = AssessmentModel.delete(id);
+    const deleted = await AssessmentModel.delete(id);
     if (!deleted) {
       const err = new Error("Assessment not found");
       err.statusCode = 404;
       throw err;
     }
-    AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
-    AssessmentLearningAreaLinkModel.deleteByAssessmentId(id);
-    AssessmentInventoryLinkModel.deleteByAssessmentId(id);
+    await AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
+    await AssessmentLearningAreaLinkModel.deleteByAssessmentId(id);
+    await AssessmentInventoryLinkModel.deleteByAssessmentId(id);
     return { message: "Assessment deleted successfully" };
   },
 
   /* ── Competencies (authored globally in Settings, tagged onto an assessment here) ── */
 
   async getAssessmentCompetencies(assessmentId) {
-    const links = AssessmentCompetencyLinkModel.findByAssessmentId(assessmentId);
+    const links = await AssessmentCompetencyLinkModel.findByAssessmentId(assessmentId);
     return CompetencyModel.findByIds(links.map((l) => l.competencyId));
   },
 
   async linkCompetency(assessmentId, competencyId) {
-    requireAssessment(assessmentId);
-    const comp = CompetencyModel.findById(competencyId);
+    await requireAssessment(assessmentId);
+    const comp = await CompetencyModel.findById(competencyId);
     if (!comp) {
       const err = new Error("Competency not found");
       err.statusCode = 404;
       throw err;
     }
-    AssessmentCompetencyLinkModel.link(assessmentId, competencyId);
+    await AssessmentCompetencyLinkModel.link(assessmentId, competencyId);
     // Live-sync: any curriculum containing a course whose session already has this
     // assessment attached picks up the new competency immediately, no re-attach needed.
-    CurriculumService.resyncCoursesForAssessment(assessmentId);
+    await CurriculumService.resyncCoursesForAssessment(assessmentId);
     return this.getAssessmentCompetencies(assessmentId);
   },
 
   async unlinkCompetency(assessmentId, competencyId) {
-    AssessmentCompetencyLinkModel.unlink(assessmentId, competencyId);
+    await AssessmentCompetencyLinkModel.unlink(assessmentId, competencyId);
     return this.getAssessmentCompetencies(assessmentId);
   },
 
   /* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
 
   async getAssessmentLearningAreas(assessmentId) {
-    const links = AssessmentLearningAreaLinkModel.findByAssessmentId(assessmentId);
+    const links = await AssessmentLearningAreaLinkModel.findByAssessmentId(assessmentId);
     return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
   },
 
   async linkLearningArea(assessmentId, learningAreaId) {
-    requireAssessment(assessmentId);
-    const area = LearningAreaModel.findById(learningAreaId);
+    await requireAssessment(assessmentId);
+    const area = await LearningAreaModel.findById(learningAreaId);
     if (!area) {
       const err = new Error("Learning area not found");
       err.statusCode = 404;
       throw err;
     }
-    AssessmentLearningAreaLinkModel.link(assessmentId, learningAreaId);
+    await AssessmentLearningAreaLinkModel.link(assessmentId, learningAreaId);
     return this.getAssessmentLearningAreas(assessmentId);
   },
 
   async unlinkLearningArea(assessmentId, learningAreaId) {
-    AssessmentLearningAreaLinkModel.unlink(assessmentId, learningAreaId);
+    await AssessmentLearningAreaLinkModel.unlink(assessmentId, learningAreaId);
     return this.getAssessmentLearningAreas(assessmentId);
   },
 
   /* ── Inventory (authored globally in Settings, linked onto a project with a quantity) ── */
 
   async getAssessmentInventory(assessmentId) {
-    const links = AssessmentInventoryLinkModel.findByAssessmentId(assessmentId);
-    const items = InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
+    const links = await AssessmentInventoryLinkModel.findByAssessmentId(assessmentId);
+    const items = await InventoryModel.findByIds(links.map((l) => l.inventoryItemId));
     const itemsById = new Map(items.map((i) => [i.id, i]));
     return links
       .map((link) => {
@@ -114,19 +114,19 @@ const AssessmentService = {
   },
 
   async linkInventoryItem(assessmentId, inventoryItemId, quantity) {
-    requireAssessment(assessmentId);
-    const item = InventoryModel.findById(inventoryItemId);
+    await requireAssessment(assessmentId);
+    const item = await InventoryModel.findById(inventoryItemId);
     if (!item) {
       const err = new Error("Inventory item not found");
       err.statusCode = 404;
       throw err;
     }
-    AssessmentInventoryLinkModel.link(assessmentId, inventoryItemId, quantity);
+    await AssessmentInventoryLinkModel.link(assessmentId, inventoryItemId, quantity);
     return this.getAssessmentInventory(assessmentId);
   },
 
   async unlinkInventoryItem(assessmentId, inventoryItemId) {
-    AssessmentInventoryLinkModel.unlink(assessmentId, inventoryItemId);
+    await AssessmentInventoryLinkModel.unlink(assessmentId, inventoryItemId);
     return this.getAssessmentInventory(assessmentId);
   },
 };

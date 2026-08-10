@@ -10,9 +10,10 @@ const AssessmentIssueModel = require("../assessments/submissions/assessment-issu
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
 // share the same gradeId/gradeName off the same curriculum. excludeId skips the record being
 // updated so re-saving a class's own unchanged tag doesn't collide with itself.
-function assertTagAvailable(tag, excludeId) {
+async function assertTagAvailable(tag, excludeId) {
   if (!tag) return;
-  const others = ClassModel.findAll().filter((c) => c.id !== excludeId);
+  const all = await ClassModel.findAll();
+  const others = all.filter((c) => c.id !== excludeId);
   if (others.some((c) => c.tag && c.tag.toLowerCase() === tag.toLowerCase())) {
     const err = new Error("A class with this tag already exists");
     err.statusCode = 409;
@@ -24,8 +25,9 @@ function assertTagAvailable(tag, excludeId) {
 // Any additional class in that same (schoolId, gradeId, academicYear) group must be told apart
 // with a streamName, and that name can't repeat another stream already in the group, so the
 // Classes grid never shows two identically-labeled cards for the same grade.
-function assertStreamAvailable(schoolId, gradeId, academicYear, streamName, excludeId) {
-  const group = ClassModel.findAll({ schoolId }).filter(
+async function assertStreamAvailable(schoolId, gradeId, academicYear, streamName, excludeId) {
+  const forSchool = await ClassModel.findAll({ schoolId });
+  const group = forSchool.filter(
     (c) => c.id !== excludeId && c.gradeId === gradeId && c.academicYear === academicYear
   );
   if (group.length === 0) return;
@@ -44,14 +46,14 @@ function assertStreamAvailable(schoolId, gradeId, academicYear, streamName, excl
 
 const ClassService = {
   async createClass(data) {
-    assertTagAvailable(data.tag, null);
-    assertStreamAvailable(data.schoolId, data.gradeId, data.academicYear, data.streamName, null);
+    await assertTagAvailable(data.tag, null);
+    await assertStreamAvailable(data.schoolId, data.gradeId, data.academicYear, data.streamName, null);
     return ClassModel.create(data);
   },
 
   async getAllClasses(filters) {
-    const classes = ClassModel.findAll(filters);
-    const allLinks = LearnerHubLinkModel.findAll();
+    const classes = await ClassModel.findAll(filters);
+    const allLinks = await LearnerHubLinkModel.findAll();
     const countMap = {};
     for (const l of allLinks) {
       if (!l.classId) continue;
@@ -61,7 +63,7 @@ const ClassService = {
   },
 
   async getClassById(id) {
-    const record = ClassModel.findById(id);
+    const record = await ClassModel.findById(id);
     if (!record) {
       const err = new Error("Class not found");
       err.statusCode = 404;
@@ -71,12 +73,12 @@ const ClassService = {
   },
 
   async updateClass(id, data) {
-    if (data.tag !== undefined) assertTagAvailable(data.tag, id);
+    if (data.tag !== undefined) await assertTagAvailable(data.tag, id);
     if (data.streamName !== undefined) {
-      const existing = ClassModel.findById(id);
-      if (existing) assertStreamAvailable(existing.schoolId, existing.gradeId, existing.academicYear, data.streamName, id);
+      const existing = await ClassModel.findById(id);
+      if (existing) await assertStreamAvailable(existing.schoolId, existing.gradeId, existing.academicYear, data.streamName, id);
     }
-    const record = ClassModel.update(id, data);
+    const record = await ClassModel.update(id, data);
     if (!record) {
       const err = new Error("Class not found");
       err.statusCode = 404;
@@ -99,38 +101,37 @@ const ClassService = {
         throw err;
       }
       seen.add(key);
-      assertTagAvailable(item.tag, null);
+      await assertTagAvailable(item.tag, null);
     }
     // Set Up Year / Program deployment each create exactly one class per grade per batch, so
     // there's never a same-grade collision within the batch itself — only against classes that
     // already exist from an earlier run.
     for (const item of items) {
-      assertStreamAvailable(item.schoolId, item.gradeId, item.academicYear, item.streamName, null);
+      await assertStreamAvailable(item.schoolId, item.gradeId, item.academicYear, item.streamName, null);
     }
     return Promise.all(items.map((item) => ClassModel.create(item)));
   },
 
   async deleteClass(id) {
-    const deleted = ClassModel.delete(id);
+    const deleted = await ClassModel.delete(id);
     if (!deleted) {
       const err = new Error("Class not found");
       err.statusCode = 404;
       throw err;
     }
     // Learners enrolled here stay enrolled at the hub, just no longer placed in a class.
-    LearnerHubLinkModel.clearClassId(id);
-    ClassCourseTeacherLinkModel.deleteByClassId(id);
-    TimetableModel.deleteByClassId(id);
-    CourseScheduleModel.deleteByClassId(id);
-    AttendanceModel.deleteByClassId(id);
+    await LearnerHubLinkModel.clearClassId(id);
+    await ClassCourseTeacherLinkModel.deleteByClassId(id);
+    await TimetableModel.deleteByClassId(id);
+    await CourseScheduleModel.deleteByClassId(id);
+    await AttendanceModel.deleteByClassId(id);
     // Only class-owned issues (no learnerId — see AssessmentIssueModel's own comment) go with the
     // class, mirroring learner.service.js's deleteLearner doing the exact opposite: it removes
     // learner-targeted issues and leaves class-owned ones alone. Learner-targeted submissions/issues
     // that merely reference this classId are real graded work belonging to a learner, not the class,
     // so they're deliberately left in place — same tolerance already relied on by revokeIssue().
-    AssessmentIssueModel.findAll({ classId: id })
-      .filter((i) => i.learnerId == null)
-      .forEach((i) => AssessmentIssueModel.delete(i.id));
+    const issues = await AssessmentIssueModel.findAll({ classId: id });
+    await Promise.all(issues.filter((i) => i.learnerId == null).map((i) => AssessmentIssueModel.delete(i.id)));
     return { message: "Class deleted successfully" };
   },
 };

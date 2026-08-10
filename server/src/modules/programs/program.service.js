@@ -17,8 +17,9 @@ function computeStatus(startDate, endDate) {
 // term (e.g. "Summer Camp" every year) is expected and stays allowed. Dates are plain YYYY-MM-DD
 // strings throughout this module, which sort lexicographically the same as chronologically, so a
 // direct string comparison is safe here.
-function findOverlappingDeployment(curriculumId, hubId, startDate, endDate, excludeId) {
-  return ProgramModel.findAll({ curriculumId }).find(
+async function findOverlappingDeployment(curriculumId, hubId, startDate, endDate, excludeId) {
+  const programs = await ProgramModel.findAll({ curriculumId });
+  return programs.find(
     (p) => p.id !== excludeId && p.hubId === hubId && startDate <= p.endDate && endDate >= p.startDate
   );
 }
@@ -31,7 +32,7 @@ const ProgramService = {
   // Class per cohort already defined in curriculum.classes automatically (same idea as "Set Up
   // Year" bulk-creating a class per grade for a regular curriculum) — no re-picking a grade here.
   async createProgram(data) {
-    const curriculum = CurriculumModel.findById(data.curriculumId);
+    const curriculum = await CurriculumModel.findById(data.curriculumId);
     if (!curriculum) {
       const err = new Error("Curriculum not found");
       err.statusCode = 404;
@@ -42,7 +43,7 @@ const ProgramService = {
       err.statusCode = 400;
       throw err;
     }
-    const hub = LearningHubModel.findById(data.hubId);
+    const hub = await LearningHubModel.findById(data.hubId);
     if (!hub) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;
@@ -54,7 +55,7 @@ const ProgramService = {
       err.statusCode = 400;
       throw err;
     }
-    if (findOverlappingDeployment(curriculum.id, hub.id, data.startDate, data.endDate)) {
+    if (await findOverlappingDeployment(curriculum.id, hub.id, data.startDate, data.endDate)) {
       const err = new Error("This program is already deployed to this hub for an overlapping period");
       err.statusCode = 409;
       throw err;
@@ -76,7 +77,7 @@ const ProgramService = {
       status: "active",
     })));
 
-    const program = ProgramModel.create({
+    const program = await ProgramModel.create({
       curriculumId: curriculum.id,
       hubId: hub.id,
       classIds: classes.map((c) => c.id),
@@ -89,11 +90,18 @@ const ProgramService = {
 
   // Merges in display-only data a program list/detail view needs — resolved fresh each read,
   // never stored, so it can't drift from the underlying curriculum/class records.
-  enrich(program) {
-    const curriculum = CurriculumModel.findById(program.curriculumId);
-    const hub = LearningHubModel.findById(program.hubId);
+  async enrich(program) {
+    const curriculum = await CurriculumModel.findById(program.curriculumId);
+    const hub = await LearningHubModel.findById(program.hubId);
     const classIds = program.classIds || [];
-    const classes = classIds.map((id) => ClassModel.findById(id)).filter(Boolean);
+    const resolvedClasses = await Promise.all(classIds.map((id) => ClassModel.findById(id)));
+    const classes = resolvedClasses.filter(Boolean);
+    const classesWithCounts = await Promise.all(classes.map(async (cls) => ({
+      id: cls.id,
+      gradeName: cls.gradeName,
+      learnerCount: (await LearnerHubLinkModel.findByClassId(cls.id)).length,
+    })));
+    const learnerCount = classesWithCounts.reduce((sum, cls) => sum + cls.learnerCount, 0);
     return {
       ...program,
       status: computeStatus(program.startDate, program.endDate),
@@ -101,21 +109,18 @@ const ProgramService = {
       description: curriculum?.description || "",
       curriculumName: curriculum?.name || null,
       hubName: hub?.name || null,
-      classes: classes.map((cls) => ({
-        id: cls.id,
-        gradeName: cls.gradeName,
-        learnerCount: LearnerHubLinkModel.findByClassId(cls.id).length,
-      })),
-      learnerCount: classes.reduce((sum, cls) => sum + LearnerHubLinkModel.findByClassId(cls.id).length, 0),
+      classes: classesWithCounts,
+      learnerCount,
     };
   },
 
-  getAllPrograms(filters) {
-    return ProgramModel.findAll(filters).map((p) => this.enrich(p));
+  async getAllPrograms(filters) {
+    const programs = await ProgramModel.findAll(filters);
+    return Promise.all(programs.map((p) => this.enrich(p)));
   },
 
-  getProgramById(id) {
-    const program = ProgramModel.findById(id);
+  async getProgramById(id) {
+    const program = await ProgramModel.findById(id);
     if (!program) {
       const err = new Error("Program not found");
       err.statusCode = 404;
@@ -124,8 +129,8 @@ const ProgramService = {
     return this.enrich(program);
   },
 
-  updateProgram(id, data) {
-    const existing = ProgramModel.findById(id);
+  async updateProgram(id, data) {
+    const existing = await ProgramModel.findById(id);
     if (!existing) {
       const err = new Error("Program not found");
       err.statusCode = 404;
@@ -133,17 +138,17 @@ const ProgramService = {
     }
     const startDate = data.startDate || existing.startDate;
     const endDate = data.endDate || existing.endDate;
-    if (findOverlappingDeployment(existing.curriculumId, existing.hubId, startDate, endDate, id)) {
+    if (await findOverlappingDeployment(existing.curriculumId, existing.hubId, startDate, endDate, id)) {
       const err = new Error("These dates overlap another deployment of this program at this hub");
       err.statusCode = 409;
       throw err;
     }
-    const updated = ProgramModel.update(id, data);
+    const updated = await ProgramModel.update(id, data);
     return this.enrich(updated);
   },
 
-  deleteProgram(id) {
-    const deleted = ProgramModel.delete(id);
+  async deleteProgram(id) {
+    const deleted = await ProgramModel.delete(id);
     if (!deleted) {
       const err = new Error("Program not found");
       err.statusCode = 404;
