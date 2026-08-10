@@ -2,6 +2,7 @@
 // log in before any "create user" UI exists. Safe to re-run — skips if that email exists.
 require("dotenv").config();
 
+const db = require("../config/db");
 const UserModel = require("../modules/auth/user.model");
 const AuthService = require("../modules/auth/auth.service");
 
@@ -16,7 +17,7 @@ async function seedAdmin() {
     return;
   }
 
-  if (UserModel.findByEmail(email)) {
+  if (await UserModel.findByEmail(email)) {
     console.log(`Admin user already exists for ${email} — nothing to do.`);
     return;
   }
@@ -25,4 +26,9 @@ async function seedAdmin() {
   console.log(`Admin user created: ${email}`);
 }
 
-seedAdmin();
+seedAdmin()
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
+  .finally(() => db.destroy());

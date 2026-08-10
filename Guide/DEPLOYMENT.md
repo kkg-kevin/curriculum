@@ -17,8 +17,8 @@ The frontend and backend are two separate applications that communicate over HTT
 Browser (curriculum.digifunzi.com)
         ↓  HTTP requests (Axios)
 API Server (nodeapp.digifunzi.com)
-        ↓  reads/writes
-JSON files (server/data/*.json)
+        ↓  reads/writes (Knex)
+MySQL database
 ```
 
 ### What each part does
@@ -31,13 +31,13 @@ JSON files (server/data/*.json)
 **Backend** (`nodeapp.digifunzi.com`)
 - A running Node.js/Express server
 - Receives requests from the frontend
-- Reads and writes data to the JSON files in `server/data/`
+- Reads and writes data via a MySQL database (through Knex)
 - Sends data back as JSON responses
 
 ### Example — creating a curriculum:
 1. User fills the form and clicks **Save** on `curriculum.digifunzi.com`
 2. Frontend sends `POST https://nodeapp.digifunzi.com/api/curricula`
-3. Backend receives it, saves it to `curricula.json`
+3. Backend receives it, saves it to the `curricula` table
 4. Backend responds with the saved data
 5. Frontend updates the UI
 
@@ -68,56 +68,67 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 |---|---|
 | CLIENT_URL | https://curriculum.digifunzi.com |
 | NODE_ENV | development |
+| DB_HOST | 127.0.0.1 (or `localhost` — whatever cPanel's MySQL Databases tool shows) |
+| DB_PORT | 3306 |
+| DB_USER | the MySQL user created for this app (cPanel prefixes it, e.g. `cpaneluser_digifunzi`) |
+| DB_PASSWORD | that MySQL user's password |
+| DB_NAME | the MySQL database created for this app (also cPanel-prefixed) |
+| JWT_SECRET | a long random string — reuse the local one or generate a new one, just don't lose it once set |
+| ADMIN_EMAIL | the email for the first admin login |
+| ADMIN_PASSWORD | the password for the first admin login |
+| ADMIN_NAME | optional, defaults to "Admin User" |
+
+### One-time: create the MySQL database
+
+Before the first deploy under MySQL, in cPanel go to **MySQL Databases**:
+1. Create a new database (cPanel will prefix it with your account username)
+2. Create a new MySQL user with a strong password
+3. Add that user to the database with **All Privileges**
+4. Note the full (prefixed) database name, username, and password — those go into `DB_NAME`/`DB_USER`/`DB_PASSWORD` above
 
 ### Steps to Deploy / Re-deploy Backend
 
-> ⚠️ **`data/` and `uploads/` are no longer part of the redeploy zip by default.** Once real content exists on the live site, wholesale-replacing those folders on every redeploy would erase anything created directly on the live site. `backend-deploy.zip` is now **code-only**: `src/`, `package.json`, `package-lock.json`. Only rebuild it including `data/`/`uploads/` if you specifically intend to overwrite live data with your local copy (see "Full data reset" below).
+> The app now migrates its own database schema and creates the first admin login automatically on every restart (see `src/server.js`) — there is no separate manual migration or data-sync step anymore. `backend-deploy.zip` is **code-only**: `src/`, `knexfile.js`, `package.json`, `package-lock.json`. **`knexfile.js` lives at the app root, not inside `src/`** — don't forget it when rebuilding the zip by hand, the app will fail to start without it.
 
 1. **Create the deployment zip** from the project root:
-   - Include: `src/`, `package.json`, `package-lock.json`
-   - Exclude: `node_modules/`, `.env`, `data/`, `uploads/`
+   - Include: `src/`, `knexfile.js`, `package.json`, `package-lock.json`
+   - Exclude: `node_modules/`, `.env`, `uploads/`
    - The ready-made zip is: `backend-deploy.zip`
 
 2. **In cPanel File Manager**, navigate to `curriculum.digifunzi` folder
 
-3. **Delete** existing files (code only — leave `data/` and `uploads/` alone):
+3. **Delete** existing files (code only — leave `uploads/` alone):
    - `src/` folder
+   - `knexfile.js` (if present from a previous deploy)
    - `package.json`
    - `package-lock.json`
+   - the old `data/` folder, if still present from before the MySQL migration — it's no longer read by the app at all and can be removed once you're confident the cutover worked
 
 4. **Upload** `backend-deploy.zip` into `curriculum.digifunzi`
 
 5. **Extract** — right-click `backend-deploy.zip` → Extract
-   - After extraction, confirm `src/server.js` and `src/modules/auth/auth.routes.js` are directly inside `curriculum.digifunzi`
+   - After extraction, confirm `src/server.js`, `knexfile.js`, and `src/modules/auth/auth.routes.js` are directly inside `curriculum.digifunzi`
    - If the zip extracted into an extra nested folder, move the contents up one level before restarting the app
 
 6. **In cPanel Node.js panel**:
+    - Confirm the `DB_*`/`JWT_SECRET`/`ADMIN_*` environment variables above are set
     - Click **Run NPM Install** — wait for it to complete
-    - Click **Restart**
+    - Click **Restart** — this is what actually builds the database schema and creates the admin login (via the automatic startup migration). Check the app's log after restarting to confirm it started cleanly rather than crash-looping (a bad `DB_*` value is the most likely cause of a failed start).
 
 7. **Test** — visit `https://nodeapp.digifunzi.com`  
-   Expected response: `{ "message": "API is running" }`
+   Expected response: `{ "message": "API is running" }`, then confirm you can log in at `https://curriculum.digifunzi.com` with the `ADMIN_EMAIL`/`ADMIN_PASSWORD` above.
 
 ### Uploaded files (cover images, inline images, attached documents)
 
 Uploaded files are saved to `server/uploads/` and served directly at `https://nodeapp.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
 
-### Login data sync
+### Login/data sync
 
-Auth is file-based in this project. User accounts and password hashes live in `server/data/users.json` on the backend host, so if localhost logins work but the live server says `Invalid email or password`, the live `data/users.json` is out of sync.
+There's no separate sync step anymore — the live MySQL database is authoritative on its own, the same way localhost's is. If localhost and live ever need the same data (e.g. testing against a copy of live data), that means backing up the live MySQL database (`mysqldump`) and restoring it wherever it's needed, not copying JSON files.
 
-To make the live site accept the same teacher/school/learner logins as localhost:
+### Full data reset (rare — only when you mean to wipe live data)
 
-1. Upload the login-only bundle: `login-users.zip`
-2. Extract it into `curriculum.digifunzi`
-3. Confirm it places `data/users.json` directly under the app root
-4. Click **Restart** in the cPanel Node.js panel
-
-This only syncs the login accounts. It does not touch curricula, uploads, or the rest of the live `data/` folder.
-
-### Full data reset (rare — only when you mean to overwrite live data)
-
-If you genuinely want to replace the live `data/` and/or `uploads/` with your local copy (e.g. first-ever deploy, or a deliberate reset), build the zip including them (`src/`, `data/`, `uploads/`, `package.json`, `package-lock.json`), delete the corresponding folders in cPanel before extracting, and be aware this destroys whatever is currently live in those folders.
+To reset the live database to empty (keeping schema/tables intact), truncate its tables directly — there's no zip-based shortcut for this anymore since data lives in MySQL, not files. Take a `mysqldump` backup first unless you're certain you don't need the data. `uploads/` is still just a folder of files if you also want to clear uploaded content — delete its contents directly in cPanel File Manager.
 
 ---
 
@@ -179,6 +190,7 @@ If you genuinely want to replace the live `data/` and/or `uploads/` with your lo
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no data/uploads) |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads) |
 | `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/`) |
 | `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract |
+| `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
