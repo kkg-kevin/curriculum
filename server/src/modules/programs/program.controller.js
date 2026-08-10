@@ -10,23 +10,23 @@ const createProgram = asyncHandler(async (req, res) => {
 
 const getAllPrograms = asyncHandler(async (req, res) => {
   const { curriculumId } = req.query;
-  const records = ProgramService.getAllPrograms({ curriculumId });
+  const records = await ProgramService.getAllPrograms({ curriculumId });
   res.json({ success: true, data: records, count: records.length });
 });
 
 const getProgramById = asyncHandler(async (req, res) => {
-  const record = ProgramService.getProgramById(req.params.id);
+  const record = await ProgramService.getProgramById(req.params.id);
   res.json({ success: true, data: record });
 });
 
 const updateProgram = asyncHandler(async (req, res) => {
   const data = updateProgramSchema.parse(req.body);
-  const record = ProgramService.updateProgram(req.params.id, data);
+  const record = await ProgramService.updateProgram(req.params.id, data);
   res.json({ success: true, data: record });
 });
 
 const deleteProgram = asyncHandler(async (req, res) => {
-  const result = ProgramService.deleteProgram(req.params.id);
+  const result = await ProgramService.deleteProgram(req.params.id);
   res.json({ success: true, ...result });
 });
 

@@ -350,7 +350,7 @@ function syncIndicatorMarks(indicatorMarks, newIds, totalPoints = 0) {
 function defaultEntry(kind, sectionId) {
   const base = { id: genId(), kind, sectionId };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
-    return { ...base, text: "", ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
+    return { ...base, text: "", points: 1, indicatorMarks: [], ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
   }
   return {
     ...base,
@@ -532,6 +532,61 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
   );
 }
 
+// Options list for mcqSingle/mcqMultiple, each row pairing its text with a radio (single) or
+// checkbox (multiple) marking it correct. `correctAnswer` stores the correct option(s) by their
+// literal text (comma-joined for mcqMultiple) — see grading.utils.js#gradeItem, which compares
+// the learner's submitted response against this same string. Since correctness is tracked by
+// text rather than by a stable id, editing/removing an option that's marked correct keeps
+// `correctAnswer` in sync so the link doesn't silently break.
+function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCorrectAnswerChange }) {
+  const correctSet = kind === "mcqMultiple" ? (correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+  const isCorrect = (v) => (kind === "mcqSingle" ? v !== "" && v === correctAnswer : correctSet.includes(v));
+
+  const set = (i, v) => {
+    const prev = options[i];
+    onOptionsChange(options.map((o, idx) => (idx === i ? v : o)));
+    if (isCorrect(prev)) {
+      onCorrectAnswerChange(kind === "mcqSingle" ? v : correctSet.map((c) => (c === prev ? v : c)).join(","));
+    }
+  };
+  const add = () => onOptionsChange([...options, ""]);
+  const remove = (i) => {
+    const removed = options[i];
+    onOptionsChange(options.filter((_, idx) => idx !== i));
+    if (isCorrect(removed)) {
+      onCorrectAnswerChange(kind === "mcqSingle" ? "" : correctSet.filter((c) => c !== removed).join(","));
+    }
+  };
+  const toggleCorrect = (v) => {
+    if (kind === "mcqSingle") onCorrectAnswerChange(v);
+    else onCorrectAnswerChange((correctSet.includes(v) ? correctSet.filter((c) => c !== v) : [...correctSet, v]).join(","));
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {options.map((v, i) => (
+        <div key={i} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input
+            type={kind === "mcqSingle" ? "radio" : "checkbox"}
+            name={`mcq-correct-${kind}`}
+            checked={isCorrect(v)}
+            disabled={!v.trim()}
+            onChange={() => toggleCorrect(v)}
+            title="Mark as correct answer"
+            style={{ flexShrink: 0, cursor: v.trim() ? "pointer" : "not-allowed" }}
+          />
+          <input className="tb-input" placeholder={`Option ${i + 1}`} value={v} onChange={(e) => set(i, e.target.value)} />
+          {options.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}>✕</button>}
+        </div>
+      ))}
+      <button type="button" className="tb-add-item-btn" onClick={add}>+ Add</button>
+      <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+        {kind === "mcqSingle" ? "Select the radio next to the correct option." : "Check every correct option."}
+      </p>
+    </div>
+  );
+}
+
 function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
   const set = (key, val) => onChange({ ...entry, [key]: val });
   const isObservation = OBSERVATION_ITEM_KINDS.includes(entry.kind);
@@ -592,7 +647,13 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
       {(entry.kind === "mcqSingle" || entry.kind === "mcqMultiple") && (
         <div>
           <Label>Options</Label>
-          <ListEditor values={entry.options} onChange={(v) => set("options", v)} placeholder="Option" minItems={2} />
+          <McqOptionsEditor
+            kind={entry.kind}
+            options={entry.options}
+            correctAnswer={entry.correctAnswer}
+            onOptionsChange={(v) => set("options", v)}
+            onCorrectAnswerChange={(v) => set("correctAnswer", v)}
+          />
         </div>
       )}
 
@@ -1158,7 +1219,7 @@ export default function AssessmentBuilderPage() {
     if (!form) return [];
     const linked = allCompetencies.filter((comp) => form.competencyIds.includes(comp.id));
     const byIndicator = new Map();
-    (form.items || []).forEach((item) => {
+    [...(form.items || []), ...(form.indicators || [])].forEach((item) => {
       (item.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
         const cur = byIndicator.get(indicatorId) || { marks: 0, questionCount: 0 };
         cur.marks += Number(marks) || 0;
@@ -1207,13 +1268,23 @@ export default function AssessmentBuilderPage() {
   }
 
   const type = form.type;
-  // Teacher Observation authors real items now, exactly like quiz/exam — `form.indicators`
-  // (the old checklist/rating-only content model) is no longer edited via the builder at all,
-  // just passed through unchanged on save (see buildPayload) so a legacy assessment authored
-  // before this change keeps its content instead of it being silently wiped.
-  const entries = form.items;
+  // Teacher Observation authors real items (structured/unstructured) alongside indicators
+  // (checklist/rating/etc, kept in `form.indicators`, scored by the teacher during grading) —
+  // both backing arrays are presented to the Structure canvas as one merged, kind-agnostic list
+  // and split back out by kind on every write. For every other assessment type `form.indicators`
+  // stays permanently empty (defaultEntry never produces an observation-kind entry unless the
+  // registry offers that group), so this is a total no-op there.
+  const entries = [...form.items, ...form.indicators];
   const setEntries = (updater) => {
-    setForm((f) => ({ ...f, items: typeof updater === "function" ? updater(f.items) : updater }));
+    setForm((f) => {
+      const merged = [...f.items, ...f.indicators];
+      const next = typeof updater === "function" ? updater(merged) : updater;
+      return {
+        ...f,
+        items: next.filter((e) => !OBSERVATION_ITEM_KINDS.includes(e.kind)),
+        indicators: next.filter((e) => OBSERVATION_ITEM_KINDS.includes(e.kind)),
+      };
+    });
   };
   const selectedEntry = entries.find((e) => e.id === selectedId) || null;
 
@@ -1290,9 +1361,8 @@ export default function AssessmentBuilderPage() {
     };
     if (registry?.supportsDeliverables) payload.overview = form.overview.trim();
     payload.items = registry?.supportsItems === false ? [] : form.items;
-    // Always passed through unchanged, never edited here anymore — preserves a legacy Teacher
-    // Observation assessment's old checklist/rating content across a save instead of wiping it
-    // (every other type's form.indicators is always [] anyway, so this is a no-op for them).
+    // Editable via the Structure canvas for Teacher Observation (see entries/setEntries above);
+    // stays permanently [] for every other type.
     payload.indicators = form.indicators;
     payload.rubric = registry?.supportsRubric ? form.rubric : [];
     if (registry?.supportsDeliverables) payload.deliverables = form.deliverables;

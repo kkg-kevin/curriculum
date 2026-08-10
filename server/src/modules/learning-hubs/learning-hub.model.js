@@ -1,74 +1,50 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/learning-hubs.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) =>
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+const TABLE = "learning_hubs";
+const JSON_FIELDS = ["address", "photos", "amenities", "operatingHours", "spaces"];
 
 const LearningHubModel = {
   create(data) {
-    const all = readAll();
-    const record = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(record);
-    writeAll(all);
-    return record;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  findAll({ status, county, curriculumId, branchId, email, hubType, includeDrafts } = {}) {
-    let all = readAll();
-    if (status)          all = all.filter((l) => l.status === status);
+  async findAll({ status, county, curriculumId, branchId, email, hubType, includeDrafts } = {}) {
+    let query = db(TABLE);
+    if (status) query = query.where({ status });
     // Drafts are staged records still being set up in Settings — hidden from every listing by
     // default so they don't leak into pickers/dashboards until an admin activates them. Callers
     // that need to see them (Settings' own management view, a school viewing its own record)
     // pass includeDrafts explicitly. An explicit `status` filter already implies this.
-    else if (!includeDrafts) all = all.filter((l) => l.status !== "draft");
-    if (county)       all = all.filter((l) => l.address?.county === county);
-    if (curriculumId) all = all.filter((l) => l.curriculumId === curriculumId);
-    if (branchId)     all = all.filter((l) => l.branchId === branchId);
-    if (email)        all = all.filter((l) => l.email?.toLowerCase() === email.toLowerCase());
-    if (hubType)      all = all.filter((l) => l.hubType === hubType);
-    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    else if (!includeDrafts) query = query.whereNot({ status: "draft" });
+    if (curriculumId) query = query.where({ curriculumId });
+    if (branchId) query = query.where({ branchId });
+    if (email) query = query.whereRaw("LOWER(email) = ?", [email.toLowerCase()]);
+    if (hubType) query = query.where({ hubType });
+
+    let rows = await query.orderBy("createdAt", "desc");
+    // `address` is a JSON column (mysql2 returns it already parsed) — county isn't its own
+    // column, so this filter runs in JS same as the JSON-file era.
+    if (county) rows = rows.filter((r) => r.address?.county === county);
+    return rows;
   },
 
   findById(id) {
-    return readAll().find((l) => l.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const idx = all.findIndex((l) => l.id === id);
-    if (idx === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[idx] = { ...all[idx], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {
-    const all = readAll();
-    const idx = all.findIndex((l) => l.id === id);
-    if (idx === -1) return false;
-    all.splice(idx, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 };
 

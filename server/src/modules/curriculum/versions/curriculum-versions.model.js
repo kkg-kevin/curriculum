@@ -1,52 +1,38 @@
-const fs     = require("fs");
-const path   = require("path");
-const crypto = require("crypto");
+const db = require("../../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/curriculum-versions.json");
-
-const genId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll  = () => { if (!fs.existsSync(FILE)) return []; const raw = fs.readFileSync(FILE, "utf-8").trim(); return raw ? JSON.parse(raw) : []; };
-const writeAll = (data) => fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+const TABLE = "curriculum_versions";
+const JSON_FIELDS = ["content"];
 
 const CurriculumVersionModel = {
   findAll() {
-    return readAll();
+    return db(TABLE);
   },
 
   findAllByCurriculumId(curriculumId) {
-    return readAll().filter((v) => v.curriculumId === curriculumId).sort((a, b) => b.versionNumber - a.versionNumber);
+    return db(TABLE).where({ curriculumId }).orderBy("versionNumber", "desc");
   },
 
   findById(id) {
-    return readAll().find((v) => v.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   create(data) {
-    const all    = readAll();
-    const record = { id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    writeAll([...all, record]);
-    return record;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   update(id, changes) {
-    const all = readAll();
-    const idx = all.findIndex((v) => v.id === id);
-    if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...changes, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(changes, JSON_FIELDS));
   },
 
   deleteByCurriculumId(curriculumId) {
-    const all      = readAll();
-    const filtered = all.filter((v) => v.curriculumId !== curriculumId);
-    writeAll(filtered);
+    return db(TABLE).where({ curriculumId }).del();
   },
-
 };
 
 module.exports = CurriculumVersionModel;

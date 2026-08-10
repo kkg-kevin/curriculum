@@ -9,7 +9,7 @@ const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middlewar
 // gated by whether that teacher has at least one course-educator link in the class — so every
 // route here first loads the target Class and reuses the exact same ownership checks
 // class.controller.js already applies to the class itself.
-function assertClassAccess(req, cls) {
+async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
     err.statusCode = 404;
@@ -17,14 +17,15 @@ function assertClassAccess(req, cls) {
   }
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
   if (req.user.role === "teacher") {
-    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
+    const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
   }
 }
 
 const markAttendance = asyncHandler(async (req, res) => {
   const { classId, date, records } = markAttendanceSchema.parse(req.body);
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
   const result = await AttendanceService.markAttendance(classId, date, records, req.ownTeacher?.id || req.user.id);
   res.status(201).json({ success: true, data: result });
 });
@@ -36,8 +37,8 @@ const getByClassDate = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
   const records = await AttendanceService.getByClassAndDate(classId, date);
   res.json({ success: true, data: records, count: records.length });
 });
@@ -49,8 +50,8 @@ const getHistory = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
   const records = await AttendanceService.getHistory({ classId, learnerId, dateFrom, dateTo, status });
   res.json({ success: true, data: records, count: records.length });
 });

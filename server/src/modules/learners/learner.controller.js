@@ -10,31 +10,39 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 // A learner belongs to a class, and a class has zero or more course-educator links — this is the
 // only place a teacher's access to a learner is decided, so both getAllLearners and
 // getLearnerById go through it.
-function classTaughtByTeacher(classId, teacherId) {
+async function classTaughtByTeacher(classId, teacherId) {
   if (!classId) return false;
-  return ClassCourseTeacherLinkModel.findByClassId(classId).some((l) => l.teacherId === teacherId);
+  const links = await ClassCourseTeacherLinkModel.findByClassId(classId);
+  return links.some((l) => l.teacherId === teacherId);
 }
 
 // True whenever `learnerId` has an enrollment link at `hubId` — the membership test a
 // "school"-role caller needs to prove a learner belongs to its own hub. Same pattern as
 // teacher.controller.js's `isLinkedToHub`.
-function isLinkedToHub(learnerId, hubId) {
-  return LearnerHubLinkModel.findByLearnerId(learnerId).some((l) => l.hubId === hubId);
+async function isLinkedToHub(learnerId, hubId) {
+  const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+  return links.some((l) => l.hubId === hubId);
 }
 
 // Same membership test, but for a caller that may own more than one hub — a "school" account's
 // one hub, or every hub under a "branchAdmin" account's branch.
-function isLinkedToOwnHub(req, learnerId) {
+async function isLinkedToOwnHub(req, learnerId) {
   if (req.user.role === "school") return isLinkedToHub(learnerId, req.ownSchool?.id);
-  if (req.user.role === "branchAdmin") return !!req.ownBranchHubIds?.some((hubId) => isLinkedToHub(learnerId, hubId));
+  if (req.user.role === "branchAdmin") {
+    if (!req.ownBranchHubIds?.length) return false;
+    const results = await Promise.all(req.ownBranchHubIds.map((hubId) => isLinkedToHub(learnerId, hubId)));
+    return results.some(Boolean);
+  }
   return false;
 }
 
 // True whenever any of `learnerId`'s enrollment links puts them in a class this teacher
 // teaches — a learner can now have several enrollments, so this is an "any", not the old
 // single-classId equality check.
-function anyEnrollmentTaughtByTeacher(learnerId, teacherId) {
-  return LearnerHubLinkModel.findByLearnerId(learnerId).some((l) => classTaughtByTeacher(l.classId, teacherId));
+async function anyEnrollmentTaughtByTeacher(learnerId, teacherId) {
+  const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+  const results = await Promise.all(links.map((l) => classTaughtByTeacher(l.classId, teacherId)));
+  return results.some(Boolean);
 }
 
 const createLearner = asyncHandler(async (req, res) => {
@@ -78,8 +86,8 @@ const getAllLearners = asyncHandler(async (req, res) => {
   // hubCount, never the other hub's identity — same privacy shape as the unscoped cross-hub
   // branch in LearnerService.getAllLearners.
   if (username && ["admin", "school", "branchAdmin"].includes(req.user.role)) {
-    const record = LearnerModel.findByUsername(username);
-    const data = record ? [{ ...record, hubCount: LearnerHubLinkModel.findByLearnerId(record.id).length }] : [];
+    const record = await LearnerModel.findByUsername(username);
+    const data = record ? [{ ...record, hubCount: (await LearnerHubLinkModel.findByLearnerId(record.id)).length }] : [];
     return res.json({ success: true, data, count: data.length });
   }
   const filters = { schoolId, classId, status, guardianEmail };
@@ -94,7 +102,7 @@ const getAllLearners = asyncHandler(async (req, res) => {
     const records = perHub.flat();
     return res.json({ success: true, data: records, count: records.length });
   } else if (req.user.role === "teacher") {
-    if (!req.ownTeacher || !classTaughtByTeacher(classId, req.ownTeacher.id)) {
+    if (!req.ownTeacher || !(await classTaughtByTeacher(classId, req.ownTeacher.id))) {
       return res.json({ success: true, data: [], count: 0 });
     }
   } else if (req.user.role === "learner") {
@@ -111,8 +119,8 @@ const getAllLearners = asyncHandler(async (req, res) => {
 
 const getLearnerById = asyncHandler(async (req, res) => {
   const record = await LearnerService.getLearnerById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isLinkedToOwnHub(req, record.id));
-  if (req.user.role === "teacher") assertOwn(anyEnrollmentTaughtByTeacher(record.id, req.ownTeacher?.id));
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(await isLinkedToOwnHub(req, record.id));
+  if (req.user.role === "teacher") assertOwn(await anyEnrollmentTaughtByTeacher(record.id, req.ownTeacher?.id));
   if (req.user.role === "learner") assertOwn(record.id === req.ownLearner?.id);
   res.json({ success: true, data: record });
 });
@@ -135,7 +143,7 @@ const updateLearner = asyncHandler(async (req, res) => {
   // needs the pre-update value regardless of who's making the change.
   const before = await LearnerService.getLearnerById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
-    assertOwn(isLinkedToOwnHub(req, before.id));
+    assertOwn(await isLinkedToOwnHub(req, before.id));
   }
   // A learner's own dedicated login may only touch its own identity fields + its own login
   // password — guardian contact info and the guardian's own password stay guardian-login-only,
@@ -194,12 +202,12 @@ const getLearnerHubs = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") assertOwn(req.params.id === req.ownLearner?.id);
   let hubs = await LearnerService.getLearnerHubs(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
-    assertOwn(isLinkedToOwnHub(req, req.params.id));
+    assertOwn(await isLinkedToOwnHub(req, req.params.id));
     // A school/branchAdmin only ever gets to see its own hub(s) in the list — not the names of
     // any other hub a shared learner also happens to attend.
     hubs = hubs.filter((h) => isOwnHub(req, h.id));
   } else if (req.user.role === "teacher") {
-    assertOwn(anyEnrollmentTaughtByTeacher(req.params.id, req.ownTeacher?.id));
+    assertOwn(await anyEnrollmentTaughtByTeacher(req.params.id, req.ownTeacher?.id));
   }
   res.json({ success: true, data: hubs, count: hubs.length });
 });

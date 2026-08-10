@@ -53,7 +53,13 @@ client/src/modules/<feature>/
 
 Entry: `server/src/server.js` — loads `.env`, starts the HTTP server.  
 App: `server/src/app.js` — mounts CORS, JSON body parser, Morgan logger. Routes will be registered here.  
-Config: `server/src/config/db.js` (database connection, not yet implemented) and `server/src/config/env.js` (env var exports, not yet implemented).
+Config: `server/src/config/db.js` exports a Knex singleton connection pool (reads `server/knexfile.js`, MySQL via `mysql2`). `server/src/config/env.js` exports env vars incl. `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME`.
+
+### Database (MySQL via Knex)
+
+Every `*.model.js` is a thin Knex query-builder wrapper (no ORM) exposing the same `create/findAll/findById/update/delete` + custom-finder shape regardless of module — services/controllers call these and `await` them like any other async function. JSON-shaped fields (nested arrays/objects like `assessments.items[]` or `course-sessions.mainConcepts[]`) are stored as MySQL `JSON` columns; write them through `stringifyJsonFields`/`toJson` from `server/src/shared/utils/model.utils.js` (mysql2 does not auto-serialize a raw JS object/array on insert, but does auto-parse JSON columns back on read). No DB-level `FOREIGN KEY` constraints — referential integrity is enforced at the application layer, same as the old JSON-file era.
+
+Migrations live in `server/src/db/migrations/` (`npm run db:migrate` / `db:migrate:rollback` / `db:migrate:status`, from `server/`). The one-time JSON→MySQL loaders and the `server/data/*.json` files they read from have been removed now that the migration is complete and MySQL is the sole source of truth.
 
 **Planned module structure** (not yet scaffolded):
 ```
@@ -90,6 +96,10 @@ VITE_API_URL=http://localhost:5000
 **`server/.env`**
 ```
 PORT=5000
-DATABASE_URL=
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=
+DB_PASSWORD=
+DB_NAME=digifunzi
 JWT_SECRET=
 ```

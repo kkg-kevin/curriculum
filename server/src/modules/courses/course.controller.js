@@ -24,25 +24,25 @@ const {
 // attendance.controller.js's assertClassAccess resolves ownership through a class. Admin is
 // unrestricted; every other role here (teacher/learner/school) previously had no check at all —
 // any authenticated account could fetch any course by id.
-function assertCourseAccess(req, courseId) {
+async function assertCourseAccess(req, courseId) {
   if (req.user.role === "admin") return;
-  const curriculumIds = CurriculumService.findCurriculaContainingCourse(courseId);
+  const curriculumIds = await CurriculumService.findCurriculaContainingCourse(courseId);
 
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool?.curriculumId && curriculumIds.includes(req.ownSchool.curriculumId));
     return;
   }
   if (req.user.role === "teacher") {
-    const classCurriculumIds = ClassCourseTeacherLinkModel.findByTeacherId(req.ownTeacher?.id)
-      .map((l) => ClassModel.findById(l.classId)?.curriculumId)
-      .filter(Boolean);
+    const links = await ClassCourseTeacherLinkModel.findByTeacherId(req.ownTeacher?.id);
+    const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
+    const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
     assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
     return;
   }
   if (req.user.role === "learner") {
-    const classCurriculumIds = LearnerHubLinkModel.findByLearnerId(req.ownLearner?.id)
-      .map((l) => ClassModel.findById(l.classId)?.curriculumId)
-      .filter(Boolean);
+    const links = await LearnerHubLinkModel.findByLearnerId(req.ownLearner?.id);
+    const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
+    const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
     assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
     return;
   }
@@ -77,7 +77,7 @@ const getAllCourses = asyncHandler(async (req, res) => {
 });
 
 const getCourseById = asyncHandler(async (req, res) => {
-  assertCourseAccess(req, req.params.id);
+  await assertCourseAccess(req, req.params.id);
   const course = await CourseService.getCourseById(req.params.id);
   res.json({ success: true, data: course });
 });
@@ -170,7 +170,7 @@ const getAssessmentScoring = asyncHandler(async (req, res) => {
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
 const getSessions = asyncHandler(async (req, res) => {
-  assertCourseAccess(req, req.params.id);
+  await assertCourseAccess(req, req.params.id);
   const data = await CourseService.getSessions(req.params.id);
   res.json({ success: true, data });
 });
@@ -201,7 +201,7 @@ const deleteSession = asyncHandler(async (req, res) => {
 /* ── Modules ─────────────────────────────────────────────────────────────── */
 
 const getModules = asyncHandler(async (req, res) => {
-  assertCourseAccess(req, req.params.id);
+  await assertCourseAccess(req, req.params.id);
   const data = await CourseService.getModules(req.params.id);
   res.json({ success: true, data });
 });

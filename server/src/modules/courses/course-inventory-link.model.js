@@ -1,14 +1,7 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../config/db");
+const { generateId } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/course-inventory-links.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "course_inventory_links";
 
 // Records how many units of a global inventory item a course needs overall — same shape as
 // assessment-inventory-link.model.js's project-assessment link, just keyed by courseId instead
@@ -16,42 +9,29 @@ function genId() {
 // shared catalog with a per-course quantity attached to the link itself.
 const CourseInventoryLinkModel = {
   findByCourseId(courseId) {
-    return read().filter((l) => l.courseId === courseId);
+    return db(TABLE).where({ courseId });
   },
 
   // Upsert — re-linking an already-linked item just overwrites its quantity.
-  link(courseId, inventoryItemId, quantity) {
-    const all = read();
-    const idx = all.findIndex((l) => l.courseId === courseId && l.inventoryItemId === inventoryItemId);
-    if (idx !== -1) {
-      all[idx] = { ...all[idx], quantity };
-      write(all);
-      return all[idx];
-    }
-    const item = { id: genId(), courseId, inventoryItemId, quantity, createdAt: new Date().toISOString() };
-    all.push(item);
-    write(all);
+  async link(courseId, inventoryItemId, quantity) {
+    const count = await db(TABLE).where({ courseId, inventoryItemId }).update({ quantity });
+    if (count > 0) return db(TABLE).where({ courseId, inventoryItemId }).first();
+    const item = { id: generateId(), courseId, inventoryItemId, quantity, createdAt: new Date() };
+    await db(TABLE).insert(item);
     return item;
   },
 
-  unlink(courseId, inventoryItemId) {
-    const all      = read();
-    const filtered = all.filter((l) => !(l.courseId === courseId && l.inventoryItemId === inventoryItemId));
-    if (filtered.length === all.length) return false;
-    write(filtered);
-    return true;
+  async unlink(courseId, inventoryItemId) {
+    const count = await db(TABLE).where({ courseId, inventoryItemId }).del();
+    return count > 0;
   },
 
   deleteByCourseId(courseId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.courseId !== courseId);
-    write(filtered);
+    return db(TABLE).where({ courseId }).del();
   },
 
   deleteByInventoryItemId(inventoryItemId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.inventoryItemId !== inventoryItemId);
-    write(filtered);
+    return db(TABLE).where({ inventoryItemId }).del();
   },
 };
 

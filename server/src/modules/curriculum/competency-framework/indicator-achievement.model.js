@@ -1,14 +1,7 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../../config/db");
+const { generateId, firstOrNull } = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/indicator-achievements.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "indicator_achievements";
 
 // A curriculum's current score (marks earned) per indicator — the persisted counterpart to
 // the marksPossible CompetencyService.getPopulatedIndicators computes live from assessments.
@@ -16,44 +9,35 @@ function genId() {
 // so it can never drift from what assessments currently define.
 const IndicatorAchievementModel = {
   findByCurriculumId(curriculumId) {
-    return read().filter((a) => a.curriculumId === curriculumId);
+    return db(TABLE).where({ curriculumId });
   },
 
   findOne(curriculumId, indicatorId) {
-    return read().find((a) => a.curriculumId === curriculumId && a.indicatorId === indicatorId) || null;
+    return firstOrNull(db(TABLE).where({ curriculumId, indicatorId }));
   },
 
-  upsert(curriculumId, competencyId, indicatorId, marksEarned) {
-    const all = read();
-    const idx = all.findIndex((a) => a.curriculumId === curriculumId && a.indicatorId === indicatorId);
-    const now = new Date().toISOString();
-    if (idx === -1) {
-      const item = { id: genId(), curriculumId, competencyId, indicatorId, marksEarned, createdAt: now, updatedAt: now };
-      all.push(item);
-      write(all);
+  async upsert(curriculumId, competencyId, indicatorId, marksEarned) {
+    const existing = await firstOrNull(db(TABLE).where({ curriculumId, indicatorId }));
+    const now = new Date();
+    if (!existing) {
+      const item = { id: generateId(), curriculumId, competencyId, indicatorId, marksEarned, createdAt: now, updatedAt: now };
+      await db(TABLE).insert(item);
       return item;
     }
-    all[idx] = { ...all[idx], competencyId, marksEarned, updatedAt: now };
-    write(all);
-    return all[idx];
+    await db(TABLE).where({ id: existing.id }).update({ competencyId, marksEarned, updatedAt: now });
+    return { ...existing, competencyId, marksEarned, updatedAt: now };
   },
 
   deleteByCurriculumId(curriculumId) {
-    const all      = read();
-    const filtered = all.filter((a) => a.curriculumId !== curriculumId);
-    write(filtered);
+    return db(TABLE).where({ curriculumId }).del();
   },
 
   deleteByCompetencyId(competencyId) {
-    const all      = read();
-    const filtered = all.filter((a) => a.competencyId !== competencyId);
-    write(filtered);
+    return db(TABLE).where({ competencyId }).del();
   },
 
   deleteByLink(curriculumId, competencyId) {
-    const all      = read();
-    const filtered = all.filter((a) => !(a.curriculumId === curriculumId && a.competencyId === competencyId));
-    write(filtered);
+    return db(TABLE).where({ curriculumId, competencyId }).del();
   },
 };
 

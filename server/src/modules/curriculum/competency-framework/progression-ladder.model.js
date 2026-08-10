@@ -1,62 +1,47 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  firstOrNull,
+  stringifyJsonFields,
+  toJson,
+} = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/progression-ladder.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "progression_ladder_rungs";
+const JSON_FIELDS = ["assignments"];
 
 const ProgressionLadderModel = {
   findByCurriculumId(curriculumId) {
-    return read().filter((r) => r.curriculumId === curriculumId);
+    return db(TABLE).where({ curriculumId });
   },
 
   findById(id) {
-    return read().find((r) => r.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   create(data) {
-    const all  = read();
-    const now  = new Date().toISOString();
-    const item = { id: genId(), ...data, createdAt: now, updatedAt: now };
-    all.push(item);
-    write(all);
-    return item;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   update(id, data) {
-    const all = read();
-    const idx = all.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...data, id, updatedAt: new Date().toISOString() };
-    write(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   deleteByCurriculumId(curriculumId) {
-    const all      = read();
-    const filtered = all.filter((r) => r.curriculumId !== curriculumId);
-    write(filtered);
+    return db(TABLE).where({ curriculumId }).del();
   },
 
   // Cross-curriculum cleanup used when a competency is deleted from the global catalog —
   // strips it out of every rung's assignments, in every curriculum's ladder.
-  removeCompetencyFromAllRungs(competencyId) {
-    const all = read();
-    let changed = false;
-    const next = all.map((rung) => {
-      const assignments = (rung.assignments || []).filter((a) => a.competencyId !== competencyId);
-      if (assignments.length !== (rung.assignments || []).length) {
-        changed = true;
-        return { ...rung, assignments };
+  async removeCompetencyFromAllRungs(competencyId) {
+    const rungs = await db(TABLE);
+    for (const rung of rungs) {
+      const assignments = rung.assignments || [];
+      const filtered = assignments.filter((a) => a.competencyId !== competencyId);
+      if (filtered.length !== assignments.length) {
+        await db(TABLE).where({ id: rung.id }).update({ assignments: toJson(filtered) });
       }
-      return rung;
-    });
-    if (changed) write(next);
+    }
   },
 };
 

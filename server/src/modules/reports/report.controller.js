@@ -9,7 +9,7 @@ const { generateReportSchema, updateRemarksSchema } = require("./report.validati
 // always has a classId (a course report only ever comes from a class enrollment), so a
 // teacher/school can only reach reports for a class they have at least one course-educator
 // link in / their own school.
-function assertClassAccess(req, cls) {
+async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
     err.statusCode = 404;
@@ -17,7 +17,8 @@ function assertClassAccess(req, cls) {
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
   if (req.user.role === "teacher") {
-    assertOwn(ClassCourseTeacherLinkModel.findByClassId(cls.id).some((l) => l.teacherId === req.ownTeacher?.id));
+    const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
   }
 }
 
@@ -45,24 +46,24 @@ const getReadiness = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
 
   if (courseIds) {
     const ids = courseIds.split(",").map((s) => s.trim()).filter(Boolean);
-    const byCourse = ReportService.getReadinessForClassCourses(classId, ids);
+    const byCourse = await ReportService.getReadinessForClassCourses(classId, ids);
     return res.json({ success: true, data: byCourse, count: ids.length });
   }
 
-  const rows = ReportService.getReadinessForClassCourse(classId, courseId);
+  const rows = await ReportService.getReadinessForClassCourse(classId, courseId);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
 const generateReport = asyncHandler(async (req, res) => {
   const data = generateReportSchema.parse(req.body);
-  const cls = ClassModel.findById(data.classId);
-  assertClassAccess(req, cls);
-  const report = ReportService.generateReport({ ...data, generatedBy: req.ownTeacher?.id || req.user.id });
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const report = await ReportService.generateReport({ ...data, generatedBy: req.ownTeacher?.id || req.user.id });
   res.status(201).json({ success: true, data: report });
 });
 
@@ -73,9 +74,9 @@ const listReportsForClassCourse = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const cls = ClassModel.findById(classId);
-  assertClassAccess(req, cls);
-  const reports = ReportService.listForClassCourse({ classId, courseId });
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
+  const reports = await ReportService.listForClassCourse({ classId, courseId });
   res.json({ success: true, data: reports, count: reports.length });
 });
 
@@ -83,12 +84,12 @@ const listReportsForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
   // hubId comes from the portal's hub switcher — scopes the list to the hub being viewed.
-  const reports = ReportService.listForLearner(learner.id, req.query.hubId || null);
+  const reports = await ReportService.listForLearner(learner.id, req.query.hubId || null);
   res.json({ success: true, data: reports, count: reports.length });
 });
 
 const getReport = asyncHandler(async (req, res) => {
-  const report = ReportService.getById(req.params.id);
+  const report = await ReportService.getById(req.params.id);
   if (!report) {
     const err = new Error("Report not found");
     err.statusCode = 404;
@@ -97,8 +98,8 @@ const getReport = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") {
     assertLearnerOwnsReport(req, report);
   } else {
-    const cls = ClassModel.findById(report.classId);
-    assertClassAccess(req, cls);
+    const cls = await ClassModel.findById(report.classId);
+    await assertClassAccess(req, cls);
   }
   res.json({ success: true, data: report });
 });
@@ -106,33 +107,33 @@ const getReport = asyncHandler(async (req, res) => {
 // Shared by updateRemarks/publishReport — resolves the report and proves this caller owns the
 // class it belongs to. Checks the report's own existence first so a bad id reports "Report not
 // found" rather than falling through to assertClassAccess and blaming a missing class.
-function loadOwnedReportOrThrow(req) {
-  const report = ReportService.getById(req.params.id);
+async function loadOwnedReportOrThrow(req) {
+  const report = await ReportService.getById(req.params.id);
   if (!report) {
     const err = new Error("Report not found");
     err.statusCode = 404;
     throw err;
   }
-  assertClassAccess(req, ClassModel.findById(report.classId));
+  await assertClassAccess(req, await ClassModel.findById(report.classId));
   return report;
 }
 
 const updateRemarks = asyncHandler(async (req, res) => {
-  loadOwnedReportOrThrow(req);
+  await loadOwnedReportOrThrow(req);
   const { remarks } = updateRemarksSchema.parse(req.body);
-  const updated = ReportService.updateRemarks(req.params.id, remarks);
+  const updated = await ReportService.updateRemarks(req.params.id, remarks);
   res.json({ success: true, data: updated });
 });
 
 const publishReport = asyncHandler(async (req, res) => {
-  loadOwnedReportOrThrow(req);
-  const updated = ReportService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
+  await loadOwnedReportOrThrow(req);
+  const updated = await ReportService.publishReport(req.params.id, req.ownTeacher?.id || req.user.id);
   res.json({ success: true, data: updated });
 });
 
 const unpublishReport = asyncHandler(async (req, res) => {
-  loadOwnedReportOrThrow(req);
-  const updated = ReportService.unpublishReport(req.params.id);
+  await loadOwnedReportOrThrow(req);
+  const updated = await ReportService.unpublishReport(req.params.id);
   res.json({ success: true, data: updated });
 });
 

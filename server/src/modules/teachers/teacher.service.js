@@ -12,28 +12,28 @@ const TeacherService = {
   },
 
   async getTeacherHubs(teacherId) {
-    return TeacherHubLinkModel.findByTeacherId(teacherId)
-      .map((l) => LearningHubModel.findById(l.hubId))
-      .filter(Boolean);
+    const links = await TeacherHubLinkModel.findByTeacherId(teacherId);
+    const hubs = await Promise.all(links.map((l) => LearningHubModel.findById(l.hubId)));
+    return hubs.filter(Boolean);
   },
 
   async linkHub(teacherId, hubId) {
-    if (!TeacherModel.findById(teacherId)) {
+    if (!(await TeacherModel.findById(teacherId))) {
       const err = new Error("Teacher not found");
       err.statusCode = 404;
       throw err;
     }
-    if (!LearningHubModel.findById(hubId)) {
+    if (!(await LearningHubModel.findById(hubId))) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;
       throw err;
     }
-    TeacherHubLinkModel.link(teacherId, hubId);
+    await TeacherHubLinkModel.link(teacherId, hubId);
     return TeacherService.getTeacherHubs(teacherId);
   },
 
   async unlinkHub(teacherId, hubId) {
-    TeacherHubLinkModel.unlink(teacherId, hubId);
+    await TeacherHubLinkModel.unlink(teacherId, hubId);
     return TeacherService.getTeacherHubs(teacherId);
   },
 
@@ -42,7 +42,7 @@ const TeacherService = {
   },
 
   async getTeacherById(id) {
-    const teacher = TeacherModel.findById(id);
+    const teacher = await TeacherModel.findById(id);
     if (!teacher) {
       const err = new Error("Teacher not found");
       err.statusCode = 404;
@@ -52,7 +52,7 @@ const TeacherService = {
   },
 
   async updateTeacher(id, data) {
-    const teacher = TeacherModel.update(id, data);
+    const teacher = await TeacherModel.update(id, data);
     if (!teacher) {
       const err = new Error("Teacher not found");
       err.statusCode = 404;
@@ -62,20 +62,20 @@ const TeacherService = {
   },
 
   async deleteTeacher(id) {
-    const deleted = TeacherModel.delete(id);
+    const deleted = await TeacherModel.delete(id);
     if (!deleted) {
       const err = new Error("Teacher not found");
       err.statusCode = 404;
       throw err;
     }
-    TeacherHubLinkModel.deleteByTeacherId(id);
-    ClassCourseTeacherLinkModel.deleteByTeacherId(id);
+    await TeacherHubLinkModel.deleteByTeacherId(id);
+    await ClassCourseTeacherLinkModel.deleteByTeacherId(id);
     // These are attribution fields, not ownership — the underlying attendance/submission/issue
     // records are real data that outlives the teacher who marked/graded/issued them, so only the
     // stale reference is cleared, never the record.
-    AttendanceModel.clearMarkedBy(id);
-    AssessmentSubmissionModel.clearGradedBy(id);
-    AssessmentIssueModel.clearIssuedBy(id);
+    await AttendanceModel.clearMarkedBy(id);
+    await AssessmentSubmissionModel.clearGradedBy(id);
+    await AssessmentIssueModel.clearIssuedBy(id);
     return { message: "Teacher deleted successfully" };
   },
 };

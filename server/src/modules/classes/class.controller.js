@@ -40,8 +40,9 @@ const createClass = asyncHandler(async (req, res) => {
 // them — there's no more single classTeacherId to filter by directly, so this resolves the
 // matching class ids from the link table first, same replacement used everywhere classTeacherId
 // used to gate teacher access (assessment-submission/report/attendance controllers, learner.controller.js).
-function classIdsTaughtBy(teacherId) {
-  return new Set(ClassCourseTeacherLinkModel.findByTeacherId(teacherId).map((l) => l.classId));
+async function classIdsTaughtBy(teacherId) {
+  const links = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
+  return new Set(links.map((l) => l.classId));
 }
 
 const getAllClasses = asyncHandler(async (req, res) => {
@@ -56,15 +57,16 @@ const getAllClasses = asyncHandler(async (req, res) => {
     // any hub) on the other filters, then narrow to this branch's hubs here.
     let records = await ClassService.getAllClasses({ status });
     records = records.filter((c) => isOwnHub(req, c.schoolId));
-    if (teacherId) { const ids = classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
+    if (teacherId) { const ids = await classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
     return res.json({ success: true, data: records, count: records.length });
   } else if (req.user.role === "teacher") {
     if (!req.ownTeacher) return res.json({ success: true, data: [], count: 0 });
-    const records = (await ClassService.getAllClasses(filters)).filter((c) => classIdsTaughtBy(req.ownTeacher.id).has(c.id));
+    const ids = await classIdsTaughtBy(req.ownTeacher.id);
+    const records = (await ClassService.getAllClasses(filters)).filter((c) => ids.has(c.id));
     return res.json({ success: true, data: records, count: records.length });
   }
   let records = await ClassService.getAllClasses(filters);
-  if (teacherId) { const ids = classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
+  if (teacherId) { const ids = await classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
   res.json({ success: true, data: records, count: records.length });
 });
 
@@ -72,11 +74,12 @@ const getClassById = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
   if (req.user.role === "teacher") {
-    assertOwn(ClassCourseTeacherLinkModel.findByClassId(record.id).some((l) => l.teacherId === req.ownTeacher?.id));
+    const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
   }
   if (req.user.role === "learner") {
     const enrolled = req.ownLearner
-      ? LearnerHubLinkModel.findByLearnerId(req.ownLearner.id).some((l) => l.classId === record.id)
+      ? (await LearnerHubLinkModel.findByLearnerId(req.ownLearner.id)).some((l) => l.classId === record.id)
       : false;
     assertOwn(enrolled);
   }
@@ -89,8 +92,9 @@ const getClassById = asyncHandler(async (req, res) => {
 const getClassCourseTeachers = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
-  const links = ClassCourseTeacherLinkModel.findByClassId(req.params.id);
-  const data = links.map((l) => ({ ...l, teacher: TeacherModel.findById(l.teacherId) })).filter((l) => l.teacher);
+  const links = await ClassCourseTeacherLinkModel.findByClassId(req.params.id);
+  const resolved = await Promise.all(links.map(async (l) => ({ ...l, teacher: await TeacherModel.findById(l.teacherId) })));
+  const data = resolved.filter((l) => l.teacher);
   res.json({ success: true, data });
 });
 
@@ -101,12 +105,12 @@ const assignCourseTeacher = asyncHandler(async (req, res) => {
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
   // An empty/unset qualifiedCourseIds means unrestricted — the gate only activates once a
   // teacher has been given a specific, non-empty list (see teacher.validation.js).
-  const teacher = TeacherModel.findById(teacherId);
+  const teacher = await TeacherModel.findById(teacherId);
   if (!teacher) return res.status(404).json({ success: false, message: "Teacher not found" });
   if (teacher.qualifiedCourseIds?.length > 0 && !teacher.qualifiedCourseIds.includes(courseId)) {
     return res.status(400).json({ success: false, message: "This educator isn't qualified to teach this course." });
   }
-  const link = ClassCourseTeacherLinkModel.link(req.params.id, courseId, teacherId);
+  const link = await ClassCourseTeacherLinkModel.link(req.params.id, courseId, teacherId);
   res.status(201).json({ success: true, data: link });
 });
 
@@ -114,7 +118,7 @@ const unassignCourseTeacher = asyncHandler(async (req, res) => {
   const { courseId, teacherId } = req.params;
   const record = await ClassService.getClassById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
-  ClassCourseTeacherLinkModel.unlink(req.params.id, courseId, teacherId);
+  await ClassCourseTeacherLinkModel.unlink(req.params.id, courseId, teacherId);
   res.json({ success: true });
 });
 
@@ -124,7 +128,7 @@ const setPrimaryCourseTeacher = asyncHandler(async (req, res) => {
   const { courseId, teacherId } = req.params;
   const record = await ClassService.getClassById(req.params.id);
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
-  const link = ClassCourseTeacherLinkModel.setPrimary(req.params.id, courseId, teacherId);
+  const link = await ClassCourseTeacherLinkModel.setPrimary(req.params.id, courseId, teacherId);
   if (!link) return res.status(404).json({ success: false, message: "Educator is not assigned to this course" });
   res.json({ success: true, data: link });
 });
@@ -136,7 +140,7 @@ const getCourseTeacherLinksForTeacher = asyncHandler(async (req, res) => {
   const { teacherId } = req.query;
   if (!teacherId) return res.json({ success: true, data: [] });
   if (req.user.role === "teacher") assertOwn(teacherId === req.ownTeacher?.id);
-  const data = ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
+  const data = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
   res.json({ success: true, data });
 });
 

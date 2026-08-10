@@ -1,22 +1,13 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/reports.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) =>
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+const TABLE = "reports";
+const JSON_FIELDS = ["content"];
 
 // One record per (learner, course, class, sessionId) — a point-in-time snapshot of that learner's
 // graded assessments, plus their indicator breakdown and any remarks. sessionId is null for a
@@ -31,56 +22,37 @@ const writeAll = (data) =>
 // first teacher's report and hand back a record scoped to a class they can't even access.
 const ReportModel = {
   create(data) {
-    const all = readAll();
-    const record = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(record);
-    writeAll(all);
-    return record;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   findAll({ classId, courseId, learnerId, status } = {}) {
-    let all = readAll();
-    if (classId)   all = all.filter((r) => r.classId === classId);
-    if (courseId)  all = all.filter((r) => r.courseId === courseId);
-    if (learnerId) all = all.filter((r) => r.learnerId === learnerId);
-    if (status)    all = all.filter((r) => r.status === status);
-    return all.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    let query = db(TABLE);
+    if (classId) query = query.where({ classId });
+    if (courseId) query = query.where({ courseId });
+    if (learnerId) query = query.where({ learnerId });
+    if (status) query = query.where({ status });
+    return query.orderBy("updatedAt", "desc");
   },
 
   // classId is required — see the identity note above. sessionId defaults to null (the course-
-  // level final report); pass a session's id to look up that session's own report instead. Rows
-  // written before sessionId existed have no such key, so `r.sessionId || null` still matches null.
+  // level final report); pass a session's id to look up that session's own report instead.
   findOne({ learnerId, courseId, classId, sessionId = null }) {
-    return readAll().find((r) => r.learnerId === learnerId && r.courseId === courseId && r.classId === classId && (r.sessionId || null) === sessionId) || null;
+    return firstOrNull(db(TABLE).where({ learnerId, courseId, classId, sessionId }));
   },
 
   findById(id) {
-    return readAll().find((r) => r.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const idx = all.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[idx] = { ...all[idx], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[idx];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   // Deleting a learner has to take their reports with it — nothing else can ever reach a report
   // whose learner is gone (every read path resolves the learner first), so leaving them behind
   // just accumulates unreachable rows. Called from learner.service.js's deleteLearner.
   deleteByLearnerId(learnerId) {
-    const all = readAll();
-    const filtered = all.filter((r) => r.learnerId !== learnerId);
-    if (filtered.length !== all.length) writeAll(filtered);
-    return all.length - filtered.length;
+    return db(TABLE).where({ learnerId }).del();
   },
 };
 

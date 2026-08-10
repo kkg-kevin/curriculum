@@ -1,66 +1,37 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  firstOrNull,
+  stringifyJsonFields,
+} = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/curricula.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
+const TABLE = "curricula";
+const JSON_FIELDS = ["periods", "classes", "competencyWeights"];
 
 const CurriculumModel = {
   create(data) {
-    const all = readAll();
-    const curriculum = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    all.push(curriculum);
-    writeAll(all);
-    return curriculum;
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   findAll({ framework, academicYear } = {}) {
-    let all = readAll();
-    if (framework) all = all.filter((c) => c.framework === framework);
-    if (academicYear) all = all.filter((c) => c.academicYear === academicYear);
-    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    let query = db(TABLE);
+    if (framework) query = query.where({ framework });
+    if (academicYear) query = query.where({ academicYear });
+    return query.orderBy("createdAt", "desc");
   },
 
   findById(id) {
-    return readAll().find((c) => c.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   update(id, data) {
-    const all = readAll();
-    const index = all.findIndex((c) => c.id === id);
-    if (index === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
-    writeAll(all);
-    return all[index];
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {
-    const all = readAll();
-    const index = all.findIndex((c) => c.id === id);
-    if (index === -1) return false;
-    all.splice(index, 1);
-    writeAll(all);
-    return true;
+    return deleteRecord(db, TABLE, id);
   },
 };
 

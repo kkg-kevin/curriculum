@@ -66,13 +66,13 @@ const getLearningHubById = asyncHandler(async (req, res) => {
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.id));
   if (req.user.role === "teacher") {
     const linked = req.ownTeacher
-      ? TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id).some((l) => l.hubId === record.id)
+      ? (await TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id)).some((l) => l.hubId === record.id)
       : false;
     assertOwn(linked);
   }
   if (req.user.role === "learner") {
     const enrolled = req.ownLearner
-      ? LearnerHubLinkModel.findByLearnerId(req.ownLearner.id).some((l) => l.hubId === record.id)
+      ? (await LearnerHubLinkModel.findByLearnerId(req.ownLearner.id)).some((l) => l.hubId === record.id)
       : false;
     assertOwn(enrolled);
   }

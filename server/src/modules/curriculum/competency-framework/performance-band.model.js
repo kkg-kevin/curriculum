@@ -1,98 +1,86 @@
-const fs     = require("fs");
-const path   = require("path");
-const { v4: uuidv4 } = require("uuid");
+const db = require("../../../config/db");
+const { generateId, toJson } = require("../../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../../data/performance-bands.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf-8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
+const TABLE = "performance_bands";
 
 const PerformanceBandModel = {
   findByCurriculum(curriculumId) {
-    return read()
-      .filter((b) => b.curriculumId === curriculumId)
-      .sort((a, b) => a.order - b.order);
+    return db(TABLE).where({ curriculumId }).orderBy("order", "asc");
   },
 
   // Bands that form one Learning Area's course ladder for Learning Journey (learningAreaId
   // + courseId both set), ordered by score range — lowest first.
   findByLearningArea(curriculumId, learningAreaId) {
-    return read()
-      .filter((b) => b.curriculumId === curriculumId && b.learningAreaId === learningAreaId && b.courseId)
-      .sort((a, b) => a.minScore - b.minScore);
+    return db(TABLE).where({ curriculumId, learningAreaId }).whereNotNull("courseId").orderBy("minScore", "asc");
   },
 
-  create(curriculumId, fields) {
-    const all   = read();
-    const count = all.filter((b) => b.curriculumId === curriculumId).length;
-    const band  = {
-      id:                     uuidv4(),
+  async create(curriculumId, fields) {
+    const [{ count }] = await db(TABLE).where({ curriculumId }).count({ count: "*" });
+    const band = {
+      id: generateId(),
       curriculumId,
-      name:                   fields.name,
-      description:            fields.description || "",
-      minScore:               fields.minScore    ?? 0,
-      maxScore:               fields.maxScore    ?? 100,
-      competencyIds:          fields.competencyIds || [],
-      indicatorContributions: fields.indicatorContributions || [],
-      advancementThreshold:   fields.advancementThreshold ?? 0,
-      learningAreaId:         fields.learningAreaId ?? null,
-      courseId:               fields.courseId ?? null,
-      order:                  count + 1,
-      createdAt:              new Date().toISOString(),
+      name: fields.name,
+      description: fields.description || "",
+      minScore: fields.minScore ?? 0,
+      maxScore: fields.maxScore ?? 100,
+      competencyIds: toJson(fields.competencyIds || []),
+      indicatorContributions: toJson(fields.indicatorContributions || []),
+      advancementThreshold: fields.advancementThreshold ?? 0,
+      learningAreaId: fields.learningAreaId ?? null,
+      courseId: fields.courseId ?? null,
+      order: Number(count) + 1,
+      createdAt: new Date(),
     };
-    all.push(band);
-    write(all);
-    return band;
+    await db(TABLE).insert(band);
+    return { ...band, competencyIds: fields.competencyIds || [], indicatorContributions: fields.indicatorContributions || [] };
   },
 
-  update(curriculumId, id, fields) {
-    const all = read();
-    const idx = all.findIndex((b) => b.id === id && b.curriculumId === curriculumId);
-    if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...fields };
-    write(all);
-    return all[idx];
+  async update(curriculumId, id, fields) {
+    const patch = { ...fields };
+    if (patch.competencyIds !== undefined) patch.competencyIds = toJson(patch.competencyIds);
+    if (patch.indicatorContributions !== undefined) patch.indicatorContributions = toJson(patch.indicatorContributions);
+    const count = await db(TABLE).where({ id, curriculumId }).update(patch);
+    if (count === 0) return null;
+    return db(TABLE).where({ id }).first();
   },
 
   delete(curriculumId, id) {
-    const all      = read();
-    const filtered = all.filter((b) => !(b.id === id && b.curriculumId === curriculumId));
-    write(filtered);
+    return db(TABLE).where({ id, curriculumId }).del();
   },
 
   deleteByCurriculumId(curriculumId) {
-    const all      = read();
-    const filtered = all.filter((b) => b.curriculumId !== curriculumId);
-    write(filtered);
+    return db(TABLE).where({ curriculumId }).del();
   },
 
-  reorder(curriculumId, orderedIds) {
-    const all = read();
-    orderedIds.forEach((id, i) => {
-      const idx = all.findIndex((b) => b.id === id && b.curriculumId === curriculumId);
-      if (idx !== -1) all[idx].order = i + 1;
-    });
-    write(all);
-    return all.filter((b) => b.curriculumId === curriculumId).sort((a, b) => a.order - b.order);
+  async reorder(curriculumId, orderedIds) {
+    await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId }).update({ order: i + 1 })));
+    return db(TABLE).where({ curriculumId }).orderBy("order", "asc");
   },
 
   // A competency was deleted from the global catalog — strip it out of every band's
   // competencyIds (and any indicatorContributions scored against it), across every
   // curriculum, so no band is left referencing a dead id.
-  removeCompetencyFromAllBands(competencyId) {
-    const all = read();
-    let changed = false;
-    all.forEach((b) => {
-      if ((b.competencyIds || []).includes(competencyId)) {
-        b.competencyIds = b.competencyIds.filter((id) => id !== competencyId);
+  async removeCompetencyFromAllBands(competencyId) {
+    const bands = await db(TABLE);
+    for (const band of bands) {
+      let changed = false;
+      let competencyIds = band.competencyIds || [];
+      let indicatorContributions = band.indicatorContributions || [];
+      if (competencyIds.includes(competencyId)) {
+        competencyIds = competencyIds.filter((id) => id !== competencyId);
         changed = true;
       }
-      if ((b.indicatorContributions || []).some((p) => p.competencyId === competencyId)) {
-        b.indicatorContributions = b.indicatorContributions.filter((p) => p.competencyId !== competencyId);
+      if (indicatorContributions.some((p) => p.competencyId === competencyId)) {
+        indicatorContributions = indicatorContributions.filter((p) => p.competencyId !== competencyId);
         changed = true;
       }
-    });
-    if (changed) write(all);
+      if (changed) {
+        await db(TABLE).where({ id: band.id }).update({
+          competencyIds: toJson(competencyIds),
+          indicatorContributions: toJson(indicatorContributions),
+        });
+      }
+    }
   },
 };
 

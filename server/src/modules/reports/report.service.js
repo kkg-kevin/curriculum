@@ -23,50 +23,50 @@ function notFound(message) {
 // that assessment was deleted (attachment records aren't cleaned up on delete), and treating a
 // dead reference as "required" would make the course permanently unable to reach "ready" for any
 // learner, since a deleted assessment can never be graded.
-function getCourseRequiredAssessmentIds(courseId) {
-  return getCourseAssessmentCounts(courseId).requiredIds;
+async function getCourseRequiredAssessmentIds(courseId) {
+  return (await getCourseAssessmentCounts(courseId)).requiredIds;
 }
 
 // Both the attached ids and the subset that still resolves to a real assessment. Callers that
 // only need the requirement use getCourseRequiredAssessmentIds above; the readiness view also
 // wants `attachedCount` so it can explain a course whose requirement silently shrank (or hit
 // zero) because assessments were deleted out from under its sessions.
-function getCourseAssessmentCounts(courseId) {
-  const sessions = SessionModel.findByCourseId(courseId);
+async function getCourseAssessmentCounts(courseId) {
+  const sessions = await SessionModel.findByCourseId(courseId);
   const ids = new Set();
   sessions.forEach((session) => getSessionAssessmentIds(session).forEach((id) => ids.add(id)));
   const attachedIds = [...ids];
+  const found = await Promise.all(attachedIds.map((id) => AssessmentModel.findById(id)));
   return {
     attachedIds,
     attachedCount: attachedIds.length,
-    requiredIds: attachedIds.filter((id) => !!AssessmentModel.findById(id)),
+    requiredIds: attachedIds.filter((id, i) => !!found[i]),
   };
 }
 
 // Same "still exists" filter as getCourseAssessmentCounts, scoped to one session's own attached
 // assessments — the unit a session report is built from.
-function getSessionRequiredAssessmentIds(session) {
-  return getSessionAssessmentIds(session).filter((id) => !!AssessmentModel.findById(id));
+async function getSessionRequiredAssessmentIds(session) {
+  const ids = getSessionAssessmentIds(session);
+  const found = await Promise.all(ids.map((id) => AssessmentModel.findById(id)));
+  return ids.filter((id, i) => !!found[i]);
 }
 
 // A submission only counts toward a course report once its own report has been published to the
 // learner (see assessment-submission.service.js's publishReport) — otherwise a course report
 // could reveal a score the learner hasn't seen released on that assessment's own page yet.
-function getPublishedGradedAssessmentIds(learnerId) {
-  return new Set(
-    AssessmentSubmissionModel.findAll({ learnerId, status: "graded" })
-      .filter((s) => s.reportPublished)
-      .map((s) => s.assessmentId)
-  );
+async function getPublishedGradedAssessmentIds(learnerId) {
+  const submissions = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
+  return new Set(submissions.filter((s) => s.reportPublished).map((s) => s.assessmentId));
 }
 
-function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null) {
-  const publishedIds = getPublishedGradedAssessmentIds(learnerId);
-  const submissions = AssessmentSubmissionModel.findAll({ learnerId, status: "graded" })
-    .filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId));
+async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null) {
+  const publishedIds = await getPublishedGradedAssessmentIds(learnerId);
+  const graded = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
+  const submissions = graded.filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId));
 
-  const assessments = submissions.map((s) => {
-    const assessment = AssessmentModel.findById(s.assessmentId);
+  const assessments = await Promise.all(submissions.map(async (s) => {
+    const assessment = await AssessmentModel.findById(s.assessmentId);
     const maxScore = s.maxScore || 0;
     const totalScore = s.totalScore || 0;
     return {
@@ -82,7 +82,7 @@ function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, cour
       // actually said about the work.
       feedback: s.overallFeedback || "",
     };
-  });
+  }));
 
   // Marks-weighted across the course's assessments, not an average of each assessment's own
   // percentage — assessments can carry very different max scores, so a flat average would let a
@@ -95,7 +95,7 @@ function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, cour
     percent: sumMax > 0 ? Math.round((sumTotal / sumMax) * 100) : 0,
   };
 
-  const indicatorBreakdown = AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(
+  const indicatorBreakdown = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(
     learnerId,
     requiredAssessmentIds
   );
@@ -105,17 +105,19 @@ function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, cour
   // Profile Competencies tab. Scoped to THIS course's assessments, matching indicatorBreakdown:
   // a course report shouldn't fold in competency standing the learner earned on other courses.
   const competencyScores = curriculumId
-    ? CompetencyService.getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, requiredAssessmentIds)
+    ? await CompetencyService.getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, requiredAssessmentIds)
     : [];
 
   // Snapshotted at generate time like everything else here, so neither the learner's report list
   // nor the report itself has to fetch the course separately just to render its name — and a
   // course later renamed or deleted doesn't retitle/blank an already-published report.
-  const courseName = courseId ? CourseModel.findById(courseId)?.name || null : null;
+  const course = courseId ? await CourseModel.findById(courseId) : null;
+  const courseName = course?.name || null;
 
   // Same snapshotting reasoning as courseName, for a session report specifically — null for a
   // course-level final report.
-  const sessionName = sessionId ? SessionModel.findById(sessionId)?.title || null : null;
+  const session = sessionId ? await SessionModel.findById(sessionId) : null;
+  const sessionName = session?.title || null;
 
   return { assessments, overall, indicatorBreakdown, competencyScores, courseName, sessionName };
 }
@@ -124,10 +126,13 @@ function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, cour
 // existing attached assessment) has a published report for this learner — the new gate a course's
 // "final" report has to clear, replacing the old flat "every assessment individually graded" check.
 // A course with zero non-empty sessions is never ready (nothing to report), matching prior behavior.
-function isCourseReadyForLearner(courseId, classId, learnerId) {
-  const sessions = SessionModel.findByCourseId(courseId).filter((s) => getSessionRequiredAssessmentIds(s).length > 0);
+async function isCourseReadyForLearner(courseId, classId, learnerId) {
+  const allSessions = await SessionModel.findByCourseId(courseId);
+  const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+  const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
   if (sessions.length === 0) return false;
-  return sessions.every((s) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id })?.status === "published");
+  const reports = await Promise.all(sessions.map((s) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id })));
+  return reports.every((r) => r?.status === "published");
 }
 
 // Builds/refreshes a single session's report for one learner, publishing it in the same step the
@@ -135,22 +140,23 @@ function isCourseReadyForLearner(courseId, classId, learnerId) {
 // no draft stage, unlike the course-level final report below. A no-op (returns the existing report
 // unchanged, or null) whenever the session isn't ready yet or has nothing attached to report on;
 // this runs unattended as a side effect of readiness checks, so it must never throw.
-function generateSessionReport({ learnerId, session, classId, curriculumId }) {
-  const requiredIds = getSessionRequiredAssessmentIds(session);
+async function generateSessionReport({ learnerId, session, classId, curriculumId }) {
+  const requiredIds = await getSessionRequiredAssessmentIds(session);
   if (requiredIds.length === 0) return null;
 
-  const existing = ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
-  const gradedIds = getPublishedGradedAssessmentIds(learnerId);
+  const existing = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
+  const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
   const ready = requiredIds.every((id) => gradedIds.has(id));
   if (!ready) return existing;
 
-  const content = buildReportContent(learnerId, requiredIds, curriculumId, session.courseId, session.id);
+  const content = await buildReportContent(learnerId, requiredIds, curriculumId, session.courseId, session.id);
   if (existing) return ReportModel.update(existing.id, { content });
 
   // hubId mirrors the course-level report's own resolution (cls?.schoolId in generateReport) —
   // listForLearner filters on it for the portal's hub switcher, so a session report left without
   // one would silently vanish from that filtered view even though it's really published.
-  const cls = ClassModel.findById(classId);
+  const cls = await ClassModel.findById(classId);
+  const now = new Date();
   return ReportModel.create({
     learnerId,
     courseId: session.courseId,
@@ -158,9 +164,9 @@ function generateSessionReport({ learnerId, session, classId, curriculumId }) {
     sessionId: session.id,
     hubId: cls?.schoolId || null,
     status: "published",
-    generatedAt: new Date().toISOString(),
+    generatedAt: now,
     generatedBy: "system",
-    publishedAt: new Date().toISOString(),
+    publishedAt: now,
     publishedBy: "system",
     remarks: "",
     content,
@@ -172,25 +178,30 @@ function generateSessionReport({ learnerId, session, classId, curriculumId }) {
 // to run this) rather than hooked into assessment-submission.service.js's grade(), which would
 // create a circular require between the assessments/submissions and reports modules (report.
 // service.js already requires AssessmentSubmissionModel/Service, so the reverse direction isn't safe).
-function ensureSessionReportsGenerated(classId, courseId, learnerIds) {
-  const sessions = SessionModel.findByCourseId(courseId);
-  const cls = ClassModel.findById(classId);
-  learnerIds.forEach((learnerId) => {
-    sessions.forEach((session) => generateSessionReport({ learnerId, session, classId, curriculumId: cls?.curriculumId }));
-  });
+async function ensureSessionReportsGenerated(classId, courseId, learnerIds) {
+  const sessions = await SessionModel.findByCourseId(courseId);
+  const cls = await ClassModel.findById(classId);
+  await Promise.all(
+    learnerIds.flatMap((learnerId) =>
+      sessions.map((session) => generateSessionReport({ learnerId, session, classId, curriculumId: cls?.curriculumId }))
+    )
+  );
 }
 
 // Shared by generateReport and publishReport — builds a course-level final report's content
 // (the union of every session's required assessments, as buildReportContent always did) and
 // attaches a sessionReports summary so the final report visibly shows what it combines.
-function buildCourseReportContent(learnerId, courseId, classId) {
-  const requiredAssessmentIds = getCourseRequiredAssessmentIds(courseId);
-  const cls = ClassModel.findById(classId);
-  const content = buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId, courseId);
+async function buildCourseReportContent(learnerId, courseId, classId) {
+  const requiredAssessmentIds = await getCourseRequiredAssessmentIds(courseId);
+  const cls = await ClassModel.findById(classId);
+  const content = await buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId, courseId);
 
-  const sessions = SessionModel.findByCourseId(courseId).filter((s) => getSessionRequiredAssessmentIds(s).length > 0);
-  content.sessionReports = sessions.map((s) => {
-    const report = ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id });
+  const allSessions = await SessionModel.findByCourseId(courseId);
+  const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+  const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
+
+  content.sessionReports = await Promise.all(sessions.map(async (s) => {
+    const report = await ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id });
     return {
       sessionId: s.id,
       sessionTitle: s.title || null,
@@ -200,7 +211,7 @@ function buildCourseReportContent(learnerId, courseId, classId) {
       percent: report?.content?.overall?.percent ?? 0,
       publishedAt: report?.publishedAt || null,
     };
-  });
+  }));
   return content;
 }
 
@@ -210,24 +221,23 @@ const ReportService = {
   // TimetableService.getSessionSummary), which only ever needs one session's numbers and
   // shouldn't have to walk every other session in the course (and lazily regenerate their
   // reports) just to answer a question about this one.
-  getSessionSummaryForClass(classId, sessionId) {
-    const session = SessionModel.findById(sessionId);
+  async getSessionSummaryForClass(classId, sessionId) {
+    const session = await SessionModel.findById(sessionId);
     if (!session) return null;
-    const cls = ClassModel.findById(classId);
-    const requiredIds = getSessionRequiredAssessmentIds(session);
-    const learnerIds = LearnerHubLinkModel.findByClassId(classId)
-      .filter((l) => l.status === "active")
-      .map((l) => l.learnerId);
-    const learners = LearnerModel.findAll({ ids: learnerIds });
+    const cls = await ClassModel.findById(classId);
+    const requiredIds = await getSessionRequiredAssessmentIds(session);
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    const learners = await LearnerModel.findAll({ ids: learnerIds });
 
-    const learnerRows = learners.map((learner) => {
+    const learnerRows = await Promise.all(learners.map(async (learner) => {
       // Same lazy generate-on-read trigger getReadinessForClassCourse applies, scoped to just
       // this session — so opening a session's summary is enough to publish its report the moment
       // it becomes ready, without waiting for the course's full Reports page to be opened too.
-      generateSessionReport({ learnerId: learner.id, session, classId, curriculumId: cls?.curriculumId });
-      const gradedIds = getPublishedGradedAssessmentIds(learner.id);
+      await generateSessionReport({ learnerId: learner.id, session, classId, curriculumId: cls?.curriculumId });
+      const gradedIds = await getPublishedGradedAssessmentIds(learner.id);
       const gradedCount = requiredIds.filter((id) => gradedIds.has(id)).length;
-      const report = ReportModel.findOne({ learnerId: learner.id, courseId: session.courseId, classId, sessionId });
+      const report = await ReportModel.findOne({ learnerId: learner.id, courseId: session.courseId, classId, sessionId });
       return {
         learner,
         requiredCount: requiredIds.length,
@@ -235,7 +245,7 @@ const ReportService = {
         ready: requiredIds.length > 0 && gradedCount === requiredIds.length,
         percent: report?.content?.overall?.percent ?? null,
       };
-    });
+    }));
 
     const scored = learnerRows.filter((r) => r.percent !== null);
     return {
@@ -251,24 +261,23 @@ const ReportService = {
   // generate (every session-attached assessment graded AND its own report published to the
   // learner), and any report that already exists for them — one call gives the teacher's Reports
   // page everything it needs per learner.
-  getReadinessForClassCourse(classId, courseId) {
-    const { attachedCount, requiredIds: requiredAssessmentIds } = getCourseAssessmentCounts(courseId);
-    const sessions = SessionModel.findByCourseId(courseId);
-    const learnerIds = LearnerHubLinkModel.findByClassId(classId)
-      .filter((l) => l.status === "active")
-      .map((l) => l.learnerId);
-    const learners = LearnerModel.findAll({ ids: learnerIds });
+  async getReadinessForClassCourse(classId, courseId) {
+    const { attachedCount, requiredIds: requiredAssessmentIds } = await getCourseAssessmentCounts(courseId);
+    const sessions = await SessionModel.findByCourseId(courseId);
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    const learners = await LearnerModel.findAll({ ids: learnerIds });
 
     // Side effect: auto-generates/publishes any session report that just became ready for any of
     // these learners — this page load is the trigger, there's no separate "Generate" click for
     // session reports (see generateSessionReport's doc comment).
-    ensureSessionReportsGenerated(classId, courseId, learnerIds);
+    await ensureSessionReportsGenerated(classId, courseId, learnerIds);
 
-    return learners.map((learner) => {
-      const gradedIds = getPublishedGradedAssessmentIds(learner.id);
+    return Promise.all(learners.map(async (learner) => {
+      const gradedIds = await getPublishedGradedAssessmentIds(learner.id);
       const gradedCount = requiredAssessmentIds.filter((id) => gradedIds.has(id)).length;
-      const sessionRows = sessions.map((session) => {
-        const sessionRequiredIds = getSessionRequiredAssessmentIds(session);
+      const sessionRows = await Promise.all(sessions.map(async (session) => {
+        const sessionRequiredIds = await getSessionRequiredAssessmentIds(session);
         const sessionGradedCount = sessionRequiredIds.filter((id) => gradedIds.has(id)).length;
         return {
           sessionId: session.id,
@@ -277,11 +286,11 @@ const ReportService = {
           requiredCount: sessionRequiredIds.length,
           gradedCount: sessionGradedCount,
           ready: sessionRequiredIds.length > 0 && sessionGradedCount === sessionRequiredIds.length,
-          report: ReportModel.findOne({ learnerId: learner.id, courseId, classId, sessionId: session.id }),
+          report: await ReportModel.findOne({ learnerId: learner.id, courseId, classId, sessionId: session.id }),
         };
-      });
-      const ready = isCourseReadyForLearner(courseId, classId, learner.id);
-      const report = ReportModel.findOne({ learnerId: learner.id, courseId, classId });
+      }));
+      const ready = await isCourseReadyForLearner(courseId, classId, learner.id);
+      const report = await ReportModel.findOne({ learnerId: learner.id, courseId, classId });
       return {
         learner,
         requiredCount: requiredAssessmentIds.length,
@@ -294,48 +303,48 @@ const ReportService = {
         ready,
         report,
       };
-    });
+    }));
   },
 
   // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,
   // replacing the per-(class × course) request fan-out the teacher's Reports page used to issue
   // (a teacher with 5 classes × 10 courses fired 50 parallel requests just to paint the page).
-  getReadinessForClassCourses(classId, courseIds) {
+  async getReadinessForClassCourses(classId, courseIds) {
     const result = {};
-    courseIds.forEach((courseId) => {
-      result[courseId] = ReportService.getReadinessForClassCourse(classId, courseId);
-    });
+    await Promise.all(courseIds.map(async (courseId) => {
+      result[courseId] = await ReportService.getReadinessForClassCourse(classId, courseId);
+    }));
     return result;
   },
 
   // Idempotent: re-generating an already-existing report updates its draft snapshot instead of
   // creating a duplicate (findOne on learnerId+courseId is the natural key). Throws 409 if the
   // learner isn't actually ready yet, so the client can't skip the readiness check.
-  generateReport({ learnerId, courseId, classId, generatedBy }) {
-    const requiredAssessmentIds = getCourseRequiredAssessmentIds(courseId);
+  async generateReport({ learnerId, courseId, classId, generatedBy }) {
+    const requiredAssessmentIds = await getCourseRequiredAssessmentIds(courseId);
     if (requiredAssessmentIds.length === 0) {
       const err = new Error("This course has no attached assessments to report on");
       err.statusCode = 409;
       throw err;
     }
-    const ready = isCourseReadyForLearner(courseId, classId, learnerId);
+    const ready = await isCourseReadyForLearner(courseId, classId, learnerId);
     if (!ready) {
       const err = new Error("Not every session has a published report for this learner yet");
       err.statusCode = 409;
       throw err;
     }
 
-    const content = buildCourseReportContent(learnerId, courseId, classId);
+    const content = await buildCourseReportContent(learnerId, courseId, classId);
 
-    const existing = ReportModel.findOne({ learnerId, courseId, classId });
+    const existing = await ReportModel.findOne({ learnerId, courseId, classId });
     if (existing) return ReportModel.update(existing.id, { content });
 
-    const cls = ClassModel.findById(classId);
+    const cls = await ClassModel.findById(classId);
     return ReportModel.create({
       learnerId, courseId, classId,
       hubId: cls?.schoolId || null,
       status: "draft",
-      generatedAt: new Date().toISOString(),
+      generatedAt: new Date(),
       generatedBy,
       publishedAt: null,
       publishedBy: null,
@@ -344,8 +353,8 @@ const ReportService = {
     });
   },
 
-  updateRemarks(id, remarks) {
-    const report = ReportModel.findById(id);
+  async updateRemarks(id, remarks) {
+    const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     return ReportModel.update(id, { remarks });
   },
@@ -354,16 +363,16 @@ const ReportService = {
   // landed since the draft was generated, so what a guardian first sees is accurate. A repeat
   // call is a no-op (returns the already-published report unchanged) rather than re-snapshotting
   // scores out from under someone who's already read them.
-  publishReport(id, publishedBy) {
-    const report = ReportModel.findById(id);
+  async publishReport(id, publishedBy) {
+    const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status === "published") return report;
 
-    const content = buildCourseReportContent(report.learnerId, report.courseId, report.classId);
+    const content = await buildCourseReportContent(report.learnerId, report.courseId, report.classId);
     return ReportModel.update(id, {
       content,
       status: "published",
-      publishedAt: new Date().toISOString(),
+      publishedAt: new Date(),
       publishedBy,
     });
   },
@@ -374,18 +383,18 @@ const ReportService = {
   // the record would also lose the remarks and the generation history. Re-publishing afterwards
   // re-snapshots content, so any grading corrected in between is picked up. No-op if it's already
   // a draft, mirroring publishReport's own idempotency.
-  unpublishReport(id) {
-    const report = ReportModel.findById(id);
+  async unpublishReport(id) {
+    const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status !== "published") return report;
     return ReportModel.update(id, { status: "draft", publishedAt: null, publishedBy: null });
   },
 
-  getById(id) {
+  async getById(id) {
     return ReportModel.findById(id);
   },
 
-  listForClassCourse({ classId, courseId }) {
+  async listForClassCourse({ classId, courseId }) {
     return ReportModel.findAll({ classId, courseId });
   },
 
@@ -393,8 +402,8 @@ const ReportService = {
   // enrolled at several hubs shouldn't see another hub's reports mixed into this one's list, the
   // same scoping every other portal surface (courses, competencies, assessments) already applies.
   // Omitted, returns every published report across all hubs.
-  listForLearner(learnerId, hubId = null) {
-    const reports = ReportModel.findAll({ learnerId, status: "published" });
+  async listForLearner(learnerId, hubId = null) {
+    const reports = await ReportModel.findAll({ learnerId, status: "published" });
     return hubId ? reports.filter((r) => r.hubId === hubId) : reports;
   },
 };

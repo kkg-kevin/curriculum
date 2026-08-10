@@ -1,14 +1,7 @@
-const fs   = require("fs");
-const path = require("path");
+const db = require("../../config/db");
+const { generateId, updateRecord, firstOrNull } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/learner-hub-links.json");
-
-function read()      { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, "utf8")) : []; }
-function write(data) { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); }
-function genId() {
-  try { return require("crypto").randomUUID(); }
-  catch { return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; }
-}
+const TABLE = "learner_hub_links";
 
 // Records which learning hub(s) a learner is enrolled at — a learner stays one independent
 // identity/record (name, guardian, gender), it just gets linked to whichever hub(s) it's
@@ -19,87 +12,75 @@ function genId() {
 // within a given hub, and that placement + admission number are hub-specific facts.
 const LearnerHubLinkModel = {
   findAll() {
-    return read();
+    return db(TABLE);
   },
 
   findByLearnerId(learnerId) {
-    return read().filter((l) => l.learnerId === learnerId);
+    return db(TABLE).where({ learnerId });
   },
 
   findByHubId(hubId) {
-    return read().filter((l) => l.hubId === hubId);
+    return db(TABLE).where({ hubId });
   },
 
   findByClassId(classId) {
-    return read().filter((l) => l.classId === classId);
+    return db(TABLE).where({ classId });
   },
 
   findOne(learnerId, hubId) {
-    return read().find((l) => l.learnerId === learnerId && l.hubId === hubId) || null;
+    return firstOrNull(db(TABLE).where({ learnerId, hubId }));
   },
 
   countByAdmissionPrefix(prefix) {
-    return read().filter((l) => l.admissionNumber && l.admissionNumber.startsWith(prefix)).length;
+    return db(TABLE)
+      .where("admissionNumber", "like", `${prefix}%`)
+      .count({ count: "*" })
+      .first()
+      .then((r) => Number(r.count));
   },
 
   // Idempotent like teacher-hub-link's `link` — if this learner already has an enrollment at
   // this hub, returns the existing row untouched rather than creating a duplicate (use
   // `update` to change its class/status/admissionNumber instead).
-  create({ learnerId, hubId, classId, admissionNumber, status }) {
-    const all = read();
-    const existing = all.find((l) => l.learnerId === learnerId && l.hubId === hubId);
+  async create({ learnerId, hubId, classId, admissionNumber, status }) {
+    const existing = await firstOrNull(db(TABLE).where({ learnerId, hubId }));
     if (existing) return existing;
+    const now = new Date();
     const item = {
-      id: genId(), learnerId, hubId,
-      classId: classId || "", admissionNumber: admissionNumber || "", status: status || "active",
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      id: generateId(),
+      learnerId,
+      hubId,
+      classId: classId || null,
+      admissionNumber: admissionNumber || null,
+      status: status || "active",
+      createdAt: now,
+      updatedAt: now,
     };
-    all.push(item);
-    write(all);
+    await db(TABLE).insert(item);
     return item;
   },
 
   update(id, data) {
-    const all = read();
-    const index = all.findIndex((l) => l.id === id);
-    if (index === -1) return null;
-    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    all[index] = { ...all[index], ...patch, id, updatedAt: new Date().toISOString() };
-    write(all);
-    return all[index];
+    return updateRecord(db, TABLE, id, data);
   },
 
-  unlink(learnerId, hubId) {
-    const all      = read();
-    const filtered = all.filter((l) => !(l.learnerId === learnerId && l.hubId === hubId));
-    if (filtered.length === all.length) return false;
-    write(filtered);
-    return true;
+  async unlink(learnerId, hubId) {
+    const count = await db(TABLE).where({ learnerId, hubId }).del();
+    return count > 0;
   },
 
   deleteByLearnerId(learnerId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.learnerId !== learnerId);
-    write(filtered);
+    return db(TABLE).where({ learnerId }).del();
   },
 
   deleteByHubId(hubId) {
-    const all      = read();
-    const filtered = all.filter((l) => l.hubId !== hubId);
-    write(filtered);
+    return db(TABLE).where({ hubId }).del();
   },
 
   // A class was deleted — the learner stays enrolled at the hub, just no longer placed in a
   // class there, mirroring the "unassigned" state the rest of the app already understands.
   clearClassId(classId) {
-    const all = read();
-    let changed = false;
-    const next = all.map((l) => {
-      if (l.classId !== classId) return l;
-      changed = true;
-      return { ...l, classId: "", updatedAt: new Date().toISOString() };
-    });
-    if (changed) write(next);
+    return db(TABLE).where({ classId }).update({ classId: null, updatedAt: new Date() });
   },
 };
 

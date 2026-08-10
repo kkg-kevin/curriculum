@@ -35,8 +35,9 @@ function timesOverlap(aStart, aEnd, bStart, bEnd) {
 // and neither can one teacher, but two different classes/teachers can happily share a time slot.
 // excludeId skips the slot being updated so re-saving one's own unchanged time doesn't collide
 // with itself.
-function hasConflict({ classId, teacherId, dayOfWeek, startTime, endTime, excludeId }) {
-  const daySlots = TimetableModel.findAll({ dayOfWeek }).filter((s) => s.id !== excludeId);
+async function hasConflict({ classId, teacherId, dayOfWeek, startTime, endTime, excludeId }) {
+  const all = await TimetableModel.findAll({ dayOfWeek });
+  const daySlots = all.filter((s) => s.id !== excludeId);
   return daySlots.some((s) => {
     if (!timesOverlap(startTime, endTime, s.startTime, s.endTime)) return false;
     if (s.classId === classId) return true;
@@ -79,17 +80,17 @@ function weekdayOf(dateStr) {
 // Missing class/curriculum, a Program with no deployment yet, or a curriculum with no published
 // Academic Year, all degrade to [] (unrestricted — see isDateSchedulable) rather than blocking
 // scheduling outright — dates are opt-in constraints, not a prerequisite for having a timetable.
-function getPeriodsForClass(classId) {
-  const cls = ClassModel.findById(classId);
+async function getPeriodsForClass(classId) {
+  const cls = await ClassModel.findById(classId);
   if (!cls?.curriculumId) return [];
-  const curriculum = CurriculumModel.findById(cls.curriculumId);
+  const curriculum = await CurriculumModel.findById(cls.curriculumId);
   if (!curriculum) return [];
   if (curriculum.isProgram) {
-    const program = ProgramModel.findByClassId(classId);
+    const program = await ProgramModel.findByClassId(classId);
     if (!program?.startDate || !program?.endDate) return [];
     return [{ name: curriculum.name, startDate: program.startDate, endDate: program.endDate, breakStartDate: "", breakEndDate: "" }];
   }
-  const publishedVersion = AcademicYearVersionModel.findPublished(curriculum.id);
+  const publishedVersion = await AcademicYearVersionModel.findPublished(curriculum.id);
   return publishedVersion?.periods || [];
 }
 
@@ -121,8 +122,8 @@ function isDateSchedulable(date, periods) {
 // persisted — this is recomputed from the anchor + current slots + current Sessions + current
 // curriculum periods on every call, so editing any of those inputs is reflected immediately with
 // no sync/migration code.
-function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods }) {
-  const sessions = SessionModel.findByCourseId(courseId);
+async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods }) {
+  const sessions = await SessionModel.findByCourseId(courseId);
   if (sessions.length === 0) return [];
   const events = [];
   let cursor = 0;
@@ -180,15 +181,15 @@ function dedupeBreaks(breaks) {
 }
 
 const TimetableService = {
-  listForClass(classId) {
+  async listForClass(classId) {
     return TimetableModel.findAll({ classId });
   },
 
-  listCourseSchedules(classId) {
+  async listCourseSchedules(classId) {
     return CourseScheduleModel.findByClassId(classId);
   },
 
-  setCourseSchedule(classId, courseId, startDate) {
+  async setCourseSchedule(classId, courseId, startDate) {
     return CourseScheduleModel.setSchedule(classId, courseId, startDate);
   },
 
@@ -196,8 +197,8 @@ const TimetableService = {
   // dates between `from` and `to`. Courses with slots but no start-date anchor yet are silently
   // excluded — the UI is responsible for prompting the school to set one. Also returns this
   // class's curriculum break windows overlapping the range, so the UI can explain empty days.
-  resolveCalendar({ classId, from, to }) {
-    const slots = TimetableModel.findAll({ classId });
+  async resolveCalendar({ classId, from, to }) {
+    const slots = await TimetableModel.findAll({ classId });
     const slotsByCourse = {};
     for (const slot of slots) {
       if (!DAYS_OF_WEEK.includes(slot.dayOfWeek)) continue;
@@ -207,16 +208,16 @@ const TimetableService = {
       if (!slotsByCourse[slot.courseId][slot.dayOfWeek]) slotsByCourse[slot.courseId][slot.dayOfWeek] = slot;
     }
 
-    const periods = getPeriodsForClass(classId);
-    const anchors = CourseScheduleModel.findByClassId(classId);
-    const events = [];
-    for (const anchor of anchors) {
+    const periods = await getPeriodsForClass(classId);
+    const anchors = await CourseScheduleModel.findByClassId(classId);
+    const eventLists = await Promise.all(anchors.map((anchor) => {
       const slotsByDay = slotsByCourse[anchor.courseId];
-      if (!slotsByDay) continue;
-      events.push(...resolveCoursePlacements({
+      if (!slotsByDay) return [];
+      return resolveCoursePlacements({
         classId, courseId: anchor.courseId, slotsByDay, startDate: anchor.startDate, from, to, periods,
-      }));
-    }
+      });
+    }));
+    const events = eventLists.flat();
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
       breaks: breaksInRange(periods, from, to, classId),
@@ -226,12 +227,12 @@ const TimetableService = {
   // Same class-resolution as listForTeacher, but returning calendar events instead of slots.
   // Classes can sit on different curricula (different term calendars), so breaks are merged
   // across every linked class rather than assumed to be one shared calendar.
-  resolveTeacherCalendar(teacherId, from, to) {
-    const links = ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
+  async resolveTeacherCalendar(teacherId, from, to) {
+    const links = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
     const pairKey = (classId, courseId) => `${classId}:${courseId}`;
     const linkedPairs = new Set(links.map((l) => pairKey(l.classId, l.courseId)));
     const classIds = [...new Set(links.map((l) => l.classId))];
-    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+    const results = await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to })));
     const events = results
       .flatMap((r) => r.events)
       .filter((e) => linkedPairs.has(pairKey(e.classId, e.courseId)))
@@ -240,20 +241,20 @@ const TimetableService = {
   },
 
   // Same class-resolution as listForLearner, but returning calendar events instead of slots.
-  resolveLearnerCalendar(learnerId, from, to) {
-    const classIds = LearnerHubLinkModel.findByLearnerId(learnerId)
-      .filter((l) => l.classId && l.status === "active")
-      .map((l) => l.classId);
-    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+  async resolveLearnerCalendar(learnerId, from, to) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
+    const results = await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to })));
     return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
   },
 
   // Same merge pattern as resolveTeacherCalendar/resolveLearnerCalendar above, scoped to every
   // class at one Learning Hub instead of one person's linked classes — the school-portal's
   // "All Classes" view.
-  resolveHubCalendar(hubId, from, to) {
-    const classIds = ClassModel.findAll({ schoolId: hubId }).map((c) => c.id);
-    const results = classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to }));
+  async resolveHubCalendar(hubId, from, to) {
+    const classes = await ClassModel.findAll({ schoolId: hubId });
+    const classIds = classes.map((c) => c.id);
+    const results = await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to })));
     return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
   },
 
@@ -261,43 +262,44 @@ const TimetableService = {
   // class-course-teacher-link.model.js) — a slot with no teacherId override is implied to be
   // taught by whichever educator(s) are linked to that course in that class, not just the
   // primary, so every co-teacher sees it on their own timetable too.
-  listForTeacher(teacherId) {
-    const links = ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
+  async listForTeacher(teacherId) {
+    const links = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
     const pairKey = (classId, courseId) => `${classId}:${courseId}`;
     const linkedPairs = new Set(links.map((l) => pairKey(l.classId, l.courseId)));
-    return TimetableModel.findAll()
+    const all = await TimetableModel.findAll();
+    return all
       .filter((s) => linkedPairs.has(pairKey(s.classId, s.courseId)))
       .filter((s) => !s.teacherId || s.teacherId === teacherId);
   },
 
   // Every slot for every class this learner is currently actively enrolled in — a learner can
   // be enrolled at more than one hub/class at once (see learner-hub-link.model.js).
-  listForLearner(learnerId) {
-    const classIds = LearnerHubLinkModel.findByLearnerId(learnerId)
-      .filter((l) => l.classId && l.status === "active")
-      .map((l) => l.classId);
-    return TimetableModel.findAll().filter((s) => classIds.includes(s.classId));
+  async listForLearner(learnerId) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
+    const all = await TimetableModel.findAll();
+    return all.filter((s) => classIds.includes(s.classId));
   },
 
-  createSlot(data) {
-    if (hasConflict(data)) {
+  async createSlot(data) {
+    if (await hasConflict(data)) {
       conflictError("This time overlaps with an existing slot for this class or teacher");
     }
     return TimetableModel.create(data);
   },
 
-  updateSlot(id, data) {
-    const existing = TimetableModel.findById(id);
+  async updateSlot(id, data) {
+    const existing = await TimetableModel.findById(id);
     if (!existing) notFound("Timetable slot not found");
     const merged = { ...existing, ...data };
-    if (hasConflict({ ...merged, excludeId: id })) {
+    if (await hasConflict({ ...merged, excludeId: id })) {
       conflictError("This time overlaps with an existing slot for this class or teacher");
     }
     return TimetableModel.update(id, data);
   },
 
-  deleteSlot(id) {
-    const deleted = TimetableModel.delete(id);
+  async deleteSlot(id) {
+    const deleted = await TimetableModel.delete(id);
     if (!deleted) notFound("Timetable slot not found");
     return { message: "Timetable slot deleted" };
   },
@@ -309,30 +311,35 @@ const TimetableService = {
   // Reports on every call, same "nothing persisted, nothing cached" posture as the rest of this
   // engine — a session viewed again after attendance is marked or grading finishes just reflects
   // the current state, no invalidation needed.
-  getSessionSummary({ classId, sessionId, date }) {
-    const session = SessionModel.findById(sessionId);
+  async getSessionSummary({ classId, sessionId, date }) {
+    const session = await SessionModel.findById(sessionId);
     if (!session) notFound("Session not found");
-    const cls = ClassModel.findById(classId);
+    const cls = await ClassModel.findById(classId);
     if (!cls) notFound("Class not found");
-    const course = CourseModel.findById(session.courseId);
-    const totalSessions = SessionModel.findByCourseId(session.courseId).length;
+    const course = await CourseModel.findById(session.courseId);
+    const courseSessions = await SessionModel.findByCourseId(session.courseId);
+    const totalSessions = courseSessions.length;
 
     // Same teacher-resolution order as TimetablePage.jsx's resolveTeacherLabel: an explicit
     // override on that day's slot wins, otherwise whichever educator is primary for this course
     // in this class.
     const dayOfWeek = weekdayOf(date);
-    const slot = TimetableModel.findAll({ classId }).find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek);
-    const courseLinks = ClassCourseTeacherLinkModel.findByClassId(classId).filter((l) => l.courseId === session.courseId);
+    const classSlots = await TimetableModel.findAll({ classId });
+    const slot = classSlots.find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek);
+    const allCourseLinks = await ClassCourseTeacherLinkModel.findByClassId(classId);
+    const courseLinks = allCourseLinks.filter((l) => l.courseId === session.courseId);
     const primaryLink = courseLinks.find((l) => l.isPrimary) || courseLinks[0] || null;
     const teacherId = slot?.teacherId || primaryLink?.teacherId || null;
-    const teacher = teacherId ? TeacherModel.findById(teacherId) : null;
+    const teacher = teacherId ? await TeacherModel.findById(teacherId) : null;
 
     // Attendance is recorded per classId+date, not per course/session — a class only ever runs
     // one session on a given date in practice, so this date's attendance IS this session's
     // attendance (see attendance.model.js's own key).
-    const enrolledLinks = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active");
-    const learnersById = new Map(LearnerModel.findAll({ ids: enrolledLinks.map((l) => l.learnerId) }).map((l) => [l.id, l]));
-    const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+    const allLinks = await LearnerHubLinkModel.findByClassId(classId);
+    const enrolledLinks = allLinks.filter((l) => l.status === "active");
+    const learners = await LearnerModel.findAll({ ids: enrolledLinks.map((l) => l.learnerId) });
+    const learnersById = new Map(learners.map((l) => [l.id, l]));
+    const attendanceRecords = await AttendanceModel.findByClassAndDate(classId, date);
     const counts = { present: 0, absent: 0, late: 0, excused: 0 };
     const records = attendanceRecords.map((a) => {
       if (counts[a.status] !== undefined) counts[a.status] += 1;
@@ -351,7 +358,7 @@ const TimetableService = {
         counts,
         records,
       },
-      grading: ReportService.getSessionSummaryForClass(classId, sessionId),
+      grading: await ReportService.getSessionSummaryForClass(classId, sessionId),
     };
   },
 
@@ -361,15 +368,16 @@ const TimetableService = {
   // attendance/grading blocks, just counts instead of per-learner rows, and silently skips a
   // triple whose session no longer exists rather than erroring out the whole batch over one
   // stale card.
-  getSessionStatusBulk(occurrences) {
+  async getSessionStatusBulk(occurrences) {
     const result = {};
     for (const { classId, sessionId, date } of occurrences) {
-      const session = SessionModel.findById(sessionId);
+      const session = await SessionModel.findById(sessionId);
       if (!session) continue;
-      const enrolledCount = LearnerHubLinkModel.findByClassId(classId).filter((l) => l.status === "active").length;
-      const attendanceRecords = AttendanceModel.findByClassAndDate(classId, date);
+      const links = await LearnerHubLinkModel.findByClassId(classId);
+      const enrolledCount = links.filter((l) => l.status === "active").length;
+      const attendanceRecords = await AttendanceModel.findByClassAndDate(classId, date);
       const presentCount = attendanceRecords.filter((a) => a.status === "present").length;
-      const grading = ReportService.getSessionSummaryForClass(classId, sessionId);
+      const grading = await ReportService.getSessionSummaryForClass(classId, sessionId);
       result[`${classId}-${sessionId}-${date}`] = {
         attendanceMarked: attendanceRecords.length > 0,
         attendancePercent: enrolledCount > 0 ? Math.round((presentCount / enrolledCount) * 100) : null,

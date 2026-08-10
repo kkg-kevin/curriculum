@@ -49,13 +49,23 @@ function ItemDetail({ item }) {
     <>
       {(item.kind === "mcqSingle" || item.kind === "mcqMultiple") && item.options?.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "8px" }}>
-          {item.options.map((o, i) => (
-            <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: o === item.correctAnswer ? "#059669" : "#374151", fontWeight: o === item.correctAnswer ? 700 : 400 }}>
-              <span style={{ color: "#9CA3AF", fontWeight: 700, width: "16px", flexShrink: 0 }}>{String.fromCharCode(65 + i)}.</span>
-              <span>{o}</span>
-              {o === item.correctAnswer && <span>✓</span>}
-            </div>
-          ))}
+          {(() => {
+            // mcqMultiple stores every correct option as a comma-joined string (see
+            // grading.utils.js#gradeItem) — mcqSingle stores just the one string.
+            const correctSet = item.kind === "mcqMultiple"
+              ? (item.correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean)
+              : [item.correctAnswer];
+            return item.options.map((o, i) => {
+              const correct = correctSet.includes(o);
+              return (
+                <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: correct ? "#059669" : "#374151", fontWeight: correct ? 700 : 400 }}>
+                  <span style={{ color: "#9CA3AF", fontWeight: 700, width: "16px", flexShrink: 0 }}>{String.fromCharCode(65 + i)}.</span>
+                  <span>{o}</span>
+                  {correct && <span>✓</span>}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
       {item.kind === "trueFalse" && item.correctAnswer && (
@@ -189,9 +199,9 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
 
   const type = assessment.type;
   const isObservation = type === "observation";
-  const entries = ((isObservation ? assessment.indicators : assessment.items) || []).map(
-    isObservation ? (i) => i : normalizeLegacyItem
-  );
+  const entries = isObservation
+    ? [...(assessment.items || []).map(normalizeLegacyItem), ...(assessment.indicators || [])]
+    : (assessment.items || []).map(normalizeLegacyItem);
   const sections = assessment.sections || [];
   const rubric = assessment.rubric || [];
   const deliverables = assessment.deliverables || [];

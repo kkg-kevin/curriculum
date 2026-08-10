@@ -1,49 +1,32 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const db = require("../../config/db");
+const { generateId, firstOrNull } = require("../../shared/utils/model.utils");
 
-const FILE = path.join(__dirname, "../../../data/attendance.json");
-
-const generateId = () =>
-  typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const readAll = () => {
-  if (!fs.existsSync(FILE)) return [];
-  const raw = fs.readFileSync(FILE, "utf-8").trim();
-  return raw ? JSON.parse(raw) : [];
-};
-
-const writeAll = (data) => {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
-};
+const TABLE = "attendance";
 
 const AttendanceModel = {
   findAll({ classId, learnerId, date, dateFrom, dateTo, status } = {}) {
-    let all = readAll();
-    if (classId)   all = all.filter((a) => a.classId === classId);
-    if (learnerId) all = all.filter((a) => a.learnerId === learnerId);
-    if (date)      all = all.filter((a) => a.date === date);
-    if (dateFrom)  all = all.filter((a) => a.date >= dateFrom);
-    if (dateTo)    all = all.filter((a) => a.date <= dateTo);
-    if (status)    all = all.filter((a) => a.status === status);
-    return all.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    let query = db(TABLE);
+    if (classId) query = query.where({ classId });
+    if (learnerId) query = query.where({ learnerId });
+    if (date) query = query.where({ date });
+    if (dateFrom) query = query.where("date", ">=", dateFrom);
+    if (dateTo) query = query.where("date", "<=", dateTo);
+    if (status) query = query.where({ status });
+    return query.orderBy("date", "desc");
   },
 
   findByClassAndDate(classId, date) {
-    return readAll().filter((a) => a.classId === classId && a.date === date);
+    return db(TABLE).where({ classId, date });
   },
 
   findById(id) {
-    return readAll().find((a) => a.id === id) || null;
+    return firstOrNull(db(TABLE).where({ id }));
   },
 
   // Re-marking a day is an idempotent overwrite — drop whatever was recorded for this
   // classId+date and insert the fresh set, rather than reconciling create-vs-update per learner.
-  bulkMark(classId, date, records, markedBy) {
-    const all = readAll().filter((a) => !(a.classId === classId && a.date === date));
-    const now = new Date().toISOString();
+  async bulkMark(classId, date, records, markedBy) {
+    const now = new Date();
     const created = records.map((r) => ({
       id: generateId(),
       classId,
@@ -55,33 +38,26 @@ const AttendanceModel = {
       createdAt: now,
       updatedAt: now,
     }));
-    writeAll([...all, ...created]);
+
+    await db.transaction(async (trx) => {
+      await trx(TABLE).where({ classId, date }).del();
+      if (created.length) await trx(TABLE).insert(created);
+    });
     return created;
   },
 
-  deleteByLearnerId(learnerId) {
-    const all = readAll();
-    const remaining = all.filter((a) => a.learnerId !== learnerId);
-    writeAll(remaining);
-    return all.length - remaining.length;
+  async deleteByLearnerId(learnerId) {
+    return db(TABLE).where({ learnerId }).del();
   },
 
-  deleteByClassId(classId) {
-    const all = readAll();
-    const remaining = all.filter((a) => a.classId !== classId);
-    writeAll(remaining);
-    return all.length - remaining.length;
+  async deleteByClassId(classId) {
+    return db(TABLE).where({ classId }).del();
   },
 
   // Detaches a deleted teacher's attribution without touching the attendance record itself —
   // the attendance history is real data and should survive the teacher who marked it leaving.
   clearMarkedBy(teacherId) {
-    const all = readAll();
-    const now = new Date().toISOString();
-    const next = all.map((a) =>
-      a.markedBy === teacherId ? { ...a, markedBy: null, updatedAt: now } : a
-    );
-    writeAll(next);
+    return db(TABLE).where({ markedBy: teacherId }).update({ markedBy: null, updatedAt: new Date() });
   },
 };
 
