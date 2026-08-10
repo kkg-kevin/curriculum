@@ -275,9 +275,34 @@ export default function CurriculumStructurePage() {
     }
   };
 
+  // Derives a short label from a curriculum label as it's typed — "Grade 1" -> "G1",
+  // "Pre Primary 2" -> "PP2", "Reception" (no trailing number) -> "REC". Only used to
+  // auto-fill shortLabel while the admin hasn't typed their own (see updateClassField).
+  const deriveShortLabel = (name) => {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return "";
+    const withNumber = trimmed.match(/^(.*?)\s*(\d+)$/);
+    if (withNumber) {
+      const words = withNumber[1].trim().split(/[\s-]+/).filter(Boolean);
+      return words.slice(0, 3).map((w) => w[0].toUpperCase()).join("") + withNumber[2];
+    }
+    const words = trimmed.split(/[\s-]+/).filter(Boolean);
+    return words.length > 1
+      ? words.slice(0, 3).map((w) => w[0].toUpperCase()).join("")
+      : words[0].slice(0, 3).toUpperCase();
+  };
+
   const updateClassField = (systemLevelId, field, value) => {
     setClassesDirty(true);
-    setClasses((p) => p.map((c) => (c.systemLevelId === systemLevelId ? { ...c, [field]: value } : c)));
+    setClasses((p) => p.map((c) => {
+      if (c.systemLevelId !== systemLevelId) return c;
+      if (field !== "name") return { ...c, [field]: value };
+      // Keep auto-filling shortLabel as the admin types the label, but stop the moment they've
+      // manually typed their own — detected by the current shortLabel no longer matching what
+      // would've been derived from the label's previous value.
+      const stillAuto = c.shortLabel === "" || c.shortLabel === deriveShortLabel(c.name);
+      return { ...c, name: value, shortLabel: stillAuto ? deriveShortLabel(value) : c.shortLabel };
+    }));
   };
 
   // Independent save for just this section — an admin can commit grade/level changes without
