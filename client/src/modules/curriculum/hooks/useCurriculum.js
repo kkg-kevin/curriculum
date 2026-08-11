@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { curriculumApi } from "../services/curriculumApi";
+import { PROGRAM_KEYS } from "../../programs/hooks/usePrograms";
 
 export const CURRICULUM_KEYS = {
   all: ["curricula"],
@@ -71,6 +72,11 @@ export function useUpdateCurriculum() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
       if (data?.id) queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(data.id) });
+      // A Program is this same curriculum record under an isProgram flag — ProgramViewPage
+      // reads the curriculum's name/description through its own cached program query, which
+      // this edit doesn't otherwise touch. Without this, a Program view can keep showing
+      // pre-edit curriculum fields until its own cache happens to go stale.
+      queryClient.invalidateQueries({ queryKey: PROGRAM_KEYS.all });
       toast.success("Curriculum updated successfully!");
     },
     onError: (err) => {
