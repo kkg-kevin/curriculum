@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getReadiness,
+  getHubAnalytics,
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,
@@ -16,6 +17,9 @@ const router = express.Router();
 // Teacher/school/admin-facing: which learners in a class/course are ready for a report, and
 // the class/course's existing draft+published reports.
 router.get("/readiness", authorize("admin", "school", "teacher"), getReadiness);
+// Hub-wide academic performance rollup for the school portal's Reports page — must stay above
+// the "/:id" route below, or "hub-analytics" gets swallowed as an :id lookup.
+router.get("/hub-analytics", authorize("admin", "school"), getHubAnalytics);
 router.post("/", authorize("admin", "school", "teacher"), generateReport);
 router.get("/", authorize("admin", "school", "teacher"), listReportsForClassCourse);
 router.patch("/:id", authorize("admin", "school", "teacher"), updateRemarks);
