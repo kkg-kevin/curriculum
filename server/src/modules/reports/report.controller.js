@@ -59,6 +59,18 @@ const getReadiness = asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows, count: rows.length });
 });
 
+const getHubAnalytics = asyncHandler(async (req, res) => {
+  const { hubId, days } = req.query;
+  if (!hubId) {
+    const err = new Error("hubId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (req.user.role === "school") assertOwn(hubId === req.ownSchool?.id);
+  const data = await ReportService.getHubAnalytics(hubId, { days: days ? Number(days) : undefined });
+  res.json({ success: true, data });
+});
+
 const generateReport = asyncHandler(async (req, res) => {
   const data = generateReportSchema.parse(req.body);
   const cls = await ClassModel.findById(data.classId);
@@ -139,6 +151,7 @@ const unpublishReport = asyncHandler(async (req, res) => {
 
 module.exports = {
   getReadiness,
+  getHubAnalytics,
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,

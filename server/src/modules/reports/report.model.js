@@ -25,11 +25,12 @@ const ReportModel = {
     return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  findAll({ classId, courseId, learnerId, status } = {}) {
+  findAll({ classId, courseId, learnerId, hubId, status } = {}) {
     let query = db(TABLE);
     if (classId) query = query.where({ classId });
     if (courseId) query = query.where({ courseId });
     if (learnerId) query = query.where({ learnerId });
+    if (hubId) query = query.where({ hubId });
     if (status) query = query.where({ status });
     return query.orderBy("updatedAt", "desc");
   },

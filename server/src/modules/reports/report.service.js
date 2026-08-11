@@ -9,6 +9,7 @@ const AssessmentModel = require("../assessments/assessment.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
+const AttendanceModel = require("../attendance/attendance.model");
 
 function notFound(message) {
   const err = new Error(message);
@@ -405,6 +406,116 @@ const ReportService = {
   async listForLearner(learnerId, hubId = null) {
     const reports = await ReportModel.findAll({ learnerId, status: "published" });
     return hubId ? reports.filter((r) => r.hubId === hubId) : reports;
+  },
+
+  // Academic-performance rollup for a hub's Reports page — deliberately built from data that
+  // already exists rather than re-deriving scores/competencies from scratch: a published final
+  // report's content.overall.percent and content.competencyScores are the same snapshot the
+  // learner/guardian sees, so the hub's aggregate view can't disagree with what a family reads on
+  // an individual report. Attendance has no such snapshot anywhere, so that piece alone is
+  // computed here from raw records.
+  async getHubAnalytics(hubId, { days = 30 } = {}) {
+    const classes = await ClassModel.findAll({ schoolId: hubId });
+    const classIds = classes.map((c) => c.id);
+
+    const links = await LearnerHubLinkModel.findByHubId(hubId);
+    const activeLinks = links.filter((l) => l.status === "active");
+    const activeLinksByClass = {};
+    activeLinks.forEach((l) => {
+      if (!l.classId) return;
+      activeLinksByClass[l.classId] = (activeLinksByClass[l.classId] || 0) + 1;
+    });
+
+    const allReports = await ReportModel.findAll({ hubId });
+    const finalReports = allReports.filter((r) => r.sessionId === null);
+    const publishedFinals = finalReports.filter((r) => r.status === "published");
+    const draftFinals = finalReports.filter((r) => r.status === "draft");
+    const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);
+
+    const averageScore = scored.length
+      ? Math.round(scored.reduce((sum, r) => sum + r.content.overall.percent, 0) / scored.length)
+      : null;
+
+    const courseSums = {}, courseCounts = {};
+    scored.forEach((r) => {
+      courseSums[r.courseId] = (courseSums[r.courseId] || 0) + r.content.overall.percent;
+      courseCounts[r.courseId] = (courseCounts[r.courseId] || 0) + 1;
+    });
+    const courseIds = Object.keys(courseSums);
+    const courses = await Promise.all(courseIds.map((id) => CourseModel.findById(id)));
+    const scoreByCourse = courseIds.map((id, i) => ({
+      courseId: id,
+      courseName: courses[i]?.name || "Untitled course",
+      averagePercent: Math.round(courseSums[id] / courseCounts[id]),
+    }));
+
+    const compSums = {}, compCounts = {}, compNames = {};
+    scored.forEach((r) => (r.content.competencyScores || []).forEach((cs) => {
+      compSums[cs.competencyId] = (compSums[cs.competencyId] || 0) + cs.score;
+      compCounts[cs.competencyId] = (compCounts[cs.competencyId] || 0) + 1;
+      compNames[cs.competencyId] = cs.name;
+    }));
+    const competencyScores = Object.keys(compSums).map((id) => ({
+      competencyId: id,
+      name: compNames[id],
+      averageScore: Math.round(compSums[id] / compCounts[id]),
+    }));
+
+    const dateFrom = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const attendanceByClass = await Promise.all(
+      classIds.map((id) => AttendanceModel.findAll({ classId: id, dateFrom }))
+    );
+    const allAttendance = attendanceByClass.flat();
+    const attendanceRate = allAttendance.length
+      ? Math.round((allAttendance.filter((a) => a.status === "present").length / allAttendance.length) * 100)
+      : null;
+
+    // Bucketed by each record's Monday so the trend reads as consistent weekly steps rather
+    // than one point per school day.
+    const weekBuckets = {};
+    allAttendance.forEach((a) => {
+      const d = new Date(a.date);
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      const key = monday.toISOString().slice(0, 10);
+      if (!weekBuckets[key]) weekBuckets[key] = { present: 0, total: 0 };
+      weekBuckets[key].total += 1;
+      if (a.status === "present") weekBuckets[key].present += 1;
+    });
+    const attendanceTrend = Object.keys(weekBuckets).sort().map((weekStart) => ({
+      weekStart,
+      rate: Math.round((weekBuckets[weekStart].present / weekBuckets[weekStart].total) * 100),
+    }));
+
+    const classBreakdown = classes.map((cls, i) => {
+      const classAttendance = attendanceByClass[i] || [];
+      const classScored = scored.filter((r) => r.classId === cls.id);
+      return {
+        classId: cls.id,
+        name: cls.gradeName || cls.name || cls.streamName,
+        learnerCount: activeLinksByClass[cls.id] || 0,
+        averageScore: classScored.length
+          ? Math.round(classScored.reduce((sum, r) => sum + r.content.overall.percent, 0) / classScored.length)
+          : null,
+        attendanceRate: classAttendance.length
+          ? Math.round((classAttendance.filter((a) => a.status === "present").length / classAttendance.length) * 100)
+          : null,
+        publishedCount: publishedFinals.filter((r) => r.classId === cls.id).length,
+        draftCount: draftFinals.filter((r) => r.classId === cls.id).length,
+      };
+    });
+
+    return {
+      classCount: classes.length,
+      activeLearnerCount: activeLinks.length,
+      reportStats: { published: publishedFinals.length, draft: draftFinals.length },
+      averageScore,
+      scoreByCourse,
+      competencyScores,
+      attendanceRate,
+      attendanceTrend,
+      classBreakdown,
+    };
   },
 };
 

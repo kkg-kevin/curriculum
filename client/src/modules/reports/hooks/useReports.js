@@ -10,6 +10,7 @@ const KEYS = {
   list:      (classId, courseId) => ["reports", "list", classId, courseId],
   detail:    (id)                => ["reports", id],
   mine:      (hubId)             => ["reports", "mine", hubId || null],
+  hubAnalytics: (hubId, days)    => ["reports", "hubAnalytics", hubId, days],
 };
 
 export function useReadiness(classId, courseId) {
@@ -42,6 +43,14 @@ export function useReport(id) {
     queryKey: KEYS.detail(id),
     queryFn:  () => reportApi.getById(id),
     enabled:  !!id,
+  });
+}
+
+export function useHubAnalytics(hubId, days = 30) {
+  return useQuery({
+    queryKey: KEYS.hubAnalytics(hubId, days),
+    queryFn:  () => reportApi.getHubAnalytics(hubId, days),
+    enabled:  !!hubId,
   });
 }
 
