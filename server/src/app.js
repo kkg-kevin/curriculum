@@ -1,8 +1,10 @@
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
+const env = require("./config/env");
 const authRoutes = require("./modules/auth/auth.routes");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
 const competencyRoutes = require("./modules/settings/competencies/competency.routes");
@@ -28,8 +30,19 @@ const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 
 const app = express();
 
+app.use(
+  helmet({
+    // This is a JSON API — the only HTML-adjacent response is the "/" health check, which
+    // returns JSON too, so there's no page for a CSP to protect and the default policy only
+    // risks conflicting with the client's own. Static /uploads files (photos, assessment
+    // media) are fetched cross-origin by the client's <img>/<video> tags, so the default
+    // same-origin resource policy would silently block them from loading.
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(cors({
-  origin: process.env.CLIENT_URL || "*",
+  origin: env.CLIENT_URL,
   credentials: true,
 }));
 app.use(express.json());

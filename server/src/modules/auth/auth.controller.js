@@ -3,10 +3,17 @@ const AuthService = require("./auth.service");
 const { loginSchema, signupSchema, updateMeSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 
-const cookieOptions = {
+// "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
+// fine locally where client and server share the "localhost" site across ports, but breaks
+// silently in production if client and API end up on different registrable domains. "none"
+// requires "secure", so it's only safe once NODE_ENV === "production" forces HTTPS.
+const baseCookieOptions = {
   httpOnly: true,
   secure: NODE_ENV === "production",
-  sameSite: "lax",
+  sameSite: NODE_ENV === "production" ? "none" : "lax",
+};
+const cookieOptions = {
+  ...baseCookieOptions,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -24,7 +31,7 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: NODE_ENV === "production", sameSite: "lax" });
+  res.clearCookie(COOKIE_NAME, baseCookieOptions);
   res.json({ success: true });
 });
 
