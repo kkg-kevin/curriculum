@@ -1,6 +1,7 @@
 const TimetableModel = require("./timetable.model");
 const CourseScheduleModel = require("./course-schedule.model");
 const SessionSkipModel = require("./session-skip.model");
+const RoomModel = require("../rooms/room.model");
 const SessionModel = require("../courses/session.model");
 const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
@@ -50,10 +51,14 @@ async function resolveEffectiveTeacherIds(classId, courseId, explicitTeacherId) 
 // per-slot override. Two different classes/teachers can otherwise happily share a time slot.
 // excludeId skips the slot being updated so re-saving one's own unchanged time doesn't collide
 // with itself.
-async function hasConflict({ classId, courseId, teacherId, dayOfWeek, startTime, endTime, excludeId }) {
+async function hasConflict({ classId, courseId, teacherId, roomId, dayOfWeek, startTime, endTime, excludeId }) {
   const all = await TimetableModel.findAll({ dayOfWeek });
   const overlapping = all.filter((s) => s.id !== excludeId && timesOverlap(startTime, endTime, s.startTime, s.endTime));
   if (overlapping.some((s) => s.classId === classId)) return true;
+  // A room is one physical resource — any two overlapping slots sharing it conflict regardless
+  // of class/teacher, unlike the teacher check below which only fires when the *same person*
+  // would be double-booked.
+  if (roomId && overlapping.some((s) => s.roomId === roomId)) return true;
 
   const myTeacherIds = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
   if (myTeacherIds.length === 0) return false;
@@ -154,7 +159,7 @@ function isDateSchedulable(date, periods) {
 // correctly with no special-casing; the loop condition includes `|| pendingMerge.length` so a
 // merge stashed on the course's very last session still gets a chance to flush instead of the
 // walk terminating (cursor === sessions.length) before ever placing it.
-async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods, skipsByDate = {} }) {
+async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods, skipsByDate = {}, roomNameById = new Map() }) {
   const sessions = await SessionModel.findByCourseId(courseId);
   if (sessions.length === 0) return [];
   const events = [];
@@ -189,7 +194,7 @@ async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDat
       events.push({
         date, dayOfWeek: day, classId, courseId,
         sessionId: session.id, sessionTitle: session.title, sessionOrder: session.order,
-        teacherId: slot.teacherId || null, startTime: slot.startTime, endTime: slot.endTime, room: slot.room || "",
+        teacherId: slot.teacherId || null, startTime: slot.startTime, endTime: slot.endTime, room: roomNameById.get(slot.roomId) || "",
         merged: toEmit.length > 1,
       });
     }
@@ -286,12 +291,17 @@ const TimetableService = {
     const anchors = await CourseScheduleModel.findByClassId(classId);
     const skipRows = await SessionSkipModel.findByClassId(classId);
     const skipsByCourse = groupSkipsByCourse(skipRows);
+    // Resolved server-side so the emitted event shape (room: <string>) stays exactly what
+    // CalendarView.jsx already renders — the client never needs to know about roomId at all.
+    const roomIds = [...new Set(slots.map((s) => s.roomId).filter(Boolean))];
+    const rooms = roomIds.length ? await RoomModel.findAll({ ids: roomIds }) : [];
+    const roomNameById = new Map(rooms.map((r) => [r.id, r.name]));
     const eventLists = await Promise.all(anchors.map((anchor) => {
       const slotsByDay = slotsByCourse[anchor.courseId];
       if (!slotsByDay) return [];
       return resolveCoursePlacements({
         classId, courseId: anchor.courseId, slotsByDay, startDate: anchor.startDate, from, to, periods,
-        skipsByDate: skipsByCourse[anchor.courseId] || {},
+        skipsByDate: skipsByCourse[anchor.courseId] || {}, roomNameById,
       });
     }));
     const events = eventLists.flat();
@@ -361,7 +371,7 @@ const TimetableService = {
 
   async createSlot(data) {
     if (await hasConflict(data)) {
-      conflictError("This time overlaps with an existing slot for this class or teacher");
+      conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
     return TimetableModel.create(data);
   },
@@ -371,7 +381,7 @@ const TimetableService = {
     if (!existing) notFound("Timetable slot not found");
     const merged = { ...existing, ...data };
     if (await hasConflict({ ...merged, excludeId: id })) {
-      conflictError("This time overlaps with an existing slot for this class or teacher");
+      conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
     return TimetableModel.update(id, data);
   },

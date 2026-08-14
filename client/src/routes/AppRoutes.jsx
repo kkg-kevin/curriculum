@@ -26,6 +26,7 @@ import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage"
 import SchoolReportsPage from "../modules/school-portal/pages/ReportsPage";
 import SchoolAttendancePage from "../modules/school-portal/pages/AttendancePage";
 import SchoolTimetablePage from "../modules/school-portal/pages/TimetablePage";
+import SchoolRoomsPage from "../modules/school-portal/pages/RoomsPage";
 import SchoolProfilePage from "../modules/school-portal/pages/ProfilePage";
 import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
@@ -219,6 +220,7 @@ export default function AppRoutes() {
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="attendance" element={<SchoolAttendancePage />} />
           <Route path="timetable" element={<SchoolTimetablePage />} />
+          <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
           <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
