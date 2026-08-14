@@ -26,6 +26,24 @@ const LearnerModel = {
     return firstOrNull(db(TABLE).whereRaw("LOWER(username) = ?", [username.toLowerCase()]));
   },
 
+  // Cross-hub lookup for getAllLearners' search branch (see AddExistingLearnerPanel on the
+  // client) — partial, case-insensitive match against name, username, or registration number,
+  // so a school/branchAdmin doesn't need to already know a learner's exact username to find
+  // them. LOWER() on both sides rather than relying on the DB's default collation.
+  search(term, { limit = 20 } = {}) {
+    const needle = `%${term.trim().toLowerCase()}%`;
+    return db(TABLE)
+      .where((qb) => {
+        qb.whereRaw("LOWER(firstName) LIKE ?", [needle])
+          .orWhereRaw("LOWER(lastName) LIKE ?", [needle])
+          .orWhereRaw("LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?", [needle])
+          .orWhereRaw("LOWER(username) LIKE ?", [needle])
+          .orWhereRaw("LOWER(registrationNumber) LIKE ?", [needle]);
+      })
+      .orderBy("firstName")
+      .limit(limit);
+  },
+
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
   },

@@ -9,35 +9,38 @@ import { learnerApi } from "../services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
 import { LearnerCard } from "../components/LearnerCard";
 import { formatClassName } from "../../classes/utils/classDisplay";
-import { useLookupLearnerByUsername, useEnrollLearnerHub } from "../hooks/useLearners";
+import { useSearchLearners, useEnrollLearnerHub } from "../hooks/useLearners";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 
-// Finds a learner already enrolled at a DIFFERENT hub (by their exact username) and enrolls them
-// here too — the only path a school/branchAdmin has for this, since they can't otherwise view or
-// search a learner outside their own hub at all. Exact match only, so a hub can't browse the
-// platform's full learner list — you have to already know the learner's username.
+// Finds a learner already enrolled at a DIFFERENT hub (by name, username, or registration
+// number) and enrolls them here too — the only path a school/branchAdmin has for this, since
+// they can't otherwise view or search a learner outside their own hub at all. Partial match, so
+// a name search can surface several candidates — pick one from the list before enrolling.
 function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {
-  const [username, setUsername] = useState("");
-  const [result, setResult] = useState(undefined); // undefined = not searched, null = not found, object = match
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState(undefined); // undefined = not searched, [] = no matches, array = matches
+  const [selectedId, setSelectedId] = useState(null);
   const [classId, setClassId] = useState("");
-  const { mutate: lookup, isPending: searching } = useLookupLearnerByUsername();
+  const { mutate: runSearch, isPending: searching } = useSearchLearners();
   const { mutate: enroll, isPending: enrolling } = useEnrollLearnerHub();
 
   const search = () => {
-    const trimmed = username.trim();
+    const trimmed = term.trim();
     if (!trimmed) return;
-    lookup(trimmed, { onSuccess: (learner) => { setResult(learner); setClassId(""); } });
+    runSearch(trimmed, { onSuccess: (learners) => { setResults(learners); setSelectedId(null); setClassId(""); } });
   };
 
+  const selected = results?.find((l) => l.id === selectedId) || null;
+
   const handleEnroll = () => {
-    if (!result) return;
+    if (!selected) return;
     enroll(
-      { learnerId: result.id, data: { hubId: schoolId, classId, status: "active" } },
-      { onSuccess: () => { setUsername(""); setResult(undefined); onEnrolled?.(); } },
+      { learnerId: selected.id, data: { hubId: schoolId, classId, status: "active" } },
+      { onSuccess: () => { setTerm(""); setResults(undefined); setSelectedId(null); onEnrolled?.(); } },
     );
   };
 
@@ -48,38 +51,66 @@ function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {
         <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Close</button>
       </div>
       <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
-        Search by the learner's exact username to find them if they're already enrolled at another hub.
+        Search by name, username, or registration number to find them if they're already enrolled at another hub.
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
-          value={username}
-          onChange={(e) => { setUsername(e.target.value); setResult(undefined); }}
+          value={term}
+          onChange={(e) => { setTerm(e.target.value); setResults(undefined); setSelectedId(null); }}
           onKeyDown={(e) => e.key === "Enter" && search()}
-          placeholder="Learner's username"
-          style={{ flex: 1, minWidth: 180, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}
+          placeholder="Name, username, or registration number"
+          style={{ flex: 1, minWidth: 220, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}
         />
         <button
           type="button"
           onClick={search}
-          disabled={!username.trim() || searching}
-          style={{ padding: "8px 16px", backgroundColor: !username.trim() || searching ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !username.trim() || searching ? "not-allowed" : "pointer" }}
+          disabled={!term.trim() || searching}
+          style={{ padding: "8px 16px", backgroundColor: !term.trim() || searching ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !term.trim() || searching ? "not-allowed" : "pointer" }}
         >
           {searching ? "Searching…" : "Search"}
         </button>
       </div>
 
-      {result === null && (
-        <p style={{ margin: 0, fontSize: 12.5, color: "#B91C1C" }}>No learner found with that exact username.</p>
+      {results?.length === 0 && (
+        <p style={{ margin: 0, fontSize: 12.5, color: "#B91C1C" }}>No learner found matching "{term.trim()}".</p>
       )}
 
-      {result && (
+      {results?.length > 0 && !selected && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {results.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => setSelectedId(l.id)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif" }}
+            >
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{l.firstName} {l.lastName}</p>
+                <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
+                  {[l.registrationNumber, l.username && `@${l.username}`].filter(Boolean).join(" · ") || "No username or registration number on file"}
+                </p>
+              </div>
+              <span style={{ fontSize: 11.5, color: "#6B7280", flexShrink: 0 }}>
+                {l.hubCount > 0 ? `${l.hubCount} other hub${l.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selected && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", borderRadius: 10 }}>
           <div style={{ flex: 1, minWidth: 160 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{result.firstName} {result.lastName}</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{selected.firstName} {selected.lastName}</p>
             <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-              {result.hubCount > 0 ? `Already enrolled at ${result.hubCount} other hub${result.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
+              {selected.hubCount > 0 ? `Already enrolled at ${selected.hubCount} other hub${selected.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
             </p>
           </div>
+          {results.length > 1 && (
+            <button type="button" onClick={() => setSelectedId(null)} style={{ background: "none", border: "none", color: "#6B7280", fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              ← Back to results
+            </button>
+          )}
           <select value={classId} onChange={(e) => setClassId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
             <option value="">— No class yet —</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}

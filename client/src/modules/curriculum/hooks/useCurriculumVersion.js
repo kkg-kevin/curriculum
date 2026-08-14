@@ -78,6 +78,30 @@ export function useCurriculumCoursesByGrade(curriculumId, gradeIds) {
   };
 }
 
+// Courses across several (curriculumId, gradeId) pairs, each possibly a DIFFERENT curriculum —
+// for a multi-hub person (teacher/learner) whose hubs don't all share one curriculum, unlike
+// useCurriculumCoursesByGrade/useCurriculumCurrentCoursesForGrades above which assume a single
+// curriculumId across every grade. Shares cache entries with those hooks (same query key shape
+// per pair), so a hub already resolved elsewhere on the page never re-fetches here.
+export function useCoursesForPairs(pairs) {
+  const list = pairs || [];
+  const results = useQueries({
+    queries: list.map(({ curriculumId, gradeId }) => ({
+      queryKey: KEYS.currentCourses(curriculumId, gradeId),
+      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
+      enabled:  !!curriculumId && !!gradeId,
+    })),
+  });
+
+  const byId = new Map();
+  results.forEach((r) => (r.data || []).forEach((c) => byId.set(c.id, c)));
+
+  return {
+    data:      byId,
+    isLoading: results.some((r) => r.isLoading),
+  };
+}
+
 export function useCreateCurriculumVersion(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
