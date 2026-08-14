@@ -348,6 +348,7 @@ export default function TimetablePage() {
   const calendarLoading = viewMode === "all" ? hubCalendarLoading : classCalendarLoading;
   const calendarEvents = calendarData?.data || [];
   const calendarBreaks = calendarData?.breaks || [];
+  const calendarSkippedSessions = calendarData?.skippedSessions || [];
   // Only needed in "All Classes" mode, to label each merged event/break with which class it
   // belongs to — resolveTeacherLabel doubles as the class label here too (same trade-off
   // teacher-portal's own merged calendar already makes: showing which class beats showing
@@ -569,18 +570,21 @@ export default function TimetablePage() {
               <CalendarView
                 events={calendarEvents}
                 breaks={calendarBreaks}
+                skippedSessions={calendarSkippedSessions}
                 isLoading={calendarLoading}
                 resolveCourseName={(courseId) => courseNameById.get(courseId) || "Course"}
                 resolveTeacherLabel={(event) => resolveTeacherLabel(event, courseLinks)}
                 onRangeChange={onRangeChange}
                 emptyMessage={courseIdsWithSlots.length === 0 ? "Add weekday slots above to start building this class's calendar." : "No sessions land in this range yet — set a course start date above."}
                 enableSessionDetail
+                enableReschedule
               />
             )
           ) : (
             <CalendarView
               events={calendarEvents}
               breaks={calendarBreaks}
+              skippedSessions={calendarSkippedSessions}
               isLoading={calendarLoading}
               resolveCourseName={resolveHubCourseName}
               resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
@@ -588,6 +592,7 @@ export default function TimetablePage() {
               onRangeChange={onRangeChange}
               emptyMessage="No sessions land in this range across any class yet."
               enableSessionDetail
+              enableReschedule
             />
           )}
         </>

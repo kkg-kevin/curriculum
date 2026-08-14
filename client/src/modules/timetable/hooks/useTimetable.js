@@ -12,6 +12,7 @@ const TIMETABLE_KEYS = {
   calendarMineTeacher: (from, to) => ["timetable", "calendar", "mine", "teacher", from, to],
   calendarMineLearner: (from, to) => ["timetable", "calendar", "mine", "learner", from, to],
   sessionSummary: (sessionId, classId, date) => ["timetable", "session-summary", sessionId, classId, date],
+  skips: (classId) => ["timetable", "skips", classId],
 };
 
 export function useClassTimetable(classId) {
@@ -194,5 +195,44 @@ export function useSessionStatusBulk(occurrences, enabled = true) {
     queryFn:  () => timetableApi.getSessionStatusBulk(occurrences),
     enabled:  enabled && occurrences.length > 0,
     staleTime: 30_000,
+  });
+}
+
+// A class's active reschedules — mainly for SkipDetailModal to resolve which row a clicked
+// marker corresponds to; the calendar's own skippedSessions (see useClassCalendar etc.) already
+// covers day-to-day display.
+export function useClassSkips(classId) {
+  return useQuery({
+    queryKey: TIMETABLE_KEYS.skips(classId),
+    queryFn:  () => timetableApi.getSkipsByClass(classId),
+    enabled:  !!classId,
+  });
+}
+
+// A single skip can ripple into the teacher/learner/hub merged calendars in ways the client
+// can't enumerate ahead of time — invalidating the whole ["timetable"] root (TanStack Query
+// matches by prefix) is the same broad-invalidation approach useCreateSlotsBulk/
+// useSetCourseScheduleBulk above already use for exactly this class of problem.
+export function useCreateSkip() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: timetableApi.createSkip,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["timetable"] });
+      toast.success("Session rescheduled");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to reschedule session"),
+  });
+}
+
+export function useDeleteSkip() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: timetableApi.removeSkip,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["timetable"] });
+      toast.success("Reschedule undone");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to undo"),
   });
 }

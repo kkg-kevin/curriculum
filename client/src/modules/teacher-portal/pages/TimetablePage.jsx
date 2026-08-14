@@ -58,6 +58,7 @@ export default function TimetablePage() {
   const { data: calendarData, isLoading: calendarLoading } = useMyTeacherCalendar(calendarRange?.from, calendarRange?.to);
   const allEvents = calendarData?.data || [];
   const allBreaks = calendarData?.breaks || [];
+  const allSkippedSessions = calendarData?.skippedSessions || [];
 
   // "All Hubs" (default) shows every class across every hub merged into one calendar; picking
   // one hub narrows both events and breaks down to just that hub's classes — same "Viewing"
@@ -69,6 +70,9 @@ export default function TimetablePage() {
     : allBreaks
         .map((b) => ({ ...b, classIds: (b.classIds || []).filter((id) => classIdToHubId.get(id) === filterHubId) }))
         .filter((b) => b.classIds.length > 0);
+  const skippedSessions = filterHubId === "all"
+    ? allSkippedSessions
+    : allSkippedSessions.filter((s) => classIdToHubId.get(s.classId) === filterHubId);
 
   const isLoading = teacherLoading || classesLoading;
 
@@ -98,6 +102,7 @@ export default function TimetablePage() {
       <CalendarView
         events={events}
         breaks={breaks}
+        skippedSessions={skippedSessions}
         isLoading={calendarLoading}
         resolveCourseName={resolveCourseName}
         resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
@@ -105,6 +110,7 @@ export default function TimetablePage() {
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
         enableSessionDetail
+        enableReschedule
       />
     </div>
   );

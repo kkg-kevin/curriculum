@@ -3,6 +3,7 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 const TimetableModel = require("../timetable/timetable.model");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
+const SessionSkipModel = require("../timetable/session-skip.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const ClassGroupService = require("./groups/class-group.service");
@@ -125,6 +126,7 @@ const ClassService = {
     await ClassCourseTeacherLinkModel.deleteByClassId(id);
     await TimetableModel.deleteByClassId(id);
     await CourseScheduleModel.deleteByClassId(id);
+    await SessionSkipModel.deleteByClassId(id);
     await AttendanceModel.deleteByClassId(id);
     await ClassGroupService.deleteAllForClass(id);
     // Only class-owned issues (no learnerId — see AssessmentIssueModel's own comment) go with the

@@ -52,7 +52,22 @@ const sessionStatusBulkSchema = z.object({
   })).max(500),
 });
 
+// One-off "we didn't hold this session" record — see timetable.service.js's
+// resolveCoursePlacements for how mode ("shift" = every later session moves forward one slot;
+// "merge" = combined onto the very next occurrence instead) plugs into the calendar walk.
+const SKIP_MODES = ["shift", "merge"];
+
+const createSkipSchema = z.object({
+  classId:   z.string().min(1, "Class is required"),
+  courseId:  z.string().min(1, "Course is required"),
+  date:      dateOnly,
+  sessionId: z.string().min(1, "Session is required"),
+  mode:      z.enum(SKIP_MODES, { errorMap: () => ({ message: "Choose Shift or Merge" }) }),
+  reason:    z.string().max(300).optional().default(""),
+});
+
 module.exports = {
   createSlotSchema, updateSlotSchema, DAYS_OF_WEEK,
   setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema,
+  createSkipSchema, SKIP_MODES,
 };

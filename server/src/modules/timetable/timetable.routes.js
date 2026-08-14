@@ -5,6 +5,7 @@ const {
   listCourseSchedules, setCourseSchedule,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
+  createSkip, deleteSkip, listSkips,
 } = require("./timetable.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -30,6 +31,14 @@ router.get("/learner/mine/calendar", authorize("learner"), getMyLearnerCalendar)
 // attendance and scores, not just the viewer's own.
 router.get("/sessions/:sessionId/summary", authorize("admin", "school", "branchAdmin", "teacher"), getSessionSummary);
 router.post("/sessions/status", authorize("admin", "school", "branchAdmin", "teacher"), getSessionStatusBulk);
+
+// Reschedule ("we didn't hold this one") — a day-to-day teacher action within their own class,
+// same posture as attendance/groups, not the admin/school-only posture slot/course-start-date
+// authoring above uses (ownership still enforced in the controller off the class the skip
+// belongs to).
+router.post("/skips", authorize("admin", "school", "branchAdmin", "teacher"), createSkip);
+router.get("/skips", authorize("admin", "school", "branchAdmin", "teacher"), listSkips);
+router.delete("/skips/:id", authorize("admin", "school", "branchAdmin", "teacher"), deleteSkip);
 
 // Teacher/learner-facing: their own timetable, resolved from their own linked classes.
 router.get("/teacher/mine", authorize("teacher"), getMyTeacherTimetable);

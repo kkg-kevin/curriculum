@@ -5,6 +5,7 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
+const SessionSkipModel = require("../timetable/session-skip.model");
 
 const TeacherService = {
   async createTeacher(data) {
@@ -76,6 +77,7 @@ const TeacherService = {
     await AttendanceModel.clearMarkedBy(id);
     await AssessmentSubmissionModel.clearGradedBy(id);
     await AssessmentIssueModel.clearIssuedBy(id);
+    await SessionSkipModel.clearCreatedBy(id);
     return { message: "Teacher deleted successfully" };
   },
 };

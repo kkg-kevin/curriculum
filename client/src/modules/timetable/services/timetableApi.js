@@ -29,4 +29,11 @@ export const timetableApi = {
   // powers the calendar's at-a-glance badges without a full-detail fetch per card.
   getSessionStatusBulk: (occurrences) =>
     api.post(`${BASE}/sessions/status`, { occurrences }).then((r) => r.data.data),
+
+  // "We didn't hold this one" — see SessionDetailModal's reschedule action. createSkip's `mode`
+  // is "shift" (every later session moves forward one slot) or "merge" (combined onto the next
+  // occurrence instead).
+  createSkip:     (data)     => api.post(`${BASE}/skips`, data).then((r) => r.data.data),
+  removeSkip:     (id)       => api.delete(`${BASE}/skips/${id}`).then((r) => r.data),
+  getSkipsByClass: (classId) => api.get(`${BASE}/skips`, { params: { classId } }).then((r) => r.data.data),
 };
