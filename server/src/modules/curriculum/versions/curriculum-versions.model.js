@@ -22,8 +22,13 @@ const CurriculumVersionModel = {
     return firstOrNull(db(TABLE).where({ id }));
   },
 
-  create(data) {
-    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+  // createRecord returns the pre-insert object (content still JSON.stringify'd for the write),
+  // not a fresh read — unlike update()'s firstOrNull refetch, which mysql2 auto-parses JSON
+  // columns back through. Restore the parsed content here so create()'s return shape matches
+  // every other read of this table (the client renders version.content as an array right away).
+  async create(data) {
+    const record = await createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+    return { ...record, content: data.content };
   },
 
   update(id, changes) {

@@ -8,6 +8,8 @@ const LearningAreaModel = require("../../curriculum/competency-framework/learnin
 const AgeCategoryModel = require("../../curriculum/competency-framework/age-category.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const CompetencyModel = require("../../settings/competencies/competency.model");
+const ClassGroupService = require("../../classes/groups/class-group.service");
+const ClassGroupModel = require("../../classes/groups/class-group.model");
 const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
 
 async function loadAssessmentOrThrow(assessmentId) {
@@ -72,6 +74,18 @@ async function summarizeIndicatorProgress(submissions) {
 // Performance Band placement) or a learningAreaId (Learning Area -> starting course
 // placement) — never both. Ordinary class-issued assessments have neither, so this is a
 // no-op for them.
+// Propagates `updates` to every OTHER submission sharing this one's (issueId, groupId) — the
+// mechanism behind "one submission per group": every sibling row stays an identical mirror of
+// the group's shared attempt (answers on draft/submit, score+feedback+status on grade). A no-op
+// for a submission with no groupId (an ordinary individual submission).
+async function fanOutToGroup(submission, updates) {
+  if (!submission.groupId) return;
+  const siblings = await AssessmentSubmissionModel.findGroupSiblings(submission.issueId, submission.groupId);
+  await Promise.all(
+    siblings.filter((s) => s.id !== submission.id).map((s) => AssessmentSubmissionModel.update(s.id, updates))
+  );
+}
+
 async function maybePlaceFromDiagnostic(submission) {
   if (submission.status !== "graded") return;
   const issue = await AssessmentIssueModel.findById(submission.issueId);
@@ -88,11 +102,29 @@ const AssessmentSubmissionService = {
   // Issuing is idempotent per (assessment, session, class) — re-issuing (e.g. after editing the
   // due date) updates the existing record instead of creating a duplicate that would otherwise
   // fragment a class's roster view across two issues of "the same" assessment.
-  async issueAssessment({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate }) {
+  // groupMode is left undefined by a caller that only means to touch dueDate on a re-issue —
+  // only an explicit true/false attempts to change it, and even then only while nobody's
+  // started (see the guard below), since flipping it mid-flight would leave a mix of individual
+  // and group-linked submission rows with no consistent meaning.
+  async issueAssessment({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate, groupMode }) {
     await loadAssessmentOrThrow(assessmentId);
     const existing = await AssessmentIssueModel.findOne({ assessmentId, sessionId, classId });
-    if (existing) return AssessmentIssueModel.update(existing.id, { dueDate: dueDate ?? existing.dueDate });
-    return AssessmentIssueModel.create({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate: dueDate || null });
+    if (existing) {
+      const updates = { dueDate: dueDate ?? existing.dueDate };
+      if (groupMode !== undefined && groupMode !== existing.groupMode) {
+        const hasSubmissions = (await AssessmentSubmissionModel.findAll({ issueId: existing.id })).length > 0;
+        if (hasSubmissions) {
+          const err = new Error("Can't change group mode after learners have started this assessment");
+          err.statusCode = 409;
+          throw err;
+        }
+        updates.groupMode = groupMode;
+      }
+      return AssessmentIssueModel.update(existing.id, updates);
+    }
+    return AssessmentIssueModel.create({
+      assessmentId, sessionId, courseId, classId, issuedBy, dueDate: dueDate || null, groupMode: groupMode || false,
+    });
   },
 
   // Standalone diagnostic issuance — bypasses the normal course/session attachment entirely
@@ -241,7 +273,35 @@ const AssessmentSubmissionService = {
   // roster individually to find pending work.
   async getSubmissionsNeedingGrading(classId) {
     const submissions = await AssessmentSubmissionModel.findAll({ classId, status: "submitted" });
-    return AssessmentSubmissionService._hydrateSubmissionRows(submissions);
+    const rows = await AssessmentSubmissionService._hydrateSubmissionRows(submissions);
+    return AssessmentSubmissionService._dedupeGroupRows(rows);
+  },
+
+  // Collapses every set of sibling rows sharing (issueId, groupId) down to one representative
+  // (earliest submittedAt), carrying {group, memberCount} instead of a bare `learner` — without
+  // this, a group of 4 submitting together would show as 4 duplicate entries in the teacher's
+  // "needs grading" queue for what's conceptually one action. Individual rows pass through
+  // untouched.
+  async _dedupeGroupRows(rows) {
+    const individual = rows.filter((row) => !row.submission.groupId);
+    const grouped = rows.filter((row) => row.submission.groupId);
+    const byGroupKey = new Map();
+    grouped.forEach((row) => {
+      const key = `${row.submission.issueId}:${row.submission.groupId}`;
+      const list = byGroupKey.get(key) || [];
+      list.push(row);
+      byGroupKey.set(key, list);
+    });
+    const groupRows = await Promise.all([...byGroupKey.values()].map(async (list) => {
+      list.sort((a, b) => new Date(a.submission.submittedAt) - new Date(b.submission.submittedAt));
+      // Drop the representative's individual `learner` — a group row identifies itself by
+      // `group`/`memberCount` instead, so a client can't mistakenly render just the one member
+      // who happened to submit first as if they were the sole owner of the work.
+      const { learner, ...representative } = list[0];
+      const group = await ClassGroupModel.findById(representative.submission.groupId);
+      return { ...representative, group: group ? { id: group.id, name: group.name } : null, memberCount: list.length };
+    }));
+    return [...individual, ...groupRows];
   },
 
   // Teacher-facing counterpart to getSubmissionsNeedingGrading above — that one only ever sees
@@ -297,7 +357,28 @@ const AssessmentSubmissionService = {
       submission: submissionByLearner.get(learner.id) || { status: "not_started" },
     }));
 
-    return { issue, assessment, roster };
+    // Purely additive — empty for every non-group issue, so the existing flat `roster` stays the
+    // only thing any current consumer needs to look at. Populated only when issue.groupMode is
+    // true: one row per class group (with its own representative submission) plus whichever
+    // active learners aren't in any group yet.
+    let groups = [];
+    let ungroupedLearners = [];
+    if (issue.groupMode) {
+      const classGroups = await ClassGroupService.listGroupsForClass(issue.classId);
+      const submissionByGroup = new Map();
+      submissions.forEach((s) => {
+        if (s.groupId && !submissionByGroup.has(s.groupId)) submissionByGroup.set(s.groupId, s);
+      });
+      groups = classGroups.map((g) => ({
+        group: { id: g.id, name: g.name, classId: g.classId },
+        members: g.members,
+        submission: submissionByGroup.get(g.id) || { status: "not_started" },
+      }));
+      const groupedLearnerIds = new Set(classGroups.flatMap((g) => g.members.map((m) => m.id)));
+      ungroupedLearners = roster.filter((row) => !groupedLearnerIds.has(row.learner.id));
+    }
+
+    return { issue, assessment, roster, groups, ungroupedLearners };
   },
 
   async getOrCreateSubmission({ issueId, learnerId }) {
@@ -311,7 +392,7 @@ const AssessmentSubmissionService = {
     if (existing) return existing;
 
     const assessment = await loadAssessmentOrThrow(issue.assessmentId);
-    return AssessmentSubmissionModel.create({
+    const base = {
       issueId,
       assessmentId: issue.assessmentId,
       learnerId,
@@ -337,6 +418,42 @@ const AssessmentSubmissionService = {
       reportPublished: false,
       reportPublishedAt: null,
       reportPublishedBy: null,
+    };
+
+    if (!issue.groupMode) return AssessmentSubmissionModel.create(base);
+
+    // Group mode: resolve this learner's class group. No group yet -> falls back to a normal
+    // solo submission (groupId stays null) — not blocked, since locking a learner out over an
+    // incomplete teacher setup would be worse; they simply show up as "ungrouped" in the roster.
+    const group = await ClassGroupService.getGroupForLearner(issue.classId, learnerId);
+    if (!group) return AssessmentSubmissionModel.create(base);
+
+    const siblings = await AssessmentSubmissionModel.findGroupSiblings(issueId, group.id);
+    if (!siblings.length) return AssessmentSubmissionModel.create({ ...base, groupId: group.id });
+
+    // A later group member opening it for the first time — clone the group's current shared
+    // state instead of starting them blank, so they see whatever progress/result already exists
+    // rather than an empty form that would silently diverge from their teammates'.
+    const sibling = siblings[0];
+    return AssessmentSubmissionModel.create({
+      ...base,
+      groupId: group.id,
+      status: sibling.status,
+      answers: sibling.answers,
+      autoScore: sibling.autoScore,
+      autoMax: sibling.autoMax,
+      autoItemResults: sibling.autoItemResults,
+      manualScore: sibling.manualScore,
+      totalScore: sibling.totalScore,
+      itemFeedback: sibling.itemFeedback,
+      overallFeedback: sibling.overallFeedback,
+      submittedAt: sibling.submittedAt,
+      gradedAt: sibling.gradedAt,
+      gradedBy: sibling.gradedBy,
+      indicatorBreakdown: sibling.indicatorBreakdown,
+      reportPublished: sibling.reportPublished,
+      reportPublishedAt: sibling.reportPublishedAt,
+      reportPublishedBy: sibling.reportPublishedBy,
     });
   },
 
@@ -352,7 +469,9 @@ const AssessmentSubmissionService = {
       err.statusCode = 400;
       throw err;
     }
-    return AssessmentSubmissionModel.update(submissionId, { answers });
+    const updated = await AssessmentSubmissionModel.update(submissionId, { answers });
+    await fanOutToGroup(submission, { answers });
+    return updated;
   },
 
   // Finalizes a learner's attempt. Auto-gradable items are scored immediately either way (the
@@ -384,7 +503,7 @@ const AssessmentSubmissionService = {
     // in the same instant as grading — only a submission a teacher actually grades (see grade())
     // goes through the separate publishReport step.
     const now = new Date();
-    const updated = await AssessmentSubmissionModel.update(submissionId, {
+    const updates = {
       answers,
       autoScore,
       autoMax,
@@ -395,7 +514,23 @@ const AssessmentSubmissionService = {
       gradedAt: needsManual ? null : now,
       indicatorBreakdown: needsManual ? submission.indicatorBreakdown || [] : indicatorBreakdown,
       ...(needsManual ? {} : { reportPublished: true, reportPublishedAt: now }),
-    });
+    };
+
+    let updated;
+    if (submission.groupId) {
+      // Guards the race where two group members tap Submit at nearly the same instant: only the
+      // first write actually lands (the row was still "in_progress"); the loser gets null back
+      // and hits the same "already submitted" error a normal retry would.
+      updated = await AssessmentSubmissionModel.updateIfInProgress(submissionId, updates);
+      if (!updated) {
+        const err = new Error("This assessment has already been submitted");
+        err.statusCode = 400;
+        throw err;
+      }
+      await fanOutToGroup(submission, updates);
+    } else {
+      updated = await AssessmentSubmissionModel.update(submissionId, updates);
+    }
     await maybePlaceFromDiagnostic(updated);
     return updated;
   },
@@ -419,7 +554,7 @@ const AssessmentSubmissionService = {
     const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);
 
     const now = new Date();
-    const graded = await AssessmentSubmissionModel.update(submissionId, {
+    const updates = {
       itemFeedback,
       overallFeedback,
       manualScore: Number(manualScore) || 0,
@@ -431,7 +566,12 @@ const AssessmentSubmissionService = {
       reportPublished: true,
       reportPublishedAt: now,
       reportPublishedBy: gradedBy,
-    });
+    };
+    const graded = await AssessmentSubmissionModel.update(submissionId, updates);
+    // Group-mode grading: whichever member's submission id the teacher graded, the identical
+    // score/feedback/status now applies to every group member — see fanOutToGroup. The teacher
+    // grades through the same PATCH endpoint either way; no separate group-grading endpoint.
+    await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(graded);
     return graded;
   },

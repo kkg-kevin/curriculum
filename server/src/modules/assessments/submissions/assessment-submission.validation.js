@@ -6,6 +6,9 @@ const issueAssessmentSchema = z.object({
   courseId:     z.string().min(1),
   classId:      z.string().min(1),
   dueDate:      z.string().optional().nullable(),
+  // Left as plain .optional() (no .default()) so an omitted value means "don't touch this on
+  // re-issue" rather than an implicit false — see issueAssessment in the service.
+  groupMode:    z.boolean().optional(),
 });
 
 // A learner has just completed every other section of this session — see

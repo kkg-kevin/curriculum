@@ -136,6 +136,9 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
 function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, issuingKey }) {
   const color = TYPE_COLORS[assessment.type] || T.accentLight;
   const modeColor = MODE_COLORS[assessment.mode] || T.inkMuted;
+  // Pre-filled from the assessment's own authored mode (finally giving that badge real effect),
+  // but editable per-issue — a teacher can still override before issuing to any class below.
+  const [groupMode, setGroupMode] = useState(assessment.mode === "group");
 
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -157,6 +160,11 @@ function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, is
         </div>
       </div>
 
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: T.inkMuted, cursor: "pointer", alignSelf: "flex-start" }}>
+        <input type="checkbox" checked={groupMode} onChange={(e) => setGroupMode(e.target.checked)} />
+        Issue as a group assessment — one submission per group, shared mark
+      </label>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {occurrences.map((occ) => (
           <div key={occ.sessionId} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, padding: "8px 10px", backgroundColor: "#FAFBFF", borderRadius: 8 }}>
@@ -165,7 +173,7 @@ function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, is
               const key = `${assessment.id}:${occ.sessionId}:${cls.id}`;
               const item = { id: assessment.id, sessionId: occ.sessionId, courseId: occ.courseId };
               return (
-                <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c)} isIssuing={issuingKey === key} />
+                <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
               );
             })}
           </div>
@@ -218,11 +226,11 @@ function NeedsGradingSection({ rows, navigate }) {
         <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{rows.length} submission{rows.length === 1 ? "" : "s"} awaiting your review</p>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {rows.map(({ submission, issue, assessment, learner, className, isDiagnostic }) => (
+        {rows.map(({ submission, issue, assessment, learner, className, isDiagnostic, group, memberCount }) => (
           <div key={submission.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: `1px solid #F9FAFB`, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 8 }}>
-                {learner.firstName} {learner.lastName}
+                {group ? `${group.name} · ${memberCount} member${memberCount === 1 ? "" : "s"}` : `${learner.firstName} ${learner.lastName}`}
                 {isDiagnostic && <span style={badgeStyle("#D97706")}>Diagnostic</span>}
               </p>
               <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
@@ -391,8 +399,8 @@ export default function AssessmentsPage() {
   const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();
   const issuingKey = issuing && issuingVariables ? `${issuingVariables.assessmentId}:${issuingVariables.sessionId}:${issuingVariables.classId}` : null;
 
-  const handleIssue = (item, cls) => {
-    issueAssessment({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id });
+  const handleIssue = (item, cls, groupMode) => {
+    issueAssessment({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode });
   };
 
   const isLoading = teacherLoading || (!!teacher && (classesLoading || coursesLoading || sessionsResults.some((r) => r.isLoading)));
