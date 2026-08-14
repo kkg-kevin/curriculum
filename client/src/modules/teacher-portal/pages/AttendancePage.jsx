@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useAttendanceByDateQuery, useAttendanceHistoryQuery, useMarkAttendance } from "../../attendance/hooks/useAttendance";
+import { useClassCalendar } from "../../timetable/hooks/useTimetable";
 
 const ACCENT = "#25476a";
 const T = {
@@ -173,6 +174,17 @@ export default function AttendancePage() {
   });
   const learners = learnersData?.data || [];
 
+  // Attendance should only be markable on a day this class actually has a session, per its
+  // timetable — not every day. A class with no timetable configured at all (calendar comes back
+  // empty over this whole window) falls back to the old "any day" behavior instead of blocking
+  // attendance outright, since plenty of hubs don't use the Timetable feature at all.
+  const calendarFrom = addDays(todayStr(), -365);
+  const calendarTo = todayStr();
+  const { data: calendarData, isLoading: calendarLoading } = useClassCalendar(selectedClassId, calendarFrom, calendarTo);
+  const sessionDates = useMemo(() => [...new Set((calendarData?.data || []).map((e) => e.date))].sort(), [calendarData]);
+  const hasTimetableConfigured = sessionDates.length > 0;
+  const isSessionDay = !hasTimetableConfigured || sessionDates.includes(date);
+
   const { data: existingData, isLoading: existingLoading } = useAttendanceByDateQuery(selectedClassId, date);
 
   useEffect(() => {
@@ -209,6 +221,21 @@ export default function AttendancePage() {
   const total = learners.length;
   const rate = total ? Math.round(((counts.present + counts.late) / total) * 100) : 0;
   const isToday = date === todayStr();
+
+  // Prev/Next jump between actual session days (per the class's timetable) instead of a flat
+  // ±1 calendar day, once that class has any timetable data to jump between.
+  const goPrevDay = () => {
+    if (!hasTimetableConfigured) { setDate((d) => addDays(d, -1)); return; }
+    const prev = [...sessionDates].reverse().find((d) => d < date);
+    if (prev) setDate(prev);
+  };
+  const goNextDay = () => {
+    if (!hasTimetableConfigured) { setDate((d) => addDays(d, 1)); return; }
+    const next = sessionDates.find((d) => d > date && d <= todayStr());
+    if (next) setDate(next);
+  };
+  const canGoPrev = hasTimetableConfigured ? sessionDates.some((d) => d < date) : true;
+  const canGoNext = hasTimetableConfigured ? sessionDates.some((d) => d > date && d <= todayStr()) : !isToday;
 
   const { data: historyData, isLoading: historyLoading } = useAttendanceHistoryQuery(
     tab === "history" ? selectedClassId : null,
@@ -301,12 +328,12 @@ export default function AttendancePage() {
             <>
               <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button type="button" onClick={() => setDate((d) => addDays(d, -1))} style={{ width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, cursor: "pointer", fontSize: 14 }}>‹</button>
+                  <button type="button" onClick={goPrevDay} disabled={!canGoPrev} title={hasTimetableConfigured ? "Previous session day" : "Previous day"} style={{ width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: canGoPrev ? T.inkMuted : "#D1D5DB", cursor: canGoPrev ? "pointer" : "not-allowed", fontSize: 14 }}>‹</button>
                   <div>
                     <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{formatDisplayDate(date)}</p>
                     {isToday && <p style={{ margin: "1px 0 0", fontSize: 11, color: T.accentLight, fontWeight: 700 }}>TODAY</p>}
                   </div>
-                  <button type="button" onClick={() => setDate((d) => addDays(d, 1))} disabled={isToday} style={{ width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: isToday ? "#D1D5DB" : T.inkMuted, cursor: isToday ? "not-allowed" : "pointer", fontSize: 14 }}>›</button>
+                  <button type="button" onClick={goNextDay} disabled={!canGoNext} title={hasTimetableConfigured ? "Next session day" : "Next day"} style={{ width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: canGoNext ? T.inkMuted : "#D1D5DB", cursor: canGoNext ? "pointer" : "not-allowed", fontSize: 14 }}>›</button>
                   <input
                     type="date"
                     value={date}
@@ -318,32 +345,46 @@ export default function AttendancePage() {
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving || learners.length === 0}
-                  style={{ padding: "10px 22px", backgroundColor: saving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: saving ? "not-allowed" : "pointer" }}
+                  disabled={saving || learners.length === 0 || !isSessionDay}
+                  style={{ padding: "10px 22px", backgroundColor: saving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: (saving || !isSessionDay) ? "not-allowed" : "pointer", opacity: isSessionDay ? 1 : 0.5 }}
                 >
                   {saving ? "Saving…" : "Save Attendance"}
                 </button>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-                <StatTile icon={<CheckCircleOutlineIcon fontSize="small" />} num={counts.present} label="Present" color={STATUS_CONFIG.present.color} />
-                <StatTile icon={<CancelOutlinedIcon fontSize="small" />} num={counts.absent} label="Absent" color={STATUS_CONFIG.absent.color} />
-                <StatTile icon={<AccessTimeOutlinedIcon fontSize="small" />} num={counts.late} label="Late" color={STATUS_CONFIG.late.color} />
-                <StatTile icon={<EventNoteOutlinedIcon fontSize="small" />} num={counts.excused} label="Excused" color={STATUS_CONFIG.excused.color} />
-                <StatTile icon={<BarChartOutlinedIcon fontSize="small" />} num={`${rate}%`} label="Attendance Rate" />
-              </div>
+              {calendarLoading ? (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Checking this class's timetable…</div>
+              ) : !isSessionDay ? (
+                <div style={{ ...cardStyle, textAlign: "center", padding: "48px 24px" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: T.accent, fontSize: 22 }}><EventNoteOutlinedIcon fontSize="inherit" /></div>
+                  <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>No session scheduled</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+                    {selectedClass?.gradeName || "This class"} has no session on the timetable for {formatDisplayDate(date)} — nothing to mark. Use the arrows above to jump to the nearest session day.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+                    <StatTile icon={<CheckCircleOutlineIcon fontSize="small" />} num={counts.present} label="Present" color={STATUS_CONFIG.present.color} />
+                    <StatTile icon={<CancelOutlinedIcon fontSize="small" />} num={counts.absent} label="Absent" color={STATUS_CONFIG.absent.color} />
+                    <StatTile icon={<AccessTimeOutlinedIcon fontSize="small" />} num={counts.late} label="Late" color={STATUS_CONFIG.late.color} />
+                    <StatTile icon={<EventNoteOutlinedIcon fontSize="small" />} num={counts.excused} label="Excused" color={STATUS_CONFIG.excused.color} />
+                    <StatTile icon={<BarChartOutlinedIcon fontSize="small" />} num={`${rate}%`} label="Attendance Rate" />
+                  </div>
 
-              <div style={{ ...cardStyle, overflow: "hidden" }}>
-                {learnersLoading || existingLoading ? (
-                  <div style={{ padding: 40, textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading roster…</div>
-                ) : learners.length === 0 ? (
-                  <div style={{ padding: 40, textAlign: "center", color: T.inkFaint, fontSize: 14 }}>No learners enrolled in this class yet.</div>
-                ) : (
-                  learners.map((l) => (
-                    <LearnerMarkRow key={l.id} learner={l} entry={draft[l.id]} onStatusChange={setLearnerStatus} onNotesChange={setLearnerNotes} />
-                  ))
-                )}
-              </div>
+                  <div style={{ ...cardStyle, overflow: "hidden" }}>
+                    {learnersLoading || existingLoading ? (
+                      <div style={{ padding: 40, textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading roster…</div>
+                    ) : learners.length === 0 ? (
+                      <div style={{ padding: 40, textAlign: "center", color: T.inkFaint, fontSize: 14 }}>No learners enrolled in this class yet.</div>
+                    ) : (
+                      learners.map((l) => (
+                        <LearnerMarkRow key={l.id} learner={l} entry={draft[l.id]} onStatusChange={setLearnerStatus} onNotesChange={setLearnerNotes} />
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>

@@ -88,7 +88,16 @@ export default function ReportDetailPage() {
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
               </div>
               {item.feedback && (
-                <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
+                <>
+                  <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
+                  {(item.gradedByName || item.gradedAt) && (
+                    <p style={{ margin: "4px 0 0", fontSize: 11, color: T.inkFaint }}>
+                      {item.gradedByName ? `— ${item.gradedByName}` : ""}
+                      {item.gradedByName && item.gradedAt ? " · " : ""}
+                      {item.gradedAt ? new Date(item.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           ))}

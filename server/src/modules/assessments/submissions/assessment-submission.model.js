@@ -12,8 +12,16 @@ const JSON_FIELDS = ["answers", "autoItemResults", "itemFeedback", "indicatorBre
 
 // One record per (issue, learner) — a learner's single attempt at an issued assessment.
 const AssessmentSubmissionModel = {
-  create(data) {
-    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+  // createRecord returns the pre-insert object (JSON fields still JSON.stringify'd for the
+  // write), not a fresh read — unlike update()'s firstOrNull refetch, which mysql2 auto-parses
+  // JSON columns back through. Restore each field to the caller's original (already-parsed)
+  // value here so create()'s return shape matches every other read of this table — getOrCreate-
+  // Submission's caller immediately renders this response (e.g. AssessmentTaker's initialAnswers),
+  // and a raw JSON string there crashes with no error boundary (blank page until reload).
+  async create(data) {
+    const record = await createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+    for (const field of JSON_FIELDS) if (data[field] !== undefined) record[field] = data[field];
+    return record;
   },
 
   findAll({ issueId, assessmentId, learnerId, classId, status, groupId } = {}) {

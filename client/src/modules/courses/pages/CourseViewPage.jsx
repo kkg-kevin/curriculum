@@ -65,6 +65,7 @@ const SESSION_DEFAULT_VALUES = {
   assessmentAttachments: [],
   notes: [],
   resources: [],
+  indicatorIds: [],
 };
 
 // A blank session always has at least one editable block per repeatable section, even if none was saved yet.
@@ -135,6 +136,7 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
         assessmentAttachments: normalizeAssessmentAttachments(current),
         notes: current.notes?.length ? current.notes : defaultNotes(),
         resources: current.resources || [],
+        indicatorIds: current.indicatorIds || [],
       });
     }
     // `current` is looked up from the `sessions` prop, which can still be the pre-creation
@@ -204,7 +206,7 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
         <div style={{ padding: "24px", maxHeight: "82vh", overflowY: "auto" }}>
           {current ? (
             <FormProvider {...methods}>
-              <SessionForm modules={modules} />
+              <SessionForm modules={modules} courseId={courseId} />
             </FormProvider>
           ) : (
             <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>Loading session…</div>

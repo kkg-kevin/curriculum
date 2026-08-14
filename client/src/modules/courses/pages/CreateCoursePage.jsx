@@ -17,6 +17,7 @@ const DEFAULT_VALUES = {
   ageMin: "",
   ageMax: "",
   learningAreaIds: [],
+  competencyIds: [],
   requirements: [],
 };
 
@@ -53,12 +54,15 @@ export default function CreateCoursePage() {
     setModuleRows((rows) => rows.filter((r) => r.id !== rowId));
   };
 
-  const onSubmit = ({ learningAreaIds, ...data }) => {
+  const onSubmit = ({ learningAreaIds, competencyIds, ...data }) => {
     createCourse(data, {
       onSuccess: async (course) => {
         setCreatingContent(true);
         if (learningAreaIds.length > 0) {
           await Promise.all(learningAreaIds.map((aid) => courseApi.linkLearningArea(course.id, aid)));
+        }
+        if (competencyIds.length > 0) {
+          await Promise.all(competencyIds.map((cid) => courseApi.linkCompetency(course.id, cid)));
         }
         // Sequential, in row order — createModule/createSessionsBulk both auto-continue
         // ordering across calls, so this naturally produces Module 1's sessions numbered

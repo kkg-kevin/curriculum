@@ -232,6 +232,13 @@ export default function AssessmentDetailPage() {
             <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
               <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Educator Feedback</p>
               <p style={{ margin: 0, fontSize: 13.5, color: T.ink }}>{submission.overallFeedback}</p>
+              {(submission.gradedByName || submission.gradedAt) && (
+                <p style={{ margin: "8px 0 0", fontSize: 11, color: T.accentMid }}>
+                  {submission.gradedByName ? `— ${submission.gradedByName}` : ""}
+                  {submission.gradedByName && submission.gradedAt ? " · " : ""}
+                  {submission.gradedAt ? new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                </p>
+              )}
             </div>
           )}
 

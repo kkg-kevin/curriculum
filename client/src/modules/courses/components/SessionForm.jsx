@@ -3,6 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { Input, SectionHeader, ListField } from "./formFields";
 import RichTextEditor from "./RichTextEditor";
 import ResourcesField from "./ResourcesField";
+import IndicatorsField from "./IndicatorsField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import { NOTE_QUICK_PICKS } from "../sectionConfig";
 import { normalizeAssessmentAttachments } from "../utils/sessionAssessment";
@@ -265,7 +266,7 @@ function ModuleField({ modules }) {
   );
 }
 
-export default function SessionForm({ modules }) {
+export default function SessionForm({ modules, courseId }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={cardStyle}>
@@ -277,6 +278,11 @@ export default function SessionForm({ modules }) {
       <div style={cardStyle}>
         <SectionHeader title="Learning Outcomes" />
         <ListField name="outcomes" label="Outcomes" hint="What will learners be able to do by the end of this session?" placeholder="e.g. Understand the session fundamentals" />
+      </div>
+
+      <div style={cardStyle}>
+        <SectionHeader title="Indicators" subtitle="Tag which of this course's competency indicators this session addresses." />
+        <IndicatorsField name="indicatorIds" label="Indicators" hint="Pulled from competencies already attached to this course." courseId={courseId} />
       </div>
 
       <div style={cardStyle}>

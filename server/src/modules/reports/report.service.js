@@ -78,6 +78,10 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
       maxScore,
       percent: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
       gradedAt: s.gradedAt,
+      // Who graded it — see AssessmentSubmissionService.resolveGraderName for the Teacher-id-or-
+      // Users-id resolution. Surfaced alongside gradedAt so feedback in a report always reads
+      // with "who said this, and when" rather than just the comment on its own.
+      gradedByName: await AssessmentSubmissionService.resolveGraderName(s.gradedBy),
       // The teacher's written comment from grading (GradingPanel.jsx) — never surfaced anywhere
       // in the report before; without it a report showed only a number, not what the teacher
       // actually said about the work.

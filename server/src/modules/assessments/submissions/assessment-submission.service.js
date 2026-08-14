@@ -10,6 +10,8 @@ const CompetencyService = require("../../curriculum/competency-framework/compete
 const CompetencyModel = require("../../settings/competencies/competency.model");
 const ClassGroupService = require("../../classes/groups/class-group.service");
 const ClassGroupModel = require("../../classes/groups/class-group.model");
+const TeacherModel = require("../../teachers/teacher.model");
+const UserModel = require("../../auth/user.model");
 const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
 
 async function loadAssessmentOrThrow(assessmentId) {
@@ -99,6 +101,20 @@ async function maybePlaceFromDiagnostic(submission) {
 }
 
 const AssessmentSubmissionService = {
+  // gradedBy (see grade() below) is set to req.ownTeacher?.id when the grader has a linked
+  // Teacher record — the common case — or falls back to the raw Users.id when an admin grades
+  // directly with no teacher record of their own. Resolve whichever it actually is, so a
+  // learner/guardian sees a real name next to their feedback rather than a bare id. Shared by
+  // this module's own learner-facing reads and report.service.js's report snapshots, so the
+  // grader's name is consistent wherever feedback is shown.
+  async resolveGraderName(gradedBy) {
+    if (!gradedBy) return null;
+    const teacher = await TeacherModel.findById(gradedBy);
+    if (teacher) return `${teacher.firstName} ${teacher.lastName}`;
+    const user = await UserModel.findById(gradedBy);
+    return user?.name || null;
+  },
+
   // Issuing is idempotent per (assessment, session, class) — re-issuing (e.g. after editing the
   // due date) updates the existing record instead of creating a duplicate that would otherwise
   // fragment a class's roster view across two issues of "the same" assessment.
