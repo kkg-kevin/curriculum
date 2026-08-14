@@ -4,15 +4,21 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
-import { useCreateClass } from "../hooks/useClasses";
+import { useCreateClass, useBulkCreateClasses } from "../hooks/useClasses";
 import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAuth } from "../../../context/AuthContext";
-import { classesListPath, classPath } from "../../../routes/portalPaths";
+import { classesListPath, classPath, gradeStreamsPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const ACCENT = "#25476a";
+
+// "Blue, Red, Green" → one class per name — lets a grade's whole set of parallel streams be
+// opened in a single submit instead of repeating "+ Add Stream" once per name.
+function parseStreamNames(raw) {
+  return (raw || "").split(",").map((s) => s.trim()).filter(Boolean);
+}
 
 const createSchema = z.object({
   schoolId:       z.string().min(1, "School is required"),
@@ -47,7 +53,9 @@ export default function CreateClassPage() {
   const prefillAcademicYear = searchParams.get("academicYear");
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  const { mutate: createClass, isPending } = useCreateClass();
+  const { mutate: createClass, isPending: creatingOne } = useCreateClass();
+  const { mutate: bulkCreateClasses, isPending: creatingBulk } = useBulkCreateClasses();
+  const isPending = creatingOne || creatingBulk;
 
   const { data: lockedSchool } = useSchoolQuery(lockedSchoolId);
   // Only needed for the admin no-schoolId case (school picker dropdown below) — skip the
@@ -59,7 +67,7 @@ export default function CreateClassPage() {
   });
   const schools = allSchoolsData?.data || [];
 
-  const { register, control, handleSubmit, watch, formState: { isDirty, errors } } = useForm({
+  const { register, control, handleSubmit, watch, setError, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(createSchema),
     defaultValues: {
       schoolId: lockedSchoolId, gradeName: prefillGradeName, academicYear: prefillAcademicYear || String(new Date().getFullYear()),
@@ -75,10 +83,26 @@ export default function CreateClassPage() {
   const curriculumClasses = curriculum?.classes || [];
 
   const backPath = classesListPath(user?.role, lockedSchoolId);
+  const streamNames = parseStreamNames(watch("streamName"));
 
   const onSubmit = (data) => {
     const gradeId = curriculumClasses.find((c) => c.name === data.gradeName)?.id;
-    const payload = { ...data, curriculumId: school.curriculumId, gradeId, tag: data.tag?.trim() || null, streamName: data.streamName?.trim() || null };
+    const names = parseStreamNames(data.streamName);
+    const base = { ...data, curriculumId: school.curriculumId, gradeId, tag: data.tag?.trim() || null };
+
+    if (names.length > 1) {
+      if (base.tag) {
+        setError("tag", { message: "Tag can only be set for a single class — leave it blank when adding several streams at once." });
+        return;
+      }
+      const items = names.map((streamName) => ({ ...base, streamName }));
+      bulkCreateClasses(items, {
+        onSuccess: () => navigate(gradeStreamsPath(user?.role, school.id, gradeId, data.academicYear)),
+      });
+      return;
+    }
+
+    const payload = { ...base, streamName: names[0] || null };
     createClass(payload, { onSuccess: (record) => navigate(classPath(user?.role, record.id, "view")) });
   };
 
@@ -99,7 +123,7 @@ export default function CreateClassPage() {
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>New</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Add Class</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Open a single one-off class outside of Set Up Year.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Open one or more one-off classes outside of Set Up Year.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={handleCancel} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -111,7 +135,7 @@ export default function CreateClassPage() {
             disabled={isPending}
             style={{ padding: "10px 24px", backgroundColor: isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
           >
-            {isPending ? "Saving…" : "Save Class"}
+            {isPending ? "Saving…" : streamNames.length > 1 ? `Save ${streamNames.length} Classes` : "Save Class"}
           </button>
         </div>
       </div>
@@ -162,8 +186,11 @@ export default function CreateClassPage() {
 
             <div style={S.field}>
               <label style={S.label}>Stream</label>
-              <input {...register("streamName")} style={S.input} placeholder="e.g. Blue, A, East — leave blank if this grade has only one class" />
-              <span style={S.hint}>Required only if this grade already has another class at this school for this year — splits it into parallel sections, each with its own roster, attendance, and educators.</span>
+              <input {...register("streamName")} style={S.input} placeholder="e.g. Blue, Red, Green, Yellow — leave blank if this grade has only one class" />
+              <span style={S.hint}>
+                Required only if this grade already has another class at this school for this year — splits it into parallel sections, each with its own roster, attendance, and educators.
+                {" "}Separate names with a comma to open several streams at once (e.g. "Blue, Red, Green, Yellow").
+              </span>
               {errors.streamName && <span style={S.error}>{errors.streamName.message}</span>}
             </div>
 
@@ -190,7 +217,12 @@ export default function CreateClassPage() {
 
             <div style={S.field}>
               <label style={S.label}>Tag</label>
-              <input {...register("tag")} style={S.input} placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
+              <input
+                {...register("tag")}
+                style={S.input}
+                disabled={streamNames.length > 1}
+                placeholder={streamNames.length > 1 ? "Not available when opening several streams at once" : "e.g. HUB-A-G1 (optional, must be unique)"}
+              />
               <span style={S.hint}>A short code unique to this class instance — lets you tell it apart from same-named classes at other hubs.</span>
               {errors.tag && <span style={S.error}>{errors.tag.message}</span>}
             </div>

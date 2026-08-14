@@ -41,12 +41,38 @@ function generateCourseCode(name, existingCodes = []) {
   return `${base}-${n}`;
 }
 
+// Same disambiguation shape as generateCourseCode above, but for the name — only duplicateCourse
+// calls this (createCourse's name is user-typed, so a clash is rejected outright by
+// assertUniqueName below rather than silently renamed).
+function generateCourseName(name, existingNames = []) {
+  const taken = new Set(existingNames.filter(Boolean).map((n) => n.trim().toLowerCase()));
+  if (!taken.has(`${name} (Copy)`.toLowerCase())) return `${name} (Copy)`;
+  let n = 2;
+  while (taken.has(`${name} (Copy ${n})`.toLowerCase())) n++;
+  return `${name} (Copy ${n})`;
+}
+
 // Cross-field check — zod validates each bound independently, but "max < min" can
 // only be caught once both values are known together.
 function assertValidAgeRange(ageMin, ageMax) {
   if (ageMin != null && ageMax != null && ageMax < ageMin) {
     const err = new Error("Max age must be greater than or equal to min age");
     err.statusCode = 400;
+    throw err;
+  }
+}
+
+// Courses have no DB-level unique constraint on name (same posture as every other table in
+// this codebase — integrity is enforced at the app layer). Case/whitespace-insensitive so
+// "Reading Basics" and "reading basics " are still caught as the same course. Only guards
+// createCourse — duplicateCourse deliberately reuses the source's exact name on purpose.
+async function assertUniqueName(name) {
+  const courses = await CourseModel.findAll();
+  const normalized = name.trim().toLowerCase();
+  const clash = courses.find((c) => c.name.trim().toLowerCase() === normalized);
+  if (clash) {
+    const err = new Error(`A course named "${clash.name}" already exists — please choose a different name.`);
+    err.statusCode = 409;
     throw err;
   }
 }
@@ -91,6 +117,7 @@ function hydrateSessionAssessments(session, assessmentsById) {
 const CourseService = {
   async createCourse(data) {
     assertValidAgeRange(data.ageMin, data.ageMax);
+    await assertUniqueName(data.name);
     return CourseModel.create(data);
   },
 
@@ -158,13 +185,11 @@ const CourseService = {
 
     const allCourses = await CourseModel.findAll();
     const existingCodes = allCourses.map((c) => c.code).filter(Boolean);
+    const existingNames = allCourses.map((c) => c.name).filter(Boolean);
     const { id: _id, createdAt, updatedAt, code, status, ...rest } = source;
     const newCourse = await CourseModel.create({
       ...rest,
-      name: source.name,
-      // Same name as the source, so generateCourseCode's own collision-suffix logic (already
-      // needed for any two courses that happen to share initials) naturally gives the copy a
-      // distinct code — no artificial "Copy" text needed in the name or the code.
+      name: generateCourseName(source.name, existingNames),
       code: generateCourseCode(source.name, existingCodes),
       status: "draft",
     });

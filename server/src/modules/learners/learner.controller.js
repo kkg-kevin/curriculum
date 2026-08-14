@@ -77,17 +77,20 @@ const createLearner = asyncHandler(async (req, res) => {
 });
 
 const getAllLearners = asyncHandler(async (req, res) => {
-  const { schoolId, classId, status, guardianEmail, username } = req.query;
-  // Exact-username lookup — how a school/branchAdmin finds a learner already enrolled at a
-  // DIFFERENT hub, in order to also enroll them at this one (see EnrollExistingLearner on the
-  // client). Deliberately bypasses every hub-scoping filter below, since the whole point is
-  // finding someone outside it; gated to roles that already manage enrollment (never
-  // teacher/learner, which would otherwise gain arbitrary cross-learner lookup). Returns only a
-  // hubCount, never the other hub's identity — same privacy shape as the unscoped cross-hub
-  // branch in LearnerService.getAllLearners.
-  if (username && ["admin", "school", "branchAdmin"].includes(req.user.role)) {
-    const record = await LearnerModel.findByUsername(username);
-    const data = record ? [{ ...record, hubCount: (await LearnerHubLinkModel.findByLearnerId(record.id)).length }] : [];
+  const { schoolId, classId, status, guardianEmail, q } = req.query;
+  // Cross-hub search by name, username, or registration number — how a school/branchAdmin
+  // finds a learner already enrolled at a DIFFERENT hub, in order to also enroll them at this
+  // one (see AddExistingLearnerPanel on the client). Deliberately bypasses every hub-scoping
+  // filter below, since the whole point is finding someone outside it; gated to roles that
+  // already manage enrollment (never teacher/learner, which would otherwise gain arbitrary
+  // cross-learner lookup). Returns only a hubCount per match, never the other hub's identity —
+  // same privacy shape as the unscoped cross-hub branch in LearnerService.getAllLearners.
+  if (q && q.trim() && ["admin", "school", "branchAdmin"].includes(req.user.role)) {
+    const records = await LearnerModel.search(q);
+    const data = await Promise.all(records.map(async (record) => ({
+      ...record,
+      hubCount: (await LearnerHubLinkModel.findByLearnerId(record.id)).length,
+    })));
     return res.json({ success: true, data, count: data.length });
   }
   const filters = { schoolId, classId, status, guardianEmail };
