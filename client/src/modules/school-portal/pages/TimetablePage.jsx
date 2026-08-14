@@ -14,6 +14,7 @@ import {
 } from "../../timetable/hooks/useTimetable";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
+import { useRoomsByHub } from "../../rooms/hooks/useRooms";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -100,9 +101,9 @@ function ClassMultiPicker({ siblings, selectedIds, onChange, label }) {
 // let it silently disagree with the section it actually gets created under. Editing an existing
 // slot (initial provided, no lockedDay) still gets the full dropdown, since moving a slot to a
 // different day is a reasonable thing to want.
-function SlotForm({ courses, courseLinks, onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [] }) {
+function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [] }) {
   const [form, setForm] = useState(() => initial || {
-    courseId: "", teacherId: "", dayOfWeek: lockedDay || "monday", startTime: "", endTime: "", room: "",
+    courseId: "", teacherId: "", dayOfWeek: lockedDay || "monday", startTime: "", endTime: "", roomId: "",
   });
   const [applyToClassIds, setApplyToClassIds] = useState([]);
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
@@ -113,7 +114,7 @@ function SlotForm({ courses, courseLinks, onSubmit, onCancel, initial, isSaving,
 
   const submit = () => {
     if (!form.courseId || !form.startTime || !form.endTime) return;
-    onSubmit({ ...form, teacherId: form.teacherId || null, applyToClassIds });
+    onSubmit({ ...form, teacherId: form.teacherId || null, roomId: form.roomId || null, applyToClassIds });
   };
 
   return (
@@ -140,7 +141,10 @@ function SlotForm({ courses, courseLinks, onSubmit, onCancel, initial, isSaving,
             <option key={l.teacherId} value={l.teacherId}>{l.teacher.firstName} {l.teacher.lastName}{l.isPrimary ? " (Primary)" : ""}</option>
           ))}
         </select>
-        <input type="text" placeholder="Room (optional)" value={form.room} onChange={(e) => set("room", e.target.value)} style={inputStyle} />
+        <select value={form.roomId} onChange={(e) => set("roomId", e.target.value)} style={selectStyle}>
+          <option value="">No room assigned</option>
+          {rooms.filter((r) => r.status === "active").map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
       </div>
 
       {isCreating && (
@@ -164,13 +168,13 @@ function SlotForm({ courses, courseLinks, onSubmit, onCancel, initial, isSaving,
   );
 }
 
-function DaySlotRow({ slot, teacherLabel, courseName, onEdit, onDelete }) {
+function DaySlotRow({ slot, teacherLabel, courseName, roomName, onEdit, onDelete }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, flexWrap: "wrap" }}>
       <span style={{ fontSize: 12, fontWeight: 700, color: T.accent, minWidth: 130 }}>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</span>
       <div style={{ flex: 1, minWidth: 140 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{courseName}</p>
-        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{teacherLabel}{slot.room ? ` · ${slot.room}` : ""}</p>
+        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{teacherLabel}{roomName ? ` · ${roomName}` : ""}</p>
       </div>
       <button type="button" onClick={onEdit} style={{ padding: "5px 10px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
         Edit
@@ -313,6 +317,10 @@ export default function TimetablePage() {
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
   const slots = slotsData?.data || [];
+
+  const { data: roomsData } = useRoomsByHub(school?.id);
+  const rooms = roomsData?.data || [];
+  const roomNameById = new Map(rooms.map((r) => [r.id, r.name]));
 
   // Once a class's weekly pattern is already configured, the day-by-day editor collapses down to
   // a summary by default — nothing left to set up, no reason to take up the page. A class with no
@@ -507,7 +515,8 @@ export default function TimetablePage() {
                           key={slot.id}
                           courses={courses}
                           courseLinks={courseLinks}
-                          initial={{ courseId: slot.courseId, teacherId: slot.teacherId || "", dayOfWeek: slot.dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, room: slot.room || "" }}
+                          rooms={rooms}
+                          initial={{ courseId: slot.courseId, teacherId: slot.teacherId || "", dayOfWeek: slot.dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, roomId: slot.roomId || "" }}
                           onSubmit={handleUpdate}
                           onCancel={() => setEditingSlotId(null)}
                           isSaving={updating}
@@ -518,6 +527,7 @@ export default function TimetablePage() {
                           slot={slot}
                           courseName={courseNameById.get(slot.courseId) || "Course"}
                           teacherLabel={resolveTeacherLabel(slot, courseLinks)}
+                          roomName={roomNameById.get(slot.roomId) || ""}
                           onEdit={() => { setEditingSlotId(slot.id); setAddingDay(null); }}
                           onDelete={() => deleteSlot(slot.id)}
                         />
@@ -527,6 +537,7 @@ export default function TimetablePage() {
                       <SlotForm
                         courses={courses}
                         courseLinks={courseLinks}
+                        rooms={rooms}
                         lockedDay={day}
                         onSubmit={handleCreate}
                         onCancel={() => setAddingDay(null)}

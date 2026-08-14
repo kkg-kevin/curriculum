@@ -4,6 +4,8 @@ const TeacherModel = require("../teachers/teacher.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassModel = require("../classes/class.model");
 const ClassService = require("../classes/class.service");
+const RoomModel = require("../rooms/room.model");
+const RoomService = require("../rooms/room.service");
 
 const LearningHubService = {
   async createLearningHub(data) {
@@ -59,6 +61,13 @@ const LearningHubService = {
     const classes = await ClassModel.findAll({ schoolId: id });
     for (const cls of classes) {
       await ClassService.deleteClass(cls.id);
+    }
+    // Rooms have no other owner once the hub is gone — routed through RoomService.deleteRoom
+    // (not RoomModel.delete) so its own cascade (nulling roomId on any remaining timetable
+    // slots) runs too, same reasoning as the classes loop above.
+    const rooms = await RoomModel.findAll({ hubId: id });
+    for (const room of rooms) {
+      await RoomService.deleteRoom(room.id);
     }
     return { message: "Learning hub deleted successfully" };
   },

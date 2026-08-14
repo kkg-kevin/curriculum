@@ -13,7 +13,7 @@ const baseSlotSchema = z.object({
   dayOfWeek: z.enum(DAYS_OF_WEEK, { errorMap: () => ({ message: "Select a valid day" }) }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Start time must be in HH:MM format"),
   endTime:   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "End time must be in HH:MM format"),
-  room:      z.string().max(100).optional().default(""),
+  roomId:    z.string().optional().nullable().default(null),
 });
 
 const createSlotSchema = baseSlotSchema.refine((d) => d.startTime < d.endTime, {

@@ -33,6 +33,12 @@ const TimetableModel = {
   deleteByClassId(classId) {
     return db(TABLE).where({ classId }).del();
   },
+
+  // Called from room.service.js's deleteRoom — a slot keeps its schedule, it just loses the
+  // stale room reference, same posture as learner-hub-link.model.js's clearClassId.
+  clearRoomId(roomId) {
+    return db(TABLE).where({ roomId }).update({ roomId: null, updatedAt: new Date() });
+  },
 };
 
 module.exports = TimetableModel;

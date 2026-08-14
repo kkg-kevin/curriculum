@@ -15,6 +15,7 @@ const learningHubRoutes = require("./modules/learning-hubs/learning-hub.routes")
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
 const classGroupRoutes = require("./modules/classes/groups/class-group.routes");
+const roomRoutes = require("./modules/rooms/room.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
@@ -75,6 +76,7 @@ app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 // Reusable class-level learner groups, for group-based assessments — see class-group.routes.js.
 app.use("/api/class-groups", protect, attachOwnRecords, classGroupRoutes);
+app.use("/api/rooms", protect, attachOwnRecords, roomRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/courses", protect, attachOwnRecords, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
