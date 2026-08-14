@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
-import { useSessionSummary, useSessionStatusBulk } from "../hooks/useTimetable";
+import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip } from "../hooks/useTimetable";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
   breakBg: "#FEF2F2", breakBorder: "#FCA5A5", breakText: "#B91C1C",
+  skipBg: "#FFFBEB", skipBorder: "#FCD34D", skipText: "#92400E",
 };
 
 // One shared read on "is this number good, needs watching, or needs attention" — used for both
@@ -145,6 +146,14 @@ function breakLabel(brk, resolveClassLabel) {
   const names = [...new Set(brk.classIds.map((id) => resolveClassLabel(id)).filter(Boolean))];
   return names.length ? `${brk.label} — ${names.join(", ")}` : brk.label;
 }
+
+// A rescheduled session drops out of `events` entirely on its original date (see
+// resolveCoursePlacements in timetable.service.js) — without a marker, that date would just look
+// like the class silently vanished with no explanation, same reasoning breaks already get shown
+// even on a day with no events.
+function skipsOnDate(dateStr, skippedSessions) {
+  return (skippedSessions || []).filter((s) => s.date === dateStr);
+}
 function monthGrid(anchor) {
   const monthStart = anchor.startOf("month");
   const monthEnd = anchor.endOf("month");
@@ -175,11 +184,18 @@ const HOUR_PX = 52;
  * benefit, and it can't accidentally affect the range data flowing in via props. Defaults to
  * false so every existing caller (in particular learner-portal, which shouldn't expose
  * classmates' attendance/scores) is completely unaffected unless it opts in.
+ *
+ * enableReschedule (also opt-in, default false) layers the "we didn't hold this one" action onto
+ * enableSessionDetail's own click-through modal — a teacher/school can reschedule a session
+ * without needing a separate slot-editing surface. skippedSessions is the sibling of `breaks`:
+ * active reschedules overlapping the visible range, surfaced as a small marker on their original
+ * date (which otherwise has zero events once skipped) so nothing just silently disappears.
  */
-export default function CalendarView({ events, breaks, isLoading, resolveCourseName, resolveTeacherLabel, resolveClassLabel, onRangeChange, emptyMessage, enableSessionDetail = false }) {
+export default function CalendarView({ events, breaks, skippedSessions, isLoading, resolveCourseName, resolveTeacherLabel, resolveClassLabel, onRangeChange, emptyMessage, enableSessionDetail = false, enableReschedule = false }) {
   const [anchor, setAnchor] = useState(() => dayjs());
   const [mode, setMode] = useState("week");
   const [activeEvent, setActiveEvent] = useState(null);
+  const [activeSkip, setActiveSkip] = useState(null);
 
   const range = useMemo(() => {
     if (mode === "month") {
@@ -253,20 +269,29 @@ export default function CalendarView({ events, breaks, isLoading, resolveCourseN
         <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading calendar…</div>
       ) : mode === "week" ? (
         <WeekGrid
-          days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks}
+          days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
           resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel}
-          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent} statusByKey={statusByKey}
+          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
+          onOpenSkip={setActiveSkip} statusByKey={statusByKey}
         />
       ) : (
         <MonthGrid
-          weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks}
+          weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
           resolveCourseName={resolveCourseName} resolveClassLabel={resolveClassLabel}
-          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent} statusByKey={statusByKey}
+          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
+          onOpenSkip={setActiveSkip} statusByKey={statusByKey}
         />
       )}
 
       {enableSessionDetail && activeEvent && (
-        <SessionDetailModal event={activeEvent} resolveCourseName={resolveCourseName} onClose={() => setActiveEvent(null)} />
+        <SessionDetailModal
+          event={activeEvent} resolveCourseName={resolveCourseName} onClose={() => setActiveEvent(null)}
+          enableReschedule={enableReschedule}
+        />
+      )}
+
+      {enableReschedule && activeSkip && (
+        <SkipDetailModal skip={activeSkip} resolveCourseName={resolveCourseName} onClose={() => setActiveSkip(null)} />
       )}
     </div>
   );
@@ -279,7 +304,7 @@ function btnStyle(active) {
   };
 }
 
-function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, statusByKey }) {
+function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
   const today = dayjs();
   const allEvents = days.flatMap((d) => eventsByDate[d.format("YYYY-MM-DD")] || []);
   const anyBreakInView = days.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks));
@@ -337,12 +362,22 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
       <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", borderBottom: `1px solid ${T.border}` }}>
         <div />
         {days.map((d) => {
-          const brk = breakOnDate(d.format("YYYY-MM-DD"), breaks);
+          const dateKey = d.format("YYYY-MM-DD");
+          const brk = breakOnDate(dateKey, breaks);
+          const skips = skipsOnDate(dateKey, skippedSessions);
           return (
-            <div key={d.format("YYYY-MM-DD")} style={{ padding: "10px 8px", textAlign: "center", borderLeft: `1px solid ${T.border}`, backgroundColor: brk ? T.breakBg : undefined }}>
+            <div key={dateKey} style={{ padding: "10px 8px", textAlign: "center", borderLeft: `1px solid ${T.border}`, backgroundColor: brk ? T.breakBg : undefined }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>{d.format("ddd")}</p>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: d.isSame(dayjs(), "day") ? T.accent : T.ink }}>{d.format("D")}</p>
               {brk && <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: T.breakText }} title={breakLabel(brk, resolveClassLabel)}>{breakLabel(brk, resolveClassLabel)}</p>}
+              {skips.map((skip) => (
+                <button
+                  key={skip.id} type="button" onClick={() => onOpenSkip(skip)}
+                  style={{ display: "block", width: "100%", margin: "2px 0 0", padding: "1px 4px", fontSize: 9, fontWeight: 700, color: T.skipText, backgroundColor: T.skipBg, border: `1px solid ${T.skipBorder}`, borderRadius: 4, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+                >
+                  ↷ Rescheduled
+                </button>
+              ))}
             </div>
           );
         })}
@@ -364,44 +399,61 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
               {hours.map((h) => (
                 <div key={h} style={{ position: "absolute", top: (h - gridStartHour) * HOUR_PX, left: 0, right: 0, height: 0, borderTop: `1px solid ${T.border}` }} />
               ))}
-              {dayEvents.map((e) => {
-                const color = colorForCourse(e.courseId);
-                const key = eventKey(e);
-                const isHovered = enableSessionDetail && hoverKey === key;
-                const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
-                const health = status ? sessionHealth({ isFuture: dayjs(e.date).isAfter(today, "day"), ...status }) : null;
-                return (
-                  <div
-                    key={key}
-                    title={enableSessionDetail ? undefined : `${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}`}
-                    onMouseEnter={() => handleEventEnter(key)}
-                    onMouseLeave={handleEventLeave}
-                    onClick={() => enableSessionDetail && onOpenDetail(e)}
-                    style={{
-                      position: "absolute", top: top(e.startTime), height: height(e.startTime, e.endTime), left: 4, right: 4,
-                      backgroundColor: color.bg, border: `1px solid ${isHovered ? color.text : color.border}`, borderRadius: 8, padding: "4px 6px", overflow: "hidden", boxSizing: "border-box",
-                      cursor: enableSessionDetail ? "pointer" : "default", zIndex: isHovered ? 2 : 1, transition: "border-color 0.15s ease",
-                    }}
-                  >
-                    {health && health !== "neutral" && (
-                      <StatusDot health={health} title={health === "attention" ? "Needs attention" : health === "warning" ? "Grading in progress" : "All good"} />
-                    )}
-                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
-                    <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: color.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{resolveCourseName(e.courseId)}</p>
-                    <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      Session {e.sessionOrder}: {e.sessionTitle}
-                    </p>
-                    {resolveTeacherLabel && (
-                      <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {resolveTeacherLabel(e)}{e.room ? ` · ${e.room}` : ""}
+              {(() => {
+                // Two events sharing the identical (startTime, endTime) — either two merged
+                // sessions from one reschedule, or (pre-existing, unrelated) two different
+                // classes that happen to share a slot in a merged teacher/hub calendar — split
+                // the column between them instead of stacking exactly on top of each other. A
+                // lone event in its slot (the overwhelming common case) collapses back to the
+                // exact same left:4/right:4 layout as before.
+                const timeGroups = {};
+                dayEvents.forEach((e) => { const k = `${e.startTime}-${e.endTime}`; (timeGroups[k] = timeGroups[k] || []).push(e); });
+                return dayEvents.map((e) => {
+                  const color = colorForCourse(e.courseId);
+                  const key = eventKey(e);
+                  const isHovered = enableSessionDetail && hoverKey === key;
+                  const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
+                  const health = status ? sessionHealth({ isFuture: dayjs(e.date).isAfter(today, "day"), ...status }) : null;
+                  const group = timeGroups[`${e.startTime}-${e.endTime}`];
+                  const idx = group.indexOf(e);
+                  const horizontal = group.length > 1
+                    ? { left: `calc(${(idx / group.length) * 100}% + 3px)`, width: `calc(${100 / group.length}% - 6px)` }
+                    : { left: 4, right: 4 };
+                  return (
+                    <div
+                      key={key}
+                      title={enableSessionDetail ? undefined : `${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}`}
+                      onMouseEnter={() => handleEventEnter(key)}
+                      onMouseLeave={handleEventLeave}
+                      onClick={() => enableSessionDetail && onOpenDetail(e)}
+                      style={{
+                        position: "absolute", top: top(e.startTime), height: height(e.startTime, e.endTime), ...horizontal,
+                        backgroundColor: color.bg, border: `1px solid ${isHovered ? color.text : color.border}`, borderRadius: 8, padding: "4px 6px", overflow: "hidden", boxSizing: "border-box",
+                        cursor: enableSessionDetail ? "pointer" : "default", zIndex: isHovered ? 2 : 1, transition: "border-color 0.15s ease",
+                      }}
+                    >
+                      {health && health !== "neutral" && (
+                        <StatusDot health={health} title={health === "attention" ? "Needs attention" : health === "warning" ? "Grading in progress" : "All good"} />
+                      )}
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
+                      <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: color.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {resolveCourseName(e.courseId)}{e.merged && <span title="Combined with another session"> · 2 sessions</span>}
                       </p>
-                    )}
-                    {enableSessionDetail && hoverReadyKey === key && (
-                      <SessionHoverCard summary={hoverSummary} isLoading={hoverLoading} />
-                    )}
-                  </div>
-                );
-              })}
+                      <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        Session {e.sessionOrder}: {e.sessionTitle}
+                      </p>
+                      {resolveTeacherLabel && (
+                        <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {resolveTeacherLabel(e)}{e.room ? ` · ${e.room}` : ""}
+                        </p>
+                      )}
+                      {enableSessionDetail && hoverReadyKey === key && (
+                        <SessionHoverCard summary={hoverSummary} isLoading={hoverLoading} />
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           );
         })}
@@ -410,7 +462,7 @@ function WeekGrid({ days, eventsByDate, breaks, resolveCourseName, resolveTeache
   );
 }
 
-function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, statusByKey }) {
+function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
   const today = dayjs();
   const hasAny = weeks.some((w) => w.some((d) => (eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0));
   const anyBreakInView = weeks.some((w) => w.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks)));
@@ -437,6 +489,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, res
             const dayEvents = eventsByDate[dateKey] || [];
             const inMonth = d.month() === anchor.month();
             const brk = breakOnDate(dateKey, breaks);
+            const skips = skipsOnDate(dateKey, skippedSessions);
             const visible = dayEvents.slice(0, 3);
             const overflow = dayEvents.length - visible.length;
             return (
@@ -451,6 +504,14 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, resolveCourseName, res
                       {breakLabel(brk, resolveClassLabel)}
                     </div>
                   )}
+                  {skips.map((skip) => (
+                    <button
+                      key={skip.id} type="button" onClick={() => onOpenSkip(skip)}
+                      style={{ backgroundColor: T.skipBg, border: `1px solid ${T.skipBorder}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: T.skipText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", fontFamily: "Inter, sans-serif", textAlign: "left" }}
+                    >
+                      ↷ Rescheduled
+                    </button>
+                  ))}
                   {visible.map((e) => {
                     const color = colorForCourse(e.courseId);
                     const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
@@ -623,10 +684,51 @@ function sortGradingRows(rows) {
   });
 }
 
+// Two clearly-labeled reschedule actions, no date restriction — offered for any session, not
+// just ones that have already happened. "shift" cascades every later session forward one slot;
+// "merge" combines this session onto the next occurrence instead, leaving everything after that
+// on its normal date. See resolveCoursePlacements in timetable.service.js for exactly how each
+// plugs into the calendar walk.
+function RescheduleSection({ event, onDone }) {
+  const [reason, setReason] = useState("");
+  const { mutate: createSkip, isPending } = useCreateSkip();
+
+  const submit = (mode) => {
+    createSkip(
+      { classId: event.classId, courseId: event.courseId, date: event.date, sessionId: event.sessionId, mode, reason },
+      { onSuccess: onDone }
+    );
+  };
+
+  return (
+    <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Didn't hold this session?</p>
+      <input
+        type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional) — e.g. public holiday"
+        style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
+      />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button
+          type="button" onClick={() => submit("shift")} disabled={isPending}
+          style={{ flex: 1, minWidth: 160, padding: "9px 12px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.accent}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+        >
+          Move all future sessions forward
+        </button>
+        <button
+          type="button" onClick={() => submit("merge")} disabled={isPending}
+          style={{ flex: 1, minWidth: 160, padding: "9px 12px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+        >
+          Combine with the next session
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Full click-through detail for one calendar event — attendance roster + per-learner grading
 // progress for that exact (class, session, date). Fetches independently of the calendar's own
 // range query (see the enableSessionDetail doc comment on CalendarView above).
-function SessionDetailModal({ event, resolveCourseName, onClose }) {
+function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedule = false }) {
   const { data: summary, isLoading } = useSessionSummary(event?.sessionId, event?.classId, event?.date, !!event);
 
   const attendancePercent = summary?.attendance.marked && summary.attendance.enrolledCount > 0
@@ -739,8 +841,67 @@ function SessionDetailModal({ event, resolveCourseName, onClose }) {
                 </div>
               </div>
             )}
+
+            {enableReschedule && <RescheduleSection event={event} onDone={onClose} />}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Detail behind a "↷ Rescheduled" marker — what happened to the session that would have landed
+// here, and an Undo. No extra fetch for the session's own title/order (the skip row doesn't need
+// it to be useful) — keeps this modal to exactly what's needed: what was decided, by whom, why,
+// and a way to reverse it.
+function SkipDetailModal({ skip, resolveCourseName, onClose }) {
+  const { mutate: removeSkip, isPending } = useDeleteSkip();
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, backgroundColor: "rgba(15,23,42,0.5)", zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: "#fff", borderRadius: 16, maxWidth: 420, width: "100%",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.25)", animation: "cv-modal-in 0.18s ease",
+        }}
+      >
+        <div style={{ padding: "18px 22px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              {dayjs(skip.date).format("dddd, D MMM YYYY")}
+            </p>
+            <h3 style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 800, color: T.ink }}>{resolveCourseName(skip.courseId)}</h3>
+          </div>
+          <button
+            type="button" onClick={onClose} aria-label="Close"
+            style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, fontSize: 14, cursor: "pointer" }}
+          >
+            ✕
+          </button>
+        </div>
+        <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 13, color: T.ink }}>
+            {skip.mode === "merge"
+              ? "This session was combined onto the next class meeting instead of running on its own date."
+              : "This session was skipped — every session after it moved forward by one slot."}
+          </p>
+          {skip.reason && (
+            <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted, fontStyle: "italic" }}>“{skip.reason}”</p>
+          )}
+          <button
+            type="button" onClick={() => removeSkip(skip.id, { onSuccess: onClose })} disabled={isPending}
+            style={{ alignSelf: "flex-start", padding: "8px 16px", backgroundColor: "#FEF2F2", color: "#B91C1C", border: "1.5px solid #FECACA", borderRadius: 8, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+          >
+            {isPending ? "Undoing…" : "Undo"}
+          </button>
+        </div>
       </div>
     </div>
   );

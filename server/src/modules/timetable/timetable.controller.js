@@ -1,9 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const TimetableService = require("./timetable.service");
 const TimetableModel = require("./timetable.model");
+const SessionSkipModel = require("./session-skip.model");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
-const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema } = require("./timetable.validation");
+const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // Same shape as attendance.controller.js's assertClassAccess — a timetable slot belongs to a
@@ -114,22 +115,22 @@ const getClassCalendar = asyncHandler(async (req, res) => {
   const cls = await ClassModel.findById(classId);
   await assertClassAccess(req, cls);
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const { events, breaks } = await TimetableService.resolveCalendar({ classId, from, to });
-  res.json({ success: true, data: events, breaks, count: events.length });
+  const { events, breaks, skippedSessions } = await TimetableService.resolveCalendar({ classId, from, to });
+  res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
 });
 
 const getMyTeacherCalendar = asyncHandler(async (req, res) => {
-  if (!req.ownTeacher) return res.json({ success: true, data: [], breaks: [] });
+  if (!req.ownTeacher) return res.json({ success: true, data: [], breaks: [], skippedSessions: [] });
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const { events, breaks } = await TimetableService.resolveTeacherCalendar(req.ownTeacher.id, from, to);
-  res.json({ success: true, data: events, breaks, count: events.length });
+  const { events, breaks, skippedSessions } = await TimetableService.resolveTeacherCalendar(req.ownTeacher.id, from, to);
+  res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
 });
 
 const getMyLearnerCalendar = asyncHandler(async (req, res) => {
-  if (!req.ownLearner) return res.json({ success: true, data: [], breaks: [] });
+  if (!req.ownLearner) return res.json({ success: true, data: [], breaks: [], skippedSessions: [] });
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const { events, breaks } = await TimetableService.resolveLearnerCalendar(req.ownLearner.id, from, to);
-  res.json({ success: true, data: events, breaks, count: events.length });
+  const { events, breaks, skippedSessions } = await TimetableService.resolveLearnerCalendar(req.ownLearner.id, from, to);
+  res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
 });
 
 // Hub-wide merged calendar — every class at one Learning Hub, for the school-portal's "All
@@ -146,8 +147,8 @@ const getHubCalendar = asyncHandler(async (req, res) => {
   }
   if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, hubId));
   const { from, to } = calendarRangeSchema.parse(req.query);
-  const { events, breaks } = await TimetableService.resolveHubCalendar(hubId, from, to);
-  res.json({ success: true, data: events, breaks, count: events.length });
+  const { events, breaks, skippedSessions } = await TimetableService.resolveHubCalendar(hubId, from, to);
+  res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
 });
 
 // The click/hover-through detail behind one calendar event — same class-ownership posture as
@@ -190,10 +191,47 @@ const getSessionStatusBulk = asyncHandler(async (req, res) => {
   res.json({ success: true, data: statuses });
 });
 
+// A teacher's "we didn't hold this one" record — see TimetableService.createSkip. Same
+// ownership posture as every other write here: teacher must actually teach the class, school/
+// branchAdmin must own its hub, admin unrestricted.
+const createSkip = asyncHandler(async (req, res) => {
+  const data = createSkipSchema.parse(req.body);
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const skip = await TimetableService.createSkip({ ...data, createdBy: req.ownTeacher?.id || req.user.id });
+  res.status(201).json({ success: true, data: skip });
+});
+
+const deleteSkip = asyncHandler(async (req, res) => {
+  const skip = await SessionSkipModel.findById(req.params.id);
+  if (!skip) {
+    const err = new Error("Reschedule record not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  await assertClassAccess(req, await ClassModel.findById(skip.classId));
+  const result = await TimetableService.deleteSkip(req.params.id);
+  res.json({ success: true, ...result });
+});
+
+const listSkips = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
+  const skips = await TimetableService.listSkips(classId);
+  res.json({ success: true, data: skips });
+});
+
 module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
+  createSkip, deleteSkip, listSkips,
 };

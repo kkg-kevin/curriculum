@@ -1,5 +1,6 @@
 const TimetableModel = require("./timetable.model");
 const CourseScheduleModel = require("./course-schedule.model");
+const SessionSkipModel = require("./session-skip.model");
 const SessionModel = require("../courses/session.model");
 const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
@@ -30,20 +31,39 @@ function timesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
+// A slot's teacherId is an optional override (see baseSlotSchema in timetable.validation.js) —
+// when unset, the slot's actual teacher is whichever educator(s) are linked to that (classId,
+// courseId) pair via class-course-teacher-link.model.js (same resolution TimetablePage.jsx's own
+// resolveTeacherLabel and getSessionSummary already use). A slot can therefore imply more than
+// one teacher (co-teachers) or none at all (course not yet assigned to anyone) — returns every
+// id that actually counts as "teaching this slot" either way.
+async function resolveEffectiveTeacherIds(classId, courseId, explicitTeacherId) {
+  if (explicitTeacherId) return [explicitTeacherId];
+  const links = await ClassCourseTeacherLinkModel.findByClassId(classId);
+  return links.filter((l) => l.courseId === courseId).map((l) => l.teacherId);
+}
+
 // A slot conflicts with another already on the same day if their times overlap AND either the
-// class or the (non-null) teacher is shared — the same class can't be in two places at once,
-// and neither can one teacher, but two different classes/teachers can happily share a time slot.
+// class is shared (same class can't be in two places at once) or the *effective* teacher is
+// shared — resolved via resolveEffectiveTeacherIds above, not just a raw teacherId match, since
+// most slots identify their teacher through the course assignment rather than an explicit
+// per-slot override. Two different classes/teachers can otherwise happily share a time slot.
 // excludeId skips the slot being updated so re-saving one's own unchanged time doesn't collide
 // with itself.
-async function hasConflict({ classId, teacherId, dayOfWeek, startTime, endTime, excludeId }) {
+async function hasConflict({ classId, courseId, teacherId, dayOfWeek, startTime, endTime, excludeId }) {
   const all = await TimetableModel.findAll({ dayOfWeek });
-  const daySlots = all.filter((s) => s.id !== excludeId);
-  return daySlots.some((s) => {
-    if (!timesOverlap(startTime, endTime, s.startTime, s.endTime)) return false;
-    if (s.classId === classId) return true;
-    if (teacherId && s.teacherId === teacherId) return true;
-    return false;
-  });
+  const overlapping = all.filter((s) => s.id !== excludeId && timesOverlap(startTime, endTime, s.startTime, s.endTime));
+  if (overlapping.some((s) => s.classId === classId)) return true;
+
+  const myTeacherIds = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
+  if (myTeacherIds.length === 0) return false;
+
+  const others = overlapping.filter((s) => s.classId !== classId);
+  for (const s of others) {
+    const otherTeacherIds = await resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId);
+    if (otherTeacherIds.some((id) => myTeacherIds.includes(id))) return true;
+  }
+  return false;
 }
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -122,29 +142,57 @@ function isDateSchedulable(date, periods) {
 // persisted — this is recomputed from the anchor + current slots + current Sessions + current
 // curriculum periods on every call, so editing any of those inputs is reflected immediately with
 // no sync/migration code.
-async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods }) {
+//
+// skipsByDate ("YYYY-MM-DD" -> skip row) layers a teacher's one-off "we didn't hold this one" on
+// top of the same mechanism: a "shift" skip behaves exactly like a break on that single date —
+// continue without consuming, so the session that would have landed there cascades onto the next
+// valid occurrence, same as scheduling already pauses through a break. A "merge" skip instead
+// consumes the session but stashes it in pendingMerge rather than emitting it, so the very next
+// valid occurrence emits it alongside whatever would normally land there (both get merged:true) —
+// everything after that stays on its normal computed date, since only ONE date absorbed the
+// extra session. pendingMerge is an array (not a flag) so consecutive skips of mixed mode compose
+// correctly with no special-casing; the loop condition includes `|| pendingMerge.length` so a
+// merge stashed on the course's very last session still gets a chance to flush instead of the
+// walk terminating (cursor === sessions.length) before ever placing it.
+async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods, skipsByDate = {} }) {
   const sessions = await SessionModel.findByCourseId(courseId);
   if (sessions.length === 0) return [];
   const events = [];
   let cursor = 0;
+  let pendingMerge = [];
   const walkStart = toUtcMs(startDate) > toUtcMs(from) ? startDate : from;
   // The cursor must still advance through every occurrence from the anchor date onward, even
   // ones before `from`, so a session's position on the calendar doesn't depend on which range
   // happens to be requested — only walk from `from` when it's already past the anchor.
-  for (let ms = toUtcMs(startDate); ms <= toUtcMs(to) && cursor < sessions.length; ms += ONE_DAY_MS) {
+  for (let ms = toUtcMs(startDate); ms <= toUtcMs(to) && (cursor < sessions.length || pendingMerge.length); ms += ONE_DAY_MS) {
     const date = fromUtcMs(ms);
     const day = weekdayOf(date);
     const slot = slotsByDay[day];
     if (!slot) continue;
     if (!isDateSchedulable(date, periods)) continue;
-    const session = sessions[cursor];
-    cursor += 1;
+
+    const skip = skipsByDate[date];
+    if (skip && skip.mode === "shift" && cursor < sessions.length) continue;
+    if (skip && skip.mode === "merge" && cursor < sessions.length) {
+      pendingMerge.push(sessions[cursor]);
+      cursor += 1;
+      continue;
+    }
+
+    const toEmit = cursor < sessions.length ? [...pendingMerge, sessions[cursor]] : [...pendingMerge];
+    if (cursor < sessions.length) cursor += 1;
+    pendingMerge = [];
+    if (toEmit.length === 0) continue;
     if (toUtcMs(date) < toUtcMs(walkStart)) continue;
-    events.push({
-      date, dayOfWeek: day, classId, courseId,
-      sessionId: session.id, sessionTitle: session.title, sessionOrder: session.order,
-      teacherId: slot.teacherId || null, startTime: slot.startTime, endTime: slot.endTime, room: slot.room || "",
-    });
+
+    for (const session of toEmit) {
+      events.push({
+        date, dayOfWeek: day, classId, courseId,
+        sessionId: session.id, sessionTitle: session.title, sessionOrder: session.order,
+        teacherId: slot.teacherId || null, startTime: slot.startTime, endTime: slot.endTime, room: slot.room || "",
+        merged: toEmit.length > 1,
+      });
+    }
   }
   return events;
 }
@@ -180,6 +228,32 @@ function dedupeBreaks(breaks) {
   return [...seen.values()];
 }
 
+// Groups one class's skip rows by courseId -> {date: skipRow}, mirroring resolveCalendar's own
+// slotsByCourse grouping — one query per class (see SessionSkipModel.findByClassId), reused both
+// by the per-course walk (needs the full, unscoped set for cursor correctness — same reasoning
+// resolveCoursePlacements already applies to periods/anchors) and by skippedSessionsInRange below.
+function groupSkipsByCourse(skipRows) {
+  const byCourse = {};
+  for (const s of skipRows) {
+    byCourse[s.courseId] = byCourse[s.courseId] || {};
+    byCourse[s.courseId][s.date] = s;
+  }
+  return byCourse;
+}
+
+// Skip rows within [from, to] — surfaced separately from events for the same reason breaks are
+// (see breaksInRange above): so the UI can mark a date that would otherwise look like the class
+// silently vanished with no explanation. Unlike the unscoped skipsByDate map fed into the
+// resolver's own walk, this is deliberately range-filtered, same relationship breaksInRange has
+// to periods.
+function skippedSessionsInRange(skipRows, from, to) {
+  const fromMs = toUtcMs(from);
+  const toMs = toUtcMs(to);
+  return skipRows
+    .filter((s) => { const ms = toUtcMs(s.date); return ms >= fromMs && ms <= toMs; })
+    .map((s) => ({ id: s.id, classId: s.classId, courseId: s.courseId, date: s.date, sessionId: s.sessionId, mode: s.mode, reason: s.reason || "" }));
+}
+
 const TimetableService = {
   async listForClass(classId) {
     return TimetableModel.findAll({ classId });
@@ -210,17 +284,21 @@ const TimetableService = {
 
     const periods = await getPeriodsForClass(classId);
     const anchors = await CourseScheduleModel.findByClassId(classId);
+    const skipRows = await SessionSkipModel.findByClassId(classId);
+    const skipsByCourse = groupSkipsByCourse(skipRows);
     const eventLists = await Promise.all(anchors.map((anchor) => {
       const slotsByDay = slotsByCourse[anchor.courseId];
       if (!slotsByDay) return [];
       return resolveCoursePlacements({
         classId, courseId: anchor.courseId, slotsByDay, startDate: anchor.startDate, from, to, periods,
+        skipsByDate: skipsByCourse[anchor.courseId] || {},
       });
     }));
     const events = eventLists.flat();
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
       breaks: breaksInRange(periods, from, to, classId),
+      skippedSessions: skippedSessionsInRange(skipRows, from, to),
     };
   },
 
@@ -237,7 +315,7 @@ const TimetableService = {
       .flatMap((r) => r.events)
       .filter((e) => linkedPairs.has(pairKey(e.classId, e.courseId)))
       .filter((e) => !e.teacherId || e.teacherId === teacherId);
-    return { events, breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
+    return { events, breaks: dedupeBreaks(results.flatMap((r) => r.breaks)), skippedSessions: results.flatMap((r) => r.skippedSessions) };
   },
 
   // Same class-resolution as listForLearner, but returning calendar events instead of slots.
@@ -245,7 +323,7 @@ const TimetableService = {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
     const results = await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to })));
-    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
+    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)), skippedSessions: results.flatMap((r) => r.skippedSessions) };
   },
 
   // Same merge pattern as resolveTeacherCalendar/resolveLearnerCalendar above, scoped to every
@@ -255,7 +333,7 @@ const TimetableService = {
     const classes = await ClassModel.findAll({ schoolId: hubId });
     const classIds = classes.map((c) => c.id);
     const results = await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to })));
-    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)) };
+    return { events: results.flatMap((r) => r.events), breaks: dedupeBreaks(results.flatMap((r) => r.breaks)), skippedSessions: results.flatMap((r) => r.skippedSessions) };
   },
 
   // Every slot belonging to a (classId, courseId) pair this teacher is actually linked to (see
@@ -302,6 +380,33 @@ const TimetableService = {
     const deleted = await TimetableModel.delete(id);
     if (!deleted) notFound("Timetable slot not found");
     return { message: "Timetable slot deleted" };
+  },
+
+  // A teacher's "we didn't hold this one" record — see resolveCoursePlacements for how mode
+  // plugs into the calendar walk. Pre-checked (not caught as a DB duplicate-key error), same
+  // "app-level pre-check" convention every other uniqueness guard in this codebase already uses
+  // (e.g. class.service.js's assertStreamAvailable). Merge structurally needs a following
+  // occurrence to attach to, so it's rejected outright on a course's actual last session rather
+  // than silently degrading to shift-like behavior at write time.
+  async createSkip({ classId, courseId, date, sessionId, mode, reason, createdBy }) {
+    const existing = await SessionSkipModel.findOne(classId, courseId, date);
+    if (existing) conflictError("This session has already been rescheduled.");
+    if (mode === "merge") {
+      const courseSessions = await SessionModel.findByCourseId(courseId);
+      const isLast = courseSessions[courseSessions.length - 1]?.id === sessionId;
+      if (isLast) conflictError("This is the final session in the course — there's no next session to merge it with. Use \"Move all future sessions forward\" instead.");
+    }
+    return SessionSkipModel.create({ classId, courseId, date, sessionId, mode, reason: reason || "", createdBy: createdBy || null });
+  },
+
+  async deleteSkip(id) {
+    const deleted = await SessionSkipModel.delete(id);
+    if (!deleted) notFound("Reschedule record not found");
+    return { message: "Reschedule undone" };
+  },
+
+  async listSkips(classId) {
+    return SessionSkipModel.findByClassId(classId);
   },
 
   // "What happened in this session" — the click-through detail behind a single calendar event.
