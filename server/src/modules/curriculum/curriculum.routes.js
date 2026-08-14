@@ -144,7 +144,11 @@ router.route("/:id/admin")
 // Everything below is curriculum-authoring content (courses, versions, academic years,
 // competencies, assessments, performance bands, learning journey) — admin is unrestricted;
 // curriculumAdmin may only touch the one curriculum they're assigned to (ownCurriculumOnly).
-router.use(authorize("admin", "curriculumAdmin"), ownCurriculumOnly);
+// Mounted on "/:id" (not a path-less use()) so Express resolves req.params.id on this layer
+// itself before ownCurriculumOnly runs — a path-less use() sees req.params.id as undefined
+// here since params are only bound by the layer whose own pattern matched them, which for a
+// bare use() is never this one.
+router.use("/:id", authorize("admin", "curriculumAdmin"), ownCurriculumOnly);
 
 // Courses — added to this curriculum from here (a course stays independent otherwise)
 router.route("/:id/courses/links").get(getCurriculumCourses).post(linkCourse);

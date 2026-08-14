@@ -5,6 +5,7 @@ import { useClassQuery, useClassCourseTeachers } from "../../classes/hooks/useCl
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
+import ClassGroupsPanel from "../components/ClassGroupsPanel";
 
 const LEARNER_STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
@@ -121,6 +122,10 @@ export default function MyClassPage() {
         ) : (
           learners.map((l) => <LearnerRow key={l.id} learner={l} />)
         )}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <ClassGroupsPanel classId={classId} />
       </div>
     </div>
   );

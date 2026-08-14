@@ -14,6 +14,7 @@ const ReportModel = require("../reports/report.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AttendanceModel = require("../attendance/attendance.model");
+const ClassGroupService = require("../classes/groups/class-group.service");
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -198,6 +199,7 @@ const LearnerService = {
     const issues = await AssessmentIssueModel.findAll({ learnerId: id });
     await Promise.all(issues.map((i) => AssessmentIssueModel.delete(i.id)));
     await AttendanceModel.deleteByLearnerId(id);
+    await ClassGroupService.removeLearnerEverywhere(id);
     return { message: "Learner deleted successfully" };
   },
 

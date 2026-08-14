@@ -140,10 +140,10 @@ const getStandaloneSubmissionsNeedingGrading = asyncHandler(async (req, res) => 
 });
 
 const getRosterForIssue = asyncHandler(async (req, res) => {
-  const { issue, assessment, roster } = await AssessmentSubmissionService.getRosterForIssue(req.params.id);
+  const { issue, assessment, roster, groups, ungroupedLearners } = await AssessmentSubmissionService.getRosterForIssue(req.params.id);
   const cls = await ClassModel.findById(issue.classId);
   await assertClassAccess(req, cls);
-  res.json({ success: true, data: { issue, assessment, roster } });
+  res.json({ success: true, data: { issue, assessment, roster, groups, ungroupedLearners } });
 });
 
 const revokeIssue = asyncHandler(async (req, res) => {

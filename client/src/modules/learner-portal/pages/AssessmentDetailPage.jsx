@@ -7,6 +7,8 @@ import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetenci
 import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import RichContent from "../../assessments/components/RichContent";
+import GroupPanel from "../../assessments/components/GroupPanel";
+import { useGroupForLearner } from "../../classes/hooks/useClassGroups";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -70,6 +72,9 @@ export default function AssessmentDetailPage() {
   const { data: areaRows = [], isLoading: areaLoading } = useLearningAreaDiagnosticsForLearner(learner?.id);
   const diagnosticRows = [stageRow, ...areaRows].filter(Boolean);
   const row = (data?.data || []).find((r) => r.issue.id === issueId) || diagnosticRows.find((r) => r.issue.id === issueId);
+  // Only meaningful for group-mode issues, but cheap/cached like the diagnostic queries above —
+  // no need to gate the call itself, GroupPanel just isn't rendered when there's no group issue.
+  const { data: group } = useGroupForLearner(cls?.id, learner?.id);
 
   const { mutate: startSubmission, isPending: starting } = useStartSubmission();
   const { mutate: saveDraft, isPending: saving } = useSaveDraft();
@@ -137,6 +142,8 @@ export default function AssessmentDetailPage() {
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{stripDescription(assessment.description)}</p>
         </div>
       </div>
+
+      {row.issue.groupMode && <GroupPanel group={group} />}
 
       {!submission || submission.status === "not_started" ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>

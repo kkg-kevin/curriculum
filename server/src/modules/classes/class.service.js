@@ -5,6 +5,7 @@ const TimetableModel = require("../timetable/timetable.model");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
+const ClassGroupService = require("./groups/class-group.service");
 
 // Tag is unique across every class, system-wide (not just within one hub) — it's how a specific
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
@@ -125,6 +126,7 @@ const ClassService = {
     await TimetableModel.deleteByClassId(id);
     await CourseScheduleModel.deleteByClassId(id);
     await AttendanceModel.deleteByClassId(id);
+    await ClassGroupService.deleteAllForClass(id);
     // Only class-owned issues (no learnerId — see AssessmentIssueModel's own comment) go with the
     // class, mirroring learner.service.js's deleteLearner doing the exact opposite: it removes
     // learner-targeted issues and leaves class-owned ones alone. Learner-targeted submissions/issues
