@@ -167,7 +167,13 @@ const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
   const rawRows = await AssessmentSubmissionService.getIssuedRowsForLearner(learner.id);
-  const rows = rawRows.map((row) => ({ ...row, submission: redactUnpublishedReport(row.submission) }));
+  const rows = await Promise.all(rawRows.map(async (row) => {
+    const submission = redactUnpublishedReport(row.submission);
+    // Redacted (unpublished) rows already have gradedBy nulled out above, so this naturally
+    // resolves to null for them too — no separate gating needed.
+    const gradedByName = await AssessmentSubmissionService.resolveGraderName(submission.gradedBy);
+    return { ...row, submission: { ...submission, gradedByName } };
+  }));
   res.json({ success: true, data: rows, count: rows.length });
 });
 

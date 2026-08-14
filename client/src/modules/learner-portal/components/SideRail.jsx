@@ -36,9 +36,13 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
               const Icon = HUB_ICONS[i % HUB_ICONS.length];
               return (
                 <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#fff", border: `1px solid ${T.tintBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: T.accent }}>
-                    <Icon size={16} />
-                  </div>
+                  {hub.photo ? (
+                    <img src={hub.photo} alt={hub.name} style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: `1px solid ${T.tintBorder}` }} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#fff", border: `1px solid ${T.tintBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: T.accent }}>
+                      <Icon size={16} />
+                    </div>
+                  )}
                   <div style={{ minWidth: 0 }}>
                     <p style={{ margin: "0 0 1px", fontSize: 13.5, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
                     <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{hub.class?.gradeName || hub.code || "—"}</p>
@@ -57,22 +61,29 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
           <EmptyState icon={FiUsers}>No teacher assigned to your class yet.</EmptyState>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {mentors.map((m) => (
-              <div key={`${m.teacher.id}-${m.hubName}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.accentMid})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                  <FiUser size={14} />
+            {mentors.map((m) => {
+              const initials = `${m.teacher.firstName?.[0] ?? ""}${m.teacher.lastName?.[0] ?? ""}`.toUpperCase();
+              return (
+                <div key={`${m.teacher.id}-${m.hubName}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {m.teacher.photo ? (
+                    <img src={m.teacher.photo} alt={`${m.teacher.firstName} ${m.teacher.lastName}`} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.accentMid})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                      {initials || <FiUser size={14} />}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ margin: "0 0 1px", fontSize: 13, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {m.teacher.firstName} {m.teacher.lastName}
+                    </p>
+                    <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: "#fff", color: T.accent, border: `1px solid ${T.tintBorder}` }}>
+                      {m.hubName}
+                    </span>
+                  </div>
+                  <FiMessageCircle size={15} color={T.inkFaint} style={{ flexShrink: 0 }} />
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ margin: "0 0 1px", fontSize: 13, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {m.teacher.firstName} {m.teacher.lastName}
-                  </p>
-                  <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: "#fff", color: T.accent, border: `1px solid ${T.tintBorder}` }}>
-                    {m.hubName}
-                  </span>
-                </div>
-                <FiMessageCircle size={15} color={T.inkFaint} style={{ flexShrink: 0 }} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </RailSection>

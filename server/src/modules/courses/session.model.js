@@ -9,7 +9,7 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "course_sessions";
-const JSON_FIELDS = ["outcomes", "mainConcepts", "activities", "assessmentIds", "assessmentAttachments", "notes", "resources"];
+const JSON_FIELDS = ["outcomes", "mainConcepts", "activities", "assessmentIds", "assessmentAttachments", "notes", "resources", "indicatorIds"];
 
 const SessionModel = {
   create(data) {

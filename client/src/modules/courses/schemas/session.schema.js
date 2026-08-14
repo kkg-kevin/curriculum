@@ -42,4 +42,7 @@ export const sessionSchema = z.object({
   assessmentAttachments: z.array(assessmentAttachmentSchema).optional().default([]),
   notes:        z.array(repeatableItemSchema).optional().default([]),
   resources:    z.array(resourceSchema).optional().default([]),
+  // Which of this session's course's competency indicators it addresses — plain tag list, just
+  // like assessmentIds; not read by any scoring/grading logic today.
+  indicatorIds: z.array(z.string().min(1)).optional().default([]),
 });

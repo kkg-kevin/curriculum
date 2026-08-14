@@ -4,6 +4,7 @@ import { Input, Field, SectionHeader, AgeRangeField, ListField } from "./formFie
 import RichTextEditor from "./RichTextEditor";
 import CoverImageField from "./CoverImageField";
 import LearningAreasField from "./LearningAreasField";
+import CompetenciesField from "./CompetenciesField";
 import { generateCourseCode } from "../schemas/course.schema";
 import { useCoursesQuery } from "../hooks/useCourse";
 
@@ -88,6 +89,11 @@ export default function CourseForm({ autoGenerateCode = false }) {
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
         <SectionHeader title="Learning Areas" subtitle="Tag which learning areas this course falls under." />
         <LearningAreasField name="learningAreaIds" hint="Pick from the shared catalog defined in Settings." />
+      </div>
+
+      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
+        <SectionHeader title="Competencies" subtitle="Tag which competencies this course develops." />
+        <CompetenciesField name="competencyIds" hint="Pick from the shared catalog defined in Settings." />
       </div>
 
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>

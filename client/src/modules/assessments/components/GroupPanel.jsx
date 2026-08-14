@@ -7,9 +7,13 @@ function MemberChip({ member }) {
   const initials = `${member.firstName?.[0] ?? ""}${member.lastName?.[0] ?? ""}`.toUpperCase();
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 4px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 20 }}>
-      <span style={{ width: 22, height: 22, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-        {initials || "?"}
-      </span>
+      {member.photo ? (
+        <img src={member.photo} alt={`${member.firstName} ${member.lastName}`} style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+      ) : (
+        <span style={{ width: 22, height: 22, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, ${T.accentMid})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+          {initials || "?"}
+        </span>
+      )}
       <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>{member.firstName} {member.lastName}</span>
     </span>
   );

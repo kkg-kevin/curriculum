@@ -20,6 +20,8 @@ export const courseSchema = z.object({
   // Not part of the Course record itself — reconciled into course-learning-area
   // links after save. See CreateCoursePage/EditCoursePage onSubmit.
   learningAreaIds: z.array(z.string()).optional().default([]),
+  // Same shape/posture as learningAreaIds — reconciled into course-competency links after save.
+  competencyIds: z.array(z.string()).optional().default([]),
   // Freeform typed requirements — IS part of the Course record itself (unlike
   // learningAreaIds above), saved directly with the rest of the form.
   requirements: z.array(z.string().min(1)).optional().default([]),
