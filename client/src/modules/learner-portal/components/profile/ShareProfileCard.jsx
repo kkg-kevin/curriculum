@@ -61,7 +61,7 @@ export default function ShareProfileCard({ learnerId }) {
 
       {!open ? (
         <p style={{ margin: 0, fontSize: 12, color: T.inkFaint, lineHeight: 1.4 }}>
-          No-login view — name, photo, class &amp; guardian contact only. Health, academic, and login details always stay private.
+          No-login view — shows this learner's full profile (identity, guardian contact, competencies, and progress). Individual assessment scores and teacher feedback stay private.
         </p>
       ) : loadingToken && !token ? (
         <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Loading…</p>

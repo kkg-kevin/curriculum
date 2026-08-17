@@ -19,6 +19,7 @@ const {
   getSubmission,
   gradeSubmission,
   publishSubmissionReport,
+  reissueAssessment,
 } = require("./assessment-submission.controller");
 const { authorize } = require("../../../shared/middleware/auth.middleware");
 
@@ -42,6 +43,9 @@ router.post("/issues/:id/start-observation", authorize("admin", "school", "teach
 // Grades one milestone of a project assessment — see gradeMilestone's comment in the
 // controller. Independent of the submission's own draft/submit/grade flow below.
 router.post("/issues/:id/milestones/:milestoneId", authorize("admin", "school", "teacher"), gradeMilestone);
+// Reissues a graded assessment to one learner who didn't perform well — see reissueAssessment's
+// comment in the controller.
+router.post("/issues/:id/reissue", authorize("admin", "school", "teacher"), reissueAssessment);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
 // Releases an already-graded submission's score/feedback to the learner — a separate step from

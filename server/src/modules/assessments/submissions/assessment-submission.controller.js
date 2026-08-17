@@ -12,6 +12,7 @@ const {
   gradeSubmissionSchema,
   startObservationSchema,
   gradeMilestoneSchema,
+  reissueSchema,
 } = require("./assessment-submission.validation");
 
 // Whether this teacher has at least one course-educator link in the given class — the one
@@ -327,6 +328,32 @@ const gradeMilestone = asyncHandler(async (req, res) => {
   res.json({ success: true, data: submission });
 });
 
+// A teacher, having graded a submission and decided it wasn't good enough, gives this one
+// learner another shot at the same assessment — see reissueToLearner's comment in the service
+// for why this creates a new issue rather than resetting the original. Same ownership shape as
+// gradeMilestone/startObservationSubmission: whoever could grade the original issue can reissue
+// it, checked off the ORIGINAL issue's class (a reissue's own new issue has no classId of its
+// own to check).
+const reissueAssessment = asyncHandler(async (req, res) => {
+  const { learnerId, dueDate } = reissueSchema.parse(req.body);
+  const issue = await AssessmentSubmissionService.getIssue(req.params.id);
+  if (!issue) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (issue.classId) {
+    const cls = await ClassModel.findById(issue.classId);
+    await assertClassAccess(req, cls);
+  } else {
+    await assertLearnerHubAccess(req, learnerId);
+  }
+  const newIssue = await AssessmentSubmissionService.reissueToLearner({
+    issueId: req.params.id, learnerId, dueDate, reissuedBy: req.ownTeacher?.id || req.user.id,
+  });
+  res.status(201).json({ success: true, data: newIssue });
+});
+
 const saveDraft = asyncHandler(async (req, res) => {
   const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   assertLearnerOwnsSubmission(req, existing);
@@ -406,4 +433,5 @@ module.exports = {
   getSubmission,
   gradeSubmission,
   publishSubmissionReport,
+  reissueAssessment,
 };

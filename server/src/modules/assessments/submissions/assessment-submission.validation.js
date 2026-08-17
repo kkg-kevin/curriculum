@@ -68,6 +68,12 @@ const gradeMilestoneSchema = z.object({
   feedback:  z.string().max(5000).optional().default(""),
 });
 
+// Teacher reissuing a graded assessment to one learner — see reissueToLearner in the service.
+const reissueSchema = z.object({
+  learnerId: z.string().min(1, "Learner is required"),
+  dueDate:   z.string().optional().nullable(),
+});
+
 module.exports = {
   issueAssessmentSchema,
   issueOnSessionCompleteSchema,
@@ -75,4 +81,5 @@ module.exports = {
   gradeSubmissionSchema,
   startObservationSchema,
   gradeMilestoneSchema,
+  reissueSchema,
 };

@@ -178,6 +178,73 @@ const AssessmentSubmissionService = {
     });
   },
 
+  // A teacher decided this one learner's graded attempt wasn't good enough and wants to give
+  // them another shot — creates a brand new standalone issue (same "bypass class, target one
+  // learner" shape as issueDiagnostic/issueOnSessionComplete above) rather than resetting the
+  // original submission in place. This is deliberate: the original graded submission — its
+  // score, its feedback — stays exactly as it was, a permanent record the learner can still see
+  // and the new attempt can point back to as guidance, instead of being destroyed. Because it's
+  // a distinct issueId, it naturally gets its own fresh row the next time getOrCreateSubmission
+  // runs, satisfying the (issueId, learnerId) unique constraint on submissions without touching
+  // the original at all.
+  //
+  // Deliberately NOT idempotent like issueDiagnostic/issueOnSessionComplete — a teacher may
+  // reasonably reissue more than once if the learner keeps struggling, so every call is a fresh,
+  // explicit action, not a system trigger to de-duplicate. Instead, this blocks a *pending*
+  // duplicate: if the last reissue from this same origin is still unresolved, reissuing again
+  // would just leave the learner with two open "do it again" cards for no reason.
+  //
+  // Scoped to individual (non-group) submissions only — reissuing one member out of a shared
+  // group attempt raises questions (does the whole group redo it? just them?) this feature isn't
+  // trying to answer yet.
+  async reissueToLearner({ issueId, learnerId, dueDate = null, reissuedBy }) {
+    const originalIssue = await AssessmentIssueModel.findById(issueId);
+    if (!originalIssue) {
+      const err = new Error("Issue not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const originalSubmission = await AssessmentSubmissionModel.findOne({ issueId, learnerId });
+    if (!originalSubmission || originalSubmission.status !== "graded") {
+      const err = new Error("This learner's submission hasn't been graded yet — reissue after grading it.");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (originalSubmission.groupId) {
+      const err = new Error("Group submissions can't be reissued to one learner — this only supports individual assessments.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const priorReissues = await AssessmentIssueModel.findAll({ learnerId, assessmentId: originalIssue.assessmentId });
+    const pending = await Promise.all(priorReissues
+      .filter((i) => i.reissuedFromIssueId === issueId)
+      .map(async (i) => ({ issue: i, submission: await AssessmentSubmissionModel.findOne({ issueId: i.id, learnerId }) })));
+    if (pending.some((p) => !p.submission || p.submission.status !== "graded")) {
+      const err = new Error("A reissue is already pending for this learner — wait for them to complete it before reissuing again.");
+      err.statusCode = 409;
+      throw err;
+    }
+
+    return AssessmentIssueModel.create({
+      assessmentId: originalIssue.assessmentId,
+      learnerId,
+      courseId: originalIssue.courseId,
+      sessionId: originalIssue.sessionId,
+      classId: null,
+      issuedBy: reissuedBy,
+      dueDate: dueDate || null,
+      reissuedFromIssueId: issueId,
+      // Carried over so a reissued Stage/Learning-Area diagnostic still re-triggers
+      // maybePlaceFromDiagnostic when the new attempt is graded — without these, grading a
+      // reissued diagnostic would silently never update the learner's placement, since
+      // maybePlaceFromDiagnostic branches entirely on the SUBMISSION'S OWN issue carrying them.
+      ageCategoryId: originalIssue.ageCategoryId,
+      learningAreaId: originalIssue.learningAreaId,
+      hubId: originalIssue.hubId,
+    });
+  },
+
   // Every standalone issue (diagnostic or course-progress-triggered) targeting this learner
   // directly, merged with their own submission — the learnerId-keyed counterpart to
   // getIssuedAssessmentsForLearner above, which is keyed by class instead.

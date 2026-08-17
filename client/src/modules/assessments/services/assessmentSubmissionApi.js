@@ -9,6 +9,7 @@ export const assessmentSubmissionApi = {
   getDiagnosticsNeedingGrading: (classId) => api.get(`${BASE}/diagnostics-needing-grading`, { params: { classId } }).then((r) => r.data),
   getRoster:          (issueId)          => api.get(`${BASE}/issues/${issueId}/roster`).then((r) => r.data.data),
   revokeIssue:        (issueId)          => api.delete(`${BASE}/issues/${issueId}`).then((r) => r.data),
+  reissue:            (issueId, payload) => api.post(`${BASE}/issues/${issueId}/reissue`, payload).then((r) => r.data.data),
 
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
   getDiagnosticForLearner: (learnerId, curriculumId) => api.get(`${BASE}/diagnostic/${learnerId}`, { params: curriculumId ? { curriculumId } : {} }).then((r) => r.data.data),

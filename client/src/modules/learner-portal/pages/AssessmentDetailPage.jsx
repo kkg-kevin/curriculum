@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { FiCheckCircle, FiClock, FiSend } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
@@ -108,6 +108,36 @@ function FeedbackRow({ index, item, response, autoResult, feedback }) {
   );
 }
 
+// Shown whenever this issue was created by a teacher's "Reissue" action (see reissueToLearner
+// server-side) — surfaces the PRIOR attempt's score/feedback as guidance for this fresh one,
+// rather than making the learner dig through Reports to find what they need to improve on.
+// `originalRow` may be missing (original issue revoked, or just not yet loaded) — the notice
+// still shows, just without the specific feedback quoted underneath.
+function ReissueNotice({ originalRow }) {
+  const originalSubmission = originalRow?.submission;
+  const hasPriorFeedback = originalSubmission?.status === "graded" && (originalSubmission.overallFeedback || originalSubmission.maxScore);
+  return (
+    <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A" }}>
+      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: "#92400E", display: "flex", alignItems: "center", gap: 7 }}>
+        <FiRefreshCw size={13} /> Reissued Assessment — Another Attempt
+      </p>
+      <p style={{ margin: "4px 0 0", fontSize: 13, color: T.ink }}>
+        Your teacher gave you another chance at this assessment. Use the feedback below to do better this time.
+      </p>
+      {hasPriorFeedback && (
+        <div style={{ marginTop: 10, padding: "10px 14px", backgroundColor: "#fff", border: "1px solid #FDE68A", borderRadius: 10 }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#92400E", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Previous attempt{originalSubmission.maxScore ? ` — ${originalSubmission.totalScore}/${originalSubmission.maxScore}` : ""}
+          </p>
+          {originalSubmission.overallFeedback && (
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: T.ink, fontStyle: "italic" }}>“{originalSubmission.overallFeedback}”</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AssessmentDetailPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
@@ -122,6 +152,12 @@ export default function AssessmentDetailPage() {
   const { data: areaRows = [], isLoading: areaLoading } = useLearningAreaDiagnosticsForLearner(learner?.id);
   const diagnosticRows = [stageRow, ...areaRows].filter(Boolean);
   const row = (data?.data || []).find((r) => r.issue.id === issueId) || diagnosticRows.find((r) => r.issue.id === issueId);
+  // If this issue was created by a teacher's "Reissue" action, its origin issue targeted this
+  // same learner and is (almost always) still in this same list — reused here instead of a new
+  // fetch. See ReissueNotice.
+  const originalRow = row?.issue?.reissuedFromIssueId
+    ? (data?.data || []).find((r) => r.issue.id === row.issue.reissuedFromIssueId)
+    : null;
   // Only meaningful for group-mode issues, but cheap/cached like the diagnostic queries above —
   // no need to gate the call itself, GroupPanel just isn't rendered when there's no group issue.
   const { data: group } = useGroupForLearner(cls?.id, learner?.id);
@@ -192,6 +228,8 @@ export default function AssessmentDetailPage() {
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{stripDescription(assessment.description)}</p>
         </div>
       </div>
+
+      {row.issue.reissuedFromIssueId && <ReissueNotice originalRow={originalRow} />}
 
       {row.issue.groupMode && <GroupPanel group={group} />}
 

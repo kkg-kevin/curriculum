@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiUsers } from "react-icons/fi";
-import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -156,6 +156,41 @@ function GroupRosterButton({ group, members, submission, active, onClick }) {
         </span>
       )}
     </button>
+  );
+}
+
+// Sits under the "Report published" box for a graded, individual (non-group) submission — lets
+// the teacher give this one learner another attempt at the same assessment. Group submissions
+// don't get this button at all (see reissueToLearner's comment server-side for why); a learner
+// who's already been reissued and hasn't finished that new attempt gets a disabled state instead
+// of a second button, rather than relying on the server's 409 to explain it after the fact.
+function ReissueBox({ issueId, learnerId, learnerName }) {
+  const { mutate: reissue, isPending, isSuccess } = useReissueAssessment();
+  if (isSuccess) {
+    return (
+      <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>Reissued</p>
+        <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>
+          {learnerName} now has a fresh attempt at this assessment, with your feedback above shown as guidance.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, backgroundColor: "#fff", border: `1.5px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>Didn't perform as expected?</p>
+        <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>Reissue this assessment to give {learnerName} another attempt — they'll see your feedback above as guidance.</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => reissue({ issueId, learnerId })}
+        disabled={isPending}
+        style={{ padding: "8px 16px", backgroundColor: isPending ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+      >
+        {isPending ? "Reissuing…" : "Reissue Assessment"}
+      </button>
+    </div>
   );
 }
 
@@ -365,6 +400,14 @@ export default function AssessmentRosterPage() {
                     {selectedGroupRow ? ` · Applies to all ${selectedGroupRow.members.length} group members.` : ""}
                   </p>
                 </div>
+              )}
+              {selectedSubmission.status === "graded" && !selectedGroupRow && selectedLearnerRow && (
+                <ReissueBox
+                  key={selectedLearnerRow.learner.id}
+                  issueId={issue.id}
+                  learnerId={selectedLearnerRow.learner.id}
+                  learnerName={`${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`}
+                />
               )}
             </>
           )}

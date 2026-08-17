@@ -13,7 +13,7 @@ import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -103,6 +103,27 @@ function DiagnosticStatusBadge({ status }) {
   );
 }
 
+// Gives this learner another attempt at a diagnostic they didn't perform well on — creates a
+// new issue rather than resetting the graded one (see reissueToLearner's comment server-side),
+// so ageCategoryId/learningAreaId are carried over onto the new issue specifically so grading
+// the retake still re-triggers the learner's Stage/Learning-Area placement. Once clicked, this
+// row's own "Grade Now" flow disappears — the fresh attempt shows up as a new row/card instead
+// (both cards key their query off getDiagnosticForLearner/getLearningAreaDiagnosticsForLearner,
+// which surface the most-recently-issued row first).
+function ReissueButton({ issueId, learnerId }) {
+  const { mutate: reissue, isPending } = useReissueAssessment();
+  return (
+    <button
+      type="button"
+      onClick={() => reissue({ issueId, learnerId })}
+      disabled={isPending}
+      style={{ padding: "8px 16px", backgroundColor: isPending ? "#F9FAFB" : "#fff", color: DIAGNOSTIC_ACCENT, border: `1.5px solid ${DIAGNOSTIC_ACCENT}55`, borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+    >
+      {isPending ? "Reissuing…" : "Reissue"}
+    </button>
+  );
+}
+
 // The auto-issued diagnostic (see age-category.model.js's diagnosticAssessmentId +
 // learner.service.js's maybeAutoIssueDiagnostic) that placed — or will place — this learner.
 // Grading it here (rather than through the usual class roster) is what triggers
@@ -154,6 +175,9 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
             <button type="button" onClick={() => setGradeOpen(true)} style={{ padding: "8px 16px", backgroundColor: DIAGNOSTIC_ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Grade Now
             </button>
+          )}
+          {row.submission.status === "graded" && (
+            <ReissueButton key={row.issue.id} issueId={row.issue.id} learnerId={learnerId} />
           )}
         </div>
       )}
@@ -211,6 +235,9 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
               <button type="button" onClick={() => setGradeOpenId(row.issue.id)} style={{ padding: "8px 16px", backgroundColor: DIAGNOSTIC_ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 Grade Now
               </button>
+            )}
+            {row.submission.status === "graded" && (
+              <ReissueButton key={row.issue.id} issueId={row.issue.id} learnerId={learnerId} />
             )}
           </div>
         ))}
@@ -366,7 +393,7 @@ function ShareProfileCard({ learnerId }) {
 
       {!open ? (
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", lineHeight: 1.4 }}>
-          No-login view — name, photo, class &amp; guardian contact only. Health, academic, and login details stay private.
+          No-login view — shows this learner's full profile (identity, guardian contact, competencies, and progress). Individual assessment scores and teacher feedback stay private.
         </p>
       ) : loadingToken && !token ? (
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>Loading…</p>

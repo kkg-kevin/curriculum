@@ -108,6 +108,23 @@ export function useGradeMilestone() {
   });
 }
 
+// A teacher reissuing a graded assessment to one learner who didn't perform well — creates a
+// brand new issue (see reissueToLearner's comment server-side), so this invalidates the same
+// broad set useGradeMilestone does: it needs to show up both in the teacher's own issue lists
+// and in the learner's "My Assessments" the moment it's created.
+export function useReissueAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ issueId, learnerId, dueDate }) => assessmentSubmissionApi.reissue(issueId, { learnerId, dueDate }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
+      toast.success("Assessment reissued — the learner will see it as a fresh attempt");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to reissue assessment"),
+  });
+}
+
 export function useSaveDraft() {
   const qc = useQueryClient();
   return useMutation({
