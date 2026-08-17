@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const LearnerModel = require("./learner.model");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
 const SchoolModel  = require("../learning-hubs/learning-hub.model");
@@ -328,6 +329,68 @@ const LearnerService = {
     const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
     if (!link) return null;
     return LearnerHubLinkModel.update(link.id, { onboardingCompletedAt: new Date() });
+  },
+
+  // Lazily issues this learner's "share via QR" token the first time it's requested, rather
+  // than backfilling every learner on creation — a learner nobody has ever shared stays with no
+  // live public link. Idempotent: a second call just hands back the same token.
+  async getOrCreatePublicToken(id) {
+    const record = await LearnerService.getLearnerById(id);
+    if (record.publicToken) return record.publicToken;
+    const token = crypto.randomBytes(24).toString("base64url");
+    await LearnerModel.update(id, { publicToken: token });
+    return token;
+  },
+
+  // Invalidates whatever QR/link is already printed or shared — the old token stops resolving
+  // the instant this runs, since getPublicProfile below looks records up BY token. The caller
+  // (an authenticated admin/school/branchAdmin, see learner.controller.js) reprints/reshares the
+  // new one.
+  async regeneratePublicToken(id) {
+    await LearnerService.getLearnerById(id);
+    const token = crypto.randomBytes(24).toString("base64url");
+    await LearnerModel.update(id, { publicToken: token });
+    return token;
+  },
+
+  // The ONLY thing an unauthenticated scan of the QR ever sees — a hand-built allow-list, never
+  // `{...record}`, so a field added to the learner schema later can't silently start leaking
+  // through a link a school printed on a badge. Deliberately excludes dateOfBirth, nationality,
+  // languages, username (a login identifier), guardianEmail, and every diagnostic/placement
+  // field — see the "Revocable + limited fields" design decision this implements. Class/hub
+  // comes from the same "first active enrollment" fallback LearnerViewPage.jsx already uses as
+  // its "current" context.
+  async getPublicProfile(token) {
+    const record = await LearnerModel.findByPublicToken(token);
+    if (!record) {
+      const err = new Error("This link is no longer valid");
+      err.statusCode = 404;
+      throw err;
+    }
+    const links = await LearnerHubLinkModel.findByLearnerId(record.id);
+    const primaryLink = links.find((l) => l.status === "active") || links[0] || null;
+    let hubName = null;
+    let gradeName = null;
+    let streamName = null;
+    if (primaryLink) {
+      const hub = await SchoolModel.findById(primaryLink.hubId);
+      hubName = hub?.name || null;
+      if (primaryLink.classId) {
+        const cls = await ClassModel.findById(primaryLink.classId);
+        gradeName = cls?.gradeName || null;
+        streamName = cls?.streamName || null;
+      }
+    }
+    return {
+      firstName: record.firstName,
+      lastName: record.lastName,
+      photo: record.photo,
+      hubName,
+      gradeName,
+      streamName,
+      guardianName: record.guardianName,
+      guardianPhone: record.guardianPhone,
+    };
   },
 };
 

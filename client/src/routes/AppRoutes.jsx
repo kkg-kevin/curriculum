@@ -69,6 +69,7 @@ import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
+import PublicLearnerProfilePage from "../modules/learners/pages/PublicLearnerProfilePage";
 import CoursesPage from "../modules/courses/pages/CoursesPage";
 import CreateCoursePage from "../modules/courses/pages/CreateCoursePage";
 import EditCoursePage from "../modules/courses/pages/EditCoursePage";
@@ -87,6 +88,12 @@ export default function AppRoutes() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+
+      {/* Unauthenticated by design — the scan destination for a learner's "Share Profile" QR
+          code (see LearnerViewPage.jsx's ShareProfileCard). No RoleRoute/ProtectedRoute/
+          MainLayout wrapper on purpose: someone scanning a printed badge on their own phone is
+          never expected to be logged in. */}
+      <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
 
       <Route element={<ProtectedRoute />}>
       <Route element={<RoleRoute allow={["admin"]} />}>

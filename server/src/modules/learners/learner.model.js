@@ -26,6 +26,13 @@ const LearnerModel = {
     return firstOrNull(db(TABLE).whereRaw("LOWER(username) = ?", [username.toLowerCase()]));
   },
 
+  // Resolves the unauthenticated "share via QR" link back to a learner — see
+  // learner.service.js's getPublicProfile.
+  findByPublicToken(token) {
+    if (!token) return null;
+    return firstOrNull(db(TABLE).where({ publicToken: token }));
+  },
+
   // Cross-hub lookup for getAllLearners' search branch (see AddExistingLearnerPanel on the
   // client) — partial, case-insensitive match against name, username, or registration number,
   // so a school/branchAdmin doesn't need to already know a learner's exact username to find

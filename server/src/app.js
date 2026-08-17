@@ -17,6 +17,7 @@ const classRoutes = require("./modules/classes/class.routes");
 const classGroupRoutes = require("./modules/classes/groups/class-group.routes");
 const roomRoutes = require("./modules/rooms/room.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
+const publicLearnerProfileRoutes = require("./modules/learners/public-profile.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
 const timetableRoutes = require("./modules/timetable/timetable.routes");
@@ -57,6 +58,12 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+// Unauthenticated by design — the "share via QR" destination for a learner's public profile
+// link. Deliberately its own router (not a route inside learnerRoutes) so it can never end up
+// behind the `protect` chain every other /api/learners route is mounted with below. Read-only,
+// and scoped by learner.service.js's getPublicProfile to a hand-picked, deliberately narrow
+// field set — see that function's comment for exactly what it excludes.
+app.use("/api/public/learners", publicLearnerProfileRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two

@@ -10,6 +10,18 @@ export function useRoomsByHub(hubId) {
   });
 }
 
+// Which of this hub's rooms are already booked at an overlapping time on the given day — lets
+// the slot picker gray out a busy room before save time instead of only finding out from the
+// 409 the server's hasConflict throws. Only enabled once a day + both times are actually picked
+// in the form; excludeSlotId lets editing a slot ignore that slot's own current booking.
+export function useRoomAvailability({ hubId, dayOfWeek, startTime, endTime, excludeSlotId }) {
+  return useQuery({
+    queryKey: ["rooms", "availability", hubId, dayOfWeek, startTime, endTime, excludeSlotId],
+    queryFn:  () => roomApi.getAvailability({ hubId, dayOfWeek, startTime, endTime, excludeSlotId }),
+    enabled:  !!hubId && !!dayOfWeek && !!startTime && !!endTime,
+  });
+}
+
 export function useCreateRoom() {
   const qc = useQueryClient();
   return useMutation({
