@@ -3,6 +3,9 @@
     "allow": [
       "Bash(powershell -Command \"Get-Process -Id 4500 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
       "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\user\\AppData\\Local\\Temp\\rooms-test"
     ]
   }
 }

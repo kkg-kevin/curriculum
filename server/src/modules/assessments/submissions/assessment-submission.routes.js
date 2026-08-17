@@ -12,6 +12,7 @@ const {
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,
+  startObservationSubmission,
   saveDraft,
   submitAnswers,
   getSubmission,
@@ -33,6 +34,10 @@ router.get("/needs-grading", authorize("admin", "school", "teacher"), getSubmiss
 // class — see getStandaloneSubmissionsNeedingGrading in the service.
 router.get("/diagnostics-needing-grading", authorize("admin", "school", "teacher"), getStandaloneSubmissionsNeedingGrading);
 router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRosterForIssue);
+// Teacher-initiated start of a Teacher Observation submission — the one assessment type with no
+// learner-facing "take" step, since the teacher records it directly (see
+// startObservationSubmission's comment in the controller). Rejects any other assessment type.
+router.post("/issues/:id/start-observation", authorize("admin", "school", "teacher"), startObservationSubmission);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
 // Releases an already-graded submission's score/feedback to the learner — a separate step from

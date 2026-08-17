@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AssessmentSubmissionService = require("./assessment-submission.service");
+const AssessmentModel = require("../assessment.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-link.model");
@@ -9,6 +10,7 @@ const {
   issueOnSessionCompleteSchema,
   submitAnswersSchema,
   gradeSubmissionSchema,
+  startObservationSchema,
 } = require("./assessment-submission.validation");
 
 // Whether this teacher has at least one course-educator link in the given class — the one
@@ -238,7 +240,55 @@ const getOrCreateSubmission = asyncHandler(async (req, res) => {
   }
   const learner = req.ownLearner;
   assertOwn(!!learner);
+  // Teacher Observation assessments have no learner-facing "take" step at all — the teacher
+  // records the whole thing directly (see startObservationSubmission below). This is the real
+  // access-control boundary, not just the learner-portal list hiding it (getIssuedAssessmentsForLearner) —
+  // a learner hitting this endpoint directly for one still gets turned away.
+  const issue = await AssessmentSubmissionService.getIssue(issueId);
+  if (!issue) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  const assessment = await AssessmentModel.findById(issue.assessmentId);
+  if (assessment?.type === "observation") {
+    const err = new Error("Teacher Observation assessments are recorded by your teacher — there's nothing here for you to start.");
+    err.statusCode = 403;
+    throw err;
+  }
   const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId: learner.id });
+  res.status(201).json({ success: true, data: submission });
+});
+
+// The teacher-side counterpart to getOrCreateSubmission above, for Teacher Observation
+// assessments only — a teacher directly opens/creates a learner's submission (no "submitted"
+// step to wait on) so they can go straight to GradingPanel and record indicators themselves.
+// Rejects any other assessment type server-side, not just hidden client-side (see
+// AssessmentRosterPage.jsx's "Begin Observation" flow, the only caller).
+const startObservationSubmission = asyncHandler(async (req, res) => {
+  const { learnerId } = startObservationSchema.parse(req.body);
+  const issue = await AssessmentSubmissionService.getIssue(req.params.id);
+  if (!issue) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  const cls = await ClassModel.findById(issue.classId);
+  await assertClassAccess(req, cls);
+  const assessment = await AssessmentModel.findById(issue.assessmentId);
+  if (assessment?.type !== "observation") {
+    const err = new Error("Only Teacher Observation assessments can be started this way");
+    err.statusCode = 400;
+    throw err;
+  }
+  const links = await LearnerHubLinkModel.findByClassId(issue.classId);
+  const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
+  if (!enrolled) {
+    const err = new Error("This learner isn't enrolled in this class");
+    err.statusCode = 400;
+    throw err;
+  }
+  const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId: req.params.id, learnerId });
   res.status(201).json({ success: true, data: submission });
 });
 
@@ -314,6 +364,7 @@ module.exports = {
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,
+  startObservationSubmission,
   saveDraft,
   submitAnswers,
   getSubmission,

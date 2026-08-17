@@ -66,6 +66,19 @@ export function useStartSubmission() {
   });
 }
 
+// Teacher-initiated counterpart to useStartSubmission, for Teacher Observation assessments only
+// — the teacher opens/creates the submission themselves (see AssessmentRosterPage.jsx's "Begin
+// Observation" flow) rather than waiting on a learner who never has anything to open. No roster
+// invalidation on success: the fresh submission is still "in_progress" with nothing graded yet,
+// so the caller holds it in local state until grading (useGradeSubmission) hands back the real,
+// persisted row and invalidates the roster query itself.
+export function useStartObservationSubmission() {
+  return useMutation({
+    mutationFn: ({ issueId, learnerId }) => assessmentSubmissionApi.startObservation(issueId, learnerId),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to begin observation"),
+  });
+}
+
 export function useSaveDraft() {
   const qc = useQueryClient();
   return useMutation({
@@ -143,6 +156,11 @@ export function useGradeSubmission() {
     onSuccess: (submission) => {
       qc.setQueryData(KEYS.submission(submission.id), submission);
       qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      // AssessmentsPage.jsx's "Needs Grading" queue (both the plain and diagnostic variants) is
+      // keyed ["assessment-submissions", "needs-grading"/"diagnostics-needing-grading", classId]
+      // — a different top-level prefix from "assessment-issues" above, so without this a just-
+      // graded row silently stayed listed as pending until a full page reload.
+      qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
       // A graded diagnostic may have just set this learner's currentStageId/currentBandId
       // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
       // so LearnerViewPage reflects the new placement without a manual reload.

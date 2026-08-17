@@ -236,7 +236,7 @@ export default function AssessmentDetailPage() {
                 <p style={{ margin: "8px 0 0", fontSize: 11, color: T.accentMid }}>
                   {submission.gradedByName ? `— ${submission.gradedByName}` : ""}
                   {submission.gradedByName && submission.gradedAt ? " · " : ""}
-                  {submission.gradedAt ? new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                  {submission.gradedAt ? new Date(submission.gradedAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : ""}
                 </p>
               )}
             </div>

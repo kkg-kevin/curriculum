@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiUsers } from "react-icons/fi";
-import { useRosterForIssue, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -67,8 +67,15 @@ export default function AssessmentRosterPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useRosterForIssue(issueId);
   const { mutate: grade, isPending: saving } = useGradeSubmission();
+  const { mutate: startObservation, isPending: starting } = useStartObservationSubmission();
   const [selectedLearnerId, setSelectedLearnerId] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  // Holds the freshly created submission for the brief window between "Begin Observation" and
+  // the teacher actually grading it — the roster query (`data`) still has the stale "not_started"
+  // placeholder until grading invalidates it (see useGradeSubmission), so this is what lets the
+  // GradingPanel render immediately instead of waiting on a refetch. Cleared on every selection
+  // change so switching rows never carries a started-but-abandoned submission into the wrong one.
+  const [startedSubmission, setStartedSubmission] = useState(null);
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -79,15 +86,28 @@ export default function AssessmentRosterPage() {
 
   const { issue, assessment, roster, groups = [], ungroupedLearners = [] } = data;
   const isGroupMode = issue.groupMode;
+  // Teacher Observation has no learner-facing "take" step — the teacher records it directly (see
+  // startObservationSubmission on the server) instead of waiting on a submission that will never
+  // arrive on its own.
+  const isObservation = assessment.type === "observation";
 
-  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); };
-  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); };
+  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); };
+  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); };
 
   const selectedGroupRow = selectedGroupId ? groups.find((g) => g.group.id === selectedGroupId) : null;
   const selectedLearnerRow = selectedLearnerId ? roster.find((r) => r.learner.id === selectedLearnerId) : null;
   // Whichever is active — a group row's `submission` is its representative member's row (grading
   // it fans out to every member server-side), an individual row's is just their own.
-  const selectedSubmission = selectedGroupRow?.submission || selectedLearnerRow?.submission || null;
+  const selectedSubmission = startedSubmission || selectedGroupRow?.submission || selectedLearnerRow?.submission || null;
+
+  const handleBeginObservation = () => {
+    // A group row's own `members` array supplies the representative learner to start against —
+    // same "grading one member fans out to the whole group" mechanic every group submission
+    // already uses (see getOrCreateSubmission's group-resolution branch server-side).
+    const learnerId = selectedGroupRow ? selectedGroupRow.members[0]?.id : selectedLearnerRow?.learner.id;
+    if (!learnerId) return;
+    startObservation({ issueId: issue.id, learnerId }, { onSuccess: (submission) => setStartedSubmission(submission) });
+  };
 
   const countableRows = isGroupMode
     ? [...groups.map((g) => g.submission), ...ungroupedLearners.map((r) => r.submission)]
@@ -159,7 +179,24 @@ export default function AssessmentRosterPage() {
             <div style={{ textAlign: "center", padding: "60px 20px", color: T.inkFaint, fontSize: 13.5 }}>
               Select a {isGroupMode ? "group" : "learner"} from the list to view or grade their submission.
             </div>
-          ) : selectedSubmission.status === "not_started" || selectedSubmission.status === "in_progress" ? (
+          ) : isObservation && selectedSubmission.status === "not_started" ? (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: T.ink }}>
+                No observation recorded yet for {selectedGroupRow ? selectedGroupRow.group.name : `${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`}
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: T.inkMuted, maxWidth: 380, marginInline: "auto" }}>
+                This is recorded by you directly — there's nothing for {isGroupMode ? "the group" : "the learner"} to submit first.
+              </p>
+              <button
+                type="button"
+                onClick={handleBeginObservation}
+                disabled={starting}
+                style={{ padding: "12px 28px", backgroundColor: starting ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: starting ? "not-allowed" : "pointer" }}
+              >
+                {starting ? "Starting…" : "Begin Observation"}
+              </button>
+            </div>
+          ) : !isObservation && (selectedSubmission.status === "not_started" || selectedSubmission.status === "in_progress") ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: T.ink }}>
                 {selectedGroupRow ? selectedGroupRow.group.name : `${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`} hasn't submitted yet
@@ -182,7 +219,12 @@ export default function AssessmentRosterPage() {
                   <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: T.ink }}>{selectedLearnerRow.learner.firstName} {selectedLearnerRow.learner.lastName}</h2>
                 )}
                 <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>
-                  Submitted {new Date(selectedSubmission.submittedAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" })}
+                  {/* An observation never goes through a learner "submit" step, so submittedAt
+                      stays null for its whole life — nothing to show once it's graded either,
+                      since the "Report published" box below already covers that. */}
+                  {selectedSubmission.submittedAt
+                    ? `Submitted ${new Date(selectedSubmission.submittedAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" })}`
+                    : isObservation && selectedSubmission.status !== "graded" ? "Recording in progress" : ""}
                 </p>
               </div>
               {selectedGroupRow && selectedSubmission.status !== "graded" && (

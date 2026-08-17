@@ -3,65 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useReport, useUpdateRemarks, usePublishReport, useUnpublishReport } from "../../reports/hooks/useReports";
 import { useLearnerQuery } from "../../learners/hooks/useLearners";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
+import ReportDetailSections from "../../reports/components/ReportDetailSections";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 const fieldStyle = { boxSizing: "border-box", padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", color: T.ink, outline: "none" };
-
-function ScoreRow({ item }) {
-  return (
-    <div style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
-          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{item.gradedAt ? new Date(item.gradedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : ""}</p>
-        </div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>{item.totalScore}/{item.maxScore} · {item.percent}%</p>
-      </div>
-      {item.feedback && (
-        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
-      )}
-    </div>
-  );
-}
-
-function IndicatorRow({ ind }) {
-  return (
-    <div style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink }}>{ind.indicatorName}</p>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.accent }}>{ind.marksEarned}/{ind.marksPossible} · {ind.percent}%</p>
-      </div>
-      <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{ind.competencyName}</p>
-    </div>
-  );
-}
-
-function SessionSummaryRow({ item }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.sessionTitle || "Untitled session"}</p>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.accent }}>{item.totalScore}/{item.maxScore} · {item.percent}%</p>
-    </div>
-  );
-}
-
-function CompetencyScoreRow({ cs }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink }}>{cs.name}</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>{cs.score}%</span>
-        {cs.level && <span style={{ fontSize: 11, color: T.inkFaint }}>{cs.level.name}</span>}
-        {cs.band && (
-          <span style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 8px" }}>
-            {cs.band.name}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function ReportEditorPage() {
   const { reportId } = useParams();
@@ -117,67 +63,53 @@ export default function ReportEditorPage() {
         </div>
       </div>
 
-      <div style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 18 }}>
-        {content.sessionReports?.length > 0 && (
-          <div>
-            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Built from {content.sessionReports.length} session{content.sessionReports.length === 1 ? "" : "s"}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {content.sessionReports.map((item) => <SessionSummaryRow key={item.sessionId} item={item} />)}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Assessments</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {(content.assessments || []).map((item) => <ScoreRow key={item.assessmentId} item={item} />)}
-          </div>
+      {!isPublished && (
+        <div style={{ padding: "12px 18px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 12.5, color: "#92400E", fontWeight: 600 }}>
+          This is still a draft — the learner and guardian can't see it until you publish it below.
         </div>
+      )}
 
-        {content.competencyScores?.length > 0 && (
-          <div>
-            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Standing</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {content.competencyScores.map((cs) => <CompetencyScoreRow key={cs.competencyId} cs={cs} />)}
-            </div>
-          </div>
-        )}
-
-        {content.indicatorBreakdown?.length > 0 && (
-          <div>
-            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Breakdown</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {content.indicatorBreakdown.map((ind) => <IndicatorRow key={ind.indicatorId} ind={ind} />)}
-            </div>
-          </div>
-        )}
-
+      <div style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
           <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</p>
-          <textarea
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            placeholder="A note for the learner and guardian about this course overall…"
-            style={{ ...fieldStyle, width: "100%", minHeight: 90, resize: "vertical" }}
-          />
+          {isPublished ? (
+            // Published reports are locked (see updateRemarks in report.service.js) — the
+            // learner/guardian's permanent record shouldn't change silently after the fact. A
+            // teacher who needs to correct it withdraws to draft first, which re-opens editing.
+            <div style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+              <p style={{ margin: 0, fontSize: 13.5, color: report.remarks ? T.ink : T.inkFaint, fontStyle: report.remarks ? "normal" : "italic" }}>
+                {report.remarks || "No remarks added."}
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: 11, color: T.inkFaint }}>Locked — withdraw to draft to change this.</p>
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                placeholder="A note for the learner and guardian about this course overall…"
+                style={{ ...fieldStyle, width: "100%", minHeight: 90, resize: "vertical" }}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => saveRemarks({ id: report.id, remarks })}
+                  disabled={savingRemarks || remarks === (report.remarks || "")}
+                  style={{ padding: "9px 16px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: savingRemarks ? "not-allowed" : "pointer" }}
+                >
+                  {savingRemarks ? "Saving…" : "Save Draft"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
-          <button
-            type="button"
-            onClick={() => saveRemarks({ id: report.id, remarks })}
-            disabled={savingRemarks || remarks === (report.remarks || "")}
-            style={{ padding: "10px 18px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: savingRemarks ? "not-allowed" : "pointer" }}
-          >
-            {savingRemarks ? "Saving…" : "Save Remarks"}
-          </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
           {isPublished ? (
             // Publishing used to be one-way: a report sent to the wrong learner, or one whose
             // scores turned out to need re-grading, could never be taken back. Withdrawing
-            // returns it to draft (hidden from the learner again) while keeping its remarks and
-            // history; re-publishing afterwards re-snapshots the scores.
+            // returns it to draft (hidden from the learner again, remarks editable again) while
+            // keeping its remarks and history; re-publishing afterwards re-snapshots the scores.
             <button
               type="button"
               onClick={() => unpublish(report.id)}
@@ -198,6 +130,8 @@ export default function ReportEditorPage() {
           )}
         </div>
       </div>
+
+      <ReportDetailSections content={content} />
     </div>
   );
 }
