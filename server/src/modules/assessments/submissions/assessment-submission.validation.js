@@ -55,9 +55,16 @@ const gradeSubmissionSchema = z.object({
   manualScore:     z.number().min(0).optional().default(0),
 });
 
+// Teacher-initiated start of a Teacher Observation submission — see
+// startObservationSubmission in the controller.
+const startObservationSchema = z.object({
+  learnerId: z.string().min(1, "Learner is required"),
+});
+
 module.exports = {
   issueAssessmentSchema,
   issueOnSessionCompleteSchema,
   submitAnswersSchema,
   gradeSubmissionSchema,
+  startObservationSchema,
 };

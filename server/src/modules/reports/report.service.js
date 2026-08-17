@@ -358,9 +358,18 @@ const ReportService = {
     });
   },
 
+  // Editable only while still a draft — once published, a report is the learner/guardian's
+  // permanent record of what they were told; changing it after the fact without a trace would
+  // undermine that. A teacher who genuinely needs to correct it withdraws to draft first (see
+  // unpublishReport), which re-opens editing and re-snapshots content on the next publish.
   async updateRemarks(id, remarks) {
     const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
+    if (report.status === "published") {
+      const err = new Error("This report is published and locked — withdraw it to draft first to change the remarks");
+      err.statusCode = 409;
+      throw err;
+    }
     return ReportModel.update(id, { remarks });
   },
 

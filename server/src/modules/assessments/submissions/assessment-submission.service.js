@@ -335,6 +335,12 @@ const AssessmentSubmissionService = {
 
   // What a learner sees: every issue targeting their class, each merged with their own
   // submission (or a synthetic "not_started" placeholder if they haven't opened it yet).
+  // Teacher Observation assessments (type "observation") are excluded — they have no
+  // learner-facing "take" step at all, the teacher records the whole thing directly (see
+  // startObservationSubmission in the controller), so there's nothing here for a learner to
+  // open. Same exclusion shape getIssuedRowsForLearner already applies to standalone
+  // diagnostics; the score still reaches the learner once graded, via Reports (see
+  // report.service.js, which only cares about reportPublished, never assessment.type).
   async getIssuedAssessmentsForLearner(classId, learnerId) {
     const issues = await AssessmentIssueModel.findAll({ classId });
     const rows = await Promise.all(issues.map(async (issue) => {
@@ -346,7 +352,7 @@ const AssessmentSubmissionService = {
         submission: submission || { status: "not_started" },
       };
     }));
-    return rows.filter((row) => !!row.assessment);
+    return rows.filter((row) => !!row.assessment && row.assessment.type !== "observation");
   },
 
   // Roster view for the teacher grading a class: every enrolled learner, each merged with their

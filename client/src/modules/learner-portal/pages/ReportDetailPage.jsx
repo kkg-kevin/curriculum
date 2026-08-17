@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FiAward } from "react-icons/fi";
 import { useReport } from "../../reports/hooks/useReports";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
+import ReportDetailSections from "../../reports/components/ReportDetailSections";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -62,88 +63,7 @@ export default function ReportDetailPage() {
         </div>
       )}
 
-      {content.sessionReports?.length > 0 && (
-        <div style={{ ...cardStyle, padding: "16px 20px" }}>
-          <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Built from {content.sessionReports.length} session{content.sessionReports.length === 1 ? "" : "s"}
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {content.sessionReports.map((item) => (
-              <div key={item.sessionId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.sessionTitle || "Untitled session"}</p>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ ...cardStyle, padding: "16px 20px" }}>
-        <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Assessments</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {assessments.map((item) => (
-            <div key={item.assessmentId} style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{item.name}</p>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: item.percent >= 60 ? "#059669" : "#DC2626" }}>{item.totalScore}/{item.maxScore} · {item.percent}%</span>
-              </div>
-              {item.feedback && (
-                <>
-                  <p style={{ margin: "8px 0 0", fontSize: 12.5, color: T.ink, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>“{item.feedback}”</p>
-                  {(item.gradedByName || item.gradedAt) && (
-                    <p style={{ margin: "4px 0 0", fontSize: 11, color: T.inkFaint }}>
-                      {item.gradedByName ? `— ${item.gradedByName}` : ""}
-                      {item.gradedByName && item.gradedAt ? " · " : ""}
-                      {item.gradedAt ? new Date(item.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : ""}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {content.competencyScores?.length > 0 && (
-        <div style={{ ...cardStyle, padding: "16px 20px" }}>
-          <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Standing</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {content.competencyScores.map((cs) => (
-              <div key={cs.competencyId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{cs.name}</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{cs.score}%</span>
-                  {cs.level && <span style={{ fontSize: 11, color: T.inkFaint }}>{cs.level.name}</span>}
-                  {cs.band && (
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 8px" }}>
-                      {cs.band.name}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {content.indicatorBreakdown?.length > 0 && (
-        <div style={{ ...cardStyle, padding: "16px 20px" }}>
-          <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Breakdown</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {content.indicatorBreakdown.map((ind) => (
-              <div key={ind.indicatorId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{ind.indicatorName}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{ind.competencyName}</p>
-                </div>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: ind.percent >= 60 ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
-                  {ind.marksEarned}/{ind.marksPossible} · {ind.percent}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <ReportDetailSections content={content} />
     </div>
   );
 }

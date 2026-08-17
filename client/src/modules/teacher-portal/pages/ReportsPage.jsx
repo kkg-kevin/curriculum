@@ -150,6 +150,43 @@ function ReportRow({ row, cls, course, onGenerate, isGenerating, navigate }) {
   );
 }
 
+// Every generated-but-not-yet-published final report across the teacher's classes, surfaced up
+// front rather than left to a passive KPI count — "Generate" only creates a draft (so a teacher
+// can review it first, see report.model.js), and it's easy to generate one, get distracted, and
+// never come back to actually publish it, leaving the learner/guardian with nothing to see
+// despite the report existing. Same "can't-miss pending queue" shape as AssessmentsPage.jsx's
+// own NeedsGradingSection.
+function NeedsPublishingSection({ rows, navigate }) {
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ ...cardStyle, overflow: "hidden", border: "1.5px solid #FED7AA" }}>
+      <div style={{ padding: "14px 20px", backgroundColor: "#FFF7ED", borderBottom: `1px solid ${T.border}` }}>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.05em" }}>Needs Publishing</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>
+          {rows.length} report{rows.length === 1 ? "" : "s"} generated but not yet visible to the learner or guardian
+        </p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {rows.map((row) => (
+          <div key={row.report.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid #F9FAFB", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{row.course.name} · {row.cls.gradeName || row.cls.name}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/teacher-portal/reports/${row.report.id}`)}
+              style={{ padding: "7px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              Review & Publish →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // One (class, course) card — a session browser (all learners' standing for one session at a
 // time, paged via SessionNavigator) sitting above the existing per-learner final-report list.
 // Session identity/order is the same across every learner's row, so it's read off the first row.
@@ -270,7 +307,9 @@ export default function ReportsPage() {
 
   const allRows = sections.flatMap((s) => s.rows.map((r) => ({ ...r, cls: s.cls, course: s.course })));
   const readyCount = allRows.filter((r) => rowStatus(r) === "ready").length;
-  const draftCount = allRows.filter((r) => rowStatus(r) === "draft").length;
+  // The actual rows, not just the count — feeds NeedsPublishingSection below.
+  const draftRows = allRows.filter((r) => rowStatus(r) === "draft");
+  const draftCount = draftRows.length;
   const publishedCount = allRows.filter((r) => rowStatus(r) === "published").length;
 
   const { mutate: generateReport, isPending: generating, variables: generatingVars } = useGenerateReport();
@@ -317,6 +356,8 @@ export default function ReportsPage() {
         <KpiTile icon={<DescriptionIcon fontSize="small" />} num={draftCount} label="Drafts" sub="Awaiting your review" />
         <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={publishedCount} label="Published" sub="Visible to learner & guardian" />
       </div>
+
+      <NeedsPublishingSection rows={draftRows} navigate={navigate} />
 
       {sections.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
