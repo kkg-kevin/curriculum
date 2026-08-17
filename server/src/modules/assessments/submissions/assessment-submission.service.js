@@ -598,6 +598,49 @@ const AssessmentSubmissionService = {
     return graded;
   },
 
+  // Grades one milestone of a project assessment, independently of everything else on the
+  // submission (its own status/totalScore keep tracking the learner's own deliverable-upload
+  // flow, untouched here) — a teacher can grade milestone 1 today and milestone 3 next week in
+  // any order, and each is visible to the learner the instant it's saved, no publish step. The
+  // submission is auto-created on the first milestone grade (same "teacher grades directly, no
+  // learner action required" shape as startObservationSubmission — a project's milestones are
+  // checkpoints the teacher observes, not something the learner submits per-checkpoint).
+  async gradeMilestone({ issueId, learnerId, milestoneId, marks, feedback, gradedBy }) {
+    const issue = await AssessmentIssueModel.findById(issueId);
+    if (!issue) {
+      const err = new Error("Issue not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const assessment = await loadAssessmentOrThrow(issue.assessmentId);
+    const milestone = (assessment.milestones || []).find((m) => m.id === milestoneId);
+    if (!milestone) {
+      const err = new Error("Milestone not found on this assessment");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId });
+    const now = new Date();
+    // Clamped to the milestone's own points — same "can't exceed what it's worth" guarantee
+    // MarksInputs already enforces client-side, re-asserted here since this is a genuine write
+    // boundary a client could otherwise bypass.
+    const entry = {
+      milestoneId,
+      marks: Math.max(0, Math.min(Number(marks) || 0, Number(milestone.points) || 0)),
+      feedback: feedback || "",
+      gradedAt: now,
+      gradedBy,
+    };
+    const nextProgress = [...(submission.milestoneProgress || []).filter((e) => e.milestoneId !== milestoneId), entry];
+    const updates = { milestoneProgress: nextProgress };
+    const updated = await AssessmentSubmissionModel.update(submission.id, updates);
+    // Group-mode: every member shares one project attempt, so a milestone graded for one
+    // representative applies to the whole group — same fan-out grade()/submit() already use.
+    await fanOutToGroup(submission, updates);
+    return updated;
+  },
+
   // Manual override, not part of the normal flow anymore — grade() above now releases every
   // submission the instant it's graded. Kept for the rare case a submission ends up graded but
   // unpublished (e.g. legacy data from before that change) and to flip it back on by hand.

@@ -11,6 +11,7 @@ const {
   submitAnswersSchema,
   gradeSubmissionSchema,
   startObservationSchema,
+  gradeMilestoneSchema,
 } = require("./assessment-submission.validation");
 
 // Whether this teacher has at least one course-educator link in the given class — the one
@@ -292,6 +293,40 @@ const startObservationSubmission = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: submission });
 });
 
+// Grades one milestone of a project assessment — same ownership shape as startObservationSubmission
+// (a teacher may only grade milestones for a learner enrolled in a class they own), but gated to
+// type "project" instead. Auto-creates the submission on the first milestone grade, same as
+// observation's start flow — see gradeMilestone's comment in the service for why.
+const gradeMilestone = asyncHandler(async (req, res) => {
+  const { learnerId, marks, feedback } = gradeMilestoneSchema.parse(req.body);
+  const issue = await AssessmentSubmissionService.getIssue(req.params.id);
+  if (!issue) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  const cls = await ClassModel.findById(issue.classId);
+  await assertClassAccess(req, cls);
+  const assessment = await AssessmentModel.findById(issue.assessmentId);
+  if (assessment?.type !== "project") {
+    const err = new Error("Only Project assessments can be graded by milestone");
+    err.statusCode = 400;
+    throw err;
+  }
+  const links = await LearnerHubLinkModel.findByClassId(issue.classId);
+  const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
+  if (!enrolled) {
+    const err = new Error("This learner isn't enrolled in this class");
+    err.statusCode = 400;
+    throw err;
+  }
+  const submission = await AssessmentSubmissionService.gradeMilestone({
+    issueId: req.params.id, learnerId, milestoneId: req.params.milestoneId, marks, feedback,
+    gradedBy: req.ownTeacher?.id || req.user.id,
+  });
+  res.json({ success: true, data: submission });
+});
+
 const saveDraft = asyncHandler(async (req, res) => {
   const existing = await AssessmentSubmissionService.getSubmission(req.params.id);
   assertLearnerOwnsSubmission(req, existing);
@@ -365,6 +400,7 @@ module.exports = {
   issueOnSessionComplete,
   getOrCreateSubmission,
   startObservationSubmission,
+  gradeMilestone,
   saveDraft,
   submitAnswers,
   getSubmission,

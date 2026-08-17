@@ -60,8 +60,17 @@ export function useIssuedForLearner() {
 }
 
 export function useStartSubmission() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: assessmentSubmissionApi.getOrCreateSubmission,
+    onSuccess: (submission) => {
+      qc.setQueryData(KEYS.submission(submission.id), submission);
+      // Without this, "My Assessments" (and any other mount of this same query) keeps showing
+      // the pre-start "Not Started"/"Start" placeholder — getOrCreateSubmission is idempotent
+      // server-side so no progress is actually lost, but the learner sees a stale card that
+      // looks like nothing was saved and reads as "I have to start over."
+      qc.invalidateQueries({ queryKey: KEYS.issuedLearner() });
+    },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to start assessment"),
   });
 }
@@ -79,11 +88,37 @@ export function useStartObservationSubmission() {
   });
 }
 
+// Grades one milestone of a project assessment — independent of the submission's own
+// draft/submit/grade flow (useSaveDraft/useSubmitAssessment/useGradeSubmission above), so this
+// invalidates the same broad set useGradeSubmission does: the roster/needs-grading queues (in
+// case a milestone-graded project ever needs to surface there later) and the learner's own list,
+// since each milestone is visible to the learner the instant it's graded.
+export function useGradeMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ issueId, milestoneId, learnerId, marks, feedback }) =>
+      assessmentSubmissionApi.gradeMilestone(issueId, milestoneId, { learnerId, marks, feedback }),
+    onSuccess: (submission) => {
+      qc.setQueryData(KEYS.submission(submission.id), submission);
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
+      toast.success("Milestone graded — visible to the learner now");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to grade milestone"),
+  });
+}
+
 export function useSaveDraft() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, answers }) => assessmentSubmissionApi.saveDraft(id, answers),
-    onSuccess: (submission) => qc.setQueryData(KEYS.submission(submission.id), submission),
+    onSuccess: (submission) => {
+      qc.setQueryData(KEYS.submission(submission.id), submission);
+      // Same gap as useStartSubmission above — without this, a saved draft's answers exist on
+      // the server but "My Assessments" (and a freshly (re)mounted detail page, which reads the
+      // exact same shared query cache) keep showing whatever was cached before this save.
+      qc.invalidateQueries({ queryKey: KEYS.issuedLearner() });
+    },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save"),
   });
 }

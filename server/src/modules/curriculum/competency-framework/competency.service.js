@@ -878,7 +878,9 @@ const CompetencyService = {
       return {
         bandId, name: meta[bandId].name, completion,
         advancementThreshold: meta[bandId].advancementThreshold,
-        thresholdMet: completion >= meta[bandId].advancementThreshold,
+        // Same "0 = unconfigured, never trivially met, but 100% always counts" rule as
+        // runIndicatorProgressEngine.
+        thresholdMet: (meta[bandId].advancementThreshold > 0 && completion >= meta[bandId].advancementThreshold) || completion >= 100,
       };
     });
   },

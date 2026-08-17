@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip } from "../hooks/useTimetable";
+import { useAuth } from "../../../context/AuthContext";
+import { sectionPath } from "../../../routes/portalPaths";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
@@ -437,7 +440,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                       )}
                       <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
                       <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: color.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {resolveCourseName(e.courseId)}{e.merged && <span title="Combined with another session"> · 2 sessions</span>}
+                        {resolveCourseName(e.courseId)}{e.merged && <span title="Combined with another session"> · 2 sessions</span>}{e.moved && <span title="Moved from another date"> · moved</span>}
                       </p>
                       <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         Session {e.sessionOrder}: {e.sessionTitle}
@@ -684,18 +687,22 @@ function sortGradingRows(rows) {
   });
 }
 
-// Two clearly-labeled reschedule actions, no date restriction — offered for any session, not
+// Three clearly-labeled reschedule actions, no date restriction — offered for any session, not
 // just ones that have already happened. "shift" cascades every later session forward one slot;
 // "merge" combines this session onto the next occurrence instead, leaving everything after that
-// on its normal date. See resolveCoursePlacements in timetable.service.js for exactly how each
-// plugs into the calendar walk.
+// on its normal date; "move" relocates just this one session to a specific date the user picks,
+// independent of the course's normal weekly pattern — everything else stays exactly where it
+// already was. See resolveCoursePlacements in timetable.service.js for exactly how each plugs
+// into the calendar walk.
 function RescheduleSection({ event, onDone }) {
   const [reason, setReason] = useState("");
+  const [pickingDate, setPickingDate] = useState(false);
+  const [newDate, setNewDate] = useState("");
   const { mutate: createSkip, isPending } = useCreateSkip();
 
-  const submit = (mode) => {
+  const submit = (mode, extra = {}) => {
     createSkip(
-      { classId: event.classId, courseId: event.courseId, date: event.date, sessionId: event.sessionId, mode, reason },
+      { classId: event.classId, courseId: event.courseId, date: event.date, sessionId: event.sessionId, mode, reason, ...extra },
       { onSuccess: onDone }
     );
   };
@@ -720,7 +727,27 @@ function RescheduleSection({ event, onDone }) {
         >
           Combine with the next session
         </button>
+        <button
+          type="button" onClick={() => setPickingDate((v) => !v)} disabled={isPending}
+          style={{ flex: 1, minWidth: 160, padding: "9px 12px", backgroundColor: "#fff", color: T.accentMid, border: `1.5px solid ${T.tintBorder}`, borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
+        >
+          Move to a specific date
+        </button>
       </div>
+      {pickingDate && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 12px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 8 }}>
+          <input
+            type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
+            style={{ flex: 1, padding: "7px 9px", borderRadius: 7, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
+          />
+          <button
+            type="button" onClick={() => submit("move", { newDate })} disabled={isPending || !newDate}
+            style={{ padding: "8px 14px", backgroundColor: !newDate || isPending ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !newDate || isPending ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+          >
+            Confirm Move
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -730,6 +757,18 @@ function RescheduleSection({ event, onDone }) {
 // range query (see the enableSessionDetail doc comment on CalendarView above).
 function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedule = false }) {
   const { data: summary, isLoading } = useSessionSummary(event?.sessionId, event?.classId, event?.date, !!event);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // "outcomes" is the first section every session's content starts with (see
+  // CourseContentLandingPage.jsx/sessionConfig.js) — there's no "just open this session,
+  // whichever section" URL, so this is the same default every other course-content entry point
+  // in the app already lands on. Closes the modal first since the navigation unmounts this page
+  // anyway.
+  const openCourseContent = () => {
+    onClose();
+    navigate(sectionPath(user?.role, event.courseId, event.sessionId, "outcomes"));
+  };
 
   const attendancePercent = summary?.attendance.marked && summary.attendance.enrolledCount > 0
     ? Math.round((summary.attendance.counts.present / summary.attendance.enrolledCount) * 100) : null;
@@ -776,9 +815,17 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
           <div style={{ padding: "50px 20px", textAlign: "center", color: T.inkFaint, fontSize: 13 }}>Loading…</div>
         ) : (
           <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 18, animation: "cv-fadein 0.2s ease" }}>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: T.inkMuted }}>
-              <span><strong style={{ color: T.ink }}>Class:</strong> {summary.class.gradeName}{summary.class.streamName ? ` — ${summary.class.streamName}` : ""}</span>
-              <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: T.inkMuted }}>
+                <span><strong style={{ color: T.ink }}>Class:</strong> {summary.class.gradeName}{summary.class.streamName ? ` — ${summary.class.streamName}` : ""}</span>
+                <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}</span>
+              </div>
+              <button
+                type="button" onClick={openCourseContent}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}
+              >
+                Open Course Content →
+              </button>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
@@ -890,6 +937,8 @@ function SkipDetailModal({ skip, resolveCourseName, onClose }) {
           <p style={{ margin: 0, fontSize: 13, color: T.ink }}>
             {skip.mode === "merge"
               ? "This session was combined onto the next class meeting instead of running on its own date."
+              : skip.mode === "move"
+              ? `This session was moved to ${dayjs(skip.newDate).format("dddd, D MMM YYYY")} — everything else stayed on its normal date.`
               : "This session was skipped — every session after it moved forward by one slot."}
           </p>
           {skip.reason && (

@@ -940,7 +940,7 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
   const updateDeliverable = (id, patch) => onChangeDeliverables(deliverables.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   const removeDeliverable = (id) => onChangeDeliverables(deliverables.filter((d) => d.id !== id));
 
-  const addMilestone = () => onChangeMilestones([...milestones, { id: genId(), name: "", description: "", order: milestones.length }]);
+  const addMilestone = () => onChangeMilestones([...milestones, { id: genId(), name: "", description: "", order: milestones.length, points: 0 }]);
   const updateMilestone = (id, patch) => onChangeMilestones(milestones.map((m) => (m.id === id ? { ...m, ...patch } : m)));
   const removeMilestone = (id) => onChangeMilestones(milestones.filter((m) => m.id !== id));
 
@@ -965,11 +965,15 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
 
       <div className="tb-card">
         <p className="tb-card-title">Milestones <span style={{ fontWeight: 400, color: "#9CA3AF", textTransform: "none" }}>(optional)</span></p>
+        <p style={{ margin: "-4px 0 8px", fontSize: "11.5px", color: "#9CA3AF" }}>
+          Checkpoints the teacher grades directly as the project progresses — each one releases to the learner the moment it's graded, independently of the deliverables above.
+        </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {milestones.map((m) => (
             <div key={m.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
               <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
                 <input className="tb-input" placeholder="Milestone name" value={m.name} onChange={(e) => updateMilestone(m.id, { name: e.target.value })} />
+                <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={m.points ?? 0} onChange={(e) => updateMilestone(m.id, { points: Number(e.target.value) || 0 })} />
                 <button type="button" className="tb-icon-btn danger" onClick={() => removeMilestone(m.id)}>✕</button>
               </div>
               <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={m.description} onChange={(e) => updateMilestone(m.id, { description: e.target.value })} />

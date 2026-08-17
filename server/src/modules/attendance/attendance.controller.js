@@ -44,14 +44,25 @@ const getByClassDate = asyncHandler(async (req, res) => {
 });
 
 const getHistory = asyncHandler(async (req, res) => {
-  const { classId, learnerId, dateFrom, dateTo, status } = req.query;
+  const { classId, dateFrom, dateTo, status } = req.query;
+  let { learnerId } = req.query;
   if (!classId) {
     const err = new Error("classId is required");
     err.statusCode = 400;
     throw err;
   }
-  const cls = await ClassModel.findById(classId);
-  await assertClassAccess(req, cls);
+  if (req.user.role === "learner") {
+    // Forced regardless of whatever learnerId the caller sent — a learner may only ever read
+    // their own attendance, never a classmate's, so this isn't a filter the client controls.
+    // No class-ownership check needed either (assertClassAccess below is about STAFF owning a
+    // class; a learner reading their own record isn't gated by that at all) — an unrelated
+    // classId just yields an empty result, since no record of theirs would match it.
+    assertOwn(!!req.ownLearner);
+    learnerId = req.ownLearner.id;
+  } else {
+    const cls = await ClassModel.findById(classId);
+    await assertClassAccess(req, cls);
+  }
   const records = await AttendanceService.getHistory({ classId, learnerId, dateFrom, dateTo, status });
   res.json({ success: true, data: records, count: records.length });
 });

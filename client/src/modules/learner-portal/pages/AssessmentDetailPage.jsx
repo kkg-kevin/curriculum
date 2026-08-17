@@ -40,6 +40,56 @@ function BandBadge({ band }) {
   );
 }
 
+// A project's milestone checkpoints — visible regardless of the submission's own status, since
+// the teacher grades these directly and independently of the learner's deliverable-upload
+// progress (see gradeMilestone's comment server-side). Each one shows the moment it's graded;
+// once every milestone has a grade, a general summary total appears underneath.
+function MilestonesCard({ milestones, progress }) {
+  if (!milestones || milestones.length === 0) return null;
+  const progressByMilestone = new Map((progress || []).map((p) => [p.milestoneId, p]));
+  const gradedCount = progressByMilestone.size;
+  const totalPoints = milestones.reduce((sum, m) => sum + (Number(m.points) || 0), 0);
+  const earnedPoints = [...progressByMilestone.values()].reduce((sum, p) => sum + (Number(p.marks) || 0), 0);
+  const allGraded = gradedCount === milestones.length;
+  const sorted = [...milestones].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  return (
+    <div style={{ ...cardStyle, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: T.ink }}>Milestones</p>
+        <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>{gradedCount}/{milestones.length} graded</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {sorted.map((m) => {
+          const p = progressByMilestone.get(m.id);
+          return (
+            <div key={m.id} style={{ padding: "10px 14px", backgroundColor: p ? "#F7FEFB" : "#FAFBFF", border: `1px solid ${p ? "#D1FAE5" : T.border}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{m.name}</p>
+                {p ? (
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>{p.marks}/{m.points}</span>
+                ) : (
+                  <span style={{ fontSize: 11, color: T.inkFaint, fontStyle: "italic" }}>Not yet graded</span>
+                )}
+              </div>
+              {m.description && <p style={{ margin: "4px 0 0", fontSize: 11.5, color: T.inkMuted }}>{m.description}</p>}
+              {p?.feedback && (
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: T.ink, fontStyle: "italic", borderTop: "1px solid #D1FAE5", paddingTop: 6 }}>“{p.feedback}”</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {allGraded && (
+        <div style={{ padding: "10px 14px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.accent }}>General Summary</p>
+          <span style={{ fontSize: 13, fontWeight: 800, color: T.accent }}>{earnedPoints}/{totalPoints}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FeedbackRow({ index, item, response, autoResult, feedback }) {
   const isAuto = AUTO_GRADABLE_KINDS.includes(item.kind);
   const marks = isAuto ? (autoResult?.marksAwarded ?? 0) : (feedback?.marks ?? 0);
@@ -144,6 +194,8 @@ export default function AssessmentDetailPage() {
       </div>
 
       {row.issue.groupMode && <GroupPanel group={group} />}
+
+      <MilestonesCard milestones={assessment.milestones} progress={submission?.milestoneProgress} />
 
       {!submission || submission.status === "not_started" ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>

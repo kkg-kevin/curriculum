@@ -17,6 +17,7 @@ export const assessmentSubmissionApi = {
   issueOnSessionComplete: (payload)      => api.post(`${BASE}/issues/course-progress`, payload).then((r) => r.data.data),
   getOrCreateSubmission: (issueId)       => api.post(`${BASE}/submissions`, { issueId }).then((r) => r.data.data),
   startObservation:   (issueId, learnerId) => api.post(`${BASE}/issues/${issueId}/start-observation`, { learnerId }).then((r) => r.data.data),
+  gradeMilestone: (issueId, milestoneId, payload) => api.post(`${BASE}/issues/${issueId}/milestones/${milestoneId}`, payload).then((r) => r.data.data),
   saveDraft:           (id, answers)     => api.patch(`${BASE}/submissions/${id}/draft`, { answers }).then((r) => r.data.data),
   submit:              (id, answers)     => api.post(`${BASE}/submissions/${id}/submit`, { answers }).then((r) => r.data.data),
   getSubmission:       (id)              => api.get(`${BASE}/submissions/${id}`).then((r) => r.data.data),

@@ -13,6 +13,7 @@ const {
   issueOnSessionComplete,
   getOrCreateSubmission,
   startObservationSubmission,
+  gradeMilestone,
   saveDraft,
   submitAnswers,
   getSubmission,
@@ -38,6 +39,9 @@ router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRos
 // learner-facing "take" step, since the teacher records it directly (see
 // startObservationSubmission's comment in the controller). Rejects any other assessment type.
 router.post("/issues/:id/start-observation", authorize("admin", "school", "teacher"), startObservationSubmission);
+// Grades one milestone of a project assessment — see gradeMilestone's comment in the
+// controller. Independent of the submission's own draft/submit/grade flow below.
+router.post("/issues/:id/milestones/:milestoneId", authorize("admin", "school", "teacher"), gradeMilestone);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
 router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
 // Releases an already-graded submission's score/feedback to the learner — a separate step from

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiUsers } from "react-icons/fi";
-import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -38,6 +38,103 @@ function LearnerRosterButton({ learner, submission, active, onClick }) {
         </span>
       )}
     </button>
+  );
+}
+
+// One milestone's own grading state — independent of everything else on the submission (see
+// gradeMilestone's comment server-side). Starts in edit mode until it's been graded at least
+// once; after a successful save, the row's own local state already holds what was just saved,
+// so it flips to read mode without needing to wait on or re-sync from a refetch.
+function MilestoneRow({ milestone, progress, isSaving, onSave }) {
+  const [editing, setEditing] = useState(!progress);
+  const [marks, setMarks] = useState(progress?.marks ?? 0);
+  const [feedback, setFeedback] = useState(progress?.feedback ?? "");
+  const max = Number(milestone.points) || 0;
+
+  if (!editing) {
+    return (
+      <div style={{ padding: "10px 12px", backgroundColor: "#fff", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>✓ {milestone.name}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>{marks}/{max}</span>
+            <button type="button" onClick={() => setEditing(true)} style={{ padding: 0, background: "none", border: "none", color: T.accent, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Edit</button>
+          </div>
+        </div>
+        {feedback && <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted, fontStyle: "italic" }}>“{feedback}”</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "10px 12px", backgroundColor: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{milestone.name}</p>
+          {milestone.description && <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkFaint }}>{milestone.description}</p>}
+        </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.inkMuted, flexShrink: 0 }}>
+          <input type="number" min={0} max={max} value={marks} onChange={(e) => setMarks(Math.min(max, Math.max(0, Number(e.target.value) || 0)))} style={{ width: 56, padding: "5px 7px", borderRadius: 7, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif" }} />
+          / {max}
+        </label>
+      </div>
+      <textarea
+        value={feedback}
+        onChange={(e) => setFeedback(e.target.value)}
+        placeholder="Feedback for this milestone…"
+        style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", minHeight: 50, resize: "vertical" }}
+      />
+      <button
+        type="button"
+        onClick={() => onSave(marks, feedback, () => setEditing(false))}
+        disabled={isSaving}
+        style={{ alignSelf: "flex-end", padding: "6px 14px", backgroundColor: isSaving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isSaving ? "not-allowed" : "pointer" }}
+      >
+        {isSaving ? "Saving…" : progress ? "Update Milestone" : "Grade Milestone"}
+      </button>
+    </div>
+  );
+}
+
+// A project's milestone checkpoints, graded one at a time, independently of the learner's own
+// deliverable-submission progress below — a milestone releases to the learner the instant it's
+// saved (see gradeMilestone's comment server-side), so there's no draft/publish step here.
+// Rendered above the usual submission-status branching, since it applies (and should be usable)
+// regardless of whether the learner has even started their own deliverables yet.
+function MilestonesPanel({ assessment, submission, issueId, learnerId, onGraded }) {
+  const { mutate: gradeMilestoneMutation, isPending, variables } = useGradeMilestone();
+  const milestones = [...(assessment.milestones || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (milestones.length === 0 || !learnerId) return null;
+
+  const progressByMilestone = new Map((submission?.milestoneProgress || []).map((p) => [p.milestoneId, p]));
+  const gradedCount = progressByMilestone.size;
+  const totalPoints = milestones.reduce((sum, m) => sum + (Number(m.points) || 0), 0);
+  const earnedPoints = [...progressByMilestone.values()].reduce((sum, p) => sum + (Number(p.marks) || 0), 0);
+  const allGraded = gradedCount === milestones.length;
+
+  return (
+    <div style={{ marginBottom: 16, padding: "14px 16px", border: `1.5px solid ${T.tintBorder}`, borderRadius: 12, backgroundColor: T.tintBg, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: T.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>Milestones</p>
+        <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>
+          {gradedCount}/{milestones.length} graded{allGraded ? ` · ${earnedPoints}/${totalPoints} overall` : ""}
+        </span>
+      </div>
+      {milestones.map((m) => (
+        <MilestoneRow
+          key={m.id}
+          milestone={m}
+          progress={progressByMilestone.get(m.id)}
+          isSaving={isPending && variables?.milestoneId === m.id}
+          onSave={(marks, feedback, onDone) =>
+            gradeMilestoneMutation({ issueId, milestoneId: m.id, learnerId, marks, feedback }, { onSuccess: (sub) => { onGraded(sub); onDone(); } })
+          }
+        />
+      ))}
+      {allGraded && (
+        <p style={{ margin: 0, fontSize: 11.5, color: T.accentMid }}>Every milestone is graded — the learner sees the full breakdown plus this overall total.</p>
+      )}
+    </div>
   );
 }
 
@@ -90,6 +187,7 @@ export default function AssessmentRosterPage() {
   // startObservationSubmission on the server) instead of waiting on a submission that will never
   // arrive on its own.
   const isObservation = assessment.type === "observation";
+  const hasMilestones = assessment.type === "project" && (assessment.milestones || []).length > 0;
 
   const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); };
   const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); };
@@ -175,6 +273,15 @@ export default function AssessmentRosterPage() {
         </div>
 
         <div style={{ ...cardStyle, padding: "20px 22px", minHeight: 300 }}>
+          {hasMilestones && selectedSubmission && (
+            <MilestonesPanel
+              assessment={assessment}
+              submission={selectedSubmission}
+              issueId={issue.id}
+              learnerId={selectedGroupRow ? selectedGroupRow.members[0]?.id : selectedLearnerRow?.learner.id}
+              onGraded={(sub) => setStartedSubmission(sub)}
+            />
+          )}
           {!selectedSubmission ? (
             <div style={{ textAlign: "center", padding: "60px 20px", color: T.inkFaint, fontSize: 13.5 }}>
               Select a {isGroupMode ? "group" : "learner"} from the list to view or grade their submission.

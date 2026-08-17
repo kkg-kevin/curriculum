@@ -50,7 +50,17 @@ function computeAge(dateOfBirth) {
 // Same gradient-hero treatment teacher-portal/school-portal already use for their own profile
 // pages — this was the one profile page in the app still using a plain white card here, which is
 // why it read as visually flat next to every other section repeating the same card style.
-export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
+// "X% to <next band>" when there's a level still ahead, a trophy note when the learner has
+// reached the top of the ladder, or a nudge to get started when nothing's been reached yet —
+// same motivating framing as the Level Journey card below (both read the same band data via
+// deriveBandJourney, so this line can never disagree with what that card shows).
+function levelSummarySub(band, nextBand) {
+  if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;
+  if (band) return "Highest level reached!";
+  return "Complete graded work to begin";
+}
+
+export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit }) {
   const age = computeAge(learner.dateOfBirth);
 
   return (
@@ -96,7 +106,12 @@ export default function ProfileIdentityCard({ learner, stage, band, onEdit }) {
           value={stage?.name || "Not yet placed"}
           sub={stage?.ageRange ? `(${stage.ageRange})` : "Set by a teacher or admin"}
         />
-        <StatusPill eyebrow="Current Level Summary" value={band?.name || "Not yet available"} icon={<FiStar size={13} />} />
+        <StatusPill
+          eyebrow="Current Level Summary"
+          value={band?.name || "Not yet placed"}
+          sub={levelSummarySub(band, nextBand)}
+          icon={<FiStar size={13} />}
+        />
       </div>
     </div>
   );
