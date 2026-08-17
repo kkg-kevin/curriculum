@@ -116,3 +116,33 @@ export function useUnenrollLearnerHub() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove from hub"),
   });
 }
+
+// A mutation, not a query — fetched on demand when the "Share Profile" card is opened, rather
+// than eagerly on every profile view (most views of this page are never going to want a QR).
+// get-or-create server-side, so this is safe to fire every time the card opens without minting
+// a fresh token (and so invalidating the last printed one) on every click.
+export function usePublicToken() {
+  return useMutation({
+    mutationFn: learnerApi.getPublicToken,
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to load share link"),
+  });
+}
+
+export function useRegeneratePublicToken() {
+  return useMutation({
+    mutationFn: learnerApi.regeneratePublicToken,
+    onSuccess: () => toast.success("Share link regenerated — the old QR code no longer works"),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to regenerate share link"),
+  });
+}
+
+// The public scan destination's own data fetch — unauthenticated, keyed by token rather than an
+// id, and never invalidated by anything else in the app's query cache.
+export function usePublicLearnerProfile(token) {
+  return useQuery({
+    queryKey: ["learners", "public", token],
+    queryFn:  () => learnerApi.getPublicProfile(token),
+    enabled:  !!token,
+    retry: false,
+  });
+}

@@ -14,7 +14,7 @@ import {
 } from "../../timetable/hooks/useTimetable";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
-import { useRoomsByHub } from "../../rooms/hooks/useRooms";
+import { useRoomsByHub, useRoomAvailability } from "../../rooms/hooks/useRooms";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -101,7 +101,7 @@ function ClassMultiPicker({ siblings, selectedIds, onChange, label }) {
 // let it silently disagree with the section it actually gets created under. Editing an existing
 // slot (initial provided, no lockedDay) still gets the full dropdown, since moving a slot to a
 // different day is a reasonable thing to want.
-function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [] }) {
+function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [], hubId, slotId }) {
   const [form, setForm] = useState(() => initial || {
     courseId: "", teacherId: "", dayOfWeek: lockedDay || "monday", startTime: "", endTime: "", roomId: "",
   });
@@ -111,6 +111,16 @@ function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initia
   // Bulk-apply only makes sense when creating a brand new slot — editing one existing slot across
   // several classes at once would mean silently touching records the school didn't ask to change.
   const isCreating = !initial;
+
+  // Rooms already booked by some other slot at this day+time — surfaced ahead of save so the
+  // picker can gray them out instead of only finding out from the 409 the server's hasConflict
+  // throws at save time. excludeSlotId (slotId here) keeps an existing slot from flagging its own
+  // current booking as a conflict with itself.
+  const { data: busyRoomIds = [] } = useRoomAvailability({
+    hubId, dayOfWeek: form.dayOfWeek, startTime: form.startTime, endTime: form.endTime, excludeSlotId: slotId,
+  });
+  const busyRoomIdSet = new Set(busyRoomIds);
+  const selectedRoomIsBusy = !!form.roomId && busyRoomIdSet.has(form.roomId);
 
   const submit = () => {
     if (!form.courseId || !form.startTime || !form.endTime) return;
@@ -143,9 +153,18 @@ function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initia
         </select>
         <select value={form.roomId} onChange={(e) => set("roomId", e.target.value)} style={selectStyle}>
           <option value="">No room assigned</option>
-          {rooms.filter((r) => r.status === "active").map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          {rooms.filter((r) => r.status === "active").map((r) => (
+            <option key={r.id} value={r.id} disabled={busyRoomIdSet.has(r.id)}>
+              {r.name}{busyRoomIdSet.has(r.id) ? " (Booked)" : ""}
+            </option>
+          ))}
         </select>
       </div>
+      {selectedRoomIsBusy && (
+        <p style={{ margin: 0, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
+          This room is already booked at this time — pick another room or time.
+        </p>
+      )}
 
       {isCreating && (
         <ClassMultiPicker
@@ -516,6 +535,8 @@ export default function TimetablePage() {
                           courses={courses}
                           courseLinks={courseLinks}
                           rooms={rooms}
+                          hubId={school?.id}
+                          slotId={slot.id}
                           initial={{ courseId: slot.courseId, teacherId: slot.teacherId || "", dayOfWeek: slot.dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, roomId: slot.roomId || "" }}
                           onSubmit={handleUpdate}
                           onCancel={() => setEditingSlotId(null)}
@@ -538,6 +559,7 @@ export default function TimetablePage() {
                         courses={courses}
                         courseLinks={courseLinks}
                         rooms={rooms}
+                        hubId={school?.id}
                         lockedDay={day}
                         onSubmit={handleCreate}
                         onCancel={() => setAddingDay(null)}

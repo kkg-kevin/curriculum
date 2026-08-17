@@ -14,4 +14,11 @@ export const learnerApi = {
   unenrollHub: (id, hubId)         => api.delete(`${BASE}/${id}/hubs/links/${hubId}`).then((r) => r.data.data),
   ensureDiagnosticsIssued: (id, hubId) => api.post(`${BASE}/${id}/ensure-diagnostics`, { hubId }).then((r) => r.data),
   completeHubOnboarding: (id, hubId) => api.post(`${BASE}/${id}/hubs/${hubId}/complete-onboarding`).then((r) => r.data),
+  getPublicToken: (id) => api.post(`${BASE}/${id}/public-token`).then((r) => r.data.data),
+  regeneratePublicToken: (id) => api.post(`${BASE}/${id}/public-token/regenerate`).then((r) => r.data.data),
+  // Unauthenticated on purpose — this is the scan destination itself (see
+  // PublicLearnerProfilePage), fetched by a browser that's often not logged in at all. Hits the
+  // separate /api/public/learners router directly rather than BASE, since that's a different,
+  // deliberately unprotected mount in app.js.
+  getPublicProfile: (token) => api.get(`/api/public/learners/${token}`).then((r) => r.data.data),
 };

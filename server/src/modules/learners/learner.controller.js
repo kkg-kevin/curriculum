@@ -260,6 +260,45 @@ const completeHubOnboarding = asyncHandler(async (req, res) => {
   res.json({ success: true, data: hub });
 });
 
+// Get-or-create the "share via QR" token — same ownership scoping as updateLearner (a
+// school/branchAdmin may only mint a share link for a learner actually linked to a hub they
+// own; admin is unrestricted). A "learner" login (guardian-mediated or the learner's own
+// dedicated one — either way req.ownLearner resolves to this same record, see
+// scope.middleware.js) may only ever mint its own link, mirroring ensureDiagnosticsIssued's
+// self-only scoping below. The token itself never appears anywhere but this response and the
+// public read below.
+const getPublicToken = asyncHandler(async (req, res) => {
+  const record = await LearnerService.getLearnerById(req.params.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") {
+    assertOwn(await isLinkedToOwnHub(req, record.id));
+  } else if (req.user.role === "learner") {
+    assertOwn(req.params.id === req.ownLearner?.id);
+  }
+  const token = await LearnerService.getOrCreatePublicToken(req.params.id);
+  res.json({ success: true, data: { token } });
+});
+
+// Same scoping as getPublicToken — invalidates whatever's currently printed/shared and hands
+// back a fresh one.
+const regeneratePublicToken = asyncHandler(async (req, res) => {
+  const record = await LearnerService.getLearnerById(req.params.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") {
+    assertOwn(await isLinkedToOwnHub(req, record.id));
+  } else if (req.user.role === "learner") {
+    assertOwn(req.params.id === req.ownLearner?.id);
+  }
+  const token = await LearnerService.regeneratePublicToken(req.params.id);
+  res.json({ success: true, data: { token } });
+});
+
+// Unauthenticated — mounted separately in app.js, ahead of the `protect` middleware chain that
+// guards every other /api/learners route (see public-profile.routes.js). No req.user, no
+// ownership check: the token itself IS the access control.
+const getPublicProfile = asyncHandler(async (req, res) => {
+  const profile = await LearnerService.getPublicProfile(req.params.token);
+  res.json({ success: true, data: profile });
+});
+
 module.exports = {
   createLearner,
   getAllLearners,
@@ -272,4 +311,7 @@ module.exports = {
   unenrollLearnerHub,
   ensureDiagnosticsIssued,
   completeHubOnboarding,
+  getPublicToken,
+  regeneratePublicToken,
+  getPublicProfile,
 };

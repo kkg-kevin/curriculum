@@ -1,5 +1,6 @@
 const RoomModel = require("./room.model");
 const TimetableModel = require("../timetable/timetable.model");
+const { timesOverlap } = require("../timetable/timetable.service");
 
 // Room name only needs to be unique within its own hub — two different hubs can both have a
 // "Room 4". excludeId skips the record being updated so re-saving a room's own unchanged name
@@ -61,6 +62,25 @@ const RoomService = {
     // clearCreatedBy.
     await TimetableModel.clearRoomId(id);
     return { message: "Room deleted successfully" };
+  },
+
+  // Which of this hub's rooms are already booked by some OTHER slot at an overlapping time on
+  // the given day — same overlap rule timetable.service.js's hasConflict uses for the actual
+  // save-time block, just surfaced ahead of time so the picker can show it before the user tries
+  // to save. excludeSlotId lets editing a slot ignore that slot's own current booking (it isn't
+  // "busy" with itself).
+  async getBusyRoomIds(hubId, { dayOfWeek, startTime, endTime, excludeSlotId }) {
+    if (!dayOfWeek || !startTime || !endTime) return [];
+    const rooms = await RoomModel.findAll({ hubId });
+    const roomIds = new Set(rooms.map((r) => r.id));
+    const slots = await TimetableModel.findAll({ dayOfWeek });
+    const busy = new Set();
+    for (const s of slots) {
+      if (s.id === excludeSlotId) continue;
+      if (!s.roomId || !roomIds.has(s.roomId)) continue;
+      if (timesOverlap(startTime, endTime, s.startTime, s.endTime)) busy.add(s.roomId);
+    }
+    return [...busy];
   },
 };
 

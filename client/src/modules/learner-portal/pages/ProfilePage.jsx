@@ -10,6 +10,7 @@ import { T, cardStyle, EmptyState } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
 import GuardianProfileCard from "../components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
+import ShareProfileCard from "../components/profile/ShareProfileCard";
 import SideRail from "../components/SideRail";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import EditGuardianProfileModal from "../components/profile/EditGuardianProfileModal";
@@ -112,6 +113,7 @@ export default function ProfilePage() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
           <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
+          <ShareProfileCard learnerId={learner.id} />
           <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
         </div>
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />

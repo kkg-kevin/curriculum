@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import {
   useLearnerQuery, useDeleteLearner, useUpdateLearner,
   useLearnerHubsQuery, useEnrollLearnerHub, useUpdateLearnerHubLink, useUnenrollLearnerHub,
+  usePublicToken, useRegeneratePublicToken,
 } from "../hooks/useLearners";
 
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
@@ -315,6 +317,102 @@ function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId })
   );
 }
 
+// A QR code + copyable link that resolves — with no login at all — to a deliberately narrow
+// public view of this learner (see learner.service.js's getPublicProfile for the exact field
+// allow-list: name, photo, class, guardian contact; never DOB/username/health/academic data).
+// Fetched on demand rather than eagerly, since most visits to this page never open the card.
+function ShareProfileCard({ learnerId }) {
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { mutate: fetchToken, isPending: loadingToken } = usePublicToken();
+  const { mutate: regenerate, isPending: regenerating } = useRegeneratePublicToken();
+
+  const handleToggle = () => {
+    setOpen((v) => !v);
+    if (!token) fetchToken(learnerId, { onSuccess: (data) => setToken(data.token) });
+  };
+
+  const handleRegenerate = () => {
+    setConfirmRegenerate(false);
+    regenerate(learnerId, { onSuccess: (data) => setToken(data.token) });
+  };
+
+  const publicUrl = token ? `${window.location.origin}/public/learners/${token}` : "";
+
+  const handleCopy = () => {
+    if (!publicUrl) return;
+    navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Share Profile</h3>
+        <button
+          type="button"
+          onClick={handleToggle}
+          style={{
+            padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
+            backgroundColor: open ? "#F3F4F6" : "#e8f5fb", color: open ? "#6B7280" : ACCENT, border: `1.5px solid ${open ? "#E5E7EB" : "#a8d5ee"}`,
+          }}
+        >
+          {open ? "Hide" : "Show QR"}
+        </button>
+      </div>
+
+      {!open ? (
+        <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", lineHeight: 1.4 }}>
+          No-login view — name, photo, class &amp; guardian contact only. Health, academic, and login details stay private.
+        </p>
+      ) : loadingToken && !token ? (
+        <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>Loading…</p>
+      ) : (
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ padding: 6, backgroundColor: "#FAFCFF", borderRadius: 10, flexShrink: 0, lineHeight: 0 }}>
+            <QRCodeSVG value={publicUrl} size={84} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                readOnly
+                value={publicUrl}
+                onFocus={(e) => e.target.select()}
+                style={{ flex: 1, minWidth: 0, padding: "6px 8px", borderRadius: 7, border: "1.5px solid #E5E7EB", fontSize: 11, fontFamily: "Inter, sans-serif", color: "#6B7280" }}
+              />
+              <button type="button" onClick={handleCopy} style={{ padding: "6px 10px", backgroundColor: "#e8f5fb", color: ACCENT, border: "1.5px solid #a8d5ee", borderRadius: 7, fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}>
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmRegenerate(true)}
+              disabled={regenerating}
+              style={{ alignSelf: "flex-start", padding: 0, background: "none", border: "none", color: "#B91C1C", fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: regenerating ? "not-allowed" : "pointer" }}
+            >
+              {regenerating ? "Regenerating…" : "Regenerate link"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmRegenerate}
+        title="Regenerate Share Link"
+        message="The current QR code and link will stop working immediately. Anyone who still has the old one won't be able to view this profile anymore."
+        confirmLabel="Regenerate"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleRegenerate}
+        onCancel={() => setConfirmRegenerate(false)}
+      />
+    </div>
+  );
+}
+
 function DetailRow({ label, value, empty = "—" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -547,6 +645,8 @@ export default function LearnerViewPage() {
             <DetailRow label="Last Updated" value={new Date(learner.updatedAt).toLocaleDateString()} />
           </div>
         </div>
+
+        <ShareProfileCard learnerId={id} />
 
         {(isAdmin || isSchool) && curriculumId && (
           <>

@@ -505,4 +505,7 @@ const TimetableService = {
   },
 };
 
+// Exported alongside the service object (not just used internally by hasConflict above) so
+// room.service.js's getBusyRoomIds can reuse the exact same overlap rule instead of duplicating it.
 module.exports = TimetableService;
+module.exports.timesOverlap = timesOverlap;

@@ -11,6 +11,8 @@ const {
   unenrollLearnerHub,
   ensureDiagnosticsIssued,
   completeHubOnboarding,
+  getPublicToken,
+  regeneratePublicToken,
 } = require("./learner.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -45,5 +47,14 @@ router.post("/:id/ensure-diagnostics", authorize("learner"), ensureDiagnosticsIs
 
 // Learner-portal-only — see completeHubOnboarding's comment in the controller.
 router.post("/:id/hubs/:hubId/complete-onboarding", authorize("learner"), completeHubOnboarding);
+
+// "Share via QR" token — mint/rotate only, same ownership scoping as PUT /:id above, plus
+// "learner" (guardian-mediated or the learner's own dedicated login) so the learner-portal's own
+// Profile page can show/regenerate its own QR without needing a staff member to do it — scoped
+// to self-only in the controller. The unauthenticated read side (GET by token, not by :id) lives
+// on its own public router — see public-profile.routes.js — since it must never sit behind this
+// file's `protect` middleware.
+router.post("/:id/public-token", authorize("admin", "school", "branchAdmin", "learner"), getPublicToken);
+router.post("/:id/public-token/regenerate", authorize("admin", "school", "branchAdmin", "learner"), regeneratePublicToken);
 
 module.exports = router;
