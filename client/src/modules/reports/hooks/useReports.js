@@ -10,7 +10,7 @@ const KEYS = {
   list:      (classId, courseId) => ["reports", "list", classId, courseId],
   detail:    (id)                => ["reports", id],
   mine:      (hubId)             => ["reports", "mine", hubId || null],
-  hubAnalytics: (hubId, days)    => ["reports", "hubAnalytics", hubId, days],
+  hubAnalytics: (hubId, days, gender) => ["reports", "hubAnalytics", hubId, days, gender || null],
   platformAnalytics: (days)      => ["reports", "platformAnalytics", days],
 };
 
@@ -47,10 +47,10 @@ export function useReport(id) {
   });
 }
 
-export function useHubAnalytics(hubId, days = 30) {
+export function useHubAnalytics(hubId, days = 30, gender = null) {
   return useQuery({
-    queryKey: KEYS.hubAnalytics(hubId, days),
-    queryFn:  () => reportApi.getHubAnalytics(hubId, days),
+    queryKey: KEYS.hubAnalytics(hubId, days, gender),
+    queryFn:  () => reportApi.getHubAnalytics(hubId, days, gender),
     enabled:  !!hubId,
   });
 }

@@ -9,6 +9,7 @@ import { summarizeCoursesProgress } from "../utils/progressStorage";
 import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
 import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
+import LevelJourneyCard from "../components/LevelJourneyCard";
 
 const T = {
   accent: "#25476a",
@@ -183,7 +184,13 @@ export default function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Level Journey — the gamified progress ladder, given the most prominent spot on the
+              page (full width, right under the hero) since motivating the learner to keep moving
+              up it is the whole point of showing it here rather than only buried in Profile. */}
+          <LevelJourneyCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
           {/* Main column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 2, minWidth: 340 }}>
             {/* Continue Learning — the primary call to action, given more visual weight */}
@@ -299,6 +306,7 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}

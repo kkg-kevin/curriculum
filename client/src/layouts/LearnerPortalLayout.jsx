@@ -4,8 +4,10 @@ import LearnerSidebar from "../modules/learner-portal/components/LearnerSidebar"
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
+import ConfirmPasswordModal from "../components/ui/ConfirmPasswordModal";
 import FirstLoginDiagnosticGate from "../modules/learner-portal/components/FirstLoginDiagnosticGate";
 import { useLearnerPortalScope } from "../modules/learner-portal/hooks/useLearnerPortalScope";
+import { authApi } from "../modules/auth/services/authApi";
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 900;
@@ -15,6 +17,14 @@ function LearnerPortalLayout() {
   const { hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // A guardian-mediated login sees every sibling under their email and could otherwise switch
+  // between them with no further check — the account's own password (re-verified via
+  // authApi.verifyPassword) is the only real gate available, since server-side scoping can't
+  // tell "the guardian is switching" apart from "the learner is switching" when it's the same
+  // JWT either way. A learner's own dedicated username login never reaches this: LearnerModel
+  // only ever resolves to that one learner for it, so `learners` never has more than one entry
+  // and the switcher below renders nothing.
+  const [pendingChildId, setPendingChildId] = useState(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,7 +76,7 @@ function LearnerPortalLayout() {
             <FirstLoginDiagnosticGate learner={learner} hub={selectedHub} cls={cls} />
           ) : (
             <>
-              <HubSwitcher hubs={childOptions} selectedHubId={selectedLearnerId} onChange={setSelectedLearnerId} />
+              <HubSwitcher hubs={childOptions} selectedHubId={selectedLearnerId} onChange={setPendingChildId} />
               <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
               <Outlet context={scope} />
             </>
@@ -75,6 +85,19 @@ function LearnerPortalLayout() {
 
         <Footer />
       </div>
+
+      <ConfirmPasswordModal
+        isOpen={!!pendingChildId}
+        title="Confirm it's you"
+        message="Enter your portal password to switch to a different child's profile."
+        confirmLabel="Switch"
+        onConfirm={async (password) => {
+          await authApi.verifyPassword(password);
+          setSelectedLearnerId(pendingChildId);
+          setPendingChildId(null);
+        }}
+        onCancel={() => setPendingChildId(null)}
+      />
     </div>
   );
 }

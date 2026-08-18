@@ -12,6 +12,7 @@ const ClassGroupService = require("../../classes/groups/class-group.service");
 const ClassGroupModel = require("../../classes/groups/class-group.model");
 const TeacherModel = require("../../teachers/teacher.model");
 const UserModel = require("../../auth/user.model");
+const NotificationService = require("../../notifications/notification.service");
 const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown } = require("./grading.utils");
 
 async function loadAssessmentOrThrow(assessmentId) {
@@ -621,6 +622,12 @@ const AssessmentSubmissionService = {
       updated = await AssessmentSubmissionModel.update(submissionId, updates);
     }
     await maybePlaceFromDiagnostic(updated);
+    if (updated.status === "graded") {
+      await NotificationService.assessmentGraded(updated);
+      await NotificationService.maybeNotifyLevelUp(updated.learnerId, updated.classId);
+    } else {
+      await NotificationService.assessmentSubmitted(updated);
+    }
     return updated;
   },
 
@@ -662,6 +669,8 @@ const AssessmentSubmissionService = {
     // grades through the same PATCH endpoint either way; no separate group-grading endpoint.
     await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(graded);
+    await NotificationService.assessmentGraded(graded);
+    await NotificationService.maybeNotifyLevelUp(graded.learnerId, graded.classId);
     return graded;
   },
 

@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
-const { loginSchema, signupSchema, updateMeSchema } = require("./auth.validation");
+const { loginSchema, signupSchema, updateMeSchema, verifyPasswordSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
@@ -47,4 +47,10 @@ const updateMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-module.exports = { signup, login, logout, me, updateMe };
+const verifyPassword = asyncHandler(async (req, res) => {
+  const { password } = verifyPasswordSchema.parse(req.body);
+  await AuthService.verifyPassword(req.user.id, password);
+  res.json({ success: true });
+});
+
+module.exports = { signup, login, logout, me, updateMe, verifyPassword };

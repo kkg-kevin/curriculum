@@ -27,6 +27,7 @@ const reportRoutes = require("./modules/reports/report.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const programRoutes = require("./modules/programs/program.routes");
 const branchRoutes = require("./modules/branches/branch.routes");
+const notificationRoutes = require("./modules/notifications/notification.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect, authorize } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
@@ -106,6 +107,9 @@ app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "branchAdmin", "learner"), uploadRoutes);
 app.use("/api/programs", protect, authorize("admin"), programRoutes);
 app.use("/api/branches", protect, attachOwnRecords, branchRoutes);
+// Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
+// router, no attachOwnRecords/authorize needed.
+app.use("/api/notifications", protect, notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

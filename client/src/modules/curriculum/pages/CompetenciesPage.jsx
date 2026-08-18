@@ -1571,7 +1571,6 @@ const BEHAVIOR_COLORS = { diagnostic: "#feb139", formative: "#38aae1", summative
 function AssessmentTypesSubPanel({ curriculumId }) {
   const { data: types = [], isLoading, isError } = useAssessmentTypes(curriculumId);
   const { data: evidences = [] }        = useEvidenceTypes(curriculumId);
-  const { data: areas = [] }            = useLearningAreas(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAssessmentType(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAssessmentType(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAssessmentType(curriculumId);
@@ -1581,18 +1580,17 @@ function AssessmentTypesSubPanel({ curriculumId }) {
   const [name, setName]         = useState("");
   const [desc, setDesc]         = useState("");
   const [behavior, setBehavior] = useState("formative");
-  const [learningAreaId, setLearningAreaId] = useState("");
   const nameRef = useRef(null);
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setBehavior("formative"); setLearningAreaId(""); setMode("add"); }
-  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setBehavior(t.behaviorType || "formative"); setLearningAreaId(t.learningAreaId || ""); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setBehavior("formative"); setMode("add"); }
+  function openEdit(t){ setEdit(t); setName(t.name); setDesc(t.description || ""); setBehavior(t.behaviorType || "formative"); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
   function submit() {
     if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), behaviorType: behavior, learningAreaId: learningAreaId || null };
+    const data = { name: name.trim(), description: desc.trim(), behaviorType: behavior };
     if (mode === "edit") update({ id: editTarget.id, data }, { onSuccess: cancel });
-    else create(data, { onSuccess: () => { setName(""); setDesc(""); setBehavior("formative"); setLearningAreaId(""); nameRef.current?.focus(); } });
+    else create(data, { onSuccess: () => { setName(""); setDesc(""); setBehavior("formative"); nameRef.current?.focus(); } });
   }
 
   const form = (
@@ -1642,24 +1640,6 @@ function AssessmentTypesSubPanel({ curriculumId }) {
           </div>
         </div>
         <div>
-          <label className="cp-field-label">Learning Area <span className="cp-optional">(optional)</span></label>
-          <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-            {behavior === "diagnostic"
-              ? "If set, scoring this assessment type places the learner onto a course in this learning area's sequence (Learning Journey tab)."
-              : "If set, scoring this assessment type can advance the learner forward in this learning area's course sequence, but never move them back."}
-          </p>
-          <select
-            value={learningAreaId}
-            onChange={(e) => setLearningAreaId(e.target.value)}
-            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#111827", boxSizing: "border-box" }}
-          >
-            <option value="">Not linked to a learning area</option>
-            {areas.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
           <textarea className="cp-textarea" rows={3} placeholder="What is this assessment type used for?" value={desc} maxLength={1000} onChange={(e) => setDesc(e.target.value)} />
           <div className="cp-char-count">{desc.length} / 1000</div>
@@ -1695,14 +1675,6 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                       {t.behaviorType}
                     </span>
                   )}
-                  {t.learningAreaId && (() => {
-                    const linkedArea = areas.find((a) => a.id === t.learningAreaId);
-                    return linkedArea ? (
-                      <span style={{ fontSize: "10px", fontWeight: "600", color: linkedArea.color || "#7C3AED", background: `${linkedArea.color || "#7C3AED"}15`, padding: "2px 7px", borderRadius: "20px" }}>
-                        <ExploreIcon fontSize="inherit" style={{ verticalAlign: "-2px", marginRight: 3 }} /> {linkedArea.name}
-                      </span>
-                    ) : null;
-                  })()}
                   {(t.evidenceWeights || []).length > 0 && (
                     <span style={{ fontSize: "10px", fontWeight: "600", color: "#059669", background: "#05966915", padding: "2px 7px", borderRadius: "20px" }}>
                       {(t.evidenceWeights || []).length} evidence scored
@@ -2960,7 +2932,7 @@ function PerformanceBandsPanel({ curriculumId }) {
           <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Performance Bands</h3>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
             {bands.length === 0
-              ? "Define the performance descriptors used across all progress levels"
+              ? "Define the performance descriptors used across this curriculum's Progress Arc"
               : `${bands.length} band${bands.length !== 1 ? "s" : ""} · ordered from lowest to highest`}
           </p>
         </div>
@@ -3128,6 +3100,19 @@ function PerformanceBandsPanel({ curriculumId }) {
                         }}>
                           {band.name}
                         </span>
+                        {idx === bands.length - 1 && (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "3px 11px", borderRadius: "20px",
+                              fontSize: "11px", fontWeight: "700",
+                              color: "#B45309", background: "#FFFBEB", border: "1.5px solid #FDE68A",
+                            }}
+                            title="The top of this ladder — what learner-facing views (Progress Arc, learner profile) show as the highest level a learner can reach"
+                          >
+                            <EmojiEventsIcon fontSize="inherit" /> Highest Level
+                          </span>
+                        )}
                         {band.advancementThreshold > 0 && (
                           <span
                             style={{

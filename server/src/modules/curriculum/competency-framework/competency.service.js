@@ -442,7 +442,7 @@ const CompetencyService = {
     return curriculum.competencyWeights || [];
   },
 
-  async calculateScore(curriculumId, id, evidenceScores, learnerId = null) {
+  async calculateScore(curriculumId, id, evidenceScores) {
     const assessmentType = await AssessmentTypeModel.findById(id);
     if (!assessmentType || assessmentType.curriculumId !== curriculumId) {
       const err = new Error("Assessment type not found");
@@ -504,33 +504,10 @@ const CompetencyService = {
 
     const hasCompetencyMappings = config.some((c) => (c.competencyMappings || []).length > 0);
 
-    // Any assessment type tied to a Learning Area feeds the Learning Journey: a diagnostic
-    // resolves and records an initial (or re-)placement outright, while ongoing formative/
-    // summative work only ever advances a learner forward if this score clears the next
-    // threshold up — it never moves them backward.
-    let learningJourneyPlacement = null;
-    if (assessmentType.learningAreaId && learnerId) {
-      if (behaviorType === "diagnostic") {
-        const courseId = await this.resolvePlacementFromScore(curriculumId, assessmentType.learningAreaId, finalScore);
-        if (courseId) {
-          const journey = await this.placeLearner(curriculumId, learnerId, assessmentType.learningAreaId, {
-            courseId, reason: "diagnostic", assessmentId: id,
-          });
-          learningJourneyPlacement = { learningAreaId: assessmentType.learningAreaId, courseId, journey };
-        }
-      } else {
-        const journey = await this.checkAdvancement(curriculumId, learnerId, assessmentType.learningAreaId, finalScore, id);
-        if (journey) {
-          learningJourneyPlacement = { learningAreaId: assessmentType.learningAreaId, courseId: journey.currentCourseId, journey };
-        }
-      }
-    }
-
     return {
       finalScore, breakdown,
       band, behaviorType, outcome,
       competencyBreakdown, failedCompetencies, allCompetenciesMet, hasCompetencyMappings,
-      learningJourneyPlacement,
     };
   },
 
@@ -984,27 +961,6 @@ const CompetencyService = {
     return matched.courseId;
   },
 
-  // Ongoing (formative/summative) coursework can also move a learner forward: if this score
-  // clears a placement threshold beyond wherever they currently stand, advance them there.
-  // Never moves a learner backward — a dip in an ordinary assessment shouldn't undo a
-  // placement; only a fresh diagnostic (resolvePlacementFromScore, above) does that.
-  async checkAdvancement(curriculumId, learnerId, learningAreaId, score, assessmentId = null) {
-    const bands = await PerformanceBandModel.findByLearningArea(curriculumId, learningAreaId);
-    if (bands.length === 0) return null;
-
-    const resolvedCourseId = await this.resolvePlacementFromScore(curriculumId, learningAreaId, score);
-    if (!resolvedCourseId) return null;
-
-    const journey = await LearnerJourneyModel.findOne(learnerId, learningAreaId);
-    const currentIdx  = bands.findIndex((b) => b.courseId === journey?.currentCourseId);
-    const resolvedIdx = bands.findIndex((b) => b.courseId === resolvedCourseId);
-    if (resolvedIdx <= currentIdx) return null;
-
-    return this.placeLearner(curriculumId, learnerId, learningAreaId, {
-      courseId: resolvedCourseId, reason: "advanced", assessmentId,
-    });
-  },
-
   // Bridges a graded standalone diagnostic (see assessment-submission.service.js's
   // maybePlaceFromDiagnostic) into this learner's placement identity: the age category the
   // diagnostic was issued for becomes their confirmed Developmental Stage, and the score
@@ -1030,10 +986,10 @@ const CompetencyService = {
 
   // Bridges a graded standalone Learning-Area diagnostic (see assessment-submission.service.js's
   // maybePlaceFromDiagnostic) into that area's own Learning Journey: the score resolves a
-  // starting course via resolvePlacementFromScore — the same "highest cleared threshold" rule
-  // checkAdvancement uses for ongoing coursework — and always places the learner there, even if
-  // that's their current or a "lower" course. Unlike checkAdvancement, a first diagnostic isn't
-  // an advancement to guard against moving backward from; it's establishing the starting point.
+  // starting course via resolvePlacementFromScore's "highest cleared threshold" rule, and always
+  // places the learner there, even if that's their current or a "lower" course — a first
+  // diagnostic isn't an advancement to guard against moving backward from; it's establishing the
+  // starting point.
   async placeLearnerFromLearningAreaDiagnostic(learnerId, learningAreaId, scorePercent, assessmentId = null) {
     const area = await LearningAreaModel.findById(learningAreaId);
     if (!area) return null;

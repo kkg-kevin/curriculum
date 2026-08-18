@@ -4,7 +4,7 @@ const BASE = "/api/reports";
 
 export const reportApi = {
   getReadiness:  (classId, courseId) => api.get(`${BASE}/readiness`, { params: { classId, courseId } }).then((r) => r.data),
-  getHubAnalytics: (hubId, days)     => api.get(`${BASE}/hub-analytics`, { params: { hubId, days } }).then((r) => r.data.data),
+  getHubAnalytics: (hubId, days, gender) => api.get(`${BASE}/hub-analytics`, { params: { hubId, days, gender: gender || undefined } }).then((r) => r.data.data),
   getPlatformAnalytics: (days)       => api.get(`${BASE}/platform-analytics`, { params: { days } }).then((r) => r.data.data),
   // Batched form — one request covers every course in a class, returning { [courseId]: rows }.
   getReadinessBatch: (classId, courseIds) =>

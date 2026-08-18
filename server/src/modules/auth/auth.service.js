@@ -113,6 +113,26 @@ const AuthService = {
     return { user: sanitize(user), token };
   },
 
+  // Confirms the CURRENTLY logged-in user really knows their own password, without touching
+  // their session (no new token/cookie) — used by the learner-portal's sibling switcher to
+  // re-gate a guardian-mediated session before it flips to a different linked learner, since
+  // the switch itself is invisible to the server (same JWT either way).
+  async verifyPassword(id, password) {
+    const user = await UserModel.findById(id);
+    if (!user) {
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      const err = new Error("Incorrect password");
+      err.statusCode = 401;
+      throw err;
+    }
+    return true;
+  },
+
   async getById(id) {
     const user = await UserModel.findById(id);
     if (!user) {
