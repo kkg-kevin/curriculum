@@ -164,6 +164,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
               options={LANGUAGES}
               value={formData.languages ? formData.languages.split(",").map((v) => v.trim()).filter(Boolean) : []}
               onChange={(next) => setFormData((prev) => ({ ...prev, languages: next.join(", ") }))}
+              itemLabel="languages"
             />
           </div>
 

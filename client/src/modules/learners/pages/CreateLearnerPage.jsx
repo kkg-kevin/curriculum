@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateLearner } from "../hooks/useLearners";
 import { createLearnerSchema } from "../schemas/learner.schema";
 import LearnerForm from "../components/LearnerForm";
+import LearnerFormPreview from "../components/LearnerFormPreview";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -59,7 +60,27 @@ export default function CreateLearnerPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .clp-layout { display: flex; gap: 24px; align-items: flex-start; }
+        .clp-form-col { flex: 1; min-width: 0; }
+        .clp-preview-col {
+          flex: 1;
+          min-width: 0;
+          position: sticky;
+          top: 24px;
+          align-self: flex-start;
+          max-height: calc(100vh - 140px);
+          overflow-y: auto;
+          padding-right: 2px;
+        }
+        @media (max-width: 900px) {
+          .clp-layout { flex-direction: column; }
+          .clp-form-col { order: 1; }
+          .clp-preview-col { order: 2; position: static; max-height: none; width: 100%; }
+        }
+      `}</style>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
@@ -92,13 +113,18 @@ export default function CreateLearnerPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 640 }}>
-        <FormProvider {...methods}>
-          <form id="create-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <LearnerForm />
-          </form>
-        </FormProvider>
-      </div>
+      <FormProvider {...methods}>
+        <form id="create-learner-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="clp-layout">
+            <div className="clp-form-col">
+              <LearnerForm />
+            </div>
+            <div className="clp-preview-col">
+              <LearnerFormPreview />
+            </div>
+          </div>
+        </form>
+      </FormProvider>
 
       <ConfirmDialog
         isOpen={confirmLeave}
