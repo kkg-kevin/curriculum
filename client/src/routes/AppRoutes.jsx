@@ -9,7 +9,6 @@ import SignupPage from "../modules/auth/pages/SignupPage";
 import ForgotPasswordPage from "../modules/auth/pages/ForgotPasswordPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
-import ComingSoon from "../components/ui/ComingSoon";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 import TeacherPortalDashboardPage from "../modules/teacher-portal/pages/DashboardPage";
 import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
@@ -37,6 +36,7 @@ import LearnerReportDetailPage from "../modules/learner-portal/pages/ReportDetai
 import LearnerProgressPage from "../modules/learner-portal/pages/ProgressPage";
 import LearnerTimetablePage from "../modules/learner-portal/pages/TimetablePage";
 import LearnerProfilePage from "../modules/learner-portal/pages/ProfilePage";
+import AdminReportsPage from "../modules/reports/pages/AdminReportsPage";
 import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
 import CreateCurriculumPage from "../modules/curriculum/pages/CreateCurriculumPage";
@@ -118,7 +118,7 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<AssessmentBuilderPage />} />
           <Route path=":id/view" element={<AssessmentViewPage />} />
         </Route>
-        <Route path="reports" element={<ComingSoon name="Reports" />} />
+        <Route path="reports" element={<AdminReportsPage />} />
         <Route path="settings">
           <Route index element={<SettingsPage />} />
           <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />

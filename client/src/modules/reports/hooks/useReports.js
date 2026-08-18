@@ -11,6 +11,7 @@ const KEYS = {
   detail:    (id)                => ["reports", id],
   mine:      (hubId)             => ["reports", "mine", hubId || null],
   hubAnalytics: (hubId, days)    => ["reports", "hubAnalytics", hubId, days],
+  platformAnalytics: (days)      => ["reports", "platformAnalytics", days],
 };
 
 export function useReadiness(classId, courseId) {
@@ -51,6 +52,13 @@ export function useHubAnalytics(hubId, days = 30) {
     queryKey: KEYS.hubAnalytics(hubId, days),
     queryFn:  () => reportApi.getHubAnalytics(hubId, days),
     enabled:  !!hubId,
+  });
+}
+
+export function usePlatformAnalytics(days = 30) {
+  return useQuery({
+    queryKey: KEYS.platformAnalytics(days),
+    queryFn:  () => reportApi.getPlatformAnalytics(days),
   });
 }
 
