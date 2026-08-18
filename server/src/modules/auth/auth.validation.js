@@ -36,6 +36,10 @@ const updateMeSchema = z.object({
   photo: z.string().optional().nullable(),
 });
 
+const verifyPasswordSchema = z.object({
+  password: z.string().min(1, "Password is required"),
+});
+
 module.exports = {
   USER_ROLES,
   PUBLIC_SIGNUP_ROLES,
@@ -43,4 +47,5 @@ module.exports = {
   signupSchema,
   createUserSchema,
   updateMeSchema,
+  verifyPasswordSchema,
 };

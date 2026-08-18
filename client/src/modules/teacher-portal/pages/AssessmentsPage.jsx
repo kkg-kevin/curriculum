@@ -332,11 +332,16 @@ export default function AssessmentsPage() {
   }, [issuesResults]);
 
   // Every submitted-but-ungraded submission across the teacher's classes — see NeedsGradingSection.
+  // A learner submits from their own separate browser session, so nothing on that side can
+  // invalidate this teacher's cache — staleTime:0 + refetchInterval keep this current on its own
+  // instead of silently serving the global 5-minute cache (main.jsx) until a manual page reload.
   const needsGradingResults = useQueries({
     queries: myClasses.map((cls) => ({
       queryKey: ["assessment-submissions", "needs-grading", cls.id],
       queryFn: () => assessmentSubmissionApi.getNeedsGrading(cls.id),
       enabled: !!cls.id,
+      staleTime: 0,
+      refetchInterval: 20_000,
     })),
   });
   // Standalone diagnostic submissions (classId: null) for learners in the teacher's classes —
@@ -347,6 +352,8 @@ export default function AssessmentsPage() {
       queryKey: ["assessment-submissions", "diagnostics-needing-grading", cls.id],
       queryFn: () => assessmentSubmissionApi.getDiagnosticsNeedingGrading(cls.id),
       enabled: !!cls.id,
+      staleTime: 0,
+      refetchInterval: 20_000,
     })),
   });
 

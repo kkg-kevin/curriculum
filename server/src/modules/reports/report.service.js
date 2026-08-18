@@ -11,6 +11,7 @@ const AssessmentSubmissionModel = require("../assessments/submissions/assessment
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
 const AttendanceModel = require("../attendance/attendance.model");
+const NotificationService = require("../notifications/notification.service");
 
 function notFound(message) {
   const err = new Error(message);
@@ -163,7 +164,7 @@ async function generateSessionReport({ learnerId, session, classId, curriculumId
   // one would silently vanish from that filtered view even though it's really published.
   const cls = await ClassModel.findById(classId);
   const now = new Date();
-  return ReportModel.create({
+  const created = await ReportModel.create({
     learnerId,
     courseId: session.courseId,
     classId,
@@ -177,6 +178,8 @@ async function generateSessionReport({ learnerId, session, classId, curriculumId
     remarks: "",
     content,
   });
+  await NotificationService.sessionReportPublished(created);
+  return created;
 }
 
 // Lazily triggers session-report generation for every learner in a class, across every session of
@@ -428,11 +431,33 @@ const ReportService = {
   // learner/guardian sees, so the hub's aggregate view can't disagree with what a family reads on
   // an individual report. Attendance has no such snapshot anywhere, so that piece alone is
   // computed here from raw records.
-  async getHubAnalytics(hubId, { days = 30 } = {}) {
+  async getHubAnalytics(hubId, { days = 30, gender = null } = {}) {
     const classes = await ClassModel.findAll({ schoolId: hubId });
     const classIds = classes.map((c) => c.id);
 
-    const links = await LearnerHubLinkModel.findByHubId(hubId);
+    let links = await LearnerHubLinkModel.findByHubId(hubId);
+    let allReports = await ReportModel.findAll({ hubId });
+    const dateFrom = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    let attendanceByClass = await Promise.all(
+      classIds.map((id) => AttendanceModel.findAll({ classId: id, dateFrom }))
+    );
+
+    // Optional gender filter — every KPI/chart/table below is derived from these three raw sets
+    // (links, reports, attendance), so filtering them here by learner gender is enough to scope
+    // the entire response without touching any of the actual analytics math further down.
+    if (gender) {
+      const learnerIds = new Set([
+        ...links.map((l) => l.learnerId),
+        ...allReports.map((r) => r.learnerId),
+        ...attendanceByClass.flat().map((a) => a.learnerId),
+      ]);
+      const learners = await LearnerModel.findAll({ ids: [...learnerIds] });
+      const matching = new Set(learners.filter((l) => l.gender === gender).map((l) => l.id));
+      links = links.filter((l) => matching.has(l.learnerId));
+      allReports = allReports.filter((r) => matching.has(r.learnerId));
+      attendanceByClass = attendanceByClass.map((rows) => rows.filter((a) => matching.has(a.learnerId)));
+    }
+
     const activeLinks = links.filter((l) => l.status === "active");
     const activeLinksByClass = {};
     activeLinks.forEach((l) => {
@@ -440,7 +465,6 @@ const ReportService = {
       activeLinksByClass[l.classId] = (activeLinksByClass[l.classId] || 0) + 1;
     });
 
-    const allReports = await ReportModel.findAll({ hubId });
     const finalReports = allReports.filter((r) => r.sessionId === null);
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
@@ -475,10 +499,6 @@ const ReportService = {
       averageScore: Math.round(compSums[id] / compCounts[id]),
     }));
 
-    const dateFrom = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    const attendanceByClass = await Promise.all(
-      classIds.map((id) => AttendanceModel.findAll({ classId: id, dateFrom }))
-    );
     const allAttendance = attendanceByClass.flat();
     const attendanceRate = allAttendance.length
       ? Math.round((allAttendance.filter((a) => a.status === "present").length / allAttendance.length) * 100)

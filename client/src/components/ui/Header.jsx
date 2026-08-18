@@ -1,11 +1,12 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FiBell, FiMenu } from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../modules/auth/services/authApi";
 import ImageUploadField from "../ImageUploadField";
+import NotificationBell from "./NotificationBell";
 
 // Admin is the only role with no dedicated "My Profile" page (Learner/Teacher/School each have
 // their own portal profile page where photo upload lives instead) — so this popover is admin's
@@ -228,16 +229,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
           gap: isMobile ? "10px" : "20px",
         }}
       >
-        {!isMobile ? (
-          <div
-            style={{
-              cursor: "pointer",
-              color: "#374151",
-            }}
-          >
-            <FiBell size={22} />
-          </div>
-        ) : null}
+        <NotificationBell />
 
         <div
           style={{

@@ -32,11 +32,20 @@ export function useIssuesForClass(classId) {
   });
 }
 
+// A teacher sits on this roster waiting for learners to submit — submission happens in a
+// completely different browser session (the learner's own), so nothing in that mutation's
+// onSuccess (useSubmitAssessment above) can reach into this teacher's cache to invalidate it.
+// Without staleTime:0 this silently served up to the global 5-minute cache (see main.jsx's
+// QueryClient defaults) even across a full navigate-away-and-back, which read as "I have to
+// reload the page to see a submission." refetchInterval keeps it current while the teacher
+// just sits on the page too, not only on remount/refocus.
 export function useRosterForIssue(issueId) {
   return useQuery({
     queryKey: KEYS.roster(issueId),
     queryFn:  () => assessmentSubmissionApi.getRoster(issueId),
     enabled:  !!issueId,
+    staleTime: 0,
+    refetchInterval: 20_000,
   });
 }
 

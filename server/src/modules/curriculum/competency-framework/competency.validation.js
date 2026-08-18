@@ -116,10 +116,6 @@ const createAssessmentTypeSchema = z.object({
   description:       z.string().max(1000).optional().default(""),
   behaviorType:      z.enum(BEHAVIOR_TYPES, { errorMap: () => ({ message: "Behavior type must be diagnostic, formative, or summative" }) }),
   progressionWeight: z.number().min(0).max(1).optional().default(1.0),
-  // Which Learning Area a diagnostic assessment type places a learner into — only
-  // meaningful when behaviorType is "diagnostic". Null means this type isn't tied to
-  // Learning Journey placement.
-  learningAreaId:    z.string().nullable().optional().default(null),
 });
 
 const updateAssessmentTypeSchema = createAssessmentTypeSchema.partial();
@@ -217,10 +213,6 @@ const evidenceScoreSchema = z.object({
 
 const calculateScoreSchema = z.object({
   evidenceScores: z.array(evidenceScoreSchema),
-  // Optional — when provided and this assessment type is a diagnostic tied to a Learning
-  // Area, the resulting score also resolves and records a Learning Journey placement for
-  // this learner.
-  learnerId: z.string().nullable().optional().default(null),
 });
 
 const indicatorAchievementSchema = z.object({

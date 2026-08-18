@@ -60,14 +60,19 @@ const getReadiness = asyncHandler(async (req, res) => {
 });
 
 const getHubAnalytics = asyncHandler(async (req, res) => {
-  const { hubId, days } = req.query;
+  const { hubId, days, gender } = req.query;
   if (!hubId) {
     const err = new Error("hubId is required");
     err.statusCode = 400;
     throw err;
   }
   if (req.user.role === "school") assertOwn(hubId === req.ownSchool?.id);
-  const data = await ReportService.getHubAnalytics(hubId, { days: days ? Number(days) : undefined });
+  if (gender && !["male", "female", "other"].includes(gender)) {
+    const err = new Error("gender must be male, female, or other");
+    err.statusCode = 400;
+    throw err;
+  }
+  const data = await ReportService.getHubAnalytics(hubId, { days: days ? Number(days) : undefined, gender: gender || null });
   res.json({ success: true, data });
 });
 

@@ -211,8 +211,8 @@ exports.updateScoring = asyncHandler(async (req, res) => {
 });
 
 exports.calculateScore = asyncHandler(async (req, res) => {
-  const { evidenceScores, learnerId } = calculateScoreSchema.parse(req.body);
-  const data = await CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores, learnerId);
+  const { evidenceScores } = calculateScoreSchema.parse(req.body);
+  const data = await CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores);
   res.json({ success: true, data });
 });
 

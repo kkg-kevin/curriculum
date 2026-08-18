@@ -22,6 +22,7 @@ import MyCoursesCard from "../components/profile/MyCoursesCard";
 import SummaryRow from "../components/profile/SummaryRow";
 import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
+import LevelJourneyCard from "../components/LevelJourneyCard";
 import LearningJourneyTabContent from "../components/profile/LearningJourneyTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
@@ -129,6 +130,8 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
+          <LevelJourneyCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
+
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
