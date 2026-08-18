@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Close as CloseIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, PauseCircle as PauseCircleIcon } from "@mui/icons-material";
+import { Add as AddIcon, CheckCircle as CheckCircleIcon, Close as CloseIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, PauseCircle as PauseCircleIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
 import { useLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { setLearningHubFilter, clearLearningHubFilters } from "../../../store/learningHubsSlice";
@@ -26,8 +26,8 @@ const selectStyle = {
 function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
   return (
     <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", margin: "0 auto 20px" }}>
-        📍
+      <div style={{ width: "72px", height: "72px", borderRadius: "18px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", color: "#25476a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+        <LocationOnIcon fontSize="large" />
       </div>
       <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
         {hasFilters ? "No results found" : "No learning hubs yet"}
@@ -152,8 +152,8 @@ export default function LearningHubsPage() {
           ))}
         </div>
       ) : isError ? (
-        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-          ⚠ Failed to load learning hubs: {error?.message}
+        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <WarningAmberIcon fontSize="small" /> Failed to load learning hubs: {error?.message}
         </div>
       ) : learningHubs.length === 0 ? (
         <EmptyState

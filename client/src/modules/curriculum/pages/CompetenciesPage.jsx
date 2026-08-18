@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon,
+  FolderOpen as FolderOpenIcon, MedicalServices as MedicalServicesIcon, Explore as ExploreIcon,
+  TrackChanges as TrackChangesIcon, Assignment as AssignmentIcon, Science as ScienceIcon,
+  ChildCare as ChildCareIcon, WarningAmber as WarningAmberIcon, EmojiEvents as EmojiEventsIcon,
+} from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
@@ -778,7 +783,7 @@ function LearningAreasPanel({ curriculumId }) {
 
       {areas.length === 0 && !showForm ? (
         <div className="cp-empty">
-          <div style={{ fontSize: "32px", marginBottom: "10px" }}>📂</div>
+          <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><FolderOpenIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No learning areas yet</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Group the competencies this curriculum uses under broad learning areas.</p>
           <button type="button" className="cp-btn-ghost" onClick={openCreate}>+ Add First Area</button>
@@ -854,7 +859,7 @@ function LearningAreasPanel({ curriculumId }) {
 
                 <div className="cp-diag-section">
                   <div className="cp-diag-header">
-                    <span className="cp-diag-title">🩺 Diagnostic Assessment</span>
+                    <span className="cp-diag-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><MedicalServicesIcon fontSize="inherit" /> Diagnostic Assessment</span>
                   </div>
 
                   {diagPickerAreaId === area.id ? (
@@ -970,7 +975,7 @@ function LearningJourneyPanel({ curriculumId }) {
         </div>
         {areasWithCourses.length === 0 ? (
           <div className="cp-empty">
-            <div style={{ fontSize: "32px", marginBottom: "10px" }}>🧭</div>
+            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><ExploreIcon fontSize="inherit" /></div>
             <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced learning areas yet</p>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
               Add courses to a Learning Area first, over on the Learning Areas tab.
@@ -1042,7 +1047,7 @@ function LearningJourneyPanel({ curriculumId }) {
         </div>
         {areasWithCourses.length === 0 ? (
           <div className="cp-empty">
-            <div style={{ fontSize: "32px", marginBottom: "10px" }}>🎯</div>
+            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
               Sequence a Learning Area's courses above first.
             </p>
@@ -1400,7 +1405,7 @@ function CompetencyPickerPanel({ curriculumId }) {
 
       {linkedComps.length === 0 ? (
         <div className="cp-empty">
-          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎯</div>
+          <div style={{ fontSize: "40px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "12px" }}><TrackChangesIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>
             No competencies added yet
           </p>
@@ -1539,7 +1544,7 @@ function CrudPanel({ title, subtitle, emptyIcon, emptyTitle, emptyText, addLabel
       {/* ── List / empty state ── */}
       {items.length === 0 ? (
         <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>{emptyIcon}</div>
+          <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}>{emptyIcon}</div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>{emptyTitle}</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "300px", marginInline: "auto" }}>{emptyText}</p>
           <button type="button" className="cp-btn-ghost" onClick={onAdd}>+ {addLabel}</button>
@@ -1672,7 +1677,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
   return (
     <CrudPanel
       title="Assessment Types" subtitle={types.length === 0 ? "Define the categories of assessment used in this curriculum" : `${types.length} type${types.length !== 1 ? "s" : ""} defined`}
-      emptyIcon="📋" emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types} isLoading={isLoading} isError={isError}
+      emptyIcon={<AssignmentIcon fontSize="inherit" />} emptyTitle="No assessment types yet" addLabel="Add Type" mode={mode} onAdd={openAdd} formContent={form} items={types} isLoading={isLoading} isError={isError}
       emptyText="Create assessment types like 'Continuous Assessment' or 'End of Term Test'."
       renderCard={(t, idx) => {
         const color = BEHAVIOR_COLORS[t.behaviorType] || "#25476a";
@@ -1694,7 +1699,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
                     const linkedArea = areas.find((a) => a.id === t.learningAreaId);
                     return linkedArea ? (
                       <span style={{ fontSize: "10px", fontWeight: "600", color: linkedArea.color || "#7C3AED", background: `${linkedArea.color || "#7C3AED"}15`, padding: "2px 7px", borderRadius: "20px" }}>
-                        🧭 {linkedArea.name}
+                        <ExploreIcon fontSize="inherit" style={{ verticalAlign: "-2px", marginRight: 3 }} /> {linkedArea.name}
                       </span>
                     ) : null;
                   })()}
@@ -1886,7 +1891,7 @@ function EvidenceTypesSubPanel({ curriculumId }) {
   return (
     <CrudPanel
       title="Evidence Types" subtitle={evidences.length === 0 ? "Define the evidence methods used to assess learning" : `${evidences.length} evidence type${evidences.length !== 1 ? "s" : ""} defined`}
-      emptyIcon="🔬" emptyTitle="No evidence types yet" addLabel="Add Evidence Type" mode={mode} onAdd={openAdd} formContent={form} items={evidences} isLoading={isLoading} isError={isError}
+      emptyIcon={<ScienceIcon fontSize="inherit" />} emptyTitle="No evidence types yet" addLabel="Add Evidence Type" mode={mode} onAdd={openAdd} formContent={form} items={evidences} isLoading={isLoading} isError={isError}
       emptyText="Add evidence types like Quiz, Assignment, Project, or Teacher Observation."
       renderCard={(e, idx) => {
         const color = EVIDENCE_PALETTE[idx % EVIDENCE_PALETTE.length];
@@ -2599,7 +2604,7 @@ function AgeCategoriesPanel({ curriculumId }) {
 
       {mode === "list" && (cats.length === 0 ? (
         <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>👶</div>
+          <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><ChildCareIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No developmental stages yet</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "300px", marginInline: "auto" }}>
             Create stages to organize the progress arc for different learner developmental phases.
@@ -2633,8 +2638,8 @@ function AgeCategoriesPanel({ curriculumId }) {
                           : `up to ${cat.maxAge} yrs`}
                       </p>
                     ) : (
-                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706" }}>
-                        ⚠ No age range set — matches every learner's age
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
+                        <WarningAmberIcon fontSize="inherit" /> No age range set — matches every learner's age
                       </p>
                     )}
                   </div>
@@ -2650,12 +2655,12 @@ function AgeCategoriesPanel({ curriculumId }) {
                   )}
                 </div>
                 {cat.diagnosticAssessmentId ? (
-                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669" }}>
-                    🩺 {assessmentNameById[cat.diagnosticAssessmentId] || "Diagnostic assigned"}
+                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669", display: "flex", alignItems: "center", gap: 4 }}>
+                    <MedicalServicesIcon fontSize="inherit" /> {assessmentNameById[cat.diagnosticAssessmentId] || "Diagnostic assigned"}
                   </p>
                 ) : (
-                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706" }}>
-                    ⚠ No diagnostic attached — learners entering this stage won't be issued anything
+                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
+                    <WarningAmberIcon fontSize="inherit" /> No diagnostic attached — learners entering this stage won't be issued anything
                   </p>
                 )}
               </div>
@@ -3071,7 +3076,7 @@ function PerformanceBandsPanel({ curriculumId }) {
       {/* Empty state */}
       {mode === "list" && bands.length === 0 && (
         <div className="cp-empty">
-          <div style={{ fontSize: "36px", marginBottom: "10px" }}>🏅</div>
+          <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><EmojiEventsIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No performance bands yet</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
             Bands like Explorer, Builder, and Pioneer give learners and teachers clear language for where performance sits.

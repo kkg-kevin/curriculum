@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { FiMail, FiPhone } from "react-icons/fi";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteTeacher } from "../hooks/useTeacher";
@@ -108,13 +109,13 @@ export function TeacherCard({ teacher }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>✉️</span>
+            <FiMail size={13} />
             {teacher.email
               ? teacher.email
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No email</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <span>📞</span>
+            <FiPhone size={13} />
             {teacher.phone
               ? teacher.phone
               : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No phone</span>}

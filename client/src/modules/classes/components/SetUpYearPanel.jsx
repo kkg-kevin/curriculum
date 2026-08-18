@@ -1,4 +1,5 @@
 ﻿import { useMemo } from "react";
+import { FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useBulkCreateClasses } from "../hooks/useClasses";
 import { useAuth } from "../../../context/AuthContext";
@@ -66,9 +67,9 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
         <button
           type="button"
           onClick={onClose}
-          style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "2px 6px" }}
+          style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", display: "flex", padding: "2px 6px" }}
         >
-          ✕
+          <FiX size={17} />
         </button>
       </div>
 

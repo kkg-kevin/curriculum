@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiCheck } from "react-icons/fi";
 import { normalizeLegacyItem, ITEM_KIND_LABELS } from "../schemas/assessment.schema";
 import { uploadApi } from "../../../services/uploadApi";
 import RichContent from "./RichContent";
@@ -78,7 +79,7 @@ function FileUploadField({ value, onChange, accept, hint }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {value?.url ? (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", backgroundColor: "#F7FEFB", border: "1px solid #A7F3D0", borderRadius: 9, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, color: "#059669" }}>✓</span>
+          <span style={{ display: "flex", color: "#059669" }}><FiCheck size={15} /></span>
           <a href={value.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: T.accent, textDecoration: "underline", wordBreak: "break-all" }}>
             {value.filename || "Uploaded file"}
           </a>

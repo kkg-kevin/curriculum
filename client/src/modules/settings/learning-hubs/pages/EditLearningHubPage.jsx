@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FiAlertTriangle } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,8 +86,8 @@ export default function EditLearningHubPage() {
 
   if (isError || !hub) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Learning hub not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Learning hub not found.
       </div>
     );
   }

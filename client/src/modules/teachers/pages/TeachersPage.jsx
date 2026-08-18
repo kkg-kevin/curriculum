@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon } from "@mui/icons-material";
+import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon, Close as CloseIcon } from "@mui/icons-material";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { useAllTeachersQuery } from "../hooks/useTeacher";
@@ -125,8 +125,8 @@ export default function TeachersPage() {
         </select>
         {(search || hubFilter || statusFilter) && (
           <button type="button" onClick={() => { setSearch(""); setHubFilter(""); setStatusFilter(""); }}
-            style={{ padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-            ✕ Clear
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <CloseIcon fontSize="inherit" style={{ fontSize: 13 }} /> Clear
           </button>
         )}
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiMoreVertical, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiMoreVertical, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useCoursesQuery, useDeleteCourse, useDuplicateCourse } from "../hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -351,8 +351,8 @@ export default function CoursesPage() {
           ))}
         </div>
       ) : isError ? (
-        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-          ⚠ Failed to load courses: {error?.message}
+        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <FiAlertTriangle size={15} /> Failed to load courses: {error?.message}
         </div>
       ) : courses.length === 0 ? (
         <EmptyState onCreateNew={() => navigate("/courses/create")} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
 import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
@@ -380,8 +380,8 @@ export default function AssessmentsPage() {
           ))}
         </div>
       ) : isError ? (
-        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-          ⚠ Failed to load assessments: {error?.message}
+        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <FiAlertTriangle size={15} /> Failed to load assessments: {error?.message}
         </div>
       ) : assessments.length === 0 ? (
         <EmptyState onCreateNew={(t) => navigate(`/assessments/new/${t}`)} />

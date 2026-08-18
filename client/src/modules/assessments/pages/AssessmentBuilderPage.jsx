@@ -9,7 +9,7 @@ import { useCompetencies } from "../../settings/competencies/hooks/useCompetenci
 import { useLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
 import { useInventory } from "../../settings/inventory/hooks/useInventory";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
-import { FiPlus, FiX, FiPackage } from "react-icons/fi";
+import { FiPlus, FiX, FiPackage, FiCheck, FiEdit3, FiAward, FiTool, FiFileText, FiEye } from "react-icons/fi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
@@ -23,7 +23,7 @@ import {
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
-const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
+const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye /> };
 const TAG_PALETTE = ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706", "#0891B2", "#BE185D"];
 
 function genId() {
@@ -259,7 +259,7 @@ function ChipList({ values, options, labels, onToggle }) {
               color: active ? "#25476a" : "#6B7280",
             }}
           >
-            {active && "✓ "}{labels[opt] || opt}
+            {active && <FiCheck size={11} style={{ marginRight: 4, verticalAlign: "-1px" }} />}{labels[opt] || opt}
           </button>
         );
       })}
@@ -453,7 +453,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
                 className="tb-section-title" style={{ border: "none", background: "transparent", outline: "none", fontFamily: "Inter, sans-serif" }}
                 value={section.name} onChange={(e) => onRenameSection(section.id, e.target.value)} onClick={(e) => e.stopPropagation()}
               />
-              <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteSection(section.id); }} title="Delete section">✕</button>
+              <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteSection(section.id); }} title="Delete section"><FiX size={13} /></button>
             </div>
             <div className="tb-section-body">
               {sectionEntries.length === 0 && (
@@ -507,7 +507,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
         {entry.kind !== "note" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
         <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
-        <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete">✕</button>
+        <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete"><FiX size={13} /></button>
       </div>
     );
   }
@@ -524,7 +524,7 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
       {values.map((v, i) => (
         <div key={i} style={{ display: "flex", gap: "6px" }}>
           <input className="tb-input" placeholder={numbered ? `${placeholder} ${i + 1}` : placeholder} value={v} onChange={(e) => set(i, e.target.value)} />
-          {values.length > minItems && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}>✕</button>}
+          {values.length > minItems && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}><FiX size={13} /></button>}
         </div>
       ))}
       <button type="button" className="tb-add-item-btn" onClick={add}>+ Add</button>
@@ -576,7 +576,7 @@ function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCor
             style={{ flexShrink: 0, cursor: v.trim() ? "pointer" : "not-allowed" }}
           />
           <input className="tb-input" placeholder={`Option ${i + 1}`} value={v} onChange={(e) => set(i, e.target.value)} />
-          {options.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}>✕</button>}
+          {options.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}><FiX size={13} /></button>}
         </div>
       ))}
       <button type="button" className="tb-add-item-btn" onClick={add}>+ Add</button>
@@ -679,7 +679,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
                 <input className="tb-input" placeholder="Left" value={p.left} onChange={(e) => { const next = [...entry.pairs]; next[i] = { ...p, left: e.target.value }; set("pairs", next); }} />
                 <span style={{ color: "#9CA3AF" }}>↔</span>
                 <input className="tb-input" placeholder="Right" value={p.right} onChange={(e) => { const next = [...entry.pairs]; next[i] = { ...p, right: e.target.value }; set("pairs", next); }} />
-                {entry.pairs.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => set("pairs", entry.pairs.filter((_, idx) => idx !== i))}>✕</button>}
+                {entry.pairs.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => set("pairs", entry.pairs.filter((_, idx) => idx !== i))}><FiX size={13} /></button>}
               </div>
             ))}
             <button type="button" className="tb-add-item-btn" onClick={() => set("pairs", [...entry.pairs, { left: "", right: "" }])}>+ Add Pair</button>
@@ -890,7 +890,7 @@ function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
                 {indicatorMarks.length === 0 && (
                   <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
                 )}
-                <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}>✕</button>
+                <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
               </div>
               <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={c.description} onChange={(e) => update(c.id, { description: e.target.value })} />
               <div style={{ marginTop: "8px" }}>
@@ -953,7 +953,7 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
             <div key={d.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
               <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
                 <input className="tb-input" placeholder="Deliverable name" value={d.name} onChange={(e) => updateDeliverable(d.id, { name: e.target.value })} />
-                <button type="button" className="tb-icon-btn danger" onClick={() => removeDeliverable(d.id)}>✕</button>
+                <button type="button" className="tb-icon-btn danger" onClick={() => removeDeliverable(d.id)}><FiX size={13} /></button>
               </div>
               <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={d.description} onChange={(e) => updateDeliverable(d.id, { description: e.target.value })} style={{ marginBottom: "6px" }} />
               <ChipList values={d.submissionKinds} options={SUBMISSION_ITEM_KINDS} labels={ITEM_KIND_LABELS} onToggle={(kind) => updateDeliverable(d.id, { submissionKinds: d.submissionKinds.includes(kind) ? d.submissionKinds.filter((k) => k !== kind) : [...d.submissionKinds, kind] })} />
@@ -974,7 +974,7 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
               <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
                 <input className="tb-input" placeholder="Milestone name" value={m.name} onChange={(e) => updateMilestone(m.id, { name: e.target.value })} />
                 <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={m.points ?? 0} onChange={(e) => updateMilestone(m.id, { points: Number(e.target.value) || 0 })} />
-                <button type="button" className="tb-icon-btn danger" onClick={() => removeMilestone(m.id)}>✕</button>
+                <button type="button" className="tb-icon-btn danger" onClick={() => removeMilestone(m.id)}><FiX size={13} /></button>
               </div>
               <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={m.description} onChange={(e) => updateMilestone(m.id, { description: e.target.value })} />
             </div>

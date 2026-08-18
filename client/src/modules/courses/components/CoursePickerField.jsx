@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FiCheck, FiSearch } from "react-icons/fi";
 import { useCoursesQuery } from "../hooks/useCourse";
 
 // Picks from real, existing courses only — no free text, so a Learning Area can
@@ -68,7 +69,7 @@ function AddCourseDropdown({ available, disabled, onAdd }) {
           <div style={{ overflowY: "auto", padding: "6px" }}>
             {filtered.length === 0 && (
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: "22px", marginBottom: "4px" }}>{available.length === 0 ? "✓" : "🔍"}</div>
+                <div style={{ display: "flex", justifyContent: "center", color: "#9CA3AF", marginBottom: "4px" }}>{available.length === 0 ? <FiCheck size={20} /> : <FiSearch size={20} />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
                   {available.length === 0 ? "All courses are already added." : "No matches found."}
                 </p>

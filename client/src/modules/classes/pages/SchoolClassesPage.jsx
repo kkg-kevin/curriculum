@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { FiX, FiBookOpen, FiCheckCircle, FiPauseCircle } from "react-icons/fi";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -98,7 +99,7 @@ export default function SchoolClassesPage() {
               onClick={() => setSetupOpen((v) => !v)}
               style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 22px", backgroundColor: setupOpen ? "rgba(255,255,255,0.15)" : "#feb139", color: setupOpen ? "#ffffff" : "#25476a", border: setupOpen ? "1.5px solid rgba(255,255,255,0.4)" : "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s" }}
             >
-              {setupOpen ? "✕ Close" : "Set Up Year"}
+              {setupOpen ? <><FiX size={14} /> Close</> : "Set Up Year"}
             </button>
           </div>
         </div>
@@ -119,12 +120,12 @@ export default function SchoolClassesPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
-          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: "📚", bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: "✅", bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
-          { label: "Inactive",      value: classesLoading ? "—" : classes.length - activeCount, icon: "⏸️", bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
+          { label: "Total Classes", value: classesLoading ? "—" : classes.length,              icon: <FiBookOpen size={18} />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
+          { label: "Active",        value: classesLoading ? "—" : activeCount,                 icon: <FiCheckCircle size={18} />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
+          { label: "Inactive",      value: classesLoading ? "—" : classes.length - activeCount, icon: <FiPauseCircle size={18} />, bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
         ].map((stat) => (
           <div key={stat.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${stat.border}`, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{stat.icon}</div>
+            <div style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: stat.bg, color: stat.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{stat.icon}</div>
             <div>
               <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.value}</p>
               <p style={{ margin: "3px 0 0", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{stat.label}</p>
@@ -142,8 +143,8 @@ export default function SchoolClassesPage() {
         </select>
         {statusFilter && (
           <button type="button" onClick={() => setStatusFilter("")}
-            style={{ padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-            ✕ Clear
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <FiX size={13} /> Clear
           </button>
         )}
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>
@@ -171,7 +172,7 @@ export default function SchoolClassesPage() {
         </div>
       ) : classes.length === 0 ? (
         <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ width: 72, height: 72, borderRadius: 18, background: "linear-gradient(135deg, #FFF7ED, #FFEDD5)", border: "2px solid #FED7AA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>📚</div>
+          <div style={{ width: 72, height: 72, borderRadius: 18, background: "linear-gradient(135deg, #FFF7ED, #FFEDD5)", border: "2px solid #FED7AA", color: "#EA580C", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><FiBookOpen size={30} /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111827" }}>
             {statusFilter ? "No classes match the filter" : `No classes for ${school?.name || "this school"} yet`}
           </h3>

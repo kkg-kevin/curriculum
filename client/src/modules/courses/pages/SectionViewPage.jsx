@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FiAlertTriangle, FiLock } from "react-icons/fi";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
@@ -568,8 +569,8 @@ export default function SectionViewPage() {
 
   if (!session || !course) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Section not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Section not found.
       </div>
     );
   }
@@ -580,8 +581,8 @@ export default function SectionViewPage() {
     const blockingName = lockedByModuleName.get(sessionId);
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px", padding: "24px", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "16px", color: "#B45309" }}>
-        <span style={{ fontSize: "14px" }}>
-          🔒 This session is locked{blockingName ? ` — finish "${blockingName}" first.` : " — finish the previous module first."}
+        <span style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <FiLock size={14} /> This session is locked{blockingName ? ` — finish "${blockingName}" first.` : " — finish the previous module first."}
         </span>
         <button
           type="button"

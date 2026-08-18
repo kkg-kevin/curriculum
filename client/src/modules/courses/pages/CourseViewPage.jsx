@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { FiAlertTriangle, FiBookOpen, FiFileText, FiList } from "react-icons/fi";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -540,8 +541,8 @@ export default function CourseViewPage() {
 
   if (courseError || !course) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Course not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Course not found.
       </div>
     );
   }
@@ -683,8 +684,8 @@ export default function CourseViewPage() {
             {course.coverImage ? (
               <img src={course.coverImage} alt={course.name} style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
             ) : (
-              <div style={{ width: "100%", height: "160px", backgroundColor: "#F0F6FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>
-                📚
+              <div style={{ width: "100%", height: "160px", backgroundColor: "#F0F6FB", color: "#38aae1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FiBookOpen size={32} />
               </div>
             )}
           </div>
@@ -693,10 +694,10 @@ export default function CourseViewPage() {
             <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Course Includes</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#374151" }}>
-                <span>📄</span> {sessions.length} Session{sessions.length !== 1 ? "s" : ""}
+                <FiFileText size={14} /> {sessions.length} Session{sessions.length !== 1 ? "s" : ""}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#374151" }}>
-                <span>☰</span> {sessions.length * SECTIONS.length} Sections
+                <FiList size={14} /> {sessions.length * SECTIONS.length} Sections
               </div>
             </div>
           </div>

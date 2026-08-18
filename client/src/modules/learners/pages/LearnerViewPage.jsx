@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiActivity, FiHome } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
@@ -25,7 +26,7 @@ const GRAD_TO   = "#38aae1";
 const ACCENT    = "#25476a";
 // Diagnostics are a distinct category from every other card on this page (Guardian, Learning
 // Hubs, Learning Journey, etc. all share the standard teal heading) — this violet accent plus
-// the 🩺 icon is what sets them apart at a glance.
+// the FiActivity icon is what sets them apart at a glance.
 const DIAGNOSTIC_ACCENT = "#7C3AED";
 
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
@@ -142,7 +143,7 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, borderLeft: `4px solid ${DIAGNOSTIC_ACCENT}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>🩺 Diagnostic Assessment</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><FiActivity size={14} /> Diagnostic Assessment</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
         Auto-issued based on this learner's age; grading it sets their Developmental Stage and Performance Band below.
       </p>
@@ -215,7 +216,7 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, borderLeft: `4px solid ${DIAGNOSTIC_ACCENT}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em" }}>🩺 Learning Area Diagnostics</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><FiActivity size={14} /> Learning Area Diagnostics</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
         One diagnostic per learning area this learner's class exposes; grading one places them at a starting course in that area, below.
       </p>
@@ -468,7 +469,7 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
     <div style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <div onClick={() => navigate(schoolViewPath(isAdmin ? "admin" : "school", enrollment.id))} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", minWidth: 0 }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>🏫</span>
+          <span style={{ display: "flex", color: ACCENT, flexShrink: 0 }}><FiHome size={18} /></span>
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ACCENT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{enrollment.name}</p>
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{enrollment.admissionNumber || "No admission number"}</p>

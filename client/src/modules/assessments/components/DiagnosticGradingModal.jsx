@@ -1,3 +1,4 @@
+import { FiX } from "react-icons/fi";
 import GradingPanel from "./GradingPanel";
 
 // Shared "grade this diagnostic" overlay — the same GradingPanel wrapped in an identical modal
@@ -10,7 +11,7 @@ export default function DiagnosticGradingModal({ title, assessment, submission, 
       <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{title}</h3>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16 }}>✕</button>
+          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", display: "flex" }}><FiX size={17} /></button>
         </div>
         <GradingPanel assessment={assessment} submission={submission} isSaving={isSaving} onSave={onSave} />
       </div>

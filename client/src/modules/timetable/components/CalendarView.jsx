@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip } from "../hooks/useTimetable";
@@ -805,9 +806,9 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
           </div>
           <button
             type="button" onClick={onClose} aria-label="Close"
-            style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, fontSize: 14, cursor: "pointer" }}
+            style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           >
-            ✕
+            <FiX size={14} />
           </button>
         </div>
 
@@ -928,9 +929,9 @@ function SkipDetailModal({ skip, resolveCourseName, onClose }) {
           </div>
           <button
             type="button" onClick={onClose} aria-label="Close"
-            style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, fontSize: 14, cursor: "pointer" }}
+            style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: T.inkMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           >
-            ✕
+            <FiX size={14} />
           </button>
         </div>
         <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 12 }}>

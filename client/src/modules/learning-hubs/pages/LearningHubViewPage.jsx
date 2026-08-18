@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
+import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
 import { useLearningHubQuery, useDeleteLearningHub, useHubTeachersQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
@@ -44,7 +44,7 @@ function DetailRow({ icon, label, value }) {
 function EmptyList({ icon, text }) {
   return (
     <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
-      <div style={{ fontSize: "24px", marginBottom: "8px" }}>{icon}</div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>{icon}</div>
       <p style={{ margin: 0, fontSize: "13px" }}>{text}</p>
     </div>
   );
@@ -99,7 +99,7 @@ export default function LearningHubViewPage() {
     return <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>Loading learning hub…</div>;
   }
   if (isError || !hub) {
-    return <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>⚠ Learning hub not found.</div>;
+    return <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}><WarningAmberIcon fontSize="small" /> Learning hub not found.</div>;
   }
 
   const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
@@ -356,7 +356,7 @@ export default function LearningHubViewPage() {
       <div style={{ display: "grid", gridTemplateColumns: isSchool ? "1fr 1fr 1fr" : "1fr", gap: "16px" }}>
         <Section title="Educators" count={teachers.length}>
           {teachers.length === 0 ? (
-            <EmptyList icon="👩‍🏫" text="No educators yet." />
+            <EmptyList icon={<PeopleAltIcon fontSize="medium" />} text="No educators yet." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {teachers.slice(0, 5).map((t) => (
@@ -378,7 +378,7 @@ export default function LearningHubViewPage() {
         <>
         <Section title="Classes" count={classes.length}>
             {classes.length === 0 ? (
-              <EmptyList icon="🏫" text="No classes yet." />
+              <EmptyList icon={<SchoolIcon fontSize="medium" />} text="No classes yet." />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {classes.slice(0, 5).map((c) => (
@@ -393,7 +393,7 @@ export default function LearningHubViewPage() {
 
           <Section title="Learners" count={learners.length}>
             {learners.length === 0 ? (
-              <EmptyList icon="🎒" text="No learners yet." />
+              <EmptyList icon={<PersonIcon fontSize="medium" />} text="No learners yet." />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {learners.slice(0, 5).map((l) => (

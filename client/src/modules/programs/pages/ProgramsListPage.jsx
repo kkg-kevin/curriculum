@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FiLayers } from "react-icons/fi";
+import { FiLayers, FiAlertTriangle } from "react-icons/fi";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import CurriculumCard from "../../curriculum/components/CurriculumCard";
 
@@ -69,8 +69,8 @@ export default function ProgramsListPage() {
           ))}
         </div>
       ) : isError ? (
-        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-          ⚠ Failed to load programs: {error?.message}
+        <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <FiAlertTriangle size={15} /> Failed to load programs: {error?.message}
         </div>
       ) : programs.length === 0 ? (
         <EmptyState onCreateNew={() => navigate("/curriculum/create")} />

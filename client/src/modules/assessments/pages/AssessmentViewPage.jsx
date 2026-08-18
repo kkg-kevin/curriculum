@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { FiAlertTriangle, FiEdit3, FiAward, FiTool, FiFileText, FiEye, FiClipboard } from "react-icons/fi";
 import { useAssessmentQuery } from "../hooks/useAssessment";
 import { STRUCTURE_MODE_LABELS } from "../schemas/assessment.schema";
 import AssessmentContent, { TYPE_LABELS } from "../components/AssessmentContent";
 
-const TYPE_ICONS = { quiz: "📝", exam: "🎓", project: "🛠️", assignment: "📄", observation: "👁️" };
+const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye /> };
 
 export default function AssessmentViewPage() {
   const { id } = useParams();
@@ -20,8 +21,8 @@ export default function AssessmentViewPage() {
 
   if (isError || !assessment) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Assessment not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Assessment not found.
       </div>
     );
   }
@@ -43,8 +44,8 @@ export default function AssessmentViewPage() {
 
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <div style={{ width: "60px", height: "60px", borderRadius: "16px", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", flexShrink: 0 }}>
-                {TYPE_ICONS[type] || "📋"}
+              <div style={{ width: "60px", height: "60px", borderRadius: "16px", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)", color: "#ffffff", fontSize: "26px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {TYPE_ICONS[type] || <FiClipboard />}
               </div>
               <div>
                 <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>
