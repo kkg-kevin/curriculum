@@ -139,6 +139,7 @@ export default function LearnerForm() {
                   options={LANGUAGES}
                   value={field.value ? field.value.split(",").map((v) => v.trim()).filter(Boolean) : []}
                   onChange={(next) => field.onChange(next.join(", "))}
+                  itemLabel="languages"
                 />
               )}
             />
