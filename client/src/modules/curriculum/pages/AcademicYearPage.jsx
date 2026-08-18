@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon } from "@mui/icons-material";
+import { CheckCircle as CheckCircleIcon, Edit as EditIcon, FactCheck as FactCheckIcon, RocketLaunch as RocketLaunchIcon, Schedule as ScheduleIcon, CalendarMonth as CalendarMonthIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from "@mui/icons-material";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
 import {
   useAcademicYears,
@@ -564,7 +564,7 @@ function AcademicYearSidebar({
                     <span style={{ fontSize: "10px", color: "#9CA3AF" }}>{group.versions.length}v</span>
                   </div>
                 </div>
-                <span style={{ fontSize: "13px", color: "#9CA3AF", flexShrink: 0 }}>{isOpen ? "▲" : "▼"}</span>
+                <span style={{ display: "flex", color: "#9CA3AF", flexShrink: 0 }}>{isOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}</span>
               </button>
 
               {/* Version entries */}
@@ -756,7 +756,7 @@ export default function AcademicYearPage() {
       {/* Empty state (no groups) */}
       {groups.length === 0 && mode === "view" && (
         <div style={{ textAlign: "center", padding: "72px 32px", backgroundColor: "#FAFAFA", border: "2px dashed #E5E7EB", borderRadius: "20px", animation: "ay-fadein 0.2s ease" }}>
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>📅</div>
+          <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "12px" }}><CalendarMonthIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No academic years yet</p>
           <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto" }}>
             Create the first academic year for this curriculum. Set the year label, overall dates, and period dates.

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { FiUsers, FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar } from "react-icons/fi";
+import { FiUsers, FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck } from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 
@@ -213,7 +213,7 @@ function LevelJourney({ levelJourney, currentLevel }) {
                     border: status === "achieved" ? "none" : status === "current" ? `2px solid ${GOLD}` : `1.5px dashed ${BORDER}`,
                   }}
                 >
-                  {status === "achieved" ? "✓" : `${Math.round(bp.completion)}%`}
+                  {status === "achieved" ? <FiCheck size={16} /> : `${Math.round(bp.completion)}%`}
                 </div>
                 <p style={{ margin: 0, fontSize: 10.5, fontWeight: 700, color: status === "locked" ? INK_FAINT : INK, textAlign: "center" }}>{bp.name}</p>
               </div>

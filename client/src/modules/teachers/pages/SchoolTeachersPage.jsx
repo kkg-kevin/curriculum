@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon } from "@mui/icons-material";
+import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon, Close as CloseIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherCreatePath } from "../../../routes/portalPaths";
 import { useLearningHubQuery as useSchoolQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
@@ -98,8 +98,8 @@ export default function SchoolTeachersPage() {
         </select>
         {statusFilter && (
           <button type="button" onClick={() => setStatusFilter("")}
-            style={{ padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-            ✕ Clear
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <CloseIcon fontSize="inherit" style={{ fontSize: 13 }} /> Clear
           </button>
         )}
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>

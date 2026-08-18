@@ -39,7 +39,7 @@ export default function ShareProfileCard({ learnerId }) {
   };
 
   return (
-    <div style={{ ...cardStyle(), borderTop: `3px solid ${T.accentMid}`, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 260 }}>
+    <div style={{ ...cardStyle(), padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 260 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: T.tintBg, color: T.accentMid, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

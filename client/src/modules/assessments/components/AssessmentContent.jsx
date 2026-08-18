@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { FiCheck, FiAlertTriangle, FiPackage, FiFlag } from "react-icons/fi";
 import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentLearningAreas, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
@@ -61,7 +62,7 @@ function ItemDetail({ item }) {
                 <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: correct ? "#059669" : "#374151", fontWeight: correct ? 700 : 400 }}>
                   <span style={{ color: "#9CA3AF", fontWeight: 700, width: "16px", flexShrink: 0 }}>{String.fromCharCode(65 + i)}.</span>
                   <span>{o}</span>
-                  {correct && <span>✓</span>}
+                  {correct && <span style={{ display: "inline-flex" }}><FiCheck size={13} /></span>}
                 </div>
               );
             });
@@ -69,7 +70,7 @@ function ItemDetail({ item }) {
         </div>
       )}
       {item.kind === "trueFalse" && item.correctAnswer && (
-        <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#059669", fontWeight: 700 }}>✓ {item.correctAnswer}</p>
+        <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}><FiCheck size={13} /> {item.correctAnswer}</p>
       )}
       {item.kind === "matching" && item.pairs?.length > 0 && (
         <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -191,8 +192,8 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
 
   if (isError || !assessment) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Assessment not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Assessment not found.
       </div>
     );
   }
@@ -266,7 +267,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {deliverables.map((d, i) => (
                   <div key={d.id || i} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
-                    <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#111827" }}>📦 {d.name}</p>
+                    <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#111827", display: "flex", alignItems: "center", gap: 6 }}><FiPackage size={13} /> {d.name}</p>
                     {d.description && <p style={{ margin: "0 0 6px", fontSize: "12.5px", color: "#6B7280" }}>{d.description}</p>}
                     {d.submissionKinds?.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
@@ -285,7 +286,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {milestones.map((m, i) => (
                 <div key={m.id || i} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "12px" }}>
-                  <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#111827" }}>🚩 {m.name}</p>
+                  <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#111827", display: "flex", alignItems: "center", gap: 6 }}><FiFlag size={13} /> {m.name}</p>
                   {m.description && <p style={{ margin: 0, fontSize: "12.5px", color: "#6B7280" }}>{m.description}</p>}
                 </div>
               ))}

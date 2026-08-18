@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/uploadApi";
 
@@ -106,9 +107,9 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
                 title="Remove"
-                style={{ position: "absolute", top: "4px", right: "4px", width: "22px", height: "22px", borderRadius: "50%", border: "none", backgroundColor: "rgba(17,24,39,0.65)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "13px", lineHeight: 1 }}
+                style={{ position: "absolute", top: "4px", right: "4px", width: "22px", height: "22px", borderRadius: "50%", border: "none", backgroundColor: "rgba(17,24,39,0.65)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
               >
-                ✕
+                <FiX size={12} />
               </button>
             </div>
           ))}

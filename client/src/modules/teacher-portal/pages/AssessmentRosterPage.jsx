@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiUsers } from "react-icons/fi";
+import { FiUsers, FiCheck } from "react-icons/fi";
 import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
@@ -55,7 +55,7 @@ function MilestoneRow({ milestone, progress, isSaving, onSave }) {
     return (
       <div style={{ padding: "10px 12px", backgroundColor: "#fff", border: `1px solid ${T.border}`, borderRadius: 10 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>✓ {milestone.name}</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 5 }}><FiCheck size={13} /> {milestone.name}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>{marks}/{max}</span>
             <button type="button" onClick={() => setEditing(true)} style={{ padding: 0, background: "none", border: "none", color: T.accent, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Edit</button>

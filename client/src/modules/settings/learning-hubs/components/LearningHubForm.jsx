@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
-import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Coffee as CoffeeIcon, CorporateFare as CorporateFareIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
+import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Close as CloseIcon, Coffee as CoffeeIcon, CorporateFare as CorporateFareIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
 import {
   KENYA_COUNTIES, LEARNING_HUB_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
 } from "../../../learning-hubs/schemas/learningHub.schema";
@@ -245,7 +245,7 @@ function AmenitiesField() {
                 {customOnly.map((v) => (
                   <span key={v} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 10px", borderRadius: "20px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", fontSize: "12px", fontWeight: "600", color: "#25476a" }}>
                     {v}
-                    <button type="button" onClick={() => toggle(v)} style={{ background: "none", border: "none", color: "#25476a", cursor: "pointer", fontSize: "12px", padding: 0, lineHeight: 1 }}>✕</button>
+                    <button type="button" onClick={() => toggle(v)} style={{ background: "none", border: "none", color: "#25476a", cursor: "pointer", display: "flex", padding: 0 }}><CloseIcon style={{ fontSize: "13px" }} /></button>
                   </span>
                 ))}
               </div>
@@ -571,7 +571,7 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
           to "School", which enrolls learners rather than renting seats. */}
       {!isSchool && (
         <SectionCard
-          icon="🪑"
+          icon={<ChairIcon fontSize="small" />}
           title="Spaces, Capacity & Pricing"
           subtitle="Define each bookable seating option, its capacity, reservation rules, and pricing model"
           badge="Non-school types"

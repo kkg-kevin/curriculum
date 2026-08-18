@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { FiAlertTriangle } from "react-icons/fi";
 import { useCourseQuery, useSessions } from "../hooks/useCourse";
 import { sessionLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
@@ -23,8 +24,8 @@ export default function CourseContentLandingPage() {
   }
   if (!course) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Course not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Course not found.
       </div>
     );
   }

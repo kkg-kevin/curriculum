@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { FiAlertTriangle, FiClipboard } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { useClassQuery, useClassCourseTeachers } from "../../classes/hooks/useClasses";
@@ -76,16 +77,16 @@ export default function MyClassPage() {
 
   if (!cls) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Class not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Class not found.
       </div>
     );
   }
 
   if (teacher && !hasCourseInClass) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ You aren't assigned to any course in this class.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> You aren't assigned to any course in this class.
       </div>
     );
   }
@@ -110,7 +111,7 @@ export default function MyClassPage() {
           onClick={() => navigate(`/teacher-portal/attendance?classId=${classId}`)}
           style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
         >
-          📋 Take Attendance
+          <FiClipboard size={14} /> Take Attendance
         </button>
       </div>
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { FiCheck, FiX } from "react-icons/fi";
 import { normalizeLegacyItem, entryMarks } from "../schemas/assessment.schema";
 import { useAssessmentCompetencies } from "../hooks/useAssessment";
 import RichContent from "./RichContent";
@@ -35,8 +36,8 @@ function AutoGradedRow({ index, item, response, autoResult }) {
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
         <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: correct ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
-          {correct ? "✓ Correct" : "✗ Incorrect"} · {autoResult?.marksAwarded ?? 0}/{autoResult?.maxMarks ?? entryMarks(item)}
+        <span style={{ fontSize: 11, fontWeight: 700, color: correct ? "#059669" : "#DC2626", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          {correct ? <><FiCheck size={12} /> Correct</> : <><FiX size={12} /> Incorrect</>} · {autoResult?.marksAwarded ?? 0}/{autoResult?.maxMarks ?? entryMarks(item)}
         </span>
       </div>
       <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted }}>Answer: {formatResponse(response)}</p>

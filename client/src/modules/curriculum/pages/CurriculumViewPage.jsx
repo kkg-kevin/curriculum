@@ -8,6 +8,16 @@ import {
   CheckCircleOutlined as CheckCircleOutlineIcon,
   Search as SearchIcon,
   Coffee as CoffeeIcon,
+  AccountTree as AccountTreeIcon,
+  CalendarMonth as CalendarMonthIcon,
+  FolderCopy as FolderCopyIcon,
+  School as SchoolIcon,
+  TrackChanges as TrackChangesIcon,
+  Folder as FolderIcon,
+  TrendingUp as TrendingUpIcon,
+  BarChart as BarChartIcon,
+  LocationOn as LocationOnIcon,
+  Home as HomeIcon,
 } from "@mui/icons-material";
 import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCourse } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
@@ -225,7 +235,7 @@ function FrameworkPanel({ icon, title, count, emptyText, children }) {
   return (
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: "1px solid #F0F2F5", borderRadius: "14px", display: "flex", flexDirection: "column", gap: "10px", minHeight: "120px", minWidth: 0, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{ fontSize: "15px" }}>{icon}</span>
+        <span style={{ display: "flex", color: "#25476a" }}>{icon}</span>
         <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#111827", flex: 1 }}>{title}</span>
         <span style={{ padding: "1px 8px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: "#F3F4F6", color: "#6B7280" }}>{count}</span>
       </div>
@@ -508,17 +518,17 @@ export default function CurriculumViewPage() {
               </button>
               <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)}
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                🏗 Structure
+                <AccountTreeIcon fontSize="small" /> Structure
               </button>
               {!curriculum.isProgram && (
                 <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)}
                   style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                  📅 Academic Year
+                  <CalendarMonthIcon fontSize="small" /> Academic Year
                 </button>
               )}
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
                 style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                🗂 Version Control
+                <FolderCopyIcon fontSize="small" /> Version Control
               </button>
             </div>
           </div>
@@ -540,17 +550,17 @@ export default function CurriculumViewPage() {
         {/* Stats bar */}
         <div style={{ padding: "18px 28px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {[
-            { label: cycleLabel(model), value: periods.length, icon: "📆", bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
-            { label: "Classes",         value: classes.length,  icon: "🎓", bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
-            { label: "Total Courses",   value: totalCourses,    icon: <MenuBookIcon />, bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
-            { label: "Versions",        value: history.length + (current ? 1 : 0), icon: "🗂", bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
+            { label: cycleLabel(model), value: periods.length, icon: <CalendarMonthIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
+            { label: "Classes",         value: classes.length,  icon: <SchoolIcon fontSize="small" />, bg: "#d6edf8", color: "#2e7db5", border: "#b8d9ee" },
+            { label: "Total Courses",   value: totalCourses,    icon: <MenuBookIcon fontSize="small" />, bg: "#E0F2FE", color: "#38aae1", border: "#a8d5ee" },
+            { label: "Versions",        value: history.length + (current ? 1 : 0), icon: <FolderCopyIcon fontSize="small" />, bg: "#F0F7FF", color: "#25476a", border: "#C7D9F8" },
           ].map((stat) => (
             <div key={stat.label} style={{
               display: "flex", alignItems: "center", gap: "10px",
               padding: "11px 16px", backgroundColor: stat.bg, border: `1px solid ${stat.border}`,
               borderRadius: "12px", flex: "1 0 100px", minWidth: "90px",
             }}>
-              <span style={{ fontSize: "18px", flexShrink: 0 }}>{stat.icon}</span>
+              <span style={{ display: "flex", color: stat.color, flexShrink: 0 }}>{stat.icon}</span>
               <div>
                 <p style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: stat.color, lineHeight: 1 }}>{stat.value}</p>
                 <p style={{ margin: "2px 0 0 0", fontSize: "10px", fontWeight: "700", color: stat.color, opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</p>
@@ -682,7 +692,7 @@ export default function CurriculumViewPage() {
                   <div className="cvp-date-pills">
                     {hasDates ? (
                       <span className="cvp-date-pill cvp-date-pill-term">
-                        📅 {fmtDate(sel.startDate)} → {fmtDate(sel.endDate)}
+                        <CalendarMonthIcon fontSize="inherit" style={{ verticalAlign: "-2px", marginRight: 4 }} /> {fmtDate(sel.startDate)} → {fmtDate(sel.endDate)}
                       </span>
                     ) : (
                       <span className="cvp-date-pill cvp-date-pill-none">No dates set — configure in Academic Year</span>
@@ -711,7 +721,7 @@ export default function CurriculumViewPage() {
           ) : (
             /* No academic year configured */
             <div style={{ padding: "48px 24px", textAlign: "center" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 16px" }}>🗂</div>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", color: "#25476a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}><FolderCopyIcon fontSize="large" /></div>
               <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#111827" }}>No Version Created Yet</h3>
               <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#6B7280", lineHeight: "1.6", maxWidth: "340px", marginInline: "auto" }}>
                 Go to Version Control to assign courses to each class per period, then save as a version.
@@ -754,7 +764,7 @@ export default function CurriculumViewPage() {
                 <div className="cvp-date-pills">
                   {hasDates ? (
                     <span className="cvp-date-pill cvp-date-pill-term">
-                      📅 {fmtDate(pDates.startDate)} → {fmtDate(pDates.endDate)}
+                      <CalendarMonthIcon fontSize="inherit" style={{ verticalAlign: "-2px", marginRight: 4 }} /> {fmtDate(pDates.startDate)} → {fmtDate(pDates.endDate)}
                     </span>
                   ) : (
                     <span className="cvp-date-pill cvp-date-pill-none">No dates — set in Academic Year → Period Dates</span>
@@ -831,7 +841,7 @@ export default function CurriculumViewPage() {
 
         {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwPerformanceBands.length === 0 && fwProgressLevels.length === 0 && fwAssessmentTypes.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎯</div>
+            <div style={{ fontSize: "28px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "8px" }}><TrackChangesIcon fontSize="inherit" /></div>
             <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#374151" }}>No competency framework set up yet</p>
             <p style={{ margin: "0 0 16px", fontSize: "12.5px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
               Adopt competencies, group them into learning areas, build the progress arc, and design assessments for this curriculum.
@@ -843,21 +853,21 @@ export default function CurriculumViewPage() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-            <FrameworkPanel icon="🎯" title="Competencies" count={fwCompetencies.length} emptyText="None adopted yet">
+            <FrameworkPanel icon={<TrackChangesIcon fontSize="small" />} title="Competencies" count={fwCompetencies.length} emptyText="None adopted yet">
               {fwCompetencies.slice(0, 6).map((c) => (
                 <FrameworkTag key={c.id} label={c.name} sub={c.minimumThreshold != null ? `≥${c.minimumThreshold}%` : null} />
               ))}
               {fwCompetencies.length > 6 && <FrameworkTag label={`+${fwCompetencies.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
             </FrameworkPanel>
 
-            <FrameworkPanel icon="📂" title="Learning Areas" count={fwLearningAreas.length} emptyText="None added yet">
+            <FrameworkPanel icon={<FolderIcon fontSize="small" />} title="Learning Areas" count={fwLearningAreas.length} emptyText="None added yet">
               {fwLearningAreas.slice(0, 6).map((a) => (
                 <FrameworkTag key={a.id} label={a.name} color={a.color || "#25476a"} bg={`${a.color || "#25476a"}12`} border={`${a.color || "#25476a"}40`} />
               ))}
               {fwLearningAreas.length > 6 && <FrameworkTag label={`+${fwLearningAreas.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
             </FrameworkPanel>
 
-            <FrameworkPanel icon="🪜" title="Progress Arc" count={fwPerformanceBands.length} emptyText="No performance bands yet">
+            <FrameworkPanel icon={<TrendingUpIcon fontSize="small" />} title="Progress Arc" count={fwPerformanceBands.length} emptyText="No performance bands yet">
               {[...fwPerformanceBands].sort((x, y) => (x.order || 0) - (y.order || 0)).slice(0, 6).map((band) => (
                 <FrameworkTag
                   key={band.id}
@@ -874,7 +884,7 @@ export default function CurriculumViewPage() {
               )}
             </FrameworkPanel>
 
-            <FrameworkPanel icon="📊" title="Assessment Framework" count={fwAssessmentTypes.length} emptyText="No assessment types yet">
+            <FrameworkPanel icon={<BarChartIcon fontSize="small" />} title="Assessment Framework" count={fwAssessmentTypes.length} emptyText="No assessment types yet">
               {fwAssessmentTypes.map((at) => (
                 <FrameworkTag key={at.id} label={at.name} sub={at.typeWeight != null ? `${at.typeWeight}%` : null} color="#059669" bg="#ECFDF5" border="#A7F3D0" />
               ))}
@@ -925,7 +935,7 @@ export default function CurriculumViewPage() {
                       to={`/courses/${c.id}/view`}
                       style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", minWidth: 0, flex: 1 }}
                     >
-                      <span style={{ fontSize: "18px", flexShrink: 0 }}>📘</span>
+                      <span style={{ display: "flex", color: "#25476a", flexShrink: 0 }}><MenuBookIcon fontSize="small" /></span>
                       <div style={{ minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
                         {c.code && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{c.code}</p>}
@@ -965,7 +975,7 @@ export default function CurriculumViewPage() {
         <div style={{ padding: "16px 20px" }}>
           {assignedSchools.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px 0", color: "#9CA3AF" }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>📍</div>
+              <div style={{ fontSize: "24px", display: "flex", justifyContent: "center", marginBottom: "8px" }}><LocationOnIcon fontSize="inherit" /></div>
               <p style={{ margin: 0, fontSize: "13px" }}>No learning hubs have been assigned this curriculum yet.</p>
             </div>
           ) : (
@@ -979,7 +989,7 @@ export default function CurriculumViewPage() {
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "20px" }}>🏫</span>
+                    <span style={{ display: "flex", color: "#25476a" }}><HomeIcon fontSize="small" /></span>
                     <div>
                       <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>{s.name}</p>
                       <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>

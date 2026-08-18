@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { FiAlertTriangle, FiHome } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery, useDeleteTeacher, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub } from "../hooks/useTeacher";
@@ -243,8 +244,8 @@ export default function TeacherViewPage() {
 
   if (isError || !teacher) {
     return (
-      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px" }}>
-        ⚠ Teacher not found.
+      <div style={{ fontFamily: "Inter, sans-serif", padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiAlertTriangle size={15} /> Teacher not found.
       </div>
     );
   }
@@ -345,7 +346,7 @@ export default function TeacherViewPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {hubs.map((hub) => (
                   <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "10px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee" }}>
-                    <span onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ fontSize: "24px", flexShrink: 0, cursor: "pointer" }}>🏫</span>
+                    <span onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ display: "flex", color: "#25476a", flexShrink: 0, cursor: "pointer" }}><FiHome size={22} /></span>
                     <div onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
                       <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
                       <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>{HUB_TYPE_LABELS[hub.hubType] || hub.hubType}{hub.address?.county ? ` · ${hub.address.county}` : ""}</p>

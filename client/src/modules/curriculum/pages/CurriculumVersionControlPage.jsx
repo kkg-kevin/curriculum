@@ -971,7 +971,7 @@ export default function CurriculumVersionControlPage() {
       {/* Empty state */}
       {mode === "empty" && (
         <div className="vc-empty-state">
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
+          <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "12px" }}><FactCheckIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No versions yet</p>
           <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#9CA3AF", maxWidth: "340px", marginInline: "auto" }}>
             Assign courses to each grade and period to create Version 1. You can publish it once it's ready.

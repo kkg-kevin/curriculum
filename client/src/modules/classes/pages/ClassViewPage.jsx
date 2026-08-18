@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiStar } from "react-icons/fi";
+import { FiStar, FiHome, FiBookOpen, FiUsers } from "react-icons/fi";
 import { useClassQuery, useDeleteClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useSetPrimaryCourseTeacher } from "../hooks/useClasses";
 import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
@@ -184,7 +184,7 @@ export default function ClassViewPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>🏫</div>
+            <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><FiHome size={26} /></div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{formatClassName(cls)}</h1>
@@ -246,7 +246,7 @@ export default function ClassViewPage() {
             <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Loading…</p>
           ) : !classCourses?.length ? (
             <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>📚</div>
+              <div style={{ fontSize: 24, display: "flex", justifyContent: "center", marginBottom: 8 }}><FiBookOpen size={22} /></div>
               <p style={{ margin: 0, fontSize: 13 }}>No courses assigned to {cls.gradeName} yet in this curriculum.</p>
             </div>
           ) : (
@@ -279,7 +279,7 @@ export default function ClassViewPage() {
           </div>
           {classLearners.length === 0 ? (
             <div style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF" }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>🎒</div>
+              <div style={{ fontSize: 24, display: "flex", justifyContent: "center", marginBottom: 8 }}><FiUsers size={22} /></div>
               <p style={{ margin: "0 0 12px", fontSize: 13 }}>No learners enrolled in this class yet.</p>
               <button type="button" onClick={() => navigate(learnerCreatePath(user?.role, cls.schoolId))} style={{ padding: "8px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Enroll Learner</button>
             </div>
