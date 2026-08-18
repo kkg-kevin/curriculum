@@ -166,17 +166,58 @@ async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDat
   let cursor = 0;
   let pendingMerge = [];
   const walkStart = toUtcMs(startDate) > toUtcMs(from) ? startDate : from;
+
+  // A "move" skip relocates a session to an explicit target date the teacher picked — unlike
+  // shift/merge (which only ever change what happens AT the origin date, still within the
+  // course's normal weekday pattern), the target may not match any configured slot day at all
+  // (a Monday class moved to a one-off Saturday makeup, say). Checked ahead of the weekday/
+  // schedulability gates below rather than folded into the normal per-day logic, since the whole
+  // point of a manual override is that it works even on a day that wouldn't normally qualify.
+  // Keyed by newDate (not the origin date skipsByDate itself uses) since that's when it actually
+  // needs to be looked up during the walk.
+  const moveTargetsByDate = {};
+  Object.values(skipsByDate).forEach((skip) => {
+    if (skip.mode === "move" && skip.newDate) moveTargetsByDate[skip.newDate] = skip;
+  });
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+  // A moved session's target date can fall AFTER the cursor has already consumed every other
+  // session (e.g. the course's whole run already finished, but this one got pushed out to a
+  // one-off makeup weeks later) — without this, the walk's own stop condition (nothing left to
+  // consume) would end the loop before ever reaching that date, and the moved session would
+  // simply vanish instead of relocating. Same "give the last one a chance to flush" reasoning
+  // pendingMerge.length already gets in this same condition, just for a date instead of a flag.
+  const latestMoveTargetMs = Object.keys(moveTargetsByDate).reduce((max, d) => Math.max(max, toUtcMs(d)), 0);
+
   // The cursor must still advance through every occurrence from the anchor date onward, even
   // ones before `from`, so a session's position on the calendar doesn't depend on which range
   // happens to be requested — only walk from `from` when it's already past the anchor.
-  for (let ms = toUtcMs(startDate); ms <= toUtcMs(to) && (cursor < sessions.length || pendingMerge.length); ms += ONE_DAY_MS) {
+  for (let ms = toUtcMs(startDate); ms <= toUtcMs(to) && (cursor < sessions.length || pendingMerge.length || ms <= latestMoveTargetMs); ms += ONE_DAY_MS) {
     const date = fromUtcMs(ms);
     const day = weekdayOf(date);
+
+    const moveTarget = moveTargetsByDate[date];
+    if (moveTarget && toUtcMs(date) >= toUtcMs(walkStart)) {
+      const movedSession = sessionById.get(moveTarget.sessionId);
+      if (movedSession) {
+        events.push({
+          date, dayOfWeek: day, classId, courseId,
+          sessionId: movedSession.id, sessionTitle: movedSession.title, sessionOrder: movedSession.order,
+          teacherId: moveTarget.teacherId || null, startTime: moveTarget.startTime, endTime: moveTarget.endTime,
+          room: roomNameById.get(moveTarget.roomId) || "",
+          merged: false, moved: true,
+        });
+      }
+    }
+
     const slot = slotsByDay[day];
     if (!slot) continue;
     if (!isDateSchedulable(date, periods)) continue;
 
     const skip = skipsByDate[date];
+    // Consumed here (the session it points at is emitted above, on its target date instead) —
+    // never falls through to the normal emit below, unlike shift (which just pauses the cursor)
+    // or merge (which stashes for the next occurrence to absorb).
+    if (skip && skip.mode === "move" && cursor < sessions.length) { cursor += 1; continue; }
     if (skip && skip.mode === "shift" && cursor < sessions.length) continue;
     if (skip && skip.mode === "merge" && cursor < sessions.length) {
       pendingMerge.push(sessions[cursor]);
@@ -398,7 +439,7 @@ const TimetableService = {
   // (e.g. class.service.js's assertStreamAvailable). Merge structurally needs a following
   // occurrence to attach to, so it's rejected outright on a course's actual last session rather
   // than silently degrading to shift-like behavior at write time.
-  async createSkip({ classId, courseId, date, sessionId, mode, reason, createdBy }) {
+  async createSkip({ classId, courseId, date, sessionId, mode, reason, newDate, createdBy }) {
     const existing = await SessionSkipModel.findOne(classId, courseId, date);
     if (existing) conflictError("This session has already been rescheduled.");
     if (mode === "merge") {
@@ -406,7 +447,26 @@ const TimetableService = {
       const isLast = courseSessions[courseSessions.length - 1]?.id === sessionId;
       if (isLast) conflictError("This is the final session in the course — there's no next session to merge it with. Use \"Move all future sessions forward\" instead.");
     }
-    return SessionSkipModel.create({ classId, courseId, date, sessionId, mode, reason: reason || "", createdBy: createdBy || null });
+    // "move" snapshots the origin slot's own time/room/teacher onto the skip row rather than
+    // re-deriving them at calendar-read time — the target date may not match any of the course's
+    // configured weekday slots at all (a Monday class moved to a one-off Saturday makeup, say),
+    // so there may be nothing to derive from once the origin date's own weekday no longer applies.
+    let moveSnapshot = {};
+    if (mode === "move") {
+      const targetTaken = await SessionSkipModel.findByNewDate(classId, courseId, newDate);
+      if (targetTaken) conflictError("Another session is already scheduled on that date.");
+      const dayOfWeek = weekdayOf(date);
+      const daySlots = await TimetableModel.findAll({ classId, dayOfWeek });
+      const originSlot = daySlots.find((s) => s.courseId === courseId);
+      moveSnapshot = {
+        newDate,
+        startTime: originSlot?.startTime || null,
+        endTime: originSlot?.endTime || null,
+        roomId: originSlot?.roomId || null,
+        teacherId: originSlot?.teacherId || null,
+      };
+    }
+    return SessionSkipModel.create({ classId, courseId, date, sessionId, mode, reason: reason || "", createdBy: createdBy || null, ...moveSnapshot });
   },
 
   async deleteSkip(id) {

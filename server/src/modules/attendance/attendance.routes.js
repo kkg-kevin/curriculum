@@ -9,6 +9,10 @@ const router = express.Router();
 // classes/learners.
 router.post("/mark", authorize("admin", "school", "teacher", "branchAdmin"), markAttendance);
 router.get("/", authorize("admin", "school", "teacher", "branchAdmin"), getByClassDate);
-router.get("/history", authorize("admin", "school", "teacher", "branchAdmin"), getHistory);
+// Also learner-facing (own record only, forced server-side — see getHistory in the controller)
+// — the learner-portal dashboard's own attendance-rate pill reads this. getByClassDate above
+// stays admin/school/teacher/branchAdmin-only since it returns the WHOLE class's records for one
+// date, not scoped to a single learner the way history's learnerId filter is.
+router.get("/history", authorize("admin", "school", "teacher", "branchAdmin", "learner"), getHistory);
 
 module.exports = router;

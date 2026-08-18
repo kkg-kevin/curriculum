@@ -61,10 +61,25 @@ const startObservationSchema = z.object({
   learnerId: z.string().min(1, "Learner is required"),
 });
 
+// One project milestone's grade — see gradeMilestone in the controller/service.
+const gradeMilestoneSchema = z.object({
+  learnerId: z.string().min(1, "Learner is required"),
+  marks:     z.number().min(0).optional().default(0),
+  feedback:  z.string().max(5000).optional().default(""),
+});
+
+// Teacher reissuing a graded assessment to one learner — see reissueToLearner in the service.
+const reissueSchema = z.object({
+  learnerId: z.string().min(1, "Learner is required"),
+  dueDate:   z.string().optional().nullable(),
+});
+
 module.exports = {
   issueAssessmentSchema,
   issueOnSessionCompleteSchema,
   submitAnswersSchema,
   gradeSubmissionSchema,
   startObservationSchema,
+  gradeMilestoneSchema,
+  reissueSchema,
 };

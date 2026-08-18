@@ -9,6 +9,7 @@ export const assessmentSubmissionApi = {
   getDiagnosticsNeedingGrading: (classId) => api.get(`${BASE}/diagnostics-needing-grading`, { params: { classId } }).then((r) => r.data),
   getRoster:          (issueId)          => api.get(`${BASE}/issues/${issueId}/roster`).then((r) => r.data.data),
   revokeIssue:        (issueId)          => api.delete(`${BASE}/issues/${issueId}`).then((r) => r.data),
+  reissue:            (issueId, payload) => api.post(`${BASE}/issues/${issueId}/reissue`, payload).then((r) => r.data.data),
 
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
   getDiagnosticForLearner: (learnerId, curriculumId) => api.get(`${BASE}/diagnostic/${learnerId}`, { params: curriculumId ? { curriculumId } : {} }).then((r) => r.data.data),
@@ -17,6 +18,7 @@ export const assessmentSubmissionApi = {
   issueOnSessionComplete: (payload)      => api.post(`${BASE}/issues/course-progress`, payload).then((r) => r.data.data),
   getOrCreateSubmission: (issueId)       => api.post(`${BASE}/submissions`, { issueId }).then((r) => r.data.data),
   startObservation:   (issueId, learnerId) => api.post(`${BASE}/issues/${issueId}/start-observation`, { learnerId }).then((r) => r.data.data),
+  gradeMilestone: (issueId, milestoneId, payload) => api.post(`${BASE}/issues/${issueId}/milestones/${milestoneId}`, payload).then((r) => r.data.data),
   saveDraft:           (id, answers)     => api.patch(`${BASE}/submissions/${id}/draft`, { answers }).then((r) => r.data.data),
   submit:              (id, answers)     => api.post(`${BASE}/submissions/${id}/submit`, { answers }).then((r) => r.data.data),
   getSubmission:       (id)              => api.get(`${BASE}/submissions/${id}`).then((r) => r.data.data),

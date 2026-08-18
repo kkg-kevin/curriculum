@@ -8,7 +8,7 @@ const {
 } = require("../../../shared/utils/model.utils");
 
 const TABLE = "assessment_submissions";
-const JSON_FIELDS = ["answers", "autoItemResults", "itemFeedback", "indicatorBreakdown"];
+const JSON_FIELDS = ["answers", "autoItemResults", "itemFeedback", "indicatorBreakdown", "milestoneProgress"];
 
 // One record per (issue, learner) — a learner's single attempt at an issued assessment.
 const AssessmentSubmissionModel = {

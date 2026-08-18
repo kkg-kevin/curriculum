@@ -103,7 +103,11 @@ function computeMaxScore(assessment) {
   ].filter((e) => e.kind !== "note");
   const itemMax = entries.reduce((sum, e) => sum + computeEntryMarks(e), 0);
   const rubricMax = (assessment.rubric || []).reduce((sum, c) => sum + computeEntryMarks(c), 0);
-  return itemMax + rubricMax;
+  // A project's milestones (see gradeMilestone in assessment-submission.service.js) are graded
+  // independently of items/rubric — included here so a project's maxScore reflects its full
+  // possible total from the moment the submission is created, not just once milestones exist.
+  const milestoneMax = (assessment.milestones || []).reduce((sum, m) => sum + computeEntryMarks(m), 0);
+  return itemMax + rubricMax + milestoneMax;
 }
 
 // Resolves each item's/rubric criterion's indicatorMarks (marks tagged per competency

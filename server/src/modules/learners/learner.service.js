@@ -16,6 +16,7 @@ const AssessmentSubmissionModel = require("../assessments/submissions/assessment
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const ClassGroupService = require("../classes/groups/class-group.service");
+const CourseModel = require("../courses/course.model");
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -353,13 +354,15 @@ const LearnerService = {
     return token;
   },
 
-  // The ONLY thing an unauthenticated scan of the QR ever sees — a hand-built allow-list, never
+  // What an unauthenticated scan of the QR sees — still a hand-built allow-list (never
   // `{...record}`, so a field added to the learner schema later can't silently start leaking
-  // through a link a school printed on a badge. Deliberately excludes dateOfBirth, nationality,
-  // languages, username (a login identifier), guardianEmail, and every diagnostic/placement
-  // field — see the "Revocable + limited fields" design decision this implements. Class/hub
-  // comes from the same "first active enrollment" fallback LearnerViewPage.jsx already uses as
-  // its "current" context.
+  // through a link a school printed on a badge), but now a comprehensive one covering everything
+  // shown on this learner's own Profile page: full identity, guardian contact, Developmental
+  // Stage/Performance Band placement, the Level Journey ladder, per-competency standing, and
+  // Learning Journey course placement per area. Deliberately still excludes individual assessment
+  // scores/teacher feedback (Reports/Assessments) — that can carry sensitive per-submission
+  // commentary that competency/progress summaries don't. Class/hub comes from the same "first
+  // active enrollment" fallback LearnerViewPage.jsx already uses as its "current" context.
   async getPublicProfile(token) {
     const record = await LearnerModel.findByPublicToken(token);
     if (!record) {
@@ -372,6 +375,7 @@ const LearnerService = {
     let hubName = null;
     let gradeName = null;
     let streamName = null;
+    let curriculumId = null;
     if (primaryLink) {
       const hub = await SchoolModel.findById(primaryLink.hubId);
       hubName = hub?.name || null;
@@ -379,17 +383,90 @@ const LearnerService = {
         const cls = await ClassModel.findById(primaryLink.classId);
         gradeName = cls?.gradeName || null;
         streamName = cls?.streamName || null;
+        curriculumId = cls?.curriculumId || null;
       }
     }
+
+    let developmentalStage = null;
+    let competencies = [];
+    let competenciesOnTrack = null;
+    let evidenceItemsCollected = null;
+    let levelJourney = [];
+    let currentLevel = null;
+    let learningJourney = [];
+
+    if (curriculumId) {
+      // Lazily required — competency.service.js and assessment-submission.service.js already
+      // dance around a circular-require chain with each other (see their own comments); doing
+      // the same here avoids adding this file as a third node in that cycle.
+      const CompetencyService = require("../curriculum/competency-framework/competency.service");
+
+      if (primaryLink?.currentStageId) {
+        const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
+        const stage = await AgeCategoryModel.findById(primaryLink.currentStageId);
+        developmentalStage = stage ? { name: stage.name, ageRange: stage.ageRange } : null;
+      }
+
+      const [scoreRows, allCompetencies, bandProgress, journeyRows, issuedRows] = await Promise.all([
+        CompetencyService.getLearnerCompetencyScores(curriculumId, record.id),
+        CompetencyService.getCurriculumCompetencies(curriculumId),
+        CompetencyService.getLearnerBandProgress(curriculumId, record.id),
+        CompetencyService.getLearningJourney(curriculumId, record.id),
+        AssessmentSubmissionService.getIssuedRowsForLearner(record.id),
+      ]);
+
+      competencies = scoreRows.map((s) => ({ name: s.name, score: s.score, band: s.band?.name || null }));
+      const onTrackCount = scoreRows.filter((s) => {
+        const threshold = allCompetencies.find((c) => c.id === s.competencyId)?.minimumThreshold ?? 60;
+        return s.score >= threshold;
+      }).length;
+      competenciesOnTrack = allCompetencies.length > 0 ? `${onTrackCount}/${allCompetencies.length}` : null;
+      // Same classId scoping PortfolioSnapshot.jsx applies on the learner's own profile page —
+      // "evidence collected" means evidence from THIS hub's class, not every hub they've ever
+      // touched.
+      const evidenceRows = primaryLink?.classId ? issuedRows.filter((r) => r.issue.classId === primaryLink.classId) : issuedRows;
+      evidenceItemsCollected = evidenceRows.filter((r) => r.submission.status === "graded").length;
+
+      levelJourney = bandProgress.map((bp) => ({ name: bp.name, completion: bp.completion, thresholdMet: bp.thresholdMet }));
+      // Same "highest achieved, closest-to-done next" logic as the learner portal's own
+      // deriveBandJourney (client/src/modules/learner-portal/utils/bandJourney.js) — duplicated
+      // here rather than imported since this is server code and that's a client-only pure
+      // function; kept in sync by being this small and this simple.
+      const achieved = bandProgress.filter((bp) => bp.thresholdMet);
+      const current = achieved.length ? achieved[achieved.length - 1] : null;
+      const remaining = bandProgress.filter((bp) => !bp.thresholdMet);
+      const next = remaining.length ? remaining.reduce((best, bp) => (bp.completion > best.completion ? bp : best), remaining[0]) : null;
+      currentLevel = { name: current?.name || null, nextLevelName: next?.name || null, nextLevelCompletion: next?.completion ?? null };
+
+      learningJourney = await Promise.all(journeyRows.map(async (row) => {
+        const course = row.currentCourseId ? await CourseModel.findById(row.currentCourseId) : null;
+        return { learningAreaName: row.learningAreaName, currentCourseName: course?.name || null };
+      }));
+    }
+
     return {
       firstName: record.firstName,
       lastName: record.lastName,
       photo: record.photo,
+      dateOfBirth: record.dateOfBirth,
+      age: computeAge(record.dateOfBirth),
+      registrationNumber: record.registrationNumber,
+      nationality: record.nationality,
+      languages: record.languages,
+      username: record.username,
       hubName,
       gradeName,
       streamName,
       guardianName: record.guardianName,
       guardianPhone: record.guardianPhone,
+      guardianEmail: record.guardianEmail,
+      developmentalStage,
+      currentLevel,
+      levelJourney,
+      competencies,
+      competenciesOnTrack,
+      evidenceItemsCollected,
+      learningJourney,
     };
   },
 };

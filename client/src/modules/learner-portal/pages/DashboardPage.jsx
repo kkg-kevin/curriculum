@@ -4,6 +4,7 @@ import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAgeCategories, useLearnerCompetencyScores, useProgressLevels } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
+import { useAttendanceHistoryQuery } from "../../attendance/hooks/useAttendance";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
@@ -128,6 +129,15 @@ export default function DashboardPage() {
     [progressSummary.courses]
   );
 
+  // Trailing 30-day window, same convention as report.service.js's getHubAnalytics.
+  const dateFrom = useMemo(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10), []);
+  const dateTo = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const { data: attendanceHistory } = useAttendanceHistoryQuery(cls?.id, dateFrom, dateTo);
+  const attendanceRecords = attendanceHistory?.data || [];
+  const attendanceRate = attendanceRecords.length
+    ? Math.round((attendanceRecords.filter((a) => a.status === "present").length / attendanceRecords.length) * 100)
+    : null;
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
@@ -154,6 +164,7 @@ export default function DashboardPage() {
                   shows on the full profile — borrowed here so it's visible without leaving the
                   dashboard. */}
               <HeroPill icon={<FiAward size={18} />} value={stage?.name || "Not placed"} label="Developmental Academy" />
+              <HeroPill icon={<FiUserCheck size={18} />} value={attendanceRate != null ? `${attendanceRate}%` : "—"} label="Attendance (30d)" />
             </div>
           )}
         </div>

@@ -16,6 +16,14 @@ const SessionSkipModel = {
     return firstOrNull(db(TABLE).where({ classId, courseId, date }));
   },
 
+  // A "move" skip's target date, not its origin — see createSkip's pre-check in
+  // timetable.service.js for why this needs its own lookup (the "already rescheduled" check
+  // above is keyed by origin date, which says nothing about whether some OTHER session has
+  // already been moved onto this same target date).
+  findByNewDate(classId, courseId, newDate) {
+    return firstOrNull(db(TABLE).where({ classId, courseId, newDate }));
+  },
+
   create(data) {
     return createRecord(db, TABLE, data, { updatedAt: false });
   },

@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useUpdateLearner } from "../../learners/hooks/useLearners";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { useCompetencies, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
+import { useCompetencies, useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
+import { deriveBandJourney } from "../utils/bandJourney";
 
 import { FiClipboard } from "react-icons/fi";
 import { T, cardStyle, EmptyState } from "../components/profile/theme";
@@ -52,15 +53,20 @@ export default function ProfilePage() {
   // Curriculum-scoped content (courses, competencies) follows whichever hub the portal-wide
   // switcher is currently on — the guardian/identity fields and hub/teacher rail below
   // deliberately don't, since those are meant to always show this learner's whole record, not
-  // just one hub's slice. Stage/band ARE hub-specific (see selectedHub.currentStageId's own
-  // comment in learner.service.js) — a learner running two different curricula at two hubs
-  // genuinely has a different Developmental Stage/Performance Band at each.
+  // just one hub's slice. Stage IS hub-specific (see selectedHub.currentStageId's own comment in
+  // learner.service.js) — a learner running two different curricula at two hubs genuinely has a
+  // different Developmental Stage at each.
   const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
-  const { data: performanceBands = [] } = usePerformanceBands(cls?.curriculumId);
-  const band = performanceBands.find((b) => b.id === selectedHub?.currentBandId) || null;
+  // "Current Level Summary" now reflects this learner's live standing (Engine 4's per-band
+  // completion %, same data the Competencies tab's Band Progress section shows) instead of
+  // selectedHub.currentBandId — a value only ever written once, by a diagnostic-placement event,
+  // that never updates again as the learner keeps progressing. Both surfaces read the same
+  // deriveBandJourney() so they can never disagree with each other.
+  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id);
+  const { current: currentBand, next: nextBand } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
@@ -104,7 +110,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <ProfileIdentityCard learner={learner} stage={stage} band={band} onEdit={() => setEditing("learner")} />
+      <ProfileIdentityCard learner={learner} stage={stage} band={currentBand} nextBand={nextBand} onEdit={() => setEditing("learner")} />
 
       {/* Guardian + Portfolio stack into their own column (matching SideRail's own two stacked
           cards) rather than sitting as three same-row siblings of mismatched height — Guardian

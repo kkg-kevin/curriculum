@@ -138,7 +138,13 @@ function runIndicatorProgressEngine(indicatorAchievements, performanceBands) {
       name: band.name,
       completion: rounded,
       advancementThreshold: threshold,
-      thresholdMet: rounded >= threshold,
+      // A threshold of 0 means no admin has configured one yet (see PerformanceBandsPanel's own
+      // `band.advancementThreshold > 0` check before it shows the "X% to advance" tag) — without
+      // this guard every unconfigured band trivially "passes" at 0% completion. But a learner who
+      // has earned 100% of a band's indicator budget has done everything that band asks for
+      // regardless of whether anyone ever set a numeric bar — that always counts as met, even on
+      // an unconfigured band.
+      thresholdMet: (threshold > 0 && rounded >= threshold) || rounded >= 100,
     };
   });
 }

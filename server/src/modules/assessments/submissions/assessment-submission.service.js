@@ -178,6 +178,73 @@ const AssessmentSubmissionService = {
     });
   },
 
+  // A teacher decided this one learner's graded attempt wasn't good enough and wants to give
+  // them another shot — creates a brand new standalone issue (same "bypass class, target one
+  // learner" shape as issueDiagnostic/issueOnSessionComplete above) rather than resetting the
+  // original submission in place. This is deliberate: the original graded submission — its
+  // score, its feedback — stays exactly as it was, a permanent record the learner can still see
+  // and the new attempt can point back to as guidance, instead of being destroyed. Because it's
+  // a distinct issueId, it naturally gets its own fresh row the next time getOrCreateSubmission
+  // runs, satisfying the (issueId, learnerId) unique constraint on submissions without touching
+  // the original at all.
+  //
+  // Deliberately NOT idempotent like issueDiagnostic/issueOnSessionComplete — a teacher may
+  // reasonably reissue more than once if the learner keeps struggling, so every call is a fresh,
+  // explicit action, not a system trigger to de-duplicate. Instead, this blocks a *pending*
+  // duplicate: if the last reissue from this same origin is still unresolved, reissuing again
+  // would just leave the learner with two open "do it again" cards for no reason.
+  //
+  // Scoped to individual (non-group) submissions only — reissuing one member out of a shared
+  // group attempt raises questions (does the whole group redo it? just them?) this feature isn't
+  // trying to answer yet.
+  async reissueToLearner({ issueId, learnerId, dueDate = null, reissuedBy }) {
+    const originalIssue = await AssessmentIssueModel.findById(issueId);
+    if (!originalIssue) {
+      const err = new Error("Issue not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const originalSubmission = await AssessmentSubmissionModel.findOne({ issueId, learnerId });
+    if (!originalSubmission || originalSubmission.status !== "graded") {
+      const err = new Error("This learner's submission hasn't been graded yet — reissue after grading it.");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (originalSubmission.groupId) {
+      const err = new Error("Group submissions can't be reissued to one learner — this only supports individual assessments.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const priorReissues = await AssessmentIssueModel.findAll({ learnerId, assessmentId: originalIssue.assessmentId });
+    const pending = await Promise.all(priorReissues
+      .filter((i) => i.reissuedFromIssueId === issueId)
+      .map(async (i) => ({ issue: i, submission: await AssessmentSubmissionModel.findOne({ issueId: i.id, learnerId }) })));
+    if (pending.some((p) => !p.submission || p.submission.status !== "graded")) {
+      const err = new Error("A reissue is already pending for this learner — wait for them to complete it before reissuing again.");
+      err.statusCode = 409;
+      throw err;
+    }
+
+    return AssessmentIssueModel.create({
+      assessmentId: originalIssue.assessmentId,
+      learnerId,
+      courseId: originalIssue.courseId,
+      sessionId: originalIssue.sessionId,
+      classId: null,
+      issuedBy: reissuedBy,
+      dueDate: dueDate || null,
+      reissuedFromIssueId: issueId,
+      // Carried over so a reissued Stage/Learning-Area diagnostic still re-triggers
+      // maybePlaceFromDiagnostic when the new attempt is graded — without these, grading a
+      // reissued diagnostic would silently never update the learner's placement, since
+      // maybePlaceFromDiagnostic branches entirely on the SUBMISSION'S OWN issue carrying them.
+      ageCategoryId: originalIssue.ageCategoryId,
+      learningAreaId: originalIssue.learningAreaId,
+      hubId: originalIssue.hubId,
+    });
+  },
+
   // Every standalone issue (diagnostic or course-progress-triggered) targeting this learner
   // directly, merged with their own submission — the learnerId-keyed counterpart to
   // getIssuedAssessmentsForLearner above, which is keyed by class instead.
@@ -596,6 +663,49 @@ const AssessmentSubmissionService = {
     await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(graded);
     return graded;
+  },
+
+  // Grades one milestone of a project assessment, independently of everything else on the
+  // submission (its own status/totalScore keep tracking the learner's own deliverable-upload
+  // flow, untouched here) — a teacher can grade milestone 1 today and milestone 3 next week in
+  // any order, and each is visible to the learner the instant it's saved, no publish step. The
+  // submission is auto-created on the first milestone grade (same "teacher grades directly, no
+  // learner action required" shape as startObservationSubmission — a project's milestones are
+  // checkpoints the teacher observes, not something the learner submits per-checkpoint).
+  async gradeMilestone({ issueId, learnerId, milestoneId, marks, feedback, gradedBy }) {
+    const issue = await AssessmentIssueModel.findById(issueId);
+    if (!issue) {
+      const err = new Error("Issue not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const assessment = await loadAssessmentOrThrow(issue.assessmentId);
+    const milestone = (assessment.milestones || []).find((m) => m.id === milestoneId);
+    if (!milestone) {
+      const err = new Error("Milestone not found on this assessment");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId });
+    const now = new Date();
+    // Clamped to the milestone's own points — same "can't exceed what it's worth" guarantee
+    // MarksInputs already enforces client-side, re-asserted here since this is a genuine write
+    // boundary a client could otherwise bypass.
+    const entry = {
+      milestoneId,
+      marks: Math.max(0, Math.min(Number(marks) || 0, Number(milestone.points) || 0)),
+      feedback: feedback || "",
+      gradedAt: now,
+      gradedBy,
+    };
+    const nextProgress = [...(submission.milestoneProgress || []).filter((e) => e.milestoneId !== milestoneId), entry];
+    const updates = { milestoneProgress: nextProgress };
+    const updated = await AssessmentSubmissionModel.update(submission.id, updates);
+    // Group-mode: every member shares one project attempt, so a milestone graded for one
+    // representative applies to the whole group — same fan-out grade()/submit() already use.
+    await fanOutToGroup(submission, updates);
+    return updated;
   },
 
   // Manual override, not part of the normal flow anymore — grade() above now releases every

@@ -54,16 +54,27 @@ const sessionStatusBulkSchema = z.object({
 
 // One-off "we didn't hold this session" record — see timetable.service.js's
 // resolveCoursePlacements for how mode ("shift" = every later session moves forward one slot;
-// "merge" = combined onto the very next occurrence instead) plugs into the calendar walk.
-const SKIP_MODES = ["shift", "merge"];
+// "merge" = combined onto the very next occurrence instead; "move" = relocated to an explicit
+// newDate, independent of the class's normal weekly slot pattern) plugs into the calendar walk.
+const SKIP_MODES = ["shift", "merge", "move"];
 
 const createSkipSchema = z.object({
   classId:   z.string().min(1, "Class is required"),
   courseId:  z.string().min(1, "Course is required"),
   date:      dateOnly,
   sessionId: z.string().min(1, "Session is required"),
-  mode:      z.enum(SKIP_MODES, { errorMap: () => ({ message: "Choose Shift or Merge" }) }),
+  mode:      z.enum(SKIP_MODES, { errorMap: () => ({ message: "Choose Shift, Merge, or Move" }) }),
   reason:    z.string().max(300).optional().default(""),
+  // Required (and only meaningful) for mode "move" — the specific date this session relocates
+  // to. Left plain-optional rather than required-by-default so shift/merge requests (which never
+  // send it) don't need an explicit null.
+  newDate:   dateOnly.optional(),
+}).refine((d) => d.mode !== "move" || !!d.newDate, {
+  message: "Pick the date to move this session to",
+  path: ["newDate"],
+}).refine((d) => d.mode !== "move" || d.newDate !== d.date, {
+  message: "Pick a different date than the original",
+  path: ["newDate"],
 });
 
 module.exports = {

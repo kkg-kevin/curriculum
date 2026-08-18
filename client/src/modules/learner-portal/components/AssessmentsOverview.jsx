@@ -74,7 +74,13 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
   const navigate = useNavigate();
   const { data, isLoading } = useIssuedForLearner();
   const allRows = data?.data || [];
-  const rows = classId ? allRows.filter((r) => r.issue.classId === classId) : allRows;
+  // Standalone issues (course-progress-triggered, and reissues — see reissueToLearner
+  // server-side) have no classId of their own to match against; excluding them here left them
+  // permanently invisible on this list regardless of which hub was selected, even though
+  // getIssuedRowsForLearner already scopes the whole query to this one learner. Always shown,
+  // same as they always were in the underlying data — only true diagnostics stay excluded
+  // (getIssuedRowsForLearner drops those before this component ever sees them).
+  const rows = classId ? allRows.filter((r) => r.issue.classId === classId || !r.issue.classId) : allRows;
   const visibleRows = limit ? rows.slice(0, limit) : rows;
 
   const pending = rows.filter((r) => r.submission.status === "not_started" || r.submission.status === "in_progress").length;
@@ -113,6 +119,7 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{assessment.name}</p>
                       <span style={typeBadgeStyle(typeColor)}>{TYPE_LABELS[assessment.type] || assessment.type}</span>
+                      {issue.reissuedFromIssueId && <span style={typeBadgeStyle("#D97706")}>Reissued — another attempt</span>}
                     </div>
                     <p style={{ margin: "8px 0 0", fontSize: 13, color: T.inkMuted }}>{stripHtml(assessment.description) || "No description added"}</p>
                   </div>

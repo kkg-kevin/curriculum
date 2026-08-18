@@ -100,6 +100,10 @@ const milestoneSchema = z.object({
   name:        z.string().min(1, "Milestone name is required").max(200),
   description: z.string().max(2000).optional().default(""),
   order:       z.number().optional().default(0),
+  // How many marks this checkpoint is worth — milestones had no scoring dimension at all before
+  // (pure checklist), so grading one meant nothing beyond a description. Defaults to 0 so
+  // existing authored milestones don't suddenly carry marks nobody intended.
+  points:      z.number().min(0).optional().default(0),
 });
 
 const createAssessmentSchema = z.object({
