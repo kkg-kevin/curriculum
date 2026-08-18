@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTeacherQuery, useUpdateTeacher } from "../hooks/useTeacher";
 import { teacherSchema } from "../schemas/teacher.schema";
 import TeacherForm from "../components/TeacherForm";
+import TeacherFormPreview from "../components/TeacherFormPreview";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -112,11 +113,38 @@ export default function EditTeacherPage() {
         </div>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .clp-layout { display: flex; gap: 24px; align-items: flex-start; }
+        .clp-form-col { flex: 1; min-width: 0; }
+        .clp-preview-col {
+          flex: 1;
+          min-width: 0;
+          position: sticky;
+          top: 24px;
+          align-self: flex-start;
+          max-height: calc(100vh - 140px);
+          overflow-y: auto;
+          padding-right: 2px;
+        }
+        @media (max-width: 900px) {
+          .clp-layout { flex-direction: column; }
+          .clp-form-col { order: 1; }
+          .clp-preview-col { order: 2; position: static; max-height: none; width: 100%; }
+        }
+      `}</style>
 
       <FormProvider {...methods}>
         <form id="edit-teacher-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <TeacherForm />
+          <div className="clp-layout">
+            <div className="clp-form-col">
+              <TeacherForm />
+            </div>
+            <div className="clp-preview-col">
+              <TeacherFormPreview />
+            </div>
+          </div>
         </form>
       </FormProvider>
 

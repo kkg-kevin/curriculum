@@ -2,6 +2,7 @@ const ReportModel = require("./report.model");
 const SessionModel = require("../courses/session.model");
 const { getSessionAssessmentIds } = require("../courses/sessionAssessment.utils");
 const ClassModel = require("../classes/class.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const CourseModel = require("../courses/course.model");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
@@ -528,6 +529,125 @@ const ReportService = {
       attendanceRate,
       attendanceTrend,
       classBreakdown,
+    };
+  },
+
+  // The platform-admin sibling of getHubAnalytics above — same computation, unscoped across every
+  // hub, plus a hub-by-hub breakdown (the admin-only view a single school's own Reports page can
+  // never show: which hubs are thriving vs falling behind). Deliberately reads the raw
+  // Report/Attendance rows directly rather than composing from N calls to getHubAnalytics — that
+  // would mean re-averaging already-rounded per-hub numbers, compounding rounding error and losing
+  // the correct per-report/per-record weighting the single-hub version gets for free.
+  async getPlatformAnalytics({ days = 30 } = {}) {
+    const hubs = await LearningHubModel.findAll({});
+    const classes = await ClassModel.findAll();
+    const hubIdByClassId = {};
+    classes.forEach((c) => { hubIdByClassId[c.id] = c.schoolId; });
+
+    const links = await LearnerHubLinkModel.findAll();
+    const activeLinks = links.filter((l) => l.status === "active");
+    const activeLearnerCountByHub = {};
+    activeLinks.forEach((l) => {
+      activeLearnerCountByHub[l.hubId] = (activeLearnerCountByHub[l.hubId] || 0) + 1;
+    });
+
+    const allReports = await ReportModel.findAll({});
+    const finalReports = allReports.filter((r) => r.sessionId === null);
+    const publishedFinals = finalReports.filter((r) => r.status === "published");
+    const draftFinals = finalReports.filter((r) => r.status === "draft");
+    const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);
+
+    const averageScore = scored.length
+      ? Math.round(scored.reduce((sum, r) => sum + r.content.overall.percent, 0) / scored.length)
+      : null;
+
+    const courseSums = {}, courseCounts = {};
+    scored.forEach((r) => {
+      courseSums[r.courseId] = (courseSums[r.courseId] || 0) + r.content.overall.percent;
+      courseCounts[r.courseId] = (courseCounts[r.courseId] || 0) + 1;
+    });
+    const courseIds = Object.keys(courseSums);
+    const courses = await Promise.all(courseIds.map((id) => CourseModel.findById(id)));
+    const scoreByCourse = courseIds.map((id, i) => ({
+      courseId: id,
+      courseName: courses[i]?.name || "Untitled course",
+      averagePercent: Math.round(courseSums[id] / courseCounts[id]),
+    }));
+
+    const compSums = {}, compCounts = {}, compNames = {};
+    scored.forEach((r) => (r.content.competencyScores || []).forEach((cs) => {
+      compSums[cs.competencyId] = (compSums[cs.competencyId] || 0) + cs.score;
+      compCounts[cs.competencyId] = (compCounts[cs.competencyId] || 0) + 1;
+      compNames[cs.competencyId] = cs.name;
+    }));
+    const competencyScores = Object.keys(compSums).map((id) => ({
+      competencyId: id,
+      name: compNames[id],
+      averageScore: Math.round(compSums[id] / compCounts[id]),
+    }));
+
+    const dateFrom = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    // One unscoped query across every class, instead of getHubAnalytics's per-class loop — that
+    // loop exists there because AttendanceModel.findAll only takes one classId at a time; fetching
+    // every hub's worth of classes individually here would mean one query per class platform-wide.
+    const allAttendance = await AttendanceModel.findAll({ dateFrom });
+    const attendanceRate = allAttendance.length
+      ? Math.round((allAttendance.filter((a) => a.status === "present").length / allAttendance.length) * 100)
+      : null;
+
+    const weekBuckets = {};
+    const attendanceByHub = {};
+    allAttendance.forEach((a) => {
+      const d = new Date(a.date);
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      const key = monday.toISOString().slice(0, 10);
+      if (!weekBuckets[key]) weekBuckets[key] = { present: 0, total: 0 };
+      weekBuckets[key].total += 1;
+      if (a.status === "present") weekBuckets[key].present += 1;
+
+      const hubId = hubIdByClassId[a.classId];
+      if (!hubId) return;
+      if (!attendanceByHub[hubId]) attendanceByHub[hubId] = { present: 0, total: 0 };
+      attendanceByHub[hubId].total += 1;
+      if (a.status === "present") attendanceByHub[hubId].present += 1;
+    });
+    const attendanceTrend = Object.keys(weekBuckets).sort().map((weekStart) => ({
+      weekStart,
+      rate: Math.round((weekBuckets[weekStart].present / weekBuckets[weekStart].total) * 100),
+    }));
+
+    const classCountByHub = {};
+    classes.forEach((c) => { classCountByHub[c.schoolId] = (classCountByHub[c.schoolId] || 0) + 1; });
+
+    const hubBreakdown = hubs.map((hub) => {
+      const hubScored = scored.filter((r) => r.hubId === hub.id);
+      const hubAttendance = attendanceByHub[hub.id];
+      return {
+        hubId: hub.id,
+        name: hub.name,
+        classCount: classCountByHub[hub.id] || 0,
+        learnerCount: activeLearnerCountByHub[hub.id] || 0,
+        averageScore: hubScored.length
+          ? Math.round(hubScored.reduce((sum, r) => sum + r.content.overall.percent, 0) / hubScored.length)
+          : null,
+        attendanceRate: hubAttendance ? Math.round((hubAttendance.present / hubAttendance.total) * 100) : null,
+        publishedCount: publishedFinals.filter((r) => r.hubId === hub.id).length,
+        draftCount: draftFinals.filter((r) => r.hubId === hub.id).length,
+      };
+    });
+
+    return {
+      hubCount: hubs.length,
+      classCount: classes.length,
+      activeLearnerCount: activeLinks.length,
+      reportStats: { published: publishedFinals.length, draft: draftFinals.length },
+      averageScore,
+      scoreByCourse,
+      competencyScores,
+      attendanceRate,
+      attendanceTrend,
+      hubBreakdown,
     };
   },
 };

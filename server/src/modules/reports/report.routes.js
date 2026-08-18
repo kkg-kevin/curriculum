@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getReadiness,
   getHubAnalytics,
+  getPlatformAnalytics,
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,
@@ -20,6 +21,9 @@ router.get("/readiness", authorize("admin", "school", "teacher"), getReadiness);
 // Hub-wide academic performance rollup for the school portal's Reports page — must stay above
 // the "/:id" route below, or "hub-analytics" gets swallowed as an :id lookup.
 router.get("/hub-analytics", authorize("admin", "school"), getHubAnalytics);
+// Platform-wide rollup across every hub, for the admin portal's own Reports page — admin only,
+// same "/:id" ordering requirement as hub-analytics above.
+router.get("/platform-analytics", authorize("admin"), getPlatformAnalytics);
 router.post("/", authorize("admin", "school", "teacher"), generateReport);
 router.get("/", authorize("admin", "school", "teacher"), listReportsForClassCourse);
 router.patch("/:id", authorize("admin", "school", "teacher"), updateRemarks);

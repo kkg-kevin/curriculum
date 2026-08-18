@@ -71,6 +71,14 @@ const getHubAnalytics = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Platform-wide sibling of getHubAnalytics — admin-only (see report.routes.js), no hubId/ownership
+// check needed since it's unscoped by design.
+const getPlatformAnalytics = asyncHandler(async (req, res) => {
+  const { days } = req.query;
+  const data = await ReportService.getPlatformAnalytics({ days: days ? Number(days) : undefined });
+  res.json({ success: true, data });
+});
+
 const generateReport = asyncHandler(async (req, res) => {
   const data = generateReportSchema.parse(req.body);
   const cls = await ClassModel.findById(data.classId);
@@ -152,6 +160,7 @@ const unpublishReport = asyncHandler(async (req, res) => {
 module.exports = {
   getReadiness,
   getHubAnalytics,
+  getPlatformAnalytics,
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,
