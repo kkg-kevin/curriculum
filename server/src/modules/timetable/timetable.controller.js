@@ -17,7 +17,7 @@ async function assertClassAccess(req, cls) {
     err.statusCode = 404;
     throw err;
   }
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
@@ -145,14 +145,14 @@ const getHubCalendar = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, hubId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, hubId));
   const { from, to } = calendarRangeSchema.parse(req.query);
   const { events, breaks, skippedSessions } = await TimetableService.resolveHubCalendar(hubId, from, to);
   res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
 });
 
 // The click/hover-through detail behind one calendar event — same class-ownership posture as
-// every other read here (teacher must actually teach that class, school/branchAdmin must own its
+// every other read here (teacher must actually teach that class, school must own its
 // hub). classId and date come from the calendar event the client already has in hand (see
 // resolveCalendar), not re-derived server-side.
 const getSessionSummary = asyncHandler(async (req, res) => {
@@ -193,7 +193,7 @@ const getSessionStatusBulk = asyncHandler(async (req, res) => {
 
 // A teacher's "we didn't hold this one" record — see TimetableService.createSkip. Same
 // ownership posture as every other write here: teacher must actually teach the class, school/
-// branchAdmin must own its hub, admin unrestricted.
+// hub, admin unrestricted.
 const createSkip = asyncHandler(async (req, res) => {
   const data = createSkipSchema.parse(req.body);
   const cls = await ClassModel.findById(data.classId);

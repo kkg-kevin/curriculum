@@ -323,7 +323,6 @@ export default function PublicLearnerProfilePage() {
 
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
           <div className="df-public-identity-grid">
-            <Row label="Date of Birth" value={profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : null} />
             <Row label="Registration Number" value={profile.registrationNumber} />
             <Row label="Nationality" value={profile.nationality} />
             <Row label="Languages" value={profile.languages} />
@@ -331,12 +330,11 @@ export default function PublicLearnerProfilePage() {
           </div>
         </div>
 
-        {(profile.guardianName || profile.guardianPhone || profile.guardianEmail) && (
+        {(profile.guardianName || profile.guardianEmail) && (
           <div style={sectionStyle}>
             <SectionHeading icon={FiUsers}>Guardian</SectionHeading>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <Row label="Name" value={profile.guardianName} />
-              <Row label="Phone" value={profile.guardianPhone} />
               <Row label="Email" value={profile.guardianEmail} />
             </div>
           </div>

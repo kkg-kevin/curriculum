@@ -15,7 +15,7 @@ const LearningHubModel = {
     return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  async findAll({ status, county, curriculumId, branchId, email, hubType, includeDrafts } = {}) {
+  async findAll({ status, county, curriculumId, parentHubId, email, hubType, includeDrafts } = {}) {
     let query = db(TABLE);
     if (status) query = query.where({ status });
     // Drafts are staged records still being set up in Settings — hidden from every listing by
@@ -24,7 +24,7 @@ const LearningHubModel = {
     // pass includeDrafts explicitly. An explicit `status` filter already implies this.
     else if (!includeDrafts) query = query.whereNot({ status: "draft" });
     if (curriculumId) query = query.where({ curriculumId });
-    if (branchId) query = query.where({ branchId });
+    if (parentHubId) query = query.where({ parentHubId });
     if (email) query = query.whereRaw("LOWER(email) = ?", [email.toLowerCase()]);
     if (hubType) query = query.where({ hubType });
 

@@ -62,22 +62,15 @@ const CSS = `
   }
   .tb-btn-secondary:hover { background:#F3F4F6; }
 
-  .tb-body { display:grid; grid-template-columns:158px minmax(0,1fr); gap:18px; padding:0 24px 32px; max-width:100%; box-sizing:border-box; }
-  @media(max-width:900px){ .tb-body{ grid-template-columns:1fr; } }
+  /* Was a 158px rail + content grid — the rail was a type-picker (Quiz/Exam/etc.) that just
+     duplicated AssessmentsPage.jsx's own NewAssessmentMenu, the thing you actually use to pick a
+     type before ever landing here, so it was dead weight in both create and edit modes. Plain
+     block now; the Structure & Items workspace gets the width back. */
+  .tb-body { padding:0 24px 32px; max-width:100%; box-sizing:border-box; }
   .tb-body-content { min-width:0; }
 
   .tb-two-col { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:16px; align-items:start; }
   @media(max-width:1000px){ .tb-two-col{ grid-template-columns:1fr; } }
-
-  .tb-rail { display:flex; flex-direction:column; gap:18px; }
-  .tb-rail-section-title { font-size:10.5px; font-weight:800; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px 4px; }
-  .tb-rail-link {
-    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:9px; font-size:13px;
-    font-weight:600; color:#374151; text-decoration:none; cursor:pointer; background:none; border:none; width:100%; text-align:left;
-  }
-  .tb-rail-link:hover { background:#F3F4F6; }
-  .tb-rail-link.active { background:#e8f5fb; color:#25476a; }
-  .tb-rail-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 
   .tb-tabs { display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid #F3F4F6; }
   .tb-tab-btn {
@@ -104,8 +97,12 @@ const CSS = `
   .tb-segmented button:first-child { border-left:none; }
   .tb-segmented button.active { background:#25476a; color:#fff; }
 
-  .tb-workspace { display:grid; grid-template-columns:200px minmax(0,1fr) 360px; gap:14px; align-items:start; }
-  @media(max-width:1500px){ .tb-workspace{ grid-template-columns:190px minmax(0,1fr) 310px; } }
+  /* Middle column gets a protected minimum so the item list never gets squeezed thinner than
+     it can actually render — the fixed-width badge/points/actions on each row already eat a
+     good chunk of it, so a narrower track than this just forces the item text back into the
+     single-line truncation this replaces (see .tb-entry-text below). */
+  .tb-workspace { display:grid; grid-template-columns:210px minmax(420px,1fr) 340px; gap:14px; align-items:start; }
+  @media(max-width:1500px){ .tb-workspace{ grid-template-columns:190px minmax(380px,1fr) 300px; } }
   @media(max-width:1250px){ .tb-workspace{ grid-template-columns:1fr; } }
 
   .tb-card { background:#fff; border-radius:14px; border:1.5px solid #E5E7EB; padding:16px; min-width:0; box-sizing:border-box; }
@@ -140,16 +137,25 @@ const CSS = `
   .tb-icon-btn:hover { background:#F3F4F6; color:#374151; }
   .tb-icon-btn.danger:hover { background:#FEF2F2; color:#DC2626; }
 
+  /* Two rows, not one — a meta line (number/badge/points/actions, all fixed-width) on top, and
+     the item's own text given its full row width below. Packing everything onto a single flex
+     line left .tb-entry-text fighting five flex-shrink:0 siblings for whatever room was left,
+     which is what forced item text down to 1-2 visible characters at normal widths. */
   .tb-entry-row {
-    display:flex; align-items:center; flex-wrap:wrap; row-gap:6px; gap:8px 10px; padding:9px 10px; border-radius:9px; border:1.5px solid #EEF0F2;
+    display:flex; flex-direction:column; gap:6px; padding:9px 10px; border-radius:9px; border:1.5px solid #EEF0F2;
     background:#FAFBFF; cursor:pointer; transition:border-color 0.12s; min-width:0;
   }
   .tb-entry-row:hover { border-color:#b8d9ee; }
   .tb-entry-row.selected { border-color:#25476a; background:#F0F7FF; }
+  .tb-entry-meta { display:flex; align-items:center; gap:8px; min-width:0; }
   .tb-entry-num { font-size:12px; font-weight:700; color:#9CA3AF; width:16px; flex-shrink:0; }
   .tb-entry-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
-  .tb-entry-text { flex:1; min-width:0; font-size:12.5px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .tb-entry-points { font-size:11px; color:#9CA3AF; flex-shrink:0; }
+  .tb-entry-actions { display:flex; align-items:center; gap:2px; margin-left:auto; flex-shrink:0; }
+  .tb-entry-text {
+    font-size:12.5px; line-height:1.4; color:#374151; padding-left:24px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
 
   .tb-add-item-btn {
     display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:9px;
@@ -551,15 +557,19 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
         key={entry.id} className={`tb-entry-row${selectedId === entry.id ? " selected" : ""}`}
         onClick={(e) => { e.stopPropagation(); onSelect(entry.id); }}
       >
-        <span className="tb-entry-num">{num}.</span>
-        <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
-          {ITEM_KIND_LABELS[entry.kind]}
-        </span>
+        <div className="tb-entry-meta">
+          <span className="tb-entry-num">{num}.</span>
+          <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
+            {ITEM_KIND_LABELS[entry.kind]}
+          </span>
+          {entry.kind !== "note" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
+          <div className="tb-entry-actions">
+            <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
+            <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
+            <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete"><FiX size={13} /></button>
+          </div>
+        </div>
         <span className="tb-entry-text">{stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>}</span>
-        {entry.kind !== "note" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
-        <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
-        <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
-        <button type="button" className="tb-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }} title="Delete"><FiX size={13} /></button>
       </div>
     );
   }
@@ -1542,17 +1552,6 @@ export default function AssessmentBuilderPage() {
       </div>
 
       <div className="tb-body">
-        <div className="tb-rail">
-          <div>
-            <p className="tb-rail-section-title">New Assessment</p>
-            {Object.keys(TYPE_LABELS).map((t) => (
-              <button key={t} type="button" className={`tb-rail-link${t === type && !isEdit ? " active" : ""}`} onClick={() => navigate(`/assessments/new/${t}`)}>
-                <span className="tb-rail-dot" style={{ backgroundColor: TYPE_COLORS[t] }} /> {TYPE_LABELS[t]}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="tb-body-content">
           <div className="tb-tabs">
             {tabs.map((tab) => (

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
-import { useLearningHubQuery, useDeleteLearningHub, useHubTeachersQuery } from "../hooks/useLearningHub";
+import { useLearningHubQuery, useDeleteLearningHub, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -94,6 +94,13 @@ export default function LearningHubViewPage() {
   });
   const classes  = classesData?.data  || [];
   const learners = learnersData?.data || [];
+
+  // "Branches": other hubs whose parentHubId points at this one — its own admin login can
+  // switch into and operate them (see useSchoolPortalScope.js). If this hub is itself a branch,
+  // show the parent it belongs to instead.
+  const { data: branchesData } = useAllLearningHubsQuery({ parentHubId: id, includeDrafts: true });
+  const branchHubs = branchesData?.data || [];
+  const { data: parentHub } = useLearningHubQuery(hub?.parentHubId);
 
   if (isLoading) {
     return <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>Loading learning hub…</div>;
@@ -347,6 +354,50 @@ export default function LearningHubViewPage() {
                 {s.notes && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#6B7280" }}>{s.notes}</p>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Branches — other hubs parented to this one, or (if this hub is itself a branch) the
+          parent it belongs to. Only "school"-type hubs get their own login, so branch switching
+          only ever matters for those; still shown for any hub type since parentHubId itself
+          isn't type-restricted. */}
+      {(branchHubs.length > 0 || hub.parentHubId) && (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "16px" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Branches</h2>
+            {branchHubs.length > 0 && (
+              <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#38aae1", border: "1px solid #a8d5ee" }}>
+                {branchHubs.length}
+              </span>
+            )}
+          </div>
+          <div style={{ padding: "20px" }}>
+            {hub.parentHubId ? (
+              <div
+                onClick={() => navigate(`/learning-hubs/${hub.parentHubId}/view`)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", cursor: "pointer" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <BusinessIcon fontSize="small" style={{ color: "#25476a" }} />
+                  <div>
+                    <p style={{ margin: "0 0 2px", fontSize: "12px", color: "#6B7280" }}>This hub is a branch of</p>
+                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#25476a" }}>{parentHub?.name || "…"}</p>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#a8d5ee", flexShrink: 0 }}><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {branchHubs.map((b) => (
+                  <div key={b.id} onClick={() => navigate(`/learning-hubs/${b.id}/view`)}
+                    style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
+                    <BusinessIcon fontSize="small" style={{ color: "#9CA3AF" }} />
+                    {b.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -41,7 +41,7 @@ export default function EditLearningHubPage() {
         password: "",
         phone: hub.phone || "",
         curriculumId: hub.curriculumId || "",
-        branchId: hub.branchId || "",
+        parentHubId: hub.parentHubId || "",
         status: hub.status || "active",
         description: hub.description || "",
         photo: hub.photo || null,
@@ -58,7 +58,7 @@ export default function EditLearningHubPage() {
   }, [hub, reset]);
 
   const onSubmit = (data) => {
-    const payload = { ...data, curriculumId: data.curriculumId || null, branchId: data.branchId || null };
+    const payload = { ...data, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
     const viewPath = `/learning-hubs/${id}/view`;
     updateLearningHub({ id, data: payload }, {
       onSuccess: () => {
@@ -142,7 +142,7 @@ export default function EditLearningHubPage() {
 
       <FormProvider {...methods}>
         <form id="edit-learning-hub-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <LearningHubForm />
+          <LearningHubForm id={id} />
         </form>
       </FormProvider>
 

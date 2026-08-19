@@ -148,15 +148,11 @@ export default function AppRoutes() {
       </Route>
       </Route>
 
-      {/* Hub network management — admin (unrestricted) and branchAdmin (every hub under their
-          one branch only, enforced server-side via req.ownBranchHubIds). Same pattern as the
-          curriculum block above: its own RoleRoute/MainLayout branch reusing admin's existing
-          Learning Hubs/Educators/Learners/Classes pages as-is, so a branchAdmin never gets
-          routed into Curriculum/Programs/Courses/Settings/etc. Sidebar.jsx filters the nav for
-          this role. settings/learning-hubs/create and .../:id/edit are duplicated here (same
-          components as the admin-only settings tree) purely so this role can reach them —
-          LearningHubViewPage's Edit button is hardcoded to that path. */}
-      <Route element={<RoleRoute allow={["admin", "branchAdmin"]} />}>
+      {/* Hub network management — admin only (a hub itself can be the parent of other "branch"
+          hubs now — see scope.middleware.js's req.ownSchools/req.ownSchool — but that admin
+          reaches it through the school-portal with a hub-switcher, not through this admin-only
+          tree). */}
+      <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route path="learning-hubs">
           <Route index element={<LearningHubsPage />} />

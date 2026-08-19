@@ -917,9 +917,17 @@ const CompetencyService = {
         };
       }
 
+      // Mirrors the client's own sequenceFor() (CompetenciesPage.jsx) exactly: courseSequence's
+      // saved order first, then whatever's left in courses[] that was never explicitly
+      // sequenced. Course Sequence's editor shows an area's lone/first course as "1" the moment
+      // it's added — before anyone has ever reordered it or set a stage default, at which point
+      // courseSequence is still `[]` — so reading courseSequence alone here left that course
+      // reading as "not sequenced" for every learner despite the editor showing it placed.
       const sequence = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
+      const sequencedIds = sequence.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
+      const orderedIds = [...sequencedIds, ...(area.courses || []).filter((cid) => !sequencedIds.includes(cid))];
       const stageDefault = stage ? sequence.find((s) => (s.defaultForStages || []).includes(stage.id)) : null;
-      const defaultCourseId = stageDefault?.courseId || sequence[0]?.courseId || null;
+      const defaultCourseId = stageDefault?.courseId || orderedIds[0] || null;
 
       return {
         learningAreaId: area.id,

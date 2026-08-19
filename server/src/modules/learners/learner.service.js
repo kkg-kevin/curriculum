@@ -7,6 +7,7 @@ const ClassModel   = require("../classes/class.model");
 const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const LearningAreaModel = require("../curriculum/competency-framework/learning-area.model");
+const ProgressionLadderModel = require("../curriculum/competency-framework/progression-ladder.model");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 // Models, not services, for the delete cascade below — these are dependency-free fs wrappers, so
@@ -57,6 +58,38 @@ async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
     }
   }
   await maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age);
+  await maybeAutoPlaceRung(learner, cls, age);
+}
+
+// Parses a rung's free-text ageRange ("12-14", "15+", "5") into numeric bounds. Unlike
+// AgeCategoryModel, progression_ladder_rungs never got structured minAge/maxAge columns — it's
+// always been a single string field (see the migration) meant for on-screen display, so this is
+// the only way to match it against a learner's computed age. An unparseable/empty range just
+// can't ever match, same as a rung nobody bothered to fill in for.
+function parseAgeRange(ageRange) {
+  const nums = (ageRange || "").match(/\d+(\.\d+)?/g);
+  if (!nums || nums.length === 0) return null;
+  const min = Number(nums[0]);
+  const max = nums.length > 1 ? Number(nums[1]) : ((ageRange || "").includes("+") ? null : min);
+  return { min, max };
+}
+
+// Legacy counterpart to the Developmental Stage age-match above, for curricula still on the
+// old Progression Ladder (superseded by Learning Areas' Developmental Stages, but never
+// migrated off — see CompetenciesPage.jsx's LearningJourneyPanel comment). Same "guess from age,
+// never overwrite an existing placement" rule, just matched against ageRange strings instead of
+// minAge/maxAge columns. currentRungId lives on the learner record itself, not the hub link —
+// matching where JourneyPlacementCard already writes it when set manually, and the same
+// limitation that implies: a learner enrolled at several hubs can only ever have one active rung,
+// same as before this just auto-fills it instead of requiring a manual pick.
+async function maybeAutoPlaceRung(learner, cls, age) {
+  if (!learner || learner.currentRungId || age === null || !cls?.curriculumId) return;
+  const rungs = await ProgressionLadderModel.findByCurriculumId(cls.curriculumId);
+  const matched = rungs.find((r) => {
+    const range = parseAgeRange(r.ageRange);
+    return range && age >= range.min && (range.max == null || age <= range.max);
+  });
+  if (matched) await LearnerModel.update(learner.id, { currentRungId: matched.id });
 }
 
 // One diagnostic per Learning Area whose courses are actually visible to this class (via the
@@ -378,7 +411,7 @@ const LearnerService = {
 
   // Invalidates whatever QR/link is already printed or shared — the old token stops resolving
   // the instant this runs, since getPublicProfile below looks records up BY token. The caller
-  // (an authenticated admin/school/branchAdmin, see learner.controller.js) reprints/reshares the
+  // (an authenticated admin/school, see learner.controller.js) reprints/reshares the
   // new one.
   async regeneratePublicToken(id) {
     await LearnerService.getLearnerById(id);
@@ -481,7 +514,6 @@ const LearnerService = {
       firstName: record.firstName,
       lastName: record.lastName,
       photo: record.photo,
-      dateOfBirth: record.dateOfBirth,
       age: computeAge(record.dateOfBirth),
       registrationNumber: record.registrationNumber,
       nationality: record.nationality,
@@ -491,7 +523,6 @@ const LearnerService = {
       gradeName,
       streamName,
       guardianName: record.guardianName,
-      guardianPhone: record.guardianPhone,
       guardianEmail: record.guardianEmail,
       developmentalStage,
       currentLevel,

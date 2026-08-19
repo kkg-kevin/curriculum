@@ -84,7 +84,7 @@ const AuthService = {
     await UserModel.update(existing.id, { username: newUsername });
   },
 
-  // `identifier` may be: an account's own email (admin/school/teacher/branchAdmin/curriculumAdmin,
+  // `identifier` may be: an account's own email (admin/school/teacher/curriculumAdmin,
   // or a guardian logging in directly); a learner's own dedicated username (a genuinely separate
   // account/password from the guardian's — see setOrCreatePasswordByUsername); or, for a learner
   // who has a username but no dedicated login yet, that same username resolved the original way —

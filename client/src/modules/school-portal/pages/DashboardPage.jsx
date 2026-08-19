@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FiAlertTriangle, FiBookOpen, FiCalendar, FiMail, FiBook, FiBriefcase, FiUsers, FiUserCheck, FiLayers, FiChevronRight, FiAward, FiHome, FiClipboard } from "react-icons/fi";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -111,14 +109,7 @@ function StatusChip({ good, children }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
+  const { school, hubsLoading: schoolLoading, email } = useOutletContext();
 
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
   // Trailing "" mirrors the unfiltered default of the statusFilter state on the list pages
@@ -175,7 +166,7 @@ export default function DashboardPage() {
           <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 16px" }}><FiHome size={28} strokeWidth={1.8} /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No school profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
-            Your account ({user?.email}) isn't linked to a school yet. Ask a platform admin to add this school using
+            Your account ({email}) isn't linked to a school yet. Ask a platform admin to add this school using
             this same email address as its contact email.
           </p>
         </div>

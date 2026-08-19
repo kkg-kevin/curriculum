@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
@@ -267,7 +266,7 @@ function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingCl
 }
 
 export default function TimetablePage() {
-  const { user } = useAuth();
+  const { school, hubsLoading: schoolLoading } = useOutletContext();
   const [selectedClassId, setSelectedClassId] = useState("");
   const [addingDay, setAddingDay] = useState(null);
   const [editingSlotId, setEditingSlotId] = useState(null);
@@ -275,13 +274,6 @@ export default function TimetablePage() {
   // calendar across every class at this hub (slot/start-date editing stays class-scoped, since
   // both inherently apply to one class at a time).
   const [viewMode, setViewMode] = useState("class");
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "bySchool", school?.id, ""],

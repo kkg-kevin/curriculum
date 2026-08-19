@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getActiveLearnerId } from "../modules/learner-portal/utils/activeLearner";
+import { getActiveHubId } from "../modules/school-portal/utils/activeHub";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -18,9 +19,15 @@ const api = axios.create({
 // scope every request to whichever child the learner-portal is currently switched to — a no-op
 // for every other role, since the server only reads this header when role === "learner"
 // (see scope.middleware.js's attachOwnRecords).
+// Lets a "school" account whose hub is itself the parent of other hubs (its "branches") scope
+// every request to whichever one the school-portal is currently switched to — a no-op for every
+// other role, since the server only reads this header when role === "school" (see
+// scope.middleware.js's attachOwnRecords).
 api.interceptors.request.use((config) => {
-  const id = getActiveLearnerId();
-  if (id) config.headers["X-Active-Learner-Id"] = id;
+  const learnerId = getActiveLearnerId();
+  if (learnerId) config.headers["X-Active-Learner-Id"] = learnerId;
+  const hubId = getActiveHubId();
+  if (hubId) config.headers["X-Active-Hub-Id"] = hubId;
   return config;
 });
 

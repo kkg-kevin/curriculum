@@ -9,4 +9,7 @@ export const learningHubApi = {
   update:  (id, data) => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:  (id)        => api.delete(`${BASE}/${id}`).then((r) => r.data),
   getTeachers: (id)    => api.get(`${BASE}/${id}/teachers/links`).then((r) => r.data.data),
+  // A "school" account's own hub plus any branch hubs under it — feeds the school-portal's
+  // hub-switcher (see useSchoolPortalScope.js).
+  getMine: ()          => api.get(`${BASE}/mine`).then((r) => r.data.data),
 };

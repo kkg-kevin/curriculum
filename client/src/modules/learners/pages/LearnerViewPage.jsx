@@ -12,7 +12,7 @@ import {
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
-import { useLadder, useLearningJourney, usePlaceLearner, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
+import { useLadder, useLearningJourney, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
@@ -258,18 +258,20 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
   );
 }
 
-// Per-Learning-Area course placement — where the learner currently sits in each
-// area's course sequence (Robotics 1 → 2 → 3 → 4, etc.), and which developmental
-// stage they're in (used to resolve a default placement when nothing else has
-// placed them yet — diagnostic assessment or manual override, set below). Stage lives on the
-// hub enrollment link (`hubId`), not the learner record — see maybeAutoIssueDiagnostic's
-// comment in learner.service.js.
+// Per-Learning-Area course placement — where the learner currently sits in each area's
+// course sequence (Robotics 1 → 2 → 3 → 4, etc.), read-only here (mirrors the learner-portal's
+// own read-only JourneyRow) — placement is resolved automatically from how each Learning Area's
+// courses are set up (its course order, plus a diagnostic assessment where one's configured),
+// not picked per area by hand. The Developmental Stage selector below is a separate, still-
+// manual control — it drives which diagnostics auto-issue and which stage-default a Learning
+// Area's placement falls back to, not a per-area override itself. Stage lives on the hub
+// enrollment link (`hubId`), not the learner record — see maybeAutoIssueDiagnostic's comment in
+// learner.service.js.
 function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId }) {
   const { data: journey = [], isLoading: journeyLoading } = useLearningJourney(curriculumId, learnerId);
   const { data: areas = [] } = useLearningAreas(curriculumId);
   const { data: stages = [] } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
-  const { mutate: place, isPending: placing } = usePlaceLearner(curriculumId, learnerId);
   const { mutate: updateHubLink, isPending: savingStage } = useUpdateLearnerHubLink();
 
   if (!curriculumId || journeyLoading) return null;
@@ -307,33 +309,20 @@ function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId })
         {journey.map((j) => {
           const area = areaById.get(j.learningAreaId);
           const areaColor = area?.color || "#25476a";
-          const seq = [...(area?.courseSequence || [])].sort((a, b) => a.order - b.order).map((s) => s.courseId)
-            .filter((cid) => (area?.courses || []).includes(cid));
-          const options = [...seq, ...((area?.courses || []).filter((id) => !seq.includes(id)))];
+          const courseName = j.currentCourseId ? courseNameById.get(j.currentCourseId) : null;
           return (
             <div key={j.learningAreaId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 160 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 160, flex: 1 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.learningAreaName}</span>
               </div>
-              <select
-                value={j.currentCourseId || ""}
-                disabled={placing}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  place({ areaId: j.learningAreaId, data: { courseId: e.target.value, reason: "manual" } });
-                }}
-                style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#111827", minWidth: 200 }}
-              >
-                <option value="">Not placed</option>
-                {options.map((cid) => (
-                  <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
-                ))}
-              </select>
-              {j.currentCourseId ? (
-                <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
-                  {j.isDefault ? "Default placement" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
-                </span>
+              {courseName ? (
+                <>
+                  <span style={{ fontSize: 13, color: "#111827" }}>{courseName}</span>
+                  <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
+                    {j.isDefault ? "Default placement" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
+                  </span>
+                </>
               ) : (
                 <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
               )}
