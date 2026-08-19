@@ -117,6 +117,20 @@ export function useUnenrollLearnerHub() {
   });
 }
 
+// Moves a learner from one hub to another in one action (enroll-at-new + unlink-old) — see
+// transferHub's comment server-side for why this isn't just a status flip on the old link.
+export function useTransferLearnerHub() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ learnerId, hubId, data }) => learnerApi.transferHub(learnerId, hubId, data),
+    onSuccess: (_data, { learnerId }) => {
+      qc.invalidateQueries({ queryKey: LEARNER_KEYS.hubs(learnerId) });
+      toast.success("Learner transferred");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to transfer learner"),
+  });
+}
+
 // A mutation, not a query — fetched on demand when the "Share Profile" card is opened, rather
 // than eagerly on every profile view (most views of this page are never going to want a QR).
 // get-or-create server-side, so this is safe to fire every time the card opens without minting

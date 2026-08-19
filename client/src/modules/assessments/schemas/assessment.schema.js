@@ -39,12 +39,15 @@ export const ITEM_GROUPS = {
 };
 
 // Which item-kind groups each assessment type's palette offers, and which extra content blocks it supports.
+// `supportsQuestionRubric`: this type's questions/criteria can compound a single tagged
+// indicator's marks from a checklist of sub-criteria (see ScoringCriteriaEditor in
+// AssessmentBuilderPage.jsx and ScoringCriteriaChecklist in GradingPanel.jsx).
 export const BUILDER_REGISTRY = {
   quiz:        { label: "Quiz", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   exam:        { label: "Exam", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
-  assignment:  { label: "Assignment", itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true },
-  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsItems: false, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true },
-  observation: { label: "Teacher Observation", itemGroups: ["structured", "unstructured", "observation"], supportsSections: true },
+  assignment:  { label: "Assignment", itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true, supportsQuestionRubric: true },
+  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsItems: false, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true, supportsQuestionRubric: true },
+  observation: { label: "Teacher Observation", itemGroups: ["structured", "unstructured", "observation"], supportsSections: true, supportsQuestionRubric: true },
 };
 
 // Legacy items authored before the Builder existed used `questionType` with a smaller kind set.

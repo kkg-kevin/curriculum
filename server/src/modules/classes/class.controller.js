@@ -144,6 +144,34 @@ const getCourseTeacherLinksForTeacher = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Per-learner readiness to move up to the next grade — computed live off the same completion
+// signal the Reports page uses (see ClassService.getPromotionReadiness), plus the resolved next
+// class (if Set Up Year has already created it). Same read access as the roster/course-teachers
+// endpoints — anyone who can already see this class's detail page can see this.
+const getPromotionReadiness = asyncHandler(async (req, res) => {
+  const record = await ClassService.getClassById(req.params.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "teacher") {
+    const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
+  }
+  const data = await ClassService.getPromotionReadiness(req.params.id);
+  res.json({ success: true, data });
+});
+
+// Moves the given learners into the next grade's class, once they're actually ready — same
+// write posture as assignCourseTeacher/updateClass (admin/school/branchAdmin only, see routes).
+const promoteLearners = asyncHandler(async (req, res) => {
+  const { learnerIds } = req.body;
+  if (!Array.isArray(learnerIds) || learnerIds.length === 0) {
+    return res.status(400).json({ success: false, message: "learnerIds is required" });
+  }
+  const record = await ClassService.getClassById(req.params.id);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  const data = await ClassService.promoteLearners(req.params.id, learnerIds);
+  res.json({ success: true, data });
+});
+
 const updateClass = asyncHandler(async (req, res) => {
   const data = pickPresent(updateClassSchema.parse(req.body), req.body);
   if (req.user.role === "school" || req.user.role === "branchAdmin") {
@@ -183,5 +211,5 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
 module.exports = {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
-  getCourseTeacherLinksForTeacher,
+  getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,
 };

@@ -110,7 +110,24 @@ function ItemDetail({ item }) {
           {item.submissionKinds?.map((k) => <Badge key={k} color="#059669">{ITEM_KIND_LABELS[k]}</Badge>)}
         </div>
       )}
+      <ScoringCriteriaList criteria={item.scoringCriteria} />
     </>
+  );
+}
+
+// A question's grading rubric (see ScoringCriteriaEditor in AssessmentBuilderPage.jsx) — purely
+// additive, renders nothing for questions authored before this feature existed.
+function ScoringCriteriaList({ criteria }) {
+  if (!criteria?.length) return null;
+  return (
+    <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "3px" }}>
+      <p style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>Rubric</p>
+      {criteria.map((c, i) => (
+        <p key={c.id || i} style={{ margin: 0, fontSize: "12.5px", color: "#374151" }}>
+          {c.label} <span style={{ color: "#9CA3AF" }}>· {c.points} pt{c.points !== 1 ? "s" : ""}</span>
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -252,6 +269,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
                       {c.criterion} <span style={{ fontWeight: "500", color: "#6B7280" }}>· {entryMarks(c)} pts</span>
                     </p>
                     {c.description && <p style={{ margin: 0, fontSize: "12.5px", color: "#6B7280" }}>{c.description}</p>}
+                    <ScoringCriteriaList criteria={c.scoringCriteria} />
                   </div>
                 ))}
               </div>

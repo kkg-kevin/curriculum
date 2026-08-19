@@ -29,6 +29,17 @@ const indicatorMarkSchema = z.object({
   marks:       z.number().min(0),
 });
 
+// One checklist line in a question's grading rubric — e.g. "Did the student answer" (1pt).
+// Only meaningful when the parent entry is tagged to exactly one indicatorMark: the Builder
+// keeps that indicator's `marks` in sync with the sum of these (see ScoringCriteriaEditor in
+// AssessmentBuilderPage.jsx), so nothing downstream needs to know this array exists — scoring
+// still reads indicatorMarks/points exactly as before.
+const scoringCriterionSchema = z.object({
+  id:     z.string().optional(),
+  label:  z.string().min(1, "Criterion is required").max(300),
+  points: z.number().min(0).optional().default(0),
+});
+
 // `id` is optional — the Builder assigns a client-side id while editing; the server
 // doesn't require one since items live embedded in the assessment document, not as
 // independently-addressable rows.
@@ -53,6 +64,8 @@ const itemSchema = z.object({
   // assessment-competency-link.model.js). Empty when the question isn't tagged to any
   // indicator, in which case `points` above is the question's total instead.
   indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  // Grading rubric for this question — see scoringCriterionSchema above.
+  scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 })
   .refine((d) => hasRichContent(d.question), { message: "Question text is required", path: ["question"] })
   .refine((d) => !["mcqSingle", "mcqMultiple"].includes(d.kind) || d.options.length >= 2, { message: "Add at least 2 options", path: ["options"] })
@@ -68,6 +81,8 @@ const rubricCriterionSchema = z.object({
   points:      z.number().min(0).optional().default(0),
   sectionId:   z.string().optional().nullable().default(null),
   indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  // Grading rubric for this criterion — see scoringCriterionSchema above.
+  scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 });
 
 // Teacher Observation content — a checklist of observable items. `kind` defaults to
@@ -85,6 +100,8 @@ const indicatorSchema = z.object({
   competencyIndicatorIds: z.array(z.string()).optional().default([]),
   points:      z.number().min(0).optional().default(1),
   indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  // Grading rubric for this observation indicator — see scoringCriterionSchema above.
+  scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 }).refine((d) => hasRichContent(d.text), { message: "Indicator text is required", path: ["text"] });
 
 const deliverableSchema = z.object({

@@ -7,6 +7,9 @@ const SessionSkipModel = require("../timetable/session-skip.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const ClassGroupService = require("./groups/class-group.service");
+const CurriculumModel = require("../curriculum/curriculum.model");
+const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
+const ReportService = require("../reports/report.service");
 
 // Tag is unique across every class, system-wide (not just within one hub) — it's how a specific
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
@@ -44,6 +47,26 @@ async function assertStreamAvailable(schoolId, gradeId, academicYear, streamName
     err.statusCode = 409;
     throw err;
   }
+}
+
+// Finds this class's grade in its own curriculum's grade list and takes the next entry as "the
+// next grade" — the curriculum's classes[] array has no explicit order field, so array position
+// is the only sequencing signal available (assumes grades are authored in progression order).
+// Next academic year is just +1 on this class's own year, matching how Set Up Year always mints
+// one class per grade per year. Never creates the target class — only looks up whether Set Up
+// Year has already created it, same shell assertStreamAvailable's uniqueness check assumes.
+async function resolveNextClass(cls) {
+  const curriculum = await CurriculumModel.findById(cls.curriculumId);
+  const grades = curriculum?.classes || [];
+  const idx = grades.findIndex((g) => g.id === cls.gradeId);
+  if (idx === -1 || idx === grades.length - 1) {
+    return { nextGradeId: null, nextGradeName: null, nextAcademicYear: null, nextClass: null };
+  }
+  const nextGrade = grades[idx + 1];
+  const nextAcademicYear = String(Number(cls.academicYear) + 1);
+  const siblings = await ClassModel.findAll({ schoolId: cls.schoolId });
+  const nextClass = siblings.find((c) => c.gradeId === nextGrade.id && c.academicYear === nextAcademicYear) || null;
+  return { nextGradeId: nextGrade.id, nextGradeName: nextGrade.name, nextAcademicYear, nextClass };
 }
 
 const ClassService = {
@@ -112,6 +135,64 @@ const ClassService = {
       await assertStreamAvailable(item.schoolId, item.gradeId, item.academicYear, item.streamName, null);
     }
     return Promise.all(items.map((item) => ClassModel.create(item)));
+  },
+
+  // A learner has "completed" this class's grade once every course the grade's curriculum
+  // version assigns to it is `ready` per ReportService.getReadinessForClassCourses — the exact
+  // signal the Reports page already uses for "this course's final report can be generated"
+  // (every session-attached assessment graded+published), reused here rather than building a
+  // second completion tracker. A grade with zero courses, or any course with zero gradeable
+  // content, can never read as ready — inherited from isCourseReadyForLearner, not special-cased.
+  async getPromotionReadiness(classId) {
+    const cls = await ClassService.getClassById(classId);
+    const nextInfo = await resolveNextClass(cls);
+    const courses = await CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId);
+    const courseIds = courses.map((c) => c.id);
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const activeLearnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+
+    let learners = activeLearnerIds.map((learnerId) => ({ learnerId, ready: false, completedCourses: 0, totalCourses: courseIds.length }));
+    if (courseIds.length > 0 && activeLearnerIds.length > 0) {
+      const readinessByCourse = await ReportService.getReadinessForClassCourses(classId, courseIds);
+      learners = activeLearnerIds.map((learnerId) => {
+        const completedCourses = courseIds.filter((courseId) =>
+          (readinessByCourse[courseId] || []).find((r) => r.learner.id === learnerId)?.ready
+        ).length;
+        return { learnerId, completedCourses, totalCourses: courseIds.length, ready: completedCourses === courseIds.length };
+      });
+    }
+
+    return { ...nextInfo, totalCourses: courseIds.length, learners };
+  },
+
+  // Re-resolves readiness/next-class server-side rather than trusting whatever the client sends
+  // — a stale or manipulated request can never move an unready or unenrolled learner. Only ever
+  // moves a learner INTO an already-existing class shell (Set Up Year's job, not this one's).
+  async promoteLearners(classId, learnerIds) {
+    const readiness = await ClassService.getPromotionReadiness(classId);
+    if (!readiness.nextClass) {
+      const err = new Error(
+        readiness.nextGradeId
+          ? `Set up classes for ${readiness.nextAcademicYear} first`
+          : "This is the final grade — there's no next class to promote into"
+      );
+      err.statusCode = 409;
+      throw err;
+    }
+    const readyById = new Map(readiness.learners.map((l) => [l.learnerId, l.ready]));
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const linkByLearnerId = new Map(links.map((l) => [l.learnerId, l]));
+
+    const promoted = [];
+    const skipped = [];
+    for (const learnerId of learnerIds) {
+      const link = linkByLearnerId.get(learnerId);
+      if (!link) { skipped.push({ learnerId, reason: "Not enrolled in this class" }); continue; }
+      if (!readyById.get(learnerId)) { skipped.push({ learnerId, reason: "Hasn't completed every course yet" }); continue; }
+      await LearnerHubLinkModel.update(link.id, { classId: readiness.nextClass.id });
+      promoted.push(learnerId);
+    }
+    return { promoted, skipped, nextClass: readiness.nextClass };
   },
 
   async deleteClass(id) {

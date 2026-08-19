@@ -9,6 +9,7 @@ const {
   enrollLearnerHub,
   updateLearnerHubLink,
   unenrollLearnerHub,
+  transferLearnerHub,
   ensureDiagnosticsIssued,
   completeHubOnboarding,
   getPublicToken,
@@ -41,6 +42,11 @@ router.route("/:id/hubs/links")
 router.route("/:id/hubs/links/:hubId")
   .put(authorize("admin", "school", "branchAdmin"), updateLearnerHubLink)
   .delete(authorize("admin", "school", "branchAdmin"), unenrollLearnerHub);
+
+// Moves a learner from :hubId to another hub in one action (enroll-at-new + unlink-old) — see
+// transferHub's comment in the service for why this isn't just a status flip.
+router.route("/:id/hubs/links/:hubId/transfer")
+  .post(authorize("admin", "school", "branchAdmin"), transferLearnerHub);
 
 // Learner-portal-only safety net — see ensureDiagnosticsIssued's comment in the controller.
 router.post("/:id/ensure-diagnostics", authorize("learner"), ensureDiagnosticsIssued);

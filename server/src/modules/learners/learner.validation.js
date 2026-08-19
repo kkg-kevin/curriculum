@@ -74,4 +74,12 @@ const updateEnrollmentSchema = z.object({
   currentBandId:  z.string().optional().nullable(),
 });
 
-module.exports = { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema };
+// Moves a learner from the hub in the URL (:hubId) to toHubId in one action — see
+// learner.service.js#transferHub. classId is optional, same as enrollLearnerSchema, and
+// auto-assigns to the destination hub's first active class when omitted.
+const transferHubSchema = z.object({
+  toHubId:   z.string().min(1, "Destination hub is required"),
+  toClassId: z.string().default(""),
+});
+
+module.exports = { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema };

@@ -7,6 +7,7 @@ export const CLASS_KEYS = {
   detail: (id)      => ["classes", "detail", id],
   courseTeachers: (classId)  => ["classes", "detail", classId, "course-teachers"],
   teacherLinks:   (teacherId) => ["classes", "course-teacher-links", teacherId],
+  promotionReadiness: (classId) => ["classes", "detail", classId, "promotion-readiness"],
 };
 
 export function useAllClassesQuery() {
@@ -128,5 +129,29 @@ export function useTeacherCourseAssignments(teacherId) {
     queryKey: CLASS_KEYS.teacherLinks(teacherId),
     queryFn:  () => classApi.getCourseTeacherLinksForTeacher(teacherId),
     enabled:  !!teacherId,
+  });
+}
+
+// Per-learner grade-completion readiness + the resolved next-grade class, for PromotionPanel.
+export function usePromotionReadiness(classId) {
+  return useQuery({
+    queryKey: CLASS_KEYS.promotionReadiness(classId),
+    queryFn:  () => classApi.getPromotionReadiness(classId),
+    enabled:  !!classId,
+  });
+}
+
+export function usePromoteLearners() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, learnerIds }) => classApi.promoteLearners(classId, learnerIds),
+    onSuccess: (data, { classId }) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.promotionReadiness(classId) });
+      qc.invalidateQueries({ queryKey: ["learners", "byClass", classId] });
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.all });
+      if (data.promoted.length > 0) toast.success(`Promoted ${data.promoted.length} learner${data.promoted.length !== 1 ? "s" : ""} to ${data.nextClass.gradeName}`);
+      if (data.skipped.length > 0 && data.promoted.length === 0) toast.error("No learners were ready to promote");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to promote learners"),
   });
 }

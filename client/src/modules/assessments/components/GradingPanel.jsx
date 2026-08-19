@@ -45,24 +45,63 @@ function AutoGradedRow({ index, item, response, autoResult }) {
   );
 }
 
-// An entry's marks input — always one flat "Marks" field for the whole question/criterion, even
-// when it's tagged to one or more competency indicators. The per-indicator split is no longer
-// entered by hand here: grading.utils.js's computeIndicatorBreakdown already apportions a flat
-// manual score across an entry's tagged indicators, proportional to each indicator's pre-set
-// share of the entry's total marks — so a teacher only ever scores the question once, and the
-// competency breakdown falls out of that automatically. Tagged indicators are still named below
-// for context, just not separately editable.
+// A question's rubric, shown as a checklist during grading — checking a criterion adds its
+// points to the marks awarded. Replaces the flat number input entirely for entries authored
+// with scoringCriteria (see ScoringCriteriaEditor in AssessmentBuilderPage.jsx); the checked
+// total is written straight into feedback.marks, so it flows through the exact same
+// itemFeedback/computeIndicatorBreakdown pipeline every other manually-graded entry already uses.
+function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {criteria.map((c) => {
+        const checked = checkedIds.includes(c.id);
+        return (
+          <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: T.ink, cursor: "pointer" }}>
+            <input type="checkbox" checked={checked} onChange={() => onToggle(c.id)} />
+            <span style={{ flex: 1 }}>{c.label}</span>
+            <span style={{ fontSize: 11, color: T.inkFaint, fontWeight: 600 }}>{c.points} pt{c.points !== 1 ? "s" : ""}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+// An entry's marks input — either a checklist rubric (when scoringCriteria was authored for the
+// question) or one flat "Marks" field, even when tagged to one or more competency indicators.
+// The per-indicator split is no longer entered by hand here: grading.utils.js's
+// computeIndicatorBreakdown already apportions a flat manual score across an entry's tagged
+// indicators, proportional to each indicator's pre-set share of the entry's total marks — so a
+// teacher only ever scores the question once (by number or by checklist), and the competency
+// breakdown falls out of that automatically. Tagged indicators are still named below for
+// context, just not separately editable.
 function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
   const max = entryMarks(entry);
   const taggedIndicators = entry.indicatorMarks || [];
+  const scoringCriteria = entry.scoringCriteria || [];
+
+  const toggleCriterion = (criterionId) => {
+    const checkedIds = feedback.checkedCriteriaIds || [];
+    const nextChecked = checkedIds.includes(criterionId) ? checkedIds.filter((id) => id !== criterionId) : [...checkedIds, criterionId];
+    const marks = scoringCriteria.filter((c) => nextChecked.includes(c.id)).reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+    onChange({ ...feedback, marks, checkedCriteriaIds: nextChecked });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
-        Marks
-        <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Math.min(max, Math.max(0, Number(e.target.value) || 0)) })} style={{ ...fieldStyle, width: 60 }} />
-        / {max}
-      </label>
+      {scoringCriteria.length > 0 ? (
+        <>
+          <p style={{ margin: "0 0 2px", fontSize: 12, color: T.inkMuted, fontWeight: 600 }}>Rubric</p>
+          <ScoringCriteriaChecklist criteria={scoringCriteria} checkedIds={feedback.checkedCriteriaIds || []} onToggle={toggleCriterion} />
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>Marks: {feedback.marks} / {max}</p>
+        </>
+      ) : (
+        <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
+          Marks
+          <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Math.min(max, Math.max(0, Number(e.target.value) || 0)) })} style={{ ...fieldStyle, width: 60 }} />
+          / {max}
+        </label>
+      )}
       {taggedIndicators.length > 0 && (
         <p style={{ margin: 0, fontSize: 10.5, color: T.inkFaint }}>
           Also assesses: {taggedIndicators.map(({ indicatorId }) => indicatorNameById.get(indicatorId)?.name || "Indicator").join(", ")}
@@ -200,16 +239,16 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     const map = new Map();
     items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      map.set(i.id, { marks: existing?.marks ?? 0 });
+      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
-      map.set(key, { marks: existing?.marks ?? 0 });
+      map.set(key, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
     });
     scorableIndicators.forEach((ind) => {
       const existing = existingFeedback.get(ind.id);
-      map.set(ind.id, { marks: existing?.marks ?? 0 });
+      map.set(ind.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
     });
     return map;
   });
@@ -227,7 +266,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
 
   const handleSave = () => {
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks }));
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [] }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
