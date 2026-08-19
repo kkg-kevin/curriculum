@@ -10,6 +10,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import PromotionPanel from "../components/PromotionPanel";
 import { formatClassName } from "../utils/classDisplay";
 
 function DetailRow({ label, value, empty = "—" }) {
@@ -312,6 +313,11 @@ export default function ClassViewPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Grade-completion readiness + moving ready learners into the next grade's class */}
+      <div style={{ marginBottom: 16 }}>
+        <PromotionPanel classId={cls.id} schoolId={cls.schoolId} classLearners={classLearners} />
       </div>
 
       <ConfirmDialog

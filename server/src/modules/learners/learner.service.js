@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const LearnerModel = require("./learner.model");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
+const LearnerTransferModel = require("./learner-transfer.model");
 const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
 const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
@@ -306,6 +307,38 @@ const LearnerService = {
 
   async unenrollFromHub(learnerId, hubId) {
     await LearnerHubLinkModel.unlink(learnerId, hubId);
+    return LearnerService.getLearnerHubs(learnerId);
+  },
+
+  // Moves a learner from one hub to another in one action — enroll-at-new then unlink-old, the
+  // same two primitives enrollInHub/unenrollFromHub already expose separately, just ordered so a
+  // failure partway through never leaves the learner unenrolled everywhere (the new link is
+  // created first). The old hub-link is still a real unlink — hard-deleted exactly like
+  // unenrollFromHub always did, deliberately NOT kept alive with a "transferred" status, since
+  // dozens of existing call sites read learner_hub_links without filtering by status and would
+  // otherwise start showing a learner as still "in" a class/hub they've actually left.
+  // LearnerTransferModel is a separate, purely additive audit log instead, so the transfer's
+  // history survives the unlink.
+  async transferHub(learnerId, { fromHubId, toHubId, toClassId, transferredBy }) {
+    if (fromHubId === toHubId) {
+      const err = new Error("Learner is already at this hub");
+      err.statusCode = 400;
+      throw err;
+    }
+    const fromLink = await LearnerHubLinkModel.findOne(learnerId, fromHubId);
+    if (!fromLink) {
+      const err = new Error("This learner isn't enrolled at the hub being transferred from");
+      err.statusCode = 404;
+      throw err;
+    }
+    await LearnerService.enrollInHub(learnerId, { hubId: toHubId, classId: toClassId || "", status: "active" });
+    await LearnerTransferModel.create({
+      learnerId, fromHubId, toHubId,
+      fromClassId: fromLink.classId, toClassId: toClassId || null,
+      fromAdmissionNumber: fromLink.admissionNumber,
+      transferredBy: transferredBy || null,
+    });
+    await LearnerHubLinkModel.unlink(learnerId, fromHubId);
     return LearnerService.getLearnerHubs(learnerId);
   },
 

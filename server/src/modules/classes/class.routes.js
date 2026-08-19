@@ -2,7 +2,7 @@ const express = require("express");
 const {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
-  getCourseTeacherLinksForTeacher,
+  getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,
 } = require("./class.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -35,5 +35,12 @@ router.route("/:id/course-teachers/:courseId/:teacherId")
   .delete(authorize("admin", "school", "branchAdmin"), unassignCourseTeacher);
 router.route("/:id/course-teachers/:courseId/:teacherId/primary")
   .patch(authorize("admin", "school", "branchAdmin"), setPrimaryCourseTeacher);
+
+// Grade-completion readiness + promotion into the next grade's class — same read/write posture
+// as course-teachers above (reads open to teacher too, writes admin/school/branchAdmin only).
+router.route("/:id/promotion-readiness")
+  .get(authorize("admin", "school", "teacher", "branchAdmin"), getPromotionReadiness);
+router.route("/:id/promote-learners")
+  .post(authorize("admin", "school", "branchAdmin"), promoteLearners);
 
 module.exports = router;

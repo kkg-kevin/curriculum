@@ -345,16 +345,68 @@ function syncIndicatorMarks(indicatorMarks, newIds, totalPoints = 0) {
   return newIds.map((id) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: evenShare });
 }
 
+/* ── question rubric (Observation / Project / Assignment) ─────────────────
+   A question tagged to exactly one indicator can compound that indicator's marks from a
+   checklist of sub-criteria instead of a hand-typed number — see the "one rubric per question"
+   design in the assessments plan. Switching into rubric mode seeds the first criterion with the
+   indicator's current marks (never resets to 0); switching back just clears scoringCriteria and
+   leaves the last-computed marks value in place. */
+
+const linkBtnStyle = { background: "none", border: "none", padding: 0, fontSize: "11.5px", fontWeight: 600, color: "#38aae1", cursor: "pointer" };
+
+function startScoringCriteria(entry) {
+  const current = entry.indicatorMarks?.[0]?.marks || 0;
+  return [{ id: genId(), label: "", points: current || 1 }];
+}
+
+function ScoringCriteriaEditor({ entry, onChange }) {
+  const criteria = entry.scoringCriteria || [];
+  const total = criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+
+  const commit = (nextCriteria) => {
+    const indicatorMarks = entry.indicatorMarks || [];
+    const nextTotal = nextCriteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+    onChange({
+      ...entry,
+      scoringCriteria: nextCriteria,
+      indicatorMarks: indicatorMarks.length === 1 ? [{ ...indicatorMarks[0], marks: nextTotal }] : indicatorMarks,
+    });
+  };
+
+  const add = () => commit([...criteria, { id: genId(), label: "", points: 1 }]);
+  const update = (id, patch) => commit(criteria.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const remove = (id) => commit(criteria.filter((c) => c.id !== id));
+
+  return (
+    <div>
+      <Label>Rubric</Label>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {criteria.map((c) => (
+          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input className="tb-input" placeholder="Criterion (e.g. Did the student answer)" value={c.label} onChange={(e) => update(c.id, { label: e.target.value })} style={{ flex: 1 }} />
+            <input type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }} value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
+            <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="tb-add-item-btn" style={{ marginTop: "8px" }} onClick={add}>+ Add Criterion</button>
+      <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: total === 0 ? 700 : 400, color: total === 0 ? "#DC2626" : "#9CA3AF" }}>
+        Total: {total} pt{total !== 1 ? "s" : ""}{total === 0 && " — worth nothing until you add criteria"}
+      </p>
+    </div>
+  );
+}
+
 /* ── entry factory ──────────────────────────────────────────────────────── */
 
 function defaultEntry(kind, sectionId) {
   const base = { id: genId(), kind, sectionId };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
-    return { ...base, text: "", points: 1, indicatorMarks: [], ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
+    return { ...base, text: "", points: 1, indicatorMarks: [], scoringCriteria: [], ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
   }
   return {
     ...base,
-    question: "", points: 1, indicatorMarks: [],
+    question: "", points: 1, indicatorMarks: [], scoringCriteria: [],
     options: kind === "mcqSingle" || kind === "mcqMultiple" ? ["", ""] : [],
     correctAnswer: "",
     pairs: kind === "matching" ? [{ left: "", right: "" }, { left: "", right: "" }] : [],
@@ -618,6 +670,28 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
             <Label>Marks</Label>
             <input type="number" min="0" className="tb-input" value={entry.points} onChange={(e) => set("points", Number(e.target.value) || 0)} />
           </div>
+        ) : indicatorMarks.length === 1 && BUILDER_REGISTRY[type]?.supportsQuestionRubric ? (
+          <div>
+            <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#6B7280" }}>
+              Assesses: <strong>{indicatorOptions.find((o) => o.id === indicatorMarks[0].indicatorId)?.chipName || indicatorOptions.find((o) => o.id === indicatorMarks[0].indicatorId)?.name || indicatorMarks[0].indicatorId}</strong>
+            </p>
+            {(entry.scoringCriteria || []).length > 0 ? (
+              <>
+                <ScoringCriteriaEditor entry={entry} onChange={onChange} />
+                <button type="button" style={{ ...linkBtnStyle, marginTop: "8px" }} onClick={() => set("scoringCriteria", [])}>Use a flat number instead</button>
+              </>
+            ) : (
+              <>
+                <Label>Marks</Label>
+                <input
+                  type="number" min="0" className="tb-input"
+                  value={indicatorMarks[0].marks}
+                  onChange={(e) => set("indicatorMarks", [{ ...indicatorMarks[0], marks: Number(e.target.value) || 0 }])}
+                />
+                <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => set("scoringCriteria", startScoringCriteria(entry))}>+ Build a rubric</button>
+              </>
+            )}
+          </div>
         ) : (
           <div>
             <Label>Marks per Indicator</Label>
@@ -870,8 +944,9 @@ function IndicatorStatsPanel({ stats }) {
 
 /* ── Grading Rubric tab (Assignment/Project) ────────────────────────────── */
 
-function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
-  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, indicatorMarks: [] }]);
+function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
+  const supportsQuestionRubric = BUILDER_REGISTRY[type]?.supportsQuestionRubric;
+  const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, indicatorMarks: [], scoringCriteria: [] }]);
   const update = (id, patch) => onChange(rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id) => onChange(rubric.filter((c) => c.id !== id));
   const totalPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
@@ -900,7 +975,29 @@ function GradingRubricTab({ rubric, onChange, indicatorOptions }) {
                   onChange={(ids) => update(c.id, { indicatorMarks: syncIndicatorMarks(indicatorMarks, ids, c.points) })}
                 />
               </div>
-              {indicatorMarks.length > 0 && (
+              {indicatorMarks.length === 1 && supportsQuestionRubric ? (
+                <div style={{ marginTop: "10px" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#6B7280" }}>
+                    Assesses: <strong>{indicatorOptions.find((o) => o.id === indicatorMarks[0].indicatorId)?.chipName || indicatorOptions.find((o) => o.id === indicatorMarks[0].indicatorId)?.name || indicatorMarks[0].indicatorId}</strong>
+                  </p>
+                  {(c.scoringCriteria || []).length > 0 ? (
+                    <>
+                      <ScoringCriteriaEditor entry={c} onChange={(next) => update(c.id, next)} />
+                      <button type="button" style={{ ...linkBtnStyle, marginTop: "8px" }} onClick={() => update(c.id, { scoringCriteria: [] })}>Use a flat number instead</button>
+                    </>
+                  ) : (
+                    <>
+                      <Label>Marks</Label>
+                      <input
+                        type="number" min="0" className="tb-input"
+                        value={indicatorMarks[0].marks}
+                        onChange={(e) => update(c.id, { indicatorMarks: [{ ...indicatorMarks[0], marks: Number(e.target.value) || 0 }] })}
+                      />
+                      <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => update(c.id, { scoringCriteria: startScoringCriteria(c) })}>+ Build a rubric</button>
+                    </>
+                  )}
+                </div>
+              ) : indicatorMarks.length > 0 && (
                 <div style={{ marginTop: "10px" }}>
                   <Label>Marks per Indicator</Label>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1171,11 +1268,11 @@ function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
     structureType: a.structureType || "mixed", overview: a.overview || "",
     sections: a.sections || [],
-    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), indicatorMarks: item.indicatorMarks || [] })),
-    indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, competencyIndicatorIds: ind.competencyIndicatorIds || [], ...ind })),
+    items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), indicatorMarks: item.indicatorMarks || [], scoringCriteria: item.scoringCriteria || [] })),
+    indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, competencyIndicatorIds: ind.competencyIndicatorIds || [], scoringCriteria: ind.scoringCriteria || [], ...ind })),
     deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
-    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), indicatorMarks: c.indicatorMarks || [] })),
+    rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), indicatorMarks: c.indicatorMarks || [], scoringCriteria: c.scoringCriteria || [] })),
     competencyIds, learningAreaIds, inventory,
   };
 }
@@ -1532,7 +1629,7 @@ export default function AssessmentBuilderPage() {
 
           {activeTab === "rubric" && (
             <div className="tb-two-col">
-              <GradingRubricTab rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} indicatorOptions={indicatorOptions} />
+              <GradingRubricTab type={type} rubric={form.rubric} onChange={(v) => setForm((f) => ({ ...f, rubric: v }))} indicatorOptions={indicatorOptions} />
               <SummaryCard form={form} />
             </div>
           )}

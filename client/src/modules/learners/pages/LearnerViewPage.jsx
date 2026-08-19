@@ -6,7 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   useLearnerQuery, useDeleteLearner, useUpdateLearner,
   useLearnerHubsQuery, useEnrollLearnerHub, useUpdateLearnerHubLink, useUnenrollLearnerHub,
-  usePublicToken, useRegeneratePublicToken,
+  useTransferLearnerHub, usePublicToken, useRegeneratePublicToken,
 } from "../hooks/useLearners";
 
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
@@ -456,6 +456,10 @@ function DetailRow({ label, value, empty = "—" }) {
 function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
   const navigate = useNavigate();
   const { mutate: updateLink } = useUpdateLearnerHubLink();
+  const { mutate: transferHub, isPending: isTransferring } = useTransferLearnerHub();
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [targetHubId, setTargetHubId] = useState("");
+  const [targetClassId, setTargetClassId] = useState("");
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", enrollment.id],
@@ -464,6 +468,18 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
   });
   const classes = classesData?.data || [];
   const statusStyle = STATUS_STYLES[enrollment.status] || STATUS_STYLES.inactive;
+
+  // Every other active hub — a learner can transfer to any hub, not just ones the caller
+  // administers (same posture as "Add Existing Learner", which already lets a school enroll a
+  // learner from any other hub into theirs without that hub's permission).
+  const { data: allHubsData } = useAllLearningHubsQuery({ status: "active" });
+  const targetHubOptions = (allHubsData?.data || []).filter((h) => h.id !== enrollment.id);
+  const { data: targetClassesData } = useQuery({
+    queryKey: ["classes", "bySchool", targetHubId],
+    queryFn:  () => classApi.getAll({ schoolId: targetHubId }),
+    enabled:  !!targetHubId,
+  });
+  const targetClasses = targetClassesData?.data || [];
 
   return (
     <div style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -500,9 +516,56 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
             <option value="transferred">Transferred</option>
             <option value="graduated">Graduated</option>
           </select>
+          <button type="button" onClick={() => setTransferOpen((v) => !v)} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+            Transfer
+          </button>
           <button type="button" onClick={() => onRequestUnlink(enrollment)} style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
             Unlink
           </button>
+        </div>
+      )}
+      {isAdmin && transferOpen && (
+        <div style={{ marginTop: 4, paddingTop: 10, borderTop: "1px dashed #E5E7EB", display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
+            Enrolls the learner at the new hub, then removes this enrollment — their history at {enrollment.name} is kept as a transfer record.
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select
+              value={targetHubId}
+              onChange={(e) => { setTargetHubId(e.target.value); setTargetClassId(""); }}
+              style={{ flex: 1, minWidth: 140, padding: "6px 8px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151" }}
+            >
+              <option value="">Transfer to hub…</option>
+              {targetHubOptions.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+            </select>
+            <select
+              value={targetClassId}
+              onChange={(e) => setTargetClassId(e.target.value)}
+              disabled={!targetHubId}
+              style={{ flex: 1, minWidth: 140, padding: "6px 8px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12, fontFamily: "Inter, sans-serif", color: "#374151", opacity: targetHubId ? 1 : 0.5 }}
+            >
+              <option value="">— Auto-assign class —</option>
+              {targetClasses.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)} — {c.academicYear}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              disabled={!targetHubId || isTransferring}
+              onClick={() => {
+                transferHub(
+                  { learnerId, hubId: enrollment.id, data: { toHubId: targetHubId, toClassId: targetClassId } },
+                  { onSuccess: () => { setTransferOpen(false); setTargetHubId(""); setTargetClassId(""); } }
+                );
+              }}
+              style={{ padding: "6px 14px", backgroundColor: !targetHubId || isTransferring ? "#b8d9ee" : ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !targetHubId || isTransferring ? "not-allowed" : "pointer" }}
+            >
+              {isTransferring ? "Transferring…" : "Confirm Transfer"}
+            </button>
+            <button type="button" onClick={() => setTransferOpen(false)} style={{ padding: "6px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              Cancel
+            </button>
+          </div>
         </div>
       )}
       {!isAdmin && (

@@ -3,7 +3,7 @@ const LearnerService = require("./learner.service");
 const LearnerModel = require("./learner.model");
 const AuthService = require("../auth/auth.service");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
-const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema } = require("./learner.validation");
+const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema } = require("./learner.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 
@@ -235,6 +235,19 @@ const unenrollLearnerHub = asyncHandler(async (req, res) => {
   res.json({ success: true, data: hubs });
 });
 
+// Moves a learner from the hub in the URL (:hubId) to another hub in one action. Only the
+// SOURCE hub needs to be the caller's own — same posture as "Add Existing Learner", which
+// already lets a school/branchAdmin enroll a learner from any other hub into theirs without that
+// other hub's permission, so requiring ownership of the destination too would be inconsistent.
+const transferLearnerHub = asyncHandler(async (req, res) => {
+  const { toHubId, toClassId } = transferHubSchema.parse(req.body);
+  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, req.params.hubId));
+  const hubs = await LearnerService.transferHub(req.params.id, {
+    fromHubId: req.params.hubId, toHubId, toClassId, transferredBy: req.user.id,
+  });
+  res.json({ success: true, data: hubs });
+});
+
 // Learner-portal-only: fired once from the first-login diagnostic gate before it reads this
 // learner's Learning-Area diagnostics, so an enrollment whose issuance was missed/incomplete
 // still gets caught before the gate decides there's nothing to show.
@@ -309,6 +322,7 @@ module.exports = {
   enrollLearnerHub,
   updateLearnerHubLink,
   unenrollLearnerHub,
+  transferLearnerHub,
   ensureDiagnosticsIssued,
   completeHubOnboarding,
   getPublicToken,

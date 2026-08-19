@@ -47,6 +47,10 @@ const itemFeedbackSchema = z.object({
   marks:   z.number().min(0).optional().default(0),
   comment: z.string().max(5000).optional().default(""),
   indicatorMarks: z.array(indicatorMarkFeedbackSchema).optional().default([]),
+  // Which of the entry's scoringCriteria checkboxes were checked (see GradingPanel.jsx's
+  // ScoringCriteriaChecklist) — purely so reopening a graded submission restores checkbox
+  // state. `marks` above is still the number scoring actually runs on.
+  checkedCriteriaIds: z.array(z.string()).optional().default([]),
 });
 
 const gradeSubmissionSchema = z.object({
