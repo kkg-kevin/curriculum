@@ -15,7 +15,7 @@ async function assertClassAccess(req, cls) {
     err.statusCode = 404;
     throw err;
   }
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));

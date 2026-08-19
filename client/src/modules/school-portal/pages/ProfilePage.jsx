@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createPortal } from "react-dom";
-import { useAuth } from "../../../context/AuthContext";
 import ImageUploadField from "../../../components/ImageUploadField";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useUpdateLearningHub as useUpdateSchool, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { learningHubProfileSchema as schoolProfileSchema, KENYA_COUNTIES } from "../../learning-hubs/schemas/learningHub.schema";
@@ -222,8 +220,8 @@ function ChangePasswordSection({ school }) {
 // Portals into document.body with fixed positioning computed from the trigger's own
 // getBoundingClientRect, same pattern as CurriculumCard's kebab menu: rendered inline instead,
 // this gets clipped by the hero's own `overflow: hidden`. onSaved is expected to refetch the
-// school query — useUpdateSchool's cache invalidation doesn't cover this page's own
-// ["schools", "byEmail", ...] query key.
+// school query — useUpdateSchool's cache invalidation doesn't cover useSchoolPortalScope's own
+// ["schools", "mine", ...] query key.
 function SchoolPhotoEditor({ school, onSaved }) {
   const { mutate: updateSchool, isPending } = useUpdateSchool();
   const [open, setOpen] = useState(false);
@@ -324,15 +322,14 @@ function StatTile({ icon, num, label, onClick }) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { school, hubsLoading: isLoading, email } = useOutletContext();
+  const queryClient = useQueryClient();
+  // useUpdateSchool's own cache invalidation doesn't cover useSchoolPortalScope's
+  // ["schools", "mine", ...] query key (see SchoolPhotoEditor's comment above) — refetch it
+  // directly so an edit/photo save here shows up immediately.
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["schools", "mine", email] });
 
-  const { data: schoolsData, isLoading, refetch } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
 
   // Trailing "" mirrors the unfiltered default of the statusFilter state on the list pages, so
@@ -356,7 +353,7 @@ export default function ProfilePage() {
         <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg, #e8f5fb, #d6edf8)", border: "2px solid #a8d5ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#25476a", margin: "0 auto 16px" }}><FiHome size={28} strokeWidth={1.8} /></div>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No school profile linked yet</h3>
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
-          Your account ({user?.email}) isn't linked to a school yet. Ask a platform admin to add this school using
+          Your account ({email}) isn't linked to a school yet. Ask a platform admin to add this school using
           this same email address as its contact email.
         </p>
       </div>
@@ -443,7 +440,7 @@ export default function ProfilePage() {
 
           <Section title="Account">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <DetailRow icon={iconMail} label="Login Email" value={user?.email} />
+              <DetailRow icon={iconMail} label="Login Email" value={email} />
               <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
                 This is the email you sign in with — it can differ from the school's public contact email above.
               </p>

@@ -3,24 +3,37 @@ const LearningHubModel = require("../../modules/learning-hubs/learning-hub.model
 const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
-const BranchModel = require("../../modules/branches/branch.model");
 
-// Resolves the caller's own LearningHub/Teacher/Learner/Curriculum/Branch record from their JWT
+// Resolves the caller's own LearningHub/Teacher/Learner/Curriculum record from their JWT
 // identity and attaches it to req — a "school"-role account matches against whichever learning
 // hub record has that email (school is just one hub type; only school-type hubs have portal
 // logins today), teacher accounts match on their own email, a learner account logs in as the
-// guardian so it matches guardianEmail instead, a "curriculumAdmin" account matches whichever
+// guardian so it matches guardianEmail instead, and a "curriculumAdmin" account matches whichever
 // curriculum has curriculumAdminId === their own user id (mirrors class.classTeacherId — one
-// outward-pointing field, not a separate collection), and a "branchAdmin" account matches
-// whichever branch has branchAdminId === their own user id, same shape. Route handlers scope
-// every query and ownership check off these attached records, never off client-supplied ids, so
-// a role can't widen its own access by editing a query param or path param.
+// outward-pointing field, not a separate collection). Route handlers scope every query and
+// ownership check off these attached records, never off client-supplied ids, so a role can't
+// widen its own access by editing a query param or path param.
 const attachOwnRecords = asyncHandler(async (req, res, next) => {
   const { role, email, id } = req.user;
 
   if (role === "school") {
+    // A hub can itself be the parent of other hubs (its "branches") — the parent's own admin
+    // gets access to switch into each one, exactly like a guardian switching between linked
+    // learners below: req.ownSchools is every hub this login can act as (own hub first, then its
+    // branches), req.ownSchool is whichever ONE is currently active, chosen via the
+    // X-Active-Hub-Id header (see api.js's request interceptor) and validated by finding it in
+    // req.ownSchools — never trusts the header blindly, falls back to the login's own hub.
     const hubs = await LearningHubModel.findAll({ email });
-    req.ownSchool = hubs[0] || null;
+    const ownHub = hubs[0] || null;
+    if (ownHub) {
+      const branches = await LearningHubModel.findAll({ parentHubId: ownHub.id, includeDrafts: true });
+      req.ownSchools = [ownHub, ...branches];
+      const requestedId = req.headers["x-active-hub-id"];
+      req.ownSchool = (requestedId && req.ownSchools.find((h) => h.id === requestedId)) || ownHub;
+    } else {
+      req.ownSchools = [];
+      req.ownSchool = null;
+    }
   }
 
   if (role === "teacher") {
@@ -55,17 +68,6 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     req.ownCurriculum = curricula.find((c) => c.curriculumAdminId === id) || null;
   }
 
-  if (role === "branchAdmin") {
-    const branches = await BranchModel.findAll();
-    req.ownBranch = branches.find((b) => b.branchAdminId === id) || null;
-    // Every hub id under this branch, computed once per request — every route that used to
-    // check "is this my one hub" (hubId === req.ownSchool?.id) can instead check membership in
-    // this set (see isOwnHub below), covering "any hub under my branch" with the same shape.
-    req.ownBranchHubIds = req.ownBranch
-      ? (await LearningHubModel.findAll({ branchId: req.ownBranch.id, includeDrafts: true })).map((h) => h.id)
-      : [];
-  }
-
   next();
 });
 
@@ -79,14 +81,14 @@ function assertOwn(condition) {
   }
 }
 
-// True whenever `hubId` is the caller's own hub — either the exact hub a "school"-role account
-// is tied to, or any hub under the branch a "branchAdmin"-role account manages. Reused across
-// learning-hubs/teachers/learners/classes/attendance so a hub-scoped ownership check only needs
-// one extra role to cover both. No-op (false) for every other role.
+// True whenever `hubId` is the caller's own hub — the CURRENTLY ACTIVE one for a "school"-role
+// account (req.ownSchool; see attachOwnRecords above for how a parent hub's admin switches this
+// across its own hub and its branches). Ownership checks are always against the active hub only,
+// same "act as one at a time" posture the guardian/learner X-Active-Learner-Id pattern uses —
+// not "any hub this login could ever act as". No-op (false) for every other role.
 function isOwnHub(req, hubId) {
   if (!hubId) return false;
   if (req.user.role === "school") return hubId === req.ownSchool?.id;
-  if (req.user.role === "branchAdmin") return !!req.ownBranchHubIds?.includes(hubId);
   return false;
 }
 

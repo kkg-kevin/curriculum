@@ -69,6 +69,10 @@ const LearningHubService = {
     for (const room of rooms) {
       await RoomService.deleteRoom(room.id);
     }
+    // Branch hubs become standalone rather than left pointing at a deleted parent — same
+    // tolerance removing a curriculum doesn't leave hubs' curriculumId dangling either.
+    const branches = await LearningHubModel.findAll({ parentHubId: id, includeDrafts: true });
+    await Promise.all(branches.map((b) => LearningHubModel.update(b.id, { parentHubId: null })));
     return { message: "Learning hub deleted successfully" };
   },
 };

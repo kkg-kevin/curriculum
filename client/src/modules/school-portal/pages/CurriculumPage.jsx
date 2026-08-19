@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiChevronDown, FiAward, FiUserCheck } from "react-icons/fi";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
@@ -139,15 +137,8 @@ function GradeCard({ gradeName, classesForGrade, courses, onViewAll }) {
 }
 
 export default function CurriculumPage() {
-  const { user } = useAuth();
+  const { school, hubsLoading: schoolLoading, email } = useOutletContext();
   const [selectedGradeId, setSelectedGradeId] = useState(null);
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
 
   const { data: curriculum } = useCurriculumQuery(school?.curriculumId);
 
@@ -203,7 +194,7 @@ export default function CurriculumPage() {
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No school profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
-            Your account ({user?.email}) isn't linked to a school yet. Ask a platform admin to add this school using
+            Your account ({email}) isn't linked to a school yet. Ask a platform admin to add this school using
             this same email address as its contact email.
           </p>
         </div>

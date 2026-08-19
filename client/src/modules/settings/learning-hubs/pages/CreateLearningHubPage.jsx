@@ -24,7 +24,7 @@ export default function CreateLearningHubPage() {
       address: { street: "", city: "", county: "" },
       mapLink: "",
       contactPerson: "", email: "", password: "", phone: "",
-      curriculumId: "", branchId: "", status: "draft",
+      curriculumId: "", parentHubId: "", status: "draft",
       description: "", photo: null, photos: [], amenities: [],
       operatingHours: { opensAt: "", closesAt: "", days: [] },
       spaces: [],
@@ -35,7 +35,7 @@ export default function CreateLearningHubPage() {
   const { handleSubmit, formState: { isDirty } } = methods;
 
   const onSubmit = (data) => {
-    const payload = { ...data, curriculumId: data.curriculumId || null, branchId: data.branchId || null };
+    const payload = { ...data, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
     createLearningHub(payload, {
       onSuccess: () => {
         if (data.password) {

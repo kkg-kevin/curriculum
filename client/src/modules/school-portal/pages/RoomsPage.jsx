@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
+import { useOutletContext } from "react-router-dom";
 import { useRoomsByHub, useCreateRoom, useUpdateRoom, useDeleteRoom } from "../../rooms/hooks/useRooms";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -80,17 +78,10 @@ function RoomRow({ room, onEdit, onDelete }) {
 }
 
 export default function RoomsPage() {
-  const { user } = useAuth();
+  const { school, hubsLoading: schoolLoading } = useOutletContext();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
 
   const { data: roomsData, isLoading: roomsLoading } = useRoomsByHub(school?.id);
   const rooms = (roomsData?.data || []).slice().sort((a, b) => a.name.localeCompare(b.name));

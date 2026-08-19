@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -18,8 +17,6 @@ import {
   EventAvailable as EventAvailableIcon,
   Groups as GroupsIcon,
 } from "@mui/icons-material";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useHubAnalytics } from "../../reports/hooks/useReports";
 import { classPath } from "../../../routes/portalPaths";
 
@@ -135,15 +132,8 @@ function GenderComparisonCard({ male, female }) {
 
 export default function ReportsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { school, hubsLoading: schoolLoading } = useOutletContext();
   const [genderFilter, setGenderFilter] = useState("all");
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
 
   // All three fetched together (React Query dedupes/parallelizes) rather than only the selected
   // one — male/female are needed simultaneously for the always-visible GenderComparisonCard below,

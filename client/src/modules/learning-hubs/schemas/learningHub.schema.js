@@ -109,7 +109,9 @@ export const learningHubSchema = z
     address: addressSchema,
     mapLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
     curriculumId: z.string().or(z.literal("")).nullable().default(""),
-    branchId: z.string().or(z.literal("")).nullable().default(""),
+    // A hub can itself be the parent of other hubs (its "branches") — see
+    // learning-hub.validation.js server-side for the same field.
+    parentHubId: z.string().or(z.literal("")).nullable().default(""),
     // New hubs start as "draft" — invisible everywhere outside Settings until promoted to
     // "active", at which point they appear in the Learning Hubs module and every other consumer.
     status: z.enum(["draft", "active", "inactive"]).default("draft"),

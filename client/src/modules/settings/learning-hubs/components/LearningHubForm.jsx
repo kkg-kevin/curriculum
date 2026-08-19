@@ -6,7 +6,6 @@ import {
 } from "../../../learning-hubs/schemas/learningHub.schema";
 import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
 import { useAllLearningHubsQuery } from "../../../learning-hubs/hooks/useLearningHub";
-import { useBranchesQuery } from "../../../branches/hooks/useBranch";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import ImageUploadField from "../../../../components/ImageUploadField";
 
@@ -398,14 +397,16 @@ function SpaceConfigCard({ index, onRemove }) {
   );
 }
 
-export default function LearningHubForm({ autoGenerateCode = false }) {
+export default function LearningHubForm({ autoGenerateCode = false, id }) {
   const { register, watch, control, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
-  const { data: branchesData } = useBranchesQuery();
-  const branches = branchesData?.data || [];
   const { data: allHubsData } = useAllLearningHubsQuery({ includeDrafts: true });
-  const existingCodes = (allHubsData?.data || []).map((h) => h.code).filter(Boolean);
+  const allHubs = allHubsData?.data || [];
+  const existingCodes = allHubs.map((h) => h.code).filter(Boolean);
+  // Parent-hub candidates: every other hub that isn't itself already a branch (one level of
+  // nesting only — see learning-hub.controller.js's assertValidParentHub) and isn't this hub.
+  const parentHubOptions = allHubs.filter((h) => h.id !== id && !h.parentHubId);
   const hubType = watch("hubType");
   const isSchool = hubType === "school";
 
@@ -530,18 +531,18 @@ export default function LearningHubForm({ autoGenerateCode = false }) {
         )}
       </SectionCard>
 
-      <SectionCard icon={<CorporateFareIcon fontSize="small" />} title="Branch" subtitle="Groups this hub with other related hubs (e.g. multiple locations of the same network) under one centralized admin.">
-        <Field label="Branch" error={errors?.branchId?.message}>
-          <select {...register("branchId")} style={selectStyle}>
-            <option value="">No branch — standalone hub</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+      <SectionCard icon={<CorporateFareIcon fontSize="small" />} title="Parent Hub" subtitle="Makes this hub a branch of another — that hub's own admin gets access to switch into and manage this one too. One level only: a hub that's already a branch can't itself be a parent.">
+        <Field label="Parent Hub" error={errors?.parentHubId?.message}>
+          <select {...register("parentHubId")} style={selectStyle}>
+            <option value="">No parent — standalone hub</option>
+            {parentHubOptions.map((h) => (
+              <option key={h.id} value={h.id}>{h.name}</option>
             ))}
           </select>
         </Field>
-        {branches.length === 0 && (
+        {parentHubOptions.length === 0 && (
           <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#F59E0B" }}>
-            No branches found. Create one from Settings → Branches to group hubs together.
+            No eligible parent hubs yet — every other hub is either this one or already a branch itself.
           </p>
         )}
       </SectionCard>

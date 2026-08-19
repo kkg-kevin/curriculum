@@ -7,9 +7,8 @@ import {
   EventNote as EventNoteOutlinedIcon,
   Home as HomeOutlinedIcon,
 } from "@mui/icons-material";
+import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../context/AuthContext";
-import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useAttendanceByDateQuery, useAttendanceHistoryQuery } from "../../attendance/hooks/useAttendance";
@@ -116,19 +115,12 @@ function HistoryRow({ row }) {
 }
 
 export default function AttendancePage() {
-  const { user } = useAuth();
+  const { school, hubsLoading: schoolLoading } = useOutletContext();
   const [tab, setTab] = useState("byDate");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [date, setDate] = useState(todayStr());
   const [historyFrom, setHistoryFrom] = useState(() => addDays(todayStr(), -30));
   const [historyTo, setHistoryTo] = useState(() => todayStr());
-
-  const { data: schoolsData, isLoading: schoolLoading } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => schoolApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "bySchool", school?.id, ""],

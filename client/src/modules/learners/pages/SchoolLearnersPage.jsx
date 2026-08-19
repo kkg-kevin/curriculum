@@ -17,7 +17,7 @@ const GRAD_TO   = "#38aae1";
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 
 // Finds a learner already enrolled at a DIFFERENT hub (by name, username, or registration
-// number) and enrolls them here too — the only path a school/branchAdmin has for this, since
+// number) and enrolls them here too — the only path a school has for this, since
 // they can't otherwise view or search a learner outside their own hub at all. Partial match, so
 // a name search can surface several candidates — pick one from the list before enrolling.
 function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {

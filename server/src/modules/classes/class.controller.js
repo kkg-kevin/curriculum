@@ -29,8 +29,6 @@ const createClass = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
     data.schoolId = req.ownSchool.id;
-  } else if (req.user.role === "branchAdmin") {
-    assertOwn(isOwnHub(req, data.schoolId));
   }
   const record = await ClassService.createClass(data);
   res.status(201).json({ success: true, data: record });
@@ -51,14 +49,6 @@ const getAllClasses = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
     filters.schoolId = req.ownSchool.id;
-  } else if (req.user.role === "branchAdmin") {
-    if (!req.ownBranch) return res.json({ success: true, data: [], count: 0 });
-    // ClassModel.findAll only matches a single schoolId — fetch every matching class (across
-    // any hub) on the other filters, then narrow to this branch's hubs here.
-    let records = await ClassService.getAllClasses({ status });
-    records = records.filter((c) => isOwnHub(req, c.schoolId));
-    if (teacherId) { const ids = await classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
-    return res.json({ success: true, data: records, count: records.length });
   } else if (req.user.role === "teacher") {
     if (!req.ownTeacher) return res.json({ success: true, data: [], count: 0 });
     const ids = await classIdsTaughtBy(req.ownTeacher.id);
@@ -72,7 +62,7 @@ const getAllClasses = asyncHandler(async (req, res) => {
 
 const getClassById = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
@@ -87,11 +77,11 @@ const getClassById = asyncHandler(async (req, res) => {
 });
 
 // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
-// Replaces the old single Class.classTeacherId. Assignment stays an admin/school/branchAdmin
-// action, same posture as the old classTeacherId write (a plain class update).
+// Replaces the old single Class.classTeacherId. Assignment stays an admin/school action, same
+// posture as the old classTeacherId write (a plain class update).
 const getClassCourseTeachers = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   const links = await ClassCourseTeacherLinkModel.findByClassId(req.params.id);
   const resolved = await Promise.all(links.map(async (l) => ({ ...l, teacher: await TeacherModel.findById(l.teacherId) })));
   const data = resolved.filter((l) => l.teacher);
@@ -102,7 +92,7 @@ const assignCourseTeacher = asyncHandler(async (req, res) => {
   const { courseId, teacherId } = req.body;
   if (!courseId || !teacherId) return res.status(400).json({ success: false, message: "courseId and teacherId are required" });
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   // An empty/unset qualifiedCourseIds means unrestricted — the gate only activates once a
   // teacher has been given a specific, non-empty list (see teacher.validation.js).
   const teacher = await TeacherModel.findById(teacherId);
@@ -117,7 +107,7 @@ const assignCourseTeacher = asyncHandler(async (req, res) => {
 const unassignCourseTeacher = asyncHandler(async (req, res) => {
   const { courseId, teacherId } = req.params;
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   await ClassCourseTeacherLinkModel.unlink(req.params.id, courseId, teacherId);
   res.json({ success: true });
 });
@@ -127,7 +117,7 @@ const unassignCourseTeacher = asyncHandler(async (req, res) => {
 const setPrimaryCourseTeacher = asyncHandler(async (req, res) => {
   const { courseId, teacherId } = req.params;
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   const link = await ClassCourseTeacherLinkModel.setPrimary(req.params.id, courseId, teacherId);
   if (!link) return res.status(404).json({ success: false, message: "Educator is not assigned to this course" });
   res.json({ success: true, data: link });
@@ -150,7 +140,7 @@ const getCourseTeacherLinksForTeacher = asyncHandler(async (req, res) => {
 // endpoints — anyone who can already see this class's detail page can see this.
 const getPromotionReadiness = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
@@ -160,21 +150,21 @@ const getPromotionReadiness = asyncHandler(async (req, res) => {
 });
 
 // Moves the given learners into the next grade's class, once they're actually ready — same
-// write posture as assignCourseTeacher/updateClass (admin/school/branchAdmin only, see routes).
+// write posture as assignCourseTeacher/updateClass (admin/school only, see routes).
 const promoteLearners = asyncHandler(async (req, res) => {
   const { learnerIds } = req.body;
   if (!Array.isArray(learnerIds) || learnerIds.length === 0) {
     return res.status(400).json({ success: false, message: "learnerIds is required" });
   }
   const record = await ClassService.getClassById(req.params.id);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   const data = await ClassService.promoteLearners(req.params.id, learnerIds);
   res.json({ success: true, data });
 });
 
 const updateClass = asyncHandler(async (req, res) => {
   const data = pickPresent(updateClassSchema.parse(req.body), req.body);
-  if (req.user.role === "school" || req.user.role === "branchAdmin") {
+  if (req.user.role === "school") {
     const existing = await ClassService.getClassById(req.params.id);
     assertOwn(isOwnHub(req, existing.schoolId));
     data.schoolId = existing.schoolId;
@@ -184,7 +174,7 @@ const updateClass = asyncHandler(async (req, res) => {
 });
 
 const deleteClass = asyncHandler(async (req, res) => {
-  if (req.user.role === "school" || req.user.role === "branchAdmin") {
+  if (req.user.role === "school") {
     const existing = await ClassService.getClassById(req.params.id);
     assertOwn(isOwnHub(req, existing.schoolId));
   }
@@ -200,8 +190,6 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
     items.forEach((item) => { item.schoolId = req.ownSchool.id; });
-  } else if (req.user.role === "branchAdmin") {
-    items.forEach((item) => assertOwn(isOwnHub(req, item.schoolId)));
   }
   const parsed = items.map((item) => createClassSchema.parse(item));
   const records = await ClassService.bulkCreateClasses(parsed);

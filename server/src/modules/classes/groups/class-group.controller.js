@@ -6,15 +6,15 @@ const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middle
 const { createGroupSchema, renameGroupSchema, addMemberSchema } = require("./class-group.validation");
 
 // Groups are a class-scoped resource with the same three-role ownership story attendance
-// already uses: school/branchAdmin via isOwnHub, teacher via a course-educator link in the
-// class. Admin passes through unrestricted, same as every other class-scoped controller.
+// already uses: school via isOwnHub, teacher via a course-educator link in the class. Admin
+// passes through unrestricted, same as every other class-scoped controller.
 async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
     err.statusCode = 404;
     throw err;
   }
-  if (req.user.role === "school" || req.user.role === "branchAdmin") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));

@@ -35,7 +35,7 @@ const LearnerModel = {
 
   // Cross-hub lookup for getAllLearners' search branch (see AddExistingLearnerPanel on the
   // client) — partial, case-insensitive match against name, username, or registration number,
-  // so a school/branchAdmin doesn't need to already know a learner's exact username to find
+  // so a school doesn't need to already know a learner's exact username to find
   // them. LOWER() on both sides rather than relying on the DB's default collation.
   search(term, { limit = 20 } = {}) {
     const needle = `%${term.trim().toLowerCase()}%`;

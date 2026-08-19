@@ -18,6 +18,8 @@ import {
   BarChart as BarChartIcon,
   LocationOn as LocationOnIcon,
   Home as HomeIcon,
+  MoreVert as MoreVertIcon,
+  ArrowForward as ArrowForwardIcon,
 } from "@mui/icons-material";
 import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCourse } from "../hooks/useCurriculum";
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
@@ -26,6 +28,7 @@ import {
   useCompetencies, useLearningAreas, useAgeCategories, useProgressLevels,
   useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
 } from "../hooks/useCompetencies";
+import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLevels";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
@@ -202,9 +205,295 @@ const CSS = `
     .cvp-date-card-body { flex-direction: column; }
     .cvp-date-box { min-width: unset; width: 100%; }
   }
+
+  /* In-page section nav — quick-jump, not sticky: MainLayout's shell scrolls the page via
+     an ancestor with overflow:hidden between this content and the real scroll container, which
+     breaks position:sticky's containing-block chain. Fixing that would mean changing shared
+     layout CSS every other page also depends on, so this stays a plain jump bar instead of a
+     pinned one. Styled as real underlined tabs (not pill buttons) with an active state driven by
+     scroll-spy (see SectionNav's IntersectionObserver), so it reads as "which section am I in"
+     rather than a row of disconnected shortcuts. */
+  .cvp-section-nav {
+    z-index: 15;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 0 4px;
+    margin-bottom: 20px;
+    background: transparent;
+    border-bottom: 1.5px solid #E5E7EB;
+  }
+  .cvp-section-nav-link {
+    position: relative;
+    padding: 11px 15px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: Inter, sans-serif;
+    color: #6B7280;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .cvp-section-nav-link:hover { color: #25476a; }
+  .cvp-section-nav-link.active { color: #25476a; font-weight: 700; }
+  .cvp-section-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 10px; right: 10px; bottom: -1.5px;
+    height: 2.5px;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(90deg, #25476a, #38aae1);
+    transform: scaleX(0);
+    transition: transform 0.18s ease;
+  }
+  .cvp-section-nav-link.active::after { transform: scaleX(1); }
+
+  /* Grade / structure pills */
+  .cvp-grade-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    background: #FAFBFF;
+  }
+  .cvp-grade-seq {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    background: #e8f5fb; color: #25476a; border: 1px solid #a8d5ee;
+    font-size: 11px; font-weight: 800;
+  }
+
+  @media (max-width: 640px) {
+    .cvp-section-nav { overflow-x: auto; flex-wrap: nowrap; }
+  }
 `;
 
+// Grade classes have no explicit order field — a System Level's own `sequence` is the only
+// real ordering signal (same resolution CurriculumLevelMappingTable.jsx uses), falling back to
+// array order for any class whose systemLevelId doesn't resolve (unmapped or level deleted).
+function sortClassesBySystemLevel(classes, systemLevels) {
+  const sequenceById = new Map((systemLevels || []).map((l) => [l.id, l.sequence]));
+  return [...(classes || [])].sort((a, b) => {
+    const sa = sequenceById.get(a.systemLevelId);
+    const sb = sequenceById.get(b.systemLevelId);
+    if (sa == null && sb == null) return 0;
+    if (sa == null) return 1;
+    if (sb == null) return -1;
+    return sa - sb;
+  });
+}
+
+// Every (periodName, className) a course currently appears under, across the live version's
+// content — feeds the "where is this course actually assigned" tag in Attached Courses, so that
+// section and Course Assignments read as one picture instead of two disconnected lists.
+function buildCourseAssignmentIndex(content) {
+  const byCourseId = new Map();
+  (content || []).forEach((period) => {
+    (period.classes || []).forEach((cls) => {
+      (cls.courses || []).forEach((course) => {
+        const list = byCourseId.get(course.id) || [];
+        list.push({ periodName: period.periodName, className: cls.className });
+        byCourseId.set(course.id, list);
+      });
+    });
+  });
+  return byCourseId;
+}
+
+// Scroll-spy'd tab strip, not just a jump bar — tracks which section currently sits at the top
+// of the viewport (via IntersectionObserver, since position:sticky can't be used here — see the
+// CSS comment above) so the active underline follows the reader's scroll position, not only a
+// click. rootMargin's -70% bottom keeps a section "active" only while it's in the upper third of
+// the viewport, matching each section's own scrollMarginTop: 76px.
+function SectionNav({ links }) {
+  const [active, setActive] = useState(links[0]?.id);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
+    );
+    const els = links.map((l) => document.getElementById(l.id)).filter(Boolean);
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [links]);
+
+  const scrollTo = (id) => {
+    setActive(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  return (
+    <nav className="cvp-section-nav" aria-label="Jump to section">
+      {links.map((l) => (
+        <button key={l.id} type="button" className={`cvp-section-nav-link${active === l.id ? " active" : ""}`} onClick={() => scrollTo(l.id)}>
+          {l.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+// First-class "what does this curriculum actually span" section — grade list (sorted by System
+// Level sequence) plus the academic cycle model and period names. Previously this was only
+// inferable indirectly through Course Assignments, and only once a version existed.
+function StructureSection({ curriculumId, classes, periods, model, systemLevels, navigate }) {
+  const sortedClasses = sortClassesBySystemLevel(classes, systemLevels);
+  const sequenceById = new Map((systemLevels || []).map((l) => [l.id, l.sequence]));
+
+  return (
+    <div id="structure" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Structure</h2>
+          <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Grades this curriculum spans and its academic cycle</p>
+        </div>
+        <ManageLink onClick={() => navigate(`/curriculum/${curriculumId}/structure`)} />
+      </div>
+
+      {sortedClasses.length === 0 ? (
+        <div style={{ padding: "32px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: "28px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "8px" }}><AccountTreeIcon fontSize="inherit" /></div>
+          <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#374151" }}>No grades configured yet</p>
+          <p style={{ margin: "0 0 16px", fontSize: "12.5px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
+            Choose which grade levels this curriculum spans and label each one.
+          </p>
+          <button type="button" onClick={() => navigate(`/curriculum/${curriculumId}/structure`)}
+            style={{ padding: "9px 20px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            Configure Structure →
+          </button>
+        </div>
+      ) : (
+        <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "20px", alignItems: "start" }}>
+          <div>
+            <p style={{ margin: "0 0 10px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+              Grades · {sortedClasses.length}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {sortedClasses.map((cls) => (
+                <div key={cls.id} className="cvp-grade-row">
+                  <span className="cvp-grade-seq">{sequenceById.get(cls.systemLevelId) ?? "?"}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111827" }}>{cls.name}</p>
+                    {cls.shortLabel && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{cls.shortLabel}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p style={{ margin: "0 0 10px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+              Academic Cycle
+            </p>
+            <div style={{ padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E7EB", backgroundColor: "#FAFBFF", marginBottom: "10px" }}>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#25476a" }}>{cycleLabel(model)}</p>
+            </div>
+            {periods.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>No {cycleLabel(model).toLowerCase()} named yet</p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {periods.map((p, i) => (
+                  <span key={p.id || i} style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "11.5px", fontWeight: "600", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Small atoms ─────────────────────────────────────────────────────── */
+
+// Ghost text-link, not a bordered pill button — every section header used to repeat its own
+// "Manage →" button styled identically to a primary action, which flattened the page into a wall
+// of same-weight buttons. This is deliberately lower-emphasis (no border/fill) so a section's
+// real content reads first and "Manage" reads as a secondary way in, not a competing CTA.
+function ManageLink({ onClick, children = "Manage" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "4px", padding: "6px 2px",
+        background: "none", border: "none", color: "#25476a", fontSize: "12.5px", fontWeight: "700",
+        fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0,
+      }}
+    >
+      {children} <ArrowForwardIcon sx={{ fontSize: 14 }} />
+    </button>
+  );
+}
+
+// Overflow menu for secondary header actions — collapses what used to be a row of 3-4 identical
+// buttons into one trigger, so the hero header reads as "one primary action + a menu" instead of
+// a wall of buttons all fighting for the same attention.
+function HeaderMenu({ items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="More actions"
+        aria-expanded={open}
+        style={{
+          width: "34px", height: "34px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+          backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)",
+          borderRadius: "8px", cursor: "pointer",
+        }}
+      >
+        <MoreVertIcon fontSize="small" />
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 30,
+          background: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px",
+          boxShadow: "0 10px 28px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06)",
+          minWidth: "200px", overflow: "hidden", padding: "6px",
+        }}>
+          {items.map((it) => (
+            <button
+              key={it.label}
+              type="button"
+              onClick={() => { it.onClick(); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "9px", width: "100%", padding: "9px 10px",
+                border: "none", borderRadius: "8px", background: "transparent",
+                fontSize: "12.5px", fontWeight: "600", fontFamily: "Inter, sans-serif", color: "#374151",
+                textAlign: "left", cursor: "pointer", boxSizing: "border-box",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#F3F4F6"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <span style={{ display: "flex", color: "#25476a", flexShrink: 0 }}>{it.icon}</span>
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Chip({ course, index }) {
   const shade = COURSE_SHADES[index % COURSE_SHADES.length];
@@ -362,6 +651,7 @@ export default function CurriculumViewPage() {
   const { data: curriculum, isLoading: currLoading, isError } = useCurriculumQuery(id);
   const { data: vData, isLoading: vLoading } = useCurriculumVersions(id);
   const { data: yearData } = useAcademicYears(id);
+  const { data: systemLevels = [] } = useSystemLevels();
 
   // Competency Framework (built in the Competencies wizard step) — fetched independently
   // so it never blocks the page's initial paint; each panel below just shows "0" until ready.
@@ -446,6 +736,26 @@ export default function CurriculumViewPage() {
   const yearPeriods  = activeYearPeriods;
   const yearSafeIdx  = Math.min(activePeriod, Math.max(yearPeriods.length - 1, 0));
 
+  /* Every group/version the Academic Year system has ever recorded, flattened — feeds the
+     Version Control section's own status card so it never needs a separate page visit to know
+     "is the calendar itself live". */
+  const ayGroups   = yearData?.groups || [];
+  const ayVersions = ayGroups.flatMap((g) => (g.versions || []).map((v) => ({ ...v, groupLabel: g.label })));
+  const ayHasDraft = ayVersions.some((v) => v.status === "draft");
+
+  /* Where each attached course currently sits in the live version's content — cross-links
+     Attached Courses with Course Assignments instead of leaving them as two disconnected lists. */
+  const courseAssignmentIndex = buildCourseAssignmentIndex(content);
+
+  const sectionLinks = [
+    { id: "structure", label: "Structure" },
+    { id: "course-assignments", label: "Course Assignments" },
+    { id: "competencies", label: "Competencies" },
+    { id: "version-control", label: "Version Control" },
+    { id: "courses", label: "Courses" },
+    { id: "hubs", label: "Hubs" },
+  ];
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <style>{CSS}</style>
@@ -511,23 +821,18 @@ export default function CurriculumViewPage() {
               )}
             </div>
 
-            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-              <button type="button" onClick={() => navigate(`/curriculum/${id}/edit`)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                <><EditIcon fontSize="small" /> Edit Details</>
-              </button>
-              <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                <AccountTreeIcon fontSize="small" /> Structure
-              </button>
-              {!curriculum.isProgram && (
-                <button type="button" onClick={() => navigate(`/curriculum/${id}/academic-year`)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-                  <CalendarMonthIcon fontSize="small" /> Academic Year
-                </button>
-              )}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              <HeaderMenu
+                items={[
+                  { label: "Edit Details", icon: <EditIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/edit`) },
+                  { label: "Structure", icon: <AccountTreeIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/structure`) },
+                  ...(!curriculum.isProgram
+                    ? [{ label: "Academic Year", icon: <CalendarMonthIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/academic-year`) }]
+                    : []),
+                ]}
+              />
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 13px", backgroundColor: "rgba(255,255,255,0.95)", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "rgba(255,255,255,0.95)", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 <FolderCopyIcon fontSize="small" /> Version Control
               </button>
             </div>
@@ -569,6 +874,17 @@ export default function CurriculumViewPage() {
           ))}
         </div>
       </div>
+
+      <SectionNav links={sectionLinks} />
+
+      <StructureSection
+        curriculumId={id}
+        classes={classes}
+        periods={periods}
+        model={model}
+        systemLevels={systemLevels}
+        navigate={navigate}
+      />
 
       {/* ── Deployments (Programs only) ──────────────────────────────────── */}
       {curriculum.isProgram && (
@@ -619,7 +935,7 @@ export default function CurriculumViewPage() {
       )}
 
       {/* ── Course Assignments Section ───────────────────────────────────── */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+      <div id="course-assignments" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
 
         {/* Section header */}
         <div style={{ padding: "16px 20px 0", borderBottom: "1px solid #F3F4F6" }}>
@@ -824,19 +1140,13 @@ export default function CurriculumViewPage() {
       </div>
 
       {/* ── Competency Framework ─────────────────────────────────────────── */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+      <div id="competencies" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Competency Framework</h2>
             <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Competencies, learning areas, progress arc, and assessment design for this curriculum</p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate(`/curriculum/${id}/competencies`)}
-            style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#e8f5fb", color: "#25476a", border: "1.5px solid #a8d5ee", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}
-          >
-            Manage →
-          </button>
+          <ManageLink onClick={() => navigate(`/curriculum/${id}/competencies`)} />
         </div>
 
         {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwPerformanceBands.length === 0 && fwProgressLevels.length === 0 && fwAssessmentTypes.length === 0 ? (
@@ -901,7 +1211,7 @@ export default function CurriculumViewPage() {
       {/* ── Attached Courses ─────────────────────────────────────────────
          Courses are created independently in the Courses module — a course is
          added to (or removed from) this curriculum here, not from the course itself. */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+      <div id="courses" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Attached Courses</h2>
@@ -926,6 +1236,10 @@ export default function CurriculumViewPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {attachedCourses.map((c) => {
                 const sc = STATUS_CONFIG[c.status] || STATUS_CONFIG.active;
+                // Where this course actually sits in the live version's content — cross-links
+                // this list with Course Assignments so they read as one picture. Not found means
+                // it's attached to the curriculum but not yet placed under any class/period.
+                const placements = courseAssignmentIndex.get(c.id) || [];
                 return (
                   <div
                     key={c.id}
@@ -938,7 +1252,18 @@ export default function CurriculumViewPage() {
                       <span style={{ display: "flex", color: "#25476a", flexShrink: 0 }}><MenuBookIcon fontSize="small" /></span>
                       <div style={{ minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
-                        {c.code && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{c.code}</p>}
+                        {c.code && <p style={{ margin: "0 0 3px", fontSize: "11px", color: "#9CA3AF" }}>{c.code}</p>}
+                        {placements.length > 0 ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "3px" }}>
+                            {placements.map((p, i) => (
+                              <span key={i} style={{ fontSize: "10.5px", fontWeight: "600", color: "#25476a", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "1px 8px", whiteSpace: "nowrap" }}>
+                                {p.periodName} · {p.className}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ margin: "3px 0 0", fontSize: "10.5px", color: "#D97706", fontStyle: "italic" }}>Not yet assigned to a class</p>
+                        )}
                       </div>
                     </Link>
                     <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -965,7 +1290,7 @@ export default function CurriculumViewPage() {
       </div>
 
       {/* ── Learning Hubs Using This Curriculum ───────────────────────── */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
+      <div id="hubs" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Learning Hubs Using This Curriculum</h2>
           <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
@@ -1012,32 +1337,86 @@ export default function CurriculumViewPage() {
         </div>
       </div>
 
-      {/* ── Version History link ──────────────────────────────────────── */}
-      {(history.length > 0 || current) && (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px" }}>
-          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Version History</h2>
-              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                {history.length + (current ? 1 : 0)} version{(history.length + (current ? 1 : 0)) !== 1 ? "s" : ""} recorded
-              </p>
+      {/* ── Version Control ──────────────────────────────────────────────
+         Two separate systems both live under this app's "version control" vocabulary — course
+         content (this curriculum's own CurriculumVersion records) and the Academic Year's own
+         term-dates versioning. Shown side by side so "is the content live" and "is the calendar
+         live" are both answerable here without a separate page visit for either. */}
+      <div id="version-control" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+          <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Version Control</h2>
+          <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Course content and academic-year calendar are versioned separately</p>
+        </div>
+
+        <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          {/* Content Version status card */}
+          <div style={{ padding: "14px 16px", borderRadius: "14px", border: "1px solid #E5E7EB", backgroundColor: "#FAFBFF" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
+                <FolderCopyIcon fontSize="small" style={{ color: "#25476a" }} /> Content Version
+              </span>
+              <ManageLink onClick={() => navigate(`/curriculum/${id}/versions`)} />
             </div>
-            <button
-              type="button"
-              onClick={() => navigate(`/curriculum/${id}/versions`)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                padding: "8px 16px", backgroundColor: "#e8f5fb", color: "#25476a",
-                border: "1.5px solid #a8d5ee", borderRadius: "9px",
-                fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer",
-              }}
-            >
-              View All Versions →
-            </button>
+            {!current ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>No version created yet</p>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "16px", fontWeight: "800", color: "#25476a" }}>v{current.versionNumber}</span>
+                  {(() => {
+                    const sc = STATUS_CONFIG[current.status] || STATUS_CONFIG.inactive;
+                    return (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 10px", borderRadius: "20px", backgroundColor: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`, fontSize: "11px", fontWeight: "700" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: sc.dot }} /> {sc.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF" }}>
+                  {history.length + 1} version{history.length + 1 !== 1 ? "s" : ""} recorded
+                </p>
+              </>
+            )}
           </div>
 
-          {/* Quick list of versions */}
-          <div style={{ padding: "0 20px 16px" }}>
+          {/* Academic Year status card */}
+          <div style={{ padding: "14px 16px", borderRadius: "14px", border: "1px solid #E5E7EB", backgroundColor: "#FAFBFF" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
+                <CalendarMonthIcon fontSize="small" style={{ color: "#25476a" }} /> Academic Year
+              </span>
+              {!curriculum.isProgram && (
+                <ManageLink onClick={() => navigate(`/curriculum/${id}/academic-year`)} />
+              )}
+            </div>
+            {!publishedAYVersion ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>{ayVersions.length === 0 ? "No academic year set up yet" : "No published calendar yet"}</p>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "16px", fontWeight: "800", color: "#25476a" }}>{activeYearLabel}</span>
+                  {(() => {
+                    const sc = STATUS_CONFIG[publishedAYVersion.status] || STATUS_CONFIG.published;
+                    return (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 10px", borderRadius: "20px", backgroundColor: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`, fontSize: "11px", fontWeight: "700" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: sc.dot }} /> {sc.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF" }}>
+                  v{publishedAYVersion.versionNumber} live · {ayVersions.length} version{ayVersions.length !== 1 ? "s" : ""} recorded
+                  {ayHasDraft && <span style={{ color: "#D97706", fontWeight: "600" }}> · has an unpublished draft</span>}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Quick list of content versions */}
+        {(history.length > 0 || current) && (
+          <div style={{ padding: "4px 20px 16px" }}>
+            <p style={{ margin: "8px 0 6px", fontSize: "10px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em" }}>Content Version History</p>
             {[current, ...history].filter(Boolean).map((v) => {
               const sc = STATUS_CONFIG[v.status] || STATUS_CONFIG.inactive;
               return (
@@ -1074,8 +1453,8 @@ export default function CurriculumViewPage() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div style={{ height: "32px" }} />
     </div>

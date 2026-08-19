@@ -1,26 +1,17 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import SchoolPortalSidebar from "../modules/school-portal/components/SchoolPortalSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
-import { useAuth } from "../context/AuthContext";
-import { learningHubApi } from "../modules/learning-hubs/services/learningHubApi";
+import HubSwitcher from "../components/ui/HubSwitcher";
+import { useSchoolPortalScope } from "../modules/school-portal/hooks/useSchoolPortalScope";
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 900;
 
 function SchoolPortalLayout() {
-  const { user } = useAuth();
-  // Same ["schools", "byEmail", email] key school-portal/ProfilePage.jsx uses — React Query
-  // dedupes identical keys, so this doesn't add a second network round-trip once either has
-  // fetched. Only needed here for the header's photo (see Header.jsx's `photo` prop comment).
-  const { data: schoolsData } = useQuery({
-    queryKey: ["schools", "byEmail", user?.email],
-    queryFn: () => learningHubApi.getAll({ email: user.email }),
-    enabled: !!user?.email,
-  });
-  const school = schoolsData?.data?.[0] || null;
+  const scope = useSchoolPortalScope();
+  const { selectedHub: school, hubs, selectedHubId, setSelectedHubId } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -55,7 +46,8 @@ function SchoolPortalLayout() {
         <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} photo={school?.photo} />
 
         <main style={{ flex: 1, padding: isMobile ? "20px 16px 28px" : "28px 32px", minWidth: 0, overflowX: "hidden" }}>
-          <Outlet />
+          <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
+          <Outlet context={scope} />
         </main>
 
         <Footer />

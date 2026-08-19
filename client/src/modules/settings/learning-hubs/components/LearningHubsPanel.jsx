@@ -1,18 +1,9 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { FiChevronDown, FiChevronRight, FiCheckCircle, FiEdit2, FiMapPin, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useAllLearningHubsQuery, useDeleteLearningHub, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../../../learning-hubs/schemas/learningHub.schema";
-import {
-  useBranchesQuery,
-  useCreateBranch,
-  useDeleteBranch,
-  useAssignBranchAdmin,
-  useUnassignBranchAdmin,
-} from "../../../branches/hooks/useBranch";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
-import PasswordRevealDialog from "../../../../components/ui/PasswordRevealDialog";
 
 const ACCENT = "#25476a";
 
@@ -24,19 +15,6 @@ const STATUS_BADGE = {
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
 };
 
-const input = {
-  width: "100%",
-  padding: "9px 12px",
-  borderRadius: "9px",
-  border: "1.5px solid #E5E7EB",
-  fontSize: "13px",
-  fontFamily: "Inter, sans-serif",
-  backgroundColor: "#F9FAFB",
-  color: "#111827",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
 function StatusBadge({ status }) {
   const s = STATUS_BADGE[status] || STATUS_BADGE.inactive;
   return (
@@ -46,7 +24,7 @@ function StatusBadge({ status }) {
   );
 }
 
-/* ── Hub row — same as before: view/activate/edit/delete ────────────────── */
+/* ── Hub row — view/activate/edit/delete ─────────────────────────────────── */
 
 function LearningHubRow({ hub, onView, onActivate, onEdit, onDelete }) {
   const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
@@ -77,148 +55,39 @@ function LearningHubRow({ hub, onView, onActivate, onEdit, onDelete }) {
   );
 }
 
-/* ── Branch admin assign/reassign/unassign — same pattern as before ─────── */
+/* ── Parent hub group — a hub with one or more branch hubs nested under it.
+   A hub can itself be the parent of other hubs now (see learning-hub.validation.js's
+   parentHubId) — its own existing admin login gets access to switch into each branch (see
+   scope.middleware.js's req.ownSchools), so there's no separate admin to assign here the way
+   the old standalone Branch entity needed. */
 
-function AdminSection({ branch }) {
-  const [showForm, setShowForm] = useState(false);
-  const [passwordReveal, setPasswordReveal] = useState(null);
-  const { mutate: assignAdmin, isPending: isAssigning } = useAssignBranchAdmin(branch.id);
-  const { mutate: unassignAdmin, isPending: isUnassigning } = useUnassignBranchAdmin(branch.id);
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { name: "", email: "", password: "" },
-  });
-
-  const onSubmit = (data) => {
-    assignAdmin(data, {
-      onSuccess: () => {
-        reset();
-        setShowForm(false);
-        setPasswordReveal({ password: data.password, name: data.name });
-      },
-    });
-  };
-
-  const admin = branch.branchAdmin;
-
-  return (
-    <div style={{ marginBottom: "12px" }}>
-      {admin && !showForm && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: "9px", marginBottom: "8px" }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: "12.5px", fontWeight: "600", color: "#111827" }}>{admin.name}</p>
-            <p style={{ margin: "1px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>{admin.email}</p>
-          </div>
-          <button type="button" onClick={() => unassignAdmin()} disabled={isUnassigning} style={{ background: "none", border: "none", color: "#EF4444", fontSize: "11.5px", fontWeight: "600", cursor: isUnassigning ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
-            {isUnassigning ? "Removing…" : "Unassign"}
-          </button>
-        </div>
-      )}
-
-      {!showForm && (
-        <button type="button" onClick={() => setShowForm(true)} className="stg-btn-secondary" style={{ fontSize: "12px", padding: "6px 12px" }}>
-          {admin ? "Reassign Admin" : "+ Assign Admin"}
-        </button>
-      )}
-
-      {showForm && (
-        <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "12px", backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: "10px" }}>
-          {admin && (
-            <p style={{ margin: "0 0 2px", fontSize: "11.5px", color: "#92400E", backgroundColor: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: "8px", padding: "7px 9px" }}>
-              This replaces <strong>{admin.name}</strong>.
-            </p>
-          )}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <div style={{ flex: 1 }}>
-              <input placeholder="Full name" style={input} {...register("name", { required: true })} />
-              {errors.name && <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#EF4444" }}>Required</p>}
-            </div>
-            <div style={{ flex: 1 }}>
-              <input placeholder="Email" type="email" style={input} {...register("email", { required: true })} />
-              {errors.email && <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#EF4444" }}>Valid email required</p>}
-            </div>
-          </div>
-          <input placeholder="Password (min 8 characters)" type="password" style={input} {...register("password", { required: true, minLength: 8 })} />
-          {errors.password && <p style={{ margin: 0, fontSize: "11px", color: "#EF4444" }}>Min 8 characters</p>}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button type="submit" disabled={isAssigning} className="stg-btn-primary" style={{ fontSize: "12px", padding: "7px 14px" }}>
-              {isAssigning ? "Assigning…" : admin ? "Reassign" : "Assign"}
-            </button>
-            <button type="button" className="stg-btn-secondary" style={{ fontSize: "12px", padding: "7px 14px" }} onClick={() => { reset(); setShowForm(false); }}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <PasswordRevealDialog
-        isOpen={!!passwordReveal}
-        password={passwordReveal?.password}
-        subjectName={passwordReveal?.name}
-        onClose={() => setPasswordReveal(null)}
-      />
-    </div>
-  );
-}
-
-/* ── Branch group — a collapsible section of hubs, with its admin inline ── */
-
-function BranchGroup({ branch, hubs, hubActions, onDeleteBranch }) {
+function ParentHubGroup({ hub, branchHubs, hubActions }) {
   const [expanded, setExpanded] = useState(true);
 
   return (
     <div style={{ marginBottom: "14px" }}>
-      <div className="stg-item" style={{ backgroundColor: "#F0F7FF", borderColor: "#C7D9F8" }}>
-        <div className="stg-item-top" style={{ cursor: "pointer" }} onClick={() => setExpanded((v) => !v)}>
-          <span style={{ display: "flex", alignItems: "center", color: "#9CA3AF", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        {branchHubs.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", flexShrink: 0, display: "flex", padding: "4px" }}
+            title={expanded ? "Collapse branches" : "Expand branches"}
+          >
             {expanded ? <FiChevronDown size={16} /> : <FiChevronRight size={16} />}
-          </span>
-          <div className="stg-item-dot" style={{ backgroundColor: ACCENT }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="stg-item-name">{branch.name}</div>
-            <div className="stg-item-sub">
-              {hubs.length} hub{hubs.length !== 1 ? "s" : ""} · {branch.branchAdmin ? branch.branchAdmin.name : "No admin assigned"}
-            </div>
-          </div>
-          <button type="button" className="stg-icon-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteBranch(branch); }} title="Delete branch">
-            <FiTrash2 size={14} strokeWidth={2} />
           </button>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <LearningHubRow hub={hub} {...hubActions(hub)} />
         </div>
       </div>
 
-      {expanded && (
-        <div style={{ marginLeft: "20px", marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
-          <AdminSection branch={branch} />
-          {hubs.length === 0 ? (
-            <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>No hubs assigned to this branch yet.</p>
-          ) : (
-            hubs.map((hub) => <LearningHubRow key={hub.id} hub={hub} {...hubActions(hub)} />)
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Standalone group — hubs with no branch ──────────────────────────────── */
-
-function StandaloneGroup({ hubs, hubActions }) {
-  const [expanded, setExpanded] = useState(true);
-  if (hubs.length === 0) return null;
-
-  return (
-    <div>
-      <div className="stg-item-top" style={{ cursor: "pointer", padding: "8px 4px" }} onClick={() => setExpanded((v) => !v)}>
-        <span style={{ display: "flex", alignItems: "center", color: "#9CA3AF", flexShrink: 0 }}>
-          {expanded ? <FiChevronDown size={16} /> : <FiChevronRight size={16} />}
-        </span>
-        <span style={{ fontSize: "12px", fontWeight: "700", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Standalone · {hubs.length} hub{hubs.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      {expanded && (
-        <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
-          {hubs.map((hub) => <LearningHubRow key={hub.id} hub={hub} {...hubActions(hub)} />)}
+      {expanded && branchHubs.length > 0 && (
+        <div style={{ marginLeft: "26px", marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: "700", color: ACCENT, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Branches · {branchHubs.length}
+          </p>
+          {branchHubs.map((h) => <LearningHubRow key={h.id} hub={h} {...hubActions(h)} />)}
         </div>
       )}
     </div>
@@ -226,37 +95,34 @@ function StandaloneGroup({ hubs, hubActions }) {
 }
 
 /* ── Panel ────────────────────────────────────────────────────────────────
- * Branches and Learning Hubs used to be separate sub-tabs — this merges them
- * into one list: hubs grouped under their branch (with that branch's admin
- * managed inline), plus a Standalone section for hubs with no branch. */
+ * Every top-level hub (no parentHubId) shows as its own row; a hub with branch
+ * hubs pointing at it (their parentHubId) shows those nested underneath. */
 
 export default function LearningHubsPanel() {
   const navigate = useNavigate();
   const { data: hubsData, isLoading: hubsLoading } = useAllLearningHubsQuery({ includeDrafts: true });
-  const { data: branchesData, isLoading: branchesLoading } = useBranchesQuery();
   const { mutate: deleteHub } = useDeleteLearningHub();
   const { mutate: updateHub } = useUpdateLearningHub();
-  const { mutate: createBranch, isPending: isCreatingBranch } = useCreateBranch();
-  const { mutate: deleteBranch } = useDeleteBranch();
 
   const [deleteHubTarget, setDeleteHubTarget] = useState(null);
-  const [deleteBranchTarget, setDeleteBranchTarget] = useState(null);
-  const [showBranchForm, setShowBranchForm] = useState(false);
-  const [branchName, setBranchName] = useState("");
   const [search, setSearch] = useState("");
 
   const hubs = hubsData?.data || [];
-  const branches = branchesData?.data || [];
 
   const query = search.trim().toLowerCase();
-  const filteredHubs = query ? hubs.filter((h) => h.name.toLowerCase().includes(query)) : hubs;
+  const matches = (h) => !query || h.name.toLowerCase().includes(query);
 
-  const hubsByBranch = new Map(branches.map((b) => [b.id, []]));
-  const standaloneHubs = [];
-  filteredHubs.forEach((hub) => {
-    if (hub.branchId && hubsByBranch.has(hub.branchId)) hubsByBranch.get(hub.branchId).push(hub);
-    else standaloneHubs.push(hub);
+  const childrenByParent = new Map();
+  hubs.forEach((h) => {
+    if (!h.parentHubId) return;
+    if (!childrenByParent.has(h.parentHubId)) childrenByParent.set(h.parentHubId, []);
+    childrenByParent.get(h.parentHubId).push(h);
   });
+  const topLevelHubs = hubs.filter((h) => !h.parentHubId);
+  // A parent hub whose own name doesn't match still shows while searching if one of its
+  // branches does — hiding the group would hide the match itself.
+  const visibleTopLevelHubs = topLevelHubs.filter((h) => matches(h) || (childrenByParent.get(h.id) || []).some(matches));
+  const hubsWithBranches = topLevelHubs.filter((h) => (childrenByParent.get(h.id) || []).length > 0).length;
 
   const hubActions = (hub) => ({
     onView: () => navigate(`/learning-hubs/${hub.id}/view`),
@@ -265,17 +131,7 @@ export default function LearningHubsPanel() {
     onDelete: () => setDeleteHubTarget(hub),
   });
 
-  const handleCreateBranch = (e) => {
-    e.preventDefault();
-    if (!branchName.trim()) return;
-    createBranch({ name: branchName.trim() }, { onSuccess: () => { setBranchName(""); setShowBranchForm(false); } });
-  };
-
-  if (hubsLoading || branchesLoading) return <div className="stg-spinner" />;
-
-  // A branch with zero hubs still shows (an admin needs to see/manage empty branches), but while
-  // actively searching, one with no matching hubs is just noise — hide it.
-  const visibleBranches = branches.filter((b) => !query || (hubsByBranch.get(b.id) || []).length > 0);
+  if (hubsLoading) return <div className="stg-spinner" />;
 
   return (
     <div>
@@ -283,39 +139,16 @@ export default function LearningHubsPanel() {
         <div>
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Learning Hubs</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {hubs.length} learning hub{hubs.length !== 1 ? "s" : ""} · {branches.length} branch{branches.length !== 1 ? "es" : ""} — grouped hubs share one centralized admin
+            {hubs.length} learning hub{hubs.length !== 1 ? "s" : ""}
+            {hubsWithBranches > 0 && ` · ${hubsWithBranches} with branches — a hub's own admin can switch into its branches`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button type="button" className="stg-btn-secondary" onClick={() => setShowBranchForm((v) => !v)}>
-            + Add Branch
-          </button>
-          <button type="button" className="stg-btn-primary" onClick={() => navigate("/settings/learning-hubs/create")}>
-            + Add Learning Hub
-          </button>
-        </div>
+        <button type="button" className="stg-btn-primary" onClick={() => navigate("/settings/learning-hubs/create")}>
+          + Add Learning Hub
+        </button>
       </div>
 
-      {showBranchForm && (
-        <form onSubmit={handleCreateBranch} style={{ display: "flex", gap: "8px", marginBottom: "18px" }}>
-          <input
-            className="stg-input"
-            style={{ maxWidth: "320px" }}
-            placeholder="Branch name (e.g. Digifunzi)"
-            value={branchName}
-            onChange={(e) => setBranchName(e.target.value)}
-            autoFocus
-          />
-          <button type="submit" disabled={isCreatingBranch || !branchName.trim()} className="stg-btn-primary">
-            {isCreatingBranch ? "Creating…" : "Create"}
-          </button>
-          <button type="button" className="stg-btn-secondary" onClick={() => { setBranchName(""); setShowBranchForm(false); }}>
-            Cancel
-          </button>
-        </form>
-      )}
-
-      {hubs.length === 0 && branches.length === 0 ? (
+      {hubs.length === 0 ? (
         <div className="stg-empty">
           <div style={{ marginBottom: "12px", color: "#25476a" }}>
             <FiMapPin size={40} strokeWidth={1.8} />
@@ -340,7 +173,7 @@ export default function LearningHubsPanel() {
             />
           </div>
 
-          {query && filteredHubs.length === 0 ? (
+          {query && visibleTopLevelHubs.length === 0 ? (
             <div className="stg-empty" style={{ padding: "40px 24px" }}>
               <div style={{ marginBottom: "10px", color: "#25476a" }}>
                 <FiSearch size={32} strokeWidth={1.8} />
@@ -349,16 +182,14 @@ export default function LearningHubsPanel() {
             </div>
           ) : (
             <div>
-              {visibleBranches.map((branch) => (
-                <BranchGroup
-                  key={branch.id}
-                  branch={branch}
-                  hubs={hubsByBranch.get(branch.id) || []}
+              {visibleTopLevelHubs.map((hub) => (
+                <ParentHubGroup
+                  key={hub.id}
+                  hub={hub}
+                  branchHubs={childrenByParent.get(hub.id) || []}
                   hubActions={hubActions}
-                  onDeleteBranch={setDeleteBranchTarget}
                 />
               ))}
-              <StandaloneGroup hubs={standaloneHubs} hubActions={hubActions} />
             </div>
           )}
         </>
@@ -367,23 +198,16 @@ export default function LearningHubsPanel() {
       <ConfirmDialog
         isOpen={!!deleteHubTarget}
         title="Delete Learning Hub"
-        message={`"${deleteHubTarget?.name}" will be permanently deleted. This cannot be undone.`}
+        message={
+          (childrenByParent.get(deleteHubTarget?.id) || []).length > 0
+            ? `"${deleteHubTarget?.name}" will be permanently deleted. Its branch hubs will become standalone (not deleted). This cannot be undone.`
+            : `"${deleteHubTarget?.name}" will be permanently deleted. This cannot be undone.`
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { deleteHub(deleteHubTarget.id); setDeleteHubTarget(null); }}
         onCancel={() => setDeleteHubTarget(null)}
-      />
-
-      <ConfirmDialog
-        isOpen={!!deleteBranchTarget}
-        title="Delete Branch"
-        message={`"${deleteBranchTarget?.name}" will be permanently deleted. Hubs currently under it will become standalone (not deleted). This cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        onConfirm={() => { deleteBranch(deleteBranchTarget.id); setDeleteBranchTarget(null); }}
-        onCancel={() => setDeleteBranchTarget(null)}
       />
     </div>
   );

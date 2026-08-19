@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon,
-  FolderOpen as FolderOpenIcon, MedicalServices as MedicalServicesIcon, Explore as ExploreIcon,
+  FolderOpen as FolderOpenIcon, MedicalServices as MedicalServicesIcon,
   TrackChanges as TrackChangesIcon, Assignment as AssignmentIcon, Science as ScienceIcon,
   ChildCare as ChildCareIcon, WarningAmber as WarningAmberIcon, EmojiEvents as EmojiEventsIcon,
 } from "@mui/icons-material";
@@ -902,20 +902,21 @@ function LearningAreasPanel({ curriculumId }) {
 }
 
 /* ── Learning Journey ──────────────────────────────────────────────────────
- * One thing is configured here: the course sequence within each Learning
- * Area (e.g. Robotics 1 → 2 → 3 → 4). Each sequenced course can also be
- * tagged as the default starting point for one or more Developmental
- * Stages — used until a diagnostic assessment or a manual override places
- * a learner somewhere else — right on its row, instead of a separate
- * stage/area matrix. Per-learner placement lives on the learner's own
- * profile page, not here. The old Progression Ladder API/model is left
- * untouched (superseded, but still referenced by the Learner page's legacy
- * placement dropdown). */
+ * Course Sequence is read-only display, not configuration — a learning area's
+ * starting course is just whichever course was added to it first, over on the
+ * Learning Areas tab (see sequenceFor()); there's no reordering or per-
+ * Developmental-Stage override step to do here anymore. Mirrors the same
+ * read-only treatment LearnerViewPage.jsx's LearningJourneyCard already uses
+ * for a learner's own placement — same underlying getLearningJourney default,
+ * just shown here at the curriculum level instead of per-learner. What IS
+ * still configured here is Placement Thresholds: the diagnostic score needed
+ * to place a learner at each course. Per-learner placement (including
+ * diagnostic-driven placement) lives on the learner's own profile page, not
+ * here. The old Progression Ladder API/model is left untouched (superseded,
+ * but still referenced by the Learner page's legacy placement dropdown). */
 
 function LearningJourneyPanel({ curriculumId }) {
   const { data: areas = [], isLoading: areasLoading, isError: areasError } = useLearningAreas(curriculumId);
-  const { mutate: updateArea } = useUpdateLearningArea(curriculumId);
-  const { data: stages = [], isLoading: stagesLoading, isError: stagesError } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { data: allBands = [], isLoading: bandsLoading, isError: bandsError } = usePerformanceBands(curriculumId);
   const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
@@ -925,44 +926,8 @@ function LearningJourneyPanel({ curriculumId }) {
 
   const areasWithCourses = areas.filter((a) => (a.courses || []).length > 0);
 
-  if (areasLoading || stagesLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
-  if (areasError || stagesError || bandsError) return <ErrorNotice message="Couldn't load Learning Journey — try refreshing the page." />;
-
-  // Reused by moveCourse and setStageDefaultCourse — every rewrite of courseSequence must
-  // carry each entry's existing defaultForStages through, or reordering would silently wipe them.
-  function defaultForStagesOf(area, courseId) {
-    return (area.courseSequence || []).find((s) => s.courseId === courseId)?.defaultForStages || [];
-  }
-
-  // Which course (if any) a given stage currently defaults to in this area.
-  function stageDefaultCourseId(area, stageId) {
-    return (area.courseSequence || []).find((s) => (s.defaultForStages || []).includes(stageId))?.courseId || "";
-  }
-
-  function moveCourse(area, courseId, direction) {
-    const ids = sequenceFor(area);
-    const idx = ids.indexOf(courseId);
-    const swapWith = idx + direction;
-    if (swapWith < 0 || swapWith >= ids.length) return;
-    [ids[idx], ids[swapWith]] = [ids[swapWith], ids[idx]];
-    updateArea({
-      id: area.id,
-      data: { courseSequence: ids.map((cid, i) => ({ courseId: cid, order: i + 1, defaultForStages: defaultForStagesOf(area, cid) })) },
-    });
-  }
-
-  // A stage can default into at most one course per Learning Area — picking a new one clears
-  // it from wherever else it was set in this same area first. Empty courseId just clears it
-  // (falls back to first-in-sequence).
-  function setStageDefaultCourse(area, stageId, courseId) {
-    const ids = sequenceFor(area);
-    const courseSequence = ids.map((cid, i) => {
-      const current = defaultForStagesOf(area, cid).filter((sId) => sId !== stageId);
-      if (cid === courseId) current.push(stageId);
-      return { courseId: cid, order: i + 1, defaultForStages: current };
-    });
-    updateArea({ id: area.id, data: { courseSequence } });
-  }
+  if (areasLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
+  if (areasError || bandsError) return <ErrorNotice message="Couldn't load Learning Journey — try refreshing the page." />;
 
   return (
     <div>
@@ -970,67 +935,27 @@ function LearningJourneyPanel({ curriculumId }) {
         <div style={{ marginBottom: "18px" }}>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Course Sequence</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            Order each learning area's courses into the progression a learner follows (e.g. Robotics 1 → 2 → 3 → 4).
+            The course a learner starts at in each learning area — the first course added to it, over on the Learning Areas tab.
           </p>
         </div>
         {areasWithCourses.length === 0 ? (
           <div className="cp-empty">
-            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><ExploreIcon fontSize="inherit" /></div>
+            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
             <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced learning areas yet</p>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
               Add courses to a Learning Area first, over on the Learning Areas tab.
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {areasWithCourses.map((area) => {
               const ids = sequenceFor(area);
               const areaColor = area.color || "#25476a";
               return (
-                <div key={area.id} style={{ border: "1px solid #EEF1F5", borderRadius: "12px", padding: "14px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor }} />
-                    <span style={{ fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {ids.map((cid, i) => (
-                      <div key={cid} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", background: "#FAFCFF" }}>
-                        <span style={{ fontSize: "11px", fontWeight: "800", color: areaColor, width: "18px", flexShrink: 0 }}>{i + 1}</span>
-                        <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#1F2937" }}>{courseNameById.get(cid) || "Unknown course"}</span>
-                        <button type="button" className="cp-icon-btn" disabled={i === 0} onClick={() => moveCourse(area, cid, -1)} title="Move up">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </button>
-                        <button type="button" className="cp-icon-btn" disabled={i === ids.length - 1} onClick={() => moveCourse(area, cid, 1)} title="Move down">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {stages.length > 0 && (
-                    <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed #E5E7EB" }}>
-                      <p style={{ margin: "0 0 8px", fontSize: "10.5px", fontWeight: "800", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                        Default starting course, by stage
-                      </p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {stages.map((stage) => (
-                          <div key={stage.id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ width: "90px", flexShrink: 0, fontSize: "12px", fontWeight: "700", color: "#374151" }}>{stage.name}</span>
-                            <select
-                              value={stageDefaultCourseId(area, stage.id)}
-                              onChange={(e) => setStageDefaultCourse(area, stage.id, e.target.value)}
-                              style={{ flex: 1, padding: "6px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12px", fontFamily: "Inter, sans-serif", color: "#111827" }}
-                            >
-                              <option value="">First in sequence ({courseNameById.get(ids[0]) || "none"})</option>
-                              {ids.map((cid) => (
-                                <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <div key={area.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", borderRadius: "10px", border: "1px solid #EEF1F5" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
+                  <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#374151" }}>{courseNameById.get(ids[0]) || "Unknown course"}</span>
                 </div>
               );
             })}
