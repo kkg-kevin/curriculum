@@ -766,7 +766,7 @@ const CompetencyService = {
   // indicator breakdown shown alongside it (see getLearnerIndicatorProgressForAssessments).
   async getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, assessmentIds) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
-    const rows = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds);
+    const rows = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds, curriculumId);
     return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
   },
 

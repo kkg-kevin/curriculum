@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiBookOpen, FiCalendar, FiAward, FiHome, FiMail, FiPhone, FiMapPin, FiUserCheck, FiHash, FiEye, FiEyeOff } from "react-icons/fi";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createPortal } from "react-dom";
@@ -27,6 +27,11 @@ const inputStyle = (hasError) => ({
   width: "100%",
   boxSizing: "border-box",
 });
+
+// outline:none in inputStyle/selectStyle below removes the browser's default focus ring
+// without replacing it — invisible to a keyboard user tabbing through the form. Paired with a
+// "sp-input" className on every field using these, so .sp-input:focus restores a visible one.
+const FOCUS_CSS = `.sp-input:focus { border-color: ${ACCENT} !important; box-shadow: 0 0 0 3px rgba(37,71,106,0.08); }`;
 
 const selectStyle = (hasError) => ({
   ...inputStyle(hasError),
@@ -82,7 +87,7 @@ function TextInput({ name, label, placeholder, type = "text", required }) {
   const error = keys.reduce((o, k) => o?.[k], errors)?.message;
   return (
     <Field label={label} error={error} required={required}>
-      <input type={type} placeholder={placeholder} {...register(name)} style={inputStyle(!!error)} />
+      <input type={type} placeholder={placeholder} {...register(name)} style={inputStyle(!!error)} className="sp-input" />
     </Field>
   );
 }
@@ -121,7 +126,7 @@ function EditForm({ school, onDone, onCancel }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <TextInput name="address.city" label="City / Town" />
           <Field label="County" required error={errors?.address?.county?.message}>
-            <select {...register("address.county")} style={selectStyle(!!errors?.address?.county)}>
+            <select {...register("address.county")} style={selectStyle(!!errors?.address?.county)} className="sp-input">
               <option value="">Select county…</option>
               {KENYA_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -183,6 +188,7 @@ function ChangePasswordSection({ school }) {
                 onChange={(e) => setPasswordDraft(e.target.value)}
                 placeholder="At least 8 characters"
                 style={{ ...inputStyle(false), paddingRight: 36 }}
+                className="sp-input"
               />
               <button type="button" onClick={() => setShowPassword((s) => !s)} aria-label={showPassword ? "Hide password" : "Show password"}
                 style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", display: "flex" }}>
@@ -197,6 +203,7 @@ function ChangePasswordSection({ school }) {
               value={confirmDraft}
               onChange={(e) => setConfirmDraft(e.target.value)}
               style={inputStyle(false)}
+              className="sp-input"
             />
           </Field>
           {error && <p style={{ margin: 0, fontSize: 12, color: "#EF4444" }}>{error}</p>}
@@ -305,19 +312,38 @@ const iconMail = <FiMail size={14} strokeWidth={2} />;
 const iconPhone = <FiPhone size={14} strokeWidth={2} />;
 const iconPin = <FiMapPin size={14} strokeWidth={2} />;
 const iconCalendar = <FiCalendar size={14} strokeWidth={2} />;
+const iconHash = <FiHash size={14} strokeWidth={2} />;
 
+// A plain <div onClick> here (the original shape) looks clickable (cursor:pointer) but is
+// invisible to keyboard/screen-reader users — a <div> isn't natively focusable or activatable
+// with Enter/Space. Rendering a real <button> when onClick is passed fixes both for free, plus
+// gets the .sp-input focus ring already defined for form fields (FOCUS_CSS above).
 function StatTile({ icon, num, label, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const Tag = onClick ? "button" : "div";
   return (
-    <div
+    <Tag
+      type={onClick ? "button" : undefined}
       onClick={onClick}
-      style={{ flex: 1, backgroundColor: "#fff", borderRadius: 14, border: "1.5px solid #E5E7EB", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, cursor: onClick ? "pointer" : "default", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={onClick ? "sp-input" : undefined}
+      style={{
+        flex: 1, backgroundColor: "#fff", borderRadius: 14,
+        border: `1.5px solid ${hovered && onClick ? "#a8d5ee" : "#E5E7EB"}`,
+        padding: "14px 18px", display: "flex", alignItems: "center", gap: 12,
+        cursor: onClick ? "pointer" : "default",
+        boxShadow: hovered && onClick ? "0 4px 12px rgba(37,71,106,0.1)" : "0 1px 3px rgba(0,0,0,0.04)",
+        transition: "box-shadow 0.15s, border-color 0.15s",
+        fontFamily: "Inter, sans-serif", textAlign: "left",
+      }}
     >
       <div style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: "#e8f5fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{icon}</div>
       <div>
         <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#111827", lineHeight: 1 }}>{num}</p>
         <p style={{ margin: "3px 0 0", fontSize: 11.5, fontWeight: 600, color: "#9CA3AF" }}>{label}</p>
       </div>
-    </div>
+    </Tag>
   );
 }
 
@@ -362,6 +388,8 @@ export default function ProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{FOCUS_CSS}</style>
+
       {/* Hero */}
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
@@ -425,7 +453,7 @@ export default function ProfilePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Section title="School Info">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <DetailRow icon={<FiBookOpen size={14} strokeWidth={2} />} label="Code" value={school.code} />
+              <DetailRow icon={iconHash} label="Code" value={school.code} />
               <DetailRow icon={<FiBookOpen size={14} strokeWidth={2} />} label="Curriculum" value={curriculum?.name} empty="Not assigned yet" />
               <DetailRow
                 icon={iconCalendar}

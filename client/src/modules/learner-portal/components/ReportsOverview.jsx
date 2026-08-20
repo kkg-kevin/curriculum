@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAward, FiFileText } from "react-icons/fi";
 import { useMyReports } from "../../reports/hooks/useReports";
@@ -76,6 +77,10 @@ export default function ReportsOverview({ limit, hubId } = {}) {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useMyReports(hubId);
   const rows = data?.data || [];
+  // Filtering to one course is only meaningful (and only rendered) in the full, unlimited view
+  // — the capped preview embedded in Profile's Reports tab is meant to stay a quick glance, not
+  // a browsing tool, so it keeps showing its usual mixed handful across courses.
+  const [courseFilter, setCourseFilter] = useState("all");
 
   // Diagnostics never become Report records (they're standalone — no course/class to key one on),
   // but a graded one is just as much a "report" to a learner as anything else here, and the user
@@ -110,8 +115,15 @@ export default function ReportsOverview({ limit, hubId } = {}) {
   // The diagnostics section counts as one slot toward `limit`, same as a single course group —
   // shown first since a diagnostic is chronologically the learner's very first result.
   const hasDiagnostics = diagnosticRows.length > 0;
-  const visibleGroups = limit ? groups.slice(0, Math.max(0, limit - (hasDiagnostics ? 1 : 0))) : groups;
   const combinedCount = groups.length + (hasDiagnostics ? 1 : 0);
+
+  // No real choice to make with 0 or 1 courses — same "don't show a selector with nothing to
+  // select" posture as HubSwitcher. Diagnostics aren't tied to any course, so narrowing to one
+  // course hides them too — the learner asked to see just that course.
+  const showCourseFilter = !limit && groups.length > 1;
+  const filteredGroups = courseFilter === "all" ? groups : groups.filter((g) => g.courseId === courseFilter);
+  const showDiagnostics = hasDiagnostics && courseFilter === "all";
+  const visibleGroups = limit ? filteredGroups.slice(0, Math.max(0, limit - (hasDiagnostics ? 1 : 0))) : filteredGroups;
 
   if (isLoading || stageLoading || areaLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading…</div>;
@@ -139,8 +151,27 @@ export default function ReportsOverview({ limit, hubId } = {}) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {showCourseFilter && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.inkMuted, fontFamily: "Inter, sans-serif" }}>Course:</span>
+          <select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            style={{
+              padding: "8px 30px 8px 12px", borderRadius: 10, border: `1.5px solid ${T.tintBorder}`,
+              backgroundColor: T.tintBg, color: T.accent, fontSize: 13, fontWeight: 700,
+              fontFamily: "Inter, sans-serif", cursor: "pointer", appearance: "none",
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2325476a' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+            }}
+          >
+            <option value="all">All Courses</option>
+            {groups.map((g) => <option key={g.courseId} value={g.courseId}>{g.courseName}</option>)}
+          </select>
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {hasDiagnostics && (
+        {showDiagnostics && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ margin: "0 0 2px", fontSize: 12.5, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>Diagnostics</p>
             {diagnosticRows.map((row) => <DiagnosticRow key={row.issue.id} row={row} navigate={navigate} />)}

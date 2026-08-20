@@ -8,6 +8,8 @@ const LearningAreaModel = require("../../curriculum/competency-framework/learnin
 const AgeCategoryModel = require("../../curriculum/competency-framework/age-category.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const CompetencyModel = require("../../settings/competencies/competency.model");
+const EvidenceTypeModel = require("../../curriculum/competency-framework/evidence-type.model");
+const AssessmentTypeModel = require("../../curriculum/competency-framework/assessment-type.model");
 const ClassGroupService = require("../../classes/groups/class-group.service");
 const ClassGroupModel = require("../../classes/groups/class-group.model");
 const TeacherModel = require("../../teachers/teacher.model");
@@ -43,16 +45,88 @@ async function resolveIndicator(indicatorId) {
   return null;
 }
 
+// Resolves each Evidence Type's real weight for real grading, from whichever ONE Assessment
+// Type references it in Score Evidence (curriculum.routes' Competencies → Assessments → Score
+// Evidence panel). If an evidence type isn't configured on any Assessment Type, or is
+// referenced by more than one with potentially different weights, there's no single
+// unambiguous number to apply — it's left out of the map, and summarizeIndicatorProgress below
+// falls back to a 1.0 (full/raw) multiplier for it, same as before this existed.
+async function buildEvidenceWeightByCategory(curriculumId) {
+  const weightByCategory = new Map();
+  if (!curriculumId) return weightByCategory;
+  const [evidenceTypes, assessmentTypes] = await Promise.all([
+    EvidenceTypeModel.findByCurriculumId(curriculumId),
+    AssessmentTypeModel.findByCurriculumId(curriculumId),
+  ]);
+  evidenceTypes.forEach((et) => {
+    if (!et.category) return;
+    const matches = assessmentTypes.filter((at) => (at.evidenceWeights || []).some((w) => w.evidenceTypeId === et.id));
+    if (matches.length !== 1) return;
+    const weight = matches[0].evidenceWeights.find((w) => w.evidenceTypeId === et.id);
+    if (weight) weightByCategory.set(et.category, weight.contribution / 100);
+  });
+  return weightByCategory;
+}
+
+// Per-learner confidence discount for sparse evidence. A curriculum's Evidence Type can set
+// minItemCount ("at least N of this expected", e.g. 3 quizzes) — schema-level only until now
+// (see createEvidenceTypeSchema's own comment: "not read by the scoring engine, since a single
+// evidence type can be reused across courses with different item counts"). That objection is
+// about a fixed per-course count; checking it per LEARNER instead sidesteps it — regardless of
+// how many quizzes exist in the abstract, we can always ask how many THIS learner has actually
+// been graded on. A learner short of the expected count has their marks for that category
+// scaled down proportionally (count/minItemCount) rather than counted as fully evidenced — 1 of
+// 3 expected quizzes, even a perfect one, shouldn't carry the same confidence as having done
+// all 3. minItemCount of 0 (never configured, the default) is a no-op — full weight, unchanged.
+async function buildThresholdFactorByCategory(curriculumId, typeByAssessmentId) {
+  const factorByCategory = new Map();
+  if (!curriculumId) return factorByCategory;
+  const evidenceTypes = await EvidenceTypeModel.findByCurriculumId(curriculumId);
+  const countByCategory = new Map();
+  [...typeByAssessmentId.values()].forEach((type) => {
+    if (!type) return;
+    countByCategory.set(type, (countByCategory.get(type) || 0) + 1);
+  });
+  evidenceTypes.forEach((et) => {
+    if (!et.category || !et.minItemCount) return;
+    const count = countByCategory.get(et.category) || 0;
+    factorByCategory.set(et.category, Math.min(1, count / et.minItemCount));
+  });
+  return factorByCategory;
+}
+
 // Shared by getLearnerIndicatorProgress (all-time) and getLearnerIndicatorProgressForAssessments
 // (course-scoped) — sums each indicator's earned/possible marks across the given graded
 // submissions and resolves each indicator's display name/competency.
-async function summarizeIndicatorProgress(submissions) {
+//
+// curriculumId (when given) applies two independent factors to each submission's marks before
+// summing, both defaulting to a no-op (1.0) when unconfigured:
+//   1. Evidence Type contribution % (Score Evidence's "Evidence Weights") — the same math
+//      Engine 1 (runAssessmentEngine) uses (score × contribution / 100), applied here to real
+//      graded marks instead of a hypothetical typed-in score.
+//   2. The minItemCount threshold discount (buildThresholdFactorByCategory above), for sparse
+//      evidence.
+// Scaling both earned and possible by the same combined factor means a lower-weighted or
+// under-evidenced category's marks count for proportionally less in the pooled total (and a
+// higher-weighted, fully-evidenced one for more), without changing what its own raw percentage
+// would be in isolation.
+async function summarizeIndicatorProgress(submissions, curriculumId = null) {
+  const weightByCategory = await buildEvidenceWeightByCategory(curriculumId);
+  const assessmentIds = [...new Set(submissions.map((s) => s.assessmentId))];
+  const assessments = await Promise.all(assessmentIds.map((id) => AssessmentModel.findById(id)));
+  const typeByAssessmentId = new Map(assessmentIds.map((id, i) => [id, assessments[i]?.type || null]));
+  const thresholdFactorByCategory = await buildThresholdFactorByCategory(curriculumId, typeByAssessmentId);
+
   const totals = new Map();
   submissions.forEach((s) => {
+    const type = typeByAssessmentId.get(s.assessmentId);
+    const contributionFactor = weightByCategory.has(type) ? weightByCategory.get(type) : 1;
+    const thresholdFactor = thresholdFactorByCategory.has(type) ? thresholdFactorByCategory.get(type) : 1;
+    const multiplier = contributionFactor * thresholdFactor;
     (s.indicatorBreakdown || []).forEach(({ indicatorId, marksEarned, marksPossible }) => {
       const cur = totals.get(indicatorId) || { marksEarned: 0, marksPossible: 0 };
-      cur.marksEarned += marksEarned;
-      cur.marksPossible += marksPossible;
+      cur.marksEarned += marksEarned * multiplier;
+      cur.marksPossible += marksPossible * multiplier;
       totals.set(indicatorId, cur);
     });
   });
@@ -65,7 +139,7 @@ async function summarizeIndicatorProgress(submissions) {
       competencyName: resolved?.competencyName || "Unknown",
       indicatorName: resolved?.indicatorName || "Unknown indicator",
       marksEarned: Math.round(marksEarned * 100) / 100,
-      marksPossible,
+      marksPossible: Math.round(marksPossible * 100) / 100,
       percent: marksPossible > 0 ? Math.round((marksEarned / marksPossible) * 100) : 0,
     };
   }));
@@ -783,7 +857,7 @@ const AssessmentSubmissionService = {
       const assessmentIds = await CompetencyService.getAttachedAssessmentIds(curriculumId);
       submissions = submissions.filter((s) => assessmentIds.has(s.assessmentId));
     }
-    return summarizeIndicatorProgress(submissions);
+    return summarizeIndicatorProgress(submissions, curriculumId);
   },
 
   // Same aggregation, narrowed to one course's worth of assessments — the reports module's
@@ -791,10 +865,10 @@ const AssessmentSubmissionService = {
   // above rather than duplicating it. Only counts assessments whose own report has already been
   // published to the learner — a course report shouldn't reveal a score the learner hasn't seen
   // released on its own assessment page yet.
-  async getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds) {
+  async getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds, curriculumId = null) {
     const graded = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
     const submissions = graded.filter((s) => assessmentIds.includes(s.assessmentId) && s.reportPublished);
-    return summarizeIndicatorProgress(submissions);
+    return summarizeIndicatorProgress(submissions, curriculumId);
   },
 };
 
