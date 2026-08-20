@@ -31,6 +31,7 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
+  await AuthService.logout(req.cookies?.[COOKIE_NAME]);
   res.clearCookie(COOKIE_NAME, baseCookieOptions);
   res.json({ success: true });
 });

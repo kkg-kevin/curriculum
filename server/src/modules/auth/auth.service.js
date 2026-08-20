@@ -1,7 +1,9 @@
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
 const LearnerModel = require("../learners/learner.model");
+const RevokedTokenModel = require("./revoked-token.model");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
 const SALT_ROUNDS = 10;
@@ -12,8 +14,15 @@ function sanitize(user) {
   return safe;
 }
 
+// jti gives each issued token a unique identity to revoke by (see logout below) — without it,
+// the denylist would have nothing to key a single token's revocation on short of storing the
+// whole raw token string.
 function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(
+    { sub: user.id, role: user.role, email: user.email, username: user.username, jti: crypto.randomUUID() },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 }
 
 const AuthService = {
@@ -131,6 +140,26 @@ const AuthService = {
       throw err;
     }
     return true;
+  },
+
+  // The JWT design has no server-side session to invalidate on its own — jwt.verify() alone
+  // considers any correctly-signed, unexpired token valid regardless of whether its owner has
+  // since logged out. This records the current token's jti in the denylist protect() checks on
+  // every request, so a copied/stolen cookie stops working immediately at logout instead of
+  // silently remaining valid until its natural expiry. Verifies the signature (ignoring
+  // expiration, since revoking an already-expired token is a harmless no-op) rather than just
+  // decoding it, so a malformed or forged token can't be used to plant an arbitrary jti here.
+  async logout(token) {
+    if (!token) return;
+    try {
+      const payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+      if (payload?.jti && payload?.exp) {
+        await RevokedTokenModel.create({ jti: payload.jti, userId: payload.sub, expiresAt: new Date(payload.exp * 1000) });
+      }
+    } catch {
+      // Not a token we issued — nothing valid to revoke.
+    }
+    await RevokedTokenModel.pruneExpired();
   },
 
   async getById(id) {
