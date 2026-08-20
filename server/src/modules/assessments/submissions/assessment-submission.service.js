@@ -274,6 +274,26 @@ const AssessmentSubmissionService = {
     return [...standaloneRows, ...classRows];
   },
 
+  // Every (assessmentId, sessionId) pair actually issued to this learner — via any of their
+  // active classes, or individually (course-progress auto-issue) — regardless of assessment
+  // type or category. Unlike getIssuedRowsForLearner above, nothing is excluded here (not even
+  // observations or diagnostics): this only answers "has this been issued", not "should it show
+  // up in the learner's to-do list". Used by CourseService.getSessions to keep a session's
+  // attachedAssessments hidden from a learner until a teacher has actually issued them — see
+  // assessment-issue.model.js's header comment: "A learner only ever sees an assessment via an
+  // Issue," which the course-browsing view never enforced until now.
+  async getIssuedSessionAssessmentKeysForLearner(learnerId) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
+    const classIssues = (await Promise.all(classIds.map((classId) => AssessmentIssueModel.findAll({ classId })))).flat();
+    const ownIssues = await AssessmentIssueModel.findAll({ learnerId });
+    const keys = new Set();
+    [...classIssues, ...ownIssues].forEach((issue) => {
+      if (issue.sessionId) keys.add(`${issue.assessmentId}:${issue.sessionId}`);
+    });
+    return keys;
+  },
+
   // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
   // Assessment" card on LearnerViewPage. Filtered to ageCategoryId specifically, since a
   // learner can now also hold course-progress-triggered standalone issues (see
