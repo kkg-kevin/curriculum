@@ -124,8 +124,60 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
       disabled={isIssuing}
       style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isIssuing ? "not-allowed" : "pointer" }}
     >
-      <SendIcon sx={{ fontSize: 13 }} /> Issue to {cls.gradeName}
+      <SendIcon sx={{ fontSize: 13 }} /> Issue {TYPE_LABELS[item.assessmentType] || item.assessmentType} to {cls.gradeName}
     </button>
+  );
+}
+
+// Confirmation step between clicking "Issue to {class}" and the request actually firing — shows
+// the assessment's admin-authored name/type/mode so the teacher can see exactly what they're
+// about to send before committing, and lets them attach an optional due date (the server/model
+// already support dueDate on assessment_issues; this dialog is the only piece that was missing).
+function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCancel }) {
+  const [dueDate, setDueDate] = useState("");
+  const color = TYPE_COLORS[item.assessmentType] || T.accentLight;
+  const modeKey = groupMode ? "group" : "individual";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", fontFamily: "Inter, sans-serif" }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: T.ink }}>{item.assessmentName}</h3>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          <span style={badgeStyle(color)}>{TYPE_LABELS[item.assessmentType] || item.assessmentType}</span>
+          <span style={badgeStyle(MODE_COLORS[modeKey])}>{MODE_LABELS[modeKey]}</span>
+        </div>
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: T.inkMuted }}>
+          Issuing <strong>{item.sessionLabel}</strong> to <strong>{cls.gradeName}</strong>.
+        </p>
+        <label style={{ display: "block", marginTop: 16, fontSize: 12, fontWeight: 700, color: T.inkMuted }}>
+          Due date (optional)
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            style={{ display: "block", marginTop: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", boxSizing: "border-box" }}
+          />
+        </label>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isIssuing}
+            style={{ padding: "8px 16px", background: "none", border: `1px solid ${T.border}`, borderRadius: 20, fontSize: 12.5, fontWeight: 700, color: T.inkMuted, cursor: isIssuing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(dueDate || null)}
+            disabled={isIssuing}
+            style={{ padding: "8px 18px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: isIssuing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
+          >
+            {isIssuing ? "Issuing…" : "Confirm & Issue"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -171,7 +223,14 @@ function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, is
             <span style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, minWidth: 90 }}>{occ.sessionLabel}</span>
             {occ.eligibleClasses.map((cls) => {
               const key = `${assessment.id}:${occ.sessionId}:${cls.id}`;
-              const item = { id: assessment.id, sessionId: occ.sessionId, courseId: occ.courseId };
+              const item = {
+                id: assessment.id,
+                sessionId: occ.sessionId,
+                courseId: occ.courseId,
+                assessmentName: assessment.name,
+                assessmentType: assessment.type,
+                sessionLabel: occ.sessionLabel,
+              };
               return (
                 <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
               );
@@ -406,8 +465,20 @@ export default function AssessmentsPage() {
   const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();
   const issuingKey = issuing && issuingVariables ? `${issuingVariables.assessmentId}:${issuingVariables.sessionId}:${issuingVariables.classId}` : null;
 
+  // Clicking "Issue to {class}" opens IssueConfirmDialog instead of issuing immediately, so the
+  // teacher can see the admin-authored name/type and optionally set a due date first.
+  const [issueDialog, setIssueDialog] = useState(null);
+
   const handleIssue = (item, cls, groupMode) => {
-    issueAssessment({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode });
+    setIssueDialog({ item, cls, groupMode });
+  };
+
+  const confirmIssue = (dueDate) => {
+    const { item, cls, groupMode } = issueDialog;
+    issueAssessment(
+      { assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode, dueDate },
+      { onSuccess: () => setIssueDialog(null) }
+    );
   };
 
   const isLoading = teacherLoading || (!!teacher && (classesLoading || coursesLoading || sessionsResults.some((r) => r.isLoading)));
@@ -485,6 +556,17 @@ export default function AssessmentsPage() {
             />
           ))}
         </div>
+      )}
+
+      {issueDialog && (
+        <IssueConfirmDialog
+          item={issueDialog.item}
+          cls={issueDialog.cls}
+          groupMode={issueDialog.groupMode}
+          isIssuing={issuing}
+          onConfirm={confirmIssue}
+          onCancel={() => setIssueDialog(null)}
+        />
       )}
     </div>
   );
