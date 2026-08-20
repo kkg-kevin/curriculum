@@ -126,11 +126,10 @@ const CourseService = {
     return CourseModel.create(data);
   },
 
-  async getAllCourses() {
-    const countByCourseId = new Map();
-    const sessions = await SessionModel.findAll();
-    sessions.forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
-    const courses = await CourseModel.findAll();
+  async getAllCourses({ limit, offset } = {}) {
+    const counts = await SessionModel.countPerCourse();
+    const countByCourseId = new Map(counts.map((r) => [r.courseId, r.count]));
+    const courses = await CourseModel.findAll({ limit, offset });
     return courses.map((course) => ({
       ...course,
       sessionCount: countByCourseId.get(course.id) || 0,

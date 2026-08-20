@@ -130,13 +130,11 @@ const generateAdmissionNumber = async (schoolCode, year) => {
 // plain count so a deleted learner's number is never reissued to someone else.
 const REGISTRATION_PREFIX = "REG-";
 async function nextRegistrationNumber() {
-  const learners = await LearnerModel.findAll();
-  const maxSeq = learners.reduce((max, l) => {
-    const seq = typeof l.registrationNumber === "string" && l.registrationNumber.startsWith(REGISTRATION_PREFIX)
-      ? parseInt(l.registrationNumber.slice(REGISTRATION_PREFIX.length), 10)
-      : NaN;
-    return Number.isFinite(seq) ? Math.max(max, seq) : max;
-  }, 0);
+  const highest = await LearnerModel.findHighestRegistrationNumber(REGISTRATION_PREFIX);
+  const seq = highest && typeof highest.registrationNumber === "string"
+    ? parseInt(highest.registrationNumber.slice(REGISTRATION_PREFIX.length), 10)
+    : NaN;
+  const maxSeq = Number.isFinite(seq) ? seq : 0;
   return `${REGISTRATION_PREFIX}${String(maxSeq + 1).padStart(6, "0")}`;
 }
 
@@ -169,12 +167,13 @@ const LearnerService = {
   // learner record itself. A learner can have at most one link per hub and at most one link per
   // class, so this merge is always unambiguous. Unscoped (no schoolId/classId) returns bare
   // identity records — there's no single enrollment to merge.
-  async getAllLearners({ schoolId, classId, status, guardianEmail, ids } = {}) {
+  async getAllLearners({ schoolId, classId, status, guardianEmail, ids, limit, offset } = {}) {
     if (!schoolId && !classId) {
       // No single admissionNumber applies across hubs, but a hub count is real, cheap to
       // compute here, and lets the flat cross-hub card show something more honest than
-      // "no ID" for a learner who simply isn't scoped to one hub in this view.
-      const learners = await LearnerModel.findAll({ guardianEmail, ids });
+      // "no ID" for a learner who simply isn't scoped to one hub in this view. This is the
+      // genuinely unbounded case (no hub/class to narrow it) — limit/offset matter most here.
+      const learners = await LearnerModel.findAll({ guardianEmail, ids, limit, offset });
       return Promise.all(
         learners.map(async (l) => ({
           ...l,

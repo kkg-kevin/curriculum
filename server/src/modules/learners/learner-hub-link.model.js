@@ -27,6 +27,14 @@ const LearnerHubLinkModel = {
     return db(TABLE).where({ classId });
   },
 
+  // Scoped counterpart to findAll() for callers that only need links for a known set of
+  // classes (e.g. class.service.js's learnerCount tally) — avoids pulling every enrollment
+  // link system-wide just to count a handful of classes' worth.
+  findByClassIds(classIds) {
+    if (!classIds || classIds.length === 0) return [];
+    return db(TABLE).whereIn("classId", classIds);
+  },
+
   findOne(learnerId, hubId) {
     return firstOrNull(db(TABLE).where({ learnerId, hubId }));
   },

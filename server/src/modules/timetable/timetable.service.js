@@ -395,8 +395,9 @@ const TimetableService = {
     const links = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
     const pairKey = (classId, courseId) => `${classId}:${courseId}`;
     const linkedPairs = new Set(links.map((l) => pairKey(l.classId, l.courseId)));
-    const all = await TimetableModel.findAll();
-    return all
+    const classIds = [...new Set(links.map((l) => l.classId))];
+    const slots = await TimetableModel.findByClassIds(classIds);
+    return slots
       .filter((s) => linkedPairs.has(pairKey(s.classId, s.courseId)))
       .filter((s) => !s.teacherId || s.teacherId === teacherId);
   },
@@ -406,8 +407,7 @@ const TimetableService = {
   async listForLearner(learnerId) {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
-    const all = await TimetableModel.findAll();
-    return all.filter((s) => classIds.includes(s.classId));
+    return TimetableModel.findByClassIds(classIds);
   },
 
   async createSlot(data) {

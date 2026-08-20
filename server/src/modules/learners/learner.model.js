@@ -12,11 +12,29 @@ const LearnerModel = {
   // per-enrollment facts on learner-hub-link.model.js. `ids` lets a caller pre-resolve "which
   // learners have a link matching X" via that table and filter down to just those (same
   // pattern as teacher.model.js's `ids` filter, fed by teacher-hub-link lookups).
-  findAll({ ids, guardianEmail } = {}) {
+  // limit/offset are optional and additive — omitted (as every current caller does), this
+  // returns the full result set exactly as before.
+  findAll({ ids, guardianEmail, limit, offset } = {}) {
     let query = db(TABLE);
     if (ids) query = query.whereIn("id", ids);
     if (guardianEmail) query = query.whereRaw("LOWER(guardianEmail) = ?", [guardianEmail.toLowerCase()]);
-    return query.orderBy("createdAt", "desc");
+    // id as a secondary sort key — see class.model.js's findAll for why a tie-breaker matters
+    // once LIMIT/OFFSET pagination is in play (e.g. several learners bulk-enrolled at once).
+    query = query.orderBy([{ column: "createdAt", order: "desc" }, { column: "id", order: "asc" }]);
+    if (limit) query = query.limit(limit);
+    if (offset) query = query.offset(offset);
+    return query;
+  },
+
+  // The single highest registrationNumber currently in use (or null if none exist yet) — since
+  // registrationNumber is zero-padded to a fixed width behind a constant prefix (see
+  // learner.service.js's nextRegistrationNumber), lexicographic ORDER BY matches numeric order,
+  // so the existing index on this column resolves this in one indexed lookup instead of
+  // loading every learner just to scan for the max.
+  findHighestRegistrationNumber(prefix) {
+    return firstOrNull(
+      db(TABLE).where("registrationNumber", "like", `${prefix}%`).orderBy("registrationNumber", "desc")
+    );
   },
 
   // Used both for uniqueness checks (learner.service.js) and to resolve a username-based

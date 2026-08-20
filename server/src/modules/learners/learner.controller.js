@@ -72,7 +72,7 @@ const createLearner = asyncHandler(async (req, res) => {
 });
 
 const getAllLearners = asyncHandler(async (req, res) => {
-  const { schoolId, classId, status, guardianEmail, q } = req.query;
+  const { schoolId, classId, status, guardianEmail, q, limit, offset } = req.query;
   // Cross-hub search by name, username, or registration number — how a school finds a learner
   // already enrolled at a DIFFERENT hub, in order to also enroll them at this one (see
   // AddExistingLearnerPanel on the client). Deliberately bypasses every hub-scoping filter
@@ -88,7 +88,11 @@ const getAllLearners = asyncHandler(async (req, res) => {
     })));
     return res.json({ success: true, data, count: data.length });
   }
-  const filters = { schoolId, classId, status, guardianEmail };
+  const filters = {
+    schoolId, classId, status, guardianEmail,
+    limit: limit ? Number(limit) : undefined,
+    offset: offset ? Number(offset) : undefined,
+  };
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
     filters.schoolId = req.ownSchool.id;

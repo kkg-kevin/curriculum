@@ -5,7 +5,7 @@ import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculu
 import { useAgeCategories, useLearnerCompetencyScores, useProgressLevels } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAttendanceHistoryQuery } from "../../attendance/hooks/useAttendance";
-import { summarizeCoursesProgress } from "../utils/progressStorage";
+import { summarizeCoursesProgress, resolveCourseEntryPath } from "../utils/progressStorage";
 import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
 import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 2, minWidth: 340 }}>
             {/* Continue Learning — the primary call to action, given more visual weight */}
             <div
-              onClick={() => continueCourse && navigate(`/learner-portal/courses/${continueCourse.id}`)}
+              onClick={() => continueCourse && navigate(resolveCourseEntryPath("learner", continueCourse.id, progressKey))}
               style={{ ...cardStyle(), overflow: "hidden", display: "flex", cursor: continueCourse ? "pointer" : "default", minHeight: 140 }}
             >
               {!continueCourse ? (

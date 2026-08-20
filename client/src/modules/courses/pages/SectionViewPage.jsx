@@ -9,7 +9,7 @@ import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatable
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
-import { markSectionComplete, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete, isModuleSessionsComplete } from "../../learner-portal/utils/progressStorage";
+import { markSectionComplete, setLastViewedSection, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete, isModuleSessionsComplete } from "../../learner-portal/utils/progressStorage";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -478,6 +478,9 @@ export default function SectionViewPage() {
   useEffect(() => {
     if (!isLearner || !progressKey || !id || !sessionId || !sectionKey) return;
     markSectionComplete(progressKey, id, sessionId, sectionKey);
+    // Unlike markSectionComplete (a one-time flag), this is overwritten on every visit — resuming
+    // should land on wherever the learner most recently was, not the first section they ever opened.
+    setLastViewedSection(progressKey, id, sessionId, sectionKey, itemId);
     forceRerender((v) => v + 1);
 
     // Once every OTHER section of this session is done, whatever assessment is attached to it
@@ -495,7 +498,7 @@ export default function SectionViewPage() {
           .catch(() => {});
       });
     }
-  }, [isLearner, progressKey, id, sessionId, sectionKey, sessions, queryClient]);
+  }, [isLearner, progressKey, id, sessionId, sectionKey, itemId, sessions, queryClient]);
 
   const sectionProgress = isLearner ? getCourseSectionProgress(progressKey, id) : null;
   const sessionCompletion = isLearner && sessionId ? getSessionCompletion(progressKey, id, sessionId) : null;

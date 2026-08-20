@@ -610,12 +610,12 @@ const CompetencyService = {
     });
 
     const assessmentIds = new Set();
-    for (const courseId of courseIds) {
-      const sessions = await SessionModel.findByCourseId(courseId);
+    const sessionsByCourse = await Promise.all([...courseIds].map((courseId) => SessionModel.findByCourseId(courseId)));
+    sessionsByCourse.forEach((sessions) => {
       sessions.forEach((s) => {
         getSessionAssessmentIds(s).forEach((aid) => assessmentIds.add(aid));
       });
-    }
+    });
     return assessmentIds;
   },
 
@@ -628,10 +628,16 @@ const CompetencyService = {
     // across every assessment attached to this curriculum. This is "marks possible," not
     // "marks earned" — there's no grading/submission data yet to compute actual achievement.
     const marksByIndicator = new Map();
-    for (const aid of assessmentIds) {
-      const assessment = await BuilderAssessmentModel.findById(aid);
-      if (!assessment) continue;
-      const compLinks = await AssessmentCompetencyLinkModel.findByAssessmentId(aid);
+    const assessmentRows = await Promise.all([...assessmentIds].map(async (aid) => {
+      const [assessment, compLinks] = await Promise.all([
+        BuilderAssessmentModel.findById(aid),
+        AssessmentCompetencyLinkModel.findByAssessmentId(aid),
+      ]);
+      return { assessment, compLinks };
+    }));
+
+    assessmentRows.forEach(({ assessment, compLinks }) => {
+      if (!assessment) return;
       compLinks.forEach((l) => relevantCompetencyIds.add(l.competencyId));
 
       const scoredEntries = [...(assessment.items || []), ...(assessment.rubric || [])];
@@ -645,18 +651,18 @@ const CompetencyService = {
       (assessment.indicators || []).forEach((entry) => {
         (entry.competencyIndicatorIds || []).forEach((indId) => usedIndicatorIds.add(indId));
       });
-    }
+    });
 
+    const comps = await Promise.all([...relevantCompetencyIds].map((competencyId) => CompetencyModel.findById(competencyId)));
     const groups = [];
-    for (const competencyId of relevantCompetencyIds) {
-      const comp = await CompetencyModel.findById(competencyId);
-      if (!comp) continue;
+    comps.forEach((comp) => {
+      if (!comp) return;
       const indicators = (comp.indicators || [])
         .filter((ind) => usedIndicatorIds.has(ind.id))
         .map((ind) => ({ ...ind, marksPossible: marksByIndicator.get(ind.id) || 0 }));
-      if (indicators.length === 0) continue;
-      groups.push({ competencyId, competencyName: comp.name, indicators });
-    }
+      if (indicators.length === 0) return;
+      groups.push({ competencyId: comp.id, competencyName: comp.name, indicators });
+    });
 
     return groups;
   },
@@ -812,14 +818,14 @@ const CompetencyService = {
     if (learnerIds.length === 0) return [];
 
     const sums = {}, counts = {}, names = {};
-    for (const learnerId of learnerIds) {
-      const scores = await this.getLearnerCompetencyScores(curriculumId, learnerId);
+    const allScores = await Promise.all(learnerIds.map((learnerId) => this.getLearnerCompetencyScores(curriculumId, learnerId)));
+    allScores.forEach((scores) => {
       scores.forEach((cs) => {
         sums[cs.competencyId]   = (sums[cs.competencyId]   || 0) + cs.score;
         counts[cs.competencyId] = (counts[cs.competencyId] || 0) + 1;
         names[cs.competencyId]  = cs.name;
       });
-    }
+    });
     const averaged = Object.keys(sums).map((id) => ({
       competencyId: id, name: names[id], score: Math.round((sums[id] / counts[id]) * 10) / 10,
     }));
@@ -842,14 +848,14 @@ const CompetencyService = {
     if (learnerIds.length === 0) return [];
 
     const sums = {}, counts = {}, meta = {};
-    for (const learnerId of learnerIds) {
-      const progress = await this.getLearnerBandProgress(curriculumId, learnerId);
+    const allProgress = await Promise.all(learnerIds.map((learnerId) => this.getLearnerBandProgress(curriculumId, learnerId)));
+    allProgress.forEach((progress) => {
       progress.forEach((bp) => {
         sums[bp.bandId]   = (sums[bp.bandId]   || 0) + bp.completion;
         counts[bp.bandId] = (counts[bp.bandId] || 0) + 1;
         meta[bp.bandId]   = { name: bp.name, advancementThreshold: bp.advancementThreshold };
       });
-    }
+    });
     return Object.keys(sums).map((bandId) => {
       const completion = Math.round((sums[bandId] / counts[bandId]) * 10) / 10;
       return {

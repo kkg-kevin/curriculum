@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
 const env = require("./config/env");
 const authRoutes = require("./modules/auth/auth.routes");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
@@ -56,6 +57,23 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.get("/", (req, res) => {
   res.json({ message: "API is running" });
 });
+
+// General abuse/runaway-loop backstop for everything under /api — login already has its own
+// stricter limiter layered on top of this one. Deliberately generous (same reasoning as
+// loginLimiter in auth.routes.js: a school/office network puts many real concurrent users
+// behind one shared IP, and this app's own polling — notifications every 60s, a teacher's
+// per-class dashboard queries — can legitimately add up to a lot of requests from one IP over
+// 15 minutes). This isn't meant to shape normal traffic, just cap the pathological case (a
+// broken client retry loop, a scraper) before it can degrade the shared connection pool for
+// everyone else.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 3000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests. Please try again later." },
+});
+app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRoutes);
 // Unauthenticated by design — the "share via QR" destination for a learner's public profile

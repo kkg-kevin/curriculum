@@ -22,8 +22,15 @@ const CourseModel = {
     return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  findAll() {
-    return db(TABLE).orderBy("createdAt", "desc");
+  // limit/offset are optional and additive — omitted (as every current caller does), this
+  // returns the full result set exactly as before.
+  findAll({ limit, offset } = {}) {
+    // id as a secondary sort key — see class.model.js's findAll for why a tie-breaker matters
+    // once LIMIT/OFFSET pagination is in play.
+    let query = db(TABLE).orderBy([{ column: "createdAt", order: "desc" }, { column: "id", order: "asc" }]);
+    if (limit) query = query.limit(limit);
+    if (offset) query = query.offset(offset);
+    return query;
   },
 
   findById(id) {

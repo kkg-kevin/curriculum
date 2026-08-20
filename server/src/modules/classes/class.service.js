@@ -78,9 +78,10 @@ const ClassService = {
 
   async getAllClasses(filters) {
     const classes = await ClassModel.findAll(filters);
-    const allLinks = await LearnerHubLinkModel.findAll();
+    const classIds = classes.map((c) => c.id);
+    const links = await LearnerHubLinkModel.findByClassIds(classIds);
     const countMap = {};
-    for (const l of allLinks) {
+    for (const l of links) {
       if (!l.classId) continue;
       countMap[l.classId] = (countMap[l.classId] || 0) + 1;
     }

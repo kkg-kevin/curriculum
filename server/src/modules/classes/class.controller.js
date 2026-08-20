@@ -44,7 +44,7 @@ async function classIdsTaughtBy(teacherId) {
 }
 
 const getAllClasses = asyncHandler(async (req, res) => {
-  const { schoolId, teacherId, status } = req.query;
+  const { schoolId, teacherId, status, limit, offset } = req.query;
   const filters = { schoolId, status };
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
@@ -54,6 +54,14 @@ const getAllClasses = asyncHandler(async (req, res) => {
     const ids = await classIdsTaughtBy(req.ownTeacher.id);
     const records = (await ClassService.getAllClasses(filters)).filter((c) => ids.has(c.id));
     return res.json({ success: true, data: records, count: records.length });
+  }
+  // limit/offset only applied here, and only when teacherId isn't also filtering — both the
+  // teacher-role branch above and the teacherId filter below post-filter the fetched page by
+  // taught-class ids, so limiting the underlying query first could drop classes either of those
+  // still needs before they get a chance to run.
+  if (!teacherId) {
+    if (limit) filters.limit = Number(limit);
+    if (offset) filters.offset = Number(offset);
   }
   let records = await ClassService.getAllClasses(filters);
   if (teacherId) { const ids = await classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
