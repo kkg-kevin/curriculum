@@ -30,7 +30,10 @@ module.exports = {
     dateStrings: ["DATE"],
     typeCast,
   },
-  pool: { min: 0, max: 10 },
+  // max:10 was thin for concurrent load at scale — MySQL's default max_connections (151) has
+  // plenty of headroom for a single Node process to use more than that; min:2 keeps a couple
+  // of connections warm instead of paying connect latency on every request after an idle spell.
+  pool: { min: 2, max: 30 },
   migrations: {
     directory: "./src/db/migrations",
     tableName: "knex_migrations",

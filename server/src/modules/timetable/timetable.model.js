@@ -12,6 +12,14 @@ const TimetableModel = {
     return query.orderBy("startTime", "asc");
   },
 
+  // Scoped counterpart to findAll() for callers resolving slots across several classes at once
+  // (e.g. a learner enrolled in multiple hubs, or every class a teacher is linked to) — avoids
+  // loading every slot system-wide just to filter down to a handful of classes in JS.
+  findByClassIds(classIds) {
+    if (!classIds || classIds.length === 0) return [];
+    return db(TABLE).whereIn("classId", classIds).orderBy("startTime", "asc");
+  },
+
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
   },

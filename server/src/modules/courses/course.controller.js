@@ -72,7 +72,11 @@ const createCourse = asyncHandler(async (req, res) => {
 });
 
 const getAllCourses = asyncHandler(async (req, res) => {
-  const courses = await CourseService.getAllCourses();
+  const { limit, offset } = req.query;
+  const courses = await CourseService.getAllCourses({
+    limit: limit ? Number(limit) : undefined,
+    offset: offset ? Number(offset) : undefined,
+  });
   res.json({ success: true, data: courses, count: courses.length });
 });
 

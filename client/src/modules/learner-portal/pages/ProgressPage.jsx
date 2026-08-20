@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiCheckCircle, FiClipboard, FiTrendingUp } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { summarizeCoursesProgress } from "../utils/progressStorage";
+import { summarizeCoursesProgress, resolveCourseEntryPath } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 
 const T = {
@@ -121,7 +121,7 @@ export default function LearnerProgressPage() {
                         <p style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: T.accent }}>{course.percent}%</p>
                         <button
                           type="button"
-                          onClick={() => navigate(`/learner-portal/courses/${course.id}`)}
+                          onClick={() => navigate(resolveCourseEntryPath("learner", course.id, progressKey))}
                           style={{ padding: "8px 16px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
                         >
                           {status === "not_started" ? "Start" : status === "completed" ? "Review" : "Resume"}

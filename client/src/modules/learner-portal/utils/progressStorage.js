@@ -1,4 +1,5 @@
 import { SECTIONS } from "../../courses/sectionConfig";
+import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 
 const STORAGE_KEY = "digifunzi.learner-progress";
 
@@ -122,6 +123,41 @@ export function getCourseCompletionPercent(email, courseId, sessionCount) {
   const totalSections = (sessionCount || 0) * SECTIONS.length;
   if (!totalSections) return 0;
   return Math.min(100, Math.round((countCompletedSections(email, courseId) / totalSections) * 100));
+}
+
+/* ── Resume — the last session/section a learner had open in a course ────
+   Separate from section-completion above: that's a one-time "seen it" flag per
+   section, this is "where were they most recently," overwritten on every visit
+   (including revisiting an already-completed section) so resuming always lands
+   on the truly last-opened spot, not just the first-ever one. */
+
+export function getLastViewedSection(email, courseId) {
+  const progress = getLearnerProgress(email);
+  return (progress.lastViewed || {})[courseId] || null;
+}
+
+export function setLastViewedSection(email, courseId, sessionId, sectionKey, itemId) {
+  const progress = getLearnerProgress(email);
+  const next = {
+    ...progress,
+    lastViewed: {
+      ...(progress.lastViewed || {}),
+      [courseId]: { sessionId, sectionKey, itemId: itemId || null, at: new Date().toISOString() },
+    },
+  };
+  setLearnerProgress(email, next);
+}
+
+// Where clicking "into" a course should actually land a learner — their last-opened
+// session/section if one's on record, otherwise the course landing page (nothing to resume
+// yet, same as today). No-op passthrough to courseHomePath for non-learner roles, so callers
+// that render the same card/button across roles (e.g. CourseCatalogGrid) can call this
+// unconditionally instead of branching on role themselves.
+export function resolveCourseEntryPath(role, courseId, email) {
+  if (role !== "learner") return courseHomePath(role, courseId);
+  const last = getLastViewedSection(email, courseId);
+  if (!last?.sessionId || !last?.sectionKey) return courseHomePath(role, courseId);
+  return sectionPath(role, courseId, last.sessionId, last.sectionKey, last.itemId);
 }
 
 // Real, section-driven aggregate across a course list — the single source of truth for

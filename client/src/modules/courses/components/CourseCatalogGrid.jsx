@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBookOpen } from "react-icons/fi";
-import { courseHomePath } from "../../../routes/portalPaths";
 import { useAuth } from "../../../context/AuthContext";
-import { getCourseCompletionPercent } from "../../learner-portal/utils/progressStorage";
+import { getCourseCompletionPercent, resolveCourseEntryPath } from "../../learner-portal/utils/progressStorage";
 
 function stripHtml(html) {
   if (!html) return "";
@@ -52,7 +51,7 @@ function CatalogCard({ role, course }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => navigate(courseHomePath(role, course.id))}
+      onClick={() => navigate(resolveCourseEntryPath(role, course.id, user?.email || user?.username))}
       style={{
         backgroundColor: "#ffffff", borderRadius: 16, cursor: "pointer",
         boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.12), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)",

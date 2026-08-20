@@ -119,11 +119,12 @@ const CurriculumVersionService = {
       }));
     }
 
+    const courseIds = [...collectCourseIds(content)];
     const countByCourseId = new Map();
-    const sessions = await SessionModel.findAll();
+    const sessions = await SessionModel.findByCourseIds(courseIds);
     sessions.forEach((s) => countByCourseId.set(s.courseId, (countByCourseId.get(s.courseId) || 0) + 1));
 
-    const courses = await Promise.all([...collectCourseIds(content)].map((id) => CourseModel.findById(id)));
+    const courses = await Promise.all(courseIds.map((id) => CourseModel.findById(id)));
     return courses
       .filter(Boolean)
       .map((course) => ({ ...course, sessionCount: countByCourseId.get(course.id) || 0 }));

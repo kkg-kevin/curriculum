@@ -36,6 +36,24 @@ const SessionModel = {
     return db(TABLE).where({ courseId }).orderBy("order", "asc");
   },
 
+  // Scoped counterpart to findAll() for callers building a session-count map for a known,
+  // small set of courses (e.g. one curriculum version's content) rather than every course
+  // system-wide — see curriculum-versions.service.js's getCurrentCourses.
+  findByCourseIds(courseIds) {
+    if (!courseIds || courseIds.length === 0) return [];
+    return db(TABLE).whereIn("courseId", courseIds);
+  },
+
+  // Session counts grouped by course, computed in the DB — used by the full course catalog
+  // listing (getAllCourses), which genuinely needs a count for every course, so scoping by
+  // courseIds wouldn't help there. Selecting just courseId and a count avoids pulling every
+  // session's full JSON content columns (outcomes, mainConcepts, activities, notes, resources)
+  // over the wire just to count rows.
+  async countPerCourse() {
+    const rows = await db(TABLE).select("courseId").count({ count: "*" }).groupBy("courseId");
+    return rows.map((r) => ({ courseId: r.courseId, count: Number(r.count) }));
+  },
+
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
   },
