@@ -346,4 +346,14 @@ const CurriculumService = {
   },
 };
 
-module.exports = CurriculumService;
+// curriculum.service.js -> class.service.js -> versions/curriculum-versions.service.js ->
+// curriculum.service.js is a real circular require (class.service.js needs
+// CurriculumVersionService, curriculum-versions.service.js needs CurriculumService back for
+// autoPopulateFromCourse). Whichever of these two service files starts loading first becomes
+// the outer frame, and the inner require() call on the other side resolves to its *pre-export*
+// module.exports (still the default {}) because Node hands back whatever object reference is
+// currently assigned, not a promise that waits for the file to finish. Replacing module.exports
+// wholesale here (`module.exports = CurriculumService`) would leave that already-captured `{}`
+// reference forever empty. Mutating the existing object instead means anyone holding that
+// reference sees these methods land on it once this line runs.
+Object.assign(module.exports, CurriculumService);
