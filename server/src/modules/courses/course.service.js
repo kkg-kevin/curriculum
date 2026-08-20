@@ -12,6 +12,7 @@ const InventoryModel = require("../settings/inventory/inventory.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const CurriculumService = require("../curriculum/curriculum.service");
 const AssessmentModel = require("../assessments/assessment.model");
+const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
@@ -102,11 +103,15 @@ async function buildAssessmentLookup() {
   return new Map(assessments.map((assessment) => [assessment.id, assessment]));
 }
 
-function hydrateSessionAssessments(session, assessmentsById) {
+// visibleKeys is null for a teacher/admin/school caller (sees everything attached, since they
+// decide what to issue) or a Set of "assessmentId:sessionId" for a learner caller (sees only
+// what's actually been issued to them — see getIssuedSessionAssessmentKeysForLearner).
+function hydrateSessionAssessments(session, assessmentsById, visibleKeys = null) {
   const attachedAssessments = normalizeAssessmentAttachments(session)
     .map((attachment) => {
       const assessment = assessmentsById.get(attachment.assessmentId);
       if (!assessment) return null;
+      if (visibleKeys && !visibleKeys.has(`${attachment.assessmentId}:${session.id}`)) return null;
       return { ...assessment, mode: attachment.mode };
     })
     .filter(Boolean);
@@ -449,7 +454,10 @@ const CourseService = {
 
   /* ── Sessions ────────────────────────────────────────────────────────── */
 
-  async getSessions(courseId) {
+  // learnerId, when passed, scopes attachedAssessments on every returned session to only what's
+  // actually been issued to that learner — see hydrateSessionAssessments. Omitted (the default)
+  // for teacher/admin/school callers, who need to see everything attached in order to issue it.
+  async getSessions(courseId, { learnerId } = {}) {
     const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
@@ -459,7 +467,10 @@ const CourseService = {
     await ensureSessionsGrouped(courseId);
     const assessmentsById = await buildAssessmentLookup();
     const sessions = await SessionModel.findByCourseId(courseId);
-    return sessions.map((session) => hydrateSessionAssessments(session, assessmentsById));
+    const visibleKeys = learnerId
+      ? await AssessmentSubmissionService.getIssuedSessionAssessmentKeysForLearner(learnerId)
+      : null;
+    return sessions.map((session) => hydrateSessionAssessments(session, assessmentsById, visibleKeys));
   },
 
   async createSession(courseId, data) {

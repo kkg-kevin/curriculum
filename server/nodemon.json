@@ -1,3 +1,4 @@
 {
-  "ignore": ["data/*", "data/**/*"]
+  "ignore": ["data/*", "data/**/*"],
+  "watch": ["src", ".env"]
 }
