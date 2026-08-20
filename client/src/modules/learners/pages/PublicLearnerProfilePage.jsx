@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { FiUsers, FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck } from "react-icons/fi";
+import { FiUsers, FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock } from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 
@@ -84,13 +84,20 @@ function PageStyles() {
         .df-public-hero-text { align-items: flex-start; text-align: left; }
         .df-public-hero-pills { justify-content: flex-start; }
       }
+      @keyframes df-lj-pulse-glow {
+        0%, 100% { transform: scale(0.94); opacity: 0.9; }
+        50% { transform: scale(1.12); opacity: 0.35; }
+      }
+      .df-lj-pulse { animation: df-lj-pulse-glow 2.2s ease-in-out infinite; }
       .df-public-identity-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        /* Fixed at 2 columns rather than switching to 3 above 640px — with exactly 4 fields
+           (Registration Number, Nationality, Languages, Username), 3 columns always strands the
+           4th alone on its own row with empty space beside it; 2 columns pairs all 4 cleanly at
+           any width instead (auto-fit doesn't help here — it still fits 3 across on a wide card,
+           same stranding). */
+        grid-template-columns: repeat(2, 1fr);
         gap: 14px 16px;
-      }
-      @media (min-width: 640px) {
-        .df-public-identity-grid { grid-template-columns: repeat(3, 1fr); }
       }
     `}</style>
   );
@@ -169,7 +176,7 @@ function HeroPill({ icon: Icon, label, sub }) {
 // "preview/greyed" state that component supports never applies on this page.
 function Pill({ icon: Icon, label, value }) {
   return (
-    <div style={{ flex: "0 1 200px", minWidth: 130, backgroundColor: "#FAFBFF", border: `1px solid ${BORDER}`, borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ backgroundColor: "#FAFBFF", border: `1px solid ${BORDER}`, borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: "#FEF3E2", color: GOLD, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Icon size={13} />
       </div>
@@ -181,49 +188,121 @@ function Pill({ icon: Icon, label, value }) {
   );
 }
 
-// Small horizontal level ladder — same idea as the learner portal's own Level Journey card
-// (client/src/modules/learner-portal/components/profile/CompetenciesTabContent.jsx), rebuilt
-// standalone here since this page is deliberately self-contained (no login, no shared
-// authenticated-portal component tree to reach into).
+// Gold ring + pulsing glow around whichever node the learner is actively working toward —
+// mirrors the learner portal's own LevelJourneyCard (client/src/modules/learner-portal/
+// components/LevelJourneyCard.jsx), rebuilt standalone here since this page is deliberately
+// self-contained (no login, no shared authenticated-portal component tree to reach into).
+function ProgressRing({ percent, size, stroke }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, percent));
+  const offset = circumference * (1 - clamped / 100);
+  return (
+    <svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#FDE9C0" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={GOLD} strokeWidth={stroke}
+        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.5s ease" }}
+      />
+    </svg>
+  );
+}
+
+// achieved = filled gradient medal, current = gold percent ring + pulsing halo ("you are here"),
+// locked = flat dashed disc with a padlock — same three-state visual language as the
+// authenticated Level Journey card, just sized to fit this smaller shared-profile card.
+function LevelNode({ band, status, ordinal }) {
+  const achieved = status === "achieved";
+  const current = status === "current";
+  const size = 56;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 82 }}>
+      <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+        {current && (
+          <>
+            <div className="df-lj-pulse" style={{ position: "absolute", inset: -5, borderRadius: "50%", backgroundColor: "rgba(254,177,57,0.28)" }} />
+            <ProgressRing percent={band.completion} size={size} stroke={5} />
+          </>
+        )}
+        <div
+          style={{
+            position: "absolute", inset: current ? 7 : 0, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: achieved ? "linear-gradient(135deg, #34d399, #059669)" : current ? "#FFFBEB" : "#fff",
+            border: achieved ? "none" : current ? `1px solid ${GOLD}` : `1.5px dashed ${BORDER}`,
+            boxShadow: achieved ? "0 4px 12px rgba(5,150,105,0.35)" : "none",
+            color: achieved ? "#fff" : current ? "#B45309" : INK_FAINT,
+            fontSize: 11, fontWeight: 800,
+          }}
+        >
+          {achieved ? <FiCheck size={17} /> : current ? `${Math.round(band.completion)}%` : <FiLock size={14} />}
+        </div>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: achieved ? "#059669" : current ? "#B45309" : INK_FAINT, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Level {ordinal}
+        </p>
+        <p style={{ margin: "1px 0 0", fontSize: 11.5, fontWeight: 700, color: achieved || current ? INK : INK_FAINT }}>{band.name}</p>
+        <p style={{ margin: "1px 0 0", fontSize: 9.5, fontWeight: 700, color: achieved ? "#059669" : current ? GOLD : INK_FAINT }}>
+          {achieved ? "Unlocked" : current ? "In progress" : "Locked"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LevelConnector({ status, percent }) {
+  const fillPercent = status === "achieved" ? 100 : status === "current" ? percent : 0;
+  const active = status === "achieved" || status === "current";
+  return (
+    <div style={{ flex: 1, minWidth: 20, height: 5, borderRadius: 3, backgroundColor: "#F3F4F6", overflow: "hidden", marginTop: 27 }}>
+      <div style={{ width: `${Math.min(100, Math.max(0, fillPercent))}%`, height: "100%", borderRadius: 3, background: active ? "linear-gradient(90deg, #059669, #feb139)" : "transparent", transition: "width 0.5s ease" }} />
+    </div>
+  );
+}
+
 function LevelJourney({ levelJourney, currentLevel }) {
   if (!levelJourney || levelJourney.length === 0) return null;
   const nextIndex = currentLevel?.nextLevelName ? levelJourney.findIndex((b) => b.name === currentLevel.nextLevelName) : -1;
+  const achievedCount = levelJourney.filter((bp) => bp.thresholdMet).length;
+  // Same guard as the authenticated card: a threshold of 0 means no admin has configured one
+  // yet, so a level only counts as "Unlocked" at 100% — worth explaining, otherwise a learner
+  // sitting at a high percent with no threshold set looks stalled for no visible reason.
+  const noThresholdsConfigured = levelJourney.every((bp) => !bp.advancementThreshold || bp.advancementThreshold <= 0);
 
   return (
     <div>
-      <p style={{ margin: "0 0 12px", fontSize: 13, color: INK_MUTED, lineHeight: 1.5 }}>
-        {currentLevel?.nextLevelName
-          ? `${currentLevel.name ? `Currently at ${currentLevel.name} — ` : ""}${currentLevel.nextLevelCompletion}% of the way to ${currentLevel.nextLevelName}.`
-          : currentLevel?.name
-          ? `${currentLevel.name} — the highest level on this ladder.`
-          : "Working toward the first level."}
-      </p>
-      <div style={{ display: "flex", overflowX: "auto", gap: 0, paddingBottom: 4 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+        <p style={{ margin: 0, fontSize: 13, color: INK_MUTED, lineHeight: 1.5, flex: 1, minWidth: 180 }}>
+          {currentLevel?.nextLevelName
+            ? `${currentLevel.name ? `Currently at ${currentLevel.name} — ` : ""}${currentLevel.nextLevelCompletion}% of the way to ${currentLevel.nextLevelName}.`
+            : currentLevel?.name
+            ? `${currentLevel.name} — the highest level on this ladder.`
+            : "Working toward the first level."}
+        </p>
+        <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", backgroundColor: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>
+          {achievedCount} of {levelJourney.length} unlocked
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {levelJourney.map((bp, i) => {
           const status = bp.thresholdMet ? "achieved" : i === nextIndex ? "current" : "locked";
           return (
-            <div key={bp.name} style={{ display: "flex", alignItems: "center", flex: i === levelJourney.length - 1 ? "0 0 auto" : 1 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 68 }}>
-                <div
-                  style={{
-                    width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 800,
-                    backgroundColor: status === "achieved" ? "#059669" : status === "current" ? "#FFFBEB" : "#fff",
-                    color: status === "achieved" ? "#fff" : status === "current" ? GOLD : INK_FAINT,
-                    border: status === "achieved" ? "none" : status === "current" ? `2px solid ${GOLD}` : `1.5px dashed ${BORDER}`,
-                  }}
-                >
-                  {status === "achieved" ? <FiCheck size={16} /> : `${Math.round(bp.completion)}%`}
-                </div>
-                <p style={{ margin: 0, fontSize: 10.5, fontWeight: 700, color: status === "locked" ? INK_FAINT : INK, textAlign: "center" }}>{bp.name}</p>
-              </div>
-              {i < levelJourney.length - 1 && (
-                <div style={{ flex: 1, minWidth: 12, height: 3, borderRadius: 2, backgroundColor: status === "achieved" ? "#059669" : "#F3F4F6", marginBottom: 18 }} />
-              )}
+            <div key={bp.name} style={{ display: "flex", alignItems: "flex-start", flex: i === levelJourney.length - 1 ? "0 0 auto" : 1 }}>
+              <LevelNode band={bp} status={status} ordinal={i + 1} />
+              {i < levelJourney.length - 1 && <LevelConnector status={status} percent={bp.completion} />}
             </div>
           );
         })}
       </div>
+
+      {noThresholdsConfigured && achievedCount === 0 && (
+        <p style={{ margin: "14px 0 0", fontSize: 11, color: INK_FAINT, fontStyle: "italic" }}>
+          No advancement threshold is set on these levels yet, so a level only counts as "Unlocked" once it's 100% complete.
+        </p>
+      )}
     </div>
   );
 }
@@ -343,7 +422,11 @@ export default function PublicLearnerProfilePage() {
         {(profile.competenciesOnTrack || profile.evidenceItemsCollected != null) && (
           <div style={sectionStyle}>
             <SectionHeading icon={FiAward}>Portfolio Snapshot</SectionHeading>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {/* grid instead of flex-wrap with a fixed basis — this section only ever has 1-2
+                tiles (there's no "courses completed" figure on the public profile), and a fixed
+                basis left visible dead space to the right instead of the tile(s) filling the
+                row. auto-fit grows them evenly across however many actually render. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
               {profile.competenciesOnTrack && <Pill icon={FiAward} label="Competencies On Track" value={profile.competenciesOnTrack} />}
               {profile.evidenceItemsCollected != null && <Pill icon={FiCheckCircle} label="Evidence Items" value={profile.evidenceItemsCollected} />}
             </div>
