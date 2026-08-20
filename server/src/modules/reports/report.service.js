@@ -104,7 +104,8 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
 
   const indicatorBreakdown = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(
     learnerId,
-    requiredAssessmentIds
+    requiredAssessmentIds,
+    curriculumId
   );
 
   // The curriculum's own score/level/band per competency — a different number from the flat

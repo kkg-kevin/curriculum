@@ -23,7 +23,10 @@ const S = {
   section: { display: "flex", flexDirection: "column", gap: 16 },
   heading: { fontSize: 12, fontWeight: 700, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" },
   divider: { border: "none", borderTop: "1px solid #a8d5ee", margin: "0 0 8px" },
-  row:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
+  // gridTemplateColumns lives in the .ec-row CSS class (see the <style> block below) instead of
+  // here, since an inline style always wins over a CSS class — keeping it inline would make the
+  // narrow-screen media query powerless to collapse this to one column.
+  row:     { display: "grid", gap: 16 },
   field:   { display: "flex", flexDirection: "column", gap: 6 },
   label:   { fontSize: 13, fontWeight: 500, color: "#374151" },
   input:   { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
@@ -31,6 +34,16 @@ const S = {
   hint:    { fontSize: 12, color: "#6B7280" },
   error:   { fontSize: 12, color: "#DC2626" },
 };
+
+// outline:none on the inputs/selects above removes the browser's default focus ring without
+// replacing it — invisible to a keyboard user tabbing through the form. .ec-input:focus restores
+// a visible one, matching the accent color already used elsewhere on this page.
+const CSS = `
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ec-input:focus { border-color: ${ACCENT} !important; box-shadow: 0 0 0 3px rgba(37,71,106,0.08); }
+  .ec-row { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 520px) { .ec-row { grid-template-columns: 1fr; } }
+`;
 
 export default function EditClassPage() {
   const { id }     = useParams();
@@ -80,7 +93,7 @@ export default function EditClassPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{CSS}</style>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -105,7 +118,19 @@ export default function EditClassPage() {
             type="submit"
             form="edit-class-form"
             disabled={isPending || !isDirty}
-            style={{ padding: "10px 24px", backgroundColor: isPending || !isDirty ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: isPending || !isDirty ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !isDirty ? 0.6 : 1 }}
+            title={!isPending && !isDirty ? "No changes to save yet" : undefined}
+            style={{
+              padding: "10px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif",
+              display: "flex", alignItems: "center", gap: 8,
+              // Saving stays branded/active-looking even though it's momentarily disabled (to
+              // block a double-submit) — only "nothing to save yet" gets the neutral gray
+              // treatment, so the two different reasons a click won't do anything read distinctly.
+              ...(isPending
+                ? { backgroundColor: ACCENT, color: "#fff", border: "none", cursor: "wait" }
+                : !isDirty
+                ? { backgroundColor: "#F3F4F6", color: "#9CA3AF", border: "1.5px solid #E5E7EB", cursor: "not-allowed" }
+                : { backgroundColor: ACCENT, color: "#fff", border: "none", cursor: "pointer" }),
+            }}
           >
             {isPending ? (
               <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Saving…</>
@@ -114,7 +139,9 @@ export default function EditClassPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 580 }}>
+      {/* Centered instead of left-pinned — on a wide viewport a fixed-width form flush against
+          the left edge leaves a large, unbalanced empty void to its right. */}
+      <div style={{ maxWidth: 640, margin: "0 auto" }}>
         {/* Read-only context */}
         <div style={{ backgroundColor: "#F8FAFF", border: "1.5px solid #a8d5ee", borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
           <p style={{ margin: "0 0 14px", fontSize: 12, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Class — read only</p>
@@ -132,13 +159,16 @@ export default function EditClassPage() {
           </div>
         </div>
 
-        {/* Editable form */}
+        {/* Editable form — wrapped in a card matching the read-only box above, so the page
+            reads as two related panels instead of a bordered box next to loose, ungrouped
+            fields floating below it. */}
         <form id="edit-class-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div style={{ backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "20px 20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div style={S.section}>
             <p style={S.heading}>Configure</p>
             <hr style={S.divider} />
 
-            <div style={S.row}>
+            <div style={S.row} className="ec-row">
               <div style={S.field}>
                 <label style={S.label}>Capacity</label>
                 <input
@@ -147,6 +177,7 @@ export default function EditClassPage() {
                   placeholder="e.g. 40 (leave blank for unlimited)"
                   {...register("capacity", { valueAsNumber: true })}
                   style={S.input}
+                  className="ec-input"
                 />
                 {errors.capacity && <span style={S.error}>{errors.capacity.message}</span>}
               </div>
@@ -157,7 +188,7 @@ export default function EditClassPage() {
                   name="status"
                   control={control}
                   render={({ field }) => (
-                    <select {...field} style={S.select}>
+                    <select {...field} style={S.select} className="ec-input">
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
@@ -168,17 +199,18 @@ export default function EditClassPage() {
 
             <div style={S.field}>
               <label style={S.label}>Tag</label>
-              <input {...register("tag")} style={S.input} placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
+              <input {...register("tag")} style={S.input} className="ec-input" placeholder="e.g. HUB-A-G1 (optional, must be unique)" />
               <span style={S.hint}>A short code unique to this class instance — lets you tell it apart from same-named classes at other hubs.</span>
               {errors.tag && <span style={S.error}>{errors.tag.message}</span>}
             </div>
 
             <div style={S.field}>
               <label style={S.label}>Stream</label>
-              <input {...register("streamName")} style={S.input} placeholder="e.g. Blue, A, East — leave blank if this grade has only one class" />
+              <input {...register("streamName")} style={S.input} className="ec-input" placeholder="e.g. Blue, A, East — leave blank if this grade has only one class" />
               <span style={S.hint}>Required only if this grade already has another class at this school for this year.</span>
               {errors.streamName && <span style={S.error}>{errors.streamName.message}</span>}
             </div>
+          </div>
           </div>
         </form>
       </div>
