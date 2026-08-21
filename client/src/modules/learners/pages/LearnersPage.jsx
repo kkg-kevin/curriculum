@@ -82,6 +82,14 @@ export default function LearnersPage() {
             <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
             Enroll Learner
           </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/learners/bulk-import${schoolFilter ? `?hubId=${schoolFilter}` : ""}`)}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+            Bulk Import
+          </button>
         </div>
       </div>
 

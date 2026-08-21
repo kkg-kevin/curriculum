@@ -23,11 +23,16 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     // branches), req.ownSchool is whichever ONE is currently active, chosen via the
     // X-Active-Hub-Id header (see api.js's request interceptor) and validated by finding it in
     // req.ownSchools — never trusts the header blindly, falls back to the login's own hub.
-    const hubs = await LearningHubModel.findAll({ email });
-    const ownHub = hubs[0] || null;
+    const hubs = await LearningHubModel.findAll({ email, includeDrafts: true });
+    const ownHub = hubs.find((h) => !h.parentHubId) || hubs[0] || null;
     if (ownHub) {
+      if (ownHub.status === "inactive") {
+        const err = new Error("This learning hub account is inactive");
+        err.statusCode = 403;
+        throw err;
+      }
       const branches = await LearningHubModel.findAll({ parentHubId: ownHub.id, includeDrafts: true });
-      req.ownSchools = [ownHub, ...branches];
+      req.ownSchools = [ownHub, ...branches.filter((h) => h.status !== "inactive")];
       const requestedId = req.headers["x-active-hub-id"];
       req.ownSchool = (requestedId && req.ownSchools.find((h) => h.id === requestedId)) || ownHub;
     } else {
@@ -47,8 +52,13 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       // — resolves to exactly this one learner, never siblings, and has no concept of
       // X-Active-Learner-Id since there's only ever one to resolve to here.
       const own = await LearnerModel.findByUsername(req.user.username);
+      if (!own || (own.accountStatus || "active") !== "active") {
+        const err = new Error("This learner account is inactive");
+        err.statusCode = 403;
+        throw err;
+      }
       req.ownLearner = own;
-      req.ownLearners = own ? [own] : [];
+      req.ownLearners = [own];
     } else {
       // Guardian-owned account. A guardian can have more than one learner linked to the same
       // email (siblings) — every learner-scoped route authorizes off req.ownLearner, so the
@@ -57,9 +67,15 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       // single-child caller working unchanged. Never trusts the header blindly — it only ever
       // resolves to one of this guardian's own learners.
       const allLearners = await LearnerModel.findAll({ guardianEmail: email });
-      req.ownLearners = allLearners;
+      const activeLearners = allLearners.filter((l) => (l.accountStatus || "active") === "active");
+      if (allLearners.length > 0 && activeLearners.length === 0) {
+        const err = new Error("This learner account is inactive");
+        err.statusCode = 403;
+        throw err;
+      }
+      req.ownLearners = activeLearners;
       const requestedId = req.headers["x-active-learner-id"];
-      req.ownLearner = (requestedId && allLearners.find((l) => l.id === requestedId)) || allLearners[0] || null;
+      req.ownLearner = (requestedId && activeLearners.find((l) => l.id === requestedId)) || activeLearners[0] || null;
     }
   }
 

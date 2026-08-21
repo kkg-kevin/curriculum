@@ -65,6 +65,7 @@ import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateProgramPage from "../modules/programs/pages/CreateProgramPage";
 import ProgramViewPage from "../modules/programs/pages/ProgramViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
+import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
@@ -162,6 +163,7 @@ export default function AppRoutes() {
         <Route path="settings/learning-hubs/:id/edit" element={<EditLearningHubPage />} />
         <Route path="learners">
           <Route index element={<LearnersPage />} />
+          <Route path="bulk-import" element={<AdminBulkImportPage />} />
           <Route path="create" element={<CreateLearnerPage />} />
           <Route path=":id/edit" element={<EditLearnerPage />} />
           <Route path=":id/view" element={<LearnerViewPage />} />

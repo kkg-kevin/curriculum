@@ -3,7 +3,7 @@ const LearnerService = require("./learner.service");
 const LearnerModel = require("./learner.model");
 const AuthService = require("../auth/auth.service");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
-const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema } = require("./learner.validation");
+const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema, bulkImportLearnersSchema, bulkImportRowSchema } = require("./learner.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 
@@ -69,6 +69,49 @@ const createLearner = asyncHandler(async (req, res) => {
   if (req.user.role === "school") linkHubId = req.ownSchool?.id;
   if (linkHubId) await LearnerService.enrollInHub(record.id, { hubId: linkHubId, classId: classId || "", status: "active" });
   res.status(201).json({ success: true, data: record });
+});
+
+// Onboards many learners in one request (a school importing a class roster from a spreadsheet)
+// by running each row through the exact same steps createLearner uses one at a time — guardian
+// login, then the record, then the learner's own login, then hub enrollment — just per-row and
+// non-atomic: one bad row (duplicate username, invalid email) is recorded as a per-row failure
+// and the rest of the batch still goes through, rather than the whole import dying on row 47.
+// Unlike createLearner's own optional hubId/classId, classId is REQUIRED here (see
+// bulkImportLearnersSchema) — every row in the batch enrolls into that one class, so a
+// mismatched/forged classId still fails safely per-row via enrollInHub's own
+// class-belongs-to-hub check, it just never falls back to "first active class" the way a single
+// manual enrollment does.
+const bulkImportLearners = asyncHandler(async (req, res) => {
+  const { hubId: bodyHubId, classId, defaultPassword, learners } = bulkImportLearnersSchema.parse(req.body);
+  let hubId = bodyHubId || undefined;
+  if (req.user.role === "school") hubId = req.ownSchool?.id;
+
+  const results = [];
+  for (let i = 0; i < learners.length; i++) {
+    const raw = learners[i];
+    const name = `${raw.firstName || ""} ${raw.lastName || ""}`.trim() || `Row ${i + 1}`;
+    try {
+      // Parsed per-row, inside the try — a malformed row (bad gender, missing guardian phone,
+      // etc.) throws here and is caught as this row's own failure, same as any other error
+      // below, instead of ever reaching bulkImportLearnersSchema and rejecting the whole batch.
+      const row = bulkImportRowSchema.parse(raw);
+      if (defaultPassword && row.guardianEmail) {
+        await AuthService.setOrCreatePassword({ name: row.guardianName, email: row.guardianEmail, password: defaultPassword, role: "learner" });
+      }
+      const record = await LearnerService.createLearner(row);
+      if (defaultPassword && row.username) {
+        await AuthService.setOrCreatePasswordByUsername({ name, username: record.username, password: defaultPassword, role: "learner" });
+      }
+      await LearnerService.enrollInHub(record.id, { hubId, classId, status: "active" });
+      results.push({ row: i, name, success: true, learnerId: record.id });
+    } catch (err) {
+      const error = Array.isArray(err.issues) ? err.issues.map((issue) => issue.message).join("; ") : err.message;
+      results.push({ row: i, name, success: false, error });
+    }
+  }
+
+  const created = results.filter((r) => r.success).length;
+  res.status(201).json({ success: true, data: { created, failed: results.length - created, results } });
 });
 
 const getAllLearners = asyncHandler(async (req, res) => {
@@ -306,6 +349,7 @@ const getPublicProfile = asyncHandler(async (req, res) => {
 
 module.exports = {
   createLearner,
+  bulkImportLearners,
   getAllLearners,
   getLearnerById,
   updateLearner,

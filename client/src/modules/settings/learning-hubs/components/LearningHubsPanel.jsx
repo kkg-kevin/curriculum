@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiChevronDown, FiChevronRight, FiCheckCircle, FiEdit2, FiMapPin, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight, FiCheckCircle, FiEdit2, FiMapPin, FiPauseCircle, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useAllLearningHubsQuery, useDeleteLearningHub, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../../../learning-hubs/schemas/learningHub.schema";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
@@ -26,7 +26,7 @@ function StatusBadge({ status }) {
 
 /* ── Hub row — view/activate/edit/delete ─────────────────────────────────── */
 
-function LearningHubRow({ hub, onView, onActivate, onEdit, onDelete }) {
+function LearningHubRow({ hub, onView, onToggleStatus, onEdit, onDelete }) {
   const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
   const sub = [typeLabel, hub.code, hub.address?.county].filter(Boolean).join(" · ");
 
@@ -39,11 +39,14 @@ function LearningHubRow({ hub, onView, onActivate, onEdit, onDelete }) {
           {sub && <div className="stg-item-sub">{sub}</div>}
         </div>
         <StatusBadge status={hub.status} />
-        {hub.status === "draft" && (
-          <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onActivate(); }} title="Activate — move into the Learning Hubs module">
-            <FiCheckCircle size={14} strokeWidth={2} />
-          </button>
-        )}
+        <button
+          type="button"
+          className="stg-icon-btn"
+          onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
+          title={hub.status === "active" ? "Deactivate" : "Activate"}
+        >
+          {hub.status === "active" ? <FiPauseCircle size={14} strokeWidth={2} /> : <FiCheckCircle size={14} strokeWidth={2} />}
+        </button>
         <button type="button" className="stg-icon-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
           <FiEdit2 size={14} strokeWidth={2} />
         </button>
@@ -126,7 +129,7 @@ export default function LearningHubsPanel() {
 
   const hubActions = (hub) => ({
     onView: () => navigate(`/learning-hubs/${hub.id}/view`),
-    onActivate: () => updateHub({ id: hub.id, data: { status: "active" } }),
+    onToggleStatus: () => updateHub({ id: hub.id, data: { status: hub.status === "active" ? "inactive" : "active" } }),
     onEdit: () => navigate(`/settings/learning-hubs/${hub.id}/edit`),
     onDelete: () => setDeleteHubTarget(hub),
   });

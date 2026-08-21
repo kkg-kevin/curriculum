@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Full world list, as nationalities (not country names) — matches the field's own label and the
+// Full world list, as nationalities (not country names) - matches the field's own label and the
 // shape of data already on existing records (e.g. "Kenyan", not "Kenya").
 export const NATIONALITIES = [
   "Afghan", "Albanian", "Algerian", "American", "Andorran", "Angolan", "Antiguan and Barbudan",
@@ -34,7 +34,7 @@ export const NATIONALITIES = [
   "Zambian", "Zimbabwean",
 ];
 
-// Major world languages — not exhaustive (there's no practical "full list" for spoken
+// Major world languages - not exhaustive (there's no practical "full list" for spoken
 // languages), covers the ones a learner's guardian is overwhelmingly likely to pick.
 export const LANGUAGES = [
   "English", "Mandarin Chinese", "Hindi", "Spanish", "French", "Arabic", "Bengali",
@@ -50,7 +50,7 @@ const baseLearnerSchema = z.object({
   dateOfBirth:   z.string().optional().or(z.literal("")),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
-  // The learner's own login identifier — either logs into the guardian-owned account (if no
+  // The learner's own login identifier - either logs into the guardian-owned account (if no
   // dedicated learnerPassword has been set yet) or their own separate account (once one has).
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed")
@@ -60,10 +60,11 @@ const baseLearnerSchema = z.object({
   guardianName:  z.string().min(1, "Guardian name is required"),
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  // Transient — never stored on the learner record. When present, creates or resets the
+  accountStatus: z.enum(["active", "inactive"]).optional(),
+  // Transient - never stored on the learner record. When present, creates or resets the
   // matching guardian's learner-portal login for guardianEmail.
   password:      z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
-  // Transient — never stored. When present, creates or resets the LEARNER's OWN separate
+  // Transient - never stored. When present, creates or resets the LEARNER's OWN separate
   // portal login (distinct from the guardian's `password` above), keyed by username.
   learnerPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   status:        z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
