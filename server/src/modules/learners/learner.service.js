@@ -156,7 +156,11 @@ const LearnerService = {
     // Always server-assigned, always overwritten here regardless of what's in `data` — the
     // validation schema never exposes this field to a client, but this is the actual guarantee
     // that it can never be spoofed or overwritten on create.
-    return LearnerModel.create({ ...data, registrationNumber: await nextRegistrationNumber() });
+    return LearnerModel.create({
+      ...data,
+      accountStatus: data.accountStatus || "active",
+      registrationNumber: await nextRegistrationNumber(),
+    });
   },
 
   // When scoped by `schoolId`/`classId`, resolves matching enrollment links first, then merges
@@ -431,6 +435,11 @@ const LearnerService = {
   async getPublicProfile(token) {
     const record = await LearnerModel.findByPublicToken(token);
     if (!record) {
+      const err = new Error("This link is no longer valid");
+      err.statusCode = 404;
+      throw err;
+    }
+    if ((record.accountStatus || "active") !== "active") {
       const err = new Error("This link is no longer valid");
       err.statusCode = 404;
       throw err;

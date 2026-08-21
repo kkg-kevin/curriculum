@@ -60,6 +60,17 @@ export function useDeleteLearner() {
   });
 }
 
+// Not invalidated on error — a partial batch (some rows created, some failed) still needs its
+// created rows to show up, and the caller (BulkImportLearnersPanel) reads created/failed/results
+// off the resolved value itself rather than a toast, so no onSuccess/onError toast here.
+export function useBulkImportLearners() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: learnerApi.bulkImport,
+    onSuccess: () => qc.invalidateQueries({ queryKey: LEARNER_KEYS.all }),
+  });
+}
+
 export function useLearnerHubsQuery(learnerId) {
   return useQuery({
     queryKey: LEARNER_KEYS.hubs(learnerId),

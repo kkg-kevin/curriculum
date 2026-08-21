@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
 const LearnerModel = require("../learners/learner.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const RevokedTokenModel = require("./revoked-token.model");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
@@ -12,6 +13,45 @@ const SALT_ROUNDS = 10;
 function sanitize(user) {
   const { passwordHash, ...safe } = user;
   return safe;
+}
+
+async function assertSessionActive(user) {
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (user.role === "school") {
+    const hubs = await LearningHubModel.findAll({ email: user.email, includeDrafts: true });
+    const ownHub = hubs.find((h) => !h.parentHubId) || hubs[0] || null;
+    if (ownHub && ownHub.status === "inactive") {
+      const err = new Error("This learning hub account is inactive");
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  if (user.role === "learner") {
+    if (user.username) {
+      const learner = await LearnerModel.findByUsername(user.username);
+      if (!learner || (learner.accountStatus || "active") !== "active") {
+        const err = new Error("This learner account is inactive");
+        err.statusCode = 403;
+        throw err;
+      }
+    } else {
+      const learners = await LearnerModel.findAll({ guardianEmail: user.email });
+      const hasActiveLearner = learners.some((learner) => (learner.accountStatus || "active") === "active");
+      if (learners.length === 0 || !hasActiveLearner) {
+        const err = new Error("This learner account is inactive");
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+  }
+
+  return user;
 }
 
 // jti gives each issued token a unique identity to revoke by (see logout below) — without it,
@@ -118,6 +158,7 @@ const AuthService = {
       err.statusCode = 401;
       throw err;
     }
+    await assertSessionActive(user);
     const token = signToken(user);
     return { user: sanitize(user), token };
   },
@@ -133,6 +174,7 @@ const AuthService = {
       err.statusCode = 404;
       throw err;
     }
+    await assertSessionActive(user);
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       const err = new Error("Incorrect password");
@@ -164,15 +206,13 @@ const AuthService = {
 
   async getById(id) {
     const user = await UserModel.findById(id);
-    if (!user) {
-      const err = new Error("User not found");
-      err.statusCode = 404;
-      throw err;
-    }
+    await assertSessionActive(user);
     return sanitize(user);
   },
 
   async updateMe(id, data) {
+    const current = await UserModel.findById(id);
+    await assertSessionActive(current);
     const user = await UserModel.update(id, data);
     if (!user) {
       const err = new Error("User not found");

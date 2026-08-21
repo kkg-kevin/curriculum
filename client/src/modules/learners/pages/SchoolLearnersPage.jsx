@@ -8,6 +8,7 @@ import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks
 import { learnerApi } from "../services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
 import { LearnerCard } from "../components/LearnerCard";
+import BulkImportLearnersPanel from "../components/BulkImportLearnersPanel";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { useSearchLearners, useEnrollLearnerHub } from "../hooks/useLearners";
 
@@ -138,6 +139,7 @@ export default function SchoolLearnersPage() {
   const backLabel = user?.role === "school" ? "Dashboard" : "Learners";
   const [statusFilter, setStatusFilter] = useState("");
   const [showAddExisting, setShowAddExisting] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
 
@@ -196,6 +198,13 @@ export default function SchoolLearnersPage() {
           <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
             <button
               type="button"
+              onClick={() => setShowBulkImport((s) => !s)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              + Bulk Import
+            </button>
+            <button
+              type="button"
               onClick={() => setShowAddExisting((s) => !s)}
               style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
             >
@@ -211,6 +220,15 @@ export default function SchoolLearnersPage() {
           </div>
         </div>
       </div>
+
+      {showBulkImport && (
+        <BulkImportLearnersPanel
+          schoolId={schoolId}
+          classes={classes}
+          onClose={() => setShowBulkImport(false)}
+          onImported={() => qc.invalidateQueries({ queryKey: ["learners", "bySchool", schoolId] })}
+        />
+      )}
 
       {showAddExisting && (
         <AddExistingLearnerPanel

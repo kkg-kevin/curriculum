@@ -623,8 +623,10 @@ export default function LearnerViewPage() {
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { data: enrollments = [] } = useLearnerHubsQuery(id);
   const { mutate: deleteLearner } = useDeleteLearner();
+  const { mutate: updateLearnerAccount, isPending: accountTogglePending } = useUpdateLearner();
   const { mutate: unenroll } = useUnenrollLearnerHub();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmAccountToggle, setConfirmAccountToggle] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState(null);
 
   const { data: ownSchoolData } = useQuery({
@@ -642,6 +644,7 @@ export default function LearnerViewPage() {
   // dedicated hub-context switcher exists for learners.
   const primary = enrollments.find((e) => e.status === "active") || enrollments[0] || null;
   const curriculumId = primary?.class?.curriculumId;
+  const accountStatus = learner.accountStatus || "active";
 
   const backContext = isSchool ? ownSchoolId : undefined;
 
@@ -670,6 +673,11 @@ export default function LearnerViewPage() {
                     {learner.registrationNumber}
                   </span>
                 )}
+                {learner.accountStatus && (
+                  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: accountStatus === "active" ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.22)", border: "1px solid rgba(255,255,255,0.25)", color: "#ffffff" }}>
+                    Account {accountStatus === "active" ? "Active" : "Inactive"}
+                  </span>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
@@ -679,6 +687,16 @@ export default function LearnerViewPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setConfirmAccountToggle(true)}
+                disabled={accountTogglePending}
+                style={{ padding: "10px 20px", backgroundColor: accountStatus === "active" ? "rgba(239,68,68,0.18)" : "rgba(16,185,129,0.18)", color: accountStatus === "active" ? "#FCA5A5" : "#A7F3D0", border: `1.5px solid ${accountStatus === "active" ? "rgba(239,68,68,0.28)" : "rgba(16,185,129,0.28)"}`, borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: accountTogglePending ? "not-allowed" : "pointer" }}
+              >
+                {accountStatus === "active" ? "Deactivate Account" : "Activate Account"}
+              </button>
+            )}
             <button type="button" onClick={() => navigate(learnerPath(user?.role, id, "edit"))} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
             </button>
@@ -758,6 +776,24 @@ export default function LearnerViewPage() {
           }
         }}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmAccountToggle}
+        title={accountStatus === "active" ? "Deactivate Learner Account" : "Activate Learner Account"}
+        message={
+          accountStatus === "active"
+            ? `"${learner.firstName} ${learner.lastName}" will be marked inactive and lose learner portal access.`
+            : `"${learner.firstName} ${learner.lastName}" will be marked active again and regain learner portal access.`
+        }
+        confirmLabel={accountStatus === "active" ? "Deactivate" : "Activate"}
+        cancelLabel="Cancel"
+        variant={accountStatus === "active" ? "danger" : "default"}
+        onConfirm={() => {
+          setConfirmAccountToggle(false);
+          updateLearnerAccount({ id, data: { accountStatus: accountStatus === "active" ? "inactive" : "active" } });
+        }}
+        onCancel={() => setConfirmAccountToggle(false)}
       />
 
       <ConfirmDialog

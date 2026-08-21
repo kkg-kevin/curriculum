@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   createLearner,
+  bulkImportLearners,
   getAllLearners,
   getLearnerById,
   updateLearner,
@@ -27,6 +28,12 @@ const router = express.Router();
 router.route("/")
   .get(authorize("admin", "school", "teacher", "learner"), getAllLearners)
   .post(authorize("admin", "school"), createLearner);
+
+// Bulk onboarding from a spreadsheet — must stay ahead of "/:id" below, since Express would
+// otherwise match "bulk-import" as an :id on any verb the param route also defines (see
+// class.routes.js and others for the same static-before-param ordering rule).
+router.post("/bulk-import", authorize("admin", "school"), bulkImportLearners);
+
 router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getLearnerById)
   .put(authorize("admin", "school", "learner"), updateLearner)

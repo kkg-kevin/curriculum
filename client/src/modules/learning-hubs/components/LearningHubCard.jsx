@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Delete as DeleteIcon, Edit as EditIcon, EventSeat as EventSeatIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, MoreVert as MoreVertIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
-import { useDeleteLearningHub } from "../hooks/useLearningHub";
+import { CheckCircle as CheckCircleIcon, Delete as DeleteIcon, Edit as EditIcon, EventSeat as EventSeatIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, MoreVert as MoreVertIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
+import { useDeleteLearningHub, useUpdateLearningHub } from "../hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -36,6 +36,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 export function LearningHubCard({ hub, curriculaMap }) {
   const navigate = useNavigate();
   const { mutate: deleteLearningHub, isPending: isDeleting } = useDeleteLearningHub();
+  const { mutate: updateLearningHub } = useUpdateLearningHub();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [hovered, setHovered] = useState(false);
@@ -45,6 +46,7 @@ export function LearningHubCard({ hub, curriculaMap }) {
 
   const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
   const curriculum = hub.curriculumId ? curriculaMap?.[hub.curriculumId] : null;
+  const nextStatus = hub.status === "active" ? "inactive" : "active";
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -152,6 +154,11 @@ export function LearningHubCard({ hub, curriculaMap }) {
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
+          <MenuButton
+            icon={hub.status === "active" ? <PauseCircleIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
+            label={hub.status === "active" ? "Deactivate" : "Activate"}
+            onClick={() => { setMenuOpen(false); updateLearningHub({ id: hub.id, data: { status: nextStatus } }); }}
+          />
           <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
             icon={<DeleteIcon fontSize="small" />}

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Class as ClassIcon, Groups as GroupsIcon } from "@mui/icons-material";
-import { useDeleteLearner } from "../hooks/useLearners";
+import { CheckCircle as CheckCircleIcon, Class as ClassIcon, Groups as GroupsIcon, PauseCircle as PauseCircleIcon } from "@mui/icons-material";
+import { useDeleteLearner, useUpdateLearner } from "../hooks/useLearners";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -17,11 +17,11 @@ const STATUS_STYLES = {
   graduated:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Graduated"   },
 };
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, label }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.inactive;
   return (
     <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-      {s.label}
+      {label ? `${label}: ` : ""}{s.label}
     </span>
   );
 }
@@ -45,6 +45,7 @@ export function LearnerCard({ learner, classMap }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteLearner, isPending: isDeleting } = useDeleteLearner();
+  const { mutate: updateLearner } = useUpdateLearner();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
   const [hovered, setHovered]         = useState(false);
@@ -79,6 +80,7 @@ export function LearnerCard({ learner, classMap }) {
   }, [menuOpen]);
 
   const initials = `${learner.firstName?.[0] ?? ""}${learner.lastName?.[0] ?? ""}`.toUpperCase();
+  const accountStatus = learner.accountStatus || "active";
 
   return (
     <div
@@ -136,11 +138,10 @@ export function LearnerCard({ learner, classMap }) {
           </div>
         </div>
 
-        {learner.status && (
-          <div style={{ marginTop: "auto" }}>
-            <StatusBadge status={learner.status} />
-          </div>
-        )}
+        <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {learner.accountStatus && <StatusBadge status={accountStatus} label="Account" />}
+          {learner.status && <StatusBadge status={learner.status} label={classMap ? "Enrollment" : "Status"} />}
+        </div>
       </div>
 
       {menuOpen && createPortal(
@@ -160,6 +161,11 @@ export function LearnerCard({ learner, classMap }) {
               guaranteed to 403 for them. */}
           {user?.role === "admin" && (
             <>
+              <MenuButton
+                icon={accountStatus === "active" ? <PauseCircleIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
+                label={accountStatus === "active" ? "Deactivate account" : "Activate account"}
+                onClick={() => { setMenuOpen(false); updateLearner({ id: learner.id, data: { accountStatus: accountStatus === "active" ? "inactive" : "active" } }); }}
+              />
               <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
               <MenuButton
                 icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
