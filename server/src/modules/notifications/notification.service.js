@@ -30,7 +30,7 @@ const NotificationService = {
       type: "invoice_issued",
       title: "New invoice issued",
       message: `${invoice.invoiceNumber} is ready. Amount due: ${invoice.currency} ${invoice.amountDue}.`,
-      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/learner-portal/invoices/" },
       dedupeKey: `invoice_issued:${invoice.id}`,
     });
   },
