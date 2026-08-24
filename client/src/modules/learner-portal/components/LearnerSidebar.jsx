@@ -9,6 +9,7 @@ const menuItems = [
   { name: "Reports",      path: "/learner-portal/reports" },
   { name: "Progress",     path: "/learner-portal/progress" },
   { name: "Timetable",    path: "/learner-portal/timetable" },
+  { name: "Invoices",     path: "/learner-portal/invoices" },
   { name: "Profile",      path: "/learner-portal/profile" },
 ];
 

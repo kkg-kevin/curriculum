@@ -48,6 +48,19 @@ export function useUpdateLearner() {
   });
 }
 
+export function useUpdateLearnerAccountStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, accountStatus }) => learnerApi.updateAccountStatus(id, accountStatus),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: LEARNER_KEYS.all });
+      if (data?.id) qc.invalidateQueries({ queryKey: LEARNER_KEYS.detail(data.id) });
+      toast.success(`Learner account ${data?.accountStatus === "inactive" ? "deactivated" : "activated"}`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update learner account status"),
+  });
+}
+
 export function useDeleteLearner() {
   const qc = useQueryClient();
   return useMutation({

@@ -25,6 +25,16 @@ const NotificationService = {
     return NotificationModel.markAllRead(recipientId);
   },
 
+  async invoiceIssued(invoice) {
+    return NotificationService._notify(invoice.payerUserId, {
+      type: "invoice_issued",
+      title: "New invoice issued",
+      message: `${invoice.invoiceNumber} is ready. Amount due: ${invoice.currency} ${invoice.amountDue}.`,
+      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      dedupeKey: `invoice_issued:${invoice.id}`,
+    });
+  },
+
   // Base primitive every event below fans out through. dedupeKey is optional — only events that
   // can legitimately recompute to "still true" on a later trigger need it (see maybeNotifyLevelUp);
   // everything else is a genuine one-time state transition and gets a fresh row every time.

@@ -3,7 +3,7 @@ const LearnerService = require("./learner.service");
 const LearnerModel = require("./learner.model");
 const AuthService = require("../auth/auth.service");
 const LearnerHubLinkModel = require("./learner-hub-link.model");
-const { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema, bulkImportLearnersSchema, bulkImportRowSchema } = require("./learner.validation");
+const { createLearnerSchema, updateLearnerSchema, updateLearnerAccountStatusSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema, bulkImportLearnersSchema, bulkImportRowSchema } = require("./learner.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 
@@ -177,6 +177,11 @@ const updateLearner = asyncHandler(async (req, res) => {
   // fields (e.g. the learner-portal profile edit form) would silently wipe whatever placement a
   // teacher/admin had already set. Only keys the caller actually sent survive.
   const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
+  if ("accountStatus" in data && req.user.role !== "admin") {
+    const err = new Error("Only administrators can change learner account status");
+    err.statusCode = 403;
+    throw err;
+  }
   // Fetched unconditionally (not just for "school") — the username-rename sync below
   // needs the pre-update value regardless of who's making the change.
   const before = await LearnerService.getLearnerById(req.params.id);
@@ -225,6 +230,12 @@ const updateLearner = asyncHandler(async (req, res) => {
       role: "learner",
     });
   }
+  res.json({ success: true, data: record });
+});
+
+const updateLearnerAccountStatus = asyncHandler(async (req, res) => {
+  const { accountStatus } = updateLearnerAccountStatusSchema.parse(req.body);
+  const record = await LearnerService.updateLearner(req.params.id, { accountStatus });
   res.json({ success: true, data: record });
 });
 
@@ -353,6 +364,7 @@ module.exports = {
   getAllLearners,
   getLearnerById,
   updateLearner,
+  updateLearnerAccountStatus,
   deleteLearner,
   getLearnerHubs,
   enrollLearnerHub,

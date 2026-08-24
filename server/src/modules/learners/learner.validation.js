@@ -53,6 +53,10 @@ const createLearnerSchema = baseLearnerSchema.superRefine((data, ctx) => {
 
 const updateLearnerSchema = baseLearnerSchema.partial();
 
+const updateLearnerAccountStatusSchema = z.object({
+  accountStatus: z.enum(["active", "inactive"]),
+});
+
 // One row of a bulk import sheet - same identity fields as baseLearnerSchema, minus the
 // per-learner password fields (a bulk import shares one `defaultPassword` across every row
 // instead, see bulkImportLearnersSchema below) and minus currentRungId/photo (never sensible to
@@ -127,4 +131,4 @@ const transferHubSchema = z.object({
   toClassId: z.string().default(""),
 });
 
-module.exports = { createLearnerSchema, updateLearnerSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema, bulkImportLearnersSchema, bulkImportRowSchema };
+module.exports = { createLearnerSchema, updateLearnerSchema, updateLearnerAccountStatusSchema, enrollLearnerSchema, updateEnrollmentSchema, transferHubSchema, bulkImportLearnersSchema, bulkImportRowSchema };

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import {
   useLearnerQuery, useDeleteLearner, useUpdateLearner,
+  useUpdateLearnerAccountStatus,
   useLearnerHubsQuery, useEnrollLearnerHub, useUpdateLearnerHubLink, useUnenrollLearnerHub,
   useTransferLearnerHub, usePublicToken, useRegeneratePublicToken,
 } from "../hooks/useLearners";
@@ -623,7 +624,7 @@ export default function LearnerViewPage() {
   const { data: learner, isLoading } = useLearnerQuery(id);
   const { data: enrollments = [] } = useLearnerHubsQuery(id);
   const { mutate: deleteLearner } = useDeleteLearner();
-  const { mutate: updateLearnerAccount, isPending: accountTogglePending } = useUpdateLearner();
+  const { mutate: updateLearnerAccount, isPending: accountTogglePending } = useUpdateLearnerAccountStatus();
   const { mutate: unenroll } = useUnenrollLearnerHub();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmAccountToggle, setConfirmAccountToggle] = useState(false);
@@ -791,7 +792,7 @@ export default function LearnerViewPage() {
         variant={accountStatus === "active" ? "danger" : "default"}
         onConfirm={() => {
           setConfirmAccountToggle(false);
-          updateLearnerAccount({ id, data: { accountStatus: accountStatus === "active" ? "inactive" : "active" } });
+          updateLearnerAccount({ id, accountStatus: accountStatus === "active" ? "inactive" : "active" });
         }}
         onCancel={() => setConfirmAccountToggle(false)}
       />

@@ -80,6 +80,8 @@ import AssessmentsPage from "../modules/assessments/pages/AssessmentsPage";
 import AssessmentBuilderPage from "../modules/assessments/pages/AssessmentBuilderPage";
 import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
+import BillingPage from "../modules/billing/pages/BillingPage";
+import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
 
 export default function AppRoutes() {
   return (
@@ -120,6 +122,8 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<AssessmentViewPage />} />
         </Route>
         <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="billing" element={<BillingPage />} />
+        <Route path="billing/:id" element={<InvoiceDetailPage />} />
         <Route path="settings">
           <Route index element={<SettingsPage />} />
           <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />
@@ -227,6 +231,8 @@ export default function AppRoutes() {
           <Route path="timetable" element={<SchoolTimetablePage />} />
           <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
+          <Route path="billing" element={<BillingPage />} />
+          <Route path="billing/:id" element={<InvoiceDetailPage />} />
           <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
       </Route>
@@ -245,6 +251,8 @@ export default function AppRoutes() {
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
+          <Route path="invoices" element={<BillingPage />} />
+          <Route path="invoices/:id" element={<InvoiceDetailPage />} />
         </Route>
       </Route>
       </Route>

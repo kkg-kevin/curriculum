@@ -1,9 +1,11 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, COOKIE_NAME, AUTH_ENABLED } = require("../../config/env");
 const RevokedTokenModel = require("../../modules/auth/revoked-token.model");
+const AuthService = require("../../modules/auth/auth.service");
 
-// Verifies the JWT cookie and attaches { id, role } to req.user. Only the token's claims
-// are trusted here — routes that need the full user record fetch it themselves.
+// Verifies the JWT cookie, confirms the account is still active, and attaches { id, role } to
+// req.user. The current-account check makes learner deactivation effective for existing tokens,
+// not only for new logins after the token naturally expires.
 //
 // The signature/expiry check alone can't see that a token's owner has since logged out (a JWT
 // is valid purely by being correctly signed and unexpired) — the jti lookup below is what makes
@@ -28,12 +30,14 @@ async function protect(req, res, next) {
       err.statusCode = 401;
       return next(err);
     }
-    req.user = { id: payload.sub, role: payload.role, email: payload.email, username: payload.username };
+    const user = await AuthService.getById(payload.sub);
+    req.user = { id: user.id, role: user.role, email: user.email, username: user.username };
     next();
-  } catch {
-    const err = new Error("Invalid or expired session");
-    err.statusCode = 401;
-    next(err);
+  } catch (err) {
+    if (err.statusCode === 403 || err.statusCode === 404) return next(err);
+    const sessionError = new Error("Invalid or expired session");
+    sessionError.statusCode = 401;
+    next(sessionError);
   }
 }
 
