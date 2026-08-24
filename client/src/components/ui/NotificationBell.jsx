@@ -86,7 +86,11 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
+    const close = (e) => {
+      // Keep the panel open while its own notification list is being scrolled.
+      if (panelRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
@@ -143,7 +147,7 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div style={{ maxHeight: "380px", overflowY: "auto" }}>
+          <div style={{ maxHeight: "min(55vh, 380px)", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
             {items.length === 0 ? (
               <p style={{ margin: 0, padding: "32px 16px", textAlign: "center", fontSize: 13, color: "#9CA3AF" }}>No notifications yet</p>
             ) : (
