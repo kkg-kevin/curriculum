@@ -193,8 +193,11 @@ const BillingService = {
     if (!invoice) throw notFound("Invoice not found");
     if (req.user.role !== "admin" && !(req.user.role === "school" && invoice.issuerHubId === req.ownSchool?.id)) throw Object.assign(new Error("You do not have permission to issue this invoice"), { statusCode: 403 });
     if (invoice.status !== "draft") throw badRequest("Only draft invoices can be issued");
-    const updated = await BillingModel.updateInvoice(id, { status: "issued", issuedAt: new Date() });
-    await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_issued", previousStatus: invoice.status, newStatus: "issued", amount: invoice.total });
+    let updated;
+    await BillingModel.transaction(async (trx) => {
+      updated = await BillingModel.updateInvoice(id, { status: "issued", issuedAt: new Date() }, trx);
+      await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_issued", previousStatus: invoice.status, newStatus: "issued", amount: invoice.total }, trx);
+    });
     const full = await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
     if (full.payerUserId) await NotificationService.invoiceIssued(full);
     return full;
@@ -205,8 +208,11 @@ const BillingService = {
     if (!invoice) throw notFound("Invoice not found");
     if (req.user.role !== "admin" && !(req.user.role === "school" && invoice.issuerHubId === req.ownSchool?.id)) throw Object.assign(new Error("You do not have permission to cancel this invoice"), { statusCode: 403 });
     if (["paid", "partially_paid", "cancelled"].includes(invoice.status)) throw badRequest("This invoice cannot be cancelled");
-    const updated = await BillingModel.updateInvoice(id, { status: "cancelled" });
-    await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_cancelled", previousStatus: invoice.status, newStatus: "cancelled" });
+    let updated;
+    await BillingModel.transaction(async (trx) => {
+      updated = await BillingModel.updateInvoice(id, { status: "cancelled" }, trx);
+      await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_cancelled", previousStatus: invoice.status, newStatus: "cancelled" }, trx);
+    });
     return await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
   },
 
@@ -214,19 +220,30 @@ const BillingService = {
     const invoice = await BillingModel.findInvoiceById(id);
     if (!invoice) throw notFound("Invoice not found");
     await assertAccess(req, invoice);
+    const existingPayment = await BillingModel.findPaymentByIdempotencyKey(data.idempotencyKey);
+    if (existingPayment) return decorate(invoice, await BillingModel.findItems(id), await BillingModel.findPayments(id));
     if (!["issued", "partially_paid", "overdue"].includes(invoice.status)) throw badRequest("This invoice is not payable");
-    const currentPaid = money((await BillingModel.sumSuccessfulPayments(id))?.total);
-    if (money(currentPaid + data.amount) > money(invoice.total)) throw badRequest("Payment exceeds the amount due");
     const paymentDate = data.paymentDate ? new Date(data.paymentDate) : new Date();
     if (Number.isNaN(paymentDate.getTime())) throw badRequest("Payment date is invalid");
-    const newPaid = money(currentPaid + data.amount);
-    const newStatus = newPaid >= money(invoice.total) ? "paid" : "partially_paid";
     let payment;
     let updated;
     await BillingModel.transaction(async (trx) => {
-      payment = await BillingModel.createPayment({ invoiceId: id, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, provider: "manual", providerReference: data.providerReference || null, receiptNumber: data.receiptNumber || receiptNumber(), amount: money(data.amount), currency: invoice.currency, status: "successful", paymentMethod: data.paymentMethod, paymentDate, paidAt: paymentDate, notes: data.notes || null }, trx);
+      const lockedInvoice = await BillingModel.findInvoiceById(id, trx, true);
+      if (!lockedInvoice) throw notFound("Invoice not found");
+      const retriedPayment = await BillingModel.findPaymentByIdempotencyKey(data.idempotencyKey, trx);
+      if (retriedPayment) {
+        payment = retriedPayment;
+        updated = lockedInvoice;
+        return;
+      }
+      if (!["issued", "partially_paid", "overdue"].includes(lockedInvoice.status)) throw badRequest("This invoice is not payable");
+      const currentPaid = money((await BillingModel.sumSuccessfulPayments(id, trx))?.total);
+      if (money(currentPaid + data.amount) > money(lockedInvoice.total)) throw badRequest("Payment exceeds the amount due");
+      const newPaid = money(currentPaid + data.amount);
+      const newStatus = newPaid >= money(lockedInvoice.total) ? "paid" : "partially_paid";
+      payment = await BillingModel.createPayment({ invoiceId: id, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, idempotencyKey: data.idempotencyKey || null, provider: "manual", providerReference: data.providerReference || null, receiptNumber: data.receiptNumber || receiptNumber(), amount: money(data.amount), currency: invoice.currency, status: "successful", paymentMethod: data.paymentMethod, paymentDate, paidAt: paymentDate, notes: data.notes || null }, trx);
       updated = await BillingModel.updateInvoice(id, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
-      await BillingModel.createAuditEvent({ invoiceId: id, paymentId: payment.id, batchId: invoice.batchId || null, actorUserId: req.user.id, eventType: "payment_recorded", previousStatus: invoice.status, newStatus, amount: data.amount, metadata: { paymentMethod: data.paymentMethod, receiptNumber: payment.receiptNumber } }, trx);
+      await BillingModel.createAuditEvent({ invoiceId: id, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: req.user.id, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: data.amount, metadata: { paymentMethod: data.paymentMethod, receiptNumber: payment.receiptNumber } }, trx);
     });
     return decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
   },

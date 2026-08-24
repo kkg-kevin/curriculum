@@ -38,7 +38,8 @@ const updateInvoiceSchema = z.object({
 
 const recordPaymentSchema = z.object({
   amount: z.coerce.number().positive(),
-  paymentMethod: z.string().max(40).default("manual"),
+  idempotencyKey: z.string().trim().min(8).max(100).optional().nullable(),
+  paymentMethod: z.enum(["cash", "bank_transfer", "mpesa_manual", "cheque", "card_manual", "other"]).default("cash"),
   providerReference: z.string().max(120).optional().nullable(),
   paymentDate: z.string().optional().nullable(),
   receiptNumber: z.string().max(50).optional().nullable(),

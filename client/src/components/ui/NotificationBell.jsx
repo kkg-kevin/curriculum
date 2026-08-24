@@ -9,6 +9,7 @@ const ICONS = {
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
+  invoice_issued: { Icon: FiFileText, color: "#25476a" },
 };
 
 // Where each notification type actually lives, per its own payload (see notification.service.js
@@ -28,6 +29,8 @@ function resolveNotificationPath(n) {
       return p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports";
     case "level_up":
       return p.learnerId ? `/learner-portal?child=${p.learnerId}` : "/learner-portal";
+    case "invoice_issued":
+      return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
     default:
       return null;
   }
