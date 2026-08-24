@@ -25,6 +25,22 @@ export function useCreateInvoice() {
   });
 }
 
+export function useBulkInvoicePreview() {
+  return useMutation({
+    mutationFn: billingApi.previewBulk,
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not preview bulk invoices"),
+  });
+}
+
+export function useCreateBulkInvoices() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: billingApi.createBulk,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: BILLING_KEYS.all }); toast.success("Bulk invoices created and issued"); },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not create bulk invoices"),
+  });
+}
+
 function invoiceAction(action, successMessage) {
   return () => {
     const qc = useQueryClient();
@@ -42,7 +58,11 @@ export function usePayInvoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => billingApi.pay(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: BILLING_KEYS.all }); toast.success("Payment recorded"); },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: BILLING_KEYS.all });
+      qc.invalidateQueries({ queryKey: ["billing", "invoice", id] });
+      toast.success("Payment recorded");
+    },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Payment failed"),
   });
 }

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import logo from "../../../assets/Logo-image.png";
 import LogoutButton from "../../../components/ui/LogoutButton";
+import { useAuth } from "../../../context/AuthContext";
 
 const menuItems = [
   { name: "Dashboard",    path: "/learner-portal" },
@@ -14,6 +15,9 @@ const menuItems = [
 ];
 
 function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
+  const { user } = useAuth();
+  const visibleMenuItems = user?.username ? menuItems.filter((item) => item.name !== "Invoices") : menuItems;
+
   return (
     <>
       {isMobile && isMobileOpen ? (
@@ -58,7 +62,7 @@ function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
         </div>
 
         <nav style={{ flex: 1, padding: "20px 12px" }}>
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}

@@ -4,12 +4,28 @@ const { createRecord, firstOrNull, updateRecord, generateId, stringifyJsonFields
 const INVOICES = "billing_invoices";
 const ITEMS = "billing_invoice_items";
 const PAYMENTS = "billing_payments";
+const BATCHES = "billing_invoice_batches";
+const AUDIT = "billing_audit_events";
 
 const BillingModel = {
-  createInvoice(data) { return createRecord(db, INVOICES, data); },
-  createItem(data) { return createRecord(db, ITEMS, stringifyJsonFields(data, ["metadata"]), { updatedAt: false }); },
-  createPayment(data) { return createRecord(db, PAYMENTS, stringifyJsonFields(data, ["metadata"])); },
+  createInvoice(data, connection = db) { return createRecord(connection, INVOICES, data); },
+  createBatch(data, connection = db) { return createRecord(connection, BATCHES, data); },
+  createItem(data, connection = db) { return createRecord(connection, ITEMS, stringifyJsonFields(data, ["metadata"]), { updatedAt: false }); },
+  createPayment(data, connection = db) { return createRecord(connection, PAYMENTS, stringifyJsonFields(data, ["metadata"])); },
+  createAuditEvent(data, connection = db) { return createRecord(connection, AUDIT, stringifyJsonFields(data, ["metadata"]), { updatedAt: false }); },
   findInvoiceById(id) { return firstOrNull(db(INVOICES).where({ id })); },
+  findBatchById(id) { return firstOrNull(db(BATCHES).where({ id })); },
+  findBatches(filters = {}) {
+    let query = db(BATCHES).orderBy("createdAt", "desc");
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== "") query = query.where(key, value);
+    }
+    return query;
+  },
+  findInvoicesByBatchId(batchId) { return db(INVOICES).where({ batchId }).orderBy("createdAt", "asc"); },
+  findExistingLearnerInvoice({ hubId, learnerId, invoiceType, periodLabel }) {
+    return firstOrNull(db(INVOICES).where({ hubId, learnerId, invoiceType, periodLabel: periodLabel || null }).whereNotIn("status", ["cancelled", "void"]));
+  },
   findInvoices(filters = {}) {
     let query = db(INVOICES).select("billing_invoices.*").orderBy("createdAt", "desc");
     for (const [key, value] of Object.entries(filters)) {
@@ -19,11 +35,13 @@ const BillingModel = {
   },
   findItems(invoiceId) { return db(ITEMS).where({ invoiceId }).orderBy("createdAt", "asc"); },
   findPayments(invoiceId) { return db(PAYMENTS).where({ invoiceId }).orderBy("createdAt", "asc"); },
-  updateInvoice(id, data) { return updateRecord(db, INVOICES, id, data); },
+  findAuditEvents(invoiceId) { return db(AUDIT).where({ invoiceId }).orderBy("createdAt", "asc"); },
+  updateInvoice(id, data, connection = db) { return updateRecord(connection, INVOICES, id, data); },
+  updateBatch(id, data, connection = db) { return updateRecord(connection, BATCHES, id, data); },
   sumSuccessfulPayments(invoiceId) {
     return db(PAYMENTS).where({ invoiceId, status: "successful" }).sum({ total: "amount" }).first();
   },
-  transaction() { return db.transaction(); },
+  transaction(callback) { return db.transaction(callback); },
   generateId,
 };
 
