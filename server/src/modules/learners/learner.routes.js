@@ -5,6 +5,7 @@ const {
   getAllLearners,
   getLearnerById,
   updateLearner,
+  updateLearnerAccountStatus,
   deleteLearner,
   getLearnerHubs,
   enrollLearnerHub,
@@ -38,6 +39,8 @@ router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getLearnerById)
   .put(authorize("admin", "school", "learner"), updateLearner)
   .delete(authorize("admin"), deleteLearner);
+
+router.patch("/:id/account-status", authorize("admin"), updateLearnerAccountStatus);
 
 // Which learning hub(s) a learner is enrolled at — a many-to-many relationship, not a field on
 // the learner record. "teacher"/"learner" may only read (their own classes / their own

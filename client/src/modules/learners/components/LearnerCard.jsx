@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle as CheckCircleIcon, Class as ClassIcon, Groups as GroupsIcon, PauseCircle as PauseCircleIcon } from "@mui/icons-material";
-import { useDeleteLearner, useUpdateLearner } from "../hooks/useLearners";
+import { useDeleteLearner, useUpdateLearnerAccountStatus } from "../hooks/useLearners";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -45,7 +45,7 @@ export function LearnerCard({ learner, classMap }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteLearner, isPending: isDeleting } = useDeleteLearner();
-  const { mutate: updateLearner } = useUpdateLearner();
+  const { mutate: updateAccountStatus } = useUpdateLearnerAccountStatus();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
   const [hovered, setHovered]         = useState(false);
@@ -164,7 +164,7 @@ export function LearnerCard({ learner, classMap }) {
               <MenuButton
                 icon={accountStatus === "active" ? <PauseCircleIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
                 label={accountStatus === "active" ? "Deactivate account" : "Activate account"}
-                onClick={() => { setMenuOpen(false); updateLearner({ id: learner.id, data: { accountStatus: accountStatus === "active" ? "inactive" : "active" } }); }}
+                onClick={() => { setMenuOpen(false); updateAccountStatus({ id: learner.id, accountStatus: accountStatus === "active" ? "inactive" : "active" }); }}
               />
               <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
               <MenuButton

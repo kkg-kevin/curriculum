@@ -8,6 +8,7 @@ export const learnerApi = {
   getAll:  (params)     => api.get(BASE, { params }).then((r) => r.data),
   getById: (id)         => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   update:  (id, data)   => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
+  updateAccountStatus: (id, accountStatus) => api.patch(`${BASE}/${id}/account-status`, { accountStatus }).then((r) => r.data.data),
   remove:  (id)         => api.delete(`${BASE}/${id}`).then((r) => r.data),
   getHubs:   (id)                  => api.get(`${BASE}/${id}/hubs/links`).then((r) => r.data.data),
   enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => r.data.data),

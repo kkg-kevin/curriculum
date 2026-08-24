@@ -14,6 +14,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Courses", path: "/courses" },
   { name: "Assessments", path: "/assessments" },
   { name: "Reports", path: "/reports" },
+  { name: "Billing", path: "/billing" },
   { name: "Settings", path: "/settings" },
 ];
 
