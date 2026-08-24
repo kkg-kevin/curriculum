@@ -645,6 +645,10 @@ export default function AcademicYearPage() {
   const [mode, setMode]               = useState("view");
   const [selectedGroup,   setSelGroup]  = useState(null);
   const [selectedVersion, setSelVersion] = useState(null);
+  // The create mutation selects the newly returned group before the invalidated query
+  // finishes. Keep it visible during that short refresh window instead of rendering neither
+  // the empty state nor the year layout.
+  const displayGroups = groups.length > 0 ? groups : selectedGroup ? [selectedGroup] : groups;
 
   // On load: auto-select the published version if nothing is selected
   useEffect(() => {
@@ -754,7 +758,7 @@ export default function AcademicYearPage() {
       </div>
 
       {/* Empty state (no groups) */}
-      {groups.length === 0 && mode === "view" && (
+      {displayGroups.length === 0 && mode === "view" && (
         <div style={{ textAlign: "center", padding: "72px 32px", backgroundColor: "#FAFAFA", border: "2px dashed #E5E7EB", borderRadius: "20px", animation: "ay-fadein 0.2s ease" }}>
           <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "12px" }}><CalendarMonthIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No academic years yet</p>
@@ -777,7 +781,7 @@ export default function AcademicYearPage() {
       )}
 
       {/* Two-column layout */}
-      {mode !== "create-group" && groups.length > 0 && (
+      {mode !== "create-group" && displayGroups.length > 0 && (
         <div className="ay-layout">
           {/* LEFT: main content */}
           <div style={{ minWidth: 0 }}>
@@ -811,7 +815,7 @@ export default function AcademicYearPage() {
 
           {/* RIGHT: sidebar */}
           <AcademicYearSidebar
-            groups={groups}
+            groups={displayGroups}
             selectedVersionId={selectedVersion?.id}
             onSelectVersion={handleSelectVersion}
             onAddYear={() => setMode("create-group")}

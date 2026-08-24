@@ -27,7 +27,11 @@ const AcademicYearVersionModel = {
   },
 
   create(data) {
-    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+    const record = createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
+    return record.then((created) => ({
+      ...created,
+      periods: typeof created.periods === "string" ? JSON.parse(created.periods) : created.periods,
+    }));
   },
 
   update(id, changes) {
