@@ -131,10 +131,12 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
 
 // Confirmation step between clicking "Issue to {class}" and the request actually firing — shows
 // the assessment's admin-authored name/type/mode so the teacher can see exactly what they're
-// about to send before committing, and lets them attach an optional due date (the server/model
-// already support dueDate on assessment_issues; this dialog is the only piece that was missing).
+// about to send before committing, and lets them attach an optional due date plus an optional
+// time limit (e.g. "due Friday, but once a learner opens it they have 2 hours") — the server/
+// model already support both on assessment_issues; this dialog is the only piece that was missing.
 function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCancel }) {
   const [dueDate, setDueDate] = useState("");
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState("");
   const color = TYPE_COLORS[item.assessmentType] || T.accentLight;
   const modeKey = groupMode ? "group" : "individual";
 
@@ -158,6 +160,21 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
             style={{ display: "block", marginTop: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", boxSizing: "border-box" }}
           />
         </label>
+        <label style={{ display: "block", marginTop: 14, fontSize: 12, fontWeight: 700, color: T.inkMuted }}>
+          Time limit in minutes (optional)
+          <input
+            type="number"
+            min="1"
+            max="1440"
+            placeholder="e.g. 120 for a 2-hour exam"
+            value={timeLimitMinutes}
+            onChange={(e) => setTimeLimitMinutes(e.target.value)}
+            style={{ display: "block", marginTop: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", boxSizing: "border-box" }}
+          />
+          <span style={{ display: "block", marginTop: 4, fontSize: 11, color: T.inkFaint, fontWeight: 400 }}>
+            Starts counting the moment a learner opens it, and keeps running even if they save and come back later.
+          </span>
+        </label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
           <button
             type="button"
@@ -169,7 +186,7 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(dueDate || null)}
+            onClick={() => onConfirm(dueDate || null, timeLimitMinutes ? Number(timeLimitMinutes) : null)}
             disabled={isIssuing}
             style={{ padding: "8px 18px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: isIssuing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
           >
@@ -473,10 +490,10 @@ export default function AssessmentsPage() {
     setIssueDialog({ item, cls, groupMode });
   };
 
-  const confirmIssue = (dueDate) => {
+  const confirmIssue = (dueDate, timeLimitMinutes) => {
     const { item, cls, groupMode } = issueDialog;
     issueAssessment(
-      { assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode, dueDate },
+      { assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode, dueDate, timeLimitMinutes },
       { onSuccess: () => setIssueDialog(null) }
     );
   };

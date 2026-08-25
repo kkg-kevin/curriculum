@@ -132,8 +132,12 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
                     </button>
                   </div>
                 </div>
-                {issue.dueDate && (
-                  <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>Due {new Date(issue.dueDate).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}</p>
+                {(issue.dueDate || issue.timeLimitMinutes) && (
+                  <p style={{ margin: 0, fontSize: 12, color: T.accent, fontWeight: 600 }}>
+                    {issue.dueDate && `Due ${new Date(issue.dueDate).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}`}
+                    {issue.dueDate && issue.timeLimitMinutes ? " · " : ""}
+                    {issue.timeLimitMinutes && `${issue.timeLimitMinutes >= 60 && issue.timeLimitMinutes % 60 === 0 ? `${issue.timeLimitMinutes / 60}h` : `${issue.timeLimitMinutes}m`} time limit`}
+                  </p>
                 )}
               </div>
             );

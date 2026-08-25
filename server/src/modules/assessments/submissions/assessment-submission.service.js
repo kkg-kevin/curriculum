@@ -163,6 +163,17 @@ async function fanOutToGroup(submission, updates) {
   );
 }
 
+// Whether a submission's own time limit (set on its issue, see issueAssessment) has run out.
+// The clock starts from the submission's createdAt — stamped once, the instant
+// getOrCreateSubmission first creates the row — and never resets across saveDraft calls, so
+// saving and coming back later never buys the learner more time. No timeLimitMinutes on the
+// issue (the common case) is a permanent false — opt-in, same posture as dueDate.
+function isExpired(issue, submission) {
+  if (!issue?.timeLimitMinutes) return false;
+  const deadline = new Date(submission.createdAt).getTime() + issue.timeLimitMinutes * 60000;
+  return Date.now() > deadline;
+}
+
 async function maybePlaceFromDiagnostic(submission) {
   if (submission.status !== "graded") return;
   const issue = await AssessmentIssueModel.findById(submission.issueId);
@@ -197,11 +208,14 @@ const AssessmentSubmissionService = {
   // only an explicit true/false attempts to change it, and even then only while nobody's
   // started (see the guard below), since flipping it mid-flight would leave a mix of individual
   // and group-linked submission rows with no consistent meaning.
-  async issueAssessment({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate, groupMode }) {
+  async issueAssessment({ assessmentId, sessionId, courseId, classId, issuedBy, dueDate, timeLimitMinutes, groupMode }) {
     await loadAssessmentOrThrow(assessmentId);
     const existing = await AssessmentIssueModel.findOne({ assessmentId, sessionId, classId });
     if (existing) {
-      const updates = { dueDate: dueDate ?? existing.dueDate };
+      const updates = {
+        dueDate: dueDate ?? existing.dueDate,
+        timeLimitMinutes: timeLimitMinutes !== undefined ? timeLimitMinutes : existing.timeLimitMinutes,
+      };
       if (groupMode !== undefined && groupMode !== existing.groupMode) {
         const hasSubmissions = (await AssessmentSubmissionModel.findAll({ issueId: existing.id })).length > 0;
         if (hasSubmissions) {
@@ -214,7 +228,8 @@ const AssessmentSubmissionService = {
       return AssessmentIssueModel.update(existing.id, updates);
     }
     return AssessmentIssueModel.create({
-      assessmentId, sessionId, courseId, classId, issuedBy, dueDate: dueDate || null, groupMode: groupMode || false,
+      assessmentId, sessionId, courseId, classId, issuedBy,
+      dueDate: dueDate || null, timeLimitMinutes: timeLimitMinutes || null, groupMode: groupMode || false,
     });
   },
 
@@ -272,7 +287,7 @@ const AssessmentSubmissionService = {
   // Scoped to individual (non-group) submissions only — reissuing one member out of a shared
   // group attempt raises questions (does the whole group redo it? just them?) this feature isn't
   // trying to answer yet.
-  async reissueToLearner({ issueId, learnerId, dueDate = null, reissuedBy }) {
+  async reissueToLearner({ issueId, learnerId, dueDate = null, timeLimitMinutes = null, reissuedBy }) {
     const originalIssue = await AssessmentIssueModel.findById(issueId);
     if (!originalIssue) {
       const err = new Error("Issue not found");
@@ -309,6 +324,7 @@ const AssessmentSubmissionService = {
       classId: null,
       issuedBy: reissuedBy,
       dueDate: dueDate || null,
+      timeLimitMinutes: timeLimitMinutes || null,
       reissuedFromIssueId: issueId,
       // Carried over so a reissued Stage/Learning-Area diagnostic still re-triggers
       // maybePlaceFromDiagnostic when the new attempt is graded — without these, grading a
@@ -651,6 +667,12 @@ const AssessmentSubmissionService = {
     if (submission.status !== "in_progress") {
       const err = new Error("This assessment has already been submitted");
       err.statusCode = 400;
+      throw err;
+    }
+    const issue = await AssessmentIssueModel.findById(submission.issueId);
+    if (isExpired(issue, submission)) {
+      const err = new Error("Time's up — this assessment's time limit has been reached. Submit it as-is.");
+      err.statusCode = 409;
       throw err;
     }
     const updated = await AssessmentSubmissionModel.update(submissionId, { answers });

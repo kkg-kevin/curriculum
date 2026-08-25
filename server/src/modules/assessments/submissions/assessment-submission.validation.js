@@ -6,6 +6,10 @@ const issueAssessmentSchema = z.object({
   courseId:     z.string().min(1),
   classId:      z.string().min(1),
   dueDate:      z.string().optional().nullable(),
+  // Optional duration in minutes, starting the instant a learner's submission is first created
+  // (see assessment-submission.service.js's isExpired) — independent of dueDate, which only
+  // gates when the assessment must be STARTED by, not how long a learner has once they begin.
+  timeLimitMinutes: z.number().int().positive().max(1440, "Time limit can't exceed 24 hours").optional().nullable(),
   // Left as plain .optional() (no .default()) so an omitted value means "don't touch this on
   // re-issue" rather than an implicit false — see issueAssessment in the service.
   groupMode:    z.boolean().optional(),
@@ -76,6 +80,7 @@ const gradeMilestoneSchema = z.object({
 const reissueSchema = z.object({
   learnerId: z.string().min(1, "Learner is required"),
   dueDate:   z.string().optional().nullable(),
+  timeLimitMinutes: z.number().int().positive().max(1440, "Time limit can't exceed 24 hours").optional().nullable(),
 });
 
 module.exports = {

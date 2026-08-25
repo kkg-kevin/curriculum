@@ -124,7 +124,7 @@ export function useGradeMilestone() {
 export function useReissueAssessment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ issueId, learnerId, dueDate }) => assessmentSubmissionApi.reissue(issueId, { learnerId, dueDate }),
+    mutationFn: ({ issueId, learnerId, dueDate, timeLimitMinutes }) => assessmentSubmissionApi.reissue(issueId, { learnerId, dueDate, timeLimitMinutes }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assessment-issues"] });
       qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
