@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
@@ -138,6 +138,65 @@ function ReissueNotice({ originalRow }) {
   );
 }
 
+// Ticking countdown from the submission's own createdAt — stamped once, the instant the learner
+// first opened it, and never reset by saveDraft — so this reflects the same deadline the server
+// enforces (see assessment-submission.service.js's isExpired) regardless of how many times the
+// learner has closed and reopened this page. onExpire fires the exact same submit the learner's
+// own Submit button uses, so whatever's currently in AssessmentTaker's draft state gets saved as
+// their final answer rather than losing work to a hard cutoff. onExpireRef sidesteps re-running
+// the interval every time the parent re-renders (which it does on every keystroke, since
+// handleSubmit closes over draftAnswers) — the effect itself only depends on the stable deadline.
+function TimeLimitBanner({ createdAt, timeLimitMinutes, onExpire }) {
+  const deadline = useMemo(() => new Date(createdAt).getTime() + timeLimitMinutes * 60000, [createdAt, timeLimitMinutes]);
+  const [remainingMs, setRemainingMs] = useState(() => deadline - Date.now());
+  const firedRef = useRef(false);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
+
+  useEffect(() => {
+    const tick = () => {
+      const remaining = deadline - Date.now();
+      setRemainingMs(remaining);
+      if (remaining <= 0 && !firedRef.current) {
+        firedRef.current = true;
+        onExpireRef.current();
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  const clamped = Math.max(0, remainingMs);
+  const expired = remainingMs <= 0;
+  const urgent = !expired && clamped <= 5 * 60 * 1000;
+  const totalSeconds = Math.floor(clamped / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const label = hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
+  const color = expired ? "#DC2626" : urgent ? "#B45309" : T.accent;
+
+  return (
+    <div style={{
+      ...cardStyle, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+      backgroundColor: expired ? "#FEF2F2" : urgent ? "#FFFBEB" : T.tintBg,
+      border: `1.5px solid ${expired ? "#FECACA" : urgent ? "#FDE68A" : T.tintBorder}`,
+      position: "sticky", top: 8, zIndex: 5,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        <FiClock size={16} color={color} />
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color }}>
+          {expired ? "Time's up — submitting your answers…" : "Time remaining"}
+        </p>
+      </div>
+      {!expired && <span style={{ fontSize: 19, fontWeight: 900, fontVariantNumeric: "tabular-nums", color }}>{label}</span>}
+    </div>
+  );
+}
+
 export default function AssessmentDetailPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
@@ -243,6 +302,7 @@ export default function AssessmentDetailPage() {
             {items.length > 0 ? `${items.length} question${items.length === 1 ? "" : "s"}. ` : ""}
             {deliverables.length > 0 ? `${deliverables.length} deliverable${deliverables.length === 1 ? "" : "s"} to submit. ` : ""}
             You can save your progress and come back before submitting.
+            {row.issue.timeLimitMinutes ? ` Once you start, you'll have ${row.issue.timeLimitMinutes >= 60 && row.issue.timeLimitMinutes % 60 === 0 ? `${row.issue.timeLimitMinutes / 60} hour${row.issue.timeLimitMinutes === 60 ? "" : "s"}` : `${row.issue.timeLimitMinutes} minutes`} to finish — the clock keeps running even if you save and come back later.` : ""}
           </p>
           <button type="button" onClick={handleStart} disabled={starting} style={{ padding: "12px 28px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: starting ? "not-allowed" : "pointer" }}>
             {starting ? "Starting…" : "Start Assessment"}
@@ -250,6 +310,9 @@ export default function AssessmentDetailPage() {
         </div>
       ) : submission.status === "in_progress" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {row.issue.timeLimitMinutes && (
+            <TimeLimitBanner createdAt={submission.createdAt} timeLimitMinutes={row.issue.timeLimitMinutes} onExpire={handleSubmit} />
+          )}
           <AssessmentTaker assessment={assessment} initialAnswers={submission.answers} onChange={setDraftAnswers} />
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" onClick={handleSaveDraft} disabled={saving} style={{ padding: "10px 20px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: saving ? "not-allowed" : "pointer" }}>

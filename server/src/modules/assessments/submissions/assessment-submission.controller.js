@@ -335,7 +335,7 @@ const gradeMilestone = asyncHandler(async (req, res) => {
 // it, checked off the ORIGINAL issue's class (a reissue's own new issue has no classId of its
 // own to check).
 const reissueAssessment = asyncHandler(async (req, res) => {
-  const { learnerId, dueDate } = reissueSchema.parse(req.body);
+  const { learnerId, dueDate, timeLimitMinutes } = reissueSchema.parse(req.body);
   const issue = await AssessmentSubmissionService.getIssue(req.params.id);
   if (!issue) {
     const err = new Error("Issue not found");
@@ -349,7 +349,7 @@ const reissueAssessment = asyncHandler(async (req, res) => {
     await assertLearnerHubAccess(req, learnerId);
   }
   const newIssue = await AssessmentSubmissionService.reissueToLearner({
-    issueId: req.params.id, learnerId, dueDate, reissuedBy: req.ownTeacher?.id || req.user.id,
+    issueId: req.params.id, learnerId, dueDate, timeLimitMinutes, reissuedBy: req.ownTeacher?.id || req.user.id,
   });
   res.status(201).json({ success: true, data: newIssue });
 });
