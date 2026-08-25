@@ -36,4 +36,10 @@ export const timetableApi = {
   createSkip:     (data)     => api.post(`${BASE}/skips`, data).then((r) => r.data.data),
   removeSkip:     (id)       => api.delete(`${BASE}/skips/${id}`).then((r) => r.data),
   getSkipsByClass: (classId) => api.get(`${BASE}/skips`, { params: { classId } }).then((r) => r.data.data),
+
+  // Which of the given candidate teacherIds would conflict (double-booked or outside their own
+  // declared availability) if picked for this day/time — lets the slot picker gray out a
+  // conflicting teacher before save time, same role getAvailability plays for rooms.
+  getTeacherAvailabilityConflicts: (params) =>
+    api.get(`${BASE}/teachers/availability-conflicts`, { params }).then((r) => r.data.data),
 };

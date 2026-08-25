@@ -1,5 +1,6 @@
 const TeacherModel = require("./teacher.model");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
+const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const AttendanceModel = require("../attendance/attendance.model");
@@ -78,7 +79,41 @@ const TeacherService = {
     await AssessmentSubmissionModel.clearGradedBy(id);
     await AssessmentIssueModel.clearIssuedBy(id);
     await SessionSkipModel.clearCreatedBy(id);
+    await TeacherAvailabilityModel.deleteByTeacherId(id);
     return { message: "Teacher deleted successfully" };
+  },
+
+  async getAvailability(teacherId) {
+    return TeacherAvailabilityModel.findByTeacherId(teacherId);
+  },
+
+  async addAvailabilitySlot(teacherId, data) {
+    if (!(await TeacherModel.findById(teacherId))) {
+      const err = new Error("Teacher not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return TeacherAvailabilityModel.create({ ...data, teacherId });
+  },
+
+  async updateAvailabilitySlot(id, data) {
+    const slot = await TeacherAvailabilityModel.update(id, data);
+    if (!slot) {
+      const err = new Error("Availability window not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return slot;
+  },
+
+  async deleteAvailabilitySlot(id) {
+    const deleted = await TeacherAvailabilityModel.delete(id);
+    if (!deleted) {
+      const err = new Error("Availability window not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return { message: "Availability window removed" };
   },
 };
 

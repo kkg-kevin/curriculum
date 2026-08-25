@@ -6,6 +6,7 @@ const {
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
+  getTeacherAvailabilityConflicts,
 } = require("./timetable.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -18,6 +19,11 @@ const router = express.Router();
 // Course start-date anchors — same authoring/read posture as slots below.
 router.get("/course-schedule", authorize("admin", "school", "teacher"), listCourseSchedules);
 router.put("/course-schedule", authorize("admin", "school"), setCourseSchedule);
+
+// Which of a course's candidate teachers would conflict (double-booked or outside their own
+// declared availability) if picked for a given day/time — admin/school only, same posture as
+// slot authoring below, since only they ever pick a teacher in the slot form.
+router.get("/teachers/availability-conflicts", authorize("admin", "school"), getTeacherAvailabilityConflicts);
 
 // Resolved calendar (real dates, Sessions placed onto them) — read-only, same role split as
 // their slot-list equivalents below.

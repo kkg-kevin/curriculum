@@ -30,10 +30,16 @@ function SnapshotRow({ icon, label, value, sub }) {
 // Current Level Summary / Learning Streak) — presented as a compact vertical rail card here
 // instead of side-by-side pills, to fit the dashboard's right-rail layout. Profile stays the
 // source of truth and keeps its own version; this is just a second, differently-shaped view
-// of the same data. currentLevel is the average of this learner's own weighted competency
-// scores mapped onto the curriculum's Progress Levels (see DashboardPage.jsx) — real once the
-// curriculum has Evidence Type categories + competency mappings configured, null until then.
-export default function DevelopmentalSnapshotCard({ stage, currentLevel }) {
+// of the same data. band/nextBand come from the same Engine 4 per-band completion +
+// deriveBandJourney logic as ProfileIdentityCard and the Progress Arc card (see
+// DashboardPage.jsx), so this row can never disagree with what those show.
+function levelSummarySub(band, nextBand) {
+  if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;
+  if (band) return "Highest level reached";
+  return "Complete graded work to begin";
+}
+
+export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
   return (
     <div style={{ backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, padding: 18 }}>
       <h2 style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, color: T.accentLight, textTransform: "uppercase", letterSpacing: "0.07em" }}>
@@ -46,7 +52,12 @@ export default function DevelopmentalSnapshotCard({ stage, currentLevel }) {
           value={stage?.name || "Not yet placed"}
           sub={stage?.ageRange ? `(${stage.ageRange})` : null}
         />
-        <SnapshotRow icon={<FiStar size={16} />} label="Current Level Summary" value={currentLevel?.name || "Not yet available"} />
+        <SnapshotRow
+          icon={<FiStar size={16} />}
+          label="Current Level Summary"
+          value={band?.name || "Not yet placed"}
+          sub={levelSummarySub(band, nextBand)}
+        />
         <SnapshotRow icon={<FiZap size={16} />} label="Learning Streak" value="Not tracked yet" />
       </div>
     </div>

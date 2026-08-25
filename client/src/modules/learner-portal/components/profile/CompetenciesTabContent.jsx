@@ -4,7 +4,7 @@ import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { iconFor } from "./competencyIcons";
 import { useLearnerIndicatorProgress } from "../../../assessments/hooks/useAssessmentSubmission";
 import { useLearnerCompetencyScores } from "../../../curriculum/hooks/useCompetencies";
-import LevelJourneyCard from "../LevelJourneyCard";
+import ProgressArcCard from "../ProgressArcCard";
 
 // percent is null (renders "Not yet scored") until the curriculum's Assessment Types have real
 // competencyMappings configured on their Score Evidence panel (Engine 2 has nothing to
@@ -110,7 +110,7 @@ export default function CompetenciesTabContent({ competencies, isLoading, learne
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <LevelJourneyCard curriculumId={curriculumId} learnerId={learnerId} />
+      <ProgressArcCard curriculumId={curriculumId} learnerId={learnerId} />
 
       <div style={{ ...cardStyle(), padding: 20 }}>
         <h2 style={{ ...sectionHeaderStyle(), marginBottom: 16 }}>Competency Framework</h2>

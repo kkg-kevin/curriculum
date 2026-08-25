@@ -225,6 +225,18 @@ export function useCreateSkip() {
   });
 }
 
+// Which of the given candidate teacherIds would conflict (double-booked or outside their own
+// declared availability) if picked for this day/time — lets the school-portal's teacher picker
+// flag a conflict before save time, same role useRoomAvailability plays for rooms. Only enabled
+// once there's at least one candidate and a day + both times are actually picked.
+export function useTeacherAvailabilityConflicts({ classId, courseId, teacherIds, dayOfWeek, startTime, endTime, excludeSlotId }) {
+  return useQuery({
+    queryKey: ["timetable", "teacher-availability-conflicts", classId, courseId, teacherIds, dayOfWeek, startTime, endTime, excludeSlotId],
+    queryFn:  () => timetableApi.getTeacherAvailabilityConflicts({ classId, courseId, teacherIds, dayOfWeek, startTime, endTime, excludeSlotId }),
+    enabled:  !!classId && !!dayOfWeek && !!startTime && !!endTime && (teacherIds?.length || 0) > 0,
+  });
+}
+
 export function useDeleteSkip() {
   const qc = useQueryClient();
   return useMutation({

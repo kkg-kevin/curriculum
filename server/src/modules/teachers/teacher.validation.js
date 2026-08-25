@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { DAYS_OF_WEEK } = require("../timetable/timetable.validation");
 
 const TEACHER_STATUSES = ["active", "inactive", "on_leave"];
 
@@ -39,7 +40,25 @@ const createTeacherSchema = baseTeacherSchema.superRefine((data, ctx) => {
 
 const updateTeacherSchema = baseTeacherSchema.partial();
 
+// A weekly recurring "I can teach during this window" row — same day/time shape timetable
+// slots use, minus the class/course/room fields that don't apply to a standing availability
+// declaration. See teacher-availability.model.js / TimetableService's hasConflict extension for
+// how this feeds into actual scheduling.
+const baseAvailabilitySchema = z.object({
+  dayOfWeek: z.enum(DAYS_OF_WEEK, { errorMap: () => ({ message: "Select a valid day" }) }),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Start time must be in HH:MM format"),
+  endTime:   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "End time must be in HH:MM format"),
+});
+
+const createAvailabilitySlotSchema = baseAvailabilitySchema.refine((d) => d.startTime < d.endTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
+});
+
+const updateAvailabilitySlotSchema = baseAvailabilitySchema.partial();
+
 module.exports = {
   createTeacherSchema, updateTeacherSchema, TEACHER_STATUSES,
   EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS,
+  createAvailabilitySlotSchema, updateAvailabilitySlotSchema,
 };

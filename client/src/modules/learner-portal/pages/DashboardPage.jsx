@@ -2,14 +2,15 @@ import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock, FiTrendingUp, FiUser, FiUserCheck } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
-import { useAgeCategories, useLearnerCompetencyScores, useProgressLevels } from "../../curriculum/hooks/useCompetencies";
+import { useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAttendanceHistoryQuery } from "../../attendance/hooks/useAttendance";
 import { summarizeCoursesProgress, resolveCourseEntryPath } from "../utils/progressStorage";
+import { deriveBandJourney } from "../utils/bandJourney";
 import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
 import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
-import LevelJourneyCard from "../components/LevelJourneyCard";
+import ProgressArcCard from "../components/ProgressArcCard";
 
 const T = {
   accent: "#25476a",
@@ -90,18 +91,12 @@ export default function DashboardPage() {
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
 
-  // Aggregate "current level" for the Developmental Snapshot card — averages this learner's own
-  // weighted competency scores (Evidence Type -> Assessment Type -> Engine pipeline, same data as
-  // the Profile Competencies tab) and maps that average onto the curriculum's Progress Levels,
-  // the same range-lookup runProgressArcEngine uses per-competency server-side.
-  const { data: competencyScores = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id);
-  const { data: progressLevels = [] } = useProgressLevels(cls?.curriculumId);
-  const avgCompetencyScore = competencyScores.length
-    ? competencyScores.reduce((sum, c) => sum + c.score, 0) / competencyScores.length
-    : null;
-  const currentLevel = avgCompetencyScore != null
-    ? progressLevels.find((l) => avgCompetencyScore >= l.minScore && avgCompetencyScore <= l.maxScore) || null
-    : null;
+  // "Current Level Summary" for the Developmental Snapshot card — same Engine 4 per-band
+  // completion data (indicator-achievement-weighted) and deriveBandJourney logic the Progress
+  // Arc card and ProfileIdentityCard both use, so all three surfaces can never disagree about
+  // which band this learner is currently at.
+  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id);
+  const { current: currentBand, next: nextBand } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
   // Scoped to the currently-selected hub's class — a learner enrolled at several hubs can have
@@ -185,10 +180,10 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Level Journey — the gamified progress ladder, given the most prominent spot on the
+          {/* Progress Arc — the gamified progress ladder, given the most prominent spot on the
               page (full width, right under the hero) since motivating the learner to keep moving
               up it is the whole point of showing it here rather than only buried in Profile. */}
-          <LevelJourneyCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
+          <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
           {/* Main column */}
@@ -282,7 +277,7 @@ export default function DashboardPage() {
 
           {/* Right rail */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 280 }}>
-            <DevelopmentalSnapshotCard stage={stage} currentLevel={currentLevel} />
+            <DevelopmentalSnapshotCard stage={stage} band={currentBand} nextBand={nextBand} />
 
             <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
 

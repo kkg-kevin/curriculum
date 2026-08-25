@@ -6,6 +6,7 @@ export const TEACHER_KEYS = {
   all:    ["teachers"],
   detail: (id)      => ["teachers", "detail", id],
   hubs:   (id)      => ["teachers", "detail", id, "hubs"],
+  availability: (id) => ["teachers", "detail", id, "availability"],
 };
 
 export function useAllTeachersQuery() {
@@ -89,5 +90,49 @@ export function useUnlinkTeacherHub() {
       toast.success("Educator removed from hub");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove from hub"),
+  });
+}
+
+export function useTeacherAvailability(teacherId) {
+  return useQuery({
+    queryKey: TEACHER_KEYS.availability(teacherId),
+    queryFn:  () => teacherApi.getAvailability(teacherId),
+    enabled:  !!teacherId,
+  });
+}
+
+export function useAddAvailabilitySlot(teacherId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => teacherApi.addAvailabilitySlot(teacherId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEACHER_KEYS.availability(teacherId) });
+      toast.success("Availability window added");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to add availability"),
+  });
+}
+
+export function useUpdateAvailabilitySlot(teacherId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slotId, data }) => teacherApi.updateAvailabilitySlot(teacherId, slotId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEACHER_KEYS.availability(teacherId) });
+      toast.success("Availability window updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update availability"),
+  });
+}
+
+export function useRemoveAvailabilitySlot(teacherId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slotId) => teacherApi.removeAvailabilitySlot(teacherId, slotId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEACHER_KEYS.availability(teacherId) });
+      toast.success("Availability window removed");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove availability"),
   });
 }

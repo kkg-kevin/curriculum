@@ -5,6 +5,7 @@ import { classApi } from "../../classes/services/classApi";
 import { useCoursesForPairs } from "../../curriculum/hooks/useCurriculumVersion";
 import { useMyTeacherCalendar } from "../../timetable/hooks/useTimetable";
 import CalendarView from "../../timetable/components/CalendarView";
+import AvailabilityEditor from "../components/AvailabilityEditor";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -74,6 +75,7 @@ export default function TimetablePage() {
     ? allSkippedSessions
     : allSkippedSessions.filter((s) => classIdToHubId.get(s.classId) === filterHubId);
 
+  const [activeTab, setActiveTab] = useState("schedule");
   const isLoading = teacherLoading || classesLoading;
 
   if (isLoading) {
@@ -89,29 +91,53 @@ export default function TimetablePage() {
         </p>
       </div>
 
-      {hubs?.length > 1 && (
-        <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <label style={{ fontSize: 12.5, fontWeight: 700, color: T.inkMuted }}>Viewing</label>
-          <select value={filterHubId} onChange={(e) => setFilterHubId(e.target.value)} style={selectStyle}>
-            <option value="all">All Hubs</option>
-            {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-        </div>
-      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        {[["schedule", "My Schedule"], ["availability", "My Availability"]].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setActiveTab(key)}
+            style={{
+              padding: "8px 18px", borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
+              border: `1.5px solid ${activeTab === key ? T.accent : T.border}`,
+              backgroundColor: activeTab === key ? T.accent : "#fff",
+              color: activeTab === key ? "#fff" : T.inkMuted,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-      <CalendarView
-        events={events}
-        breaks={breaks}
-        skippedSessions={skippedSessions}
-        isLoading={calendarLoading}
-        resolveCourseName={resolveCourseName}
-        resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
-        resolveClassLabel={(classId) => classNameById.get(classId)}
-        onRangeChange={onRangeChange}
-        emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
-        enableSessionDetail
-        enableReschedule
-      />
+      {activeTab === "schedule" ? (
+        <>
+          {hubs?.length > 1 && (
+            <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <label style={{ fontSize: 12.5, fontWeight: 700, color: T.inkMuted }}>Viewing</label>
+              <select value={filterHubId} onChange={(e) => setFilterHubId(e.target.value)} style={selectStyle}>
+                <option value="all">All Hubs</option>
+                {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          <CalendarView
+            events={events}
+            breaks={breaks}
+            skippedSessions={skippedSessions}
+            isLoading={calendarLoading}
+            resolveCourseName={resolveCourseName}
+            resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
+            resolveClassLabel={(classId) => classNameById.get(classId)}
+            onRangeChange={onRangeChange}
+            emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
+            enableSessionDetail
+            enableReschedule
+          />
+        </>
+      ) : (
+        <AvailabilityEditor teacherId={teacher?.id} />
+      )}
     </div>
   );
 }

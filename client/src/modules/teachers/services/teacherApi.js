@@ -11,4 +11,11 @@ export const teacherApi = {
   getHubs:   (id)        => api.get(`${ENDPOINT}/${id}/hubs/links`).then((r) => r.data.data),
   linkHub:   (id, hubId) => api.post(`${ENDPOINT}/${id}/hubs/links`, { hubId }).then((r) => r.data.data),
   unlinkHub: (id, hubId) => api.delete(`${ENDPOINT}/${id}/hubs/links/${hubId}`).then((r) => r.data.data),
+
+  // Weekly "here's when I can teach" windows — see server/src/modules/timetable/
+  // timetable.service.js's violatesTeacherAvailability for how these feed into scheduling.
+  getAvailability:          (id)             => api.get(`${ENDPOINT}/${id}/availability`).then((r) => r.data.data),
+  addAvailabilitySlot:      (id, data)       => api.post(`${ENDPOINT}/${id}/availability`, data).then((r) => r.data.data),
+  updateAvailabilitySlot:   (id, slotId, data) => api.put(`${ENDPOINT}/${id}/availability/${slotId}`, data).then((r) => r.data.data),
+  removeAvailabilitySlot:   (id, slotId)     => api.delete(`${ENDPOINT}/${id}/availability/${slotId}`).then((r) => r.data),
 };
