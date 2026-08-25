@@ -108,6 +108,7 @@ export default function AdminReportsPage() {
             <KpiTile icon={<AssessmentIcon fontSize="small" />} num={analytics.averageScore != null ? `${analytics.averageScore}%` : "—"} label="Average score" sub="From published course reports" />
             <KpiTile icon={<EventAvailableIcon fontSize="small" />} num={analytics.attendanceRate != null ? `${analytics.attendanceRate}%` : "—"} label="Attendance rate" sub="Last 30 days" />
             <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={analytics.reportStats.published} label="Reports published" sub={`${analytics.reportStats.draft} draft${analytics.reportStats.draft === 1 ? "" : "s"} awaiting review`} />
+            <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={analytics.completionStats?.rate != null ? `${analytics.completionStats.rate}%` : "—"} label="Completion rate" sub={`${analytics.completionStats?.completed || 0} of ${analytics.completionStats?.expected || 0} learner-course reports`} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
@@ -154,7 +155,7 @@ export default function AdminReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {["Hub", "Classes", "Learners", "Avg. score", "Attendance", "Reports"].map((h) => (
+                    {["Hub", "Classes", "Learners", "Avg. score", "Attendance", "Completion", "Reports"].map((h) => (
                       <th key={h} style={{ textAlign: "left", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: T.inkFaint, padding: "0 10px 8px", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -167,6 +168,7 @@ export default function AdminReportsPage() {
                       <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, fontVariantNumeric: "tabular-nums" }}>{h.learnerCount}</td>
                       <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, fontVariantNumeric: "tabular-nums" }}>{h.averageScore != null ? `${h.averageScore}%` : "—"}</td>
                       <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, fontVariantNumeric: "tabular-nums" }}>{h.attendanceRate != null ? `${h.attendanceRate}%` : "—"}</td>
+                      <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, fontVariantNumeric: "tabular-nums" }}>{h.completionRate != null ? `${h.completionRate}%` : "—"}</td>
                       <td style={{ padding: "11px 10px", borderBottom: `1px solid ${T.border}`, color: T.inkMuted }}>{h.publishedCount} published{h.draftCount > 0 ? ` · ${h.draftCount} draft` : ""}</td>
                     </tr>
                   ))}
