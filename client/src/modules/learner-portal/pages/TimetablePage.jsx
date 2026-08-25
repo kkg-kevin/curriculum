@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useCoursesForPairs } from "../../curriculum/hooks/useCurriculumVersion";
 import { useMyLearnerCalendar } from "../../timetable/hooks/useTimetable";
@@ -18,7 +18,7 @@ const selectStyle = {
 };
 
 export default function TimetablePage() {
-  const { hubs, isLoading: scopeLoading } = useOutletContext();
+  const { hubs, selectedHubId, isLoading: scopeLoading } = useOutletContext();
   const enrolledHubs = (hubs || []).filter((h) => h.class);
 
   // A learner can be actively enrolled at more than one hub at once (see resolveLearnerCalendar
@@ -44,10 +44,16 @@ export default function TimetablePage() {
   const allEvents = calendarData?.data || [];
   const allBreaks = calendarData?.breaks || [];
 
-  // "All Hubs" (default) shows every hub's class merged into one calendar; picking one hub
-  // narrows both events and breaks down to just that hub's class — same "Viewing" filter
-  // pattern already used on the school-portal Timetable page's "All Classes" mode.
-  const [filterHubId, setFilterHubId] = useState("all");
+  // Defaults to whichever hub the portal-wide HubSwitcher (rendered by LearnerPortalLayout above
+  // every page, including this one) is currently on, rather than always resetting to "All Hubs"
+  // — without this, switching hubs up there had no visible effect here at all, since this page
+  // used to track its own filter completely independently. Still overridable locally to "All
+  // Hubs" (or a different hub) for the one thing that global switcher can't do: a single merged
+  // calendar across every hub a learner attends, same "All Classes" pattern the school-portal
+  // Timetable page uses. The effect re-syncs only when the GLOBAL selection changes, so a local
+  // override isn't clobbered by this page's own re-renders.
+  const [filterHubId, setFilterHubId] = useState(() => selectedHubId || "all");
+  useEffect(() => setFilterHubId(selectedHubId || "all"), [selectedHubId]);
   const events = filterHubId === "all" ? allEvents : allEvents.filter((e) => classIdToHubId.get(e.classId) === filterHubId);
   const breaks = filterHubId === "all"
     ? allBreaks
