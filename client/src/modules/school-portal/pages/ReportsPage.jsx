@@ -123,9 +123,29 @@ function GenderComparisonCard({ male, female }) {
         <div>
           <GenderComparisonRow label="Active learners" icon={<GroupsIcon fontSize="inherit" style={{ fontSize: 15 }} />} male={male.activeLearnerCount} female={female.activeLearnerCount} suffix="" />
           <GenderComparisonRow label="Average score" icon={<AssessmentIcon fontSize="inherit" style={{ fontSize: 15 }} />} male={male.averageScore} female={female.averageScore} />
+          <GenderComparisonRow label="Completion rate" icon={<CheckCircleIcon fontSize="inherit" style={{ fontSize: 15 }} />} male={male.completionStats?.rate} female={female.completionStats?.rate} />
           <GenderComparisonRow label="Attendance rate" icon={<EventAvailableIcon fontSize="inherit" style={{ fontSize: 15 }} />} male={male.attendanceRate} female={female.attendanceRate} isLast />
         </div>
       )}
+    </div>
+  );
+}
+
+function CompetencyComparisonCard({ male, female }) {
+  if (!male?.competencyScores || !female?.competencyScores) return null;
+  const maleById = new Map(male.competencyScores.map((row) => [row.competencyId, row]));
+  const femaleById = new Map(female.competencyScores.map((row) => [row.competencyId, row]));
+  const rows = [...new Set([...maleById.keys(), ...femaleById.keys()])].map((id) => ({
+    competencyId: id,
+    name: maleById.get(id)?.name || femaleById.get(id)?.name,
+    male: maleById.get(id)?.averageScore,
+    female: femaleById.get(id)?.averageScore,
+  }));
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ ...cardStyle, padding: "20px 22px" }}>
+      <p style={{ margin: "0 0 10px", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.accentLight }}>Competence development comparison</p>
+      {rows.map((row, index) => <GenderComparisonRow key={row.competencyId} label={row.name || "Unnamed competence"} male={row.male} female={row.female} isLast={index === rows.length - 1} />)}
     </div>
   );
 }
@@ -217,12 +237,14 @@ export default function ReportsPage() {
           </div>
 
           <GenderComparisonCard male={maleAnalytics} female={femaleAnalytics} />
+          <CompetencyComparisonCard male={maleAnalytics} female={femaleAnalytics} />
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
             <KpiTile icon={<GroupsIcon fontSize="small" />} num={analytics.activeLearnerCount} label="Active learners" sub={`Across ${analytics.classCount} class${analytics.classCount === 1 ? "" : "es"}`} />
             <KpiTile icon={<AssessmentIcon fontSize="small" />} num={analytics.averageScore != null ? `${analytics.averageScore}%` : "—"} label="Average score" sub="From published course reports" />
             <KpiTile icon={<EventAvailableIcon fontSize="small" />} num={analytics.attendanceRate != null ? `${analytics.attendanceRate}%` : "—"} label="Attendance rate" sub="Last 30 days" />
             <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={analytics.reportStats.published} label="Reports published" sub={`${analytics.reportStats.draft} draft${analytics.reportStats.draft === 1 ? "" : "s"} awaiting review`} />
+            <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={analytics.completionStats?.rate != null ? `${analytics.completionStats.rate}%` : "—"} label="Completion rate" sub={`${analytics.completionStats?.completed || 0} of ${analytics.completionStats?.expected || 0} learner-course reports`} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>

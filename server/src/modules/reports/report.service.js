@@ -12,11 +12,38 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
 const AttendanceModel = require("../attendance/attendance.model");
 const NotificationService = require("../notifications/notification.service");
+const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 
 function notFound(message) {
   const err = new Error(message);
   err.statusCode = 404;
   throw err;
+}
+
+async function getExpectedCourseCompletions(classes, activeLinks) {
+  const activeByClass = {};
+  activeLinks.forEach((link) => {
+    if (link.classId) activeByClass[link.classId] = (activeByClass[link.classId] || 0) + 1;
+  });
+  const courseCounts = await Promise.all(classes.map(async (cls) => {
+    const courses = await CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId);
+    return { classId: cls.id, count: courses.length };
+  }));
+  const expectedByClass = Object.fromEntries(courseCounts.map((row) => [
+    row.classId,
+    (activeByClass[row.classId] || 0) * row.count,
+  ]));
+  const expected = Object.values(expectedByClass).reduce((sum, count) => sum + count, 0);
+  return { expected, expectedByClass, activeByClass };
+}
+
+function buildCompletionStats(publishedFinals, expected) {
+  const completed = publishedFinals.length;
+  return {
+    completed,
+    expected,
+    rate: expected > 0 ? Math.round((completed / expected) * 100) : null,
+  };
 }
 
 // Every assessment a learner needs graded for a course to be report-eligible — a course's
@@ -470,6 +497,11 @@ const ReportService = {
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
     const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);
+    const { expected } = await getExpectedCourseCompletions(classes, activeLinks);
+    const completionStats = buildCompletionStats(
+      publishedFinals.filter((r) => activeLinks.some((l) => l.learnerId === r.learnerId && l.classId === r.classId)),
+      expected
+    );
 
     const averageScore = scored.length
       ? Math.round(scored.reduce((sum, r) => sum + r.content.overall.percent, 0) / scored.length)
@@ -544,6 +576,7 @@ const ReportService = {
       classCount: classes.length,
       activeLearnerCount: activeLinks.length,
       reportStats: { published: publishedFinals.length, draft: draftFinals.length },
+      completionStats,
       averageScore,
       scoreByCourse,
       competencyScores,
@@ -577,6 +610,10 @@ const ReportService = {
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
     const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);
+    const { expected, expectedByClass } = await getExpectedCourseCompletions(classes, activeLinks);
+    const activeEnrollmentKeys = new Set(activeLinks.map((link) => `${link.learnerId}:${link.classId}`));
+    const activePublishedFinals = publishedFinals.filter((report) => activeEnrollmentKeys.has(`${report.learnerId}:${report.classId}`));
+    const completionStats = buildCompletionStats(activePublishedFinals, expected);
 
     const averageScore = scored.length
       ? Math.round(scored.reduce((sum, r) => sum + r.content.overall.percent, 0) / scored.length)
@@ -644,6 +681,10 @@ const ReportService = {
     const hubBreakdown = hubs.map((hub) => {
       const hubScored = scored.filter((r) => r.hubId === hub.id);
       const hubAttendance = attendanceByHub[hub.id];
+      const hubExpected = classes
+        .filter((cls) => cls.schoolId === hub.id)
+        .reduce((sum, cls) => sum + (expectedByClass[cls.id] || 0), 0);
+      const hubCompleted = activePublishedFinals.filter((r) => r.hubId === hub.id).length;
       return {
         hubId: hub.id,
         name: hub.name,
@@ -653,6 +694,7 @@ const ReportService = {
           ? Math.round(hubScored.reduce((sum, r) => sum + r.content.overall.percent, 0) / hubScored.length)
           : null,
         attendanceRate: hubAttendance ? Math.round((hubAttendance.present / hubAttendance.total) * 100) : null,
+        completionRate: hubExpected > 0 ? Math.round((hubCompleted / hubExpected) * 100) : null,
         publishedCount: publishedFinals.filter((r) => r.hubId === hub.id).length,
         draftCount: draftFinals.filter((r) => r.hubId === hub.id).length,
       };
@@ -663,6 +705,7 @@ const ReportService = {
       classCount: classes.length,
       activeLearnerCount: activeLinks.length,
       reportStats: { published: publishedFinals.length, draft: draftFinals.length },
+      completionStats,
       averageScore,
       scoreByCourse,
       competencyScores,
