@@ -1,4 +1,6 @@
 const LearningHubModel = require("./learning-hub.model");
+const LearningHubCurriculumLinkModel = require("./learning-hub-curriculum-link.model");
+const CurriculumModel = require("../curriculum/curriculum.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const TeacherModel = require("../teachers/teacher.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
@@ -7,9 +9,30 @@ const ClassService = require("../classes/class.service");
 const RoomModel = require("../rooms/room.model");
 const RoomService = require("../rooms/room.service");
 
+async function assertCurriculumExists(curriculumId) {
+  const curriculum = await CurriculumModel.findById(curriculumId);
+  if (!curriculum) {
+    const err = new Error("Curriculum not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  return curriculum;
+}
+
+function sortAttachments(links) {
+  return [...links].sort((a, b) => {
+    if (a.slot === b.slot) return a.createdAt > b.createdAt ? 1 : -1;
+    return a.slot === "core" ? -1 : 1;
+  });
+}
+
 const LearningHubService = {
   async createLearningHub(data) {
-    return LearningHubModel.create(data);
+    const record = await LearningHubModel.create(data);
+    if (data.curriculumId) {
+      await this.syncCoreCurriculum(record.id, data.curriculumId);
+    }
+    return record;
   },
 
   // Read-only mirror of TeacherService's link management — teachers are linked to a hub from
@@ -42,7 +65,163 @@ const LearningHubService = {
       err.statusCode = 404;
       throw err;
     }
+    if (Object.prototype.hasOwnProperty.call(data, "curriculumId")) {
+      await this.syncCoreCurriculum(id, data.curriculumId);
+    }
     return record;
+  },
+
+  async syncCoreCurriculum(hubId, curriculumId) {
+    const existing = await LearningHubCurriculumLinkModel.findCoreByHubId(hubId);
+    if (!curriculumId) {
+      if (existing) await LearningHubCurriculumLinkModel.delete(existing.id);
+      return null;
+    }
+
+    await assertCurriculumExists(curriculumId);
+    const now = new Date();
+    if (existing && existing.curriculumId === curriculumId) {
+      return existing;
+    }
+
+    return LearningHubCurriculumLinkModel.upsertBySlot({
+      hubId,
+      curriculumId,
+      slot: "core",
+      role: "core",
+      status: "active",
+      startedAt: existing?.startedAt || now,
+      endedAt: null,
+    });
+  },
+
+  async attachSecondaryCurriculum(hubId, curriculumId, role) {
+    if (!["complementary", "substitutional"].includes(role)) {
+      const err = new Error("Secondary curriculum role must be complementary or substitutional");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const hub = await LearningHubModel.findById(hubId);
+    const core = await LearningHubCurriculumLinkModel.findCoreByHubId(hubId);
+    if (!hub || (!core && !hub.curriculumId)) {
+      const err = new Error("A secondary curriculum can only be attached to a hub that already has a core curriculum");
+      err.statusCode = 400;
+      throw err;
+    }
+    await assertCurriculumExists(curriculumId);
+    const existing = await LearningHubCurriculumLinkModel.findSecondaryByHubId(hubId);
+    const now = new Date();
+    if (existing && existing.curriculumId === curriculumId && existing.role === role) {
+      return existing;
+    }
+
+    return LearningHubCurriculumLinkModel.upsertBySlot({
+      hubId,
+      curriculumId,
+      slot: "secondary",
+      role,
+      status: "active",
+      startedAt: existing?.curriculumId === curriculumId ? existing.startedAt : now,
+      endedAt: null,
+    });
+  },
+
+  async updateSecondaryCurriculumStatus(hubId, curriculumId, status) {
+    if (!["active", "inactive", "completed"].includes(status)) {
+      const err = new Error("Invalid curriculum status");
+      err.statusCode = 400;
+      throw err;
+    }
+    const link = await LearningHubCurriculumLinkModel.findByHubAndCurriculumId(hubId, curriculumId);
+    if (!link) {
+      const err = new Error("Hub curriculum link not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (link.slot !== "secondary") {
+      const err = new Error("Only secondary curricula can be updated through this action");
+      err.statusCode = 400;
+      throw err;
+    }
+    const patch = {
+      status,
+      endedAt: status === "active" ? null : new Date(),
+      startedAt: status === "active" && !link.startedAt ? new Date() : link.startedAt,
+    };
+    return LearningHubCurriculumLinkModel.update(link.id, patch);
+  },
+
+  async detachCurriculum(hubId, curriculumId) {
+    const link = await LearningHubCurriculumLinkModel.findByHubAndCurriculumId(hubId, curriculumId);
+    if (!link) {
+      const hub = await LearningHubModel.findById(hubId);
+      if (hub?.curriculumId === curriculumId) {
+        await LearningHubModel.clearCurriculumIdByHubId(hubId);
+        return true;
+      }
+      return false;
+    }
+    if (link.slot === "core") {
+      await LearningHubModel.clearCurriculumIdByHubId(hubId);
+    }
+    return LearningHubCurriculumLinkModel.delete(link.id);
+  },
+
+  async getHubCurricula(hubId) {
+    const hub = await LearningHubModel.findById(hubId);
+    if (!hub) {
+      const err = new Error("Learning hub not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const links = sortAttachments(await LearningHubCurriculumLinkModel.findByHubId(hubId));
+    const core = links.find((l) => l.slot === "core") || (hub.curriculumId ? {
+      id: null,
+      hubId,
+      curriculumId: hub.curriculumId,
+      slot: "core",
+      role: "core",
+      status: "active",
+      startedAt: null,
+      endedAt: null,
+    } : null);
+    const secondary = links.find((l) => l.slot === "secondary") || null;
+    const curriculumIds = [...new Set([core?.curriculumId, secondary?.curriculumId].filter(Boolean))];
+    const curricula = await Promise.all(curriculumIds.map((curriculumId) => CurriculumModel.findById(curriculumId)));
+    const curriculumById = new Map(curricula.filter(Boolean).map((curriculum) => [curriculum.id, curriculum]));
+
+    return [core, secondary].filter(Boolean).map((link) => ({
+      ...link,
+      curriculum: curriculumById.get(link.curriculumId) || null,
+    }));
+  },
+
+  async getEffectiveCurriculumIds(hubId) {
+    const hub = await LearningHubModel.findById(hubId);
+    const links = sortAttachments(await LearningHubCurriculumLinkModel.findByHubId(hubId));
+    const core = links.find((l) => l.slot === "core");
+    const secondary = links.find((l) => l.slot === "secondary");
+
+    if (secondary?.status === "active" && secondary.role === "substitutional") {
+      return [secondary.curriculumId];
+    }
+
+    const ids = [];
+    const coreCurriculumId = core?.curriculumId || hub?.curriculumId || null;
+    if ((core?.status || "active") === "active" && coreCurriculumId) ids.push(coreCurriculumId);
+    if (secondary?.status === "active" && secondary.role === "complementary" && secondary.curriculumId) {
+      ids.push(secondary.curriculumId);
+    }
+    if (!coreCurriculumId && !secondary?.curriculumId) return [];
+    return [...new Set(ids)];
+  },
+
+  async getEffectiveCurricula(hubId) {
+    const ids = await this.getEffectiveCurriculumIds(hubId);
+    const curricula = await Promise.all(ids.map((id) => CurriculumModel.findById(id)));
+    return curricula.filter(Boolean);
   },
 
   async deleteLearningHub(id) {
@@ -52,6 +231,7 @@ const LearningHubService = {
       err.statusCode = 404;
       throw err;
     }
+    await LearningHubCurriculumLinkModel.deleteByHubId(id);
     await TeacherHubLinkModel.deleteByHubId(id);
     await LearnerHubLinkModel.deleteByHubId(id);
     // Classes are keyed by schoolId === this hub's id, with no other owner once the hub is gone —

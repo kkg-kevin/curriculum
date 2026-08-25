@@ -52,7 +52,7 @@ function computeAge(dateOfBirth) {
 // why it read as visually flat next to every other section repeating the same card style.
 // "X% to <next band>" when there's a level still ahead, a trophy note when the learner has
 // reached the top of the ladder, or a nudge to get started when nothing's been reached yet —
-// same motivating framing as the Level Journey card below (both read the same band data via
+// same motivating framing as the Progress Arc card below (both read the same band data via
 // deriveBandJourney, so this line can never disagree with what that card shows).
 function levelSummarySub(band, nextBand) {
   if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;

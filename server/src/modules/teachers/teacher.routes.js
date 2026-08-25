@@ -8,6 +8,10 @@ const {
   getTeacherHubs,
   linkTeacherHub,
   unlinkTeacherHub,
+  getTeacherAvailability,
+  addTeacherAvailabilitySlot,
+  updateTeacherAvailabilitySlot,
+  deleteTeacherAvailabilitySlot,
 } = require("./teacher.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -36,5 +40,16 @@ router.route("/:id/hubs/links")
   .post(authorize("admin", "school"), linkTeacherHub);
 router.route("/:id/hubs/links/:hubId")
   .delete(authorize("admin", "school"), unlinkTeacherHub);
+
+// A teacher's own weekly "here's when I can teach" windows — read is open to "school" too (not
+// just admin/self) so a school can check availability before assigning a teacher to a timetable
+// slot; write is teacher-self or admin/school-of-record, enforced in the controller. Purely
+// opt-in data — see timetable.service.js's hasConflict for how (or whether) it's enforced.
+router.route("/:id/availability")
+  .get(authorize("admin", "school", "teacher"), getTeacherAvailability)
+  .post(authorize("admin", "school", "teacher"), addTeacherAvailabilitySlot);
+router.route("/:id/availability/:slotId")
+  .put(authorize("admin", "school", "teacher"), updateTeacherAvailabilitySlot)
+  .delete(authorize("admin", "school", "teacher"), deleteTeacherAvailabilitySlot);
 
 module.exports = router;

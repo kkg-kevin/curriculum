@@ -43,6 +43,14 @@ const LearningHubModel = {
     return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
+  clearCurriculumId(curriculumId) {
+    return db(TABLE).where({ curriculumId }).update({ curriculumId: null, updatedAt: new Date() });
+  },
+
+  clearCurriculumIdByHubId(hubId) {
+    return db(TABLE).where({ id: hubId }).update({ curriculumId: null, updatedAt: new Date() });
+  },
+
   delete(id) {
     return deleteRecord(db, TABLE, id);
   },

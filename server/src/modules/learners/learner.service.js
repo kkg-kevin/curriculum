@@ -427,7 +427,7 @@ const LearnerService = {
   // `{...record}`, so a field added to the learner schema later can't silently start leaking
   // through a link a school printed on a badge), but now a comprehensive one covering everything
   // shown on this learner's own Profile page: full identity, guardian contact, Developmental
-  // Stage/Performance Band placement, the Level Journey ladder, per-competency standing, and
+  // Stage/Performance Band placement, the Progress Arc ladder, per-competency standing, and
   // Learning Journey course placement per area. Deliberately still excludes individual assessment
   // scores/teacher feedback (Reports/Assessments) — that can carry sensitive per-submission
   // commentary that competency/progress summaries don't. Class/hub comes from the same "first

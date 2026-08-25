@@ -35,7 +35,7 @@ function LevelNode({ band, status, ordinal, size = 64 }) {
       <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
         {current && (
           <>
-            <div className="lj-pulse" style={{ position: "absolute", inset: -6, borderRadius: "50%", backgroundColor: "rgba(254,177,57,0.28)" }} />
+            <div className="pa-pulse" style={{ position: "absolute", inset: -6, borderRadius: "50%", backgroundColor: "rgba(254,177,57,0.28)" }} />
             <ProgressRing percent={band.completion} size={size} stroke={6} color={T.gold} />
           </>
         )}
@@ -85,7 +85,7 @@ function LevelConnector({ status, percent }) {
   );
 }
 
-function levelJourneyCaption(current, next) {
+function progressArcCaption(current, next) {
   if (next) return `You're at ${current ? current.name : "the start"} — ${next.completion}% of the way to unlocking ${next.name}. Keep going!`;
   if (current) return `${current.name} — the highest level on this curriculum's ladder. Amazing work!`;
   return "Complete graded work tagged to these levels to start your journey.";
@@ -98,7 +98,9 @@ function levelJourneyCaption(current, next) {
 // CompetenciesTabContent's Band Progress section always showed, restyled to read as a reward
 // track instead of a plain data table, and pulled out to its own file so both the Profile
 // Overview tab and the Dashboard's own upper section can show the exact same live progress.
-export default function LevelJourneyCard({ curriculumId, learnerId }) {
+// Named "Progress Arc" to match Engine 3 (scoring-engines.js → runProgressArcEngine), the
+// score-to-band mapping this whole ladder visualizes — not just a "journey" through levels.
+export default function ProgressArcCard({ curriculumId, learnerId }) {
   const { data: bandProgress = [] } = useLearnerBandProgress(curriculumId, learnerId);
   const { current, next } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
   if (bandProgress.length === 0) return null;
@@ -113,11 +115,11 @@ export default function LevelJourneyCard({ curriculumId, learnerId }) {
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: 20, overflow: "hidden", position: "relative",
     }}>
       <style>{`
-        @keyframes lj-pulse-glow {
+        @keyframes pa-pulse-glow {
           0%, 100% { transform: scale(0.94); opacity: 0.9; }
           50% { transform: scale(1.12); opacity: 0.35; }
         }
-        .lj-pulse { animation: lj-pulse-glow 2.2s ease-in-out infinite; }
+        .pa-pulse { animation: pa-pulse-glow 2.2s ease-in-out infinite; }
       `}</style>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
@@ -125,14 +127,14 @@ export default function LevelJourneyCard({ curriculumId, learnerId }) {
           <div style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: T.gold, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <FiAward size={13} />
           </div>
-          <h2 style={{ ...sectionHeaderStyle(), color: "#B45309" }}>Level Journey</h2>
+          <h2 style={{ ...sectionHeaderStyle(), color: "#B45309" }}>Progress Arc</h2>
         </div>
         <span style={{ fontSize: 11, fontWeight: 800, color: "#B45309", backgroundColor: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap" }}>
           {achievedCount} of {bandProgress.length} unlocked
         </span>
       </div>
 
-      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.5 }}>{levelJourneyCaption(current, next)}</p>
+      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.5 }}>{progressArcCaption(current, next)}</p>
 
       <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {bandProgress.map((bp, i) => {

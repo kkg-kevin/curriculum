@@ -6,6 +6,7 @@ const SessionModel = require("../courses/session.model");
 const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const TeacherAvailabilityModel = require("../teachers/teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearnerModel = require("../learners/learner.model");
 const TeacherModel = require("../teachers/teacher.model");
@@ -67,6 +68,29 @@ async function hasConflict({ classId, courseId, teacherId, roomId, dayOfWeek, st
   for (const s of others) {
     const otherTeacherIds = await resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId);
     if (otherTeacherIds.some((id) => myTeacherIds.includes(id))) return true;
+  }
+  return false;
+}
+
+// True if this slot would schedule some effective teacher outside their own declared
+// availability (see teacher-availability.model.js). Deliberately opt-in per teacher, same
+// "unconfigured = unrestricted" posture isDateSchedulable already applies to academic-year
+// periods: a teacher who has never declared any availability at all imposes no restriction, so
+// this can never retroactively conflict-block an existing school's timetable the day this
+// feature ships. Once a teacher HAS declared at least one window, though, every day they didn't
+// also declare is treated as "not available" (they were asked to lay out ALL their available
+// time, not just a partial sample) and a slot's time must fall entirely inside one of that
+// teacher's windows for the matching day, not merely overlap it.
+async function violatesTeacherAvailability({ classId, courseId, teacherId, dayOfWeek, startTime, endTime }) {
+  const teacherIds = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
+  if (teacherIds.length === 0) return false;
+  const rows = await TeacherAvailabilityModel.findByTeacherIds(teacherIds);
+  for (const id of teacherIds) {
+    const own = rows.filter((r) => r.teacherId === id);
+    if (own.length === 0) continue;
+    const dayRows = own.filter((r) => r.dayOfWeek === dayOfWeek);
+    const fits = dayRows.some((r) => startTime >= r.startTime && endTime <= r.endTime);
+    if (!fits) return true;
   }
   return false;
 }
@@ -414,6 +438,9 @@ const TimetableService = {
     if (await hasConflict(data)) {
       conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
+    if (await violatesTeacherAvailability(data)) {
+      conflictError("This time falls outside the assigned teacher's declared availability");
+    }
     return TimetableModel.create(data);
   },
 
@@ -424,6 +451,9 @@ const TimetableService = {
     if (await hasConflict({ ...merged, excludeId: id })) {
       conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
+    if (await violatesTeacherAvailability(merged)) {
+      conflictError("This time falls outside the assigned teacher's declared availability");
+    }
     return TimetableModel.update(id, data);
   },
 
@@ -431,6 +461,27 @@ const TimetableService = {
     const deleted = await TimetableModel.delete(id);
     if (!deleted) notFound("Timetable slot not found");
     return { message: "Timetable slot deleted" };
+  },
+
+  // Which of the given candidate teachers (the same ids already populating the school-portal's
+  // teacher <select>) would conflict if picked for this day/time — either double-booked against
+  // another slot's effective teacher, or scheduled outside their own declared availability (see
+  // violatesTeacherAvailability above). Surfaced ahead of save time so the picker can flag a
+  // conflict before the user tries to save, same role getBusyRoomIds plays for rooms
+  // (room.service.js). excludeSlotId lets editing a slot ignore that slot's own current booking.
+  async getConflictingTeacherIds(teacherIds, { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId }) {
+    if (!teacherIds?.length || !dayOfWeek || !startTime || !endTime) return [];
+    const daySlots = await TimetableModel.findAll({ dayOfWeek });
+    const overlapping = daySlots.filter((s) => s.id !== excludeSlotId && s.classId !== classId && timesOverlap(startTime, endTime, s.startTime, s.endTime));
+    const overlappingTeacherIdSets = await Promise.all(overlapping.map((s) => resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId)));
+
+    const conflicting = [];
+    for (const teacherId of teacherIds) {
+      const doubleBooked = overlappingTeacherIdSets.some((ids) => ids.includes(teacherId));
+      const outsideAvailability = !doubleBooked && await violatesTeacherAvailability({ classId, courseId, teacherId, dayOfWeek, startTime, endTime });
+      if (doubleBooked || outsideAvailability) conflicting.push(teacherId);
+    }
+    return conflicting;
   },
 
   // A teacher's "we didn't hold this one" record — see resolveCoursePlacements for how mode

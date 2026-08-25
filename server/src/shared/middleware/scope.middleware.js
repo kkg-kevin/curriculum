@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const LearningHubModel = require("../../modules/learning-hubs/learning-hub.model");
+const LearningHubService = require("../../modules/learning-hubs/learning-hub.service");
 const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
@@ -35,9 +36,11 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       req.ownSchools = [ownHub, ...branches.filter((h) => h.status !== "inactive")];
       const requestedId = req.headers["x-active-hub-id"];
       req.ownSchool = (requestedId && req.ownSchools.find((h) => h.id === requestedId)) || ownHub;
+      req.ownSchoolCurriculumIds = req.ownSchool ? await LearningHubService.getEffectiveCurriculumIds(req.ownSchool.id) : [];
     } else {
       req.ownSchools = [];
       req.ownSchool = null;
+      req.ownSchoolCurriculumIds = [];
     }
   }
 

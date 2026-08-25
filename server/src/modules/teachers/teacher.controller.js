@@ -2,9 +2,10 @@ const asyncHandler = require("express-async-handler");
 const TeacherService = require("./teacher.service");
 const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
+const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
-const { createTeacherSchema, updateTeacherSchema } = require("./teacher.validation");
+const { createTeacherSchema, updateTeacherSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // True whenever `teacherId` is linked to `hubId` via the teacher-hub link table — the
@@ -151,6 +152,54 @@ const unlinkTeacherHub = asyncHandler(async (req, res) => {
   res.json({ success: true, data: hubs });
 });
 
+// A teacher's own "here's when I can teach" weekly windows — same ownership posture as
+// hubs/links above: "teacher" only ever reads/writes its own, "school" only a teacher linked to
+// its own hub, "admin" unrestricted. Read is open to "school" too (not just admin/self) so a
+// school can check a teacher's availability before assigning them to a timetable slot.
+const getTeacherAvailability = asyncHandler(async (req, res) => {
+  if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
+  if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  const slots = await TeacherService.getAvailability(req.params.id);
+  res.json({ success: true, data: slots, count: slots.length });
+});
+
+const addTeacherAvailabilitySlot = asyncHandler(async (req, res) => {
+  if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
+  if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  const data = createAvailabilitySlotSchema.parse(req.body);
+  const slot = await TeacherService.addAvailabilitySlot(req.params.id, data);
+  res.status(201).json({ success: true, data: slot });
+});
+
+async function loadOwnedAvailabilitySlotOrThrow(req) {
+  const slot = await TeacherAvailabilityModel.findById(req.params.slotId);
+  if (!slot) {
+    const err = new Error("Availability window not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (req.user.role === "teacher") assertOwn(slot.teacherId === req.ownTeacher?.id);
+  if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, slot.teacherId));
+  return slot;
+}
+
+const updateTeacherAvailabilitySlot = asyncHandler(async (req, res) => {
+  await loadOwnedAvailabilitySlotOrThrow(req);
+  const parsed = updateAvailabilitySlotSchema.parse(req.body);
+  // Same "only keys present in the raw body survive" guard every partial-update endpoint in
+  // this codebase needs (updateAvailabilitySlotSchema is createAvailabilitySlotSchema.partial(),
+  // which still materializes an absent key's .default() if one existed).
+  const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
+  const slot = await TeacherService.updateAvailabilitySlot(req.params.slotId, data);
+  res.json({ success: true, data: slot });
+});
+
+const deleteTeacherAvailabilitySlot = asyncHandler(async (req, res) => {
+  await loadOwnedAvailabilitySlotOrThrow(req);
+  const result = await TeacherService.deleteAvailabilitySlot(req.params.slotId);
+  res.json({ success: true, ...result });
+});
+
 module.exports = {
   createTeacher,
   getAllTeachers,
@@ -160,4 +209,8 @@ module.exports = {
   getTeacherHubs,
   linkTeacherHub,
   unlinkTeacherHub,
+  getTeacherAvailability,
+  addTeacherAvailabilitySlot,
+  updateTeacherAvailabilitySlot,
+  deleteTeacherAvailabilitySlot,
 };

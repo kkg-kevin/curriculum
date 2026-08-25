@@ -72,6 +72,26 @@ const deleteSlot = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+// Which of a course's candidate teachers (the ids already populating the school-portal's
+// teacher <select>) would conflict if picked for this day/time — either double-booked or
+// outside their own declared availability. Same ownership posture as every other class-scoped
+// read here. teacherIds comes from the client (the same class-course-teacher links already
+// populating the picker), not resolved server-side, since "candidate" here means "appears in
+// this picker", not "every teacher in the system".
+const getTeacherAvailabilityConflicts = asyncHandler(async (req, res) => {
+  const { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
+  const teacherIds = Array.isArray(req.query.teacherIds) ? req.query.teacherIds : req.query.teacherIds ? [req.query.teacherIds] : [];
+  const conflicting = await TimetableService.getConflictingTeacherIds(teacherIds, { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId });
+  res.json({ success: true, data: conflicting });
+});
+
 const getMyTeacherTimetable = asyncHandler(async (req, res) => {
   if (!req.ownTeacher) return res.json({ success: true, data: [] });
   const slots = await TimetableService.listForTeacher(req.ownTeacher.id);
@@ -234,4 +254,5 @@ module.exports = {
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
+  getTeacherAvailabilityConflicts,
 };

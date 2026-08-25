@@ -189,8 +189,8 @@ function Pill({ icon: Icon, label, value }) {
 }
 
 // Gold ring + pulsing glow around whichever node the learner is actively working toward —
-// mirrors the learner portal's own LevelJourneyCard (client/src/modules/learner-portal/
-// components/LevelJourneyCard.jsx), rebuilt standalone here since this page is deliberately
+// mirrors the learner portal's own ProgressArcCard (client/src/modules/learner-portal/
+// components/ProgressArcCard.jsx), rebuilt standalone here since this page is deliberately
 // self-contained (no login, no shared authenticated-portal component tree to reach into).
 function ProgressRing({ percent, size, stroke }) {
   const radius = (size - stroke) / 2;
@@ -211,7 +211,7 @@ function ProgressRing({ percent, size, stroke }) {
 
 // achieved = filled gradient medal, current = gold percent ring + pulsing halo ("you are here"),
 // locked = flat dashed disc with a padlock — same three-state visual language as the
-// authenticated Level Journey card, just sized to fit this smaller shared-profile card.
+// authenticated Progress Arc card, just sized to fit this smaller shared-profile card.
 function LevelNode({ band, status, ordinal }) {
   const achieved = status === "achieved";
   const current = status === "current";
@@ -435,7 +435,7 @@ export default function PublicLearnerProfilePage() {
 
         {profile.levelJourney?.length > 0 && (
           <div style={sectionStyle}>
-            <SectionHeading icon={FiTrendingUp}>Level Journey</SectionHeading>
+            <SectionHeading icon={FiTrendingUp}>Progress Arc</SectionHeading>
             <LevelJourney levelJourney={profile.levelJourney} currentLevel={profile.currentLevel} />
           </div>
         )}

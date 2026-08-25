@@ -14,6 +14,7 @@ import {
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
 import { useRoomsByHub, useRoomAvailability } from "../../rooms/hooks/useRooms";
+import { useTeacherAvailabilityConflicts } from "../../timetable/hooks/useTimetable";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -100,7 +101,7 @@ function ClassMultiPicker({ siblings, selectedIds, onChange, label }) {
 // let it silently disagree with the section it actually gets created under. Editing an existing
 // slot (initial provided, no lockedDay) still gets the full dropdown, since moving a slot to a
 // different day is a reasonable thing to want.
-function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [], hubId, slotId }) {
+function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initial, isSaving, lockedDay, siblingClasses = [], hubId, classId, slotId }) {
   const [form, setForm] = useState(() => initial || {
     courseId: "", teacherId: "", dayOfWeek: lockedDay || "monday", startTime: "", endTime: "", roomId: "",
   });
@@ -120,6 +121,16 @@ function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initia
   });
   const busyRoomIdSet = new Set(busyRoomIds);
   const selectedRoomIsBusy = !!form.roomId && busyRoomIdSet.has(form.roomId);
+
+  // Same idea for this course's candidate educators — flags whichever would be double-booked or
+  // scheduled outside their own declared availability (see teacher.routes.js's /:id/availability)
+  // before save time, instead of only finding out from the 409 TimetableService.createSlot throws.
+  const { data: conflictingTeacherIds = [] } = useTeacherAvailabilityConflicts({
+    classId, courseId: form.courseId, teacherIds: teachersForCourse.map((l) => l.teacherId),
+    dayOfWeek: form.dayOfWeek, startTime: form.startTime, endTime: form.endTime, excludeSlotId: slotId,
+  });
+  const conflictingTeacherIdSet = new Set(conflictingTeacherIds);
+  const selectedTeacherConflicts = !!form.teacherId && conflictingTeacherIdSet.has(form.teacherId);
 
   const submit = () => {
     if (!form.courseId || !form.startTime || !form.endTime) return;
@@ -147,7 +158,9 @@ function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initia
         <select value={form.teacherId} onChange={(e) => set("teacherId", e.target.value)} style={selectStyle} disabled={!form.courseId}>
           <option value="">{teachersForCourse.length > 0 ? "Default educator" : "No educator assigned yet"}</option>
           {teachersForCourse.map((l) => (
-            <option key={l.teacherId} value={l.teacherId}>{l.teacher.firstName} {l.teacher.lastName}{l.isPrimary ? " (Primary)" : ""}</option>
+            <option key={l.teacherId} value={l.teacherId} disabled={conflictingTeacherIdSet.has(l.teacherId)}>
+              {l.teacher.firstName} {l.teacher.lastName}{l.isPrimary ? " (Primary)" : ""}{conflictingTeacherIdSet.has(l.teacherId) ? " (Unavailable)" : ""}
+            </option>
           ))}
         </select>
         <select value={form.roomId} onChange={(e) => set("roomId", e.target.value)} style={selectStyle}>
@@ -162,6 +175,11 @@ function SlotForm({ courses, courseLinks, rooms = [], onSubmit, onCancel, initia
       {selectedRoomIsBusy && (
         <p style={{ margin: 0, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
           This room is already booked at this time — pick another room or time.
+        </p>
+      )}
+      {selectedTeacherConflicts && (
+        <p style={{ margin: 0, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
+          This educator is already booked, or this time falls outside their declared availability — pick another educator or time.
         </p>
       )}
 
@@ -528,6 +546,7 @@ export default function TimetablePage() {
                           courseLinks={courseLinks}
                           rooms={rooms}
                           hubId={school?.id}
+                          classId={selectedClassId}
                           slotId={slot.id}
                           initial={{ courseId: slot.courseId, teacherId: slot.teacherId || "", dayOfWeek: slot.dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, roomId: slot.roomId || "" }}
                           onSubmit={handleUpdate}
@@ -552,6 +571,7 @@ export default function TimetablePage() {
                         courseLinks={courseLinks}
                         rooms={rooms}
                         hubId={school?.id}
+                        classId={selectedClassId}
                         lockedDay={day}
                         onSubmit={handleCreate}
                         onCancel={() => setAddingDay(null)}

@@ -7,6 +7,7 @@ export const LEARNING_HUB_KEYS = {
   all: ["learningHubs"],
   list: (filters) => ["learningHubs", "list", filters],
   detail: (id) => ["learningHubs", "detail", id],
+  curricula: (id) => ["learningHubs", "detail", id, "curricula"],
 };
 
 export function useLearningHubsQuery() {
@@ -29,6 +30,14 @@ export function useLearningHubQuery(id) {
     queryKey: LEARNING_HUB_KEYS.detail(id),
     queryFn: () => learningHubApi.getById(id),
     enabled: !!id,
+  });
+}
+
+export function useLearningHubCurriculaQuery(hubId) {
+  return useQuery({
+    queryKey: LEARNING_HUB_KEYS.curricula(hubId),
+    queryFn: () => learningHubApi.getCurricula(hubId),
+    enabled: !!hubId,
   });
 }
 
@@ -74,5 +83,44 @@ export function useDeleteLearningHub() {
       toast.success("Learning hub deleted");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to delete learning hub"),
+  });
+}
+
+export function useAttachHubCurriculum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => learningHubApi.attachCurriculum(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.curricula(variables.id) });
+      toast.success("Curriculum attached to the hub");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to attach curriculum"),
+  });
+}
+
+export function useUpdateHubCurriculumStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, curriculumId, status }) => learningHubApi.updateCurriculumStatus(id, curriculumId, status),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.curricula(variables.id) });
+      toast.success("Curriculum status updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update curriculum status"),
+  });
+}
+
+export function useRemoveHubCurriculum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, curriculumId }) => learningHubApi.removeCurriculum(id, curriculumId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.curricula(variables.id) });
+      toast.success("Curriculum removed from hub");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to remove curriculum"),
   });
 }
