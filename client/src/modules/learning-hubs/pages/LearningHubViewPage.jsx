@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
-import { useLearningHubQuery, useDeleteLearningHub, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
+import { useLearningHubQuery, useLearningHubCurriculaQuery, useDeleteLearningHub, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -69,11 +69,61 @@ function AmenityIcon({ name }) {
   return Icon ? <Icon fontSize="small" /> : null;
 }
 
+function curriculumRoleLabel(role) {
+  if (role === "core") return "Core";
+  if (role === "complementary") return "Complementary";
+  if (role === "substitutional") return "Substitutional";
+  return role || "Curriculum";
+}
+
+function curriculumRoleDescription(link) {
+  if (!link) return "";
+  if (link.role === "complementary") {
+    return "Runs alongside the core curriculum when active.";
+  }
+  if (link.role === "substitutional") {
+    return "Temporarily replaces the core curriculum while active.";
+  }
+  return "Primary curriculum for this hub.";
+}
+
+function badgeStyle(kind) {
+  if (kind === "active") return { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" };
+  if (kind === "completed") return { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" };
+  return { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
+}
+
+function computeRunningCurricula(links, fallbackCurriculum) {
+  const normalized = Array.isArray(links) ? links : [];
+  const core = normalized.find((link) => link.slot === "core") || (fallbackCurriculum ? {
+    slot: "core",
+    role: "core",
+    status: "active",
+    curriculumId: fallbackCurriculum.id,
+    curriculum: fallbackCurriculum,
+  } : null);
+  const secondary = normalized.find((link) => link.slot === "secondary") || null;
+
+  if (secondary?.status === "active" && secondary.role === "substitutional") {
+    return [secondary];
+  }
+
+  const result = [];
+  if ((core?.status || "active") === "active" && core?.curriculum) {
+    result.push(core);
+  }
+  if (secondary?.status === "active" && secondary.role === "complementary" && secondary.curriculum) {
+    result.push(secondary);
+  }
+  return result;
+}
+
 export default function LearningHubViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: hub, isLoading, isError } = useLearningHubQuery(id);
   const { data: curriculum } = useCurriculumQuery(hub?.curriculumId);
+  const { data: curriculumLinks = [] } = useLearningHubCurriculaQuery(id);
   const { mutate: deleteLearningHub } = useDeleteLearningHub();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -110,6 +160,7 @@ export default function LearningHubViewPage() {
   }
 
   const typeLabel = LEARNING_HUB_TYPES.find((t) => t.value === hub.hubType)?.label || hub.hubType;
+  const runningCurricula = computeRunningCurricula(curriculumLinks, curriculum);
   const address = [hub.address?.street, hub.address?.city, hub.address?.county ? `${hub.address.county} County` : null]
     .filter(Boolean).join(", ");
   const statusStyle = hub.status === "active"
@@ -246,10 +297,64 @@ export default function LearningHubViewPage() {
           </div>
         </Section>
 
-        <Section title="Assigned Curriculum">
-          {curriculum ? (
+
+        <Section title="Curriculum Stack" count={curriculumLinks.length || (curriculum ? 1 : 0)}>
+          {curriculumLinks.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {curriculumLinks.map((link) => {
+                const s = badgeStyle(link.status);
+                return (
+                  <div
+                    key={link.id || (link.slot + "-" + link.curriculumId)}
+                    onClick={() => link.curriculum?.id && navigate("/curriculum/" + link.curriculum.id + "/view")}
+                    style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", cursor: link.curriculum?.id ? "pointer" : "default" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                      <div>
+                        <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a" }}>
+                          {link.curriculum?.name || "Curriculum not found"}
+                        </p>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>
+                          {link.curriculum?.framework || "Unknown framework"}
+                          {link.curriculum?.academicYear ? (" · " + link.curriculum.academicYear) : ""}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "6px" }}>
+                        <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
+                          {curriculumRoleLabel(link.role)}
+                        </span>
+                        <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: "1px solid " + s.border }}>
+                          {link.status}
+                        </span>
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#4B5563", lineHeight: 1.5 }}>
+                      {curriculumRoleDescription(link)}
+                    </p>
+                  </div>
+                );
+              })}
+
+              <div style={{ padding: "12px 14px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e5e7eb" }}>
+                <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: "700", color: "#25476a", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Running now
+                </p>
+                {runningCurricula.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {runningCurricula.map((link) => (
+                      <span key={link.id || (link.slot + "-" + link.curriculumId)} style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "600", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
+                        {link.curriculum?.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>No curriculum is currently active for this hub.</p>
+                )}
+              </div>
+            </div>
+          ) : curriculum ? (
             <div
-              onClick={() => navigate(`/curriculum/${curriculum.id}/view`)}
+              onClick={() => navigate("/curriculum/" + curriculum.id + "/view")}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", cursor: "pointer" }}
             >
               <div>
@@ -261,7 +366,7 @@ export default function LearningHubViewPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", textAlign: "center" }}>
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No curriculum assigned to this learning hub yet.</p>
-              <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              <button type="button" onClick={() => navigate("/settings/learning-hubs/" + id + "/edit")} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 Assign Curriculum
               </button>
             </div>

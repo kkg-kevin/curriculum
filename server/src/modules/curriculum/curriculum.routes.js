@@ -85,7 +85,10 @@ const { assertOwn } = require("../../shared/middleware/scope.middleware");
 // curriculum, even by guessing an id. No-op for every other role (their own authorize(...) call
 // already decided whether they belong on the route at all — admin is always unrestricted here).
 function ownCurriculumOnly(req, res, next) {
-  if (req.user.role === "school") assertOwn(req.ownSchool?.curriculumId === req.params.id);
+  if (req.user.role === "school") {
+    const accessible = req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []);
+    assertOwn(accessible.includes(req.params.id));
+  }
   if (req.user.role === "curriculumAdmin") assertOwn(req.ownCurriculum?.id === req.params.id);
   next();
 }

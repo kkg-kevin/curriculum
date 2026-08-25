@@ -5,7 +5,13 @@ import {
   KENYA_COUNTIES, LEARNING_HUB_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
 } from "../../../learning-hubs/schemas/learningHub.schema";
 import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
-import { useAllLearningHubsQuery } from "../../../learning-hubs/hooks/useLearningHub";
+import {
+  useAllLearningHubsQuery,
+  useLearningHubCurriculaQuery,
+  useAttachHubCurriculum,
+  useUpdateHubCurriculumStatus,
+  useRemoveHubCurriculum,
+} from "../../../learning-hubs/hooks/useLearningHub";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import ImageUploadField from "../../../../components/ImageUploadField";
 
@@ -292,6 +298,163 @@ function CustomAmenityInput({ onAdd }) {
   );
 }
 
+function SecondaryCurriculumManager({ hubId, coreCurriculumId, curricula }) {
+  const { data: hubCurriculaData } = useLearningHubCurriculaQuery(hubId);
+  const { mutate: attachCurriculum, isPending: isAttaching } = useAttachHubCurriculum();
+  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateHubCurriculumStatus();
+  const { mutate: removeCurriculum, isPending: isRemoving } = useRemoveHubCurriculum();
+  const [secondaryCurriculumId, setSecondaryCurriculumId] = useState("");
+  const [role, setRole] = useState("complementary");
+
+  const hubCurricula = hubCurriculaData || [];
+  const secondaryLink = hubCurricula.find((link) => link.slot === "secondary") || null;
+  const currentRole = secondaryLink?.role || "complementary";
+  const currentStatus = secondaryLink?.status || "active";
+  const availableCurricula = curricula.filter((c) => c.id !== coreCurriculumId);
+
+  useEffect(() => {
+    if (secondaryLink?.curriculumId) setSecondaryCurriculumId(secondaryLink.curriculumId);
+    if (secondaryLink?.role) setRole(secondaryLink.role);
+  }, [secondaryLink?.curriculumId, secondaryLink?.role]);
+
+  if (!hubId) return null;
+
+  return (
+    <SectionCard
+      icon={<MenuBookIcon fontSize="small" />}
+      title="Complementary / Substitutional Curriculum"
+      subtitle="Add a second curriculum to this hub. Complementary runs alongside the core curriculum. Substitutional pauses the core while active."
+      badge={secondaryLink ? "Secondary attached" : "Optional"}
+    >
+      {!coreCurriculumId && (
+        <div style={{ marginBottom: "14px", padding: "12px 14px", borderRadius: "12px", backgroundColor: "#FFF8E6", border: "1px solid #FCD97A", color: "#8A5A00", fontSize: "13px" }}>
+          Assign a core curriculum first. The secondary curriculum can only be attached after the hub has a core curriculum.
+        </div>
+      )}
+
+      {secondaryLink ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "18px" }}>
+          <div style={{ padding: "14px 16px", borderRadius: "12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <div>
+                <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a" }}>
+                  {secondaryLink.curriculum?.name || "Current secondary curriculum"}
+                </p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>
+                  {secondaryLink.curriculum?.framework || "Unknown framework"}
+                  {secondaryLink.curriculum?.academicYear ? ` · ${secondaryLink.curriculum.academicYear}` : ""}
+                </p>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "6px" }}>
+                <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>
+                  {currentRole === "substitutional" ? "Substitutional" : "Complementary"}
+                </span>
+                <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: currentStatus === "active" ? "#e8f5fb" : currentStatus === "completed" ? "#EEF2FF" : "#F9FAFB", color: currentStatus === "active" ? "#25476a" : currentStatus === "completed" ? "#4338ca" : "#6B7280", border: "1px solid #E5E7EB" }}>
+                  {currentStatus}
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+              <span style={{ fontSize: "12px", color: "#4B5563" }}>
+                This curriculum is currently attached to the hub.
+              </span>
+              <button
+                type="button"
+                onClick={() => removeCurriculum({ id: hubId, curriculumId: secondaryLink.curriculumId })}
+                disabled={isRemoving}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #FECACA", backgroundColor: "#FFF5F5", color: "#DC2626", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: isRemoving ? "not-allowed" : "pointer" }}
+              >
+                {isRemoving ? "Removing..." : "Remove secondary"}
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <Field label="Role">
+                <select
+                  value={currentRole}
+                  onChange={(e) => attachCurriculum({ id: hubId, data: { curriculumId: secondaryLink.curriculumId, role: e.target.value } })}
+                  style={selectStyle}
+                  disabled={isAttaching}
+                >
+                  <option value="complementary">Complementary</option>
+                  <option value="substitutional">Substitutional</option>
+                </select>
+              </Field>
+              <Field label="Status">
+                <select
+                  value={currentStatus}
+                  onChange={(e) => updateStatus({ id: hubId, curriculumId: secondaryLink.curriculumId, status: e.target.value })}
+                  style={selectStyle}
+                  disabled={isUpdatingStatus}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </Field>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginBottom: "18px", padding: "12px 14px", borderRadius: "12px", backgroundColor: "#F8FBFE", border: "1px dashed #A8D5EE", color: "#25476a", fontSize: "13px" }}>
+          No complementary or substitutional curriculum is attached yet.
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "12px" }}>
+          <Field label="Select curriculum" required={!secondaryLink} hint={coreCurriculumId ? "Choose a curriculum that is different from the core curriculum." : "Save a core curriculum first, then attach a secondary curriculum."}>
+            <select
+              value={secondaryCurriculumId}
+              onChange={(e) => setSecondaryCurriculumId(e.target.value)}
+              style={selectStyle}
+              disabled={!coreCurriculumId || availableCurricula.length === 0 || isAttaching}
+            >
+              <option value="">Choose curriculum</option>
+              {availableCurricula.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code}) - {c.framework} {c.academicYear}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Role" required={!secondaryLink}>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              style={selectStyle}
+              disabled={!coreCurriculumId || isAttaching}
+            >
+              <option value="complementary">Complementary</option>
+              <option value="substitutional">Substitutional</option>
+            </select>
+          </Field>
+        </div>
+
+        {availableCurricula.length === 0 && (
+          <p style={{ margin: 0, fontSize: "12px", color: "#F59E0B" }}>
+            No extra curricula are available to attach right now.
+          </p>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={() => attachCurriculum(
+              { id: hubId, data: { curriculumId: secondaryCurriculumId, role } },
+              { onSuccess: () => setSecondaryCurriculumId("") }
+            )}
+            disabled={!coreCurriculumId || !secondaryCurriculumId || isAttaching}
+            style={{ padding: "10px 18px", borderRadius: "10px", border: "none", backgroundColor: !coreCurriculumId || !secondaryCurriculumId || isAttaching ? "#b8d9ee" : ACCENT, color: "#fff", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: !coreCurriculumId || !secondaryCurriculumId || isAttaching ? "not-allowed" : "pointer" }}
+          >
+            {isAttaching ? "Saving..." : secondaryLink ? "Replace secondary curriculum" : "Attach secondary curriculum"}
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function OperatingDaysField() {
   const { control } = useFormContext();
   return (
@@ -513,7 +676,7 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
         </div>
       </SectionCard>
 
-      <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="The curriculum this learning hub follows. Can be updated at any time.">
+      <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="Core curriculum only. Complementary and substitutional curricula are managed below when editing an existing hub.">
         <Field label="Curriculum" error={errors?.curriculumId?.message}>
           <select {...register("curriculumId")} style={selectStyle}>
             <option value="">No curriculum assigned</option>
@@ -530,6 +693,14 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
           </p>
         )}
       </SectionCard>
+
+      {id && (
+        <SecondaryCurriculumManager
+          hubId={id}
+          coreCurriculumId={watch("curriculumId")}
+          curricula={curricula}
+        />
+      )}
 
       <SectionCard icon={<CorporateFareIcon fontSize="small" />} title="Parent Hub" subtitle="Makes this hub a branch of another — that hub's own admin gets access to switch into and manage this one too. One level only: a hub that's already a branch can't itself be a parent.">
         <Field label="Parent Hub" error={errors?.parentHubId?.message}>

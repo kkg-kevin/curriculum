@@ -105,4 +105,20 @@ const updateLearningHubSchema = baseLearningHubSchema.partial().extend({
   operatingHours: operatingHoursSchema.partial().optional(),
 });
 
-module.exports = { createLearningHubSchema, updateLearningHubSchema, LEARNING_HUB_TYPES, KENYA_COUNTIES };
+const attachHubCurriculumSchema = z.object({
+  curriculumId: z.string().min(1, "Curriculum is required"),
+  role: z.enum(["complementary", "substitutional"], { errorMap: () => ({ message: "Select a valid curriculum role" }) }),
+});
+
+const updateHubCurriculumStatusSchema = z.object({
+  status: z.enum(["active", "inactive", "completed"], { errorMap: () => ({ message: "Select a valid curriculum status" }) }),
+});
+
+module.exports = {
+  createLearningHubSchema,
+  updateLearningHubSchema,
+  attachHubCurriculumSchema,
+  updateHubCurriculumStatusSchema,
+  LEARNING_HUB_TYPES,
+  KENYA_COUNTIES,
+};

@@ -1,5 +1,7 @@
 const CurriculumModel          = require("./curriculum.model");
 const UserModel = require("../auth/user.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const LearningHubCurriculumLinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
 const ClassModel = require("../classes/class.model");
 const ClassService = require("../classes/class.service");
 const ProgramModel = require("../programs/program.model");
@@ -210,6 +212,8 @@ const CurriculumService = {
     await CurriculumVersionModel.deleteByCurriculumId(id);
     await LearnerJourneyModel.deleteByCurriculumId(id);
     await IndicatorAchievementModel.deleteByCurriculumId(id);
+    await LearningHubCurriculumLinkModel.deleteByCurriculumId(id);
+    await LearningHubModel.clearCurriculumId(id);
     // A Program deployed from this curriculum (see program.service.js's createProgram) has no
     // life outside it either — unlike ProgramModel.delete's own deliberate choice to leave a
     // program's Classes standing when just the Program record is removed (that's a real cohort's

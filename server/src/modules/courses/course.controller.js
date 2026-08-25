@@ -29,7 +29,8 @@ async function assertCourseAccess(req, courseId) {
   const curriculumIds = await CurriculumService.findCurriculaContainingCourse(courseId);
 
   if (req.user.role === "school") {
-    assertOwn(!!req.ownSchool?.curriculumId && curriculumIds.includes(req.ownSchool.curriculumId));
+    const accessible = req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []);
+    assertOwn(accessible.some((id) => curriculumIds.includes(id)));
     return;
   }
   if (req.user.role === "teacher") {

@@ -1,16 +1,20 @@
 const asyncHandler = require("express-async-handler");
 const LearningHubService = require("./learning-hub.service");
+const CurriculumModel = require("../curriculum/curriculum.model");
 const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
-const { createLearningHubSchema, updateLearningHubSchema } = require("./learning-hub.validation");
+const {
+  createLearningHubSchema,
+  updateLearningHubSchema,
+  attachHubCurriculumSchema,
+  updateHubCurriculumStatusSchema,
+} = require("./learning-hub.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // updateLearningHubSchema is baseLearningHubSchema.partial(), but zod still materializes a field's
-// .default(...) when its key is simply absent from the request body — e.g. an update body that
-// omits "email" comes back from .parse() with email: "", silently wiping it. Recursively keep
-// only keys actually present in the raw body so a genuinely partial update never overwrites a
-// field the caller didn't send.
+// default when its key is absent from the request body. Keep only keys actually present in the raw
+// body so a partial update never overwrites a field the caller didn't send.
 function pickPresent(parsed, raw) {
   if (raw === null || typeof raw !== "object") return parsed;
   const result = {};
@@ -23,11 +27,8 @@ function pickPresent(parsed, raw) {
   return result;
 }
 
-// Defensive, one-level-only rule: a hub can't be its own parent, and a hub that's already a
-// branch (has a parentHubId of its own) can't itself be chosen as a parent — blocks chains and
-// cycles with a simple check rather than a real tree-depth walk. Mirrors LearningHubForm.jsx's
-// picker, which already excludes both cases from the option list — this is the server-side
-// backstop for a request that skips the form.
+// Defensive, one-level-only rule: a hub cannot be its own parent, and a hub that is already a
+// branch cannot itself be chosen as a parent.
 async function assertValidParentHub(parentHubId, ownId) {
   if (!parentHubId) return;
   if (parentHubId === ownId) {
@@ -37,7 +38,7 @@ async function assertValidParentHub(parentHubId, ownId) {
   }
   const parent = await LearningHubService.getLearningHubById(parentHubId);
   if (parent.parentHubId) {
-    const err = new Error("That hub is itself a branch — a branch can't have its own branches");
+    const err = new Error("That hub is itself a branch - a branch can't have its own branches");
     err.statusCode = 400;
     throw err;
   }
@@ -46,8 +47,14 @@ async function assertValidParentHub(parentHubId, ownId) {
 const createLearningHub = asyncHandler(async (req, res) => {
   const { password, ...data } = createLearningHubSchema.parse(req.body);
   await assertValidParentHub(data.parentHubId, null);
-  // Create the login first — if it fails (e.g. the email is already someone else's account),
-  // nothing is written at all, rather than leaving an orphaned hub with no matching login.
+  if (data.curriculumId) {
+    const curriculum = await CurriculumModel.findById(data.curriculumId);
+    if (!curriculum) {
+      const err = new Error("Curriculum not found");
+      err.statusCode = 404;
+      throw err;
+    }
+  }
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.name, email: data.email, password, role: "school" });
   }
@@ -55,8 +62,7 @@ const createLearningHub = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: record });
 });
 
-// A "school" account's own hub(s), for the school-portal hub-switcher — req.ownSchools already
-// resolved by attachOwnRecords (own hub + any branch hubs), so this just echoes it back.
+// A "school" account's own hub(s), for the school-portal hub-switcher.
 const getMyLearningHubs = asyncHandler(async (req, res) => {
   const hubs = req.ownSchools || [];
   res.json({ success: true, data: hubs, count: hubs.length });
@@ -65,10 +71,6 @@ const getMyLearningHubs = asyncHandler(async (req, res) => {
 const getAllLearningHubs = asyncHandler(async (req, res) => {
   const { status, county, curriculumId, parentHubId, email, hubType, includeDrafts } = req.query;
   const filters = { status, county, curriculumId, parentHubId, email, hubType, includeDrafts: includeDrafts === "true" };
-  // A "school"-role account only ever sees its own (currently active) record — see
-  // scope.middleware.js's attachOwnRecords for how req.ownSchool resolves to whichever hub the
-  // school-portal is switched to. Always include drafts here: a school can log in and land on
-  // its own profile before an admin has activated it.
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
     filters.email = req.ownSchool.email;
@@ -96,13 +98,16 @@ const getLearningHubById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
-// Read-only mirror of the teacher-hub link table, scoped to one hub — the write side lives on
-// the teacher routes (see teacher.routes.js's /:id/hubs/links), this just lets a hub see who's
-// assigned to it.
 const getHubTeachers = asyncHandler(async (req, res) => {
   if (req.user.role === "school") assertOwn(isOwnHub(req, req.params.id));
   const teachers = await LearningHubService.getHubTeachers(req.params.id);
   res.json({ success: true, data: teachers, count: teachers.length });
+});
+
+const getHubCurricula = asyncHandler(async (req, res) => {
+  if (req.user.role === "school") assertOwn(isOwnHub(req, req.params.id));
+  const curricula = await LearningHubService.getHubCurricula(req.params.id);
+  res.json({ success: true, data: curricula, count: curricula.length });
 });
 
 const updateLearningHub = asyncHandler(async (req, res) => {
@@ -111,9 +116,6 @@ const updateLearningHub = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     const existing = await LearningHubService.getLearningHubById(req.params.id);
     assertOwn(isOwnHub(req, existing.id));
-    // A school can update its own contact info, but code/status/curriculum assignment/type/parent
-    // stay platform-admin-controlled governance fields — force them back to their current
-    // values regardless of what's in the request body.
     data.code = existing.code;
     data.status = existing.status;
     data.curriculumId = existing.curriculumId;
@@ -121,7 +123,16 @@ const updateLearningHub = asyncHandler(async (req, res) => {
     data.parentHubId = existing.parentHubId;
   } else {
     await assertValidParentHub(data.parentHubId, req.params.id);
+    if (Object.prototype.hasOwnProperty.call(data, "curriculumId") && data.curriculumId) {
+      const curriculum = await CurriculumModel.findById(data.curriculumId);
+      if (!curriculum) {
+        const err = new Error("Curriculum not found");
+        err.statusCode = 404;
+        throw err;
+      }
+    }
   }
+
   const record = await LearningHubService.updateLearningHub(req.params.id, data);
   if (password) {
     if (!record.email) {
@@ -134,9 +145,43 @@ const updateLearningHub = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+const attachHubCurriculum = asyncHandler(async (req, res) => {
+  const { curriculumId, role } = attachHubCurriculumSchema.parse(req.body);
+  const record = await LearningHubService.attachSecondaryCurriculum(req.params.id, curriculumId, role);
+  res.status(201).json({ success: true, data: record });
+});
+
+const updateHubCurriculumStatus = asyncHandler(async (req, res) => {
+  const { status } = updateHubCurriculumStatusSchema.parse(req.body);
+  const record = await LearningHubService.updateSecondaryCurriculumStatus(req.params.id, req.params.curriculumId, status);
+  res.json({ success: true, data: record });
+});
+
+const detachHubCurriculum = asyncHandler(async (req, res) => {
+  const removed = await LearningHubService.detachCurriculum(req.params.id, req.params.curriculumId);
+  if (!removed) {
+    const err = new Error("Hub curriculum link not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  res.json({ success: true, message: "Hub curriculum detached successfully" });
+});
+
 const deleteLearningHub = asyncHandler(async (req, res) => {
   const result = await LearningHubService.deleteLearningHub(req.params.id);
   res.json({ success: true, ...result });
 });
 
-module.exports = { createLearningHub, getAllLearningHubs, getMyLearningHubs, getLearningHubById, updateLearningHub, deleteLearningHub, getHubTeachers };
+module.exports = {
+  createLearningHub,
+  getAllLearningHubs,
+  getMyLearningHubs,
+  getLearningHubById,
+  getHubTeachers,
+  getHubCurricula,
+  updateLearningHub,
+  attachHubCurriculum,
+  updateHubCurriculumStatus,
+  detachHubCurriculum,
+  deleteLearningHub,
+};
