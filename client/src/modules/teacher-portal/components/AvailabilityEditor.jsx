@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiChevronDown, FiChevronUp, FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import { useTeacherAvailability, useAddAvailabilitySlot, useRemoveAvailabilitySlot } from "../../teachers/hooks/useTeacher";
+import WeeklyAvailabilityGrid from "../../teachers/components/WeeklyAvailabilityGrid";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -56,6 +57,9 @@ export default function AvailabilityEditor({ teacherId }) {
   const { mutate: addSlot, isPending: adding } = useAddAvailabilitySlot(teacherId);
   const { mutate: removeSlot } = useRemoveAvailabilitySlot(teacherId);
   const [addingDay, setAddingDay] = useState(null);
+  // Collapsed by default — the grid above already gives the at-a-glance view, so this list (pure
+  // editing surface) only needs to expand when someone actually wants to add/remove a window.
+  const [managing, setManaging] = useState(false);
 
   const slotsByDay = DAYS_OF_WEEK.map((day) => ({
     day,
@@ -67,15 +71,35 @@ export default function AvailabilityEditor({ teacherId }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {slots.length === 0 && (
-        <div style={{ ...cardStyle, padding: "16px 18px" }}>
-          <p style={{ margin: 0, fontSize: 12.5, color: T.inkMuted, lineHeight: 1.6 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ ...cardStyle, padding: "18px 20px" }}>
+        <p style={{ margin: "0 0 14px", fontSize: 13.5, fontWeight: 800, color: T.ink }}>Weekly overview</p>
+        <WeeklyAvailabilityGrid slots={slots} />
+        {slots.length === 0 && (
+          <p style={{ margin: "14px 0 0", fontSize: 12.5, color: T.inkMuted, lineHeight: 1.6 }}>
             You haven't declared any availability yet — your school can schedule you at any time. Add windows below to let them know when you're actually free to teach; once you add at least one, any day left blank is treated as unavailable.
           </p>
-        </div>
-      )}
-      {slotsByDay.map(({ day, windows }) => (
+        )}
+      </div>
+
+      <div style={{ ...cardStyle, overflow: "hidden" }}>
+        <button
+          type="button"
+          onClick={() => setManaging((v) => !v)}
+          style={{ width: "100%", padding: "14px 18px", border: "none", background: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <FiEdit2 size={13} color={T.inkMuted} />
+            <span style={{ fontSize: 13.5, fontWeight: 800, color: T.ink }}>Manage windows</span>
+            {!managing && <span style={{ fontSize: 11.5, color: T.inkFaint, fontWeight: 500 }}>— add or remove your availability</span>}
+          </span>
+          {managing ? <FiChevronUp size={16} color={T.inkMuted} /> : <FiChevronDown size={16} color={T.inkMuted} />}
+        </button>
+
+        {managing && (
+          <div style={{ padding: "0 18px 18px", display: "flex", flexDirection: "column", gap: 12, borderTop: `1px solid ${T.border}` }}>
+            <div style={{ height: 6 }} />
+            {slotsByDay.map(({ day, windows }) => (
         <div key={day} style={{ ...cardStyle, overflow: "hidden" }}>
           <div style={{ padding: "12px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: T.ink }}>{DAY_LABELS[day]}</p>
@@ -116,7 +140,10 @@ export default function AvailabilityEditor({ teacherId }) {
             )}
           </div>
         </div>
-      ))}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

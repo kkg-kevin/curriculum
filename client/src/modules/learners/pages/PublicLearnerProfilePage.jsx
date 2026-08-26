@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { FiUsers, FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock } from "react-icons/fi";
+import { FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock } from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 
@@ -334,11 +334,15 @@ function CompetencyRow({ name, band, score }) {
 // learner.service.js's getPublicProfile chose to expose — a comprehensive mirror of the
 // learner's own Profile page (identity, guardian, competencies, level journey, learning
 // journey), short of individual assessment scores/teacher feedback text, which stays private.
-// A 404 here almost always means the token was regenerated (old QR/link retired), not a broken
-// link — worded that way rather than a generic error.
+//
+// A 404 is the only real signal that the token was regenerated (old QR/link retired) — see
+// usePublicLearnerProfile's retry logic. Any other failure (timeout, dropped connection, a
+// transient 5xx) gets its own honest "couldn't load, try again" state instead of also being
+// blamed on regeneration, which was misleading whoever hit a plain network hiccup on a valid,
+// still-live QR code.
 export default function PublicLearnerProfilePage() {
   const { token } = useParams();
-  const { data: profile, isLoading, isError } = usePublicLearnerProfile(token);
+  const { data: profile, isLoading, isError, error, refetch, isFetching } = usePublicLearnerProfile(token);
 
   if (isLoading) {
     return (
@@ -350,14 +354,29 @@ export default function PublicLearnerProfilePage() {
   }
 
   if (isError || !profile) {
+    const notFound = error?.statusCode === 404;
     return (
       <div className="df-public-page">
         <PageStyles />
         <div className="df-public-card" style={{ textAlign: "center", padding: "32px 28px" }}>
-          <h1 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: INK }}>This link is no longer valid</h1>
+          <h1 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: INK }}>
+            {notFound ? "This link is no longer valid" : "Couldn't load this profile"}
+          </h1>
           <p style={{ margin: 0, fontSize: 13, color: INK_MUTED }}>
-            The QR code or link may have been regenerated. Ask the school for a current one.
+            {notFound
+              ? "The QR code or link may have been regenerated. Ask the school for a current one."
+              : "Something went wrong loading this page — check your connection and try again."}
           </p>
+          {!notFound && (
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              style={{ marginTop: 16, padding: "9px 18px", borderRadius: 8, border: "none", backgroundColor: ACCENT, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isFetching ? "default" : "pointer", opacity: isFetching ? 0.6 : 1 }}
+            >
+              {isFetching ? "Retrying…" : "Try again"}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -408,16 +427,6 @@ export default function PublicLearnerProfilePage() {
             <Row label="Username" value={profile.username} />
           </div>
         </div>
-
-        {(profile.guardianName || profile.guardianEmail) && (
-          <div style={sectionStyle}>
-            <SectionHeading icon={FiUsers}>Guardian</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Row label="Name" value={profile.guardianName} />
-              <Row label="Email" value={profile.guardianEmail} />
-            </div>
-          </div>
-        )}
 
         {(profile.competenciesOnTrack || profile.evidenceItemsCollected != null) && (
           <div style={sectionStyle}>

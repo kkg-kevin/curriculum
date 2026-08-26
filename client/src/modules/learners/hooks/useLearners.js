@@ -176,11 +176,19 @@ export function useRegeneratePublicToken() {
 
 // The public scan destination's own data fetch — unauthenticated, keyed by token rather than an
 // id, and never invalidated by anything else in the app's query cache.
+//
+// retry is deliberately NOT a flat false/true: a 404 here means the token genuinely doesn't
+// resolve (regenerated, or never existed) — retrying that is pointless, so PublicLearnerProfilePage
+// can trust a 404 to mean "get a new QR from the school". Anything else (timeout, dropped
+// connection, a transient 5xx) is exactly the "flaky school WiFi" scenario a QR scan expects (see
+// this page's own Avatar component comment) — those get a couple of quick retries first, so a
+// one-off network blip doesn't get misreported as "this link was regenerated" when it wasn't.
 export function usePublicLearnerProfile(token) {
   return useQuery({
     queryKey: ["learners", "public", token],
     queryFn:  () => learnerApi.getPublicProfile(token),
     enabled:  !!token,
-    retry: false,
+    retry: (failureCount, error) => error?.statusCode !== 404 && failureCount < 2,
+    retryDelay: 800,
   });
 }
