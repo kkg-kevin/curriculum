@@ -85,8 +85,14 @@ function LevelConnector({ status, percent }) {
   );
 }
 
+// A band with no admin-set bar only ever unlocks at 100% (see scoring-engines.js's
+// runIndicatorProgressEngine) — so that's the honest number to quote here too, not 0/blank.
+function effectiveThreshold(band) {
+  return band.advancementThreshold > 0 ? band.advancementThreshold : 100;
+}
+
 function progressArcCaption(current, next) {
-  if (next) return `You're at ${current ? current.name : "the start"} — ${next.completion}% of the way to unlocking ${next.name}. Keep going!`;
+  if (next) return `You're at ${current ? current.name : "the start"} — ${next.completion}% of the way to unlocking ${next.name} (needs ${effectiveThreshold(next)}%). Keep going!`;
   if (current) return `${current.name} — the highest level on this curriculum's ladder. Amazing work!`;
   return "Complete graded work tagged to these levels to start your journey.";
 }
@@ -105,8 +111,18 @@ export default function ProgressArcCard({ curriculumId, learnerId }) {
   const { current, next } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
   if (bandProgress.length === 0) return null;
 
-  const achievedCount = bandProgress.filter((bp) => bp.thresholdMet).length;
   const noThresholdsConfigured = bandProgress.every((bp) => !bp.advancementThreshold || bp.advancementThreshold <= 0);
+
+  // `next` (the "current" node) can sit at any index — it's picked by highest completion, not
+  // strictly the band right after the last achieved one (see bandJourney.js). But the ladder
+  // itself is sequential from the learner's point of view: being actively worked toward a later
+  // band means every earlier band is already behind them, even if that earlier band's own
+  // independently-weighted formula never technically cleared its own bar. Without this, an
+  // earlier band could render "Locked" while a later one shows "In progress" — reads as broken
+  // (how are you past a level you haven't unlocked?). The "X of Y unlocked" badge below counts
+  // the same way, so it never disagrees with what the ladder itself shows.
+  const nextIndex = next ? bandProgress.findIndex((bp) => bp.bandId === next.bandId) : -1;
+  const achievedCount = bandProgress.filter((bp, i) => bp.thresholdMet || (nextIndex !== -1 && i < nextIndex)).length;
   const nothingAchievedYet = achievedCount === 0;
 
   return (
@@ -138,7 +154,13 @@ export default function ProgressArcCard({ curriculumId, learnerId }) {
 
       <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {bandProgress.map((bp, i) => {
-          const status = bp.thresholdMet ? "achieved" : bp.bandId === next?.bandId ? "current" : "locked";
+          const status = bp.thresholdMet
+            ? "achieved"
+            : bp.bandId === next?.bandId
+            ? "current"
+            : nextIndex !== -1 && i < nextIndex
+            ? "achieved"
+            : "locked";
           return (
             <div key={bp.bandId} style={{ display: "flex", alignItems: "flex-start", flex: i === bandProgress.length - 1 ? "0 0 auto" : 1 }}>
               <LevelNode band={bp} status={status} ordinal={i + 1} />

@@ -3078,12 +3078,21 @@ function PerformanceBandsPanel({ curriculumId }) {
                         {(() => {
                           // Every indicator % contribution assigned anywhere in this band — across
                           // all of its competencies, since they share one 100% budget (see
-                          // BandCompetencyBlock) — should sum to exactly 100.
+                          // BandCompetencyBlock) — should sum to exactly 100. A band stuck below
+                          // 100% (including 0%, when competencies are attached but never weighted)
+                          // can mathematically never be fully completed by any learner, no matter
+                          // what they do — Engine 4 sums exactly these weights, nothing more. That
+                          // used to be hidden entirely at 0% (the worst case, and the easiest state
+                          // to leave behind mid-setup), so it's surfaced here instead of suppressed.
+                          if ((band.competencyIds || []).length === 0) return null;
                           const total = (band.indicatorContributions || []).reduce((s, c) => s + (Number(c.percentage) || 0), 0);
-                          if (total === 0) return null;
                           const ok = total === 100;
                           const over = total > 100;
-                          const color = ok ? "#059669" : over ? "#DC2626" : "#D97706";
+                          const color = ok ? "#059669" : "#DC2626";
+                          const label = total === 0 ? "Not weighted — always 0%" : over ? `Indicators: ${total}% (exceeds 100%)` : `Indicators: ${total}% — can't reach 100%`;
+                          const title = ok
+                            ? "Sum of every indicator's % contribution across this band's competencies — totals 100%"
+                            : "This band's indicator weights don't total 100% — no learner can ever fully complete it until they do. Add or adjust weights below.";
                           return (
                             <span
                               style={{
@@ -3092,9 +3101,9 @@ function PerformanceBandsPanel({ curriculumId }) {
                                 fontSize: "11px", fontWeight: "700",
                                 color, background: `${color}12`, border: `1.5px solid ${color}40`,
                               }}
-                              title="Sum of every indicator's % contribution across this band's competencies — should total 100%"
+                              title={title}
                             >
-                              Indicators: {total}%{ok ? "" : ""}
+                              {ok ? `Indicators: ${total}%` : label}
                             </span>
                           );
                         })()}
