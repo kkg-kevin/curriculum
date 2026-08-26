@@ -265,18 +265,27 @@ function LevelConnector({ status, percent }) {
 function LevelJourney({ levelJourney, currentLevel }) {
   if (!levelJourney || levelJourney.length === 0) return null;
   const nextIndex = currentLevel?.nextLevelName ? levelJourney.findIndex((b) => b.name === currentLevel.nextLevelName) : -1;
-  const achievedCount = levelJourney.filter((bp) => bp.thresholdMet).length;
+  // The "current"/next band can sit at any index (picked by highest completion, not strictly
+  // "the band right after the last achieved one" — see the learner portal's own bandJourney.js).
+  // The ladder is still sequential from the learner's point of view, though: being actively
+  // worked toward a later band means every earlier one is already behind them, even if that
+  // earlier band's own independently-weighted formula never technically cleared its own bar.
+  // Both the badge count and the per-node status below agree on this, so they never contradict
+  // each other (an earlier node showing "Locked" while a later one is "In progress" reads as
+  // broken — how are you past a level you haven't unlocked?).
+  const achievedCount = levelJourney.filter((bp, i) => bp.thresholdMet || (nextIndex !== -1 && i < nextIndex)).length;
   // Same guard as the authenticated card: a threshold of 0 means no admin has configured one
   // yet, so a level only counts as "Unlocked" at 100% — worth explaining, otherwise a learner
   // sitting at a high percent with no threshold set looks stalled for no visible reason.
   const noThresholdsConfigured = levelJourney.every((bp) => !bp.advancementThreshold || bp.advancementThreshold <= 0);
+  const nextThreshold = nextIndex !== -1 ? (levelJourney[nextIndex].advancementThreshold > 0 ? levelJourney[nextIndex].advancementThreshold : 100) : null;
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <p style={{ margin: 0, fontSize: 13, color: INK_MUTED, lineHeight: 1.5, flex: 1, minWidth: 180 }}>
           {currentLevel?.nextLevelName
-            ? `${currentLevel.name ? `Currently at ${currentLevel.name} — ` : ""}${currentLevel.nextLevelCompletion}% of the way to ${currentLevel.nextLevelName}.`
+            ? `${currentLevel.name ? `Currently at ${currentLevel.name} — ` : ""}${currentLevel.nextLevelCompletion}% of the way to ${currentLevel.nextLevelName} (needs ${nextThreshold}%).`
             : currentLevel?.name
             ? `${currentLevel.name} — the highest level on this ladder.`
             : "Working toward the first level."}
@@ -288,7 +297,7 @@ function LevelJourney({ levelJourney, currentLevel }) {
 
       <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {levelJourney.map((bp, i) => {
-          const status = bp.thresholdMet ? "achieved" : i === nextIndex ? "current" : "locked";
+          const status = bp.thresholdMet ? "achieved" : i === nextIndex ? "current" : nextIndex !== -1 && i < nextIndex ? "achieved" : "locked";
           return (
             <div key={bp.name} style={{ display: "flex", alignItems: "flex-start", flex: i === levelJourney.length - 1 ? "0 0 auto" : 1 }}>
               <LevelNode band={bp} status={status} ordinal={i + 1} />
