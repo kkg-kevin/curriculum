@@ -82,6 +82,9 @@ import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage"
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
 import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
+import ReceiptsListPage from "../modules/billing/pages/ReceiptsListPage";
+import ReceiptDetailPage from "../modules/billing/pages/ReceiptDetailPage";
+import StatementOfAccountPage from "../modules/billing/pages/StatementOfAccountPage";
 
 export default function AppRoutes() {
   return (
@@ -123,6 +126,9 @@ export default function AppRoutes() {
         </Route>
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="billing" element={<BillingPage />} />
+        <Route path="billing/receipts" element={<ReceiptsListPage />} />
+        <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
+        <Route path="billing/statements" element={<StatementOfAccountPage />} />
         <Route path="billing/:id" element={<InvoiceDetailPage />} />
         <Route path="settings">
           <Route index element={<SettingsPage />} />
@@ -232,6 +238,9 @@ export default function AppRoutes() {
           <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
           <Route path="billing" element={<BillingPage />} />
+          <Route path="billing/receipts" element={<ReceiptsListPage />} />
+          <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
+          <Route path="billing/statements" element={<StatementOfAccountPage />} />
           <Route path="billing/:id" element={<InvoiceDetailPage />} />
           <Route path="profile" element={<SchoolProfilePage />} />
         </Route>
@@ -253,6 +262,9 @@ export default function AppRoutes() {
           <Route path="profile" element={<LearnerProfilePage />} />
           <Route path="invoices" element={<BillingPage />} />
           <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="receipts" element={<ReceiptsListPage />} />
+          <Route path="receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
+          <Route path="statement" element={<StatementOfAccountPage />} />
         </Route>
       </Route>
       </Route>

@@ -29,6 +29,7 @@ function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
       ) : null}
 
       <aside
+        className="no-print"
         style={{
           width: isMobile ? "min(86vw, 300px)" : "260px",
           height: "100vh",

@@ -13,4 +13,7 @@ export const billingApi = {
   previewBulk: (data) => api.post(`${BASE}/batches/preview`, data).then((r) => r.data.data),
   createBulk: (data) => api.post(`${BASE}/batches`, data).then((r) => r.data.data),
   listBatches: () => api.get(`${BASE}/batches`).then((r) => r.data),
+  listReceipts: () => api.get(`${BASE}/receipts`).then((r) => r.data),
+  getReceipt: (invoiceId, paymentId) => api.get(`${BASE}/${invoiceId}/payments/${paymentId}`).then((r) => r.data.data),
+  getStatement: (payerType, payerId, params = {}) => api.get(`${BASE}/statements/${payerType}/${payerId}`, { params }).then((r) => r.data.data),
 };

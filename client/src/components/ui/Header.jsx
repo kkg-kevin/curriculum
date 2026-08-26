@@ -176,6 +176,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
 
   return (
     <header
+      className="no-print"
       style={{
         height: "70px",
         backgroundColor: "#ffffff",

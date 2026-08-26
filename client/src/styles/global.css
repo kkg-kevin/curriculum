@@ -32,3 +32,22 @@ button {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .scroll-box {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* A bounded, internally-scrollable region for long tables (e.g. a statement's running ledger) —
+   keeps the surrounding page short regardless of history length, without truncating the data.
+   Printed output ignores this (see the @media print override above) so the full record still
+   appears on paper. */
+.scroll-box {
+  max-height: 420px;
+  overflow-y: auto;
+}

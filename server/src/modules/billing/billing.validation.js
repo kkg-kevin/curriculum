@@ -42,8 +42,12 @@ const recordPaymentSchema = z.object({
   paymentMethod: z.enum(["cash", "bank_transfer", "mpesa_manual", "cheque", "card_manual", "other"]).default("cash"),
   providerReference: z.string().max(120).optional().nullable(),
   paymentDate: z.string().optional().nullable(),
-  receiptNumber: z.string().max(50).optional().nullable(),
   notes: z.string().max(255).optional().nullable(),
+});
+
+const statementQuerySchema = z.object({
+  from: z.string().optional().nullable(),
+  to: z.string().optional().nullable(),
 });
 
 const bulkInvoicePreviewSchema = z.object({
@@ -62,4 +66,4 @@ const bulkInvoiceCreateSchema = bulkInvoicePreviewSchema.extend({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-module.exports = { invoiceTypes, invoiceStatus, createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema };
+module.exports = { invoiceTypes, invoiceStatus, createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema };

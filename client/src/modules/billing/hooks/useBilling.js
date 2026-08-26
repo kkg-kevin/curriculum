@@ -61,8 +61,29 @@ export function usePayInvoice() {
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: BILLING_KEYS.all });
       qc.invalidateQueries({ queryKey: ["billing", "invoice", id] });
+      qc.invalidateQueries({ queryKey: ["billing", "receipts"] });
       toast.success("Payment recorded");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Payment failed"),
+  });
+}
+
+export function useReceiptsQuery() {
+  return useQuery({ queryKey: ["billing", "receipts"], queryFn: billingApi.listReceipts });
+}
+
+export function useReceiptQuery(invoiceId, paymentId) {
+  return useQuery({
+    queryKey: ["billing", "receipt", invoiceId, paymentId],
+    queryFn: () => billingApi.getReceipt(invoiceId, paymentId),
+    enabled: !!invoiceId && !!paymentId,
+  });
+}
+
+export function useStatementQuery(payerType, payerId, { from, to } = {}) {
+  return useQuery({
+    queryKey: ["billing", "statement", payerType, payerId, from || null, to || null],
+    queryFn: () => billingApi.getStatement(payerType, payerId, { from, to }),
+    enabled: !!payerType && !!payerId,
   });
 }

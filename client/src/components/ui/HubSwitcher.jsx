@@ -5,7 +5,7 @@ export default function HubSwitcher({ hubs, selectedHubId, onChange }) {
   if (!hubs || hubs.length <= 1) return null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+    <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>Viewing:</span>
       <select
         value={selectedHubId || ""}
