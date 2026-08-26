@@ -2,7 +2,8 @@
 import { FiAlertTriangle, FiHome } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useTeacherQuery, useDeleteTeacher, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub } from "../hooks/useTeacher";
+import { useTeacherQuery, useDeleteTeacher, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
+import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
@@ -204,6 +205,7 @@ export default function TeacherViewPage() {
 
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
   const { data: hubs = [] } = useTeacherHubsQuery(id);
+  const { data: availabilitySlots = [] } = useTeacherAvailability(id);
   const { mutate: deleteTeacher } = useDeleteTeacher();
   const { mutate: linkHub, isPending: isLinking } = useLinkTeacherHub();
   const { mutate: unlinkHub } = useUnlinkTeacherHub();
@@ -330,6 +332,10 @@ export default function TeacherViewPage() {
               </div>
             )}
             {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
+          </Section>
+
+          <Section title="Availability">
+            <WeeklyAvailabilityGrid slots={availabilitySlots} />
           </Section>
         </div>
 

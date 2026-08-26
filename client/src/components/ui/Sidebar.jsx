@@ -134,37 +134,6 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
 
         <div
           style={{
-            margin: "16px",
-            padding: "18px",
-            backgroundColor: "#2e7db5",
-            borderRadius: "14px",
-          }}
-        >
-          <h4 style={{ margin: "0 0 10px 0", fontWeight: "600" }}>Need Help?</h4>
-
-          <p style={{ fontSize: "13px", lineHeight: "1.6", marginBottom: "14px" }}>
-            Visit our help center or contact support.
-          </p>
-
-          <button
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "10px",
-              border: "1px solid white",
-              background: "transparent",
-              color: "#fff",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              fontWeight: "600",
-            }}
-          >
-            Get Help
-          </button>
-        </div>
-
-        <div
-          style={{
             padding: "12px",
             borderTop: "1px solid rgba(255,255,255,0.1)",
           }}

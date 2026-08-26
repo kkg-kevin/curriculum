@@ -425,13 +425,14 @@ const LearnerService = {
 
   // What an unauthenticated scan of the QR sees — still a hand-built allow-list (never
   // `{...record}`, so a field added to the learner schema later can't silently start leaking
-  // through a link a school printed on a badge), but now a comprehensive one covering everything
-  // shown on this learner's own Profile page: full identity, guardian contact, Developmental
-  // Stage/Performance Band placement, the Progress Arc ladder, per-competency standing, and
-  // Learning Journey course placement per area. Deliberately still excludes individual assessment
-  // scores/teacher feedback (Reports/Assessments) — that can carry sensitive per-submission
-  // commentary that competency/progress summaries don't. Class/hub comes from the same "first
-  // active enrollment" fallback LearnerViewPage.jsx already uses as its "current" context.
+  // through a link a school printed on a badge): full identity, Developmental Stage/Performance
+  // Band placement, the Progress Arc ladder, per-competency standing, and Learning Journey course
+  // placement per area. Deliberately excludes guardian contact details (name/email) — a link
+  // meant to be scanned/shared publicly (badges, posters) shouldn't hand out a parent's contact
+  // info to whoever scans it — and individual assessment scores/teacher feedback (Reports/
+  // Assessments), which can carry sensitive per-submission commentary that competency/progress
+  // summaries don't. Class/hub comes from the same "first active enrollment" fallback
+  // LearnerViewPage.jsx already uses as its "current" context.
   async getPublicProfile(token) {
     const record = await LearnerModel.findByPublicToken(token);
     if (!record) {
@@ -530,8 +531,6 @@ const LearnerService = {
       hubName,
       gradeName,
       streamName,
-      guardianName: record.guardianName,
-      guardianEmail: record.guardianEmail,
       developmentalStage,
       currentLevel,
       levelJourney,
