@@ -12,6 +12,7 @@ const competencyRoutes = require("./modules/settings/competencies/competency.rou
 const learningAreaRoutes = require("./modules/settings/learning-areas/learning-area.routes");
 const systemLevelRoutes = require("./modules/settings/system-levels/system-level.routes");
 const inventoryRoutes = require("./modules/settings/inventory/inventory.routes");
+const itemsRoutes = require("./modules/settings/items/items.routes");
 const learningHubRoutes = require("./modules/learning-hubs/learning-hub.routes");
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const classRoutes = require("./modules/classes/class.routes");
@@ -97,6 +98,7 @@ app.use("/api/competencies", protect, authorize("admin"), competencyRoutes);
 app.use("/api/learning-areas", protect, authorize("admin"), learningAreaRoutes);
 app.use("/api/system-levels", protect, authorize("admin"), systemLevelRoutes);
 app.use("/api/inventory", protect, authorize("admin"), inventoryRoutes);
+app.use("/api/items", protect, authorize("admin"), itemsRoutes);
 app.use("/api/learning-hubs", protect, attachOwnRecords, learningHubRoutes);
 app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);

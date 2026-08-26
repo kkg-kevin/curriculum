@@ -1,43 +1,31 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, CheckCircle as CheckCircleIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery } from "../hooks/useBilling";
+import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery, useReceiptsQuery } from "../hooks/useBilling";
 import { classApi } from "../../classes/services/classApi";
+import { useItems } from "../../settings/items/hooks/useItems";
+import { inputStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
+import StatusPill, { TYPE_LABELS, TYPE_HELP, STATUS_LABELS } from "../components/StatusPill";
+import { LoadingState, EmptyState } from "../components/PageStates";
+import Pagination from "../components/Pagination";
 
-const TYPE_LABELS = {
-  hub_subscription: "Hub subscription",
-  learner_term: "Learner per term",
-  course_module: "Course / module",
-  bootcamp: "One-time bootcamp",
-};
-const TYPE_HELP = {
-  hub_subscription: "Platform fees billed directly to the learning hub.",
-  learner_term: "Recurring learner fees for an academic term. The guardian account is notified.",
-  course_module: "Charge a learner for a specific course or module.",
-  bootcamp: "A single payment for a special programme or bootcamp.",
-};
-const STATUS_LABELS = { draft: "Draft", issued: "Issued", partially_paid: "Partially paid", paid: "Paid", overdue: "Overdue", cancelled: "Cancelled", void: "Void" };
-const STATUS_COLORS = {
-  draft: { bg: "#F3F4F6", color: "#4B5563" }, issued: { bg: "#EFF6FF", color: "#1D4ED8" }, partially_paid: { bg: "#FFF7ED", color: "#C2410C" }, paid: { bg: "#ECFDF5", color: "#047857" }, overdue: { bg: "#FEF2F2", color: "#B91C1C" }, cancelled: { bg: "#F9FAFB", color: "#6B7280" }, void: { bg: "#F9FAFB", color: "#6B7280" },
-};
-const inputStyle = { padding: "10px 12px", border: "1px solid #D7DEE8", borderRadius: 8, fontSize: 13, fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
-const buttonStyle = { padding: "9px 14px", border: 0, borderRadius: 8, background: "#25476a", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+const INVOICES_PER_PAGE = 8;
+const RECENT_RECEIPTS_COUNT = 5;
 
 function Field({ label, children }) { return <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, fontWeight: 700, color: "#374151" }}>{label}{children}</label>; }
-function StatusPill({ status }) { const style = STATUS_COLORS[status] || STATUS_COLORS.draft; return <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 9px", borderRadius: 999, background: style.bg, color: style.color, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>{status === "paid" ? <CheckCircleIcon sx={{ fontSize: 14 }} /> : null}{STATUS_LABELS[status] || status}</span>; }
-function formatMoney(amount, currency = "KES") { return `${currency} ${Number(amount || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
-function formatDate(value) { return value ? new Date(value).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "No due date"; }
 
 export default function BillingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isLearner = user?.role === "learner";
   const isAdmin = user?.role === "admin";
+  const receiptsBasePath = isLearner ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const statementBasePath = isLearner ? "/learner-portal/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoicesQuery();
   const { data: hubsData } = useAllLearningHubsQuery({ includeDrafts: true });
   const hubs = hubsData?.data || [];
@@ -58,11 +46,13 @@ export default function BillingPage() {
   const activeClasses = useMemo(() => classes.filter((cls) => cls.status === "active"), [classes]);
   const { data: coursesData } = useCoursesQuery();
   const courses = coursesData?.data || [];
+  const { data: catalogItems = [] } = useItems();
   const [invoiceType, setInvoiceType] = useState(isAdmin ? "hub_subscription" : "learner_term");
   const [learnerId, setLearnerId] = useState("");
   const [courseId, setCourseId] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [itemPick, setItemPick] = useState("");
   const [periodLabel, setPeriodLabel] = useState("");
   const [dueAt, setDueAt] = useState("");
   const [notes, setNotes] = useState("");
@@ -70,9 +60,12 @@ export default function BillingPage() {
   const { mutate: issueInvoice } = useIssueInvoice();
   const { mutate: cancelInvoice } = useCancelInvoice();
   const invoices = invoicesData?.data || [];
+  const { data: receiptsData } = useReceiptsQuery();
+  const recentReceipts = (receiptsData?.data || []).slice(0, RECENT_RECEIPTS_COUNT);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showForm, setShowForm] = useState(!isLearner);
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [showForm, setShowForm] = useState(false);
   const [hubBillingMode, setHubBillingMode] = useState("group");
   const [adminScope, setAdminScope] = useState("hub");
   const [adminClassId, setAdminClassId] = useState("");
@@ -81,6 +74,7 @@ export default function BillingPage() {
   const [bulkType, setBulkType] = useState("learner_term");
   const [bulkDescription, setBulkDescription] = useState("");
   const [bulkAmount, setBulkAmount] = useState("");
+  const [bulkItemPick, setBulkItemPick] = useState("");
   const [bulkPeriod, setBulkPeriod] = useState("");
   const [bulkDueAt, setBulkDueAt] = useState("");
   const [bulkPreview, setBulkPreview] = useState(null);
@@ -95,6 +89,9 @@ export default function BillingPage() {
       return matchesStatus && matchesSearch;
     });
   }, [invoices, search, statusFilter]);
+  useEffect(() => { setInvoicePage(1); }, [search, statusFilter]);
+  const invoicePageCount = Math.max(1, Math.ceil(filteredInvoices.length / INVOICES_PER_PAGE));
+  const pagedInvoices = useMemo(() => filteredInvoices.slice((invoicePage - 1) * INVOICES_PER_PAGE, invoicePage * INVOICES_PER_PAGE), [filteredInvoices, invoicePage]);
   const invoiceStats = useMemo(() => ({
     total: invoices.length,
     outstanding: invoices.filter((invoice) => ["issued", "partially_paid", "overdue"].includes(invoice.status)).reduce((sum, invoice) => sum + Number(invoice.amountDue || 0), 0),
@@ -105,6 +102,20 @@ export default function BillingPage() {
     if (!isAdmin) return 0;
     return new Set(learners.filter((learner) => (learner.accountStatus || "active") === "active" && (learner.status || "active") === "active" && (adminScope === "hub" || learner.classId === adminClassId)).map((learner) => learner.id)).size;
   }, [adminClassId, adminScope, isAdmin, learners]);
+  // Items whose invoiceType tag matches the currently selected type, plus untagged ("Any") ones —
+  // a fill-helper, not a hard link: picking one just prefills description/amount, both stay editable.
+  const itemsForType = useMemo(() => catalogItems.filter((item) => !item.invoiceType || item.invoiceType === invoiceType), [catalogItems, invoiceType]);
+  const itemsForBulkType = useMemo(() => catalogItems.filter((item) => !item.invoiceType || item.invoiceType === bulkType), [catalogItems, bulkType]);
+  const pickItem = (id) => {
+    setItemPick(id);
+    const item = catalogItems.find((i) => i.id === id);
+    if (item) { setDescription(item.name); if (item.defaultPrice !== null && item.defaultPrice !== undefined) setAmount(String(item.defaultPrice)); }
+  };
+  const pickBulkItem = (id) => {
+    setBulkItemPick(id);
+    const item = catalogItems.find((i) => i.id === id);
+    if (item) { setBulkDescription(item.name); if (item.defaultPrice !== null && item.defaultPrice !== undefined) setBulkAmount(String(item.defaultPrice)); }
+  };
 
   const submit = (event) => {
     event.preventDefault();
@@ -139,6 +150,11 @@ export default function BillingPage() {
         {!isLearner && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
       </div>
 
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <Link to={`${receiptsBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><PaidIcon sx={{ fontSize: 16 }} /> Receipts</Link>
+        <Link to={`${statementBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><AccountBalanceIcon sx={{ fontSize: 16 }} /> Statement of account</Link>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
         {[{ label: "All invoices", value: invoiceStats.total, icon: <ViewListIcon fontSize="small" />, color: "#25476a" }, { label: "Outstanding", value: formatMoney(invoiceStats.outstanding), icon: <AccountBalanceIcon fontSize="small" />, color: "#C2410C" }, { label: "Paid", value: formatMoney(invoiceStats.paid), icon: <PaidIcon fontSize="small" />, color: "#047857" }, { label: "Overdue", value: invoiceStats.overdue, icon: <EventNoteIcon fontSize="small" />, color: "#B91C1C" }].map((stat) => <div key={stat.label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}><div style={{ width: 36, height: 36, borderRadius: 9, background: "#F1F7FB", color: stat.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{stat.icon}</div><div><div style={{ fontSize: 18, fontWeight: 850, color: stat.color, fontVariantNumeric: "tabular-nums" }}>{stat.value}</div><div style={{ fontSize: 11, color: "#6B7280" }}>{stat.label}</div></div></div>)}
       </div>
@@ -150,6 +166,7 @@ export default function BillingPage() {
             <Field label="Scope"><select value={bulkScope} onChange={(e) => { setBulkScope(e.target.value); setBulkPreview(null); }} style={inputStyle}><option value="class">Whole class</option><option value="hub">Whole hub</option></select></Field>
             {bulkScope === "class" && <Field label="Class"><select value={bulkClassId} onChange={(e) => { setBulkClassId(e.target.value); setBulkPreview(null); }} style={inputStyle}><option value="">Select a class</option>{classes.map((cls) => <option key={cls.id} value={cls.id}>{cls.gradeName || cls.name}{cls.streamName ? ` - ${cls.streamName}` : ""}</option>)}</select></Field>}
             <Field label="Invoice type"><select value={bulkType} onChange={(e) => setBulkType(e.target.value)} style={inputStyle}><option value="learner_term">Per learner per term</option><option value="course_module">Per course / module</option><option value="bootcamp">One-time bootcamp</option></select></Field>
+            {itemsForBulkType.length > 0 && <Field label="Bill from item (optional)"><select value={bulkItemPick} onChange={(e) => pickBulkItem(e.target.value)} style={inputStyle}><option value="">Type manually</option>{itemsForBulkType.map((item) => <option key={item.id} value={item.id}>{item.name}{item.defaultPrice != null ? ` — KES ${Number(item.defaultPrice).toLocaleString()}` : ""}</option>)}</select></Field>}
             <Field label="Amount per learner (KES)"><input type="number" min="0.01" step="0.01" value={bulkAmount} onChange={(e) => setBulkAmount(e.target.value)} placeholder="0.00" style={inputStyle} /></Field>
             <Field label="Description"><input value={bulkDescription} onChange={(e) => setBulkDescription(e.target.value)} placeholder="Term tuition or bootcamp fee" style={inputStyle} /></Field>
             {bulkType === "learner_term" && <Field label="Term / period"><input value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} placeholder="Term 1, 2026" style={inputStyle} /></Field>}
@@ -174,6 +191,7 @@ export default function BillingPage() {
             <Field label="Invoice type"><select value={invoiceType} onChange={(e) => { setInvoiceType(e.target.value); setLearnerId(""); }} style={inputStyle}>{(isAdmin ? ["hub_subscription"] : ["learner_term", "course_module", "bootcamp"]).map((type) => <option key={type} value={type}>{TYPE_LABELS[type]}</option>)}</select></Field>
             {invoiceType !== "hub_subscription" && <Field label="Learner"><select value={learnerId} onChange={(e) => setLearnerId(e.target.value)} style={inputStyle}><option value="">Select a learner</option>{learners.map((learner) => <option key={learner.id} value={learner.id}>{learner.firstName} {learner.lastName}</option>)}</select></Field>}
             {invoiceType === "course_module" && <Field label="Course / module"><select value={courseId} onChange={(e) => setCourseId(e.target.value)} style={inputStyle}><option value="">Optional course link</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></Field>}
+            {itemsForType.length > 0 && <Field label="Bill from item (optional)"><select value={itemPick} onChange={(e) => pickItem(e.target.value)} style={inputStyle}><option value="">Type manually</option>{itemsForType.map((item) => <option key={item.id} value={item.id}>{item.name}{item.defaultPrice != null ? ` — KES ${Number(item.defaultPrice).toLocaleString()}` : ""}</option>)}</select></Field>}
             <Field label="Description"><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={invoiceType === "bootcamp" ? "Robotics bootcamp" : "Tuition / course fee"} style={inputStyle} /></Field>
             <Field label={isAdmin ? "Amount per learner (KES)" : "Amount (KES)"}><input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={inputStyle} /></Field>
             {invoiceType === "learner_term" && <Field label="Term / period"><input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} placeholder="Term 1, 2026" style={inputStyle} /></Field>}
@@ -186,13 +204,46 @@ export default function BillingPage() {
 
       <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><div><h2 style={{ margin: 0, fontSize: 16 }}>Invoices</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredInvoices.length} of {invoices.length} invoice{invoices.length === 1 ? "" : "s"}</p></div><div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><label style={{ position: "relative" }}><SearchIcon sx={{ position: "absolute", left: 9, top: 8, fontSize: 16, color: "#9CA3AF" }} /><input aria-label="Search invoices" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice number" style={{ ...inputStyle, width: 190, paddingLeft: 30 }} /></label><select aria-label="Filter invoice status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ ...inputStyle, width: 145 }}><option value="all">All statuses</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div></div>
-        {invoicesLoading ? <div style={{ padding: 24, color: "#6B7280" }}>Loading invoices…</div> : filteredInvoices.length === 0 ? <div style={{ padding: "42px 20px", textAlign: "center" }}><ReceiptLongIcon sx={{ fontSize: 36, color: "#B8C8D5", marginBottom: 8 }} /><p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#374151" }}>{invoices.length === 0 ? "No invoices yet" : "No matching invoices"}</p><p style={{ margin: "5px 0 0", fontSize: 12, color: "#9CA3AF" }}>{invoices.length === 0 && !isLearner ? "Create a draft above to start your billing record." : "Try a different search or status filter."}</p></div> : filteredInvoices.map((invoice) => (
-          <div key={invoice.id} role="button" tabIndex={0} onClick={() => navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .15s" }}>
-            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} /></div><div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt)}</div></div>
+        {invoicesLoading ? <LoadingState label="Loading invoices…" /> : filteredInvoices.length === 0 ? (
+          <EmptyState
+            icon={ReceiptLongIcon}
+            title={invoices.length === 0 ? "No invoices yet" : "No matching invoices"}
+            subtitle={invoices.length === 0 && !isLearner ? "Create a draft above to start your billing record." : "Try a different search or status filter."}
+          />
+        ) : pagedInvoices.map((invoice) => (
+          <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} /></div><div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}><div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 850, color: "#25476a" }}>{formatMoney(invoice.total, invoice.currency)}</div><div style={{ fontSize: 11, color: invoice.amountDue > 0 ? "#C2410C" : "#047857", marginTop: 3 }}>{invoice.amountDue > 0 ? `${formatMoney(invoice.amountDue, invoice.currency)} due` : "Fully paid"}</div></div>{!isLearner && <div style={{ display: "flex", gap: 7 }} onClick={(event) => event.stopPropagation()}>{invoice.status === "draft" && <button type="button" title="Issue invoice" aria-label={`Issue ${invoice.invoiceNumber}`} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, display: "inline-flex", alignItems: "center", gap: 5 }}><SendIcon sx={{ fontSize: 15 }} />Issue</button>}{["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" title="Cancel invoice" aria-label={`Cancel ${invoice.invoiceNumber}`} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, padding: "8px 10px", background: "#fff", color: "#B91C1C", border: "1px solid #FECACA" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} /></button>}</div>}</div>
           </div>
         ))}
+        <Pagination page={invoicePage} pageCount={invoicePageCount} onChange={setInvoicePage} />
       </div>
+
+      {!isLearner && recentReceipts.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden", marginTop: 16 }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 16 }}>Recent receipts</h2>
+            <Link to={receiptsBasePath} style={{ fontSize: 12, fontWeight: 700, color: "#25476a", textDecoration: "none" }}>View all receipts →</Link>
+          </div>
+          {recentReceipts.map((receipt) => (
+            <div
+              key={receipt.id}
+              role="button"
+              tabIndex={0}
+              {...rowHoverHandlers}
+              onClick={() => navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`)}
+              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`); } }}
+              style={{ padding: "13px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ fontSize: 13, color: "#111827" }}>{receipt.receiptNumber}</strong>
+                <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{receipt.invoice?.invoiceNumber || "—"} <span style={{ color: "#CBD5E1" }}>·</span> {formatDate(receipt.paidAt)}</div>
+              </div>
+              <strong style={{ fontSize: 13, fontWeight: 800, color: "#047857" }}>{formatMoney(receipt.amount, receipt.invoice?.currency)}</strong>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

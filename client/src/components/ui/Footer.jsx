@@ -1,6 +1,7 @@
 function Footer() {
   return (
     <footer
+      className="no-print"
       style={{
         height: "40px",
         backgroundColor: "#ffffff",

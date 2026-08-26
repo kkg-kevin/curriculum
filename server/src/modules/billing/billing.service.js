@@ -6,16 +6,45 @@ const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
 const ClassModel = require("../classes/class.model");
 
+const RECEIVABLE_STATUSES = ["issued", "partially_paid", "paid", "overdue"];
+
 function money(value) { return Number(Number(value || 0).toFixed(2)); }
 function notFound(message) { const err = new Error(message); err.statusCode = 404; return err; }
 function badRequest(message) { const err = new Error(message); err.statusCode = 400; return err; }
 function forbidden(message) { const err = new Error(message); err.statusCode = 403; return err; }
-function invoiceNumber() { return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; }
-function receiptNumber() { return `RCT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; }
+// A draft is never shown to the payer and is freely edited/cancelled — reserving a real
+// sequential number for every abandoned draft would leave gaps that read as "a missing/deleted
+// invoice" to anyone auditing the sequence. Drafts get this placeholder instead; issueInvoice
+// assigns the real INV-YYYY-000001 number at the moment it becomes a real document. 38 chars,
+// fits the column's 40-char limit.
+function draftInvoiceNumber() { return `DRAFT-${BillingModel.generateId().replace(/-/g, "")}`; }
+async function nextInvoiceNumber(trx) { const year = new Date().getFullYear(); return `INV-${year}-${String(await BillingModel.nextNumber("invoice", year, trx)).padStart(6, "0")}`; }
+async function nextReceiptNumber(trx) { const year = new Date().getFullYear(); return `RCT-${year}-${String(await BillingModel.nextNumber("receipt", year, trx)).padStart(6, "0")}`; }
+
+// The "Bill To" identity for a document — switches on which id is actually set on the invoice,
+// not on issuerType, since a school-issued invoice could in principle carry either. Prefers the
+// Learner's guardian fields over the User row when both are available: Learner has guardianPhone,
+// the payerUserId's own `users` row only has name/email.
+async function resolvePayerIdentity(invoice) {
+  if (invoice.payerHubId) {
+    const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
+    if (!hub) return null;
+    return { name: hub.name, email: hub.email || null, phone: hub.phone || null, address: hub.address || null };
+  }
+  if (invoice.payerUserId) {
+    if (invoice.learnerId) {
+      const learner = await LearnerModel.findById(invoice.learnerId);
+      if (learner) return { name: learner.guardianName || null, email: learner.guardianEmail || null, phone: learner.guardianPhone || null, address: null };
+    }
+    const payer = await UserModel.findById(invoice.payerUserId);
+    if (payer) return { name: payer.name || null, email: payer.email || null, phone: null, address: null };
+  }
+  return null;
+}
 
 async function decorate(invoice, items, payments) {
   const amountPaid = money(payments.filter((p) => p.status === "successful").reduce((sum, p) => sum + Number(p.amount), 0));
-  return { ...invoice, subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total), amountPaid, amountDue: money(Number(invoice.total) - amountPaid), items, payments, auditEvents: await BillingModel.findAuditEvents(invoice.id) };
+  return { ...invoice, subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total), amountPaid, amountDue: money(Number(invoice.total) - amountPaid), items, payments, billTo: await resolvePayerIdentity(invoice), auditEvents: await BillingModel.findAuditEvents(invoice.id) };
 }
 
 async function assertLearnerAtHub(learnerId, hubId) {
@@ -83,7 +112,7 @@ const BillingService = {
     await BillingModel.transaction(async (trx) => {
       batch = await BillingModel.createBatch({ batchNumber: `BATCH-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`, hubId: data.hubId, createdBy: req.user.id, scopeType: data.scopeType, classId: data.classId || null, invoiceType: data.invoiceType, status: "processing", periodLabel: data.periodLabel || null, dueAt: data.dueAt || null, unitAmount: data.unitAmount, totalLearners: rows.length, createdInvoices: 0, skippedLearners: rows.length - eligible.length, totalAmount: 0 }, trx);
       for (const row of eligible) {
-        const invoice = await BillingModel.createInvoice({ invoiceNumber: invoiceNumber(), batchId: batch.id, issuerType: "learning_hub", issuerHubId: data.hubId, payerUserId: row.payerUserId, payerHubId: null, learnerId: row.learnerId, hubId: data.hubId, invoiceType: data.invoiceType, status: "issued", currency: "KES", subtotal: data.unitAmount, discount: 0, total: data.unitAmount, amountPaid: 0, periodLabel: data.periodLabel || null, issuedAt: now, dueAt: data.dueAt || null, notes: data.notes || null }, trx);
+        const invoice = await BillingModel.createInvoice({ invoiceNumber: await nextInvoiceNumber(trx), batchId: batch.id, issuerType: "learning_hub", issuerHubId: data.hubId, payerUserId: row.payerUserId, payerHubId: null, learnerId: row.learnerId, hubId: data.hubId, invoiceType: data.invoiceType, status: "issued", currency: "KES", subtotal: data.unitAmount, discount: 0, total: data.unitAmount, amountPaid: 0, periodLabel: data.periodLabel || null, issuedAt: now, dueAt: data.dueAt || null, notes: data.notes || null }, trx);
         await BillingModel.createItem({ invoiceId: invoice.id, learnerId: row.learnerId, courseId: null, description: data.description, quantity: 1, unitAmount: data.unitAmount, totalAmount: data.unitAmount, metadata: { batchId: batch.id } }, trx);
         await BillingModel.createAuditEvent({ invoiceId: invoice.id, batchId: batch.id, actorUserId: req.user.id, eventType: "invoice_issued", newStatus: "issued", amount: data.unitAmount, metadata: { source: "bulk_invoice" } }, trx);
         created.push(invoice);
@@ -141,7 +170,7 @@ const BillingService = {
     if (discount > subtotal) throw badRequest("Discount cannot exceed the invoice subtotal");
     const total = money(subtotal - discount);
     const invoice = await BillingModel.createInvoice({
-      invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      invoiceNumber: draftInvoiceNumber(),
       issuerType, issuerHubId, payerUserId, payerHubId, learnerId: data.learnerId || null, hubId: hub.id,
       invoiceType: calculatedData.invoiceType, status: "draft", currency: "KES", subtotal, discount, total, amountPaid: 0,
       classId: calculatedData.classId || null, pricingMode: calculatedData.pricingMode || "flat", unitAmount: calculatedData.unitAmount || null,
@@ -195,7 +224,7 @@ const BillingService = {
     if (invoice.status !== "draft") throw badRequest("Only draft invoices can be issued");
     let updated;
     await BillingModel.transaction(async (trx) => {
-      updated = await BillingModel.updateInvoice(id, { status: "issued", issuedAt: new Date() }, trx);
+      updated = await BillingModel.updateInvoice(id, { status: "issued", issuedAt: new Date(), invoiceNumber: await nextInvoiceNumber(trx) }, trx);
       await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_issued", previousStatus: invoice.status, newStatus: "issued", amount: invoice.total }, trx);
     });
     const full = await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
@@ -241,11 +270,111 @@ const BillingService = {
       if (money(currentPaid + data.amount) > money(lockedInvoice.total)) throw badRequest("Payment exceeds the amount due");
       const newPaid = money(currentPaid + data.amount);
       const newStatus = newPaid >= money(lockedInvoice.total) ? "paid" : "partially_paid";
-      payment = await BillingModel.createPayment({ invoiceId: id, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, idempotencyKey: data.idempotencyKey || null, provider: "manual", providerReference: data.providerReference || null, receiptNumber: data.receiptNumber || receiptNumber(), amount: money(data.amount), currency: invoice.currency, status: "successful", paymentMethod: data.paymentMethod, paymentDate, paidAt: paymentDate, notes: data.notes || null }, trx);
+      payment = await BillingModel.createPayment({ invoiceId: id, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, idempotencyKey: data.idempotencyKey || null, provider: "manual", providerReference: data.providerReference || null, receiptNumber: await nextReceiptNumber(trx), amount: money(data.amount), currency: invoice.currency, status: "successful", paymentMethod: data.paymentMethod, paymentDate, paidAt: paymentDate, notes: data.notes || null }, trx);
       updated = await BillingModel.updateInvoice(id, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
       await BillingModel.createAuditEvent({ invoiceId: id, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: req.user.id, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: data.amount, metadata: { paymentMethod: data.paymentMethod, receiptNumber: payment.receiptNumber } }, trx);
     });
     return decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
+  },
+
+  async getReceipt(invoiceId, paymentId, req) {
+    const invoice = await BillingModel.findInvoiceById(invoiceId);
+    if (!invoice) throw notFound("Invoice not found");
+    await assertAccess(req, invoice);
+    const payment = await BillingModel.findPaymentById(paymentId);
+    if (!payment || payment.invoiceId !== invoiceId) throw notFound("Receipt not found");
+    return { ...payment, amount: money(payment.amount), invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, total: money(invoice.total) }, billTo: await resolvePayerIdentity(invoice) };
+  },
+
+  async listReceipts(req) {
+    const filters = {};
+    if (req.user.role === "school") filters.hubId = req.ownSchool?.id || "__none__";
+    if (req.user.role === "learner") {
+      if (req.user.username) return [];
+      filters.learnerId = req.ownLearner?.id || "__none__";
+    }
+    const invoices = await BillingModel.findInvoices(filters);
+    const invoiceById = new Map(invoices.map((inv) => [inv.id, inv]));
+    const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
+    return Promise.all(payments.map(async (payment) => {
+      const invoice = invoiceById.get(payment.invoiceId);
+      return { ...payment, amount: money(payment.amount), invoice: invoice ? { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency } : null, billTo: invoice ? await resolvePayerIdentity(invoice) : null };
+    }));
+  },
+
+  // Statement of Account — a per-payer running ledger, computed on the fly from existing
+  // invoices/payments (no new table). Access control is role-driven filtering, not a
+  // client-supplied-id check: mirrors listInvoices' `filters.hubId = req.ownSchool?.id` posture
+  // rather than trusting the URL's payerId for anyone but admin.
+  async getStatement(payerType, rawPayerId, { from, to }, req) {
+    if (!["user", "hub"].includes(payerType)) throw badRequest("Invalid statement type");
+
+    let payerId = rawPayerId;
+    let hubId;
+    if (req.user.role === "learner") {
+      if (req.user.username) throw forbidden("Learner accounts cannot access billing statements");
+      if (payerType !== "user") throw forbidden("You do not have access to this statement");
+      payerId = req.user.id; // payerUserId on a guardian's invoices IS their own users.id — never trust the URL here
+    } else if (req.user.role === "school") {
+      if (!req.ownSchool) throw forbidden("You do not have access to this statement");
+      if (payerType === "hub") {
+        if (payerId !== req.ownSchool.id) throw forbidden("You do not have access to this statement");
+      } else {
+        hubId = req.ownSchool.id; // a school's view of a guardian's statement is always scoped to their own hub, never the guardian's full history
+      }
+    } else if (req.user.role !== "admin") {
+      throw forbidden("You do not have access to this statement");
+    }
+
+    const toDate = to ? new Date(to) : new Date();
+    const fromDate = from ? new Date(from) : new Date(toDate.getFullYear(), toDate.getMonth() - 12, toDate.getDate());
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) throw badRequest("Invalid date range");
+
+    const filters = payerType === "hub" ? { payerHubId: payerId } : { payerUserId: payerId };
+    if (hubId) filters.hubId = hubId;
+    const invoices = (await BillingModel.findInvoices(filters)).filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
+    const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
+
+    // Two independently date-filtered sums, not "payments against invoices dated before from" —
+    // that formulation double-counts a payment made after `from` against an invoice issued
+    // before it, silently corrupting every running balance after it.
+    const openingInvoiced = money(invoices.filter((inv) => inv.issuedAt && new Date(inv.issuedAt) < fromDate).reduce((sum, inv) => sum + Number(inv.total), 0));
+    const openingPaid = money(payments.filter((p) => p.paidAt && new Date(p.paidAt) < fromDate).reduce((sum, p) => sum + Number(p.amount), 0));
+    const openingBalance = money(openingInvoiced - openingPaid);
+
+    const inRangeInvoices = invoices.filter((inv) => inv.issuedAt && new Date(inv.issuedAt) >= fromDate && new Date(inv.issuedAt) <= toDate);
+    const inRangePayments = payments.filter((p) => p.paidAt && new Date(p.paidAt) >= fromDate && new Date(p.paidAt) <= toDate);
+    const lines = [
+      ...inRangeInvoices.map((inv) => ({ date: inv.issuedAt, type: "invoice", reference: inv.invoiceNumber, description: `${inv.invoiceType.replace(/_/g, " ")}${inv.periodLabel ? ` — ${inv.periodLabel}` : ""}`, debit: money(inv.total), credit: 0 })),
+      ...inRangePayments.map((p) => ({ date: p.paidAt, type: "payment", reference: p.receiptNumber, description: p.paymentMethod || p.provider, debit: 0, credit: money(p.amount) })),
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let running = openingBalance;
+    const ledger = lines.map((line) => { running = money(running + line.debit - line.credit); return { ...line, balance: running }; });
+    const closingBalance = ledger.length ? ledger[ledger.length - 1].balance : openingBalance;
+
+    const now = new Date();
+    const aging = { current: 0, "1-30": 0, "31-60": 0, "61-90": 0, "90+": 0 };
+    for (const inv of invoices) {
+      const outstanding = money(Number(inv.total) - Number(inv.amountPaid || 0));
+      if (outstanding <= 0) continue;
+      const dueAt = inv.dueAt ? new Date(inv.dueAt) : (inv.issuedAt ? new Date(inv.issuedAt) : now);
+      const daysPastDue = Math.floor((now - dueAt) / (1000 * 60 * 60 * 24));
+      const bucket = daysPastDue <= 0 ? "current" : daysPastDue <= 30 ? "1-30" : daysPastDue <= 60 ? "31-60" : daysPastDue <= 90 ? "61-90" : "90+";
+      aging[bucket] = money(aging[bucket] + outstanding);
+    }
+
+    const billTo = payerType === "hub"
+      ? await resolvePayerIdentity({ payerHubId: payerId })
+      : await resolvePayerIdentity({ payerUserId: payerId, learnerId: invoices[0]?.learnerId || null });
+
+    return {
+      payerType, payerId, from: fromDate, to: toDate, billTo,
+      openingBalance, closingBalance,
+      totalInvoiced: money(inRangeInvoices.reduce((sum, inv) => sum + Number(inv.total), 0)),
+      totalPaid: money(inRangePayments.reduce((sum, p) => sum + Number(p.amount), 0)),
+      ledger, aging,
+    };
   },
 };
 

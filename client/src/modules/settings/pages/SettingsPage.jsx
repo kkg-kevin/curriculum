@@ -4,6 +4,7 @@ import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
+import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
@@ -250,6 +251,7 @@ const TABS = [
   { key: "learning-areas", label: "Learning Areas" },
   { key: "system-levels", label: "System Levels" },
   { key: "inventory", label: "Inventory" },
+  { key: "items", label: "Items" },
   { key: "learning-hubs", label: "Learning Hubs" },
 ];
 
@@ -295,6 +297,7 @@ export default function SettingsPage() {
         {activeTab === "learning-areas" && <LearningAreasPanel />}
         {activeTab === "system-levels" && <SystemLevelsPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
+        {activeTab === "items" && <ItemsPanel />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
       </div>
     </div>

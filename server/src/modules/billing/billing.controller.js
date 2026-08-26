@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const BillingService = require("./billing.service");
-const { createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema } = require("./billing.validation");
+const { createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema } = require("./billing.validation");
 
 const listBatches = asyncHandler(async (req, res) => {
   const data = await BillingService.listBatches(req);
@@ -49,4 +49,18 @@ const recordPayment = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.recordPayment(req.params.id, data, req) });
 });
 
-module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices };
+const listReceipts = asyncHandler(async (req, res) => {
+  const data = await BillingService.listReceipts(req);
+  res.json({ success: true, data, count: data.length });
+});
+
+const getReceipt = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await BillingService.getReceipt(req.params.invoiceId, req.params.paymentId, req) });
+});
+
+const getStatement = asyncHandler(async (req, res) => {
+  const query = statementQuerySchema.parse(req.query);
+  res.json({ success: true, data: await BillingService.getStatement(req.params.payerType, req.params.payerId, query, req) });
+});
+
+module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement };
