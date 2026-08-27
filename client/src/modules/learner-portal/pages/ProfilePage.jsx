@@ -113,6 +113,13 @@ export default function ProfilePage() {
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       <ProfileIdentityCard learner={learner} stage={stage} band={currentBand} nextBand={nextBand} onEdit={() => setEditing("learner")} />
 
+      {/* Only on Overview — Progress Arc otherwise lived further down, inside the Overview tab's
+          own content below; moved up here, above Guardian Profile/My Learning Hubs, per the
+          product decision this was built for. Still tab-scoped (not shown on Competencies/
+          Learning Journey/etc.) since CompetencyProgressGrid right below it already covers the
+          Overview-only Progress Arc + competency summary pairing those other tabs don't need. */}
+      {activeTab === "Overview" && <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />}
+
       {/* Guardian + Portfolio stack into their own column (matching SideRail's own two stacked
           cards) rather than sitting as three same-row siblings of mismatched height — Guardian
           Profile and Portfolio Snapshot are both short, so left as flex siblings next to
@@ -130,8 +137,6 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
-          <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
-
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>

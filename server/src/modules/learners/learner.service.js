@@ -32,16 +32,21 @@ function computeAge(dateOfBirth) {
 }
 
 // Runs whenever a learner's enrollment resolves a class (and so a curriculum) — matches their
-// age (from dateOfBirth) against that curriculum's Developmental Stages, and if the matched
-// stage has a diagnostic assessment configured, auto-issues it (see
-// AssessmentSubmissionService.issueDiagnostic, idempotent per learner+assessment). An existing
-// manual/diagnostic placement is never overwritten by this age guess — only fills in
-// currentStageId when it's still unset. Placement lives on THIS hub's enrollment link, not the
-// learner record — a learner enrolled at several hubs can run a different curriculum (and so a
-// different stage/band) at each one, hence the required `hubId`. Also auto-issues one
-// diagnostic per Learning Area the class's courses actually expose (see
-// maybeAutoIssueLearningAreaDiagnostics below) — a separate placement identity (starting course
-// per area) from the stage/band one above.
+// age (from dateOfBirth) against that curriculum's Developmental Stages, and fills in
+// currentStageId when it's still unset (an existing manual/diagnostic placement is never
+// overwritten by this age guess). Placement lives on THIS hub's enrollment link, not the learner
+// record — a learner enrolled at several hubs can run a different curriculum (and so a different
+// stage) at each one, hence the required `hubId`.
+//
+// A Developmental Stage no longer auto-issues its own diagnostic — that mechanism was removed in
+// favor of Learning Area diagnostics doing the same age-appropriate-placement job per subject
+// area (see maybeAutoIssueLearningAreaDiagnostics below), so a learner gets one diagnostic per
+// relevant subject instead of one extra, separate "overall" diagnostic on top. currentStageId
+// itself still matters beyond this: Progress Arc's band-snapshot display and Learning Journey's
+// course-defaulting both read it (see CompetencyService.getLearningJourney), so the age-match
+// still runs — only the issueDiagnostic call was removed. AgeCategory.diagnosticAssessmentId
+// remains in the schema for now (existing historical issues/reports still reference it) but the
+// authoring UI (AgeCategoriesPanel) no longer exposes it, so no new stage ever sets it again.
 async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
   if (!cls?.curriculumId) return;
   const learner = await LearnerModel.findById(learnerId);
@@ -50,11 +55,8 @@ async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
   if (age !== null) {
     const categories = await AgeCategoryModel.findByCurriculumId(cls.curriculumId);
     const category = categories.find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
-    if (category) {
-      if (link && !link.currentStageId) await LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
-      if (category.diagnosticAssessmentId) {
-        await AssessmentSubmissionService.issueDiagnostic({ assessmentId: category.diagnosticAssessmentId, learnerId, ageCategoryId: category.id, hubId });
-      }
+    if (category && link && !link.currentStageId) {
+      await LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
     }
   }
   await maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age);
@@ -479,7 +481,11 @@ const LearnerService = {
       if (primaryLink?.currentStageId) {
         const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
         const stage = await AgeCategoryModel.findById(primaryLink.currentStageId);
-        developmentalStage = stage ? { name: stage.name, ageRange: stage.ageRange } : null;
+        // minAge/maxAge, not the stored `ageRange` column — that field is never collected by
+        // the Developmental Stage authoring form (AgeCategoriesPanel), so it's always null for
+        // any stage created through the app. The client derives a display range from the real
+        // numeric bounds instead (see PublicLearnerProfilePage's formatAgeRange).
+        developmentalStage = stage ? { name: stage.name, minAge: stage.minAge, maxAge: stage.maxAge } : null;
       }
 
       const [scoreRows, allCompetencies, bandProgress, journeyRows, issuedRows] = await Promise.all([

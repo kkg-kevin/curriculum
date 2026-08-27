@@ -938,24 +938,17 @@ function IndicatorStatsPanel({ stats }) {
     );
   }
 
-  const used = stats.filter((s) => s.questionCount > 0);
-  if (used.length === 0) {
-    return (
-      <div className="tb-card" style={{ marginTop: "16px" }}>
-        <p className="tb-card-title">Indicator Statistics</p>
-        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
-          No questions have been linked to an indicator yet — this fills in as you tag questions in the panel on the right.
-        </p>
-      </div>
-    );
-  }
-
-  const totalIndicatorMarks = used.reduce((sum, s) => sum + s.marks, 0);
+  const totalIndicatorMarks = stats.reduce((sum, s) => sum + s.marks, 0);
   const byCompetency = new Map();
-  used.forEach((s) => {
+  stats.forEach((s) => {
     if (!byCompetency.has(s.competencyName)) byCompetency.set(s.competencyName, []);
     byCompetency.get(s.competencyName).push(s);
   });
+  // A competency can be linked (Info tab) without any of ITS OWN indicators ever being tagged
+  // on a question — e.g. an author links two competencies but only tags indicators from one of
+  // them. That's not a display bug downstream (Performance Bands correctly shows nothing to
+  // attach), but it's easy to miss here, so call it out by name instead of just going quiet.
+  const untaggedCompetencies = [...byCompetency.entries()].filter(([, inds]) => inds.every((s) => s.questionCount === 0));
 
   return (
     <div className="tb-card" style={{ marginTop: "16px" }}>
@@ -963,33 +956,50 @@ function IndicatorStatsPanel({ stats }) {
       <p style={{ margin: "0 0 14px", fontSize: "11.5px", color: "#9CA3AF" }}>
         How many marks each linked indicator is worth, based on the per-indicator marks assigned on tagged questions.
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        {[...byCompetency.entries()].map(([competencyName, indicators]) => (
-          <div key={competencyName}>
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: "700", color: indicators[0].color, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              {competencyName}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {indicators.map((ind) => (
-                <div key={ind.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "10px" }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", fontWeight: "600", color: "#111827" }}>
-                    {ind.name}
-                  </span>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF", flexShrink: 0 }}>
-                    {ind.questionCount} question{ind.questionCount !== 1 ? "s" : ""}
-                  </span>
-                  <span style={{ fontSize: "12.5px", fontWeight: "700", color: ind.color, flexShrink: 0, minWidth: "50px", textAlign: "right" }}>
-                    {ind.marks} pt{ind.marks !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              ))}
+
+      {untaggedCompetencies.length > 0 && (
+        <div style={{ marginBottom: "14px", padding: "10px 12px", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "10px" }}>
+          <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#92400E" }}>
+            {untaggedCompetencies.length === 1 ? "1 linked competency has" : `${untaggedCompetencies.length} linked competencies have`} no tagged indicators
+          </p>
+          <p style={{ margin: "4px 0 0", fontSize: "11.5px", color: "#92400E" }}>
+            {untaggedCompetencies.map(([name]) => name).join(", ")} — none of {untaggedCompetencies.length === 1 ? "its" : "their"} indicators appear on any question yet, so it won't show up when attaching this curriculum's Performance Bands. Tag at least one question with an indicator from {untaggedCompetencies.length === 1 ? "it" : "each"} below.
+          </p>
+        </div>
+      )}
+
+      {stats.every((s) => s.questionCount === 0) ? null : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {[...byCompetency.entries()].filter(([, inds]) => inds.some((s) => s.questionCount > 0)).map(([competencyName, indicators]) => (
+            <div key={competencyName}>
+              <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: "700", color: indicators[0].color, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                {competencyName}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {indicators.filter((ind) => ind.questionCount > 0).map((ind) => (
+                  <div key={ind.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", backgroundColor: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "10px" }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", fontWeight: "600", color: "#111827" }}>
+                      {ind.name}
+                    </span>
+                    <span style={{ fontSize: "11px", color: "#9CA3AF", flexShrink: 0 }}>
+                      {ind.questionCount} question{ind.questionCount !== 1 ? "s" : ""}
+                    </span>
+                    <span style={{ fontSize: "12.5px", fontWeight: "700", color: ind.color, flexShrink: 0, minWidth: "50px", textAlign: "right" }}>
+                      {ind.marks} pt{ind.marks !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <p style={{ margin: "14px 0 0", paddingTop: "12px", borderTop: "1px solid #F3F4F6", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
-        Sum across indicators: {totalIndicatorMarks} pt{totalIndicatorMarks !== 1 ? "s" : ""}
-      </p>
+          ))}
+        </div>
+      )}
+
+      {stats.some((s) => s.questionCount > 0) && (
+        <p style={{ margin: "14px 0 0", paddingTop: "12px", borderTop: "1px solid #F3F4F6", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
+          Sum across indicators: {totalIndicatorMarks} pt{totalIndicatorMarks !== 1 ? "s" : ""}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { FiAward, FiStar, FiZap } from "react-icons/fi";
+import { formatAgeRange } from "../utils/ageRange";
 
 const T = {
   accent: "#25476a",
@@ -50,7 +51,7 @@ export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
           icon={<FiAward size={16} />}
           label="Developmental Academy"
           value={stage?.name || "Not yet placed"}
-          sub={stage?.ageRange ? `(${stage.ageRange})` : null}
+          sub={stage && formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null}
         />
         <SnapshotRow
           icon={<FiStar size={16} />}

@@ -1,6 +1,7 @@
 import { FiEdit2, FiStar } from "react-icons/fi";
 import { T, heroGradient } from "./theme";
 import Avatar from "../../../../components/ui/Avatar";
+import { formatAgeRange } from "../../utils/ageRange";
 
 // Unchanged, still exported — GuardianProfileCard uses this too, and it stays on a light card
 // (never moves onto the hero gradient below), so its light-background styling is untouched.
@@ -104,7 +105,7 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
         <StatusPill
           eyebrow="Developmental Academy"
           value={stage?.name || "Not yet placed"}
-          sub={stage?.ageRange ? `(${stage.ageRange})` : "Set by a teacher or admin"}
+          sub={stage ? (formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null) : "Set by a teacher or admin"}
         />
         <StatusPill
           eyebrow="Current Level Summary"
