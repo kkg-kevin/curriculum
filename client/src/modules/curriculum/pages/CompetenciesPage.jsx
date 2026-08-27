@@ -2350,17 +2350,34 @@ function AssessmentsPanel({ curriculumId }) {
 
 const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
 
+// Whether two [minAge, maxAge] ranges (either bound possibly null/open-ended) overlap at all.
+function agesOverlap(aMin, aMax, bMin, bMax) {
+  const lowOk = aMin == null || bMax == null || aMin <= bMax;
+  const highOk = aMax == null || bMin == null || aMax >= bMin;
+  return lowOk && highOk;
+}
+
+// maybeAutoIssueDiagnostic (learner.service.js) matches a learner's age against a curriculum's
+// stages in creation order and stops at the FIRST match — so when two stages' age ranges
+// overlap, whichever was created earlier always wins for any learner in that overlap, silently.
+// This surfaces that instead of leaving it invisible: for each stage, every other stage (in
+// list order, which is creation order) whose range overlaps it and that appears EARLIER in the
+// list is the one actually winning the overlap.
+function findOverlaps(cats) {
+  const warnings = new Map();
+  cats.forEach((cat, i) => {
+    if (cat.minAge == null && cat.maxAge == null) return;
+    const shadowedBy = cats.slice(0, i).find((earlier) => agesOverlap(cat.minAge, cat.maxAge, earlier.minAge, earlier.maxAge));
+    if (shadowedBy) warnings.set(cat.id, shadowedBy.name);
+  });
+  return warnings;
+}
+
 function AgeCategoriesPanel({ curriculumId }) {
   const { data: cats = [], isLoading, isError } = useAgeCategories(curriculumId);
   const { mutate: create, isPending: creating } = useCreateAgeCategory(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
-  const { data: assessmentsData } = useAssessmentsQuery();
-  // Teacher Observation assessments have no learner-facing "take" step (the teacher records
-  // them directly — see assessment-submission.controller.js's getOrCreateSubmission) — picking
-  // one here as a diagnostic would auto-issue it to a learner who can never start it.
-  const assessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
-  const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
 
   const [mode,       setMode]       = useState("list");
   const [editTarget, setEditTarget] = useState(null);
@@ -2368,17 +2385,16 @@ function AgeCategoriesPanel({ curriculumId }) {
   const [desc,       setDesc]       = useState("");
   const [minAge,     setMinAge]     = useState("");
   const [maxAge,     setMaxAge]     = useState("");
-  const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setMode("add");
   }
   function openEdit(c) {
     setEditTarget(c); setName(c.name); setDesc(c.description || "");
-    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setDiagnosticAssessmentId(c.diagnosticAssessmentId || ""); setMode("edit");
+    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
 
@@ -2391,14 +2407,28 @@ function AgeCategoriesPanel({ curriculumId }) {
       description: desc.trim(),
       minAge: minAge === "" ? null : Number(minAge),
       maxAge: maxAge === "" ? null : Number(maxAge),
-      diagnosticAssessmentId: diagnosticAssessmentId || null,
     };
     if (mode === "edit") {
+      // diagnosticAssessmentId is deliberately omitted — the update endpoint only touches
+      // fields present in the request body (see onlySentKeys), so any legacy value already on
+      // an existing stage is left exactly as-is, neither wiped nor re-shown, rather than sent
+      // back as null. This form no longer authors or displays it at all.
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
       create(data, { onSuccess: cancel });
     }
   }
+
+  // Draft overlap check for the open form — compares the in-progress min/max against every
+  // OTHER existing stage (excluding the one being edited), regardless of list order, since the
+  // form doesn't yet know where a new stage will land in creation order.
+  const draftMin = minAge === "" ? null : Number(minAge);
+  const draftMax = maxAge === "" ? null : Number(maxAge);
+  const draftOverlapsWith = !ageRangeInvalid && (draftMin != null || draftMax != null)
+    ? cats.filter((c) => c.id !== editTarget?.id && agesOverlap(draftMin, draftMax, c.minAge, c.maxAge))
+    : [];
+
+  const overlapWarnings = findOverlaps(cats);
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
   if (isError) return <ErrorNotice message="Couldn't load Developmental Stages — try refreshing the page." />;
@@ -2455,7 +2485,7 @@ function AgeCategoriesPanel({ curriculumId }) {
             <div>
               <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                A learner whose age falls in this range is auto-placed at this stage, and auto-issued its diagnostic assessment below (if one is set). Leave blank to match every age.
+                A learner whose age falls in this range is auto-placed at this stage. Leave blank to match every age.
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
@@ -2478,20 +2508,13 @@ function AgeCategoriesPanel({ curriculumId }) {
               {ageRangeInvalid && (
                 <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
               )}
-            </div>
-            <div>
-              <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Auto-issued to a new learner once their age places them in this stage. Its graded score sets their Performance Band.
-              </p>
-              <select
-                className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                value={diagnosticAssessmentId}
-                onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
-              >
-                <option value="">— None —</option>
-                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              {!ageRangeInvalid && draftOverlapsWith.length > 0 && (
+                <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#D97706" }}>
+                  Overlaps {draftOverlapsWith.map((c) => c.name).join(", ")} — a learner whose age falls in
+                  both ranges will be placed wherever the two stages' creation order puts them first, not
+                  necessarily this one.
+                </p>
+              )}
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
@@ -2548,6 +2571,11 @@ function AgeCategoriesPanel({ curriculumId }) {
                   </div>
                   <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
                 </div>
+                {overlapWarnings.has(cat.id) && (
+                  <p style={{ margin: "0 0 10px", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
+                    <WarningAmberIcon fontSize="inherit" /> Overlaps {overlapWarnings.get(cat.id)} — that stage was created first, so it always wins for learners in the overlap
+                  </p>
+                )}
                 <div style={{ flex: 1 }}>
                   {cat.description ? (
                     <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -2557,15 +2585,6 @@ function AgeCategoriesPanel({ curriculumId }) {
                     <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
                   )}
                 </div>
-                {cat.diagnosticAssessmentId ? (
-                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "600", color: "#059669", display: "flex", alignItems: "center", gap: 4 }}>
-                    <MedicalServicesIcon fontSize="inherit" /> {assessmentNameById[cat.diagnosticAssessmentId] || "Diagnostic assigned"}
-                  </p>
-                ) : (
-                  <p style={{ margin: "10px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
-                    <WarningAmberIcon fontSize="inherit" /> No diagnostic attached — learners entering this stage won't be issued anything
-                  </p>
-                )}
               </div>
             );
           })}
@@ -2719,7 +2738,9 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
         <div className="cp-indicators-body">
           {populatedIndicators.length === 0 ? (
             <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
-              No indicators tagged yet in this curriculum's attached assessments for this competency.
+              This competency is linked to an assessment in this curriculum, but none of its own indicators
+              have been tagged on a question, rubric criterion, or observation item yet — check that
+              assessment's Info and Questions tabs (this is authored per-question, not here).
             </p>
           ) : (
             populatedIndicators.map((ind) => (

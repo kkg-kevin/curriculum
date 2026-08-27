@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock } from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
+import { formatAgeRange } from "../utils/ageRange";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO = "#38aae1";
@@ -413,7 +414,11 @@ export default function PublicLearnerProfilePage() {
               {(profile.developmentalStage?.name || profile.currentLevel?.name) && (
                 <div className="df-public-hero-pills">
                   {profile.developmentalStage?.name && (
-                    <HeroPill icon={FiCompass} label={profile.developmentalStage.name} sub={profile.developmentalStage.ageRange || "Developmental stage"} />
+                    <HeroPill
+                      icon={FiCompass}
+                      label={profile.developmentalStage.name}
+                      sub={formatAgeRange(profile.developmentalStage.minAge, profile.developmentalStage.maxAge) || "Developmental stage"}
+                    />
                   )}
                   {profile.currentLevel?.name && (
                     <HeroPill
