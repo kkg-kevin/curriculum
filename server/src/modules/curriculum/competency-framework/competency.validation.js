@@ -86,6 +86,17 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
+// Same shape as bandIndicatorContributionSchema further down (a Performance Band's own
+// per-indicator % weighting) — duplicated here rather than reordered, since a Developmental
+// Stage is now a structural twin of a Performance Band: its own competencyIds +
+// indicatorContributions, computed the same way (Engine 4) but purely for display alongside a
+// learner's real Progress Arc — it never gates level advancement itself.
+const stageIndicatorContributionSchema = z.object({
+  competencyId: z.string().min(1),
+  indicatorId:  z.string().min(1),
+  percentage:   z.number().min(0).max(100),
+});
+
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -95,6 +106,9 @@ const ageCategoryFields = z.object({
   // one diagnostic per stage, same "single FK, not a whole module" pattern as
   // class.classTeacherId / curriculum.curriculumAdminId.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
+  competencyIds:          z.array(z.string().min(1)).optional().default([]),
+  indicatorContributions: z.array(stageIndicatorContributionSchema).optional().default([]),
+  advancementThreshold:   z.number().min(0).max(100).optional().default(0),
 });
 
 const createAgeCategorySchema = ageCategoryFields.refine(ageRangeRefinement, ageRangeRefinementOptions);

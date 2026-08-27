@@ -2350,6 +2350,13 @@ function AssessmentsPanel({ curriculumId }) {
 
 const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
 
+// A Developmental Stage isn't a ranked ladder a learner climbs the way Performance Bands are —
+// it's an age-matched bucket a learner lands in once, based on how old they are (see
+// maybeAutoIssueDiagnostic in learner.service.js). Deliberately a different palette family
+// (single warm hue, tint-graded) from ARC_PALETTE's cycling accent colors, so this panel reads
+// as a visually distinct kind of thing at a glance rather than a reskinned copy of bands.
+const STAGE_PALETTE = ["#0F766E", "#0891B2", "#7C3AED", "#BE185D", "#B45309", "#4D7C0F"];
+
 // Whether two [minAge, maxAge] ranges (either bound possibly null/open-ended) overlap at all.
 function agesOverlap(aMin, aMax, bMin, bMax) {
   const lowOk = aMin == null || bMax == null || aMin <= bMax;
@@ -2378,25 +2385,43 @@ function AgeCategoriesPanel({ curriculumId }) {
   const { mutate: create, isPending: creating } = useCreateAgeCategory(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
+  // A Developmental Stage is now a structural twin of a Performance Band — its own
+  // competencyIds/indicatorContributions/advancementThreshold, weighted and displayed the
+  // same way (same reused BandCompetencyBlock/BandIndicatorContributionRow, same
+  // "Indicators: X%" validity badge). Unlike a band, a stage has no completion readout of its
+  // own — it never gates level advancement, only a Performance Band's own completion does that.
+  const { data: adoptedCompetencies = [] }      = useCompetencies(curriculumId);
+  const { data: populatedIndicatorGroups = [] } = usePopulatedIndicators(curriculumId);
+  const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
+  const linkableCompetencies = adoptedCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
+  const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
 
-  const [mode,       setMode]       = useState("list");
-  const [editTarget, setEditTarget] = useState(null);
-  const [name,       setName]       = useState("");
-  const [desc,       setDesc]       = useState("");
-  const [minAge,     setMinAge]     = useState("");
-  const [maxAge,     setMaxAge]     = useState("");
+  const [mode,          setMode]          = useState("list");
+  const [editTarget,    setEditTarget]    = useState(null);
+  const [name,          setName]          = useState("");
+  const [desc,          setDesc]          = useState("");
+  const [minAge,        setMinAge]        = useState("");
+  const [maxAge,        setMaxAge]        = useState("");
+  const [competencyIds, setCompetencyIds] = useState([]);
+  const [threshold,     setThreshold]     = useState(0);
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
-    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge(""); setMode("add");
+    setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge("");
+    setCompetencyIds([]); setThreshold(0); setMode("add");
   }
   function openEdit(c) {
     setEditTarget(c); setName(c.name); setDesc(c.description || "");
-    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? ""); setMode("edit");
+    setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? "");
+    setCompetencyIds([...(c.competencyIds || [])]); setThreshold(c.advancementThreshold ?? 0); setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
+
+  function toggleCompetency(id) {
+    setCompetencyIds((prev) => prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]);
+  }
 
   const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
 
@@ -2407,16 +2432,62 @@ function AgeCategoriesPanel({ curriculumId }) {
       description: desc.trim(),
       minAge: minAge === "" ? null : Number(minAge),
       maxAge: maxAge === "" ? null : Number(maxAge),
+      competencyIds,
+      advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)),
     };
     if (mode === "edit") {
       // diagnosticAssessmentId is deliberately omitted — the update endpoint only touches
       // fields present in the request body (see onlySentKeys), so any legacy value already on
-      // an existing stage is left exactly as-is, neither wiped nor re-shown, rather than sent
-      // back as null. This form no longer authors or displays it at all.
+      // an existing stage is left exactly as-is, neither wiped nor re-shown.
+      // Dropping a competency also drops any % already assigned to its indicators — nothing
+      // to score against a competency the stage no longer uses.
+      data.indicatorContributions = (editTarget.indicatorContributions || []).filter((p) => competencyIds.includes(p.competencyId));
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
       create(data, { onSuccess: cancel });
     }
+  }
+
+  // Same "send the full editable record back, not a partial patch" reasoning as
+  // PerformanceBandsPanel's persistIndicatorContributions.
+  function persistIndicatorContributions(cat, next) {
+    update({
+      id: cat.id,
+      data: {
+        name: cat.name,
+        description: cat.description,
+        minAge: cat.minAge,
+        maxAge: cat.maxAge,
+        competencyIds: cat.competencyIds,
+        advancementThreshold: cat.advancementThreshold,
+        indicatorContributions: next,
+      },
+    });
+  }
+
+  function saveIndicatorContribution(cat, competencyId, indicatorId, percentage) {
+    const filtered = (cat.indicatorContributions || []).filter(
+      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
+    );
+    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
+    persistIndicatorContributions(cat, next);
+  }
+
+  // A competencyId this stage references was deleted from the global catalog since — strip
+  // it (and any indicator % it had) rather than leaving a dead reference.
+  function removeDeadCompetency(cat, competencyId) {
+    update({
+      id: cat.id,
+      data: {
+        name: cat.name,
+        description: cat.description,
+        minAge: cat.minAge,
+        maxAge: cat.maxAge,
+        advancementThreshold: cat.advancementThreshold,
+        competencyIds: (cat.competencyIds || []).filter((id) => id !== competencyId),
+        indicatorContributions: (cat.indicatorContributions || []).filter((p) => p.competencyId !== competencyId),
+      },
+    });
   }
 
   // Draft overlap check for the open form — compares the in-progress min/max against every
@@ -2429,6 +2500,7 @@ function AgeCategoriesPanel({ curriculumId }) {
     : [];
 
   const overlapWarnings = findOverlaps(cats);
+  const colorByStageId = new Map(cats.map((c, idx) => [c.id, STAGE_PALETTE[idx % STAGE_PALETTE.length]]));
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
   if (isError) return <ErrorNotice message="Couldn't load Developmental Stages — try refreshing the page." />;
@@ -2452,7 +2524,7 @@ function AgeCategoriesPanel({ curriculumId }) {
 
       {mode !== "list" && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "480px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
+          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div className="cp-comp-form-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
@@ -2462,7 +2534,7 @@ function AgeCategoriesPanel({ curriculumId }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label className="cp-field-label">Name <span className="cp-required">*</span></label>
               <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
@@ -2516,10 +2588,59 @@ function AgeCategoriesPanel({ curriculumId }) {
                 </p>
               )}
             </div>
+
+            <div>
+              <label className="cp-field-label">Indicator Weighting Threshold <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                The % of this stage's own indicator contributions a learner must clear. Informational only — unlike a Performance Band, a Developmental Stage never advances a learner on its own.
+              </p>
+              <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
+                <input
+                  type="number" min="0" max="100" className="cp-comp-config-input"
+                  value={threshold} onChange={(e) => setThreshold(e.target.value)}
+                />
+                <span className="cp-comp-eval-suffix">%</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="cp-field-label">Competencies <span className="cp-optional">(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                Import from the competencies this curriculum already uses. Once added, you can set each indicator's % contribution toward this stage's own 100% from the stage card.
+              </p>
+
+              {competencyIds.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                  {competencyIds.map((id) => {
+                    const comp = competencyById.get(id);
+                    if (!comp) return null;
+                    return (
+                      <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
+                        {comp.name}
+                        <button type="button" onClick={() => toggleCompetency(id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", border: "none", borderRadius: "50%", background: "rgba(37,71,106,0.12)", color: "#25476a", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>×</button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {linkableCompetencies.length === 0 ? (
+                <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
+                  {adoptedCompetencies.length === 0
+                    ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab."
+                    : "None of this curriculum's competencies have indicators yet — add indicators to one in Settings → Competencies."}
+                </div>
+              ) : (
+                <CompetencyLinkDropdown
+                  available={linkableCompetencies.filter((c) => !competencyIds.includes(c.id))}
+                  onAdd={toggleCompetency}
+                />
+              )}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+          <div style={{ display: "flex", gap: "8px", marginTop: "18px" }}>
             <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim() || ageRangeInvalid}>
-              {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Group"}
+              {creating || updating ? "Saving…" : mode === "edit" ? "Save Changes" : "Add Stage"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
@@ -2538,52 +2659,167 @@ function AgeCategoriesPanel({ curriculumId }) {
           <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Stage</button>
         </div>
       ) : (
-        <div className="cp-comp-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {cats.map((cat, idx) => {
-            const color   = ARC_PALETTE[idx % ARC_PALETTE.length];
-            const initial = cat.name.charAt(0).toUpperCase();
+            const color     = colorByStageId.get(cat.id);
+            const isEditing = mode === "edit" && editTarget?.id === cat.id;
             return (
-              <div key={cat.id} className="cp-comp-card">
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+              <div key={cat.id} style={{
+                background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
+                borderRadius: "16px", padding: "18px 20px",
+                boxShadow: isEditing ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
+                transition: "border-color 0.15s, box-shadow 0.15s",
+              }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{
-                    width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
-                    backgroundColor: `${color}15`, border: `2px solid ${color}30`,
+                    width: "32px", height: "32px", borderRadius: "10px", flexShrink: 0, marginTop: "2px",
+                    background: `${color}18`, border: `2px solid ${color}35`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "17px", fontWeight: "800", color,
+                    fontSize: "12px", fontWeight: "800", color,
                   }}>
-                    {initial}
+                    {idx + 1}
                   </div>
+
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{cat.name}</p>
-                    {cat.minAge != null || cat.maxAge != null ? (
-                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
-                        {cat.minAge != null && cat.maxAge != null
-                          ? `${cat.minAge}–${cat.maxAge} yrs`
-                          : cat.minAge != null
-                          ? `${cat.minAge}+ yrs`
-                          : `up to ${cat.maxAge} yrs`}
-                      </p>
-                    ) : (
-                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
-                        <WarningAmberIcon fontSize="inherit" /> No age range set — matches every learner's age
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{
+                          display: "inline-block", padding: "5px 16px", borderRadius: "20px",
+                          background: `${color}18`, border: `1.5px solid ${color}35`,
+                          fontSize: "17px", fontWeight: "800", color,
+                        }}>
+                          {cat.name}
+                        </span>
+                        {cat.advancementThreshold > 0 && (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "3px 11px 3px 9px", borderRadius: "20px",
+                              fontSize: "11px", fontWeight: "700",
+                              color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
+                            }}
+                            title="Minimum % of this stage's own indicators a learner should reach — informational only, doesn't advance the learner"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                              <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+                            </svg>
+                            {cat.advancementThreshold}% target
+                          </span>
+                        )}
+                        {(() => {
+                          if ((cat.competencyIds || []).length === 0) return null;
+                          const total = (cat.indicatorContributions || []).reduce((s, c) => s + (Number(c.percentage) || 0), 0);
+                          const ok = total === 100;
+                          const over = total > 100;
+                          const badgeColor = ok ? "#059669" : "#DC2626";
+                          const label = total === 0 ? "Not weighted — always 0%" : over ? `Indicators: ${total}% (exceeds 100%)` : `Indicators: ${total}% — can't reach 100%`;
+                          const title = ok
+                            ? "Sum of every indicator's % contribution across this stage's competencies — totals 100%"
+                            : "This stage's indicator weights don't total 100%. Add or adjust weights below.";
+                          return (
+                            <span
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: "5px",
+                                padding: "3px 11px", borderRadius: "20px",
+                                fontSize: "11px", fontWeight: "700",
+                                color: badgeColor, background: `${badgeColor}12`, border: `1.5px solid ${badgeColor}40`,
+                              }}
+                              title={title}
+                            >
+                              {ok ? `Indicators: ${total}%` : label}
+                            </span>
+                          );
+                        })()}
+                        {cat.minAge != null || cat.maxAge != null ? (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "4px 12px", borderRadius: "20px",
+                              fontSize: "12.5px", fontWeight: "700",
+                              color: "#374151", background: "#F3F4F6", border: "1.5px solid #E5E7EB",
+                            }}
+                            title="Learners in this age range are auto-placed at this stage"
+                          >
+                            <ChildCareIcon style={{ fontSize: "14px" }} />
+                            {cat.minAge != null && cat.maxAge != null
+                              ? `${cat.minAge}–${cat.maxAge} yrs`
+                              : cat.minAge != null
+                              ? `${cat.minAge}+ yrs`
+                              : `up to ${cat.maxAge} yrs`}
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "4px 12px", borderRadius: "20px",
+                              fontSize: "12.5px", fontWeight: "700",
+                              color: "#D97706", background: "#FFFBEB", border: "1.5px solid #FDE68A",
+                            }}
+                          >
+                            <WarningAmberIcon style={{ fontSize: "14px" }} /> No age range set — matches every learner's age
+                          </span>
+                        )}
+                      </div>
+                      <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
+                    </div>
+
+                    {overlapWarnings.has(cat.id) && (
+                      <p style={{ margin: "8px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
+                        <WarningAmberIcon fontSize="inherit" /> Overlaps {overlapWarnings.get(cat.id)} — that stage was created first, so it always wins for learners in the overlap
                       </p>
                     )}
+
+                    {cat.description && (
+                      <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}>{cat.description}</p>
+                    )}
+
+                    {(cat.competencyIds || []).length === 0 ? (
+                      <p style={{ margin: "10px 0 0", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
+                        No competencies imported yet — edit this stage to add some.
+                      </p>
+                    ) : (
+                      cat.competencyIds.map((cId) => {
+                        const comp = competencyById.get(cId);
+                        if (!comp) {
+                          return (
+                            <div
+                              key={cId}
+                              style={{
+                                marginTop: "10px", padding: "9px 12px", borderRadius: "8px",
+                                background: "#FFF7ED", border: "1px solid #FED7AA",
+                                display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
+                              }}
+                            >
+                              <span style={{ fontSize: "11.5px", color: "#C2410C" }}>
+                                A competency attached here was deleted from Settings — it can no longer be configured.
+                              </span>
+                              <button
+                                type="button" className="cp-icon-btn danger" style={{ width: "22px", height: "22px", flexShrink: 0 }}
+                                onClick={() => removeDeadCompetency(cat, cId)} title="Remove from this stage"
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                              </button>
+                            </div>
+                          );
+                        }
+                        const percentageByIndicator = {};
+                        (cat.indicatorContributions || []).forEach((p) => {
+                          if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
+                        });
+                        return (
+                          <BandCompetencyBlock
+                            key={cId}
+                            comp={comp}
+                            color={color}
+                            populatedIndicators={populatedByCompetencyId.get(cId) || []}
+                            percentageByIndicator={percentageByIndicator}
+                            onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(cat, cId, indicatorId, percentage)}
+                          />
+                        );
+                      })
+                    )}
                   </div>
-                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
-                </div>
-                {overlapWarnings.has(cat.id) && (
-                  <p style={{ margin: "0 0 10px", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
-                    <WarningAmberIcon fontSize="inherit" /> Overlaps {overlapWarnings.get(cat.id)} — that stage was created first, so it always wins for learners in the overlap
-                  </p>
-                )}
-                <div style={{ flex: 1 }}>
-                  {cat.description ? (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {cat.description}
-                    </p>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
-                  )}
                 </div>
               </div>
             );
@@ -2677,41 +2913,76 @@ function CompetencyLinkDropdown({ available, onAdd }) {
 
 /* ── PerformanceBandsPanel ───────────────────────────────────────────────── */
 
-function BandIndicatorContributionRow({ ind, percentage, onSave }) {
+// A percentage weight is a proportion, not an arbitrary number — a slider + live fill-bar lets
+// an admin see the share at a glance while dragging, rather than reading a bare digit and
+// imagining what "30%" looks like. The number field stays alongside it for precise entry/typing,
+// kept in sync both ways. Same blur/commit-on-release save contract as before — dragging the
+// slider doesn't fire a save per pixel, only on release, so this is no chattier than the old
+// plain input was.
+function BandIndicatorContributionRow({ ind, percentage, color, onSave }) {
   const [value, setValue] = useState(percentage ?? 0);
+  const [saved, setSaved] = useState(false);
+  const savedTimeout = useRef(null);
 
   useEffect(() => { setValue(percentage ?? 0); }, [percentage]);
+  useEffect(() => () => clearTimeout(savedTimeout.current), []);
 
-  const save = () => {
-    const v = Math.min(100, Math.max(0, Number(value) || 0));
+  const commit = (raw) => {
+    const v = Math.min(100, Math.max(0, Number(raw) || 0));
     setValue(v);
-    if (v !== (percentage ?? 0)) onSave(v);
+    if (v !== (percentage ?? 0)) {
+      onSave(v);
+      setSaved(true);
+      clearTimeout(savedTimeout.current);
+      savedTimeout.current = setTimeout(() => setSaved(false), 1500);
+    }
   };
 
   return (
-    <div className="cp-indicator-row" style={{ alignItems: "flex-start" }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block" }}>
-          {ind.name}
-          {ind.marksPossible > 0 && (
-            <span style={{ marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>
-              {ind.marksPossible} pt{ind.marksPossible !== 1 ? "s" : ""} possible
+    <div className="cp-indicator-row" style={{ alignItems: "flex-start", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px", width: "100%" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block" }}>
+            {ind.name}
+            {ind.marksPossible > 0 && (
+              <span style={{ marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF" }}>
+                {ind.marksPossible} pt{ind.marksPossible !== 1 ? "s" : ""} possible
+              </span>
+            )}
+          </span>
+          {ind.description && (
+            <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "#9CA3AF" }}>{ind.description}</span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+          {saved && (
+            <span style={{ flex: "none", fontSize: "10px", fontWeight: 700, color: "#059669", display: "flex", alignItems: "center", gap: "3px" }}>
+              <CheckIcon style={{ fontSize: "12px" }} /> Saved
             </span>
           )}
-        </span>
-        {ind.description && (
-          <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "#9CA3AF" }}>{ind.description}</span>
-        )}
+          <div className="cp-comp-eval-input-wrap" style={{ width: "58px" }}>
+            <input
+              type="number" min="0" max="100" className="cp-comp-config-input"
+              style={{ padding: "5px 22px 5px 8px", fontSize: "11.5px" }}
+              value={value} onChange={(e) => setValue(e.target.value)}
+              onBlur={(e) => commit(e.target.value)}
+            />
+            <span className="cp-comp-eval-suffix" style={{ right: "6px", fontSize: "10px" }}>%</span>
+          </div>
+        </div>
       </div>
-      <div className="cp-comp-eval-input-wrap" style={{ width: "60px", flexShrink: 0 }}>
-        <input
-          type="number" min="0" max="100" className="cp-comp-config-input"
-          style={{ padding: "5px 24px 5px 8px", fontSize: "11.5px" }}
-          value={value} onChange={(e) => setValue(e.target.value)}
-          onBlur={save}
-        />
-        <span className="cp-comp-eval-suffix" style={{ right: "6px", fontSize: "10px" }}>%</span>
-      </div>
+      <input
+        type="range" min="0" max="100" step="1" value={Math.min(100, Math.max(0, Number(value) || 0))}
+        onChange={(e) => setValue(e.target.value)}
+        onMouseUp={(e) => commit(e.target.value)}
+        onTouchEnd={(e) => commit(e.target.value)}
+        onKeyUp={(e) => commit(e.target.value)}
+        style={{
+          width: "100%", height: "5px", borderRadius: "3px", appearance: "none", cursor: "pointer",
+          background: `linear-gradient(to right, ${color} ${value}%, #E5E7EB ${value}%)`,
+          accentColor: color,
+        }}
+      />
     </div>
   );
 }
@@ -2748,6 +3019,7 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
                 key={ind.id}
                 ind={ind}
                 percentage={percentageByIndicator[ind.id]}
+                color={color}
                 onSave={(percentage) => onSaveContribution(ind.id, percentage)}
               />
             ))
