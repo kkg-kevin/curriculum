@@ -3,18 +3,22 @@
 // whatever sequence numbers 1..14 are still missing, never touches existing/renamed levels.
 const SystemLevelModel = require("../modules/settings/system-levels/system-level.model");
 
-function seed() {
-  const existing = SystemLevelModel.findAll();
+async function seed() {
+  const existing = await SystemLevelModel.findAll();
   const existingSequences = new Set(existing.map((l) => l.sequence));
   let created = 0;
 
   for (let seq = 1; seq <= 14; seq++) {
     if (existingSequences.has(seq)) continue;
-    SystemLevelModel.create({ name: `Level ${seq}`, sequence: seq });
+    await SystemLevelModel.create({ name: `Level ${seq}`, sequence: seq });
     created++;
   }
 
   console.log(`Seeded ${created} of 14 default system levels (${existing.length} already existed).`);
+  process.exit(0);
 }
 
-seed();
+seed().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

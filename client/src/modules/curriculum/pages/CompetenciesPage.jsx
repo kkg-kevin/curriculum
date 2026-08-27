@@ -581,7 +581,10 @@ function LearningAreasPanel({ curriculumId }) {
   const allCourses = coursesResponse?.data || [];
   const courseById = new Map(allCourses.map((c) => [c.id, c]));
   const { data: assessmentsData } = useAssessmentsQuery();
-  const assessments = assessmentsData?.data || [];
+  // Teacher Observation assessments have no learner-facing "take" step (the teacher records
+  // them directly — see assessment-submission.controller.js's getOrCreateSubmission) — picking
+  // one here as a diagnostic would auto-issue it to a learner who can never start it.
+  const assessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
   const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
   const queryClient = useQueryClient();
   const availableToImport = catalogAreas.filter(
@@ -2353,7 +2356,10 @@ function AgeCategoriesPanel({ curriculumId }) {
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
   const { data: assessmentsData } = useAssessmentsQuery();
-  const assessments = assessmentsData?.data || [];
+  // Teacher Observation assessments have no learner-facing "take" step (the teacher records
+  // them directly — see assessment-submission.controller.js's getOrCreateSubmission) — picking
+  // one here as a diagnostic would auto-issue it to a learner who can never start it.
+  const assessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
   const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
 
   const [mode,       setMode]       = useState("list");
