@@ -67,24 +67,39 @@ function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle }) {
   );
 }
 
+// Splits an earned total evenly across every indicator tagged to an entry — e.g. a 10pt rubric
+// with 2 tagged indicators, scored 8, gives each indicator 4 earned marks. Written into
+// feedback.indicatorMarks so grading.utils.js's computeIndicatorBreakdown uses this exact split
+// instead of falling back to apportioning by each indicator's pre-set weight (its default
+// behaviour when a manual entry carries no per-indicator feedback at all).
+function evenIndicatorSplit(taggedIndicators, earnedTotal) {
+  if (taggedIndicators.length === 0) return [];
+  const share = Math.round((earnedTotal / taggedIndicators.length) * 100) / 100;
+  return taggedIndicators.map(({ indicatorId }) => ({ indicatorId, marks: share }));
+}
+
 // An entry's marks input — either a checklist rubric (when scoringCriteria was authored for the
-// question) or one flat "Marks" field, even when tagged to one or more competency indicators.
-// The per-indicator split is no longer entered by hand here: grading.utils.js's
-// computeIndicatorBreakdown already apportions a flat manual score across an entry's tagged
-// indicators, proportional to each indicator's pre-set share of the entry's total marks — so a
-// teacher only ever scores the question once (by number or by checklist), and the competency
-// breakdown falls out of that automatically. Tagged indicators are still named below for
-// context, just not separately editable.
+// question) or one flat "Marks" field. When tagged to two or more competency indicators, the
+// earned total is split evenly across them (see evenIndicatorSplit) and written to
+// feedback.indicatorMarks so the competency breakdown reflects actual performance on this entry
+// rather than each indicator's pre-set authoring weight. A single tagged indicator earns the
+// entry's full marks, same as before. Tagged indicators are named below for context either way.
 function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
   const max = entryMarks(entry);
   const taggedIndicators = entry.indicatorMarks || [];
   const scoringCriteria = entry.scoringCriteria || [];
 
+  const applyMarks = (marks) => {
+    const indicatorMarks = taggedIndicators.length > 1 ? evenIndicatorSplit(taggedIndicators, marks) : [];
+    onChange({ ...feedback, marks, indicatorMarks });
+  };
+
   const toggleCriterion = (criterionId) => {
     const checkedIds = feedback.checkedCriteriaIds || [];
     const nextChecked = checkedIds.includes(criterionId) ? checkedIds.filter((id) => id !== criterionId) : [...checkedIds, criterionId];
     const marks = scoringCriteria.filter((c) => nextChecked.includes(c.id)).reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    onChange({ ...feedback, marks, checkedCriteriaIds: nextChecked });
+    const indicatorMarks = taggedIndicators.length > 1 ? evenIndicatorSplit(taggedIndicators, marks) : [];
+    onChange({ ...feedback, marks, checkedCriteriaIds: nextChecked, indicatorMarks });
   };
 
   return (
@@ -98,7 +113,7 @@ function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
       ) : (
         <label style={{ fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
           Marks
-          <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => onChange({ ...feedback, marks: Math.min(max, Math.max(0, Number(e.target.value) || 0)) })} style={{ ...fieldStyle, width: 60 }} />
+          <input type="number" min={0} max={max} value={feedback.marks} onChange={(e) => applyMarks(Math.min(max, Math.max(0, Number(e.target.value) || 0)))} style={{ ...fieldStyle, width: 60 }} />
           / {max}
         </label>
       )}
@@ -239,16 +254,16 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     const map = new Map();
     items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
+      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
-      map.set(key, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
+      map.set(key, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
     });
     scorableIndicators.forEach((ind) => {
       const existing = existingFeedback.get(ind.id);
-      map.set(ind.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [] });
+      map.set(ind.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
     });
     return map;
   });
@@ -266,7 +281,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
 
   const handleSave = () => {
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [] }));
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [], indicatorMarks: f.indicatorMarks || [] }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
