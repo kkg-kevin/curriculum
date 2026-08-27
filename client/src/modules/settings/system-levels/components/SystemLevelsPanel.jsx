@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FiChevronDown, FiChevronUp, FiLayers, FiTrash2 } from "react-icons/fi";
 import {
   useSystemLevels, useCreateSystemLevel, useUpdateSystemLevel, useDeleteSystemLevel, useReorderSystemLevels,
@@ -71,6 +71,12 @@ export default function SystemLevelsPanel() {
   const { mutate: remove, isPending: deleting } = useDeleteSystemLevel();
   const { mutate: reorder } = useReorderSystemLevels();
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // `creating` (React Query's isPending) only flips true once the mutation's own state update
+  // has flowed through a re-render — a fast double-click on "+ Add Level" can fire twice before
+  // that happens, racing two identically-named creates past each other (see
+  // system-level.service.js's createSystemLevel). This ref disables the button synchronously,
+  // in the same tick as the first click, closing that gap regardless of render timing.
+  const addInFlight = useRef(false);
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -80,6 +86,12 @@ export default function SystemLevelsPanel() {
     const ids = levels.map((l) => l.id);
     [ids[index], ids[swapWith]] = [ids[swapWith], ids[index]];
     reorder(ids);
+  };
+
+  const addLevel = (name) => {
+    if (addInFlight.current) return;
+    addInFlight.current = true;
+    create({ name }, { onSettled: () => { addInFlight.current = false; } });
   };
 
   return (
@@ -95,7 +107,7 @@ export default function SystemLevelsPanel() {
           type="button"
           className="stg-btn-primary"
           disabled={creating}
-          onClick={() => create({ name: `Level ${levels.length + 1}` })}
+          onClick={() => addLevel(`Level ${levels.length + 1}`)}
         >
           + Add Level
         </button>
@@ -110,7 +122,7 @@ export default function SystemLevelsPanel() {
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
             Add levels in order (e.g. Level 1 through Level 14) to build the spine curricula map their grades onto.
           </p>
-          <button type="button" className="stg-btn-primary" onClick={() => create({ name: "Level 1" })}>
+          <button type="button" className="stg-btn-primary" disabled={creating} onClick={() => addLevel("Level 1")}>
             + Add Level
           </button>
         </div>
