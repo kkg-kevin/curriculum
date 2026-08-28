@@ -8,8 +8,8 @@ import ConfirmPasswordModal from "../components/ui/ConfirmPasswordModal";
 import FirstLoginDiagnosticGate from "../modules/learner-portal/components/FirstLoginDiagnosticGate";
 import { useLearnerPortalScope } from "../modules/learner-portal/hooks/useLearnerPortalScope";
 import { authApi } from "../modules/auth/services/authApi";
+import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
 
-const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 900;
 
 function LearnerPortalLayout() {
@@ -17,6 +17,9 @@ function LearnerPortalLayout() {
   const { hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Same storage key ("learner") as LearnerSidebar.jsx — both must agree on the current
+  // collapsed state so the content area's reserved margin matches the sidebar's actual width.
+  const [collapsed] = useSidebarCollapse("learner");
   // A guardian-mediated login sees every sibling under their email and could otherwise switch
   // between them with no further check — the account's own password (re-verified via
   // authApi.verifyPassword) is the only real gate available, since server-side scoping can't
@@ -53,6 +56,7 @@ function LearnerPortalLayout() {
   const gateActive = !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
 
   const sidebarReserved = !gateActive && !isMobile;
+  const reservedWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -60,13 +64,14 @@ function LearnerPortalLayout() {
 
       <div
         style={{
-          marginLeft: sidebarReserved ? SIDEBAR_WIDTH : 0,
-          width: sidebarReserved ? `calc(100vw - ${SIDEBAR_WIDTH}px)` : "100vw",
+          marginLeft: sidebarReserved ? reservedWidth : 0,
+          width: sidebarReserved ? `calc(100vw - ${reservedWidth}px)` : "100vw",
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#F5F7FA",
           overflow: "hidden",
+          transition: "margin-left 0.2s ease, width 0.2s ease",
         }}
       >
         <Header isMobile={isMobile && !gateActive} onMenuClick={() => setSidebarOpen(true)} photo={learner?.photo} />
