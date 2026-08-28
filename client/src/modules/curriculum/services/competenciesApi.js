@@ -66,8 +66,9 @@ export const competenciesApi = {
     api.put(`${base(curriculumId)}/indicator-achievements/${indicatorId}`, { competencyId, marksEarned }).then((r) => r.data.data),
 
   // Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
-  getCompetencyScores: (curriculumId) =>
-    api.get(`${base(curriculumId)}/scores`).then((r) => r.data.data),
+  // ageCategoryId is required now that Performance Bands are scoped per Developmental Stage.
+  getCompetencyScores: (curriculumId, ageCategoryId) =>
+    api.get(`${base(curriculumId)}/scores`, { params: { ageCategoryId } }).then((r) => r.data.data),
 
   // Real per-learner sibling of the above — this learner's own graded work run through the
   // same Evidence Type → Assessment Type → Engine 1/2/5/3 pipeline, instead of the shared
@@ -123,8 +124,8 @@ export const competenciesApi = {
   updateGlobalScoring: (curriculumId, assessmentTypes, competencyWeights = []) =>
     api.put(`/api/curricula/${curriculumId}/assessments/scoring`, { assessmentTypes, competencyWeights }).then((r) => r.data.data),
 
-  calculateScore: (curriculumId, atId, evidenceScores, learnerId = null) =>
-    api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores, learnerId }).then((r) => r.data.data),
+  calculateScore: (curriculumId, atId, evidenceScores, ageCategoryId) =>
+    api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores, ageCategoryId }).then((r) => r.data.data),
 
   /* Assessment Framework — Evidence Types */
   getEvidenceTypes: (curriculumId) =>
@@ -152,12 +153,13 @@ export const competenciesApi = {
   deletePerformanceBand: (curriculumId, bandId) =>
     api.delete(`/api/curricula/${curriculumId}/competencies/bands/${bandId}`).then((r) => r.data),
 
-  reorderPerformanceBands: (curriculumId, orderedIds) =>
-    api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { orderedIds }).then((r) => r.data.data),
+  reorderPerformanceBands: (curriculumId, ageCategoryId, orderedIds) =>
+    api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { ageCategoryId, orderedIds }).then((r) => r.data.data),
 
   // Indicator-driven band completion, computed from persisted indicator-achievements.
-  getBandProgress: (curriculumId) =>
-    api.get(`${base(curriculumId)}/bands/progress`).then((r) => r.data.data),
+  // ageCategoryId is required now that Performance Bands are scoped per Developmental Stage.
+  getBandProgress: (curriculumId, ageCategoryId) =>
+    api.get(`${base(curriculumId)}/bands/progress`, { params: { ageCategoryId } }).then((r) => r.data.data),
 
   // Real per-learner sibling — this learner's own accumulating indicator progress instead of
   // the shared curriculum-wide manual store.

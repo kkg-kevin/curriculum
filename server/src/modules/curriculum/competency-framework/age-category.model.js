@@ -18,7 +18,7 @@ const AgeCategoryModel = {
     const now = new Date();
     const item = { ...stringifyJsonFields(data, JSON_FIELDS), id: generateId(), order: Number(count) + 1, createdAt: now, updatedAt: now };
     await db(TABLE).insert(item);
-    return { ...item, competencyIds: data.competencyIds || [], indicatorContributions: data.indicatorContributions || [] };
+    return { ...item, competencyIds: [], indicatorContributions: [] };
   },
 
   update(id, data) {

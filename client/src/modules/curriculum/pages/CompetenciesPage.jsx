@@ -1102,7 +1102,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
 // `itemLabel`/`itemType` (e.g. "Continuous Assessment" / "assessment type") drive the delete
 // confirmation copy — every caller of this kebab previously fired onDelete() straight from the
 // menu click with no confirmation at all, so a mis-click permanently destroyed configuration.
-function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item" }) {
+function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item", message }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const ref = useRef(null);
@@ -1160,7 +1160,7 @@ function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemTy
       <ConfirmDialog
         isOpen={confirming}
         title={`Delete "${itemLabel}"?`}
-        message={`This ${itemType} will be permanently removed. This cannot be undone.`}
+        message={message || `This ${itemType} will be permanently removed. This cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         onConfirm={() => { setConfirming(false); onDelete(); }}
@@ -2350,12 +2350,17 @@ function AssessmentsPanel({ curriculumId }) {
 
 const ARC_PALETTE = ["#25476a", "#feb139", "#38aae1"];
 
-// A Developmental Stage isn't a ranked ladder a learner climbs the way Performance Bands are —
-// it's an age-matched bucket a learner lands in once, based on how old they are (see
-// maybeAutoIssueDiagnostic in learner.service.js). Deliberately a different palette family
-// (single warm hue, tint-graded) from ARC_PALETTE's cycling accent colors, so this panel reads
-// as a visually distinct kind of thing at a glance rather than a reskinned copy of bands.
-const STAGE_PALETTE = ["#0F766E", "#0891B2", "#7C3AED", "#BE185D", "#B45309", "#4D7C0F"];
+// The conventional Performance Band progression. Band names are free text (any name, no cap —
+// see PerformanceBandsPanel's Band Name field), but a band whose name matches one of these five
+// still auto-sorts into this rank on creation regardless of creation order, so admins who do
+// follow the convention end up with consistently-ordered ladders across stages without having to
+// think about it.
+const PERFORMANCE_BAND_SEQUENCE = ["Explorer", "Builder", "Creator", "Innovator", "Pioneer"];
+
+// Same accent system as everything else in Progress Arc (bands, threshold track) — navy/gold/
+// accent-blue — rather than a separate palette family, so Developmental Stages and Performance
+// Bands read as one consistent color language instead of two differently-branded panels.
+const STAGE_PALETTE = ARC_PALETTE;
 
 // Whether two [minAge, maxAge] ranges (either bound possibly null/open-ended) overlap at all.
 function agesOverlap(aMin, aMax, bMin, bMax) {
@@ -2385,43 +2390,27 @@ function AgeCategoriesPanel({ curriculumId }) {
   const { mutate: create, isPending: creating } = useCreateAgeCategory(curriculumId);
   const { mutate: update, isPending: updating } = useUpdateAgeCategory(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeleteAgeCategory(curriculumId);
-  // A Developmental Stage is now a structural twin of a Performance Band — its own
-  // competencyIds/indicatorContributions/advancementThreshold, weighted and displayed the
-  // same way (same reused BandCompetencyBlock/BandIndicatorContributionRow, same
-  // "Indicators: X%" validity badge). Unlike a band, a stage has no completion readout of its
-  // own — it never gates level advancement, only a Performance Band's own completion does that.
-  const { data: adoptedCompetencies = [] }      = useCompetencies(curriculumId);
-  const { data: populatedIndicatorGroups = [] } = usePopulatedIndicators(curriculumId);
-  const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
-  const linkableCompetencies = adoptedCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
-  const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
 
-  const [mode,          setMode]          = useState("list");
-  const [editTarget,    setEditTarget]    = useState(null);
-  const [name,          setName]          = useState("");
-  const [desc,          setDesc]          = useState("");
-  const [minAge,        setMinAge]        = useState("");
-  const [maxAge,        setMaxAge]        = useState("");
-  const [competencyIds, setCompetencyIds] = useState([]);
-  const [threshold,     setThreshold]     = useState(0);
+  const [mode,       setMode]       = useState("list");
+  const [editTarget, setEditTarget] = useState(null);
+  const [name,       setName]       = useState("");
+  const [desc,       setDesc]       = useState("");
+  const [minAge,     setMinAge]     = useState("");
+  const [maxAge,     setMaxAge]     = useState("");
   const nameRef = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
   function openAdd() {
     setEditTarget(null); setName(""); setDesc(""); setMinAge(""); setMaxAge("");
-    setCompetencyIds([]); setThreshold(0); setMode("add");
+    setMode("add");
   }
   function openEdit(c) {
     setEditTarget(c); setName(c.name); setDesc(c.description || "");
     setMinAge(c.minAge ?? ""); setMaxAge(c.maxAge ?? "");
-    setCompetencyIds([...(c.competencyIds || [])]); setThreshold(c.advancementThreshold ?? 0); setMode("edit");
+    setMode("edit");
   }
   function cancel() { setMode("list"); setEditTarget(null); }
-
-  function toggleCompetency(id) {
-    setCompetencyIds((prev) => prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]);
-  }
 
   const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
 
@@ -2432,62 +2421,15 @@ function AgeCategoriesPanel({ curriculumId }) {
       description: desc.trim(),
       minAge: minAge === "" ? null : Number(minAge),
       maxAge: maxAge === "" ? null : Number(maxAge),
-      competencyIds,
-      advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)),
     };
     if (mode === "edit") {
       // diagnosticAssessmentId is deliberately omitted — the update endpoint only touches
       // fields present in the request body (see onlySentKeys), so any legacy value already on
       // an existing stage is left exactly as-is, neither wiped nor re-shown.
-      // Dropping a competency also drops any % already assigned to its indicators — nothing
-      // to score against a competency the stage no longer uses.
-      data.indicatorContributions = (editTarget.indicatorContributions || []).filter((p) => competencyIds.includes(p.competencyId));
       update({ id: editTarget.id, data }, { onSuccess: cancel });
     } else {
       create(data, { onSuccess: cancel });
     }
-  }
-
-  // Same "send the full editable record back, not a partial patch" reasoning as
-  // PerformanceBandsPanel's persistIndicatorContributions.
-  function persistIndicatorContributions(cat, next) {
-    update({
-      id: cat.id,
-      data: {
-        name: cat.name,
-        description: cat.description,
-        minAge: cat.minAge,
-        maxAge: cat.maxAge,
-        competencyIds: cat.competencyIds,
-        advancementThreshold: cat.advancementThreshold,
-        indicatorContributions: next,
-      },
-    });
-  }
-
-  function saveIndicatorContribution(cat, competencyId, indicatorId, percentage) {
-    const filtered = (cat.indicatorContributions || []).filter(
-      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
-    );
-    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
-    persistIndicatorContributions(cat, next);
-  }
-
-  // A competencyId this stage references was deleted from the global catalog since — strip
-  // it (and any indicator % it had) rather than leaving a dead reference.
-  function removeDeadCompetency(cat, competencyId) {
-    update({
-      id: cat.id,
-      data: {
-        name: cat.name,
-        description: cat.description,
-        minAge: cat.minAge,
-        maxAge: cat.maxAge,
-        advancementThreshold: cat.advancementThreshold,
-        competencyIds: (cat.competencyIds || []).filter((id) => id !== competencyId),
-        indicatorContributions: (cat.indicatorContributions || []).filter((p) => p.competencyId !== competencyId),
-      },
-    });
   }
 
   // Draft overlap check for the open form — compares the in-progress min/max against every
@@ -2588,55 +2530,6 @@ function AgeCategoriesPanel({ curriculumId }) {
                 </p>
               )}
             </div>
-
-            <div>
-              <label className="cp-field-label">Indicator Weighting Threshold <span className="cp-optional">(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                The % of this stage's own indicator contributions a learner must clear. Informational only — unlike a Performance Band, a Developmental Stage never advances a learner on its own.
-              </p>
-              <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
-                <input
-                  type="number" min="0" max="100" className="cp-comp-config-input"
-                  value={threshold} onChange={(e) => setThreshold(e.target.value)}
-                />
-                <span className="cp-comp-eval-suffix">%</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="cp-field-label">Competencies <span className="cp-optional">(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Import from the competencies this curriculum already uses. Once added, you can set each indicator's % contribution toward this stage's own 100% from the stage card.
-              </p>
-
-              {competencyIds.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
-                  {competencyIds.map((id) => {
-                    const comp = competencyById.get(id);
-                    if (!comp) return null;
-                    return (
-                      <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
-                        {comp.name}
-                        <button type="button" onClick={() => toggleCompetency(id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", border: "none", borderRadius: "50%", background: "rgba(37,71,106,0.12)", color: "#25476a", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>×</button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
-              {linkableCompetencies.length === 0 ? (
-                <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
-                  {adoptedCompetencies.length === 0
-                    ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab."
-                    : "None of this curriculum's competencies have indicators yet — add indicators to one in Settings → Competencies."}
-                </div>
-              ) : (
-                <CompetencyLinkDropdown
-                  available={linkableCompetencies.filter((c) => !competencyIds.includes(c.id))}
-                  onAdd={toggleCompetency}
-                />
-              )}
-            </div>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "18px" }}>
             <button type="button" className="cp-btn-primary" onClick={submit} disabled={(creating || updating) || !name.trim() || ageRangeInvalid}>
@@ -2659,167 +2552,70 @@ function AgeCategoriesPanel({ curriculumId }) {
           <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Stage</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {cats.map((cat, idx) => {
+        <div className="cp-comp-grid">
+          {cats.map((cat) => {
             const color     = colorByStageId.get(cat.id);
             const isEditing = mode === "edit" && editTarget?.id === cat.id;
+            const initial   = cat.name.charAt(0).toUpperCase();
+            const ageLabel  = cat.minAge != null && cat.maxAge != null
+              ? `${cat.minAge}–${cat.maxAge} yrs`
+              : cat.minAge != null
+              ? `${cat.minAge}+ yrs`
+              : cat.maxAge != null
+              ? `up to ${cat.maxAge} yrs`
+              : null;
             return (
-              <div key={cat.id} style={{
-                background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
-                borderRadius: "16px", padding: "18px 20px",
-                boxShadow: isEditing ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
-                transition: "border-color 0.15s, box-shadow 0.15s",
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div key={cat.id} className={`cp-comp-card${isEditing ? " cp-comp-card--editing" : ""}`}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
                   <div style={{
-                    width: "32px", height: "32px", borderRadius: "10px", flexShrink: 0, marginTop: "2px",
-                    background: `${color}18`, border: `2px solid ${color}35`,
+                    width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
+                    backgroundColor: `${color}15`, border: `2px solid ${color}30`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "12px", fontWeight: "800", color,
+                    fontSize: "17px", fontWeight: "800", color,
                   }}>
-                    {idx + 1}
+                    {initial}
                   </div>
-
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <span style={{
-                          display: "inline-block", padding: "5px 16px", borderRadius: "20px",
-                          background: `${color}18`, border: `1.5px solid ${color}35`,
-                          fontSize: "17px", fontWeight: "800", color,
-                        }}>
-                          {cat.name}
-                        </span>
-                        {cat.advancementThreshold > 0 && (
-                          <span
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: "5px",
-                              padding: "3px 11px 3px 9px", borderRadius: "20px",
-                              fontSize: "11px", fontWeight: "700",
-                              color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
-                            }}
-                            title="Minimum % of this stage's own indicators a learner should reach — informational only, doesn't advance the learner"
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                              <circle cx="12" cy="12" r="3.5" fill="currentColor" />
-                            </svg>
-                            {cat.advancementThreshold}% target
-                          </span>
-                        )}
-                        {(() => {
-                          if ((cat.competencyIds || []).length === 0) return null;
-                          const total = (cat.indicatorContributions || []).reduce((s, c) => s + (Number(c.percentage) || 0), 0);
-                          const ok = total === 100;
-                          const over = total > 100;
-                          const badgeColor = ok ? "#059669" : "#DC2626";
-                          const label = total === 0 ? "Not weighted — always 0%" : over ? `Indicators: ${total}% (exceeds 100%)` : `Indicators: ${total}% — can't reach 100%`;
-                          const title = ok
-                            ? "Sum of every indicator's % contribution across this stage's competencies — totals 100%"
-                            : "This stage's indicator weights don't total 100%. Add or adjust weights below.";
-                          return (
-                            <span
-                              style={{
-                                display: "inline-flex", alignItems: "center", gap: "5px",
-                                padding: "3px 11px", borderRadius: "20px",
-                                fontSize: "11px", fontWeight: "700",
-                                color: badgeColor, background: `${badgeColor}12`, border: `1.5px solid ${badgeColor}40`,
-                              }}
-                              title={title}
-                            >
-                              {ok ? `Indicators: ${total}%` : label}
-                            </span>
-                          );
-                        })()}
-                        {cat.minAge != null || cat.maxAge != null ? (
-                          <span
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: "5px",
-                              padding: "4px 12px", borderRadius: "20px",
-                              fontSize: "12.5px", fontWeight: "700",
-                              color: "#374151", background: "#F3F4F6", border: "1.5px solid #E5E7EB",
-                            }}
-                            title="Learners in this age range are auto-placed at this stage"
-                          >
-                            <ChildCareIcon style={{ fontSize: "14px" }} />
-                            {cat.minAge != null && cat.maxAge != null
-                              ? `${cat.minAge}–${cat.maxAge} yrs`
-                              : cat.minAge != null
-                              ? `${cat.minAge}+ yrs`
-                              : `up to ${cat.maxAge} yrs`}
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: "5px",
-                              padding: "4px 12px", borderRadius: "20px",
-                              fontSize: "12.5px", fontWeight: "700",
-                              color: "#D97706", background: "#FFFBEB", border: "1.5px solid #FDE68A",
-                            }}
-                          >
-                            <WarningAmberIcon style={{ fontSize: "14px" }} /> No age range set — matches every learner's age
-                          </span>
-                        )}
-                      </div>
-                      <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
-                    </div>
-
-                    {overlapWarnings.has(cat.id) && (
-                      <p style={{ margin: "8px 0 0", fontSize: "11px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
-                        <WarningAmberIcon fontSize="inherit" /> Overlaps {overlapWarnings.get(cat.id)} — that stage was created first, so it always wins for learners in the overlap
-                      </p>
-                    )}
-
-                    {cat.description && (
-                      <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}>{cat.description}</p>
-                    )}
-
-                    {(cat.competencyIds || []).length === 0 ? (
-                      <p style={{ margin: "10px 0 0", fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
-                        No competencies imported yet — edit this stage to add some.
-                      </p>
+                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827", lineHeight: 1.35 }}>{cat.name}</p>
+                    {ageLabel ? (
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "5px",
+                        padding: "2px 8px", borderRadius: "20px",
+                        fontSize: "10px", fontWeight: "700", backgroundColor: `${color}12`, color, border: `1px solid ${color}28`,
+                      }}
+                        title="Learners in this age range are auto-placed at this stage"
+                      >
+                        <ChildCareIcon style={{ fontSize: "12px" }} />
+                        {ageLabel}
+                      </span>
                     ) : (
-                      cat.competencyIds.map((cId) => {
-                        const comp = competencyById.get(cId);
-                        if (!comp) {
-                          return (
-                            <div
-                              key={cId}
-                              style={{
-                                marginTop: "10px", padding: "9px 12px", borderRadius: "8px",
-                                background: "#FFF7ED", border: "1px solid #FED7AA",
-                                display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
-                              }}
-                            >
-                              <span style={{ fontSize: "11.5px", color: "#C2410C" }}>
-                                A competency attached here was deleted from Settings — it can no longer be configured.
-                              </span>
-                              <button
-                                type="button" className="cp-icon-btn danger" style={{ width: "22px", height: "22px", flexShrink: 0 }}
-                                onClick={() => removeDeadCompetency(cat, cId)} title="Remove from this stage"
-                              >
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                              </button>
-                            </div>
-                          );
-                        }
-                        const percentageByIndicator = {};
-                        (cat.indicatorContributions || []).forEach((p) => {
-                          if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
-                        });
-                        return (
-                          <BandCompetencyBlock
-                            key={cId}
-                            comp={comp}
-                            color={color}
-                            populatedIndicators={populatedByCompetencyId.get(cId) || []}
-                            percentageByIndicator={percentageByIndicator}
-                            onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(cat, cId, indicatorId, percentage)}
-                          />
-                        );
-                      })
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "5px",
+                        padding: "2px 8px", borderRadius: "20px",
+                        fontSize: "10px", fontWeight: "700", color: "#D97706", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A",
+                      }}>
+                        <WarningAmberIcon style={{ fontSize: "12px" }} /> No age range set
+                      </span>
                     )}
                   </div>
+                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
+                </div>
+
+                {overlapWarnings.has(cat.id) && (
+                  <p style={{ margin: "0 0 8px", fontSize: "10.5px", fontWeight: "700", color: "#D97706", display: "flex", alignItems: "flex-start", gap: 4 }}>
+                    <WarningAmberIcon style={{ fontSize: "13px", flexShrink: 0, marginTop: "1px" }} />
+                    Overlaps {overlapWarnings.get(cat.id)} — that stage wins for learners in the overlap
+                  </p>
+                )}
+
+                <div style={{ flex: 1 }}>
+                  {cat.description ? (
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {cat.description}
+                    </p>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
+                  )}
                 </div>
               </div>
             );
@@ -3030,12 +2826,146 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
   );
 }
 
+/* ── CombinedThresholdTrack ─────────────────────────────────────────────────
+ * One single horizontal ladder for the SELECTED stage's own bands, in ladder order — every stage
+ * now carries the full canonical band set (Explorer..Pioneer), so flattening every stage's bands
+ * into one line would be an unreadable 25+-node horizontal scroll; the dropdown above already
+ * picks which one stage to look at, and this track mirrors that same choice. Each node shows its
+ * advancement threshold directly (not an ordinal), with the band name below it. One consistent
+ * accent color throughout (matching ARC_PALETTE's navy, used system-wide) rather than a
+ * first/middle/last color progression — the position in the ladder is already conveyed by the
+ * node's left-to-right order, so recoloring each one doesn't add information, just noise. Every
+ * node is clickable — jumps down to that band's own card in the list below (id="band-card-<id>"),
+ * a quick way to reach a specific band without scrolling past every card before it. Deliberately
+ * NOT opening the edit modal on click — that's what the card's own Edit action is for; a click
+ * here is navigation, not an edit action. */
+
+const TRACK_COLOR = "#25476a"; // navy — matches ARC_PALETTE / T.accent, used for every node alike
+
+function CombinedThresholdTrack({ bands }) {
+  if (bands.length === 0) return null;
+
+  function scrollToBand(bandId) {
+    document.getElementById(`band-card-${bandId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <div style={{
+        display: "flex", alignItems: "flex-start", gap: 0,
+        padding: "16px 20px", background: "#F8FAFC", border: "1px solid #EEF1F5",
+        borderRadius: "14px", overflowX: "auto",
+      }}>
+        {bands.map((band, idx) => {
+          const isLast = idx === bands.length - 1;
+          return (
+            <div key={band.id} style={{ display: "flex", alignItems: "flex-start", flex: isLast ? "0 0 auto" : "1 1 0", minWidth: "96px" }}>
+              <button
+                type="button"
+                onClick={() => scrollToBand(band.id)}
+                title={`Jump to ${band.name}`}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", flexShrink: 0,
+                  background: "none", border: "none", padding: 0, cursor: "pointer",
+                }}
+              >
+                <div style={{
+                  width: "40px", height: "40px", borderRadius: "50%",
+                  background: `${TRACK_COLOR}18`,
+                  border: `2px solid ${TRACK_COLOR}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "13px", fontWeight: "800", color: TRACK_COLOR,
+                }}>
+                  {band.advancementThreshold ?? 0}
+                </div>
+                <span style={{ fontSize: "12px", fontWeight: "800", color: TRACK_COLOR, whiteSpace: "nowrap" }}>{band.name}</span>
+              </button>
+              {!isLast && (
+                <div style={{ flex: 1, height: "2px", marginTop: "20px", background: TRACK_COLOR }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── OrphanedBandsBanner ─────────────────────────────────────────────────
+ * Legacy bands from before Developmental Stages existed (a multi- or zero-stage curriculum the
+ * migration couldn't safely auto-assign — see the backfill migration's comment) are invisible in
+ * the normal per-stage view, since every read is now filtered by ageCategoryId. Rather than
+ * silently dropping them, this surfaces them with a manual per-band stage-assignment action. */
+
+function OrphanedBandsBanner({ bands, stages, onAssign, updating }) {
+  const [open, setOpen] = useState(false);
+  const [pickerFor, setPickerFor] = useState(null);
+
+  return (
+    <div style={{ marginBottom: "16px", border: "1.5px solid #FDE68A", background: "#FFFBEB", borderRadius: "12px", padding: "12px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+        <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#92400E" }}>
+          {bands.length} legacy performance band{bands.length !== 1 ? "s" : ""} from before Developmental Stages existed{" "}
+          {bands.length !== 1 ? "have" : "has"} no stage assigned and {bands.length !== 1 ? "aren't" : "isn't"} shown above.
+        </span>
+        <button type="button" className="cp-btn-ghost" style={{ flexShrink: 0 }} onClick={() => setOpen((v) => !v)}>
+          {open ? "Hide" : "View"}
+        </button>
+      </div>
+      {open && (
+        <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {bands.map((band) => (
+            <div key={band.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", background: "#fff", border: "1px solid #FDE68A", borderRadius: "8px", padding: "8px 10px" }}>
+              <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>{band.name}</span>
+              {pickerFor === band.id ? (
+                <select
+                  className="cp-input"
+                  style={{ maxWidth: "220px" }}
+                  autoFocus
+                  disabled={updating}
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value) { onAssign(band, e.target.value); setPickerFor(null); } }}
+                  onBlur={() => setPickerFor(null)}
+                >
+                  <option value="" disabled>Choose a stage…</option>
+                  {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              ) : (
+                <button type="button" className="cp-btn-secondary" onClick={() => setPickerFor(band.id)} disabled={stages.length === 0}>
+                  Assign to stage
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PerformanceBandsPanel({ curriculumId }) {
+  // Each Developmental Stage now has its own independent Progress Arc ladder — this panel
+  // always edits exactly one stage's bands at a time, picked via the dropdown below.
+  const { data: stages = [], isLoading: stagesLoading, isError: stagesError } = useAgeCategories(curriculumId);
+  const [selectedStageId, setSelectedStageId] = useState(null);
+
+  // Default to the first stage once stages load, and re-default if the previously-selected
+  // stage disappeared (e.g. deleted from the Developmental Stages tab).
+  useEffect(() => {
+    if (stages.length === 0) { setSelectedStageId(null); return; }
+    if (!stages.some((s) => s.id === selectedStageId)) setSelectedStageId(stages[0].id);
+  }, [stages, selectedStageId]);
+
   // Learning Journey reuses this same model for per-Learning-Area placement thresholds
-  // (learningAreaId set) — exclude those here so this curriculum-wide Progress Arc view
-  // only ever shows its own bands.
+  // (learningAreaId set) — exclude those here (alongside the stage filter) so this panel only
+  // ever shows Progress Arc bands.
   const { data: allBands = [], isLoading, isError } = usePerformanceBands(curriculumId);
-  const bands = allBands.filter((b) => !b.learningAreaId);
+  const progressArcBands = allBands.filter((b) => !b.learningAreaId);
+  const bands = !selectedStageId ? [] : progressArcBands
+    .filter((b) => b.ageCategoryId === selectedStageId)
+    .sort((a, b) => a.order - b.order);
+  const orphanedBands = progressArcBands.filter((b) => !b.ageCategoryId);
+
   const { mutate: create, isPending: creating }    = useCreatePerformanceBand(curriculumId);
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
@@ -3043,12 +2973,17 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
   const { data: populatedIndicatorGroups = [] }    = usePopulatedIndicators(curriculumId);
   const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
-  const { data: bandProgressList = [] }            = useBandProgress(curriculumId);
+  const { data: bandProgressList = [] }            = useBandProgress(curriculumId, selectedStageId);
   const progressByBandId = new Map(bandProgressList.map((p) => [p.bandId, p]));
 
-  // Only competencies this curriculum has actually adopted (Competencies tab) — and that
-  // have indicators defined in Settings — are offered here; nothing to draw on otherwise.
-  const linkableCompetencies = adoptedCompetencies.filter((c) => (c.indicators?.length || 0) > 0);
+  // Only competencies actually IN USE in this curriculum — tagged on at least one question/
+  // rubric criterion/observation item of an assessment this curriculum's courses attach (see
+  // populatedIndicatorGroups, computed live by getPopulatedIndicators) — are offered here. Being
+  // merely "adopted" (added on the Competencies tab) or having indicators defined in Settings
+  // isn't enough on its own; a competency with zero tagged assessment content has nothing real
+  // to score a band against yet, so it's excluded until it does.
+  const usedCompetencyIds = new Set(populatedIndicatorGroups.map((g) => g.competencyId));
+  const linkableCompetencies = adoptedCompetencies.filter((c) => usedCompetencyIds.has(c.id));
   const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
 
   const [mode,          setMode]          = useState("list");
@@ -3070,8 +3005,18 @@ function PerformanceBandsPanel({ curriculumId }) {
   }
 
   function submit() {
-    if (!name.trim()) return;
-    const data = { name: name.trim(), description: desc.trim(), competencyIds, advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)) };
+    if (!name.trim() || !selectedStageId) return;
+    const data = {
+      name: name.trim(), description: desc.trim(), competencyIds,
+      advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)),
+      ageCategoryId: selectedStageId,
+    };
+    // A band's name fixes its position in the ladder (Explorer=1, Builder=2, …) regardless of
+    // the order it was created in — this keeps every stage's ladder in the same canonical shape.
+    if (mode === "add") {
+      const rank = PERFORMANCE_BAND_SEQUENCE.indexOf(name.trim());
+      if (rank !== -1) data.order = rank + 1;
+    }
     if (mode === "edit") {
       // The update endpoint's Zod schema defaults any field missing from the request body
       // (e.g. minScore/maxScore aren't edited by this form) rather than leaving it
@@ -3089,8 +3034,9 @@ function PerformanceBandsPanel({ curriculumId }) {
 
   // The update endpoint validates with a Zod .partial() schema whose fields still carry
   // .default(...) — a field entirely absent from the request body gets silently defaulted
-  // (e.g. competencyIds -> []) rather than left untouched, so a truly partial payload here
-  // would wipe every other field on this band. Send the full editable record back instead.
+  // (e.g. competencyIds -> [], ageCategoryId -> null) rather than left untouched, so a truly
+  // partial payload here would wipe every other field on this band (and, for ageCategoryId,
+  // fail the "must have a stage" validation entirely). Send the full editable record back.
   function persistIndicatorContributions(band, next) {
     update({
       id: band.id,
@@ -3101,6 +3047,7 @@ function PerformanceBandsPanel({ curriculumId }) {
         maxScore: band.maxScore,
         competencyIds: band.competencyIds,
         advancementThreshold: band.advancementThreshold,
+        ageCategoryId: band.ageCategoryId,
         indicatorContributions: next,
       },
     });
@@ -3125,8 +3072,27 @@ function PerformanceBandsPanel({ curriculumId }) {
         minScore: band.minScore,
         maxScore: band.maxScore,
         advancementThreshold: band.advancementThreshold,
+        ageCategoryId: band.ageCategoryId,
         competencyIds: (band.competencyIds || []).filter((id) => id !== competencyId),
         indicatorContributions: (band.indicatorContributions || []).filter((p) => p.competencyId !== competencyId),
+      },
+    });
+  }
+
+  // A legacy band from before Developmental Stages existed — assign it to a stage so it
+  // rejoins that stage's ladder, rather than sitting invisible/orphaned forever.
+  function assignOrphanToStage(band, ageCategoryId) {
+    update({
+      id: band.id,
+      data: {
+        name: band.name,
+        description: band.description,
+        minScore: band.minScore,
+        maxScore: band.maxScore,
+        advancementThreshold: band.advancementThreshold,
+        competencyIds: band.competencyIds,
+        indicatorContributions: band.indicatorContributions,
+        ageCategoryId,
       },
     });
   }
@@ -3135,38 +3101,86 @@ function PerformanceBandsPanel({ curriculumId }) {
     if (idx === 0) return;
     const ids = bands.map((b) => b.id);
     [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
-    reorder(ids);
+    reorder({ ageCategoryId: selectedStageId, orderedIds: ids });
   }
 
   function moveDown(idx) {
     if (idx === bands.length - 1) return;
     const ids = bands.map((b) => b.id);
     [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
-    reorder(ids);
+    reorder({ ageCategoryId: selectedStageId, orderedIds: ids });
   }
 
-  if (isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
-  if (isError) return <ErrorNotice message="Couldn't load Performance Bands — try refreshing the page." />;
+  if (stagesLoading || isLoading) return <div className="cp-spinner" style={{ marginTop: "48px" }} />;
+  if (stagesError || isError) return <ErrorNotice message="Couldn't load Performance Bands — try refreshing the page." />;
 
   return (
     <div>
+      {orphanedBands.length > 0 && (
+        <OrphanedBandsBanner bands={orphanedBands} stages={stages} onAssign={assignOrphanToStage} updating={updating} />
+      )}
+
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <div>
           <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Performance Bands</h3>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {bands.length === 0
-              ? "Define the performance descriptors used across this curriculum's Progress Arc"
-              : `${bands.length} band${bands.length !== 1 ? "s" : ""} · ordered from lowest to highest`}
+            {stages.length === 0
+              ? "Add a Developmental Stage first, then build its performance ladder here"
+              : bands.length === 0
+              ? "Define this stage's performance ladder"
+              : `${bands.length} band${bands.length !== 1 ? "s" : ""} in this stage's ladder · ordered from lowest to highest`}
           </p>
         </div>
-        {mode === "list" && (
+        {mode === "list" && stages.length > 0 && (
           <button type="button" className="cp-btn-primary" onClick={openAdd}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
             Add Band
           </button>
         )}
       </div>
+
+      {/* Stage picker — the primary control driving everything below it on this panel, so it
+          carries a persistent navy tint (not just on focus like a plain cp-input) to read as
+          the featured selector rather than an ordinary form field. */}
+      <div style={{ marginBottom: "20px" }}>
+        <label className="cp-field-label" style={{ textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.05em", color: "#25476a" }}>
+          Developmental Stage
+        </label>
+        {stages.length === 0 ? (
+          <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: "#9CA3AF" }}>
+            No Developmental Stages defined yet — add one on the Developmental Stages tab first.
+          </p>
+        ) : (
+          <div style={{ position: "relative", maxWidth: "320px", marginTop: "6px" }}>
+            <select
+              value={selectedStageId || ""}
+              onChange={(e) => setSelectedStageId(e.target.value)}
+              style={{
+                width: "100%", boxSizing: "border-box", appearance: "none",
+                padding: "9px 36px 9px 14px", borderRadius: "10px",
+                border: "1.5px solid #a8d5ee", background: "#e8f5fb",
+                color: "#0A3880", fontSize: "13.5px", fontWeight: "700",
+                fontFamily: "Inter, sans-serif", cursor: "pointer", outline: "none",
+                transition: "border-color 0.15s, box-shadow 0.15s",
+              }}
+              onFocus={(e) => { e.target.style.borderColor = "#25476a"; e.target.style.boxShadow = "0 0 0 3px rgba(37,71,106,0.12)"; }}
+              onBlur={(e) => { e.target.style.borderColor = "#a8d5ee"; e.target.style.boxShadow = "none"; }}
+            >
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}{s.minAge != null || s.maxAge != null ? ` · Ages ${s.minAge ?? "0"}-${s.maxAge ?? "∞"}` : ""}
+                </option>
+              ))}
+            </select>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#25476a" }}>
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      <CombinedThresholdTrack bands={bands} />
 
       {/* Form */}
       {mode !== "list" && (
@@ -3183,7 +3197,10 @@ function PerformanceBandsPanel({ curriculumId }) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* Name */}
+            {/* Name — free text; a band whose name matches the canonical Explorer→Pioneer
+                sequence still auto-sorts into that rank on creation (see submit()) regardless
+                of what order it was created in, but any name is allowed and there's no cap on
+                how many bands a stage can have. */}
             <div>
               <label className="cp-field-label">Band Name <span className="cp-required">*</span></label>
               <input ref={nameRef} className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
@@ -3234,7 +3251,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                     const comp = competencyById.get(id);
                     if (!comp) return null;
                     return (
-                      <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#EFF6FF", border: "1px solid #DCEAFB", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
+                      <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
                         {comp.name}
                         <button type="button" onClick={() => toggleCompetency(id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", border: "none", borderRadius: "50%", background: "rgba(37,71,106,0.12)", color: "#25476a", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>×</button>
                       </span>
@@ -3247,7 +3264,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                 <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
                   {adoptedCompetencies.length === 0
                     ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab."
-                    : "None of this curriculum's competencies have indicators yet — add indicators to one in Settings → Competencies."}
+                    : "None of this curriculum's competencies are in use yet — tag one on a question, rubric criterion, or observation item in an attached assessment first."}
                 </div>
               ) : (
                 <CompetencyLinkDropdown
@@ -3270,12 +3287,20 @@ function PerformanceBandsPanel({ curriculumId }) {
       )}
 
       {/* Empty state */}
-      {mode === "list" && bands.length === 0 && (
+      {mode === "list" && bands.length === 0 && stages.length === 0 && (
+        <div className="cp-empty">
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No Developmental Stages yet</p>
+          <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto" }}>
+            Performance Bands now belong to a Developmental Stage — add a stage on the Developmental Stages tab first, then come back here to build its ladder.
+          </p>
+        </div>
+      )}
+      {mode === "list" && bands.length === 0 && stages.length > 0 && (
         <div className="cp-empty">
           <div style={{ fontSize: "36px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><EmojiEventsIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No performance bands yet</p>
           <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-            Bands like Explorer, Builder, and Pioneer give learners and teachers clear language for where performance sits.
+            Bands like Explorer, Builder, and Pioneer give learners and teachers clear language for where this stage's performance sits.
           </p>
           <button type="button" className="cp-btn-ghost" onClick={openAdd}>+ Add First Band</button>
         </div>
@@ -3288,7 +3313,7 @@ function PerformanceBandsPanel({ curriculumId }) {
             const color     = ARC_PALETTE[idx % ARC_PALETTE.length];
             const isEditing = mode === "edit" && editTarget?.id === band.id;
             return (
-              <div key={band.id} style={{
+              <div key={band.id} id={`band-card-${band.id}`} style={{
                 background: "#fff", border: `1.5px solid ${isEditing ? "#25476a" : "#E5E7EB"}`,
                 borderRadius: "16px", padding: "18px 20px",
                 boxShadow: isEditing ? "0 0 0 3px rgba(37,71,106,0.08)" : "none",
@@ -3332,7 +3357,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                               fontSize: "11px", fontWeight: "700",
                               color: "#B45309", background: "#FFFBEB", border: "1.5px solid #FDE68A",
                             }}
-                            title="The top of this ladder — what learner-facing views (Progress Arc, learner profile) show as the highest level a learner can reach"
+                            title="The top of this stage's own ladder — what a learner in this Developmental Stage sees as the highest level they can reach"
                           >
                             <EmojiEventsIcon fontSize="inherit" /> Highest Level
                           </span>
@@ -3407,7 +3432,19 @@ function PerformanceBandsPanel({ curriculumId }) {
                           );
                         })()}
                       </div>
-                      <CardKebab onEdit={() => openEdit(band)} onDelete={() => remove(band.id)} disabled={deleting} itemLabel={band.name} itemType="performance band" />
+                      <CardKebab
+                        onEdit={() => openEdit(band)}
+                        onDelete={() => remove(band.id)}
+                        disabled={deleting}
+                        itemLabel={band.name}
+                        itemType="performance band"
+                        message={(() => {
+                          const otherStageNames = stages.filter((s) => s.id !== selectedStageId).map((s) => s.name);
+                          return otherStageNames.length > 0
+                            ? `Every Developmental Stage shares the same band names — deleting "${band.name}" here also removes it from ${otherStageNames.join(", ")}, including each stage's own configured indicators and threshold for it. This cannot be undone.`
+                            : undefined;
+                        })()}
+                      />
                     </div>
 
                     {band.description && (

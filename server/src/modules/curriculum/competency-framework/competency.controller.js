@@ -211,8 +211,8 @@ exports.updateScoring = asyncHandler(async (req, res) => {
 });
 
 exports.calculateScore = asyncHandler(async (req, res) => {
-  const { evidenceScores } = calculateScoreSchema.parse(req.body);
-  const data = await CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores);
+  const { evidenceScores, ageCategoryId } = calculateScoreSchema.parse(req.body);
+  const data = await CompetencyService.calculateScore(req.params.id, req.params.atId, evidenceScores, ageCategoryId);
   res.json({ success: true, data });
 });
 
@@ -276,14 +276,14 @@ exports.deletePerformanceBand = asyncHandler(async (req, res) => {
 });
 
 exports.reorderPerformanceBands = asyncHandler(async (req, res) => {
-  const { orderedIds } = reorderBandsSchema.parse(req.body);
-  const data = await CompetencyService.reorderPerformanceBands(req.params.id, orderedIds);
+  const { ageCategoryId, orderedIds } = reorderBandsSchema.parse(req.body);
+  const data = await CompetencyService.reorderPerformanceBands(req.params.id, ageCategoryId, orderedIds);
   res.json({ success: true, data });
 });
 
 exports.calculateIndicatorProgress = asyncHandler(async (req, res) => {
-  const { indicatorAchievements } = calculateIndicatorProgressSchema.parse(req.body);
-  const data = await CompetencyService.calculateIndicatorProgress(req.params.id, indicatorAchievements);
+  const { ageCategoryId, indicatorAchievements } = calculateIndicatorProgressSchema.parse(req.body);
+  const data = await CompetencyService.calculateIndicatorProgress(req.params.id, ageCategoryId, indicatorAchievements);
   res.json({ success: true, data });
 });
 
@@ -307,12 +307,24 @@ exports.setIndicatorAchievement = asyncHandler(async (req, res) => {
 // this curriculum (see getCurriculumWideCompetencyScores), not the old manual IndicatorAchievement
 // entry that no admin UI ever populated.
 exports.getCompetencyScores = asyncHandler(async (req, res) => {
-  const data = await CompetencyService.getCurriculumWideCompetencyScores(req.params.id);
+  const ageCategoryId = req.query.ageCategoryId;
+  if (!ageCategoryId) {
+    const err = new Error("ageCategoryId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const data = await CompetencyService.getCurriculumWideCompetencyScores(req.params.id, ageCategoryId);
   res.json({ success: true, data });
 });
 
 exports.getBandProgress = asyncHandler(async (req, res) => {
-  const data = await CompetencyService.getCurriculumWideBandProgress(req.params.id);
+  const ageCategoryId = req.query.ageCategoryId;
+  if (!ageCategoryId) {
+    const err = new Error("ageCategoryId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const data = await CompetencyService.getCurriculumWideBandProgress(req.params.id, ageCategoryId);
   res.json({ success: true, data });
 });
 

@@ -272,7 +272,23 @@ const CompetencyService = {
       err.statusCode = 409;
       throw err;
     }
-    return AgeCategoryModel.create({ curriculumId, ...data });
+    const category = await AgeCategoryModel.create({ curriculumId, ...data });
+
+    // Every Developmental Stage in a curriculum progresses through the SAME named Performance
+    // Band levels (Explorer -> Pioneer) — just configured differently underneath per stage (own
+    // competencies/indicator weights/threshold). A brand-new stage inherits whichever band
+    // set any existing stage already has, each band starting with empty config. The first stage
+    // ever created in a curriculum has nothing to inherit — its bands, built by hand via the
+    // normal Add Band flow, become the canonical set every later stage copies.
+    if (existing.length > 0) {
+      const template = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, existing[0].id);
+      for (const band of template) {
+        await PerformanceBandModel.create(curriculumId, {
+          name: band.name, ageCategoryId: category.id, order: band.order,
+        });
+      }
+    }
+    return category;
   },
 
   async updateAgeCategory(curriculumId, id, data) {
@@ -442,20 +458,25 @@ const CompetencyService = {
     return curriculum.competencyWeights || [];
   },
 
-  async calculateScore(curriculumId, id, evidenceScores) {
+  async calculateScore(curriculumId, id, evidenceScores, ageCategoryId) {
     const assessmentType = await AssessmentTypeModel.findById(id);
     if (!assessmentType || assessmentType.curriculumId !== curriculumId) {
       const err = new Error("Assessment type not found");
       err.statusCode = 404;
       throw err;
     }
+    const category = await AgeCategoryModel.findById(ageCategoryId);
+    if (!category || category.curriculumId !== curriculumId) {
+      const err = new Error("Developmental stage not found");
+      err.statusCode = 404;
+      throw err;
+    }
 
     const evidenceTypes    = await EvidenceTypeModel.findByCurriculumId(curriculumId);
     const competencies     = await this.getCurriculumCompetencies(curriculumId);
-    // Learning-Area-scoped bands (Learning Journey's course ladders) share this same model
-    // but shouldn't count toward the curriculum-wide Progress Arc band below.
-    const allBands = await PerformanceBandModel.findByCurriculum(curriculumId);
-    const performanceBands = allBands.filter((b) => !b.learningAreaId);
+    // This stage's own ladder — findByCurriculumAndStage can never return a Learning-Journey
+    // band (those never carry an ageCategoryId), so no separate exclusion filter is needed.
+    const performanceBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId);
     const progressLevels   = await ProgressLevelModel.findByCurriculumId(curriculumId);
     const config           = assessmentType.evidenceWeights || [];
 
@@ -516,14 +537,13 @@ const CompetencyService = {
   // runIndicatorProgressEngine). `indicatorAchievements` is the learner's 0-100 achievement
   // per indicator (marks earned / marks possible across graded work); passed in manually for
   // now, same shape `calculateScore`'s `evidenceScores` takes for the evidence pipeline.
-  async calculateIndicatorProgress(curriculumId, indicatorAchievements) {
-    // Same Learning-Journey-band exclusion as calculateScore above — a scoped band has no
-    // indicatorContributions of its own, so leaving it in would surface a bogus 100%-complete
-    // entry (0 completion >= its 0 default threshold) alongside real Progress Arc bands.
-    const allBands = await PerformanceBandModel.findByCurriculum(curriculumId);
-    const performanceBands = allBands.filter((b) => !b.learningAreaId);
+  async calculateIndicatorProgress(curriculumId, ageCategoryId, indicatorAchievements) {
+    // findByCurriculumAndStage can never return a Learning-Journey band (those never carry an
+    // ageCategoryId), so no separate exclusion filter is needed.
+    const performanceBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId);
     return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
   },
+
 
   /* ── Evidence Types ─────────────────────────────────────────────────── */
 
@@ -567,25 +587,92 @@ const CompetencyService = {
   },
 
   async createPerformanceBand(curriculumId, data) {
-    return PerformanceBandModel.create(curriculumId, data);
+    const created = await PerformanceBandModel.create(curriculumId, data);
+    if (!created.learningAreaId) await this._syncBandAcrossStages(curriculumId, created, "create");
+    return created;
   },
 
   async updatePerformanceBand(curriculumId, id, data) {
+    const before = await PerformanceBandModel.findById(id);
     const band = await PerformanceBandModel.update(curriculumId, id, data);
     if (!band) {
       const err = new Error("Performance band not found");
       err.statusCode = 404;
       throw err;
     }
+    if (before && !before.learningAreaId && data.name && data.name !== before.name) {
+      await this._syncBandAcrossStages(curriculumId, band, "rename", before.name);
+    }
     return band;
   },
 
   async deletePerformanceBand(curriculumId, id) {
+    const band = await PerformanceBandModel.findById(id);
     await PerformanceBandModel.delete(curriculumId, id);
+    if (band && !band.learningAreaId) {
+      await this._syncBandAcrossStages(curriculumId, band, "delete", band.name);
+    }
   },
 
-  async reorderPerformanceBands(curriculumId, orderedIds) {
-    return PerformanceBandModel.reorder(curriculumId, orderedIds);
+  async reorderPerformanceBands(curriculumId, ageCategoryId, orderedIds) {
+    const reordered = await PerformanceBandModel.reorder(curriculumId, ageCategoryId, orderedIds);
+    const isLearningJourney = reordered.some((b) => b.learningAreaId);
+    if (!isLearningJourney) {
+      await this._syncReorderAcrossStages(curriculumId, ageCategoryId, reordered.map((b) => b.name));
+    }
+    return reordered;
+  },
+
+  // Keeps every OTHER Developmental Stage's band SET aligned with a create/rename/delete that
+  // just happened on one stage's band — every stage progresses through the same named levels,
+  // just with independently-configured competencies/indicators/thresholds underneath. Matched by
+  // NAME (the band's name before this change, `matchName`), never by position — real-world stage
+  // band lists can already be out of alignment (drift that pre-dates this sync feature, or a
+  // stage with its own extra custom bands), and matching by position risks silently touching a
+  // completely unrelated band that merely happens to share a numeric slot. Never called for
+  // Learning-Journey bands (learningAreaId set) — callers guard that before invoking this.
+  async _syncBandAcrossStages(curriculumId, changedBand, action, matchName) {
+    const stages = await AgeCategoryModel.findByCurriculumId(curriculumId);
+    const otherStages = stages.filter((s) => s.id !== changedBand.ageCategoryId);
+    for (const stage of otherStages) {
+      const stageBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, stage.id);
+      if (action === "create") {
+        // Skip a stage that already has a band with this exact name (e.g. it was itself the
+        // template another sync pass just copied from) — append at the end of THIS stage's own
+        // list rather than forcing the same numeric position, since stages' existing band counts
+        // may already differ.
+        if (!stageBands.some((b) => b.name === changedBand.name)) {
+          await PerformanceBandModel.create(curriculumId, { name: changedBand.name, ageCategoryId: stage.id });
+        }
+      } else if (action === "rename") {
+        const match = stageBands.find((b) => b.name === matchName);
+        if (match) await PerformanceBandModel.update(curriculumId, match.id, { name: changedBand.name });
+      } else if (action === "delete") {
+        const match = stageBands.find((b) => b.name === matchName);
+        if (match) await PerformanceBandModel.delete(curriculumId, match.id);
+      }
+    }
+  },
+
+  // Reorder sibling of _syncBandAcrossStages — `newOrder` is the source stage's band NAMES in
+  // their new sequence after a reorder. Replayed on every OTHER stage by matching band NAMES
+  // (never position, for the same drift-safety reason as _syncBandAcrossStages) — but only for a
+  // stage whose own band-name set is an exact match for the source stage's; a stage with a
+  // different or incomplete set (today's real drifted data, or one still mid-setup) is left
+  // untouched rather than guessed at, since there's no safe way to interleave names it doesn't
+  // have into a reordering built for a different set.
+  async _syncReorderAcrossStages(curriculumId, sourceStageId, newOrder) {
+    const stages = await AgeCategoryModel.findByCurriculumId(curriculumId);
+    const sourceNameSet = new Set(newOrder);
+    for (const stage of stages.filter((s) => s.id !== sourceStageId)) {
+      const stageBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, stage.id);
+      const stageNameSet = new Set(stageBands.map((b) => b.name));
+      const sameSet = stageNameSet.size === sourceNameSet.size && [...sourceNameSet].every((n) => stageNameSet.has(n));
+      if (!sameSet) continue;
+      const byName = new Map(stageBands.map((b) => [b.name, b.id]));
+      const newOrderedIds = newOrder.map((name) => byName.get(name));
+      await PerformanceBandModel.reorder(curriculumId, stage.id, newOrderedIds);
+    }
   },
 
   // Indicators actually in use — tagged on at least one question/rubric criterion/
@@ -711,10 +798,13 @@ const CompetencyService = {
   // counts toward is already fixed at assessment-authoring time via indicatorMarks tagging — that
   // tagging IS the competency mapping. `indicatorRows` is either getIndicatorAchievements' shared
   // manual values (preview) or a real learner's getLearnerIndicatorProgress (live).
-  async _competencyScoresFromIndicatorMarks(curriculumId, indicatorRows) {
+  async _competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, indicatorRows) {
     const competencies     = await this.getCurriculumCompetencies(curriculumId);
-    const allBands = await PerformanceBandModel.findByCurriculum(curriculumId);
-    const performanceBands = allBands.filter((b) => !b.learningAreaId);
+    // No stage yet (e.g. a learner not yet placed) — still return competency scores, just with
+    // no band/level per row, rather than erroring or guessing a ladder.
+    const performanceBands = ageCategoryId
+      ? await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId)
+      : [];
     const progressLevels   = await ProgressLevelModel.findByCurriculumId(curriculumId);
 
     const byCompetency = new Map();
@@ -743,8 +833,23 @@ const CompetencyService = {
   // Curriculum-admin preview — every learner would see the same number from this one, since
   // "earned" comes from the shared manually-set IndicatorAchievementModel store rather than any
   // real learner's grading. See getLearnerCompetencyScores for the real per-learner version.
-  async getCompetencyScores(curriculumId) {
-    return this._competencyScoresFromIndicatorMarks(curriculumId, await this.getIndicatorAchievements(curriculumId));
+  async getCompetencyScores(curriculumId, ageCategoryId) {
+    return this._competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, await this.getIndicatorAchievements(curriculumId));
+  },
+
+  // This learner's confirmed Developmental Stage for THIS curriculum — same link/class walk
+  // getLearningJourney below performs, extracted since getLearnerCompetencyScores and
+  // getLearnerBandProgress both need it too. Returns null if the learner has no enrollment link
+  // resolving to this curriculum, or hasn't been placed at a stage yet (currentStageId not set) —
+  // both are legitimate, pre-placement states, not errors.
+  async _resolveLearnerStageId(curriculumId, learnerId) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    for (const l of links) {
+      if (!l.classId) continue;
+      const cls = await ClassModel.findById(l.classId);
+      if (cls?.curriculumId === curriculumId) return l.currentStageId || null;
+    }
+    return null;
   },
 
   // Real per-learner competency score — the number this learner should actually see on their
@@ -756,7 +861,8 @@ const CompetencyService = {
     // assessment-submission.service.js, which requires this file back for diagnostic placement).
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
     const rows = await AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, curriculumId);
-    return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
+    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
+    return this._competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, rows);
   },
 
   // Same pipeline as getLearnerCompetencyScores, narrowed to one specific set of assessments —
@@ -767,26 +873,31 @@ const CompetencyService = {
   async getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, assessmentIds) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
     const rows = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds, curriculumId);
-    return this._competencyScoresFromIndicatorMarks(curriculumId, rows);
+    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
+    return this._competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, rows);
   },
 
   // Live-data sibling of calculateIndicatorProgress — driven by what's actually persisted
   // instead of requiring the caller to construct the whole indicatorAchievements payload. This
   // is the curriculum-admin preview (shared manual store) — see getLearnerBandProgress for the
   // real per-learner version.
-  async getBandProgress(curriculumId) {
+  async getBandProgress(curriculumId, ageCategoryId) {
     const achievements = await this.getIndicatorAchievements(curriculumId);
     const indicatorAchievements = achievements.map((a) => ({
       competencyId: a.competencyId,
       indicatorId:  a.indicatorId,
       percent:      a.marksPossible > 0 ? Math.min(100, (a.marksEarned / a.marksPossible) * 100) : 0,
     }));
-    return this.calculateIndicatorProgress(curriculumId, indicatorAchievements);
+    return this.calculateIndicatorProgress(curriculumId, ageCategoryId, indicatorAchievements);
   },
 
   // Real per-learner sibling of getBandProgress — indicatorAchievements built from this
   // learner's own accumulating progress (already computed with a `percent` per indicator) rather
-  // than the shared curriculum-wide manual store.
+  // than the shared curriculum-wide manual store. Scoped to the learner's OWN Developmental
+  // Stage's ladder — every stage shares the same band NAMES (see createAgeCategory/
+  // _syncBandAcrossStages) but each configures its own thresholds/indicators appropriately for
+  // that age group, so a 5-year-old's "Pioneer" and an 18-year-old's "Pioneer" are the same rung
+  // in name only, evaluated against completely different, age-appropriate criteria.
   async getLearnerBandProgress(curriculumId, learnerId) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
     // Scoped to this curriculum, matching getLearnerCompetencyScores above — omitting curriculumId
@@ -798,7 +909,12 @@ const CompetencyService = {
       indicatorId:  p.indicatorId,
       percent:      p.percent,
     }));
-    return this.calculateIndicatorProgress(curriculumId, indicatorAchievements);
+    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
+    // Not yet placed at a stage — no ladder to report progress against, rather than resolving
+    // findByCurriculumAndStage(curriculumId, null), which would ambiguously match orphaned
+    // legacy bands still sitting with ageCategoryId null (see the backfill migration).
+    if (!ageCategoryId) return [];
+    return this.calculateIndicatorProgress(curriculumId, ageCategoryId, indicatorAchievements);
   },
 
   // Real cross-learner replacement for the old manual-entry preview above (IndicatorAchievementModel
@@ -807,14 +923,21 @@ const CompetencyService = {
   // averaged score via the same runProgressArcEngine used everywhere else. "Participating" means
   // any learner with a graded submission against this curriculum's attached assessments — same
   // signal _evidenceTypeScoresFromEarnedMap already uses for "possible" marks.
-  async getCurriculumWideCompetencyScores(curriculumId) {
+  async getCurriculumWideCompetencyScores(curriculumId, ageCategoryId) {
     const AssessmentSubmissionModel = require("../../assessments/submissions/assessment-submission.model");
     const attachedIds = await this.getAttachedAssessmentIds(curriculumId);
     const assessmentIds = new Set(attachedIds);
     const graded = await AssessmentSubmissionModel.findAll({ status: "graded" });
-    const learnerIds = [...new Set(
+    const gradedLearnerIds = [...new Set(
       graded.filter((s) => assessmentIds.has(s.assessmentId)).map((s) => s.learnerId)
     )];
+    if (gradedLearnerIds.length === 0) return [];
+
+    // Only learners currently placed at this stage get averaged into its ladder — averaging
+    // across stages would mix bands that don't correspond to each other now that each stage has
+    // its own independent ladder.
+    const stageIds = await Promise.all(gradedLearnerIds.map((learnerId) => this._resolveLearnerStageId(curriculumId, learnerId)));
+    const learnerIds = gradedLearnerIds.filter((_, i) => stageIds[i] === ageCategoryId);
     if (learnerIds.length === 0) return [];
 
     const sums = {}, counts = {}, names = {};
@@ -830,21 +953,24 @@ const CompetencyService = {
       competencyId: id, name: names[id], score: Math.round((sums[id] / counts[id]) * 10) / 10,
     }));
 
-    const allBands = await PerformanceBandModel.findByCurriculum(curriculumId);
-    const performanceBands = allBands.filter((b) => !b.learningAreaId);
+    const performanceBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId);
     const progressLevels   = await ProgressLevelModel.findByCurriculumId(curriculumId);
     return runProgressArcEngine(averaged, progressLevels, performanceBands);
   },
 
   // Same cross-learner averaging as above, for Engine 4's band-completion % (getBandProgress).
-  async getCurriculumWideBandProgress(curriculumId) {
+  async getCurriculumWideBandProgress(curriculumId, ageCategoryId) {
     const AssessmentSubmissionModel = require("../../assessments/submissions/assessment-submission.model");
     const attachedIds = await this.getAttachedAssessmentIds(curriculumId);
     const assessmentIds = new Set(attachedIds);
     const graded = await AssessmentSubmissionModel.findAll({ status: "graded" });
-    const learnerIds = [...new Set(
+    const gradedLearnerIds = [...new Set(
       graded.filter((s) => assessmentIds.has(s.assessmentId)).map((s) => s.learnerId)
     )];
+    if (gradedLearnerIds.length === 0) return [];
+
+    const stageIds = await Promise.all(gradedLearnerIds.map((learnerId) => this._resolveLearnerStageId(curriculumId, learnerId)));
+    const learnerIds = gradedLearnerIds.filter((_, i) => stageIds[i] === ageCategoryId);
     if (learnerIds.length === 0) return [];
 
     const sums = {}, counts = {}, meta = {};
@@ -988,8 +1114,7 @@ const CompetencyService = {
   async placeLearnerFromDiagnostic(learnerId, hubId, ageCategoryId, scorePercent) {
     const category = await AgeCategoryModel.findById(ageCategoryId);
     if (!category) return null;
-    const allBands = await PerformanceBandModel.findByCurriculum(category.curriculumId);
-    const bands = allBands.filter((b) => !b.learningAreaId);
+    const bands = await PerformanceBandModel.findByCurriculumAndStage(category.curriculumId, ageCategoryId);
     const band = [...bands]
       .sort((a, b) => a.minScore - b.minScore)
       .find((b) => scorePercent >= b.minScore && scorePercent <= b.maxScore) || null;

@@ -30,6 +30,19 @@ const ACCENT    = "#25476a";
 // the FiActivity icon is what sets them apart at a glance.
 const DIAGNOSTIC_ACCENT = "#7C3AED";
 
+// Mirrors ProfileIdentityCard.jsx/LearnerFormPreview.jsx's own computeAge — display-only, kept
+// as a local duplicate rather than a shared import, same as those two.
+function computeAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
 const STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -733,7 +746,7 @@ export default function LearnerViewPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DetailRow label="Registration Number" value={learner.registrationNumber} />
             <DetailRow label="Gender" value={learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null} />
-            <DetailRow label="Date of Birth" value={learner.dateOfBirth ? new Date(learner.dateOfBirth).toLocaleDateString() : null} />
+            <DetailRow label="Age" value={learner.dateOfBirth ? `${computeAge(learner.dateOfBirth)} yrs` : null} />
             <DetailRow label="Nationality" value={learner.nationality} />
             <DetailRow label="Languages" value={learner.languages} />
             <DetailRow label="Student Username" value={learner.username} />

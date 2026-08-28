@@ -1,4 +1,4 @@
-import { FiAward, FiStar, FiZap } from "react-icons/fi";
+import { FiAward, FiStar } from "react-icons/fi";
 import { formatAgeRange } from "../utils/ageRange";
 
 const T = {
@@ -28,12 +28,12 @@ function SnapshotRow({ icon, label, value, sub }) {
 }
 
 // The same facts ProfileIdentityCard shows on the full profile (Developmental Academy /
-// Current Level Summary / Learning Streak) — presented as a compact vertical rail card here
-// instead of side-by-side pills, to fit the dashboard's right-rail layout. Profile stays the
-// source of truth and keeps its own version; this is just a second, differently-shaped view
-// of the same data. band/nextBand come from the same Engine 4 per-band completion +
-// deriveBandJourney logic as ProfileIdentityCard and the Progress Arc card (see
-// DashboardPage.jsx), so this row can never disagree with what those show.
+// Current Level Summary) — presented as a compact vertical rail card here instead of
+// side-by-side pills, to fit the dashboard's right-rail layout. Profile stays the source of
+// truth and keeps its own version; this is just a second, differently-shaped view of the same
+// data. band/nextBand come from the same Engine 4 per-band completion + deriveBandJourney logic
+// as ProfileIdentityCard and the Progress Arc card (see DashboardPage.jsx), so this row can
+// never disagree with what those show.
 function levelSummarySub(band, nextBand) {
   if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;
   if (band) return "Highest level reached";
@@ -59,7 +59,6 @@ export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
           value={band?.name || "Not yet placed"}
           sub={levelSummarySub(band, nextBand)}
         />
-        <SnapshotRow icon={<FiZap size={16} />} label="Learning Streak" value="Not tracked yet" />
       </div>
     </div>
   );
