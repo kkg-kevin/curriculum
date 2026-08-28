@@ -86,17 +86,6 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
-// Same shape as bandIndicatorContributionSchema further down (a Performance Band's own
-// per-indicator % weighting) — duplicated here rather than reordered, since a Developmental
-// Stage is now a structural twin of a Performance Band: its own competencyIds +
-// indicatorContributions, computed the same way (Engine 4) but purely for display alongside a
-// learner's real Progress Arc — it never gates level advancement itself.
-const stageIndicatorContributionSchema = z.object({
-  competencyId: z.string().min(1),
-  indicatorId:  z.string().min(1),
-  percentage:   z.number().min(0).max(100),
-});
-
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -106,9 +95,6 @@ const ageCategoryFields = z.object({
   // one diagnostic per stage, same "single FK, not a whole module" pattern as
   // class.classTeacherId / curriculum.curriculumAdminId.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
-  competencyIds:          z.array(z.string().min(1)).optional().default([]),
-  indicatorContributions: z.array(stageIndicatorContributionSchema).optional().default([]),
-  advancementThreshold:   z.number().min(0).max(100).optional().default(0),
 });
 
 const createAgeCategorySchema = ageCategoryFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
@@ -195,11 +181,26 @@ const bandIndicatorContributionSchema = z.object({
   percentage:   z.number().min(0).max(100),
 });
 
-const createPerformanceBandSchema = z.object({
+// A Progress-Arc-purpose band (learningAreaId null) now belongs to exactly one Developmental
+// Stage — no more curriculum-wide fallback ladder. A Learning-Journey band (learningAreaId +
+// courseId set) never has one; see the module-level comment in performance-band.model.js.
+const bandStageRefinement = (data) => data.learningAreaId != null || data.ageCategoryId != null;
+const bandStageRefinementOptions = {
+  message: "ageCategoryId is required for a Progress-Arc-purpose band (no learningAreaId)",
+  path:    ["ageCategoryId"],
+};
+
+// Kept as a plain (unrefined) object, same reason as learningAreaFields/ageCategoryFields above —
+// Zod can't .partial() a schema that already has .refine() attached.
+const performanceBandFields = z.object({
   name:          z.string().min(1, "Name is required").max(100),
   description:   z.string().max(1000).optional().default(""),
   minScore:      z.number().min(0).max(100).optional().default(0),
   maxScore:      z.number().min(0).max(100).optional().default(100),
+  // Explicit position in the stage's ladder (Explorer=1, Builder=2, …) — the client sends this
+  // on create so a band's name fixes its rank regardless of creation order. Omitted, the model
+  // falls back to appending at the end of the stage's current ladder (its old behavior).
+  order:         z.number().int().min(1).optional(),
   // Competencies (from the ones this curriculum has adopted) that this band draws on.
   competencyIds:          z.array(z.string().min(1)).optional().default([]),
   indicatorContributions: z.array(bandIndicatorContributionSchema).optional().default([]),
@@ -208,16 +209,21 @@ const createPerformanceBandSchema = z.object({
   advancementThreshold:   z.number().min(0).max(100).optional().default(0),
   // Learning Journey reuses Performance Bands as a per-Learning-Area course ladder: when
   // both of these are set, this band represents one rung in that Learning Area's course
-  // sequence (matched by score range via minScore/maxScore) rather than a curriculum-wide
-  // Progress Arc tier. Left null, a band behaves exactly as it always has.
+  // sequence (matched by score range via minScore/maxScore) rather than a Developmental
+  // Stage's Progress Arc ladder. Left null, a band behaves exactly as it always has.
   learningAreaId:         z.string().nullable().optional().default(null),
   courseId:               z.string().nullable().optional().default(null),
+  // Which Developmental Stage's own ladder this band belongs to — required (via the refine
+  // below) unless this is a Learning-Journey band (learningAreaId set), which never gets one.
+  ageCategoryId:          z.string().nullable().optional().default(null),
 });
 
-const updatePerformanceBandSchema = createPerformanceBandSchema.partial();
+const createPerformanceBandSchema = performanceBandFields.refine(bandStageRefinement, bandStageRefinementOptions);
+const updatePerformanceBandSchema = performanceBandFields.partial().refine(bandStageRefinement, bandStageRefinementOptions);
 
 const reorderBandsSchema = z.object({
-  orderedIds: z.array(z.string().min(1)),
+  ageCategoryId: z.string().nullable().optional().default(null),
+  orderedIds:    z.array(z.string().min(1)),
 });
 
 const evidenceScoreSchema = z.object({
@@ -227,6 +233,9 @@ const evidenceScoreSchema = z.object({
 
 const calculateScoreSchema = z.object({
   evidenceScores: z.array(evidenceScoreSchema),
+  // Which Developmental Stage's ladder to score against — required now that Performance Bands
+  // are scoped per stage rather than one flat curriculum-wide ladder.
+  ageCategoryId:  z.string().min(1, "ageCategoryId is required"),
 });
 
 const indicatorAchievementSchema = z.object({
@@ -236,6 +245,7 @@ const indicatorAchievementSchema = z.object({
 });
 
 const calculateIndicatorProgressSchema = z.object({
+  ageCategoryId:         z.string().min(1, "ageCategoryId is required"),
   indicatorAchievements: z.array(indicatorAchievementSchema),
 });
 

@@ -17,8 +17,8 @@ const KEYS = {
   compWeights:      (cid) => ["competency-weights", cid],
   learningJourney:  (cid, learnerId) => ["learning-journey", cid, learnerId],
   indicatorAchievements: (cid) => ["indicator-achievements", cid],
-  competencyScores:      (cid) => ["competency-scores", cid],
-  bandProgress:          (cid) => ["band-progress", cid],
+  competencyScores:      (cid, ageCategoryId) => ["competency-scores", cid, ageCategoryId],
+  bandProgress:          (cid, ageCategoryId) => ["band-progress", cid, ageCategoryId],
   learnerCompetencyScores: (cid, learnerId) => ["competency-scores", "learner", cid, learnerId],
   learnerBandProgress:     (cid, learnerId) => ["band-progress", "learner", cid, learnerId],
 };
@@ -245,20 +245,22 @@ export function useSetIndicatorAchievement(curriculumId) {
 }
 
 // Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
-export function useCompetencyScores(curriculumId) {
+// Scoped to one Developmental Stage's ladder now — only fires once a stage is selected.
+export function useCompetencyScores(curriculumId, ageCategoryId) {
   return useQuery({
-    queryKey: KEYS.competencyScores(curriculumId),
-    queryFn:  () => competenciesApi.getCompetencyScores(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey: KEYS.competencyScores(curriculumId, ageCategoryId),
+    queryFn:  () => competenciesApi.getCompetencyScores(curriculumId, ageCategoryId),
+    enabled:  !!curriculumId && !!ageCategoryId,
   });
 }
 
 // Indicator-driven Performance Band completion, computed from persisted indicator-achievements.
-export function useBandProgress(curriculumId) {
+// Scoped to one Developmental Stage's ladder now — only fires once a stage is selected.
+export function useBandProgress(curriculumId, ageCategoryId) {
   return useQuery({
-    queryKey: KEYS.bandProgress(curriculumId),
-    queryFn:  () => competenciesApi.getBandProgress(curriculumId),
-    enabled:  !!curriculumId,
+    queryKey: KEYS.bandProgress(curriculumId, ageCategoryId),
+    queryFn:  () => competenciesApi.getBandProgress(curriculumId, ageCategoryId),
+    enabled:  !!curriculumId && !!ageCategoryId,
   });
 }
 
@@ -503,7 +505,7 @@ export function useDeletePerformanceBand(curriculumId) {
 export function useReorderPerformanceBands(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (orderedIds) => competenciesApi.reorderPerformanceBands(curriculumId, orderedIds),
+    mutationFn: ({ ageCategoryId, orderedIds }) => competenciesApi.reorderPerformanceBands(curriculumId, ageCategoryId, orderedIds),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
     },

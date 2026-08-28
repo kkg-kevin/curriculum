@@ -3,9 +3,25 @@ const { generateId, toJson } = require("../../../shared/utils/model.utils");
 
 const TABLE = "performance_bands";
 
+// ageCategoryId is nullable at the DB level and must stay that way. A Progress-Arc-purpose band
+// (learningAreaId null) is required to have one by the Zod/service layer, but a Learning-Journey
+// band (learningAreaId + courseId set — see findByLearningArea below) never has one and never
+// should. Existing production data may already have Learning-Journey bands, so a hard DB-level
+// NOT NULL would break inserts for that unrelated feature.
 const PerformanceBandModel = {
   findByCurriculum(curriculumId) {
     return db(TABLE).where({ curriculumId }).orderBy("order", "asc");
+  },
+
+  findById(id) {
+    return db(TABLE).where({ id }).first();
+  },
+
+  // One Developmental Stage's own Progress-Arc ladder — excludes Learning-Journey bands
+  // implicitly, since those never carry an ageCategoryId. Ordered by this stage's own `order`
+  // (1..N, independent of every other stage's numbering — see create/reorder below).
+  findByCurriculumAndStage(curriculumId, ageCategoryId) {
+    return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
   },
 
   // Bands that form one Learning Area's course ladder for Learning Journey (learningAreaId
@@ -15,7 +31,24 @@ const PerformanceBandModel = {
   },
 
   async create(curriculumId, fields) {
-    const [{ count }] = await db(TABLE).where({ curriculumId }).count({ count: "*" });
+    const ageCategoryId = fields.ageCategoryId ?? null;
+    // Scoped to (curriculumId, ageCategoryId) so each stage's ladder independently numbers 1..N.
+    // Learning-Journey bands (ageCategoryId always null) keep sharing one counter per curriculum
+    // exactly as before — they don't read `order` anyway, they sort by minScore.
+    const [{ count }] = await db(TABLE).where({ curriculumId, ageCategoryId }).count({ count: "*" });
+
+    let order;
+    if (fields.order != null) {
+      // An explicit position (e.g. a band's fixed rank in the canonical Progress-Arc sequence —
+      // see PERFORMANCE_BAND_SEQUENCE client-side) — clamp to a valid slot and shift anything
+      // already at or after it up by one, so inserting "Explorer" at position 1 into a ladder
+      // that already starts at 1 doesn't collide, it displaces.
+      order = Math.max(1, Math.min(Number(fields.order), Number(count) + 1));
+      await db(TABLE).where({ curriculumId, ageCategoryId }).andWhere("order", ">=", order).increment("order", 1);
+    } else {
+      order = Number(count) + 1;
+    }
+
     const band = {
       id: generateId(),
       curriculumId,
@@ -28,7 +61,8 @@ const PerformanceBandModel = {
       advancementThreshold: fields.advancementThreshold ?? 0,
       learningAreaId: fields.learningAreaId ?? null,
       courseId: fields.courseId ?? null,
-      order: Number(count) + 1,
+      ageCategoryId,
+      order,
       createdAt: new Date(),
     };
     await db(TABLE).insert(band);
@@ -52,9 +86,11 @@ const PerformanceBandModel = {
     return db(TABLE).where({ curriculumId }).del();
   },
 
-  async reorder(curriculumId, orderedIds) {
-    await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId }).update({ order: i + 1 })));
-    return db(TABLE).where({ curriculumId }).orderBy("order", "asc");
+  // Scoped to one stage's ladder — the { id, curriculumId, ageCategoryId } guard on each update
+  // also prevents a caller from accidentally reordering a band belonging to a different stage.
+  async reorder(curriculumId, ageCategoryId, orderedIds) {
+    await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId, ageCategoryId }).update({ order: i + 1 })));
+    return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
   },
 
   // A competency was deleted from the global catalog — strip it out of every band's
