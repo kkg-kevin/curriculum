@@ -7,8 +7,10 @@ import ConfirmDialog from "./ConfirmDialog";
 // variant "sidebar" (default) assumes the dark sidebar background every portal's Sidebar already
 // renders this against. variant "light" is for the rare screen with no sidebar at all — e.g. the
 // learner-portal's FirstLoginDiagnosticGate, which hides the sidebar entirely while active but
-// still needs to let a learner sign out instead of being stuck with no way out.
-function LogoutButton({ variant = "sidebar" }) {
+// still needs to let a learner sign out instead of being stuck with no way out. `collapsed`
+// shrinks a "sidebar"-variant button to icon-only, centered — for when the sidebar itself is
+// collapsed to a narrow icon rail; irrelevant to "light" (never rendered in a collapsed sidebar).
+function LogoutButton({ variant = "sidebar", collapsed = false }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -31,7 +33,8 @@ function LogoutButton({ variant = "sidebar" }) {
       }
     : {
         display: "flex", alignItems: "center", gap: "10px", width: "100%",
-        padding: "12px 18px", borderRadius: "12px", border: "none",
+        padding: collapsed ? "12px" : "12px 18px", borderRadius: "12px", border: "none",
+        justifyContent: collapsed ? "center" : "flex-start",
         backgroundColor: hovered ? "rgba(255,255,255,0.1)" : "transparent",
         color: "#fff", fontSize: "15px", fontWeight: "500", fontFamily: "Inter, sans-serif",
         cursor: "pointer", textAlign: "left", transition: "background-color 0.2s ease",
@@ -44,10 +47,11 @@ function LogoutButton({ variant = "sidebar" }) {
         onClick={() => setConfirmOpen(true)}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        title={collapsed ? "Log Out" : undefined}
         style={style}
       >
         <FiLogOut size={variant === "light" ? 14 : 17} style={{ flexShrink: 0 }} />
-        Log Out
+        {!collapsed && "Log Out"}
       </button>
 
       <ConfirmDialog

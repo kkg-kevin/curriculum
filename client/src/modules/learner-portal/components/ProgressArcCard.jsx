@@ -92,7 +92,12 @@ function effectiveThreshold(band) {
 }
 
 function progressArcCaption(current, next) {
-  if (next) return `You're at ${current ? current.name : "the start"} — ${next.completion}% of the way to unlocking ${next.name} (needs ${effectiveThreshold(next)}%). Keep going!`;
+  // No level achieved yet — `next` is the very first level on the ladder itself, so "You're at
+  // the start — X% of the way to unlocking Explorer" reads as if Explorer were both where the
+  // learner already is AND where they're headed. Name it as the destination only, not a
+  // from/to pair with no real "from."
+  if (next && !current) return `You're just getting started — ${next.completion}% of the way to unlocking ${next.name}, your first level (needs ${effectiveThreshold(next)}%). Keep going!`;
+  if (next) return `You're at ${current.name} — ${next.completion}% of the way to unlocking ${next.name} (needs ${effectiveThreshold(next)}%). Keep going!`;
   if (current) return `${current.name} — the highest level on this curriculum's ladder. Amazing work!`;
   return "Complete graded work tagged to these levels to start your journey.";
 }

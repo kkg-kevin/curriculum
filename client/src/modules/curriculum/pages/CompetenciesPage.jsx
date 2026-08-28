@@ -2805,9 +2805,7 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
         <div className="cp-indicators-body">
           {populatedIndicators.length === 0 ? (
             <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
-              This competency is linked to an assessment in this curriculum, but none of its own indicators
-              have been tagged on a question, rubric criterion, or observation item yet — check that
-              assessment's Info and Questions tabs (this is authored per-question, not here).
+              This competency has no indicators defined at all yet — add some in Settings → Competencies first.
             </p>
           ) : (
             populatedIndicators.map((ind) => (
@@ -2976,15 +2974,34 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { data: bandProgressList = [] }            = useBandProgress(curriculumId, selectedStageId);
   const progressByBandId = new Map(bandProgressList.map((p) => [p.bandId, p]));
 
-  // Only competencies actually IN USE in this curriculum — tagged on at least one question/
-  // rubric criterion/observation item of an assessment this curriculum's courses attach (see
-  // populatedIndicatorGroups, computed live by getPopulatedIndicators) — are offered here. Being
+  // Default: only competencies actually IN USE in this curriculum — tagged on at least one
+  // question/rubric criterion/observation item of an assessment this curriculum's courses
+  // attach (see populatedIndicatorGroups, computed live by getPopulatedIndicators). Being
   // merely "adopted" (added on the Competencies tab) or having indicators defined in Settings
-  // isn't enough on its own; a competency with zero tagged assessment content has nothing real
-  // to score a band against yet, so it's excluded until it does.
+  // isn't enough on its own for this default list; a competency with zero tagged assessment
+  // content has nothing real to score a band against YET, so it's excluded until it does.
   const usedCompetencyIds = new Set(populatedIndicatorGroups.map((g) => g.competencyId));
   const linkableCompetencies = adoptedCompetencies.filter((c) => usedCompetencyIds.has(c.id));
-  const competencyById = new Map(adoptedCompetencies.map((c) => [c.id, c]));
+
+  // Opt-in escape hatch: the ENTIRE global catalog (Settings → Competencies), regardless of
+  // whether this curriculum has adopted it or anything has been tagged yet — for an admin who
+  // wants to pre-configure a band's weights/threshold ahead of real assessment content existing.
+  // Such a competency's indicators come from the global catalog (see BandCompetencyBlock's own
+  // fallback below, since populatedIndicatorGroups has no entry for it yet) and score 0%/nothing
+  // for every learner until a real assessment actually tags them — this doesn't change how
+  // Engine 4 computes completion, it just lets the config exist before the data does.
+  const { data: allGlobalCompetencies = [] } = useGlobalCompetencies();
+  const [showAllCompetencies, setShowAllCompetencies] = useState(false);
+  const pickableCompetencies = showAllCompetencies ? allGlobalCompetencies : linkableCompetencies;
+
+  // Resolve a band's linked competency by id from whichever source actually has it — a
+  // curriculum-adopted one first (carries the curriculum's own indicator set), falling back to
+  // the raw global catalog entry for a competency added via "all competencies" that this
+  // curriculum hasn't formally adopted.
+  const competencyById = new Map([
+    ...allGlobalCompetencies.map((c) => [c.id, c]),
+    ...adoptedCompetencies.map((c) => [c.id, c]),
+  ]);
 
   const [mode,          setMode]          = useState("list");
   const [editTarget,    setEdit]          = useState(null);
@@ -3240,9 +3257,26 @@ function PerformanceBandsPanel({ curriculumId }) {
 
             {/* Linked Competencies */}
             <div>
-              <label className="cp-field-label">Competencies <span className="cp-optional">(optional)</span></label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                <label className="cp-field-label" style={{ marginBottom: 0 }}>Competencies <span className="cp-optional">(optional)</span></label>
+                <button
+                  type="button"
+                  onClick={() => setShowAllCompetencies((v) => !v)}
+                  style={{
+                    fontSize: "11px", fontWeight: "700", padding: "3px 10px", borderRadius: "20px",
+                    border: `1px solid ${showAllCompetencies ? "#a8d5ee" : "#E5E7EB"}`,
+                    background: showAllCompetencies ? "#e8f5fb" : "#fff",
+                    color: showAllCompetencies ? "#25476a" : "#6B7280",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showAllCompetencies ? "Showing all competencies" : "Browse all competencies"}
+                </button>
+              </div>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Import from the competencies this curriculum already uses. Once added, you can set each indicator's % contribution toward that competency's 100% from the band card.
+                {showAllCompetencies
+                  ? "Every competency in the global catalog, including ones this curriculum hasn't adopted or that have no tagged assessment content yet — useful for pre-configuring a band's threshold ahead of real usage. It scores 0% for every learner until real content exists."
+                  : "Import from the competencies this curriculum already uses. Once added, you can set each indicator's % contribution toward that competency's 100% from the band card."}
               </p>
 
               {competencyIds.length > 0 && (
@@ -3260,15 +3294,17 @@ function PerformanceBandsPanel({ curriculumId }) {
                 </div>
               )}
 
-              {linkableCompetencies.length === 0 ? (
+              {pickableCompetencies.length === 0 ? (
                 <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6 }}>
-                  {adoptedCompetencies.length === 0
-                    ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab."
-                    : "None of this curriculum's competencies are in use yet — tag one on a question, rubric criterion, or observation item in an attached assessment first."}
+                  {showAllCompetencies
+                    ? "No competencies exist in the global catalog yet — add some in Settings → Competencies."
+                    : adoptedCompetencies.length === 0
+                    ? "This curriculum hasn't adopted any competencies yet — add some in the Competencies tab, or browse all competencies above."
+                    : "None of this curriculum's competencies are in use yet — tag one on a question, rubric criterion, or observation item in an attached assessment, or browse all competencies above."}
                 </div>
               ) : (
                 <CompetencyLinkDropdown
-                  available={linkableCompetencies.filter((c) => !competencyIds.includes(c.id))}
+                  available={pickableCompetencies.filter((c) => !competencyIds.includes(c.id))}
                   onAdd={toggleCompetency}
                 />
               )}
@@ -3484,12 +3520,21 @@ function PerformanceBandsPanel({ curriculumId }) {
                         (band.indicatorContributions || []).forEach((p) => {
                           if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
                         });
+                        // Real tagged-on-assessment indicators first; if none exist yet (a
+                        // competency added via "browse all competencies" ahead of real usage),
+                        // fall back to the competency's own global indicator list so there's
+                        // still something to weight/track — it just scores 0% for every learner
+                        // until a real assessment actually tags these indicators. No visual
+                        // distinction is made either way — it's shown exactly like any other
+                        // competency on this band.
+                        const populated = populatedByCompetencyId.get(cId);
+                        const blockIndicators = populated && populated.length > 0 ? populated : (comp.indicators || []);
                         return (
                           <BandCompetencyBlock
                             key={cId}
                             comp={comp}
                             color={color}
-                            populatedIndicators={populatedByCompetencyId.get(cId) || []}
+                            populatedIndicators={blockIndicators}
                             percentageByIndicator={percentageByIndicator}
                             onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
                           />

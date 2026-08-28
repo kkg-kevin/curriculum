@@ -5,8 +5,8 @@ import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
 import { useSchoolPortalScope } from "../modules/school-portal/hooks/useSchoolPortalScope";
+import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
 
-const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 900;
 
 function SchoolPortalLayout() {
@@ -14,6 +14,10 @@ function SchoolPortalLayout() {
   const { selectedHub: school, hubs, selectedHubId, setSelectedHubId } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Same storage key ("school") as SchoolPortalSidebar.jsx — both must agree on the current
+  // collapsed state so the content area's reserved margin matches the sidebar's actual width.
+  const [collapsed] = useSidebarCollapse("school");
+  const reservedWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
 
   useEffect(() => {
     const handleResize = () => {
@@ -34,13 +38,14 @@ function SchoolPortalLayout() {
 
       <div
         style={{
-          marginLeft: isMobile ? 0 : SIDEBAR_WIDTH,
-          width: isMobile ? "100%" : `calc(100vw - ${SIDEBAR_WIDTH}px)`,
+          marginLeft: isMobile ? 0 : reservedWidth,
+          width: isMobile ? "100%" : `calc(100vw - ${reservedWidth}px)`,
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#F5F7FA",
           overflow: "hidden",
+          transition: "margin-left 0.2s ease, width 0.2s ease",
         }}
       >
         <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} photo={school?.photo} />
