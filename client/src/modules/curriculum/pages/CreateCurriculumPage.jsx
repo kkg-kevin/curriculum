@@ -96,11 +96,18 @@ export default function CreateCurriculumPage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, formState: { isDirty } } = methods;
+  const { handleSubmit, setError, formState: { isDirty } } = methods;
 
   const onSubmit = (data) => {
     createCurriculum(data, {
       onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/competencies`),
+      // A duplicate name comes back as 409 — pin it to the name field so it shows inline
+      // (red) right where the admin needs to fix it, on top of the hook's own toast.
+      onError: (err) => {
+        if (err?.statusCode === 409) {
+          setError("name", { type: "server", message: err.message }, { shouldFocus: true });
+        }
+      },
     });
   };
 

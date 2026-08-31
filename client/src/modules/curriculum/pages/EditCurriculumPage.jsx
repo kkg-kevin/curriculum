@@ -30,6 +30,7 @@ function EditCurriculumForm({ curriculum }) {
 
   const {
     handleSubmit,
+    setError,
     formState: { isDirty },
   } = methods;
 
@@ -40,7 +41,16 @@ function EditCurriculumForm({ curriculum }) {
   const onSubmit = (data) => {
     updateCurriculum(
       { id: curriculum.id, data },
-      { onSuccess: () => navigate(exitPath) }
+      {
+        onSuccess: () => navigate(exitPath),
+        // Renaming onto a name another curriculum already uses comes back as 409 — surface it
+        // inline on the name field, alongside the hook's own toast.
+        onError: (err) => {
+          if (err?.statusCode === 409) {
+            setError("name", { type: "server", message: err.message }, { shouldFocus: true });
+          }
+        },
+      }
     );
   };
 
