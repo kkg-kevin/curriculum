@@ -124,8 +124,32 @@ async function enrichCurriculum(curriculum, meta) {
   return enriched;
 }
 
+// Curricula have no DB-level unique constraint on name (same posture as every other table in
+// this codebase — integrity is enforced at the app layer; see course.service.js's
+// assertUniqueName, mirrored here). Case- and whitespace-insensitive so "STEM Curriculum" and
+// "stem curriculum " are still caught as the same name. `excludeId` skips the record being
+// renamed, so re-saving a curriculum without changing its name doesn't flag it against itself.
+// Covers program-curricula too — a Program is a `curricula` row with isProgram: true, authored
+// through this same createCurriculum flow, and a name shared between the two lists is just as
+// ambiguous.
+async function assertUniqueName(name, excludeId = null) {
+  const curricula = await CurriculumModel.findAll();
+  const normalized = name.trim().toLowerCase();
+  const clash = curricula.find(
+    (c) => c.id !== excludeId && (c.name || "").trim().toLowerCase() === normalized
+  );
+  if (clash) {
+    const err = new Error(
+      `A curriculum named "${clash.name}" already exists — please choose a different name.`
+    );
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
 const CurriculumService = {
   async createCurriculum(data) {
+    await assertUniqueName(data.name);
     return CurriculumModel.create(data);
   },
 
@@ -147,6 +171,8 @@ const CurriculumService = {
 
   async updateCurriculum(id, data) {
     const existing = await CurriculumModel.findById(id);
+    // A rename can't collide with a name another curriculum already uses (same rule as create).
+    if (data.name !== undefined) await assertUniqueName(data.name, id);
     const curriculum = await CurriculumModel.update(id, data);
     if (!curriculum) {
       const err = new Error("Curriculum not found");
