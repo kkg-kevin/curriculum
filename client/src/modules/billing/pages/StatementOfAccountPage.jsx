@@ -57,7 +57,7 @@ export default function StatementOfAccountPage() {
           <h1 style={{ margin: "8px 0 5px", fontSize: 24, fontWeight: 900 }}>{isLearner ? "My statement" : statement?.billTo?.name || "Select a payer"}</h1>
           <p style={{ margin: 0, color: "rgba(255,255,255,.74)", fontSize: 13 }}>{statement ? `${formatDate(statement.from)} – ${formatDate(statement.to)}` : "A running ledger of every invoice and payment for one payer."}</p>
         </div>
-        {statement && <DocumentActions targetId="statement-document" filename={statementFilename} />}
+        {statement && <DocumentActions kind="statement" doc={statement} targetId="statement-document" filename={statementFilename} />}
       </section>
 
       <section className="no-print" style={{ ...cardStyle, padding: "16px 20px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
