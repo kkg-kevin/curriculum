@@ -108,6 +108,7 @@ export default function LearningHubsPanel() {
   const { mutate: updateHub } = useUpdateLearningHub();
 
   const [deleteHubTarget, setDeleteHubTarget] = useState(null);
+  const [statusTarget, setStatusTarget] = useState(null);
   const [search, setSearch] = useState("");
 
   const hubs = hubsData?.data || [];
@@ -129,10 +130,15 @@ export default function LearningHubsPanel() {
 
   const hubActions = (hub) => ({
     onView: () => navigate(`/learning-hubs/${hub.id}/view`),
-    onToggleStatus: () => updateHub({ id: hub.id, data: { status: hub.status === "active" ? "inactive" : "active" } }),
+    // Deactivating a hub also deactivates every learner and teacher tied to it (cascade lives in
+    // the server's learning-hub.service.js) — confirm first rather than a silent one-click toggle.
+    onToggleStatus: () => setStatusTarget(hub),
     onEdit: () => navigate(`/settings/learning-hubs/${hub.id}/edit`),
     onDelete: () => setDeleteHubTarget(hub),
   });
+
+  const deactivating = statusTarget?.status === "active";
+  const branchCount = (childrenByParent.get(statusTarget?.id) || []).length;
 
   if (hubsLoading) return <div className="stg-spinner" />;
 
@@ -197,6 +203,27 @@ export default function LearningHubsPanel() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        isOpen={!!statusTarget}
+        title={deactivating ? "Deactivate Learning Hub" : "Activate Learning Hub"}
+        message={
+          deactivating
+            ? `"${statusTarget?.name}" will be deactivated. Every learner enrolled here and every educator assigned to it will also be deactivated and lose portal access` +
+              (branchCount > 0 ? `, along with its ${branchCount} branch hub${branchCount === 1 ? "" : "s"} and everyone in ${branchCount === 1 ? "it" : "them"}` : "") +
+              `. A learner or educator who is still active at another hub keeps their account. Reactivating the hub brings everyone back.`
+            : `"${statusTarget?.name}" will be reactivated. Its enrollments and everyone tied to it are set active again` +
+              (branchCount > 0 ? `, along with its ${branchCount} branch hub${branchCount === 1 ? "" : "s"}` : "") + `.`
+        }
+        confirmLabel={deactivating ? "Deactivate" : "Activate"}
+        cancelLabel="Cancel"
+        variant={deactivating ? "danger" : "default"}
+        onConfirm={() => {
+          updateHub({ id: statusTarget.id, data: { status: deactivating ? "inactive" : "active" } });
+          setStatusTarget(null);
+        }}
+        onCancel={() => setStatusTarget(null)}
+      />
 
       <ConfirmDialog
         isOpen={!!deleteHubTarget}

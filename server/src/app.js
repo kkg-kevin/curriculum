@@ -31,8 +31,14 @@ const programRoutes = require("./modules/programs/program.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
-const { protect, authorize } = require("./shared/middleware/auth.middleware");
+const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
+
+// Every authenticated route already mounts `protect`; pairing it here with `blockIfSuspended`
+// means a suspended account keeps a read-only session everywhere but is refused every write in
+// one place, without touching each route file. `protect` is exported as `protectBase` and
+// re-exposed as this array so the existing `protect, ...` mount calls below need no change.
+const protect = [protectBase, blockIfSuspended];
 
 const app = express();
 

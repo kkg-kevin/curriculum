@@ -5,7 +5,7 @@ const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
-const { createTeacherSchema, updateTeacherSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
+const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // True whenever `teacherId` is linked to `hubId` via the teacher-hub link table — the
@@ -119,6 +119,21 @@ const updateTeacher = asyncHandler(async (req, res) => {
   res.json({ success: true, data: teacher });
 });
 
+// Activate / deactivate / put-on-leave a teacher. Separate from the general PUT so it's a
+// one-field action and can be authorized independently. "school" may only toggle a teacher
+// linked to its own hub; "teacher" can never reach this (not in the route's authorize list) —
+// same posture as the learner account-status endpoint. Deactivating takes effect on the
+// teacher's very next request (see auth.service.js's assertSessionActive).
+const updateTeacherStatus = asyncHandler(async (req, res) => {
+  const { status } = updateTeacherStatusSchema.parse(req.body);
+  if (req.user.role === "school") {
+    const existing = await TeacherService.getTeacherById(req.params.id);
+    assertOwn(await isLinkedToOwnHub(req, existing.id));
+  }
+  const teacher = await TeacherService.updateTeacher(req.params.id, { status });
+  res.json({ success: true, data: teacher });
+});
+
 // True delete is admin-only (see teacher.routes.js) — a "school" losing access to a teacher
 // shared with another hub must unlink (DELETE /:id/hubs/links/:hubId), never destroy the
 // underlying record.
@@ -205,6 +220,7 @@ module.exports = {
   getAllTeachers,
   getTeacherById,
   updateTeacher,
+  updateTeacherStatus,
   deleteTeacher,
   getTeacherHubs,
   linkTeacherHub,

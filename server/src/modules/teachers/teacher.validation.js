@@ -40,6 +40,12 @@ const createTeacherSchema = baseTeacherSchema.superRefine((data, ctx) => {
 
 const updateTeacherSchema = baseTeacherSchema.partial();
 
+// Dedicated status toggle — separate from the general update so a plain "deactivate" action
+// doesn't have to round-trip the whole record, and so the route can be authorized on its own.
+const updateTeacherStatusSchema = z.object({
+  status: z.enum(TEACHER_STATUSES),
+});
+
 // A weekly recurring "I can teach during this window" row — same day/time shape timetable
 // slots use, minus the class/course/room fields that don't apply to a standing availability
 // declaration. See teacher-availability.model.js / TimetableService's hasConflict extension for
@@ -58,7 +64,7 @@ const createAvailabilitySlotSchema = baseAvailabilitySchema.refine((d) => d.star
 const updateAvailabilitySlotSchema = baseAvailabilitySchema.partial();
 
 module.exports = {
-  createTeacherSchema, updateTeacherSchema, TEACHER_STATUSES,
+  createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, TEACHER_STATUSES,
   EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS,
   createAvailabilitySlotSchema, updateAvailabilitySlotSchema,
 };

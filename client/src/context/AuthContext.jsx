@@ -7,10 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // A suspended (deactivated) account IS logged in — `user` is a real session — but their
+  // account is flagged. `user.suspended` carries the reason ("learner" | "teacher" | "hub") or
+  // is falsy. The router locks a suspended session to the in-app "Account Suspended" page; the
+  // server refuses every write. Exposed as its own `suspended` value for convenience.
+  const suspended = user?.suspended || null;
+
   // Rehydrate from the existing httpOnly session cookie (if any) on a fresh app load, instead
   // of always forcing a re-login — a page refresh should keep you signed in. A missing/expired/
   // invalid cookie 401s here, which just means "not logged in" (same as never having a
-  // session), not an error to surface.
+  // session), not an error to surface. A suspended account still gets a valid /me response,
+  // carrying `suspended`.
   useEffect(() => {
     authApi
       .me()
@@ -42,7 +49,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, signup, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, suspended, login, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

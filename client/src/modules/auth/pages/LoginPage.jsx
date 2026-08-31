@@ -28,6 +28,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(identifier, password);
+      // A suspended account logs in like anyone else — ProtectedRoute then renders the in-app
+      // "Account Suspended" screen in place of whatever route we land on, so no special-casing
+      // is needed here; "/" is fine as the target.
       const redirectTo = location.state?.from?.pathname || "/";
       navigate(redirectTo, { replace: true });
     } catch (err) {

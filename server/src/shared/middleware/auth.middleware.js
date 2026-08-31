@@ -53,4 +53,33 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { protect, authorize };
+// A suspended account keeps a read-only session (so the client can render its in-app "Account
+// Suspended" page) but must not be able to change any data. Mounted once, after `protect`, on
+// the whole /api tree: safe methods pass straight through; any mutating request from a suspended
+// user is refused with a machine-readable 403. admin/curriculumAdmin can't be suspended, so
+// resolveSuspension short-circuits to null for them with no DB work.
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+async function blockIfSuspended(req, res, next) {
+  if (SAFE_METHODS.has(req.method) || !AUTH_ENABLED) return next();
+  try {
+    const reason = await AuthService.resolveSuspension({
+      id: req.user.id,
+      role: req.user.role,
+      email: req.user.email,
+      username: req.user.username,
+    });
+    if (reason) {
+      const err = new Error("Your account is suspended — you can view your data but can't make changes.");
+      err.statusCode = 403;
+      err.code = "ACCOUNT_SUSPENDED";
+      err.reason = reason;
+      return next(err);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { protect, authorize, blockIfSuspended };

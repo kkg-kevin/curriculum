@@ -5,6 +5,10 @@ const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
 
+// A suspended account is NOT blocked here — it's allowed a read-only session so the client can
+// load enough to show its in-app "Account Suspended" page. Writes are refused by the separate
+// blockIfSuspended middleware; the client locks navigation to the suspended page.
+
 // Resolves the caller's own LearningHub/Teacher/Learner/Curriculum record from their JWT
 // identity and attaches it to req — a "school"-role account matches against whichever learning
 // hub record has that email (school is just one hub type; only school-type hubs have portal
@@ -27,11 +31,9 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     const hubs = await LearningHubModel.findAll({ email, includeDrafts: true });
     const ownHub = hubs.find((h) => !h.parentHubId) || hubs[0] || null;
     if (ownHub) {
-      if (ownHub.status === "inactive") {
-        const err = new Error("This learning hub account is inactive");
-        err.statusCode = 403;
-        throw err;
-      }
+      // An inactive hub is NOT blocked here — the client redirects it to the suspended page;
+      // its own record still resolves so that page can load. Branches keep their existing
+      // inactive-filter (a suspended parent shouldn't gain a still-active branch to act as).
       const branches = await LearningHubModel.findAll({ parentHubId: ownHub.id, includeDrafts: true });
       req.ownSchools = [ownHub, ...branches.filter((h) => h.status !== "inactive")];
       const requestedId = req.headers["x-active-hub-id"];
@@ -46,7 +48,9 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
 
   if (role === "teacher") {
     const teachers = await TeacherModel.findAll({ email });
-    req.ownTeacher = teachers[0] || null;
+    // A deactivated teacher isn't blocked here (client redirects to the suspended page) — prefer
+    // a non-inactive record if one exists, else fall back to the first so the page can still load.
+    req.ownTeacher = teachers.find((t) => (t.status || "active") !== "inactive") || teachers[0] || null;
   }
 
   if (role === "learner") {
@@ -54,14 +58,11 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       // The learner's own dedicated login (see auth.service.js's setOrCreatePasswordByUsername)
       // — resolves to exactly this one learner, never siblings, and has no concept of
       // X-Active-Learner-Id since there's only ever one to resolve to here.
+      // Not blocked here for a suspended learner — the client redirects to the suspended page,
+      // and that page still needs the learner record resolved to render.
       const own = await LearnerModel.findByUsername(req.user.username);
-      if (!own || (own.accountStatus || "active") !== "active") {
-        const err = new Error("This learner account is inactive");
-        err.statusCode = 403;
-        throw err;
-      }
-      req.ownLearner = own;
-      req.ownLearners = [own];
+      req.ownLearner = own || null;
+      req.ownLearners = own ? [own] : [];
     } else {
       // Guardian-owned account. A guardian can have more than one learner linked to the same
       // email (siblings) — every learner-scoped route authorizes off req.ownLearner, so the
@@ -71,14 +72,13 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       // resolves to one of this guardian's own learners.
       const allLearners = await LearnerModel.findAll({ guardianEmail: email });
       const activeLearners = allLearners.filter((l) => (l.accountStatus || "active") === "active");
-      if (allLearners.length > 0 && activeLearners.length === 0) {
-        const err = new Error("This learner account is inactive");
-        err.statusCode = 403;
-        throw err;
-      }
-      req.ownLearners = activeLearners;
+      // A guardian whose children are ALL suspended isn't blocked here (client redirects to the
+      // suspended page) — expose the full set so that page can still name the learner. When at
+      // least one child is active, keep the old behavior: scope only to the active ones.
+      const scoped = activeLearners.length > 0 ? activeLearners : allLearners;
+      req.ownLearners = scoped;
       const requestedId = req.headers["x-active-learner-id"];
-      req.ownLearner = (requestedId && activeLearners.find((l) => l.id === requestedId)) || activeLearners[0] || null;
+      req.ownLearner = (requestedId && scoped.find((l) => l.id === requestedId)) || scoped[0] || null;
     }
   }
 

@@ -2,7 +2,7 @@
 import { FiAlertTriangle, FiHome } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useTeacherQuery, useDeleteTeacher, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
+import { useTeacherQuery, useDeleteTeacher, useUpdateTeacherStatus, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
 import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
@@ -207,6 +207,7 @@ export default function TeacherViewPage() {
   const { data: hubs = [] } = useTeacherHubsQuery(id);
   const { data: availabilitySlots = [] } = useTeacherAvailability(id);
   const { mutate: deleteTeacher } = useDeleteTeacher();
+  const { mutate: updateTeacherStatus, isPending: statusPending } = useUpdateTeacherStatus();
   const { mutate: linkHub, isPending: isLinking } = useLinkTeacherHub();
   const { mutate: unlinkHub } = useUnlinkTeacherHub();
 
@@ -222,6 +223,7 @@ export default function TeacherViewPage() {
   const [selectedHubToAdd, setSelectedHubToAdd] = useState("");
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmStatusToggle, setConfirmStatusToggle] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState(null);
 
   // Every (class, course) link for this teacher, grouped by class — replaces the old
@@ -287,7 +289,7 @@ export default function TeacherViewPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: "10px", flexShrink: 0, flexWrap: "wrap" }}>
               <button
                 type="button"
                 onClick={() => navigate(teacherPath(user?.role, id, "edit"))}
@@ -299,6 +301,16 @@ export default function TeacherViewPage() {
                 </svg>
                 Edit Educator
               </button>
+              {(isAdmin || isSchool) && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmStatusToggle(true)}
+                  disabled={statusPending}
+                  style={{ padding: "10px 20px", backgroundColor: teacher.status === "inactive" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: teacher.status === "inactive" ? "#A7F3D0" : "#FCA5A5", border: `1.5px solid ${teacher.status === "inactive" ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)"}`, borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: statusPending ? "not-allowed" : "pointer" }}
+                >
+                  {teacher.status === "inactive" ? "Activate Account" : "Deactivate Account"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
@@ -465,6 +477,24 @@ export default function TeacherViewPage() {
           }
         }}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmStatusToggle}
+        title={teacher.status === "inactive" ? "Activate Educator Account" : "Deactivate Educator Account"}
+        message={
+          teacher.status === "inactive"
+            ? `"${teacher.firstName} ${teacher.lastName}" will be marked active again and regain portal access.`
+            : `"${teacher.firstName} ${teacher.lastName}" will be marked inactive and lose teacher-portal access immediately. Their record, hub assignments, and class history are kept.`
+        }
+        confirmLabel={teacher.status === "inactive" ? "Activate" : "Deactivate"}
+        cancelLabel="Cancel"
+        variant={teacher.status === "inactive" ? "default" : "danger"}
+        onConfirm={() => {
+          setConfirmStatusToggle(false);
+          updateTeacherStatus({ id, status: teacher.status === "inactive" ? "active" : "inactive" });
+        }}
+        onCancel={() => setConfirmStatusToggle(false)}
       />
 
       <ConfirmDialog
