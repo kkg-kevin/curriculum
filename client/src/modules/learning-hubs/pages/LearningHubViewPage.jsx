@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
-import { useLearningHubQuery, useLearningHubCurriculaQuery, useDeleteLearningHub, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
+import { useLearningHubQuery, useLearningHubCurriculaQuery, useDeleteLearningHub, useUpdateLearningHubStatus, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -125,7 +125,9 @@ export default function LearningHubViewPage() {
   const { data: curriculum } = useCurriculumQuery(hub?.curriculumId);
   const { data: curriculumLinks = [] } = useLearningHubCurriculaQuery(id);
   const { mutate: deleteLearningHub } = useDeleteLearningHub();
+  const { mutate: updateHubStatus, isPending: statusPending } = useUpdateLearningHubStatus();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmStatusToggle, setConfirmStatusToggle] = useState(false);
 
   const isSchool = hub?.hubType === "school";
 
@@ -170,6 +172,12 @@ export default function LearningHubViewPage() {
     : { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
   const statusLabel = hub.status === "active" ? "Active" : hub.status === "draft" ? "Draft" : "Inactive";
 
+  // A draft hub is promoted to active by editing it, not by this toggle — the toggle is only
+  // meaningful once a hub is live. `deactivating` is the direction of the pending action.
+  const canToggleStatus = hub.status === "active" || hub.status === "inactive";
+  const deactivating = hub.status === "active";
+  const branchCount = branchHubs.length;
+
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Breadcrumb */}
@@ -203,10 +211,20 @@ export default function LearningHubViewPage() {
               </p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: "10px", flexShrink: 0, flexWrap: "wrap" }}>
             <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
             </button>
+            {canToggleStatus && (
+              <button
+                type="button"
+                onClick={() => setConfirmStatusToggle(true)}
+                disabled={statusPending}
+                style={{ padding: "10px 20px", backgroundColor: deactivating ? "rgba(239,68,68,0.18)" : "rgba(16,185,129,0.18)", color: deactivating ? "#FCA5A5" : "#A7F3D0", border: `1.5px solid ${deactivating ? "rgba(239,68,68,0.28)" : "rgba(16,185,129,0.28)"}`, borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: statusPending ? "not-allowed" : "pointer" }}
+              >
+                {deactivating ? "Deactivate Hub" : "Activate Hub"}
+              </button>
+            )}
             <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Delete
             </button>
@@ -582,6 +600,27 @@ export default function LearningHubViewPage() {
           deleteLearningHub(id, { onSuccess: () => navigate("/learning-hubs") });
         }}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmStatusToggle}
+        title={deactivating ? "Deactivate Learning Hub" : "Activate Learning Hub"}
+        message={
+          deactivating
+            ? `"${hub.name}" will be deactivated. Every learner enrolled here and every educator assigned to it will also be deactivated and lose portal access` +
+              (branchCount > 0 ? `, along with its ${branchCount} branch hub${branchCount === 1 ? "" : "s"} and everyone in ${branchCount === 1 ? "it" : "them"}` : "") +
+              `. A learner or educator who is still active at another hub keeps their account. Reactivating the hub brings everyone back.`
+            : `"${hub.name}" will be reactivated. Its enrollments and everyone tied to it are set active again` +
+              (branchCount > 0 ? `, along with its ${branchCount} branch hub${branchCount === 1 ? "" : "s"}` : "") + `.`
+        }
+        confirmLabel={deactivating ? "Deactivate" : "Activate"}
+        cancelLabel="Cancel"
+        variant={deactivating ? "danger" : "default"}
+        onConfirm={() => {
+          setConfirmStatusToggle(false);
+          updateHubStatus({ id, status: deactivating ? "inactive" : "active" });
+        }}
+        onCancel={() => setConfirmStatusToggle(false)}
       />
     </div>
   );

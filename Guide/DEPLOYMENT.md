@@ -9,6 +9,29 @@
 
 ---
 
+## This release (31 Aug 2026) — what changed
+
+Deploy **backend first, then frontend** (there is a new schema migration).
+
+**Backend** (`backend-deploy.zip`):
+- **New migration** `src/db/migrations/20260831100000_add_advancement_min_to_performance_bands.js` — adds the `advancementMin` column to `performance_bands`. Applies automatically on **Restart** (nothing manual). Existing bands get `advancementMin = 0` (behaviour unchanged until an admin sets a range).
+- Curriculum name is now unique (case/space-insensitive) — creating/renaming a curriculum to a name already in use is rejected with a 409.
+- **Account deactivation model:** a suspended learner / educator / learning-hub account can now still log in but is locked to an in-app "Account Suspended" screen; every write is refused server-side. New `PATCH /api/teachers/:id/status` (admin / school). Deactivating a learning hub cascades — every learner and educator tied to it (and its branch hubs) is deactivated too; reactivating brings them back.
+- Billing documents (`billing.service.js`) now also return an `issuedBy` block + `learner` (name/photo) on invoices, receipts and statements — consumed by the new PDF builders below. Purely additive.
+- No `package.json` change on the backend — but still click **Run NPM Install** on redeploy as usual.
+
+**Frontend** (`assets.zip` + `index.html`):
+- **New dependency `jspdf-autotable`** — already in `client/package.json` and baked into this build; nothing to install on cPanel (frontend is static). Only matters if you rebuild the frontend yourself: run `npm install` in `client/` before `npm run build`.
+- Invoices / receipts / statements now **download as proper vector PDFs** (selectable text, ~85 KB, page-safe tables) instead of a page screenshot — with the Digifunzi logo, the hub's logo, and the learner's photo. Print is unchanged.
+- Learner report (`/learner-portal/reports/:id`) has **Print / Download PDF** — a branded document with all three logos.
+- Learner portal: a learner enrolled at several hubs is no longer trapped on the first-login diagnostic gate of a hub they haven't started — the hub switcher stays visible so they can switch back to a hub they've already onboarded.
+- Sidebar collapse now reflows the content area immediately (previously needed a page refresh).
+- Progress Arc → Performance Bands: the advancement threshold is now a **min–max range** (min = "on track" marker, max = advances the learner) with a per-competency % subtotal shown on each band card.
+
+**Assets folder:** `Guide/assets/` is the extracted contents of `assets.zip` (the 65 built files) — provided for reference / manual upload if the zip route is inconvenient.
+
+---
+
 ## How Frontend and Backend Connect (REST API)
 
 The frontend and backend are two separate applications that communicate over HTTP using a **REST API**.
@@ -190,7 +213,29 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads) |
-| `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/`) |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 262 files, includes every migration through `20260831100000`. |
+| `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/` → extracts to an `assets/` folder). 66 entries. |
+| `assets/` | The **extracted** contents of `assets.zip` (65 built JS/CSS/font/image files) — same thing, unzipped, in case uploading the folder directly is easier than the zip route. |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` (both are `index-BeHMNMl4.js` in this build). |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
+
+### Rebuilding these zips by hand (Git Bash, from the project root)
+
+Use Info-Zip `zip`, **not** PowerShell `Compress-Archive` (it writes `\` path separators that break Linux/cPanel extraction — you'd get a single file literally named `assets\index-….js`).
+
+```bash
+# frontend
+cd client && npm install && npm run build && cd ..
+cp client/dist/index.html Guide/index.html
+rm -rf Guide/assets Guide/assets.zip
+(cd client/dist && zip -r -X -q ../../Guide/assets.zip assets)
+cp -r client/dist/assets Guide/assets
+
+# backend
+rm -f Guide/backend-deploy.zip
+(cd server && zip -r -X -q ../Guide/backend-deploy.zip src knexfile.js package.json package-lock.json)
+
+# verify — forward slashes only, and the extract matches source
+unzip -l Guide/assets.zip | grep -c '\\'          # must be 0
+unzip -l Guide/backend-deploy.zip | grep -c '\\'  # must be 0
+```
