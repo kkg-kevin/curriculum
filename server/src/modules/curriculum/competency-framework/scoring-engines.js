@@ -118,8 +118,8 @@ function runProgressArcEngine(competencyScores, progressLevels, performanceBands
  * and multiplies it against each contribution's weight to get the band's overall completion.
  *
  * @param {Array<{competencyId, indicatorId, percent}>} indicatorAchievements  Learner's 0-100 achievement per indicator
- * @param {Array} performanceBands  Band objects (must have indicatorContributions, advancementThreshold)
- * @returns {Array<{bandId, name, completion, advancementThreshold, thresholdMet}>}
+ * @param {Array} performanceBands  Band objects (must have indicatorContributions, advancementThreshold; optional advancementMin)
+ * @returns {Array<{bandId, name, completion, advancementMin, advancementThreshold, onTrack, thresholdMet}>}
  */
 function runIndicatorProgressEngine(indicatorAchievements, performanceBands) {
   return performanceBands.map((band) => {
@@ -132,19 +132,27 @@ function runIndicatorProgressEngine(indicatorAchievements, performanceBands) {
       return sum + (percent * c.percentage) / 100;
     }, 0);
     const rounded = roundTo1Decimal(completion);
+    // The advancement bar is a range: `advancementMin` is a display-only "on track / approaching"
+    // floor, `advancementThreshold` is the MAX — the bar that actually advances the learner.
+    const min = band.advancementMin ?? 0;
     const threshold = band.advancementThreshold ?? 0;
+    // A threshold of 0 means no admin has configured one yet (see PerformanceBandsPanel's own
+    // `band.advancementThreshold > 0` check before it shows the "X% to advance" tag) — without
+    // this guard every unconfigured band trivially "passes" at 0% completion. But a learner who
+    // has earned 100% of a band's indicator budget has done everything that band asks for
+    // regardless of whether anyone ever set a numeric bar — that always counts as met, even on
+    // an unconfigured band.
+    const thresholdMet = (threshold > 0 && rounded >= threshold) || rounded >= 100;
     return {
       bandId: band.id,
       name: band.name,
       completion: rounded,
+      advancementMin: min,
       advancementThreshold: threshold,
-      // A threshold of 0 means no admin has configured one yet (see PerformanceBandsPanel's own
-      // `band.advancementThreshold > 0` check before it shows the "X% to advance" tag) — without
-      // this guard every unconfigured band trivially "passes" at 0% completion. But a learner who
-      // has earned 100% of a band's indicator budget has done everything that band asks for
-      // regardless of whether anyone ever set a numeric bar — that always counts as met, even on
-      // an unconfigured band.
-      thresholdMet: (threshold > 0 && rounded >= threshold) || rounded >= 100,
+      // Purely informational: the learner has reached the "on track" floor but not yet the
+      // advancement max. Only meaningful when a min is configured and the max hasn't been met.
+      onTrack: !thresholdMet && min > 0 && rounded >= min,
+      thresholdMet,
     };
   });
 }

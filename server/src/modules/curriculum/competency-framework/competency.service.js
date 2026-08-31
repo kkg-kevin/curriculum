@@ -979,17 +979,22 @@ const CompetencyService = {
       progress.forEach((bp) => {
         sums[bp.bandId]   = (sums[bp.bandId]   || 0) + bp.completion;
         counts[bp.bandId] = (counts[bp.bandId] || 0) + 1;
-        meta[bp.bandId]   = { name: bp.name, advancementThreshold: bp.advancementThreshold };
+        meta[bp.bandId]   = { name: bp.name, advancementMin: bp.advancementMin ?? 0, advancementThreshold: bp.advancementThreshold };
       });
     });
     return Object.keys(sums).map((bandId) => {
       const completion = Math.round((sums[bandId] / counts[bandId]) * 10) / 10;
+      const min = meta[bandId].advancementMin;
+      const threshold = meta[bandId].advancementThreshold;
+      // Same "0 = unconfigured, never trivially met, but 100% always counts" rule as
+      // runIndicatorProgressEngine.
+      const thresholdMet = (threshold > 0 && completion >= threshold) || completion >= 100;
       return {
         bandId, name: meta[bandId].name, completion,
-        advancementThreshold: meta[bandId].advancementThreshold,
-        // Same "0 = unconfigured, never trivially met, but 100% always counts" rule as
-        // runIndicatorProgressEngine.
-        thresholdMet: (meta[bandId].advancementThreshold > 0 && completion >= meta[bandId].advancementThreshold) || completion >= 100,
+        advancementMin: min,
+        advancementThreshold: threshold,
+        onTrack: !thresholdMet && min > 0 && completion >= min,
+        thresholdMet,
       };
     });
   },

@@ -58,6 +58,10 @@ const PerformanceBandModel = {
       maxScore: fields.maxScore ?? 100,
       competencyIds: toJson(fields.competencyIds || []),
       indicatorContributions: toJson(fields.indicatorContributions || []),
+      // Range, not a single bar: advancementMin is a display-only "on track" floor,
+      // advancementThreshold is the max that actually advances the learner (see
+      // runIndicatorProgressEngine).
+      advancementMin: fields.advancementMin ?? 0,
       advancementThreshold: fields.advancementThreshold ?? 0,
       learningAreaId: fields.learningAreaId ?? null,
       courseId: fields.courseId ?? null,
