@@ -50,7 +50,7 @@ export default function InvoiceDetailPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <StatusPill status={invoice.status} />
-          <DocumentActions targetId="invoice-document" filename={`${invoice.invoiceNumber}.pdf`} />
+          <DocumentActions kind="invoice" doc={invoice} targetId="invoice-document" filename={`${invoice.invoiceNumber}.pdf`} />
           <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             {canManage && invoice.status === "draft" && <button type="button" disabled={issuing} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B" }}><SendIcon sx={{ fontSize: 16 }} />{issuing ? "Issuing…" : "Issue invoice"}</button>}
             {canManage && ["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" disabled={cancelling} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.3)" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} />Cancel</button>}

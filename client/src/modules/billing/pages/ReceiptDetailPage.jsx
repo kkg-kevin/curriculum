@@ -31,7 +31,7 @@ export default function ReceiptDetailPage() {
           <h1 style={{ margin: "8px 0 5px", fontSize: 24, fontWeight: 900 }}>{receipt.receiptNumber}</h1>
           <p style={{ margin: 0, color: "rgba(255,255,255,.74)", fontSize: 13 }}>Payment for invoice {receipt.invoice?.invoiceNumber} · Received {formatDate(receipt.paidAt)}</p>
         </div>
-        <DocumentActions targetId="receipt-document" filename={`${receipt.receiptNumber}.pdf`} />
+        <DocumentActions kind="receipt" doc={receipt} targetId="receipt-document" filename={`${receipt.receiptNumber}.pdf`} />
       </section>
 
       <BillToCard billTo={receipt.billTo} label="Received from" />

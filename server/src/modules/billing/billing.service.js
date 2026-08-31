@@ -42,9 +42,45 @@ async function resolvePayerIdentity(invoice) {
   return null;
 }
 
+// Platform issuer identity for documents Digifunzi itself issues (hub-subscription invoices).
+// Static rather than env-driven — matches the "use existing data only" scope; a configurable
+// billing-profile can replace this later without changing any consumer.
+const PLATFORM_ISSUER = { name: "Digifunzi", email: "billing@digifunzi.com", phone: null, address: null, logo: null };
+
+// The "Issued by" block for a document — the party the payer owes / paid. A hub-issued invoice
+// (school billing a guardian) is issued by that hub, with its own logo; a platform invoice
+// (Digifunzi billing a hub) is issued by Digifunzi. Purely additive to the payload — every
+// existing consumer that ignores `issuedBy` is unaffected.
+async function resolveIssuerIdentity(invoice) {
+  if (invoice.issuerType === "learning_hub" && invoice.issuerHubId) {
+    const hub = await LearningHubService.getLearningHubById(invoice.issuerHubId).catch(() => null);
+    if (hub) return { name: hub.name, email: hub.email || null, phone: hub.phone || null, address: hub.address || null, logo: hub.photo || null };
+  }
+  return PLATFORM_ISSUER;
+}
+
+// The learner a document concerns, when it targets one (tuition/materials invoices, and their
+// receipts). Just the display trio — name + photo — for the document header. Null for a
+// hub-subscription invoice, which has no learnerId.
+async function resolveDocumentLearner(learnerId) {
+  if (!learnerId) return null;
+  const learner = await LearnerModel.findById(learnerId);
+  if (!learner) return null;
+  return { id: learner.id, firstName: learner.firstName, lastName: learner.lastName, photo: learner.photo || null };
+}
+
 async function decorate(invoice, items, payments) {
   const amountPaid = money(payments.filter((p) => p.status === "successful").reduce((sum, p) => sum + Number(p.amount), 0));
-  return { ...invoice, subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total), amountPaid, amountDue: money(Number(invoice.total) - amountPaid), items, payments, billTo: await resolvePayerIdentity(invoice), auditEvents: await BillingModel.findAuditEvents(invoice.id) };
+  return {
+    ...invoice,
+    subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total),
+    amountPaid, amountDue: money(Number(invoice.total) - amountPaid),
+    items, payments,
+    billTo: await resolvePayerIdentity(invoice),
+    issuedBy: await resolveIssuerIdentity(invoice),
+    learner: await resolveDocumentLearner(invoice.learnerId),
+    auditEvents: await BillingModel.findAuditEvents(invoice.id),
+  };
 }
 
 async function assertLearnerAtHub(learnerId, hubId) {
@@ -283,7 +319,14 @@ const BillingService = {
     await assertAccess(req, invoice);
     const payment = await BillingModel.findPaymentById(paymentId);
     if (!payment || payment.invoiceId !== invoiceId) throw notFound("Receipt not found");
-    return { ...payment, amount: money(payment.amount), invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, total: money(invoice.total) }, billTo: await resolvePayerIdentity(invoice) };
+    return {
+      ...payment,
+      amount: money(payment.amount),
+      invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, total: money(invoice.total) },
+      billTo: await resolvePayerIdentity(invoice),
+      issuedBy: await resolveIssuerIdentity(invoice),
+      learner: await resolveDocumentLearner(invoice.learnerId),
+    };
   },
 
   async listReceipts(req) {
@@ -368,8 +411,17 @@ const BillingService = {
       ? await resolvePayerIdentity({ payerHubId: payerId })
       : await resolvePayerIdentity({ payerUserId: payerId, learnerId: invoices[0]?.learnerId || null });
 
+    // Issuer for a statement: a hub-payer statement is Digifunzi billing that hub; a user-payer
+    // statement is issued by whichever hub billed them (resolved off any invoice in the set —
+    // a user statement is already hub-scoped for a school caller, and a guardian only ever has
+    // one hub relationship in practice). Falls back to the platform issuer if nothing resolves.
+    const issuedBy = payerType === "hub"
+      ? PLATFORM_ISSUER
+      : await resolveIssuerIdentity(invoices[0] || {});
+    const learner = payerType === "user" ? await resolveDocumentLearner(invoices[0]?.learnerId) : null;
+
     return {
-      payerType, payerId, from: fromDate, to: toDate, billTo,
+      payerType, payerId, from: fromDate, to: toDate, billTo, issuedBy, learner,
       openingBalance, closingBalance,
       totalInvoiced: money(inRangeInvoices.reduce((sum, inv) => sum + Number(inv.total), 0)),
       totalPaid: money(inRangePayments.reduce((sum, p) => sum + Number(p.amount), 0)),

@@ -51,8 +51,11 @@ function LearnerPortalLayout() {
   // learner-level flag) so a learner enrolled at several hubs gets gated again on a hub they
   // haven't cleared yet, even after clearing another one. Never true until the learner record
   // and hub list have actually loaded, so a fresh mount doesn't flash the gate open on
-  // undefined data. Sidebar/switchers are hidden while it's active so it's genuinely the only
-  // thing reachable; Header stays so the learner can still sign out.
+  // undefined data. The sidebar stays hidden while it's active (nothing in the portal should be
+  // reachable yet for this hub), but the hub switcher is kept visible below — a learner enrolled
+  // at several hubs must be able to switch back to one they've already onboarded rather than
+  // being trapped on the gate of a hub they haven't started, with only "do the diagnostic" or
+  // "log out" as options. Header stays too, so they can still sign out.
   const gateActive = !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
 
   const sidebarReserved = !gateActive && !isMobile;
@@ -77,14 +80,16 @@ function LearnerPortalLayout() {
         <Header isMobile={isMobile && !gateActive} onMenuClick={() => setSidebarOpen(true)} photo={learner?.photo} />
 
         <main style={{ flex: 1, padding: isMobile ? "20px 16px 28px" : "28px 32px", minWidth: 0, overflowX: "hidden" }}>
+          {/* Switchers render above everything, gate or not — so a multi-hub learner sitting on
+              an un-onboarded hub's diagnostic can still switch back to a hub they've completed
+              (or to another child), instead of being stuck with only "take the diagnostic" or
+              "log out". Each renders nothing when there's only one option (see HubSwitcher). */}
+          <HubSwitcher hubs={childOptions} selectedHubId={selectedLearnerId} onChange={setPendingChildId} />
+          <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
           {gateActive ? (
             <FirstLoginDiagnosticGate learner={learner} hub={selectedHub} cls={cls} />
           ) : (
-            <>
-              <HubSwitcher hubs={childOptions} selectedHubId={selectedLearnerId} onChange={setPendingChildId} />
-              <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
-              <Outlet context={scope} />
-            </>
+            <Outlet context={scope} />
           )}
         </main>
 
