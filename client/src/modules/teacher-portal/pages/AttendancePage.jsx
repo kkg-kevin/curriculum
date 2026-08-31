@@ -54,22 +54,27 @@ function StatTile({ icon, num, label, color }) {
   );
 }
 
-function StatusSegmented({ value, onChange }) {
+function StatusSegmented({ value, onChange, disabled = false }) {
   return (
     <div style={{ display: "flex", gap: 6 }}>
       {STATUS_ORDER.map((s) => {
         const cfg = STATUS_CONFIG[s];
         const active = value === s;
+        // When locked, only the chosen status stays visible (as a static chip) — the other
+        // three are hidden so a read-only recorded row can't be mistaken for an editable one.
+        if (disabled && !active) return null;
         return (
           <button
             key={s}
             type="button"
-            onClick={() => onChange(s)}
+            onClick={() => !disabled && onChange(s)}
+            disabled={disabled}
             title={cfg.label}
             style={{
               padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${active ? cfg.border : T.border}`,
               backgroundColor: active ? cfg.bg : "#fff", color: active ? cfg.color : T.inkFaint,
-              fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "Inter, sans-serif", cursor: "pointer",
+              fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "Inter, sans-serif",
+              cursor: disabled ? "default" : "pointer",
               display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", transition: "all 0.12s",
             }}
           >
@@ -82,7 +87,7 @@ function StatusSegmented({ value, onChange }) {
   );
 }
 
-function LearnerMarkRow({ learner, entry, onStatusChange, onNotesChange }) {
+function LearnerMarkRow({ learner, entry, onStatusChange, onNotesChange, disabled = false }) {
   const initials = `${learner.firstName?.[0] ?? ""}${learner.lastName?.[0] ?? ""}`.toUpperCase();
   const status = entry?.status || "present";
   return (
@@ -99,15 +104,16 @@ function LearnerMarkRow({ learner, entry, onStatusChange, onNotesChange }) {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
           <p style={{ margin: "1px 0 0", fontSize: 11, color: T.inkFaint }}>{learner.admissionNumber || "No ID"}</p>
         </div>
-        <StatusSegmented value={status} onChange={(s) => onStatusChange(learner.id, s)} />
+        <StatusSegmented value={status} onChange={(s) => onStatusChange(learner.id, s)} disabled={disabled} />
       </div>
-      {status !== "present" && (
+      {status !== "present" && (entry?.notes || !disabled) && (
         <input
           type="text"
           value={entry?.notes || ""}
           onChange={(e) => onNotesChange(learner.id, e.target.value)}
-          placeholder={`Reason (optional) — e.g. ${status === "absent" ? "sick, family emergency" : status === "late" ? "traffic, overslept" : "appointment"}`}
-          style={{ marginLeft: 46, padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none", backgroundColor: "#F9FAFB" }}
+          readOnly={disabled}
+          placeholder={disabled ? "" : `Reason (optional) — e.g. ${status === "absent" ? "sick, family emergency" : status === "late" ? "traffic, overslept" : "appointment"}`}
+          style={{ marginLeft: 46, padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none", backgroundColor: "#F9FAFB", color: disabled ? T.inkMuted : T.ink }}
         />
       )}
     </div>
@@ -194,14 +200,28 @@ export default function AttendancePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId, date, existingData]);
 
-  const setLearnerStatus = (learnerId, status) =>
+  // Attendance is locked (view-only, no save) once EITHER: it's already been recorded for this
+  // class+date — it's write-once, no edits — OR the session day is in the past, since a passed
+  // session's attendance can no longer be marked. The server enforces both (see
+  // attendance.service.js); this just keeps the UI honest so a teacher isn't offered a Save
+  // button that will only bounce with a 409.
+  const alreadyRecorded = (existingData?.data || []).length > 0;
+  const isPastSession = date < todayStr();
+  const locked = alreadyRecorded || isPastSession;
+
+  const setLearnerStatus = (learnerId, status) => {
+    if (locked) return;
     setDraft((d) => ({ ...d, [learnerId]: { status, notes: status === "present" ? "" : (d[learnerId]?.notes || "") } }));
-  const setLearnerNotes = (learnerId, notes) =>
+  };
+  const setLearnerNotes = (learnerId, notes) => {
+    if (locked) return;
     setDraft((d) => ({ ...d, [learnerId]: { status: d[learnerId]?.status || "present", notes } }));
+  };
 
   const { mutate: markAttendance, isPending: saving } = useMarkAttendance();
 
   const handleSave = () => {
+    if (locked) return;
     const records = learners.map((l) => ({
       learnerId: l.id,
       status: draft[l.id]?.status || "present",
@@ -342,15 +362,32 @@ export default function AttendancePage() {
                     style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || learners.length === 0 || !isSessionDay}
-                  style={{ padding: "10px 22px", backgroundColor: saving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: (saving || !isSessionDay) ? "not-allowed" : "pointer", opacity: isSessionDay ? 1 : 0.5 }}
-                >
-                  {saving ? "Saving…" : "Save Attendance"}
-                </button>
+                {locked ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, backgroundColor: alreadyRecorded ? T.tintBg : "#F9FAFB", border: `1.5px solid ${alreadyRecorded ? T.tintBorder : T.border}`, fontSize: 12.5, fontWeight: 700, color: alreadyRecorded ? T.accent : T.inkMuted }}>
+                    <CheckCircleOutlineIcon fontSize="small" /> {alreadyRecorded ? "Recorded — locked" : "Session passed — locked"}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || learners.length === 0 || !isSessionDay}
+                    style={{ padding: "10px 22px", backgroundColor: saving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: (saving || !isSessionDay) ? "not-allowed" : "pointer", opacity: isSessionDay ? 1 : 0.5 }}
+                  >
+                    {saving ? "Saving…" : "Save Attendance"}
+                  </button>
+                )}
               </div>
+
+              {/* Banner only for the "recorded — locked" case; a past session with no record gets
+                  its own full empty-state card below instead. */}
+              {alreadyRecorded && isSessionDay && !calendarLoading && (
+                <div style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
+                  <span style={{ fontSize: 18, color: T.accent, display: "flex" }}><CheckCircleOutlineIcon fontSize="inherit" /></span>
+                  <p style={{ margin: 0, fontSize: 12.5, color: T.accent, fontWeight: 600 }}>
+                    Attendance for this session has already been recorded — it can't be changed.
+                  </p>
+                </div>
+              )}
 
               {calendarLoading ? (
                 <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Checking this class's timetable…</div>
@@ -360,6 +397,17 @@ export default function AttendancePage() {
                   <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>No session scheduled</h3>
                   <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
                     {selectedClass?.gradeName || "This class"} has no session on the timetable for {formatDisplayDate(date)} — nothing to mark. Use the arrows above to jump to the nearest session day.
+                  </p>
+                </div>
+              ) : isPastSession && !alreadyRecorded && !existingLoading ? (
+                // A session day that came and went with nobody marking it — there's nothing to
+                // show and nothing can be added now. Distinct from the "recorded — locked" case,
+                // which does render the (read-only) roster below.
+                <div style={{ ...cardStyle, textAlign: "center", padding: "48px 24px" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#FFFBEB", border: "1.5px solid #FDE68A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: "#B45309", fontSize: 22 }}><EventNoteOutlinedIcon fontSize="inherit" /></div>
+                  <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>Session passed — not marked</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+                    Attendance for {formatDisplayDate(date)} was never recorded, and this session has now passed — it can no longer be marked.
                   </p>
                 </div>
               ) : (
@@ -379,7 +427,7 @@ export default function AttendancePage() {
                       <div style={{ padding: 40, textAlign: "center", color: T.inkFaint, fontSize: 14 }}>No learners enrolled in this class yet.</div>
                     ) : (
                       learners.map((l) => (
-                        <LearnerMarkRow key={l.id} learner={l} entry={draft[l.id]} onStatusChange={setLearnerStatus} onNotesChange={setLearnerNotes} />
+                        <LearnerMarkRow key={l.id} learner={l} entry={draft[l.id]} onStatusChange={setLearnerStatus} onNotesChange={setLearnerNotes} disabled={locked} />
                       ))
                     )}
                   </div>

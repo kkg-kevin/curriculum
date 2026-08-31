@@ -77,13 +77,13 @@ function SessionSummaryRow({ item }) {
 
 // Everything past "the general important stuff" (name, overall score, remarks — all rendered by
 // the page itself, above this) — the per-session breakdown, every individual assessment's score
-// and feedback, and both competency views. Collapsed by default on both the teacher's editor and
-// the learner's own report page, so a report reads as one clear number first, with the full
-// backing detail one click away instead of a wall of cards every time. Shared between the two
-// rather than duplicated, since the content shape (and now this collapsing behavior) is identical
-// either side of the publish boundary.
-export default function ReportDetailSections({ content }) {
-  const [open, setOpen] = useState(false);
+// and feedback, and both competency views. Shared between the teacher's editor and the learner's
+// own report page, since the content shape is identical either side of the publish boundary.
+// `defaultOpen` controls the starting state: the teacher's editor leaves it collapsed (a report
+// reads as one number first, detail one click away), while the learner's own report opens it
+// straight away — a learner clicking "View Report" wants the whole thing, not a second click.
+export default function ReportDetailSections({ content, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   const sessionReports = content.sessionReports || [];
   const assessments = content.assessments || [];
   const competencyScores = content.competencyScores || [];

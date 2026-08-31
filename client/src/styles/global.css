@@ -41,6 +41,25 @@ button {
     max-height: none !important;
     overflow: visible !important;
   }
+
+  /* Printable documents (learner report, billing invoice/receipt) are captured/printed as a
+     standalone page — strip the app's grey canvas and any layout padding the shell adds so the
+     document itself fills the sheet, and let its coloured header/badges print in full colour. */
+  html, body {
+    background: #fff !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+@page {
+  margin: 12mm;
 }
 
 /* A bounded, internally-scrollable region for long tables (e.g. a statement's running ledger) —
