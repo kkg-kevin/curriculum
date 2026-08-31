@@ -23,8 +23,11 @@ const AttendanceModel = {
     return firstOrNull(db(TABLE).where({ id }));
   },
 
-  // Re-marking a day is an idempotent overwrite — drop whatever was recorded for this
-  // classId+date and insert the fresh set, rather than reconciling create-vs-update per learner.
+  // Attendance is write-once per class+date (see AttendanceService.markAttendance, which rejects
+  // a second save before this is ever reached). A plain insert of the whole set — no prior rows
+  // exist to reconcile against. The unique (classId, date, learnerId) index is the last-line
+  // guard against a concurrent double-submit: the loser's insert fails outright rather than
+  // silently overwriting, matching the "locked on first save" contract.
   async bulkMark(classId, date, records, markedBy) {
     const now = new Date();
     const created = records.map((r) => ({
@@ -39,10 +42,7 @@ const AttendanceModel = {
       updatedAt: now,
     }));
 
-    await db.transaction(async (trx) => {
-      await trx(TABLE).where({ classId, date }).del();
-      if (created.length) await trx(TABLE).insert(created);
-    });
+    if (created.length) await db(TABLE).insert(created);
     return created;
   },
 
