@@ -41,6 +41,13 @@ api.interceptors.response.use(
     // survives past this point. Callers that want specifics read `err.errors`.
     wrapped.errors = error.response?.data?.errors;
     wrapped.statusCode = error.response?.status;
+    // Machine-readable discriminator (e.g. "ACCOUNT_SUSPENDED") + its reason — set by the
+    // server only for specific app errors; undefined for everything else. A suspended user
+    // keeps a read-only session, so writes come back with this code — callers just surface it
+    // as a normal error; the router already has them locked to the suspended page.
+    wrapped.code = error.response?.data?.code;
+    wrapped.reason = error.response?.data?.reason;
+
     return Promise.reject(wrapped);
   }
 );

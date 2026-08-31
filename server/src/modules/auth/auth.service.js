@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
 const LearnerModel = require("../learners/learner.model");
+const TeacherModel = require("../teachers/teacher.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const RevokedTokenModel = require("./revoked-token.model");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
@@ -15,42 +16,50 @@ function sanitize(user) {
   return safe;
 }
 
-async function assertSessionActive(user) {
-  if (!user) {
-    const err = new Error("User not found");
-    err.statusCode = 404;
-    throw err;
-  }
+// Resolves whether a user's account is suspended (deactivated), and why. A suspended user is
+// still allowed a session — they can log in and load /api/auth/me — but the client locks them
+// to an in-app "Account Suspended" page, and every write is refused server-side by the
+// blockIfSuspended middleware. Returns null (not suspended) or a reason string:
+//   "hub"     — the school-role account's own learning hub is inactive
+//   "teacher" — the teacher record is inactive ("on_leave" is NOT a suspension, just a hint)
+//   "learner" — the learner account (or every sibling under a guardian login) is inactive
+// A user with no matching record at all (e.g. a teacher login with no teacher row yet) is not
+// suspended — that's handled by the portals' own "no profile linked" states.
+async function resolveSuspension(user) {
+  if (!user) return null;
 
   if (user.role === "school") {
     const hubs = await LearningHubModel.findAll({ email: user.email, includeDrafts: true });
     const ownHub = hubs.find((h) => !h.parentHubId) || hubs[0] || null;
-    if (ownHub && ownHub.status === "inactive") {
-      const err = new Error("This learning hub account is inactive");
-      err.statusCode = 403;
-      throw err;
-    }
+    if (ownHub && ownHub.status === "inactive") return "hub";
+  }
+
+  if (user.role === "teacher") {
+    const teachers = await TeacherModel.findAll({ email: user.email });
+    if (teachers.length > 0 && !teachers.some((t) => (t.status || "active") !== "inactive")) return "teacher";
   }
 
   if (user.role === "learner") {
     if (user.username) {
       const learner = await LearnerModel.findByUsername(user.username);
-      if (!learner || (learner.accountStatus || "active") !== "active") {
-        const err = new Error("This learner account is inactive");
-        err.statusCode = 403;
-        throw err;
-      }
+      if (!learner || (learner.accountStatus || "active") !== "active") return "learner";
     } else {
       const learners = await LearnerModel.findAll({ guardianEmail: user.email });
-      const hasActiveLearner = learners.some((learner) => (learner.accountStatus || "active") === "active");
-      if (learners.length === 0 || !hasActiveLearner) {
-        const err = new Error("This learner account is inactive");
-        err.statusCode = 403;
-        throw err;
-      }
+      const hasActiveLearner = learners.some((l) => (l.accountStatus || "active") === "active");
+      if (learners.length === 0 || !hasActiveLearner) return "learner";
     }
   }
 
+  return null;
+}
+
+// Kept for the one caller that must still hard-fail on a missing user (protect's getById path).
+async function assertUserExists(user) {
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
   return user;
 }
 
@@ -158,9 +167,12 @@ const AuthService = {
       err.statusCode = 401;
       throw err;
     }
-    await assertSessionActive(user);
+    // A suspended account is still allowed to log in — the client shows an in-app "Account
+    // Suspended" page and every write is refused server-side. `suspended` rides along on the
+    // returned user so the client knows immediately, without a second round trip.
+    const suspended = await resolveSuspension(user);
     const token = signToken(user);
-    return { user: sanitize(user), token };
+    return { user: { ...sanitize(user), suspended }, token };
   },
 
   // Confirms the CURRENTLY logged-in user really knows their own password, without touching
@@ -174,7 +186,6 @@ const AuthService = {
       err.statusCode = 404;
       throw err;
     }
-    await assertSessionActive(user);
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       const err = new Error("Incorrect password");
@@ -206,13 +217,23 @@ const AuthService = {
 
   async getById(id) {
     const user = await UserModel.findById(id);
-    await assertSessionActive(user);
-    return sanitize(user);
+    await assertUserExists(user);
+    // A suspended user still gets a valid /me response — the client uses `suspended` to lock
+    // them to the in-app "Account Suspended" page.
+    const suspended = await resolveSuspension(user);
+    return { ...sanitize(user), suspended };
   },
 
   async updateMe(id, data) {
     const current = await UserModel.findById(id);
-    await assertSessionActive(current);
+    await assertUserExists(current);
+    // A suspended user can't edit their own profile either — this is a write.
+    if (await resolveSuspension(current)) {
+      const err = new Error("Your account is suspended.");
+      err.statusCode = 403;
+      err.code = "ACCOUNT_SUSPENDED";
+      throw err;
+    }
     const user = await UserModel.update(id, data);
     if (!user) {
       const err = new Error("User not found");
@@ -221,6 +242,9 @@ const AuthService = {
     }
     return sanitize(user);
   },
+
+  // Exposed so middleware (blockIfSuspended) can reuse the exact same resolution.
+  resolveSuspension,
 };
 
 module.exports = AuthService;

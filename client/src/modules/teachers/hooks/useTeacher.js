@@ -49,6 +49,23 @@ export function useUpdateTeacher() {
   });
 }
 
+export function useUpdateTeacherStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }) => teacherApi.updateStatus(id, status),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.all });
+      if (data?.id) queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.detail(data.id) });
+      toast.success(
+        data?.status === "inactive" ? "Educator account deactivated"
+          : data?.status === "on_leave" ? "Educator marked on leave"
+          : "Educator account activated"
+      );
+    },
+    onError: (err) => toast.error(err.message || "Failed to update educator status"),
+  });
+}
+
 export function useDeleteTeacher() {
   const queryClient = useQueryClient();
   return useMutation({

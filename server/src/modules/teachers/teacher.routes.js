@@ -4,6 +4,7 @@ const {
   getAllTeachers,
   getTeacherById,
   updateTeacher,
+  updateTeacherStatus,
   deleteTeacher,
   getTeacherHubs,
   linkTeacherHub,
@@ -31,6 +32,11 @@ router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getTeacherById)
   .put(authorize("admin", "school", "teacher"), updateTeacher)
   .delete(authorize("admin"), deleteTeacher);
+
+// Activate / deactivate / on-leave a teacher — admin, or a school for a teacher at its own hub
+// (scoped in the controller). Never authorized for "teacher" — a teacher can't (de)activate
+// their own account, same as the learner account-status route.
+router.patch("/:id/status", authorize("admin", "school"), updateTeacherStatus);
 
 // Which learning hubs a teacher is assigned to teach at — a many-to-many relationship, not a
 // field on the teacher record. "teacher" may only read its own; "school" may read/write only

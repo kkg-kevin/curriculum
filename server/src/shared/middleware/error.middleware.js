@@ -24,6 +24,11 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message,
+    // Machine-readable discriminators for the client — only present when an app-thrown error
+    // set them (e.g. ACCOUNT_SUSPENDED from auth.service.js / scope.middleware.js). Absent for
+    // every other error, so nothing existing changes shape.
+    ...(err.code ? { code: err.code } : {}),
+    ...(err.reason ? { reason: err.reason } : {}),
   });
 };
 

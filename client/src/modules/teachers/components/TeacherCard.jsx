@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { FiMail, FiPhone } from "react-icons/fi";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { useDeleteTeacher } from "../hooks/useTeacher";
+import { useDeleteTeacher, useUpdateTeacherStatus } from "../hooks/useTeacher";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -39,12 +39,18 @@ export function TeacherCard({ teacher }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteTeacher, isPending: isDeleting } = useDeleteTeacher();
+  const { mutate: updateTeacherStatus } = useUpdateTeacherStatus();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
   const [hovered, setHovered]         = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState(false);
   const triggerRef  = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Deactivate/activate is admin- and school-controlled (matches PATCH /api/teachers/:id/status).
+  const canToggleStatus = user?.role === "admin" || user?.role === "school";
+  const isInactive = teacher.status === "inactive";
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -139,6 +145,16 @@ export function TeacherCard({ teacher }) {
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
           <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
+          {canToggleStatus && (
+            <MenuButton
+              icon={isInactive
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><line x1="10" y1="9" x2="10" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="14" y1="9" x2="14" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
+              label={isInactive ? "Activate account" : "Deactivate account"}
+              onClick={() => { setMenuOpen(false); setConfirmStatus(true); }}
+              danger={!isInactive}
+            />
+          )}
           <MenuButton
             icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
@@ -156,6 +172,24 @@ export function TeacherCard({ teacher }) {
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteTeacher(teacher.id); }}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmStatus}
+        title={isInactive ? "Activate Educator Account" : "Deactivate Educator Account"}
+        message={
+          isInactive
+            ? `"${teacher.firstName} ${teacher.lastName}" will be marked active again and regain portal access.`
+            : `"${teacher.firstName} ${teacher.lastName}" will be marked inactive and lose teacher-portal access immediately. Their record, hub assignments, and class history are kept.`
+        }
+        confirmLabel={isInactive ? "Activate" : "Deactivate"}
+        cancelLabel="Cancel"
+        variant={isInactive ? "default" : "danger"}
+        onConfirm={() => {
+          setConfirmStatus(false);
+          updateTeacherStatus({ id: teacher.id, status: isInactive ? "active" : "inactive" });
+        }}
+        onCancel={() => setConfirmStatus(false)}
       />
     </div>
   );
