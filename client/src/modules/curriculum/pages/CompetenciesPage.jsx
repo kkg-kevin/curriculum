@@ -2793,13 +2793,37 @@ function BandIndicatorContributionRow({ ind, percentage, color, onSave }) {
 function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByIndicator, onSaveContribution }) {
   const [open, setOpen] = useState(false);
 
+  // How much of this BAND's 100% budget this one competency currently accounts for — the sum of
+  // every one of its indicator % contributions. A band can draw on several competencies that all
+  // share the same 100%, so this per-competency subtotal shows how that 100% is split between
+  // them (the band card's own "Indicators: X%" chip is the sum of these across every competency).
+  // Only the indicators actually listed here count — a stale contribution for an indicator no
+  // longer populated is ignored, same as Engine 4 does.
+  const competencyTotal = populatedIndicators.reduce(
+    (s, ind) => s + (Number(percentageByIndicator[ind.id]) || 0),
+    0
+  );
+  const totalRounded = Math.round(competencyTotal * 10) / 10;
+
   return (
     <div style={{ marginTop: "10px" }}>
       <button type="button" className="cp-indicators-toggle" onClick={() => setOpen((v) => !v)} style={{ marginTop: 0 }}>
         <span style={{ color }}>{comp.name}</span>
-        <svg className={`cp-indicators-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+          <span
+            className="cp-indicator-count"
+            style={{
+              background: totalRounded > 0 ? `${color}14` : "#F3F4F6",
+              color: totalRounded > 0 ? color : "#9CA3AF",
+            }}
+            title={`${comp.name} contributes ${totalRounded}% toward this band — the sum of its indicator weights below. Every competency on the band shares one 100% budget.`}
+          >
+            {totalRounded}%
+          </span>
+          <svg className={`cp-indicators-chevron${open ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
       </button>
       {open && (
         <div className="cp-indicators-body">
@@ -3008,13 +3032,16 @@ function PerformanceBandsPanel({ curriculumId }) {
   const [name,          setName]          = useState("");
   const [desc,          setDesc]          = useState("");
   const [competencyIds, setCompetencyIds] = useState([]);
+  // Advancement bar is a range: `thresholdMin` is a display-only "on track" floor,
+  // `threshold` is the max — the bar that actually advances the learner to the next band.
+  const [thresholdMin,  setThresholdMin]  = useState(0);
   const [threshold,     setThreshold]     = useState(0);
   const nameRef    = useRef(null);
 
   useEffect(() => { if (mode !== "list") nameRef.current?.focus(); }, [mode]);
 
-  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCompetencyIds([]); setThreshold(0); setMode("add"); }
-  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCompetencyIds([...(b.competencyIds || [])]); setThreshold(b.advancementThreshold ?? 0); setMode("edit"); }
+  function openAdd()  { setEdit(null); setName(""); setDesc(""); setCompetencyIds([]); setThresholdMin(0); setThreshold(0); setMode("add"); }
+  function openEdit(b){ setEdit(b); setName(b.name); setDesc(b.description || ""); setCompetencyIds([...(b.competencyIds || [])]); setThresholdMin(b.advancementMin ?? 0); setThreshold(b.advancementThreshold ?? 0); setMode("edit"); }
   function cancel()   { setMode("list"); setEdit(null); }
 
   function toggleCompetency(id) {
@@ -3023,9 +3050,13 @@ function PerformanceBandsPanel({ curriculumId }) {
 
   function submit() {
     if (!name.trim() || !selectedStageId) return;
+    const clampedMax = Math.min(100, Math.max(0, Number(threshold) || 0));
+    // The "on track" floor can't sit above the advancement max — clamp it down if it does.
+    const clampedMin = Math.min(clampedMax || 100, Math.min(100, Math.max(0, Number(thresholdMin) || 0)));
     const data = {
       name: name.trim(), description: desc.trim(), competencyIds,
-      advancementThreshold: Math.min(100, Math.max(0, Number(threshold) || 0)),
+      advancementMin: clampedMin,
+      advancementThreshold: clampedMax,
       ageCategoryId: selectedStageId,
     };
     // A band's name fixes its position in the ladder (Explorer=1, Builder=2, …) regardless of
@@ -3063,6 +3094,7 @@ function PerformanceBandsPanel({ curriculumId }) {
         minScore: band.minScore,
         maxScore: band.maxScore,
         competencyIds: band.competencyIds,
+        advancementMin: band.advancementMin,
         advancementThreshold: band.advancementThreshold,
         ageCategoryId: band.ageCategoryId,
         indicatorContributions: next,
@@ -3088,6 +3120,7 @@ function PerformanceBandsPanel({ curriculumId }) {
         description: band.description,
         minScore: band.minScore,
         maxScore: band.maxScore,
+        advancementMin: band.advancementMin,
         advancementThreshold: band.advancementThreshold,
         ageCategoryId: band.ageCategoryId,
         competencyIds: (band.competencyIds || []).filter((id) => id !== competencyId),
@@ -3106,6 +3139,7 @@ function PerformanceBandsPanel({ curriculumId }) {
         description: band.description,
         minScore: band.minScore,
         maxScore: band.maxScore,
+        advancementMin: band.advancementMin,
         advancementThreshold: band.advancementThreshold,
         competencyIds: band.competencyIds,
         indicatorContributions: band.indicatorContributions,
@@ -3240,19 +3274,40 @@ function PerformanceBandsPanel({ curriculumId }) {
               <div className="cp-char-count">{desc.length} / 1000</div>
             </div>
 
-            {/* Advancement threshold */}
+            {/* Advancement threshold range */}
             <div>
-              <label className="cp-field-label">Minimum Threshold to Advance <span className="cp-optional">(optional)</span></label>
+              <label className="cp-field-label">Threshold to Advance <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                The % of this band's indicator contributions a learner must clear, per competency, to progress past this band to the next one. Different bands can require different thresholds.
+                The % of this band's indicator contributions a learner completes. <strong>Minimum</strong> marks them as "on track" toward the next band; reaching the <strong>maximum</strong> is what actually moves them to the next band. Different bands can use different ranges.
               </p>
-              <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
-                <input
-                  type="number" min="0" max="100" className="cp-comp-config-input"
-                  value={threshold} onChange={(e) => setThreshold(e.target.value)}
-                />
-                <span className="cp-comp-eval-suffix">%</span>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", flexWrap: "wrap" }}>
+                <div>
+                  <span style={{ display: "block", fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF", marginBottom: "3px" }}>MINIMUM (on track)</span>
+                  <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
+                    <input
+                      type="number" min="0" max="100" className="cp-comp-config-input"
+                      value={thresholdMin} onChange={(e) => setThresholdMin(e.target.value)}
+                    />
+                    <span className="cp-comp-eval-suffix">%</span>
+                  </div>
+                </div>
+                <span style={{ paddingBottom: "9px", color: "#D1D5DB", fontWeight: 700 }}>–</span>
+                <div>
+                  <span style={{ display: "block", fontSize: "10.5px", fontWeight: 700, color: "#9CA3AF", marginBottom: "3px" }}>MAXIMUM (advances)</span>
+                  <div className="cp-comp-eval-input-wrap" style={{ width: "100px" }}>
+                    <input
+                      type="number" min="0" max="100" className="cp-comp-config-input"
+                      value={threshold} onChange={(e) => setThreshold(e.target.value)}
+                    />
+                    <span className="cp-comp-eval-suffix">%</span>
+                  </div>
+                </div>
               </div>
+              {Number(thresholdMin) > 0 && Number(threshold) > 0 && Number(thresholdMin) > Number(threshold) && (
+                <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626", fontWeight: 600 }}>
+                  Minimum can't be higher than maximum — it'll be clamped down on save.
+                </p>
+              )}
             </div>
 
             {/* Linked Competencies */}
@@ -3406,32 +3461,44 @@ function PerformanceBandsPanel({ curriculumId }) {
                               fontSize: "11px", fontWeight: "700",
                               color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee",
                             }}
-                            title="Minimum % of this band's indicators a learner must reach to advance to the next band"
+                            title={
+                              band.advancementMin > 0
+                                ? `On track from ${band.advancementMin}%; reaching ${band.advancementThreshold}% advances the learner to the next band`
+                                : `A learner reaching ${band.advancementThreshold}% of this band's indicators advances to the next band`
+                            }
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                               <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
                               <circle cx="12" cy="12" r="3.5" fill="currentColor" />
                             </svg>
-                            {band.advancementThreshold}% to advance
+                            {band.advancementMin > 0
+                              ? `${band.advancementMin}–${band.advancementThreshold}% to advance`
+                              : `${band.advancementThreshold}% to advance`}
                           </span>
                         )}
                         {(band.indicatorContributions || []).length > 0 && (() => {
                           const progress = progressByBandId.get(band.id);
                           if (!progress) return null;
                           const met = progress.thresholdMet;
+                          const onTrack = progress.onTrack;
+                          // met (green) = reached the advancement max; onTrack (blue) = past the
+                          // "on track" min but not yet the max; neither (amber) = below the min.
+                          const c = met ? "#059669" : onTrack ? "#2563EB" : "#D97706";
                           return (
                             <span
                               style={{
                                 display: "inline-flex", alignItems: "center", gap: "5px",
                                 padding: "3px 11px", borderRadius: "20px",
                                 fontSize: "11px", fontWeight: "700",
-                                color: met ? "#059669" : "#D97706",
-                                background: met ? "#05966912" : "#D9770612",
-                                border: `1.5px solid ${met ? "#05966940" : "#D9770640"}`,
+                                color: c, background: `${c}12`, border: `1.5px solid ${c}40`,
                               }}
-                              title={met ? "Threshold met — ready to advance" : "Below this band's advancement threshold"}
+                              title={
+                                met ? "Reached the advancement maximum — ready to advance to the next band"
+                                : onTrack ? `On track — past the ${progress.advancementMin}% minimum, working toward the ${progress.advancementThreshold}% maximum`
+                                : "Below this band's 'on track' minimum"
+                              }
                             >
-                              {progress.completion}% complete{met ? "" : ""}
+                              {progress.completion}% complete{met ? "" : onTrack ? " · on track" : ""}
                             </span>
                           );
                         })()}

@@ -508,7 +508,7 @@ const LearnerService = {
       const evidenceRows = primaryLink?.classId ? issuedRows.filter((r) => r.issue.classId === primaryLink.classId) : issuedRows;
       evidenceItemsCollected = evidenceRows.filter((r) => r.submission.status === "graded").length;
 
-      levelJourney = bandProgress.map((bp) => ({ name: bp.name, completion: bp.completion, thresholdMet: bp.thresholdMet, advancementThreshold: bp.advancementThreshold }));
+      levelJourney = bandProgress.map((bp) => ({ name: bp.name, completion: bp.completion, thresholdMet: bp.thresholdMet, onTrack: bp.onTrack, advancementMin: bp.advancementMin, advancementThreshold: bp.advancementThreshold }));
       // Same "highest achieved, closest-to-done next" logic as the learner portal's own
       // deriveBandJourney (client/src/modules/learner-portal/utils/bandJourney.js) — duplicated
       // here rather than imported since this is server code and that's a client-only pure

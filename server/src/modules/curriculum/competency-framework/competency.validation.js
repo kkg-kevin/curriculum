@@ -204,8 +204,11 @@ const performanceBandFields = z.object({
   // Competencies (from the ones this curriculum has adopted) that this band draws on.
   competencyIds:          z.array(z.string().min(1)).optional().default([]),
   indicatorContributions: z.array(bandIndicatorContributionSchema).optional().default([]),
-  // Minimum % of this band's indicator contributions a learner must clear to be
-  // considered as having progressed past this band to the next one in order.
+  // The advancement bar is a range. `advancementMin` is the lower end — a display-only "on
+  // track / approaching" marker; it gates nothing. `advancementThreshold` is the upper end
+  // (the MAX): the % of this band's indicator contributions a learner must clear to have
+  // progressed past this band to the next one (see runIndicatorProgressEngine's thresholdMet).
+  advancementMin:         z.number().min(0).max(100).optional().default(0),
   advancementThreshold:   z.number().min(0).max(100).optional().default(0),
   // Learning Journey reuses Performance Bands as a per-Learning-Area course ladder: when
   // both of these are set, this band represents one rung in that Learning Area's course
@@ -218,8 +221,25 @@ const performanceBandFields = z.object({
   ageCategoryId:          z.string().nullable().optional().default(null),
 });
 
-const createPerformanceBandSchema = performanceBandFields.refine(bandStageRefinement, bandStageRefinementOptions);
-const updatePerformanceBandSchema = performanceBandFields.partial().refine(bandStageRefinement, bandStageRefinementOptions);
+// min must not sit above max. Checked only when both are present and both > 0 — a 0 on either
+// side means "that end not configured", and on a partial update one end may be absent entirely.
+const bandAdvancementRangeRefinement = (data) => {
+  const min = data.advancementMin;
+  const max = data.advancementThreshold;
+  if (min == null || max == null || min === 0 || max === 0) return true;
+  return min <= max;
+};
+const bandAdvancementRangeOptions = {
+  message: "The 'on track' minimum can't be higher than the advancement maximum",
+  path:    ["advancementMin"],
+};
+
+const createPerformanceBandSchema = performanceBandFields
+  .refine(bandStageRefinement, bandStageRefinementOptions)
+  .refine(bandAdvancementRangeRefinement, bandAdvancementRangeOptions);
+const updatePerformanceBandSchema = performanceBandFields.partial()
+  .refine(bandStageRefinement, bandStageRefinementOptions)
+  .refine(bandAdvancementRangeRefinement, bandAdvancementRangeOptions);
 
 const reorderBandsSchema = z.object({
   ageCategoryId: z.string().nullable().optional().default(null),
