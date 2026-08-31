@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Assignment as AssignmentIcon,
   Description as DescriptionIcon,
-  ExpandMore as ExpandMoreIcon,
+  ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Group as GroupIcon,
   Person as PersonIcon,
@@ -198,15 +198,13 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
   );
 }
 
-// One assessment's card, shown once per course no matter how many sessions it's attached to —
-// each attached session becomes a compact row underneath instead of a whole repeated card, which
-// is what made the previous flat layout hard to scan once an observation/checklist-style
-// assessment was reused across many sessions.
-function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, issuingKey }) {
+// One assessment inside a session slide — its badges, an optional group-mode toggle, and a
+// per-class Issue / roster button. Trimmed from the old per-course "AssessmentGroupCard": now
+// that the carousel shows one session at a time, an assessment only ever appears once per slide,
+// so the "N sessions" roll-up and the nested session-row list are gone.
+function SessionAssessmentCard({ assessment, sessionId, courseId, eligibleClasses, issuesByKey, onIssue, issuingKey }) {
   const color = TYPE_COLORS[assessment.type] || T.accentLight;
   const modeColor = MODE_COLORS[assessment.mode] || T.inkMuted;
-  // Pre-filled from the assessment's own authored mode (finally giving that badge real effect),
-  // but editable per-issue — a teacher can still override before issuing to any class below.
   const [groupMode, setGroupMode] = useState(assessment.mode === "group");
 
   return (
@@ -225,7 +223,6 @@ function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, is
           <span style={badgeStyle(color)}>{TYPE_LABELS[assessment.type] || assessment.type}</span>
           <span style={badgeStyle(modeColor)}>{MODE_LABELS[assessment.mode] || "Individual"}</span>
           <span style={badgeStyle(T.accent)}>{assessmentSummary(assessment)}</span>
-          <span style={badgeStyle(T.inkMuted)}>{occurrences.length} session{occurrences.length === 1 ? "" : "s"}</span>
         </div>
       </div>
 
@@ -234,55 +231,170 @@ function AssessmentGroupCard({ assessment, occurrences, issuesByKey, onIssue, is
         Issue as a group assessment — one submission per group, shared mark
       </label>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {occurrences.map((occ) => (
-          <div key={occ.sessionId} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, padding: "8px 10px", backgroundColor: "#FAFBFF", borderRadius: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, minWidth: 90 }}>{occ.sessionLabel}</span>
-            {occ.eligibleClasses.map((cls) => {
-              const key = `${assessment.id}:${occ.sessionId}:${cls.id}`;
-              const item = {
-                id: assessment.id,
-                sessionId: occ.sessionId,
-                courseId: occ.courseId,
-                assessmentName: assessment.name,
-                assessmentType: assessment.type,
-                sessionLabel: occ.sessionLabel,
-              };
-              return (
-                <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
-              );
-            })}
-          </div>
-        ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {eligibleClasses.length === 0 ? (
+          <span style={{ fontSize: 12, color: T.inkFaint }}>No eligible class for this course at this hub.</span>
+        ) : eligibleClasses.map((cls) => {
+          const key = `${assessment.id}:${sessionId}:${cls.id}`;
+          const item = {
+            id: assessment.id,
+            sessionId,
+            courseId,
+            assessmentName: assessment.name,
+            assessmentType: assessment.type,
+            sessionLabel: assessment.sessionLabel,
+          };
+          return (
+            <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// Groups the flat (course, session, assessment) attachment list into one entry per course, and
-// within a course, one entry per distinct assessment with every session it's attached to nested
-// underneath — see AssessmentGroupCard.
-function groupAttachmentsByCourse(attachments) {
-  const courseMap = new Map();
+// Builds, per course, an ordered list of EVERY session (not just the ones that have assessments),
+// each carrying its attached assessments (possibly empty) and the classes eligible to be issued
+// them. `allSessionsByCourse` is the full session list from courseApi.getSessions; `attachments`
+// is the flattened (course, session, assessment) list already resolved with eligibleClasses.
+function buildCourseCarousels(courses, allSessionsByCourse, attachments) {
+  const attByCourseSession = new Map();
   attachments.forEach((att) => {
-    if (!courseMap.has(att.courseId)) {
-      courseMap.set(att.courseId, { courseId: att.courseId, courseName: att.courseName, sessionIds: new Set(), assessmentMap: new Map() });
-    }
-    const courseEntry = courseMap.get(att.courseId);
-    courseEntry.sessionIds.add(att.sessionId);
-    if (!courseEntry.assessmentMap.has(att.id)) courseEntry.assessmentMap.set(att.id, { assessment: att, occurrences: [] });
-    courseEntry.assessmentMap.get(att.id).occurrences.push(att);
+    const k = `${att.courseId}:${att.sessionId}`;
+    if (!attByCourseSession.has(k)) attByCourseSession.set(k, []);
+    attByCourseSession.get(k).push(att);
   });
 
-  return [...courseMap.values()].map((c) => ({
-    courseId: c.courseId,
-    courseName: c.courseName,
-    sessionCount: c.sessionIds.size,
-    assessments: [...c.assessmentMap.values()].map((a) => ({
-      ...a,
-      occurrences: [...a.occurrences].sort((x, y) => (x.sessionOrder || 0) - (y.sessionOrder || 0)),
-    })),
-  }));
+  return courses.map((course) => {
+    const sessions = [...(allSessionsByCourse.get(course.id) || [])]
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((session) => {
+        const atts = attByCourseSession.get(`${course.id}:${session.id}`) || [];
+        return {
+          sessionId: session.id,
+          sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
+          order: session.order || 0,
+          assessments: atts,
+        };
+      });
+    const assessmentCount = sessions.reduce((n, s) => n + s.assessments.length, 0);
+    return { courseId: course.id, courseName: course.name, sessions, assessmentCount };
+  }).filter((c) => c.sessions.length > 0);
+}
+
+// The per-course carousel: a course selector (tabs) + one session slide at a time with
+// prev/next. Replaces the old collapsible course-section stack; everything else on the page
+// (KPI tiles, Needs Grading, the issue confirm dialog) is unchanged.
+function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
+  const [courseIdx, setCourseIdx] = useState(0);
+  const [sessionIdx, setSessionIdx] = useState(0);
+
+  // Guard against the selected course/session disappearing between renders (data refetch,
+  // hub switch) — clamp both indices back into range.
+  useEffect(() => {
+    if (courseIdx > carousels.length - 1) setCourseIdx(0);
+  }, [carousels.length, courseIdx]);
+
+  const course = carousels[Math.min(courseIdx, carousels.length - 1)] || carousels[0];
+
+  useEffect(() => {
+    setSessionIdx(0);
+  }, [course?.courseId]);
+
+  if (!course) return null;
+  const sIdx = Math.min(sessionIdx, course.sessions.length - 1);
+  const session = course.sessions[sIdx];
+  const canPrev = sIdx > 0;
+  const canNext = sIdx < course.sessions.length - 1;
+
+  const navBtn = (disabled) => ({
+    width: 34, height: 34, borderRadius: 10, border: `1.5px solid ${T.border}`,
+    background: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+    color: disabled ? "#D1D5DB" : T.accent, cursor: disabled ? "not-allowed" : "pointer",
+    flexShrink: 0,
+  });
+
+  return (
+    <div style={{ ...cardStyle, overflow: "hidden" }}>
+      {/* Course selector */}
+      <div style={{ padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Course</span>
+        {carousels.map((c, i) => (
+          <button
+            key={c.courseId}
+            type="button"
+            onClick={() => setCourseIdx(i)}
+            style={{
+              padding: "7px 14px", borderRadius: 20, fontSize: 12.5, fontWeight: 700,
+              fontFamily: "Inter, sans-serif", cursor: "pointer",
+              border: `1.5px solid ${i === courseIdx ? T.accent : T.border}`,
+              backgroundColor: i === courseIdx ? T.accent : "#fff",
+              color: i === courseIdx ? "#fff" : T.inkMuted,
+            }}
+          >
+            {c.courseName}
+          </button>
+        ))}
+      </div>
+
+      {/* Session pager header */}
+      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}`, marginTop: 14 }}>
+        <button type="button" onClick={() => canPrev && setSessionIdx(sIdx - 1)} disabled={!canPrev} style={navBtn(!canPrev)} title="Previous session">
+          <ChevronLeftIcon sx={{ fontSize: 20 }} />
+        </button>
+        <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.sessionLabel}</h3>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint }}>
+            Session {sIdx + 1} of {course.sessions.length} · {session.assessments.length} assessment{session.assessments.length === 1 ? "" : "s"}
+          </p>
+        </div>
+        <button type="button" onClick={() => canNext && setSessionIdx(sIdx + 1)} disabled={!canNext} style={navBtn(!canNext)} title="Next session">
+          <ChevronRightIcon sx={{ fontSize: 20 }} />
+        </button>
+      </div>
+
+      {/* Session slide */}
+      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {session.assessments.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 16px", color: T.inkFaint, fontSize: 13 }}>
+            No assessments attached to this session.
+          </div>
+        ) : (
+          session.assessments.map((assessment) => (
+            <SessionAssessmentCard
+              key={assessment.id}
+              assessment={assessment}
+              sessionId={session.sessionId}
+              courseId={course.courseId}
+              eligibleClasses={assessment.eligibleClasses || []}
+              issuesByKey={issuesByKey}
+              onIssue={onIssue}
+              issuingKey={issuingKey}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Session dots */}
+      {course.sessions.length > 1 && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "0 20px 16px", flexWrap: "wrap" }}>
+          {course.sessions.map((s, i) => (
+            <button
+              key={s.sessionId}
+              type="button"
+              onClick={() => setSessionIdx(i)}
+              title={s.sessionLabel}
+              style={{
+                width: i === sIdx ? 22 : 8, height: 8, borderRadius: 20, border: "none", padding: 0,
+                cursor: "pointer", transition: "width 0.15s",
+                backgroundColor: i === sIdx ? T.accent : s.assessments.length > 0 ? T.tintBorder : T.border,
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Cross-cutting queue of every submitted-but-ungraded submission across the teacher's classes —
@@ -338,37 +450,9 @@ function NeedsGradingSection({ rows, navigate }) {
   );
 }
 
-function CourseSection({ group, isCollapsed, onToggle, issuesByKey, onIssue, issuingKey }) {
-  return (
-    <div style={{ ...cardStyle, overflow: "hidden" }}>
-      <button
-        type="button"
-        onClick={onToggle}
-        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "16px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-      >
-        {isCollapsed ? <ChevronRightIcon sx={{ color: T.inkFaint }} /> : <ExpandMoreIcon sx={{ color: T.inkFaint }} />}
-        <div>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>{group.courseName}</h3>
-          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint }}>
-            {group.sessionCount} session{group.sessionCount === 1 ? "" : "s"} · {group.assessments.length} assessment{group.assessments.length === 1 ? "" : "s"}
-          </p>
-        </div>
-      </button>
-      {!isCollapsed && (
-        <div style={{ padding: "0 20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {group.assessments.map(({ assessment, occurrences }) => (
-            <AssessmentGroupCard key={assessment.id} assessment={assessment} occurrences={occurrences} issuesByKey={issuesByKey} onIssue={onIssue} issuingKey={issuingKey} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function AssessmentsPage() {
   const navigate = useNavigate();
   const { teacher, teacherLoading, selectedHub, selectedHubId, email } = useOutletContext();
-  const [collapsedCourseIds, setCollapsedCourseIds] = useState(() => new Set());
 
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
@@ -469,15 +553,22 @@ export default function AssessmentsPage() {
     return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   }, [courses, sessionsResults, myClasses, coursesByGrade]);
 
-  const courseGroups = useMemo(() => groupAttachmentsByCourse(attachments), [attachments]);
-
-  const toggleCourse = (courseId) => {
-    setCollapsedCourseIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(courseId)) next.delete(courseId); else next.add(courseId);
-      return next;
+  // Full session list per course (every session, not just ones with assessments) — the carousel
+  // needs to page through all of them in order. Keyed to the same sessionsResults the attachments
+  // memo already fetched, so no extra request.
+  const allSessionsByCourse = useMemo(() => {
+    const map = new Map();
+    sessionsResults.forEach((result, index) => {
+      const course = courses[index];
+      if (course) map.set(course.id, result.data || []);
     });
-  };
+    return map;
+  }, [courses, sessionsResults]);
+
+  const courseCarousels = useMemo(
+    () => buildCourseCarousels(courses, allSessionsByCourse, attachments),
+    [courses, allSessionsByCourse, attachments]
+  );
 
   const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();
   const issuingKey = issuing && issuingVariables ? `${issuingVariables.assessmentId}:${issuingVariables.sessionId}:${issuingVariables.classId}` : null;
@@ -503,7 +594,7 @@ export default function AssessmentsPage() {
   const totalCount = attachments.length;
   const individualCount = attachments.filter((a) => a.mode === "individual").length;
   const groupCount = attachments.filter((a) => a.mode === "group").length;
-  const courseCount = courseGroups.length;
+  const courseCount = courseCarousels.length;
   const issuedCount = [...issuesByKey.values()].length;
 
   if (isLoading) {
@@ -554,25 +645,18 @@ export default function AssessmentsPage() {
 
       <NeedsGradingSection rows={needsGradingRows} navigate={navigate} />
 
-      {courseGroups.length === 0 ? (
+      {courseCarousels.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
-          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No assessments attached yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Once your school adds assessments to your class courses, they will show up here automatically.</p>
+          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No course content yet</h3>
+          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>Once your school adds sessions and assessments to your class courses, they will show up here automatically.</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {courseGroups.map((group) => (
-            <CourseSection
-              key={group.courseId}
-              group={group}
-              isCollapsed={collapsedCourseIds.has(group.courseId)}
-              onToggle={() => toggleCourse(group.courseId)}
-              issuesByKey={issuesByKey}
-              onIssue={handleIssue}
-              issuingKey={issuingKey}
-            />
-          ))}
-        </div>
+        <CourseCarousel
+          carousels={courseCarousels}
+          issuesByKey={issuesByKey}
+          onIssue={handleIssue}
+          issuingKey={issuingKey}
+        />
       )}
 
       {issueDialog && (

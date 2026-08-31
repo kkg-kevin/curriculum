@@ -8,7 +8,6 @@ const LearnerJourneyModel = require("../curriculum/competency-framework/learner-
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const LearningAreaModel = require("../curriculum/competency-framework/learning-area.model");
 const ProgressionLadderModel = require("../curriculum/competency-framework/progression-ladder.model");
-const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 // Models, not services, for the delete cascade below — these are dependency-free fs wrappers, so
 // requiring them here can't reintroduce the circular-require chain the services already dance
@@ -94,28 +93,59 @@ async function maybeAutoPlaceRung(learner, cls, age) {
   if (matched) await LearnerModel.update(learner.id, { currentRungId: matched.id });
 }
 
-// One diagnostic per Learning Area whose courses are actually visible to this class (via the
-// curriculum's live version, same source ClassViewPage's "Courses & Educators" panel reads),
-// that has a diagnosticAssessmentId configured, and whose own minAge/maxAge (if set) covers this
-// learner — same open-ended-range matching as the stage lookup above, so a learner is never owed
-// every learning area in the curriculum, only the ones actually meant for their age. `age` is
-// null when the learner has no dateOfBirth on file; that skips the age check entirely (every
-// eligible area still issues) rather than risk under-diagnosing someone we can't place by age at
-// all. issueDiagnostic's own (assessmentId, learnerId) idempotency means this is safe to re-run on
-// every enrollment/class change — a learner already holding a given area's diagnostic never gets
-// a duplicate, and moving to a class exposing a *new* area issues just that one.
+// A learner takes ONE diagnostic, decided by their age bracket: the single Learning Area in this
+// curriculum whose minAge/maxAge range contains the learner's age. Learning Areas are authored so
+// their age ranges partition the age line (5-7, 8-10, 11-13, …), so exactly one matches — and
+// that area's diagnosticAssessmentId is the one diagnostic the learner is issued.
+//
+// Deliberately NOT filtered by "which courses this class currently exposes" — the diagnostic's
+// job is placement, which happens before any course is assigned, so an age-matched area with no
+// visible courses (or none yet) must still issue its diagnostic. The area's own course ladder is
+// only consulted later, once the diagnostic is graded (see placeLearnerFromLearningAreaDiagnostic).
+//
+// No dateOfBirth on file (age == null) → no bracket can be resolved → no diagnostic is auto-
+// issued here. That's surfaced to admins (the learner shows as "needs date of birth" for
+// placement) rather than guessing; an admin can add the DOB and re-running this (it's idempotent)
+// then issues the right one.
+//
+// If more than one area's range somehow contains the age (overlapping/misconfigured ranges), the
+// FIRST by authoring order wins — a single deterministic pick, never several diagnostics. If the
+// matched area has no diagnosticAssessmentId, nothing is issued (nothing to take).
+//
+// Idempotent: issueDiagnostic dedupes per (assessmentId, learnerId), so this is safe to re-run on
+// every enrollment/class/DOB change. It also PRUNES: any Learning-Area diagnostic previously
+// issued for a different bracket of this same curriculum that the learner never started is
+// revoked, so a learner who was over-issued (before this became age-bracket-scoped, or after an
+// age-range edit) is left holding only the one that matches their age. A diagnostic the learner
+// has already opened (in_progress / submitted / graded) is never touched — that's real work / a
+// real placement.
 async function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age) {
-  if (!cls?.gradeId) return;
-  const currentCourses = await CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId);
-  const currentCourseIds = new Set(currentCourses.map((c) => c.id));
-  if (currentCourseIds.size === 0) return;
+  if (!cls?.curriculumId || age == null) return;
   const allAreas = await LearningAreaModel.findByCurriculumId(cls.curriculumId);
-  const areas = allAreas
-    .filter((a) => a.diagnosticAssessmentId && (a.courses || []).some((cid) => currentCourseIds.has(cid)))
-    .filter((a) => age == null || ((a.minAge == null || age >= a.minAge) && (a.maxAge == null || age <= a.maxAge)));
-  for (const area of areas) {
-    await AssessmentSubmissionService.issueDiagnostic({ assessmentId: area.diagnosticAssessmentId, learnerId, learningAreaId: area.id });
+  const areaById = new Map(allAreas.map((a) => [a.id, a]));
+  const match = allAreas.find(
+    (a) => (a.minAge == null || age >= a.minAge) && (a.maxAge == null || age <= a.maxAge)
+  );
+
+  // Revoke stale un-started Learning-Area diagnostics for THIS curriculum's areas — anything
+  // that isn't the age-matched one.
+  const issues = await AssessmentIssueModel.findAll({ learnerId });
+  for (const issue of issues) {
+    if (!issue.learningAreaId || issue.learningAreaId === match?.id) continue;
+    const area = areaById.get(issue.learningAreaId);
+    if (!area) continue; // belongs to a different curriculum — leave it for that hub's gate
+    const sub = await AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId });
+    if (sub && sub.status !== "not_started") continue; // learner engaged with it — keep
+    if (sub) await AssessmentSubmissionModel.delete(sub.id);
+    await AssessmentIssueModel.delete(issue.id);
   }
+
+  if (!match?.diagnosticAssessmentId) return;
+  await AssessmentSubmissionService.issueDiagnostic({
+    assessmentId: match.diagnosticAssessmentId,
+    learnerId,
+    learningAreaId: match.id,
+  });
 }
 
 const generateAdmissionNumber = async (schoolCode, year) => {

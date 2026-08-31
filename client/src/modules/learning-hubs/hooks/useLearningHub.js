@@ -74,6 +74,29 @@ export function useUpdateLearningHub() {
   });
 }
 
+// Activate / deactivate a hub — same PUT as useUpdateLearningHub, but with a status-specific
+// toast (matching how educator/learner deactivation reads) and a broader cache invalidation
+// since deactivating a hub cascades to its learners and educators server-side.
+export function useUpdateLearningHubStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }) => learningHubApi.update(id, { status }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.all });
+      if (data?.id) queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.detail(data.id) });
+      // The cascade touches learners and educators — refresh those lists too.
+      queryClient.invalidateQueries({ queryKey: ["learners"] });
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      toast.success(
+        data?.status === "inactive"
+          ? "Learning hub deactivated — its learners and educators were deactivated too"
+          : "Learning hub activated — its learners and educators were reactivated"
+      );
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update learning hub status"),
+  });
+}
+
 export function useDeleteLearningHub() {
   const queryClient = useQueryClient();
   return useMutation({
