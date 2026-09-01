@@ -9,22 +9,27 @@
 
 ---
 
-## This release (31 Aug 2026) — what changed
+## This release (1 Sep 2026) — what changed
 
-**No new schema migration in this release.** Deploy order doesn't strictly matter, but deploying **backend first, then frontend** is still the safe habit. Click **Run NPM Install** + **Restart** on the backend as usual (there is no `package.json` change, but Restart is what reloads the code).
+**No new schema migration in this release.** No `package.json` change on either side. Deploy order doesn't strictly matter, but deploying **backend first, then frontend** is still the safe habit. Click **Run NPM Install** + **Restart** on the backend as usual (Restart is what reloads the code).
 
 **Backend** (`backend-deploy.zip`):
-- **Diagnostic issuing is now strictly one-per-age-bracket.** A learner is issued exactly **one** Learning-Area diagnostic — the area whose `minAge`/`maxAge` range contains the learner's age — instead of one per area whose courses the class happens to expose. A learner with **no date of birth on file gets no auto-issued diagnostic** (they surface to admins as needing a DOB; adding it and any later enrollment/class change re-runs the logic idempotently). Stale diagnostics from a different bracket that the learner never started are **pruned automatically**; anything the learner has opened (in progress / submitted / graded) is left untouched. (`learner.service.js` only — no route or column change.)
+- **Billing — Customers API.** New admin-only endpoints `GET /api/billing/customers` and `GET /api/billing/customers/:hubId`. A "customer" is derived on the fly (a learning hub the platform bills) — no new table, no migration. Returns per-hub invoice/payment aggregates and, for one hub, its full invoice + payment list.
+- **Competencies — duplicate a Performance Band's setup to the next level.** New endpoint `POST /api/curricula/:id/competencies/bands/:bandId/duplicate-to-next`. Copies a configured band's competencies, per-indicator % weights and advancement thresholds onto the next band in the *same* Developmental Stage's ladder (Explorer → Builder), overwriting that band's config. Scoped to one stage only — it never fans out across stages.
 
 **Frontend** (`assets.zip` + `index.html`):
-- **Tech Educator portal → Assessments** page rebuilt as a **per-course carousel**: a course selector plus one session slide at a time (prev / next arrows + dots) instead of the old collapsible course-section stack. It now pages through **every** session in the course (not only sessions that already have an assessment attached), so a session with nothing attached is visible as an empty slide.
-- **Learning Hub view (Settings):** an **Activate / Deactivate Hub** button next to Edit/Delete, with a confirmation dialog that spells out the cascade (deactivating a hub deactivates every learner and educator tied to it and its branch hubs; reactivating brings them back; someone still active at another hub keeps their account). The button only shows once a hub is live (a draft hub is still promoted by editing it).
+- **Tech Educator portal → Assessments** page rebuilt as a **per-course carousel**: a course selector plus one session slide at a time (prev / next arrows + dots) instead of the old collapsible course-section stack. It pages through **every** session in the course (not only sessions with an assessment attached), so an empty session shows as an empty slide.
+- **Billing → Customers.** The admin Billing page is now split into **Customers · Invoices · Payments** tabs. The Customers tab lists every learning hub with its invoiced / outstanding totals; each opens a customer page showing that hub's invoices and payments, with **Add invoice** (jumps to the Invoices tab pre-scoped to that hub) and **View statement** (opens the existing Statement of Account pre-selected to that hub). School and learner billing views are unchanged.
+- **Curriculum → Progress Arc → Performance Bands.** Each band card's ⋮ menu has a **"Duplicate to \<next band\>"** action — copies that band's competencies, indicator weights and advancement thresholds onto the next level in the selected stage, with a confirm dialog first.
+- **Tech Educator portal → Claims** — new sidebar entry (between Timetable and My Profile) and a placeholder page. The claim submission / approval flow is not built yet; this only adds the navigation and a "coming soon" screen.
+- **Learning Hub view (Settings):** an **Activate / Deactivate Hub** button next to Edit/Delete, with a confirmation dialog that spells out the cascade (deactivating a hub deactivates every learner and educator tied to it and its branch hubs; reactivating brings them back; someone still active at another hub keeps their account). Only shows once a hub is live.
 
-### Previous release (31 Aug 2026, earlier build) — still included here
+### Previous release (31 Aug 2026) — still included here
 
-The migration and features below shipped in the immediately preceding build and are already baked into these same zips — listed for anyone who skipped that deploy:
+Shipped in the immediately preceding build, already baked into these same zips — listed for anyone who skipped that deploy:
 
-- **Migration** `20260831100000_add_advancement_min_to_performance_bands.js` — adds `advancementMin` to `performance_bands` (applies on Restart; existing bands get `0`).
+- **Migration** `20260831100000_add_advancement_min_to_performance_bands.js` — adds `advancementMin` to `performance_bands` (applies on Restart; existing bands get `0`). This is the latest migration; the backend zip includes every migration through it.
+- **Diagnostic issuing is strictly one-per-age-bracket.** A learner is issued exactly **one** Learning-Area diagnostic — the area whose `minAge`/`maxAge` range contains the learner's age. A learner with **no date of birth on file gets no auto-issued diagnostic**. Stale diagnostics from a different bracket the learner never started are **pruned automatically**; anything opened (in progress / submitted / graded) is left untouched. (`learner.service.js` only.)
 - Curriculum name unique (case/space-insensitive) — duplicate create/rename rejected with 409.
 - Account deactivation model — suspended learner / educator / hub can log in but is locked to an "Account Suspended" screen; writes refused server-side. `PATCH /api/teachers/:id/status`. Hub deactivation cascades to its (and its branches') learners and educators.
 - Billing documents return `issuedBy` + `learner` (name/photo) on invoices / receipts / statements.
@@ -173,20 +178,25 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    This generates `client/dist/` containing `index.html` and `assets/`
 
 3. **Zip the assets folder** (needed because cPanel cannot upload folders directly):
-   - Zip `client/dist/assets/` → `assets.zip`
-   - The ready-made zip is: `assets.zip`
+   - Zip the `assets` **folder itself**, not its loose contents — from `client/dist/` run `zip -r assets.zip assets` so the archive holds `assets/…` paths and extracts back into an `assets/` folder.
+   - The ready-made zip is: `assets.zip` (already built this way — 66 entries, all under `assets/`).
 
 4. **In cPanel File Manager**, navigate to `curriculum.digifunzi.com` folder
 
-5. **Upload**:
+5. **Delete the previous build's files** so old hashed chunks don't linger:
+   - the whole `assets/` folder
+   - `index.html`
+   (Leave `.htaccess` alone.)
+
+6. **Upload**:
    - `index.html` from `client/dist/`
    - `assets.zip`
 
-6. **Extract** `assets.zip` — right-click → Extract
+7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-SUi4RgEX.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
 
-7. **Delete** `assets.zip` after extraction
+8. **Delete** `assets.zip` after extraction
 
-8. **Create `.htaccess`** file in `curriculum.digifunzi.com` (if not already there):
+9. **Create `.htaccess`** file in `curriculum.digifunzi.com` (if not already there):
    ```apache
    Options -MultiViews
    RewriteEngine On
@@ -194,7 +204,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    RewriteRule ^ index.html [QSA,L]
    ```
 
-9. **Test** — visit `https://curriculum.digifunzi.com`
+10. **Test** — visit `https://curriculum.digifunzi.com`
 
 ---
 
@@ -204,7 +214,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 - Repeat Backend steps 1–7
 
 ### Frontend changes only:
-- Repeat Frontend steps 1–9
+- Repeat Frontend steps 1–10
 
 ### Both changed:
 - Deploy backend first, then frontend
@@ -215,8 +225,8 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 | File | Purpose |
 |---|---|
 | `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 262 files, includes every migration through `20260831100000`. |
-| `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/` → extracts to an `assets/` folder). 66 entries. |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` (both are `index-Cq5v5NNt.js` in this build; the CSS is unchanged at `index-CPRP9smp.css`). |
+| `assets.zip` | Ready-to-upload frontend assets zip. Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-SUi4RgEX.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
@@ -228,13 +238,15 @@ Use Info-Zip `zip`, **not** PowerShell `Compress-Archive` (it writes `\` path se
 cd client && npm install && npm run build && cd ..
 cp client/dist/index.html Guide/index.html
 rm -f Guide/assets.zip
+# zip the "assets" directory itself (not its contents) so it extracts back into an assets/ folder
 (cd client/dist && zip -r -X -q ../../Guide/assets.zip assets)
 
 # backend
 rm -f Guide/backend-deploy.zip
 (cd server && zip -r -X -q ../Guide/backend-deploy.zip src knexfile.js package.json package-lock.json)
 
-# verify — forward slashes only (both must print 0)
-unzip -l Guide/assets.zip | grep -c '\\'          # must be 0
-unzip -l Guide/backend-deploy.zip | grep -c '\\'  # must be 0
+# verify — no backslash paths (both must print 0), and assets.zip must hold assets/… paths
+unzip -l Guide/assets.zip | grep -cF '\'          # must be 0
+unzip -l Guide/backend-deploy.zip | grep -cF '\'  # must be 0
+unzip -l Guide/assets.zip | grep -c '^\s*0.*assets/$'   # must be 1 (the folder entry)
 ```
