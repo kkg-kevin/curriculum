@@ -513,6 +513,18 @@ export function useReorderPerformanceBands(curriculumId) {
   });
 }
 
+export function useDuplicatePerformanceBandToNext(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (bandId) => competenciesApi.duplicatePerformanceBandToNext(curriculumId, bandId),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+      toast.success(`${data?.source?.name || "Band"}'s setup copied to ${data?.target?.name || "the next level"}`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to duplicate band"),
+  });
+}
+
 /* ── Learning Journey (per-learner, per-Learning-Area placement/history) ──── */
 
 export function useLearningJourney(curriculumId, learnerId) {

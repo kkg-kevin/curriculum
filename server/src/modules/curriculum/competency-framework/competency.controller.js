@@ -281,6 +281,11 @@ exports.reorderPerformanceBands = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+exports.duplicatePerformanceBandToNext = asyncHandler(async (req, res) => {
+  const data = await CompetencyService.duplicatePerformanceBandToNext(req.params.id, req.params.bandId);
+  res.json({ success: true, data });
+});
+
 exports.calculateIndicatorProgress = asyncHandler(async (req, res) => {
   const { ageCategoryId, indicatorAchievements } = calculateIndicatorProgressSchema.parse(req.body);
   const data = await CompetencyService.calculateIndicatorProgress(req.params.id, ageCategoryId, indicatorAchievements);

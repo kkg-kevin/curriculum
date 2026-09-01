@@ -36,6 +36,7 @@ import {
   useUpdatePerformanceBand,
   useDeletePerformanceBand,
   useReorderPerformanceBands,
+  useDuplicatePerformanceBandToNext,
   usePopulatedIndicators,
   useBandProgress,
 } from "../hooks/useCompetencies";
@@ -1102,9 +1103,10 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
 // `itemLabel`/`itemType` (e.g. "Continuous Assessment" / "assessment type") drive the delete
 // confirmation copy — every caller of this kebab previously fired onDelete() straight from the
 // menu click with no confirmation at all, so a mis-click permanently destroyed configuration.
-function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item", message }) {
+function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item", message, onDuplicate, duplicateLabel, duplicateTitle, duplicateMessage }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -1140,6 +1142,20 @@ function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemTy
             </svg>
             Edit
           </button>
+          {onDuplicate && (
+            <button
+              type="button"
+              className="cp-card-menu-item"
+              onClick={() => { setOpen(false); setDuplicating(true); }}
+              disabled={disabled}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {duplicateLabel || "Duplicate"}
+            </button>
+          )}
           <button
             type="button"
             className="cp-card-menu-item cp-card-menu-item--danger"
@@ -1166,6 +1182,18 @@ function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemTy
         onConfirm={() => { setConfirming(false); onDelete(); }}
         onCancel={() => setConfirming(false)}
       />
+
+      {onDuplicate && (
+        <ConfirmDialog
+          isOpen={duplicating}
+          title={duplicateTitle || "Duplicate configuration?"}
+          message={duplicateMessage || "This will overwrite the target's current configuration."}
+          confirmLabel="Duplicate"
+          variant="default"
+          onConfirm={() => { setDuplicating(false); onDuplicate(); }}
+          onCancel={() => setDuplicating(false)}
+        />
+      )}
     </div>
   );
 }
@@ -2992,6 +3020,7 @@ function PerformanceBandsPanel({ curriculumId }) {
   const { mutate: update, isPending: updating }    = useUpdatePerformanceBand(curriculumId);
   const { mutate: remove, isPending: deleting }    = useDeletePerformanceBand(curriculumId);
   const { mutate: reorder }                        = useReorderPerformanceBands(curriculumId);
+  const { mutate: duplicateToNext, isPending: duplicating } = useDuplicatePerformanceBandToNext(curriculumId);
   const { data: adoptedCompetencies = [] }         = useCompetencies(curriculumId);
   const { data: populatedIndicatorGroups = [] }    = usePopulatedIndicators(curriculumId);
   const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
@@ -3535,19 +3564,38 @@ function PerformanceBandsPanel({ curriculumId }) {
                           );
                         })()}
                       </div>
-                      <CardKebab
-                        onEdit={() => openEdit(band)}
-                        onDelete={() => remove(band.id)}
-                        disabled={deleting}
-                        itemLabel={band.name}
-                        itemType="performance band"
-                        message={(() => {
-                          const otherStageNames = stages.filter((s) => s.id !== selectedStageId).map((s) => s.name);
-                          return otherStageNames.length > 0
-                            ? `Every Developmental Stage shares the same band names — deleting "${band.name}" here also removes it from ${otherStageNames.join(", ")}, including each stage's own configured indicators and threshold for it. This cannot be undone.`
-                            : undefined;
-                        })()}
-                      />
+                      {(() => {
+                        // "Duplicate to next level" — copies this band's competencies, indicator
+                        // weights and advancement thresholds onto the next band in THIS stage's
+                        // ladder (Explorer -> Builder), overwriting its current config. Only
+                        // offered when there is a next band and this one has something to copy.
+                        const nextBand = bands[idx + 1];
+                        const hasConfig = (band.competencyIds || []).length > 0
+                          || (band.advancementThreshold ?? 0) > 0
+                          || (band.advancementMin ?? 0) > 0;
+                        const canDuplicate = !!nextBand && hasConfig && !duplicating;
+                        return (
+                          <CardKebab
+                            onEdit={() => openEdit(band)}
+                            onDelete={() => remove(band.id)}
+                            disabled={deleting}
+                            itemLabel={band.name}
+                            itemType="performance band"
+                            message={(() => {
+                              const otherStageNames = stages.filter((s) => s.id !== selectedStageId).map((s) => s.name);
+                              return otherStageNames.length > 0
+                                ? `Every Developmental Stage shares the same band names — deleting "${band.name}" here also removes it from ${otherStageNames.join(", ")}, including each stage's own configured indicators and threshold for it. This cannot be undone.`
+                                : undefined;
+                            })()}
+                            onDuplicate={canDuplicate ? () => duplicateToNext(band.id) : undefined}
+                            duplicateLabel={nextBand ? `Duplicate to ${nextBand.name}` : undefined}
+                            duplicateTitle={nextBand ? `Copy ${band.name}'s setup to ${nextBand.name}?` : undefined}
+                            duplicateMessage={nextBand
+                              ? `${nextBand.name}'s competencies, indicator weights and advancement thresholds will be replaced with ${band.name}'s. Only ${nextBand.name} in this stage is affected.`
+                              : undefined}
+                          />
+                        );
+                      })()}
                     </div>
 
                     {band.description && (

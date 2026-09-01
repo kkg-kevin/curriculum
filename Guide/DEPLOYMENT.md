@@ -11,24 +11,25 @@
 
 ## This release (31 Aug 2026) — what changed
 
-Deploy **backend first, then frontend** (there is a new schema migration).
+**No new schema migration in this release.** Deploy order doesn't strictly matter, but deploying **backend first, then frontend** is still the safe habit. Click **Run NPM Install** + **Restart** on the backend as usual (there is no `package.json` change, but Restart is what reloads the code).
 
 **Backend** (`backend-deploy.zip`):
-- **New migration** `src/db/migrations/20260831100000_add_advancement_min_to_performance_bands.js` — adds the `advancementMin` column to `performance_bands`. Applies automatically on **Restart** (nothing manual). Existing bands get `advancementMin = 0` (behaviour unchanged until an admin sets a range).
-- Curriculum name is now unique (case/space-insensitive) — creating/renaming a curriculum to a name already in use is rejected with a 409.
-- **Account deactivation model:** a suspended learner / educator / learning-hub account can now still log in but is locked to an in-app "Account Suspended" screen; every write is refused server-side. New `PATCH /api/teachers/:id/status` (admin / school). Deactivating a learning hub cascades — every learner and educator tied to it (and its branch hubs) is deactivated too; reactivating brings them back.
-- Billing documents (`billing.service.js`) now also return an `issuedBy` block + `learner` (name/photo) on invoices, receipts and statements — consumed by the new PDF builders below. Purely additive.
-- No `package.json` change on the backend — but still click **Run NPM Install** on redeploy as usual.
+- **Diagnostic issuing is now strictly one-per-age-bracket.** A learner is issued exactly **one** Learning-Area diagnostic — the area whose `minAge`/`maxAge` range contains the learner's age — instead of one per area whose courses the class happens to expose. A learner with **no date of birth on file gets no auto-issued diagnostic** (they surface to admins as needing a DOB; adding it and any later enrollment/class change re-runs the logic idempotently). Stale diagnostics from a different bracket that the learner never started are **pruned automatically**; anything the learner has opened (in progress / submitted / graded) is left untouched. (`learner.service.js` only — no route or column change.)
 
 **Frontend** (`assets.zip` + `index.html`):
-- **New dependency `jspdf-autotable`** — already in `client/package.json` and baked into this build; nothing to install on cPanel (frontend is static). Only matters if you rebuild the frontend yourself: run `npm install` in `client/` before `npm run build`.
-- Invoices / receipts / statements now **download as proper vector PDFs** (selectable text, ~85 KB, page-safe tables) instead of a page screenshot — with the Digifunzi logo, the hub's logo, and the learner's photo. Print is unchanged.
-- Learner report (`/learner-portal/reports/:id`) has **Print / Download PDF** — a branded document with all three logos.
-- Learner portal: a learner enrolled at several hubs is no longer trapped on the first-login diagnostic gate of a hub they haven't started — the hub switcher stays visible so they can switch back to a hub they've already onboarded.
-- Sidebar collapse now reflows the content area immediately (previously needed a page refresh).
-- Progress Arc → Performance Bands: the advancement threshold is now a **min–max range** (min = "on track" marker, max = advances the learner) with a per-competency % subtotal shown on each band card.
+- **Tech Educator portal → Assessments** page rebuilt as a **per-course carousel**: a course selector plus one session slide at a time (prev / next arrows + dots) instead of the old collapsible course-section stack. It now pages through **every** session in the course (not only sessions that already have an assessment attached), so a session with nothing attached is visible as an empty slide.
+- **Learning Hub view (Settings):** an **Activate / Deactivate Hub** button next to Edit/Delete, with a confirmation dialog that spells out the cascade (deactivating a hub deactivates every learner and educator tied to it and its branch hubs; reactivating brings them back; someone still active at another hub keeps their account). The button only shows once a hub is live (a draft hub is still promoted by editing it).
 
-**Assets folder:** `Guide/assets/` is the extracted contents of `assets.zip` (the 65 built files) — provided for reference / manual upload if the zip route is inconvenient.
+### Previous release (31 Aug 2026, earlier build) — still included here
+
+The migration and features below shipped in the immediately preceding build and are already baked into these same zips — listed for anyone who skipped that deploy:
+
+- **Migration** `20260831100000_add_advancement_min_to_performance_bands.js` — adds `advancementMin` to `performance_bands` (applies on Restart; existing bands get `0`).
+- Curriculum name unique (case/space-insensitive) — duplicate create/rename rejected with 409.
+- Account deactivation model — suspended learner / educator / hub can log in but is locked to an "Account Suspended" screen; writes refused server-side. `PATCH /api/teachers/:id/status`. Hub deactivation cascades to its (and its branches') learners and educators.
+- Billing documents return `issuedBy` + `learner` (name/photo) on invoices / receipts / statements.
+- Frontend: vector-PDF invoices / receipts / statements (selectable text, three logos); learner report Print / Download PDF; multi-hub learners no longer trapped on a diagnostic gate; sidebar collapse reflows immediately; Performance Bands advancement threshold is a min–max range with per-competency % subtotal.
+- Dependency `jspdf-autotable` (already in `client/package.json`, baked into the build — only matters if you rebuild the frontend yourself).
 
 ---
 
@@ -215,8 +216,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 |---|---|
 | `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 262 files, includes every migration through `20260831100000`. |
 | `assets.zip` | Ready-to-upload frontend assets zip (`client/dist/assets/` → extracts to an `assets/` folder). 66 entries. |
-| `assets/` | The **extracted** contents of `assets.zip` (65 built JS/CSS/font/image files) — same thing, unzipped, in case uploading the folder directly is easier than the zip route. |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` (both are `index-BeHMNMl4.js` in this build). |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` (both are `index-Cq5v5NNt.js` in this build; the CSS is unchanged at `index-CPRP9smp.css`). |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
@@ -227,15 +227,14 @@ Use Info-Zip `zip`, **not** PowerShell `Compress-Archive` (it writes `\` path se
 # frontend
 cd client && npm install && npm run build && cd ..
 cp client/dist/index.html Guide/index.html
-rm -rf Guide/assets Guide/assets.zip
+rm -f Guide/assets.zip
 (cd client/dist && zip -r -X -q ../../Guide/assets.zip assets)
-cp -r client/dist/assets Guide/assets
 
 # backend
 rm -f Guide/backend-deploy.zip
 (cd server && zip -r -X -q ../Guide/backend-deploy.zip src knexfile.js package.json package-lock.json)
 
-# verify — forward slashes only, and the extract matches source
+# verify — forward slashes only (both must print 0)
 unzip -l Guide/assets.zip | grep -c '\\'          # must be 0
 unzip -l Guide/backend-deploy.zip | grep -c '\\'  # must be 0
 ```

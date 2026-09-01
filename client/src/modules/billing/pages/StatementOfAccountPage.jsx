@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AccountBalance as AccountBalanceIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useInvoicesQuery, useStatementQuery } from "../hooks/useBilling";
@@ -34,13 +34,26 @@ export default function StatementOfAccountPage() {
     return [...map.values()];
   }, [invoices]);
 
-  const [selectedKey, setSelectedKey] = useState("");
+  const [searchParams] = useSearchParams();
+  // A "View statement" link from the customer detail page arrives as ?payer=hub:<id>. The
+  // dropdown is built from invoices this page already loads, so a hub with invoices is
+  // preselectable; a never-billed hub still resolves server-side (empty ledger).
+  const payerParam = searchParams.get("payer");
+  const [selectedKey, setSelectedKey] = useState(payerParam || "");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  useEffect(() => { if (payerParam) setSelectedKey(payerParam); }, [payerParam]);
+
+  // Parse "hub:<id>" / "user:<id>" straight from the selected key so a hub with no invoices yet
+  // (absent from payerOptions) still resolves when linked to from the customer page.
+  const parsedKey = useMemo(() => {
+    const [type, id] = (selectedKey || "").split(":");
+    return type === "hub" || type === "user" ? { payerType: type, payerId: id } : null;
+  }, [selectedKey]);
   const selected = isLearner
     ? { payerType: "user", payerId: user?.id }
-    : payerOptions.find((opt) => `${opt.payerType}:${opt.payerId}` === selectedKey);
+    : payerOptions.find((opt) => `${opt.payerType}:${opt.payerId}` === selectedKey) || parsedKey;
 
   const { data: statement, isError } = useStatementQuery(selected?.payerType, selected?.payerId, { from, to });
 
@@ -67,6 +80,9 @@ export default function StatementOfAccountPage() {
             <select value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)} style={inputStyle}>
               <option value="">Select a payer…</option>
               {payerOptions.map((opt) => <option key={`${opt.payerType}:${opt.payerId}`} value={`${opt.payerType}:${opt.payerId}`}>{opt.label}</option>)}
+              {parsedKey && !payerOptions.some((opt) => `${opt.payerType}:${opt.payerId}` === selectedKey) && (
+                <option value={selectedKey}>{statement?.billTo?.name || "Selected payer"}</option>
+              )}
             </select>
           </label>
         )}

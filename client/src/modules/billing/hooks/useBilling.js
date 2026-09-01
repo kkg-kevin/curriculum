@@ -87,3 +87,17 @@ export function useStatementQuery(payerType, payerId, { from, to } = {}) {
     enabled: !!payerType && !!payerId,
   });
 }
+
+// Customers is an admin-only endpoint (403 for every other role) — `enabled` lets a shared
+// component mount the hook unconditionally without firing a doomed request for non-admins.
+export function useCustomersQuery({ enabled = true } = {}) {
+  return useQuery({ queryKey: ["billing", "customers"], queryFn: billingApi.listCustomers, enabled });
+}
+
+export function useCustomerQuery(hubId) {
+  return useQuery({
+    queryKey: ["billing", "customer", hubId],
+    queryFn: () => billingApi.getCustomer(hubId),
+    enabled: !!hubId,
+  });
+}

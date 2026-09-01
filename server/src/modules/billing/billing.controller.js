@@ -63,4 +63,13 @@ const getStatement = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.getStatement(req.params.payerType, req.params.payerId, query, req) });
 });
 
-module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement };
+const listCustomers = asyncHandler(async (req, res) => {
+  const data = await BillingService.listCustomers(req);
+  res.json({ success: true, data, count: data.length });
+});
+
+const getCustomer = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await BillingService.getCustomer(req.params.hubId, req) });
+});
+
+module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer };

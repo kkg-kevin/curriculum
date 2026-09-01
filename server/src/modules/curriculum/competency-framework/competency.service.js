@@ -623,6 +623,44 @@ const CompetencyService = {
     return reordered;
   },
 
+  // Copies a fully-configured band's setup onto the NEXT band in the same stage's ladder
+  // (Explorer -> Builder): its competencies, per-indicator % contributions, advancement range,
+  // and score range. Name, order, stage, description are left as the target's own — this is a
+  // config copy, not a rename, so it never touches _syncBandAcrossStages. The target's existing
+  // config is overwritten wholesale (the client confirms first). Scoped to ONE stage's ladder;
+  // other stages' same-named band is deliberately untouched, since each stage is meant to carry
+  // its own age-appropriate thresholds.
+  async duplicatePerformanceBandToNext(curriculumId, bandId) {
+    const source = await PerformanceBandModel.findById(bandId);
+    if (!source || source.curriculumId !== curriculumId) {
+      const err = new Error("Performance band not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (source.learningAreaId) {
+      const err = new Error("Only Progress Arc bands can be duplicated to the next level");
+      err.statusCode = 400;
+      throw err;
+    }
+    const ladder = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, source.ageCategoryId);
+    const idx = ladder.findIndex((b) => b.id === bandId);
+    const target = ladder[idx + 1];
+    if (!target) {
+      const err = new Error("This is the highest band in the stage — there is no next level to copy to");
+      err.statusCode = 400;
+      throw err;
+    }
+    const updated = await PerformanceBandModel.update(curriculumId, target.id, {
+      minScore:               source.minScore,
+      maxScore:               source.maxScore,
+      competencyIds:          source.competencyIds || [],
+      indicatorContributions: source.indicatorContributions || [],
+      advancementMin:         source.advancementMin ?? 0,
+      advancementThreshold:   source.advancementThreshold ?? 0,
+    });
+    return { source, target: updated };
+  },
+
   // Keeps every OTHER Developmental Stage's band SET aligned with a create/rename/delete that
   // just happened on one stage's band — every stage progresses through the same named levels,
   // just with independently-configured competencies/indicators/thresholds underneath. Matched by

@@ -16,4 +16,6 @@ export const billingApi = {
   listReceipts: () => api.get(`${BASE}/receipts`).then((r) => r.data),
   getReceipt: (invoiceId, paymentId) => api.get(`${BASE}/${invoiceId}/payments/${paymentId}`).then((r) => r.data.data),
   getStatement: (payerType, payerId, params = {}) => api.get(`${BASE}/statements/${payerType}/${payerId}`, { params }).then((r) => r.data.data),
+  listCustomers: () => api.get(`${BASE}/customers`).then((r) => r.data),
+  getCustomer: (hubId) => api.get(`${BASE}/customers/${hubId}`).then((r) => r.data.data),
 };
