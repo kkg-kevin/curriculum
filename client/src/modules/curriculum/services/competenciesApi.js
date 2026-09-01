@@ -156,6 +156,11 @@ export const competenciesApi = {
   reorderPerformanceBands: (curriculumId, ageCategoryId, orderedIds) =>
     api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { ageCategoryId, orderedIds }).then((r) => r.data.data),
 
+  // Copies a configured band's competencies, indicator weights and advancement thresholds onto
+  // the next band in the same stage's ladder (Explorer -> Builder).
+  duplicatePerformanceBandToNext: (curriculumId, bandId) =>
+    api.post(`/api/curricula/${curriculumId}/competencies/bands/${bandId}/duplicate-to-next`).then((r) => r.data.data),
+
   // Indicator-driven band completion, computed from persisted indicator-achievements.
   // ageCategoryId is required now that Performance Bands are scoped per Developmental Stage.
   getBandProgress: (curriculumId, ageCategoryId) =>

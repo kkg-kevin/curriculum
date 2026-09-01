@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiChevronLeft } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiFileText, FiUser, FiChevronLeft } from "react-icons/fi";
 import logo from "../../../assets/Logo-image.png";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarCollapse";
@@ -11,6 +11,7 @@ const menuItems = [
   { name: "Reports",         path: "/teacher-portal/reports", icon: FiBarChart2 },
   { name: "Attendance",      path: "/teacher-portal/attendance", icon: FiCheckSquare },
   { name: "Timetable",       path: "/teacher-portal/timetable", icon: FiCalendar },
+  { name: "Claims",          path: "/teacher-portal/claims", icon: FiFileText },
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
 ];
 

@@ -66,6 +66,7 @@ const {
   updatePerformanceBand,
   deletePerformanceBand,
   reorderPerformanceBands,
+  duplicatePerformanceBandToNext,
   calculateIndicatorProgress,
   getPopulatedIndicators,
   getIndicatorAchievements,
@@ -228,6 +229,9 @@ router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicat
 // Progress Arc — same engine, but driven by persisted indicator-achievements instead of a
 // caller-supplied payload (see indicator-achievements routes above).
 router.route("/:id/competencies/bands/progress").get(getBandProgress);
+// Copy a configured band's setup onto the next band in the same stage's ladder — the two-segment
+// path keeps it clear of the bare /:bandId PUT/DELETE below.
+router.route("/:id/competencies/bands/:bandId/duplicate-to-next").post(duplicatePerformanceBandToNext);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
 
 // Learning Journey — per-learner, per-Learning-Area placement/history (both registered above —

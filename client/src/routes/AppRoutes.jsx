@@ -19,6 +19,7 @@ import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
 import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
 import TeacherTimetablePage from "../modules/teacher-portal/pages/TimetablePage";
+import TeacherClaimsPage from "../modules/teacher-portal/pages/ClaimsPage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
@@ -85,6 +86,8 @@ import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
 import ReceiptsListPage from "../modules/billing/pages/ReceiptsListPage";
 import ReceiptDetailPage from "../modules/billing/pages/ReceiptDetailPage";
 import StatementOfAccountPage from "../modules/billing/pages/StatementOfAccountPage";
+import CustomersListPage from "../modules/billing/pages/CustomersListPage";
+import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 
 export default function AppRoutes() {
   return (
@@ -126,6 +129,8 @@ export default function AppRoutes() {
         </Route>
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="billing" element={<BillingPage />} />
+        <Route path="billing/customers" element={<CustomersListPage />} />
+        <Route path="billing/customers/:hubId" element={<CustomerDetailPage />} />
         <Route path="billing/receipts" element={<ReceiptsListPage />} />
         <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
         <Route path="billing/statements" element={<StatementOfAccountPage />} />
@@ -209,6 +214,7 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="timetable" element={<TeacherTimetablePage />} />
+          <Route path="claims" element={<TeacherClaimsPage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
       </Route>

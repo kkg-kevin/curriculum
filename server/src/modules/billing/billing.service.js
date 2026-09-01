@@ -428,6 +428,77 @@ const BillingService = {
       ledger, aging,
     };
   },
+
+  // Customers — admin-only. A "customer" for the platform admin is a learning hub it bills
+  // (invoiceType hub_subscription, payerHubId set). Derived on the fly from existing hubs +
+  // invoices + payments, no dedicated table. Every hub is listed, including ones never invoiced,
+  // so the admin can open one and raise its first invoice.
+  async listCustomers(req) {
+    if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
+    const hubs = await LearningHubService.getAllLearningHubs({ includeDrafts: true });
+    const invoices = (await BillingModel.findInvoices({})).filter((inv) => inv.payerHubId && RECEIVABLE_STATUSES.includes(inv.status));
+    const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
+    const paidByInvoice = new Map();
+    for (const p of payments) paidByInvoice.set(p.invoiceId, money((paidByInvoice.get(p.invoiceId) || 0) + Number(p.amount)));
+
+    return hubs.map((hub) => {
+      const hubInvoices = invoices.filter((inv) => inv.payerHubId === hub.id);
+      const totalInvoiced = money(hubInvoices.reduce((sum, inv) => sum + Number(inv.total), 0));
+      const totalPaid = money(hubInvoices.reduce((sum, inv) => sum + (paidByInvoice.get(inv.id) || 0), 0));
+      const issuedAts = hubInvoices.map((inv) => inv.issuedAt).filter(Boolean).sort();
+      return {
+        id: hub.id,
+        name: hub.name,
+        email: hub.email || null,
+        phone: hub.phone || null,
+        type: hub.hubType || null,
+        status: hub.status || null,
+        invoiceCount: hubInvoices.length,
+        totalInvoiced,
+        totalPaid,
+        balance: money(totalInvoiced - totalPaid),
+        lastInvoiceAt: issuedAts.length ? issuedAts[issuedAts.length - 1] : null,
+      };
+    });
+  },
+
+  async getCustomer(hubId, req) {
+    if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
+    const hub = await LearningHubService.getLearningHubById(hubId);
+    const invoices = (await BillingModel.findInvoices({ payerHubId: hubId })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
+    const invoiceById = new Map(invoices.map((inv) => [inv.id, inv]));
+    const paidByInvoice = new Map();
+    for (const p of payments) paidByInvoice.set(p.invoiceId, money((paidByInvoice.get(p.invoiceId) || 0) + Number(p.amount)));
+
+    const receivable = invoices.filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
+    const totalInvoiced = money(receivable.reduce((sum, inv) => sum + Number(inv.total), 0));
+    const totalPaid = money(receivable.reduce((sum, inv) => sum + (paidByInvoice.get(inv.id) || 0), 0));
+
+    return {
+      customer: {
+        id: hub.id, name: hub.name, email: hub.email || null, phone: hub.phone || null,
+        address: hub.address || null, type: hub.hubType || null, status: hub.status || null,
+        logo: hub.photo || null,
+      },
+      billTo: await resolvePayerIdentity({ payerHubId: hubId }),
+      summary: { invoiceCount: invoices.length, totalInvoiced, totalPaid, balance: money(totalInvoiced - totalPaid) },
+      invoices: invoices.map((inv) => ({
+        id: inv.id, invoiceNumber: inv.invoiceNumber, invoiceType: inv.invoiceType, status: inv.status,
+        currency: inv.currency, total: money(inv.total), amountPaid: money(paidByInvoice.get(inv.id) || 0),
+        amountDue: money(Number(inv.total) - (paidByInvoice.get(inv.id) || 0)),
+        createdAt: inv.createdAt, issuedAt: inv.issuedAt, dueAt: inv.dueAt, periodLabel: inv.periodLabel,
+      })),
+      payments: payments.map((p) => {
+        const inv = invoiceById.get(p.invoiceId);
+        return {
+          id: p.id, invoiceId: p.invoiceId, receiptNumber: p.receiptNumber, amount: money(p.amount),
+          currency: p.currency, paymentMethod: p.paymentMethod, provider: p.provider, paidAt: p.paidAt,
+          invoice: inv ? { invoiceNumber: inv.invoiceNumber, currency: inv.currency } : null,
+        };
+      }),
+    };
+  },
 };
 
 module.exports = BillingService;

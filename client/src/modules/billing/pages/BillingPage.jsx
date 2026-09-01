@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery, useReceiptsQuery } from "../hooks/useBilling";
+import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery, useReceiptsQuery, useCustomersQuery } from "../hooks/useBilling";
 import { classApi } from "../../classes/services/classApi";
 import { useItems } from "../../settings/items/hooks/useItems";
 import { inputStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
@@ -19,6 +19,12 @@ const RECENT_RECEIPTS_COUNT = 5;
 
 function Field({ label, children }) { return <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, fontWeight: 700, color: "#374151" }}>{label}{children}</label>; }
 
+const ADMIN_TABS = [
+  { key: "customers", label: "Customers", icon: GroupsIcon },
+  { key: "invoices", label: "Invoices", icon: ReceiptLongIcon },
+  { key: "payments", label: "Payments", icon: PaidIcon },
+];
+
 export default function BillingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -26,10 +32,18 @@ export default function BillingPage() {
   const isAdmin = user?.role === "admin";
   const receiptsBasePath = isLearner ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
   const statementBasePath = isLearner ? "/learner-portal/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Admin billing is split into Customers | Invoices | Payments tabs (driven by ?tab= so a link
+  // from the customer page can deep-link to a tab). Other roles keep the single-view layout.
+  const activeTab = isAdmin ? (ADMIN_TABS.some((t) => t.key === searchParams.get("tab")) ? searchParams.get("tab") : "customers") : null;
+  const setActiveTab = (key) => setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("tab", key); if (key !== "invoices") next.delete("hub"); return next; }, { replace: true });
+  const hubParam = searchParams.get("hub");
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoicesQuery();
+  const { data: customersData } = useCustomersQuery({ enabled: isAdmin });
+  const customers = customersData?.data || [];
   const { data: hubsData } = useAllLearningHubsQuery({ includeDrafts: true });
   const hubs = hubsData?.data || [];
-  const [hubId, setHubId] = useState("");
+  const [hubId, setHubId] = useState(hubParam || "");
   const selectedHubId = isAdmin ? hubId : hubs[0]?.id || "";
   const { data: learnersData } = useQuery({
     queryKey: ["billing", "learners", selectedHubId],
@@ -66,6 +80,9 @@ export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [invoicePage, setInvoicePage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  // A "?hub=" deep-link from the customer page lands on the Invoices tab with that hub
+  // preselected and the create form open.
+  useEffect(() => { if (hubParam) { setHubId(hubParam); setShowForm(true); } }, [hubParam]);
   const [hubBillingMode, setHubBillingMode] = useState("group");
   const [adminScope, setAdminScope] = useState("hub");
   const [adminClassId, setAdminClassId] = useState("");
@@ -134,6 +151,14 @@ export default function BillingPage() {
     }, { onSuccess: () => { setDescription(""); setAmount(""); setPeriodLabel(""); setDueAt(""); setNotes(""); setLearnerId(""); setCourseId(""); } });
   };
 
+  const [customerSearch, setCustomerSearch] = useState("");
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+    if (!query) return customers;
+    return customers.filter((c) => `${c.name} ${c.email || ""}`.toLowerCase().includes(query));
+  }, [customers, customerSearch]);
+  const allReceipts = receiptsData?.data || [];
+
   const bulkRequest = () => ({ hubId: selectedHubId, scopeType: bulkScope, classId: bulkScope === "class" ? bulkClassId : null, learnerIds: [], invoiceType: bulkType, periodLabel: bulkPeriod || null });
   const previewBulkInvoices = (event) => {
     event.preventDefault();
@@ -147,14 +172,79 @@ export default function BillingPage() {
     <div style={{ fontFamily: "Inter, sans-serif", color: "#111827" }}>
       <div style={{ background: "linear-gradient(135deg, #142F4A 0%, #25476a 48%, #2e7db5 100%)", borderRadius: 18, padding: "26px 28px", marginBottom: 16, color: "#fff", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
         <div><div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}><ReceiptLongIcon sx={{ fontSize: 16 }} /> Finance workspace</div><h1 style={{ margin: 0, fontSize: 25, fontWeight: 900 }}>{isLearner ? "My invoices" : "Billing"}</h1><p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{isLearner ? "Review invoices assigned to your parent account." : "Create, issue, and track hub and learner invoices."}</p></div>
-        {!isLearner && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
+        {!isLearner && (!isAdmin || activeTab === "invoices") && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <Link to={`${receiptsBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><PaidIcon sx={{ fontSize: 16 }} /> Receipts</Link>
-        <Link to={`${statementBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><AccountBalanceIcon sx={{ fontSize: 16 }} /> Statement of account</Link>
-      </div>
+      {isAdmin && (
+        <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid #E5E7EB", flexWrap: "wrap" }}>
+          {ADMIN_TABS.map((tab) => {
+            const active = activeTab === tab.key;
+            const Icon = tab.icon;
+            return (
+              <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", border: 0, borderBottom: `2px solid ${active ? "#25476a" : "transparent"}`, background: "transparent", color: active ? "#25476a" : "#6B7280", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                <Icon sx={{ fontSize: 17 }} /> {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
+      {!isAdmin && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <Link to={`${receiptsBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><PaidIcon sx={{ fontSize: 16 }} /> Receipts</Link>
+          <Link to={`${statementBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><AccountBalanceIcon sx={{ fontSize: 16 }} /> Statement of account</Link>
+        </div>
+      )}
+
+      {isAdmin && activeTab === "customers" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
+            {[
+              { label: "All customers", value: customers.length, icon: <GroupsIcon fontSize="small" />, color: "#25476a" },
+              { label: "With a balance", value: customers.filter((c) => Number(c.balance) > 0).length, icon: <AccountBalanceIcon fontSize="small" />, color: "#C2410C" },
+              { label: "Total outstanding", value: formatMoney(customers.reduce((sum, c) => sum + Number(c.balance || 0), 0)), icon: <EventNoteIcon fontSize="small" />, color: "#B91C1C" },
+            ].map((stat) => <div key={stat.label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}><div style={{ width: 36, height: 36, borderRadius: 9, background: "#F1F7FB", color: stat.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{stat.icon}</div><div><div style={{ fontSize: 18, fontWeight: 850, color: stat.color, fontVariantNumeric: "tabular-nums" }}>{stat.value}</div><div style={{ fontSize: 11, color: "#6B7280" }}>{stat.label}</div></div></div>)}
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div><h2 style={{ margin: 0, fontSize: 16 }}>Customers</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredCustomers.length} of {customers.length} · learning hubs you bill</p></div>
+              <label style={{ position: "relative" }}><SearchIcon sx={{ position: "absolute", left: 9, top: 8, fontSize: 16, color: "#9CA3AF" }} /><input aria-label="Search customers" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Search name or email" style={{ ...inputStyle, width: 220, paddingLeft: 30 }} /></label>
+            </div>
+            {filteredCustomers.length === 0 ? (
+              <EmptyState icon={GroupsIcon} title={customers.length === 0 ? "No customers yet" : "No matching customers"} subtitle={customers.length === 0 ? "Learning hubs appear here once they exist." : "Try a different search term."} />
+            ) : filteredCustomers.map((customer) => (
+              <div key={customer.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`/billing/customers/${customer.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`/billing/customers/${customer.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(200px, 1.4fr) auto auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+                <div style={{ minWidth: 0 }}>
+                  <strong style={{ fontSize: 13, color: "#111827" }}>{customer.name}</strong>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>{customer.email || "No email"} <span style={{ color: "#CBD5E1" }}>·</span> {customer.invoiceCount} invoice{customer.invoiceCount === 1 ? "" : "s"}{customer.lastInvoiceAt && <> <span style={{ color: "#CBD5E1" }}>·</span> last {formatDate(customer.lastInvoiceAt)}</>}</div>
+                </div>
+                <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 800, color: "#25476a" }}>{formatMoney(customer.totalInvoiced)}</div><div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>invoiced</div></div>
+                <div style={{ textAlign: "right", minWidth: 110 }}><div style={{ fontSize: 13, fontWeight: 800, color: Number(customer.balance) > 0 ? "#C2410C" : "#047857" }}>{formatMoney(customer.balance)}</div><div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>{Number(customer.balance) > 0 ? "outstanding" : "settled"}</div></div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {isAdmin && activeTab === "payments" && (
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div><h2 style={{ margin: 0, fontSize: 16 }}>Payments</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{allReceipts.length} payment{allReceipts.length === 1 ? "" : "s"} received</p></div>
+            <Link to={receiptsBasePath} style={{ fontSize: 12, fontWeight: 700, color: "#25476a", textDecoration: "none" }}>Open receipts page →</Link>
+          </div>
+          {allReceipts.length === 0 ? (
+            <EmptyState icon={PaidIcon} title="No payments yet" subtitle="Payments appear here once recorded against an invoice." />
+          ) : allReceipts.map((receipt) => (
+            <div key={receipt.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`); } }} style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+              <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13, color: "#111827" }}>{receipt.receiptNumber}</strong><div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{receipt.invoice?.invoiceNumber || "—"} <span style={{ color: "#CBD5E1" }}>·</span> {(receipt.paymentMethod || receipt.provider || "").replaceAll("_", " ")} <span style={{ color: "#CBD5E1" }}>·</span> {formatDate(receipt.paidAt)}</div></div>
+              <strong style={{ fontSize: 14, fontWeight: 850, color: "#047857" }}>{formatMoney(receipt.amount, receipt.invoice?.currency)}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isAdmin && activeTab !== "invoices" ? null : (
+      <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
         {[{ label: "All invoices", value: invoiceStats.total, icon: <ViewListIcon fontSize="small" />, color: "#25476a" }, { label: "Outstanding", value: formatMoney(invoiceStats.outstanding), icon: <AccountBalanceIcon fontSize="small" />, color: "#C2410C" }, { label: "Paid", value: formatMoney(invoiceStats.paid), icon: <PaidIcon fontSize="small" />, color: "#047857" }, { label: "Overdue", value: invoiceStats.overdue, icon: <EventNoteIcon fontSize="small" />, color: "#B91C1C" }].map((stat) => <div key={stat.label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}><div style={{ width: 36, height: 36, borderRadius: 9, background: "#F1F7FB", color: stat.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{stat.icon}</div><div><div style={{ fontSize: 18, fontWeight: 850, color: stat.color, fontVariantNumeric: "tabular-nums" }}>{stat.value}</div><div style={{ fontSize: 11, color: "#6B7280" }}>{stat.label}</div></div></div>)}
       </div>
@@ -243,6 +333,8 @@ export default function BillingPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

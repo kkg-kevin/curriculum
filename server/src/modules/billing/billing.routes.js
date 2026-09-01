@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement,
+  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer,
 } = require("./billing.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -14,6 +14,8 @@ router.post("/batches", authorize("admin", "school"), createBulkInvoices);
 // Registered before "/:id" — a single-segment GET route further down would otherwise swallow
 // these (Express matches "/receipts" against "/:id" too; same reason "/batches" is up here).
 router.get("/receipts", authorize("admin", "school", "learner"), listReceipts);
+router.get("/customers", authorize("admin"), listCustomers);
+router.get("/customers/:hubId", authorize("admin"), getCustomer);
 router.get("/statements/:payerType/:payerId", authorize("admin", "school", "learner"), getStatement);
 router.get("/:id", authorize("admin", "school", "learner"), getInvoice);
 router.patch("/:id", authorize("admin", "school"), updateInvoice);
