@@ -4,7 +4,7 @@ const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassModel = require("../../classes/class.model");
-const LearningAreaModel = require("../../curriculum/competency-framework/learning-area.model");
+const PathwayModel = require("../../curriculum/competency-framework/pathway.model");
 const AgeCategoryModel = require("../../curriculum/competency-framework/age-category.model");
 const CompetencyService = require("../../curriculum/competency-framework/competency.service");
 const CompetencyModel = require("../../settings/competencies/competency.model");
@@ -148,7 +148,7 @@ async function summarizeIndicatorProgress(submissions, curriculumId = null) {
 }
 
 // A standalone diagnostic issue carries either an ageCategoryId (Developmental Stage ->
-// Performance Band placement) or a learningAreaId (Learning Area -> starting course
+// Performance Band placement) or a pathwayId (Pathway -> starting course
 // placement) — never both. Ordinary class-issued assessments have neither, so this is a
 // no-op for them.
 // Propagates `updates` to every OTHER submission sharing this one's (issueId, groupId) — the
@@ -181,8 +181,8 @@ async function maybePlaceFromDiagnostic(submission) {
   const scorePercent = submission.maxScore > 0 ? (submission.totalScore / submission.maxScore) * 100 : 0;
   if (issue.ageCategoryId) {
     await CompetencyService.placeLearnerFromDiagnostic(issue.learnerId, issue.hubId, issue.ageCategoryId, scorePercent);
-  } else if (issue.learningAreaId) {
-    await CompetencyService.placeLearnerFromLearningAreaDiagnostic(issue.learnerId, issue.learningAreaId, scorePercent, issue.assessmentId);
+  } else if (issue.pathwayId) {
+    await CompetencyService.placeLearnerFromPathwayDiagnostic(issue.learnerId, issue.pathwayId, scorePercent, issue.assessmentId);
   }
 }
 
@@ -236,18 +236,18 @@ const AssessmentSubmissionService = {
   // Standalone diagnostic issuance — bypasses the normal course/session attachment entirely
   // (unlike issueAssessment above), since a diagnostic is meant to run before any course is
   // even assigned. Idempotent per (assessment, learner): re-triggering (e.g. re-enrolling)
-  // never creates a duplicate. Pass exactly one of ageCategoryId/learningAreaId — which one is
+  // never creates a duplicate. Pass exactly one of ageCategoryId/pathwayId — which one is
   // set is what maybePlaceFromDiagnostic branches on at grading time. `hubId` is only ever set
   // alongside ageCategoryId — it's what lets maybePlaceFromDiagnostic write the resulting
   // stage/band placement back onto the correct hub enrollment once this is graded (see
   // CompetencyService.placeLearnerFromDiagnostic). See learner.service.js's
   // maybeAutoIssueDiagnostic for the caller(s).
-  async issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, learningAreaId = null, hubId = null }) {
+  async issueDiagnostic({ assessmentId, learnerId, ageCategoryId = null, pathwayId = null, hubId = null }) {
     await loadAssessmentOrThrow(assessmentId);
-    const existing = await AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId, learningAreaId, ageCategoryId });
+    const existing = await AssessmentIssueModel.findOneStandalone({ assessmentId, learnerId, pathwayId, ageCategoryId });
     if (existing) return existing;
     return AssessmentIssueModel.create({
-      assessmentId, learnerId, ageCategoryId, learningAreaId, hubId,
+      assessmentId, learnerId, ageCategoryId, pathwayId, hubId,
       sessionId: null, courseId: null, classId: null,
       issuedBy: "system", dueDate: null,
     });
@@ -326,12 +326,12 @@ const AssessmentSubmissionService = {
       dueDate: dueDate || null,
       timeLimitMinutes: timeLimitMinutes || null,
       reissuedFromIssueId: issueId,
-      // Carried over so a reissued Stage/Learning-Area diagnostic still re-triggers
+      // Carried over so a reissued Stage/Pathway diagnostic still re-triggers
       // maybePlaceFromDiagnostic when the new attempt is graded — without these, grading a
       // reissued diagnostic would silently never update the learner's placement, since
       // maybePlaceFromDiagnostic branches entirely on the SUBMISSION'S OWN issue carrying them.
       ageCategoryId: originalIssue.ageCategoryId,
-      learningAreaId: originalIssue.learningAreaId,
+      pathwayId: originalIssue.pathwayId,
       hubId: originalIssue.hubId,
     });
   },
@@ -360,7 +360,7 @@ const AssessmentSubmissionService = {
     const classRowsPerClass = await Promise.all(classIds.map((classId) => AssessmentSubmissionService.getIssuedAssessmentsForLearner(classId, learnerId)));
     const classRows = classRowsPerClass.flat();
     const standalone = await AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId);
-    const standaloneRows = standalone.filter((row) => !row.issue.ageCategoryId && !row.issue.learningAreaId);
+    const standaloneRows = standalone.filter((row) => !row.issue.ageCategoryId && !row.issue.pathwayId);
     return [...standaloneRows, ...classRows];
   },
 
@@ -404,7 +404,7 @@ const AssessmentSubmissionService = {
     return null;
   },
 
-  // Every Learning-Area diagnostic this learner currently holds (one per area their class's
+  // Every Pathway diagnostic this learner currently holds (one per area their class's
   // courses expose, per learner.service.js's maybeAutoIssueDiagnostic) — plural counterpart to
   // getDiagnosticForLearner above, since a learner can hold several of these at once. Scoped to
   // two things so old housekeeping never blocks the first-login gate forever: (1) the area's
@@ -414,17 +414,17 @@ const AssessmentSubmissionService = {
   // diagnosticAssessmentId — if an admin swaps which assessment an area uses for its
   // diagnostic, the learner's old issue against the previous assessment is stale too, not a
   // second diagnostic to take.
-  async getLearningAreaDiagnosticsForLearner(learnerId) {
+  async getPathwayDiagnosticsForLearner(learnerId) {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const activeLinks = links.filter((link) => link.status === "active" && link.classId);
     const activeClasses = await Promise.all(activeLinks.map((link) => ClassModel.findById(link.classId)));
     const activeCurriculumIds = new Set(activeClasses.map((c) => c?.curriculumId).filter(Boolean));
 
     const standalone = await AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId);
-    const candidates = standalone.filter((row) => !!row.issue.learningAreaId);
+    const candidates = standalone.filter((row) => !!row.issue.pathwayId);
     const results = await Promise.all(candidates.map(async (row) => {
-      const area = await LearningAreaModel.findById(row.issue.learningAreaId);
-      const matches = !!area && activeCurriculumIds.has(area.curriculumId) && area.diagnosticAssessmentId === row.issue.assessmentId;
+      const pathway = await PathwayModel.findById(row.issue.pathwayId);
+      const matches = !!pathway && activeCurriculumIds.has(pathway.curriculumId) && pathway.diagnosticAssessmentId === row.issue.assessmentId;
       return matches ? row : null;
     }));
     return results.filter(Boolean);

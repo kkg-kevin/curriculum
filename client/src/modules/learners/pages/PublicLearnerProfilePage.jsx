@@ -474,13 +474,13 @@ export default function PublicLearnerProfilePage() {
           </div>
         )}
 
-        {profile.learningJourney?.length > 0 && (
+        {profile.pathway?.length > 0 && (
           <div style={sectionStyle}>
-            <SectionHeading icon={FiBookOpen}>Learning Journey</SectionHeading>
+            <SectionHeading icon={FiBookOpen}>Pathway</SectionHeading>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {profile.learningJourney.map((row) => (
-                <div key={row.learningAreaName} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: INK }}>{row.learningAreaName}</p>
+              {profile.pathway.map((row) => (
+                <div key={row.pathwayName} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: INK }}>{row.pathwayName}</p>
                   <span style={{ fontSize: 12, color: INK_MUTED, textAlign: "right" }}>{row.currentCourseName || "Not placed"}</span>
                 </div>
               ))}

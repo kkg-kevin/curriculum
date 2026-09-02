@@ -4,9 +4,9 @@ const { generateId, toJson } = require("../../../shared/utils/model.utils");
 const TABLE = "performance_bands";
 
 // ageCategoryId is nullable at the DB level and must stay that way. A Progress-Arc-purpose band
-// (learningAreaId null) is required to have one by the Zod/service layer, but a Learning-Journey
-// band (learningAreaId + courseId set — see findByLearningArea below) never has one and never
-// should. Existing production data may already have Learning-Journey bands, so a hard DB-level
+// (pathwayId null) is required to have one by the Zod/service layer, but a Pathway
+// band (pathwayId + courseId set — see findByPathway below) never has one and never
+// should. Existing production data may already have Pathway bands, so a hard DB-level
 // NOT NULL would break inserts for that unrelated feature.
 const PerformanceBandModel = {
   findByCurriculum(curriculumId) {
@@ -17,23 +17,23 @@ const PerformanceBandModel = {
     return db(TABLE).where({ id }).first();
   },
 
-  // One Developmental Stage's own Progress-Arc ladder — excludes Learning-Journey bands
+  // One Developmental Stage's own Progress-Arc ladder — excludes Pathway bands
   // implicitly, since those never carry an ageCategoryId. Ordered by this stage's own `order`
   // (1..N, independent of every other stage's numbering — see create/reorder below).
   findByCurriculumAndStage(curriculumId, ageCategoryId) {
     return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
   },
 
-  // Bands that form one Learning Area's course ladder for Learning Journey (learningAreaId
+  // Bands that form one Pathway's course ladder for Pathway (pathwayId
   // + courseId both set), ordered by score range — lowest first.
-  findByLearningArea(curriculumId, learningAreaId) {
-    return db(TABLE).where({ curriculumId, learningAreaId }).whereNotNull("courseId").orderBy("minScore", "asc");
+  findByPathway(curriculumId, pathwayId) {
+    return db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("minScore", "asc");
   },
 
   async create(curriculumId, fields) {
     const ageCategoryId = fields.ageCategoryId ?? null;
     // Scoped to (curriculumId, ageCategoryId) so each stage's ladder independently numbers 1..N.
-    // Learning-Journey bands (ageCategoryId always null) keep sharing one counter per curriculum
+    // Pathway bands (ageCategoryId always null) keep sharing one counter per curriculum
     // exactly as before — they don't read `order` anyway, they sort by minScore.
     const [{ count }] = await db(TABLE).where({ curriculumId, ageCategoryId }).count({ count: "*" });
 
@@ -63,7 +63,7 @@ const PerformanceBandModel = {
       // runIndicatorProgressEngine).
       advancementMin: fields.advancementMin ?? 0,
       advancementThreshold: fields.advancementThreshold ?? 0,
-      learningAreaId: fields.learningAreaId ?? null,
+      pathwayId: fields.pathwayId ?? null,
       courseId: fields.courseId ?? null,
       ageCategoryId,
       order,

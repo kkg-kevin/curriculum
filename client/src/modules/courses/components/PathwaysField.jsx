@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { FiCheck, FiSearch } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { useLearningAreas as useGlobalLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
+import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { Field } from "./formFields";
-import CreateLearningAreaModal from "./CreateLearningAreaModal";
+import CreatePathwayModal from "./CreatePathwayModal";
 
 const PALETTE = [
   "#25476a", "#38aae1", "#059669", "#7C3AED",
   "#DC2626", "#D97706", "#0891B2", "#BE185D",
 ];
 
-function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }) {
+function AddPathwayDropdown({ available, allPathways, onAdd, onRequestCreate }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -34,8 +34,8 @@ function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }
     ? available.filter((a) => a.name.toLowerCase().includes(trimmed.toLowerCase()))
     : available;
   // Only offer "create" when the name is genuinely new — otherwise we'd let this
-  // field silently mint duplicate catalog entries for something that already exists.
-  const canCreate = trimmed !== "" && !allAreas.some((a) => a.name.toLowerCase() === trimmed.toLowerCase());
+  // field silently mint duplicate template entries for something that already exists.
+  const canCreate = trimmed !== "" && !allPathways.some((a) => a.name.toLowerCase() === trimmed.toLowerCase());
 
   const handleCreate = () => {
     onRequestCreate(trimmed);
@@ -54,7 +54,7 @@ function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }
           cursor: "pointer",
         }}
       >
-        + Add Learning Area
+        + Add Pathway
       </button>
       {open && (
         <div style={{
@@ -85,15 +85,15 @@ function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", color: "#9CA3AF", marginBottom: "4px" }}>{available.length === 0 ? <FiCheck size={20} /> : <FiSearch size={20} />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  {available.length === 0 ? "All learning areas are already added." : "No matches found."}
+                  {available.length === 0 ? "All pathways are already added." : "No matches found."}
                 </p>
               </div>
             )}
-            {filtered.map((area) => (
+            {filtered.map((pw) => (
               <button
-                key={area.id}
+                key={pw.id}
                 type="button"
-                onClick={() => { onAdd(area.id); setOpen(false); }}
+                onClick={() => { onAdd(pw.id); setOpen(false); }}
                 style={{
                   display: "flex", alignItems: "center", gap: "8px", width: "100%", padding: "8px 10px",
                   border: "none", borderRadius: "8px", background: "transparent", fontSize: "12.5px",
@@ -102,8 +102,8 @@ function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#F3F4F6"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, backgroundColor: area.color || "#9CA3AF" }} />
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{area.name}</span>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, backgroundColor: pw.color || "#9CA3AF" }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pw.name}</span>
               </button>
             ))}
             {canCreate && (
@@ -142,46 +142,46 @@ function AddLearningAreaDropdown({ available, allAreas, onAdd, onRequestCreate }
   );
 }
 
-export default function LearningAreasField({ name, label, hint }) {
+export default function PathwaysField({ name, label, hint }) {
   const { watch, setValue } = useFormContext();
-  const { data: allAreas = [], isLoading } = useGlobalLearningAreas();
+  const { data: allPathways = [], isLoading } = usePathwayTemplates();
   const [createQuery, setCreateQuery] = useState(null);
   const selectedIds = watch(name) || [];
 
   const selected = selectedIds
-    .map((id) => allAreas.find((a) => a.id === id))
+    .map((id) => allPathways.find((a) => a.id === id))
     .filter(Boolean);
-  const available = allAreas.filter((a) => !selectedIds.includes(a.id));
+  const available = allPathways.filter((a) => !selectedIds.includes(a.id));
 
-  const addLearningArea = (id) => {
+  const addPathway = (id) => {
     setValue(name, [...selectedIds, id], { shouldDirty: true });
   };
-  const removeLearningArea = (id) => {
+  const removePathway = (id) => {
     setValue(name, selectedIds.filter((x) => x !== id), { shouldDirty: true });
   };
 
   return (
     <Field label={label} hint={hint}>
       {isLoading ? (
-        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>Loading learning areas…</p>
-      ) : allAreas.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>Loading pathways…</p>
+      ) : allPathways.length === 0 ? (
         <div style={{ padding: "12px 14px", backgroundColor: "#F9FAFB", border: "1.5px dashed #E5E7EB", borderRadius: "10px" }}>
           <p style={{ margin: "0 0 6px", fontSize: "12.5px", color: "#6B7280" }}>
-            No learning areas have been defined yet.
+            No pathways have been defined yet.
           </p>
           <Link to="/settings" style={{ fontSize: "12.5px", fontWeight: "700", color: "#38aae1", textDecoration: "none" }}>
-            + Define Learning Areas in Settings →
+            + Define Pathways in Settings →
           </Link>
         </div>
       ) : (
         <div>
           {selected.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-              {selected.map((area, idx) => {
-                const color = area.color || PALETTE[idx % PALETTE.length];
+              {selected.map((pw, idx) => {
+                const color = pw.color || PALETTE[idx % PALETTE.length];
                 return (
                   <span
-                    key={area.id}
+                    key={pw.id}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "7px",
                       padding: "5px 8px 5px 12px", borderRadius: "20px",
@@ -189,10 +189,10 @@ export default function LearningAreasField({ name, label, hint }) {
                       fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif",
                     }}
                   >
-                    {area.name}
+                    {pw.name}
                     <button
                       type="button"
-                      onClick={() => removeLearningArea(area.id)}
+                      onClick={() => removePathway(pw.id)}
                       title="Remove"
                       style={{
                         width: "16px", height: "16px", borderRadius: "50%", border: "none",
@@ -208,14 +208,14 @@ export default function LearningAreasField({ name, label, hint }) {
               })}
             </div>
           )}
-          <AddLearningAreaDropdown available={available} allAreas={allAreas} onAdd={addLearningArea} onRequestCreate={setCreateQuery} />
+          <AddPathwayDropdown available={available} allPathways={allPathways} onAdd={addPathway} onRequestCreate={setCreateQuery} />
         </div>
       )}
       {createQuery !== null && (
-        <CreateLearningAreaModal
+        <CreatePathwayModal
           initialName={createQuery}
           onClose={() => setCreateQuery(null)}
-          onCreated={addLearningArea}
+          onCreated={addPathway}
         />
       )}
     </Field>

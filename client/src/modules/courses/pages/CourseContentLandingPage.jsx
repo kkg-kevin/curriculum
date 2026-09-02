@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { FiAlertTriangle } from "react-icons/fi";
-import { useCourseQuery, useSessions, useCourseLearningAreas } from "../hooks/useCourse";
+import { useCourseQuery, useSessions, useCoursePathways } from "../hooks/useCourse";
 import { sessionLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseCatalogPath, sectionPath } from "../../../routes/portalPaths";
@@ -10,7 +10,7 @@ const ACCENT = "#25476a";
 // Read-only landing page for a single course, reached from a School's/Teacher's/Learner's
 // course catalog. Deliberately not CourseViewPage (that page is a session editor with
 // create/update/delete — appropriate for Admin authoring, not for browsing content) — but the
-// Learning Area tags CourseViewPage shows are still pulled in here read-only (no "Add some →"
+// Pathway tags CourseViewPage shows are still pulled in here read-only (no "Add some →"
 // edit prompt, since this page has no admin controls), so a course tagged e.g. "Robotics" reads
 // the same regardless of who's looking at it, not just to Admin.
 export default function CourseContentLandingPage() {
@@ -21,7 +21,7 @@ export default function CourseContentLandingPage() {
 
   const { data: course, isLoading: courseLoading } = useCourseQuery(courseId);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(courseId);
-  const { data: learningAreas = [] } = useCourseLearningAreas(courseId);
+  const { data: pathways = [] } = useCoursePathways(courseId);
 
   if (courseLoading || sessionsLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -48,12 +48,12 @@ export default function CourseContentLandingPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{course.name}</h1>
-          <p style={{ margin: learningAreas.length > 0 ? "0 0 12px" : 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 640 }}>
+          <p style={{ margin: pathways.length > 0 ? "0 0 12px" : 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 640 }}>
             {sessions.length} session{sessions.length !== 1 ? "s" : ""}
           </p>
-          {learningAreas.length > 0 && (
+          {pathways.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {learningAreas.map((area) => (
+              {pathways.map((area) => (
                 <span
                   key={area.id}
                   style={{

@@ -4,9 +4,9 @@ const LearnerHubLinkModel = require("./learner-hub-link.model");
 const LearnerTransferModel = require("./learner-transfer.model");
 const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
-const LearnerJourneyModel = require("../curriculum/competency-framework/learner-journey.model");
+const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
-const LearningAreaModel = require("../curriculum/competency-framework/learning-area.model");
+const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const ProgressionLadderModel = require("../curriculum/competency-framework/progression-ladder.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 // Models, not services, for the delete cascade below — these are dependency-free fs wrappers, so
@@ -38,11 +38,11 @@ function computeAge(dateOfBirth) {
 // stage) at each one, hence the required `hubId`.
 //
 // A Developmental Stage no longer auto-issues its own diagnostic — that mechanism was removed in
-// favor of Learning Area diagnostics doing the same age-appropriate-placement job per subject
-// area (see maybeAutoIssueLearningAreaDiagnostics below), so a learner gets one diagnostic per
+// favor of Pathway diagnostics doing the same age-appropriate-placement job per subject
+// area (see maybeAutoIssuePathwayDiagnostics below), so a learner gets one diagnostic per
 // relevant subject instead of one extra, separate "overall" diagnostic on top. currentStageId
-// itself still matters beyond this: Progress Arc's band-snapshot display and Learning Journey's
-// course-defaulting both read it (see CompetencyService.getLearningJourney), so the age-match
+// itself still matters beyond this: Progress Arc's band-snapshot display and Pathway's
+// course-defaulting both read it (see CompetencyService.getPathway), so the age-match
 // still runs — only the issueDiagnostic call was removed. AgeCategory.diagnosticAssessmentId
 // remains in the schema for now (existing historical issues/reports still reference it) but the
 // authoring UI (AgeCategoriesPanel) no longer exposes it, so no new stage ever sets it again.
@@ -58,7 +58,7 @@ async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
       await LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
     }
   }
-  await maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age);
+  await maybeAutoIssuePathwayDiagnostics(learnerId, cls, age);
   await maybeAutoPlaceRung(learner, cls, age);
 }
 
@@ -76,8 +76,8 @@ function parseAgeRange(ageRange) {
 }
 
 // Legacy counterpart to the Developmental Stage age-match above, for curricula still on the
-// old Progression Ladder (superseded by Learning Areas' Developmental Stages, but never
-// migrated off — see CompetenciesPage.jsx's LearningJourneyPanel comment). Same "guess from age,
+// old Progression Ladder (superseded by Pathways' Developmental Stages, but never
+// migrated off — see CompetenciesPage.jsx's PathwayPanel comment). Same "guess from age,
 // never overwrite an existing placement" rule, just matched against ageRange strings instead of
 // minAge/maxAge columns. currentRungId lives on the learner record itself, not the hub link —
 // matching where JourneyPlacementCard already writes it when set manually, and the same
@@ -93,15 +93,15 @@ async function maybeAutoPlaceRung(learner, cls, age) {
   if (matched) await LearnerModel.update(learner.id, { currentRungId: matched.id });
 }
 
-// A learner takes ONE diagnostic, decided by their age bracket: the single Learning Area in this
-// curriculum whose minAge/maxAge range contains the learner's age. Learning Areas are authored so
+// A learner takes ONE diagnostic, decided by their age bracket: the single Pathway in this
+// curriculum whose minAge/maxAge range contains the learner's age. Pathways are authored so
 // their age ranges partition the age line (5-7, 8-10, 11-13, …), so exactly one matches — and
 // that area's diagnosticAssessmentId is the one diagnostic the learner is issued.
 //
 // Deliberately NOT filtered by "which courses this class currently exposes" — the diagnostic's
 // job is placement, which happens before any course is assigned, so an age-matched area with no
 // visible courses (or none yet) must still issue its diagnostic. The area's own course ladder is
-// only consulted later, once the diagnostic is graded (see placeLearnerFromLearningAreaDiagnostic).
+// only consulted later, once the diagnostic is graded (see placeLearnerFromPathwayDiagnostic).
 //
 // No dateOfBirth on file (age == null) → no bracket can be resolved → no diagnostic is auto-
 // issued here. That's surfaced to admins (the learner shows as "needs date of birth" for
@@ -113,27 +113,27 @@ async function maybeAutoPlaceRung(learner, cls, age) {
 // matched area has no diagnosticAssessmentId, nothing is issued (nothing to take).
 //
 // Idempotent: issueDiagnostic dedupes per (assessmentId, learnerId), so this is safe to re-run on
-// every enrollment/class/DOB change. It also PRUNES: any Learning-Area diagnostic previously
+// every enrollment/class/DOB change. It also PRUNES: any Pathway diagnostic previously
 // issued for a different bracket of this same curriculum that the learner never started is
 // revoked, so a learner who was over-issued (before this became age-bracket-scoped, or after an
 // age-range edit) is left holding only the one that matches their age. A diagnostic the learner
 // has already opened (in_progress / submitted / graded) is never touched — that's real work / a
 // real placement.
-async function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age) {
+async function maybeAutoIssuePathwayDiagnostics(learnerId, cls, age) {
   if (!cls?.curriculumId || age == null) return;
-  const allAreas = await LearningAreaModel.findByCurriculumId(cls.curriculumId);
-  const areaById = new Map(allAreas.map((a) => [a.id, a]));
-  const match = allAreas.find(
-    (a) => (a.minAge == null || age >= a.minAge) && (a.maxAge == null || age <= a.maxAge)
+  const allPathways = await PathwayModel.findByCurriculumId(cls.curriculumId);
+  const pathwayById = new Map(allPathways.map((p) => [p.id, p]));
+  const match = allPathways.find(
+    (p) => (p.minAge == null || age >= p.minAge) && (p.maxAge == null || age <= p.maxAge)
   );
 
-  // Revoke stale un-started Learning-Area diagnostics for THIS curriculum's areas — anything
+  // Revoke stale un-started Pathway diagnostics for THIS curriculum's pathways — anything
   // that isn't the age-matched one.
   const issues = await AssessmentIssueModel.findAll({ learnerId });
   for (const issue of issues) {
-    if (!issue.learningAreaId || issue.learningAreaId === match?.id) continue;
-    const area = areaById.get(issue.learningAreaId);
-    if (!area) continue; // belongs to a different curriculum — leave it for that hub's gate
+    if (!issue.pathwayId || issue.pathwayId === match?.id) continue;
+    const pathway = pathwayById.get(issue.pathwayId);
+    if (!pathway) continue; // belongs to a different curriculum — leave it for that hub's gate
     const sub = await AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId });
     if (sub && sub.status !== "not_started") continue; // learner engaged with it — keep
     if (sub) await AssessmentSubmissionModel.delete(sub.id);
@@ -144,7 +144,7 @@ async function maybeAutoIssueLearningAreaDiagnostics(learnerId, cls, age) {
   await AssessmentSubmissionService.issueDiagnostic({
     assessmentId: match.diagnosticAssessmentId,
     learnerId,
-    learningAreaId: match.id,
+    pathwayId: match.id,
   });
 }
 
@@ -257,7 +257,7 @@ const LearnerService = {
       err.statusCode = 404;
       throw err;
     }
-    await LearnerJourneyModel.deleteByLearnerId(id);
+    await LearnerPathwayModel.deleteByLearnerId(id);
     await LearnerHubLinkModel.deleteByLearnerId(id);
     // Everything else keyed to this learner goes too. Without this the records survive as
     // permanently unreachable rows — every read path resolves the learner first, so an orphaned
@@ -458,7 +458,7 @@ const LearnerService = {
   // What an unauthenticated scan of the QR sees — still a hand-built allow-list (never
   // `{...record}`, so a field added to the learner schema later can't silently start leaking
   // through a link a school printed on a badge): full identity, Developmental Stage/Performance
-  // Band placement, the Progress Arc ladder, per-competency standing, and Learning Journey course
+  // Band placement, the Progress Arc ladder, per-competency standing, and Pathway course
   // placement per area. Deliberately excludes guardian contact details (name/email) — a link
   // meant to be scanned/shared publicly (badges, posters) shouldn't hand out a parent's contact
   // info to whoever scans it — and individual assessment scores/teacher feedback (Reports/
@@ -522,7 +522,7 @@ const LearnerService = {
         CompetencyService.getLearnerCompetencyScores(curriculumId, record.id),
         CompetencyService.getCurriculumCompetencies(curriculumId),
         CompetencyService.getLearnerBandProgress(curriculumId, record.id),
-        CompetencyService.getLearningJourney(curriculumId, record.id),
+        CompetencyService.getPathway(curriculumId, record.id),
         AssessmentSubmissionService.getIssuedRowsForLearner(record.id),
       ]);
 
@@ -551,7 +551,7 @@ const LearnerService = {
 
       learningJourney = await Promise.all(journeyRows.map(async (row) => {
         const course = row.currentCourseId ? await CourseModel.findById(row.currentCourseId) : null;
-        return { learningAreaName: row.learningAreaName, currentCourseName: course?.name || null };
+        return { pathwayName: row.pathwayName, currentCourseName: course?.name || null };
       }));
     }
 

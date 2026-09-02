@@ -8,9 +8,9 @@ const {
   getAssessmentCompetencies,
   linkCompetency,
   unlinkCompetency,
-  getAssessmentLearningAreas,
-  linkLearningArea,
-  unlinkLearningArea,
+  getAssessmentPathways,
+  linkPathway,
+  unlinkPathway,
   getAssessmentInventory,
   linkInventoryItem,
   unlinkInventoryItem,
@@ -31,9 +31,9 @@ router.get("/:id/competencies/links", authorize("admin", "school", "teacher", "l
 router.post("/:id/competencies/links", authorize("admin"), linkCompetency);
 router.delete("/:id/competencies/links/:competencyId", authorize("admin"), unlinkCompetency);
 
-// Learning Areas — this assessment's tagged learning areas (authored globally under /api/learning-areas)
-router.route("/:id/learning-areas/links").get(authorize("admin"), getAssessmentLearningAreas).post(authorize("admin"), linkLearningArea);
-router.route("/:id/learning-areas/links/:learningAreaId").delete(authorize("admin"), unlinkLearningArea);
+// Pathways — this assessment's tagged pathways (authored globally under /api/pathway-templates)
+router.route("/:id/pathways/links").get(authorize("admin"), getAssessmentPathways).post(authorize("admin"), linkPathway);
+router.route("/:id/pathways/links/:pathwayId").delete(authorize("admin"), unlinkPathway);
 
 // Inventory — this project's linked materials, each with a quantity (authored globally under /api/inventory)
 router.route("/:id/inventory/links").get(authorize("admin"), getAssessmentInventory).post(authorize("admin"), linkInventoryItem);

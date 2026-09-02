@@ -12,11 +12,11 @@ import {
   useCompetencies,
   useLinkCompetency,
   useUnlinkCompetency,
-  useLearningAreas,
-  useCreateLearningArea,
-  useUpdateLearningArea,
-  useDeleteLearningArea,
-  useImportLearningArea,
+  usePathways,
+  useCreatePathway,
+  useUpdatePathway,
+  useDeletePathway,
+  useImportPathway,
   useAgeCategories,
   useCreateAgeCategory,
   useUpdateAgeCategory,
@@ -41,8 +41,8 @@ import {
   useBandProgress,
 } from "../hooks/useCompetencies";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
-import { useLearningAreas as useCatalogLearningAreas, LEARNING_AREA_KEYS } from "../../settings/learning-areas/hooks/useLearningAreas";
-import { learningAreasApi as catalogLearningAreasApi } from "../../settings/learning-areas/services/learningAreasApi";
+import { usePathwayTemplates as useCatalogPathways, PATHWAY_TEMPLATE_KEYS } from "../../settings/pathways/hooks/usePathwayTemplates";
+import { pathwayTemplatesApi as pathwayTemplateApi } from "../../settings/pathways/services/pathwayTemplatesApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CoursePickerField from "../../courses/components/CoursePickerField";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
@@ -132,7 +132,7 @@ const CSS = `
   .cp-item-name { flex:1; min-width:0; font-size:13px; font-weight:600; color:#111827; padding-top:1px; }
   .cp-item-sub  { font-size:11px; color:#9CA3AF; font-weight:400; margin-top:1px; }
 
-  /* Course list (Learning Areas) */
+  /* Course list (Pathways) */
   .cp-course-section {
     margin-top:12px; padding-top:12px; border-top:1px dashed #E5E7EB;
   }
@@ -162,7 +162,7 @@ const CSS = `
   .cp-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
   .cp-course-meta { font-size:10.5px; font-weight:600; color:#9CA3AF; flex-shrink:0; white-space:nowrap; }
 
-  /* Diagnostic Assessment section (Learning Areas) — violet accent, matches LearnerViewPage */
+  /* Diagnostic Assessment section (Pathways) — violet accent, matches LearnerViewPage */
   .cp-diag-section {
     margin-top:10px; padding:11px 12px; border-radius:10px;
     background:#FAF8FF; border:1px solid #E9DFFC;
@@ -517,10 +517,10 @@ function StepIndicator({ current }) {
   );
 }
 
-/* ── LearningAreasPanel ─────────────────────────────────────────────────── */
+/* ── PathwaysPanel ─────────────────────────────────────────────────── */
 
-// Shared by LearningAreasPanel (course rows on each area card) and LearningJourneyPanel
-// (Course Sequence editor) — an area's course order comes from courseSequence when set,
+// Shared by PathwaysPanel (course rows on each pathway card) and LearningJourneyPanel
+// (Course Sequence editor) — a pathway's course order comes from courseSequence when set,
 // falling back to courses for anything not yet sequenced there.
 function sequenceFor(area) {
   const seq = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
@@ -529,7 +529,7 @@ function sequenceFor(area) {
   return [...seqIds, ...extras];
 }
 
-function ImportLearningAreaDropdown({ available, onImport, isPending }) {
+function ImportPathwayDropdown({ available, onImport, isPending }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -543,7 +543,7 @@ function ImportLearningAreaDropdown({ available, onImport, isPending }) {
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
       <button type="button" className="cp-btn-secondary" onClick={() => setOpen((v) => !v)}>
-        Import from Catalog
+        Import Template
       </button>
       {open && (
         <div className="cp-card-menu" style={{ minWidth: "260px", maxHeight: "320px", overflowY: "auto", right: 0 }}>
@@ -570,14 +570,14 @@ function ImportLearningAreaDropdown({ available, onImport, isPending }) {
   );
 }
 
-function LearningAreasPanel({ curriculumId }) {
-  const { data: areas = [], isLoading, isError } = useLearningAreas(curriculumId);
-  const { mutate: create, isPending: creating } = useCreateLearningArea(curriculumId);
-  const { mutate: update, isPending: updating } = useUpdateLearningArea(curriculumId);
-  const { mutate: remove, isPending: deleting } = useDeleteLearningArea(curriculumId);
+function PathwaysPanel({ curriculumId }) {
+  const { data: areas = [], isLoading, isError } = usePathways(curriculumId);
+  const { mutate: create, isPending: creating } = useCreatePathway(curriculumId);
+  const { mutate: update, isPending: updating } = useUpdatePathway(curriculumId);
+  const { mutate: remove, isPending: deleting } = useDeletePathway(curriculumId);
   const { requestDelete, confirmDialog } = useConfirmDelete();
-  const { data: catalogAreas = [] } = useCatalogLearningAreas();
-  const { mutate: importArea, isPending: importing } = useImportLearningArea(curriculumId);
+  const { data: catalogAreas = [] } = useCatalogPathways();
+  const { mutate: importArea, isPending: importing } = useImportPathway(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
   const courseById = new Map(allCourses.map((c) => [c.id, c]));
@@ -646,7 +646,7 @@ function LearningAreasPanel({ curriculumId }) {
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
     } else {
-      // A brand-new area authored here should also become a Settings default so other
+      // A brand-new pathway authored here should also become a reusable template so other
       // curricula/courses/assessments can pick it up — but only if it's genuinely new;
       // otherwise we'd mint a duplicate catalog entry alongside the existing one. Synced
       // silently (no toast) since the curriculum-copy creation above already confirmed the save.
@@ -654,8 +654,8 @@ function LearningAreasPanel({ curriculumId }) {
       create(data, {
         onSuccess: () => {
           if (!existsInCatalog) {
-            catalogLearningAreasApi.createLearningArea(data).then(() => {
-              queryClient.invalidateQueries({ queryKey: LEARNING_AREA_KEYS.areas });
+            pathwayTemplateApi.create(data).then(() => {
+              queryClient.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
             }).catch(() => {});
           }
           cancel();
@@ -665,23 +665,23 @@ function LearningAreasPanel({ curriculumId }) {
   }
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
-  if (isError) return <ErrorNotice message="Couldn't load Learning Areas — try refreshing the page." />;
+  if (isError) return <ErrorNotice message="Couldn't load Pathways — try refreshing the page." />;
 
   return (
     <div className="cp-card">
       {confirmDialog}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Learning Areas</h2>
+          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Pathways</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {areas.length} area{areas.length !== 1 ? "s" : ""} — broad domains that group the competencies this curriculum uses (e.g. Language, STEM, Arts)
+            {areas.length} pathway{areas.length !== 1 ? "s" : ""} — each a roadmap of courses a learner follows, with its own diagnostic and age range
           </p>
         </div>
         {!showForm && (
           <div style={{ display: "flex", gap: "8px" }}>
-            <ImportLearningAreaDropdown available={availableToImport} onImport={importArea} isPending={importing} />
+            <ImportPathwayDropdown available={availableToImport} onImport={importArea} isPending={importing} />
             <button type="button" className="cp-btn-add" onClick={openCreate}>
-              + Add Area
+              + Add Pathway
             </button>
           </div>
         )}
@@ -693,7 +693,7 @@ function LearningAreasPanel({ curriculumId }) {
             <input
               ref={nameRef}
               className="cp-input"
-              placeholder="Area name (e.g. Language & Literacy)"
+              placeholder="Pathway name (e.g. Software Engineer)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
@@ -731,7 +731,7 @@ function LearningAreasPanel({ curriculumId }) {
           <div style={{ marginTop: "12px" }}>
             <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
             <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-              Only learners in this age range are auto-issued this area's diagnostic. Leave blank to apply to every age.
+              Only learners in this age range are auto-issued this pathway's diagnostic. Leave blank to apply to every age.
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
@@ -758,12 +758,12 @@ function LearningAreasPanel({ curriculumId }) {
 
           {/* Existing areas set/change their diagnostic from the dedicated section on the card
               instead (see the "Diagnostic Assessment" cp-diag-section below) — kept here only
-              for create, since a brand-new area has no card yet to attach that to. */}
+              for create, since a brand-new pathway has no card yet to attach that to. */}
           {!editId && (
             <div style={{ marginTop: "12px" }}>
               <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Auto-issued once to a learner whose class exposes one of this area's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
+                Auto-issued once to a learner whose class exposes one of this pathway's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
               </p>
               <select
                 className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
@@ -788,9 +788,9 @@ function LearningAreasPanel({ curriculumId }) {
       {areas.length === 0 && !showForm ? (
         <div className="cp-empty">
           <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><FolderOpenIcon fontSize="inherit" /></div>
-          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No learning areas yet</p>
-          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Group the competencies this curriculum uses under broad learning areas.</p>
-          <button type="button" className="cp-btn-ghost" onClick={openCreate}>+ Add First Area</button>
+          <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No pathways yet</p>
+          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Build a roadmap of courses, a diagnostic and an age range for each area a learner can specialise in.</p>
+          <button type="button" className="cp-btn-ghost" onClick={openCreate}>+ Add First Pathway</button>
         </div>
       ) : (
         <div className="cp-list">
@@ -821,7 +821,7 @@ function LearningAreasPanel({ curriculumId }) {
                     className="cp-icon-btn danger"
                     onClick={() => requestDelete({
                       title: `Delete "${area.name}"?`,
-                      message: "This learning area will be permanently removed, along with its course sequence and placement thresholds. This cannot be undone.",
+                      message: "This pathway will be permanently removed, along with its course sequence and placement thresholds. This cannot be undone.",
                       onConfirm: () => remove(area.id),
                     })}
                     disabled={deleting}
@@ -891,7 +891,7 @@ function LearningAreasPanel({ curriculumId }) {
                     </div>
                   ) : (
                     <div className="cp-diag-empty">
-                      <span className="cp-diag-hint">Auto-issued once a learner's class exposes one of this area's courses.</span>
+                      <span className="cp-diag-hint">Auto-issued once a learner's class exposes one of this pathway's courses.</span>
                       <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={() => openDiagPicker(area)}>+ Assign</button>
                     </div>
                   )}
@@ -906,12 +906,12 @@ function LearningAreasPanel({ curriculumId }) {
 }
 
 /* ── Learning Journey ──────────────────────────────────────────────────────
- * Course Sequence is read-only display, not configuration — a learning area's
+ * Course Sequence is read-only display, not configuration — a pathway's
  * starting course is just whichever course was added to it first, over on the
- * Learning Areas tab (see sequenceFor()); there's no reordering or per-
+ * Pathways tab (see sequenceFor()); there's no reordering or per-
  * Developmental-Stage override step to do here anymore. Mirrors the same
- * read-only treatment LearnerViewPage.jsx's LearningJourneyCard already uses
- * for a learner's own placement — same underlying getLearningJourney default,
+ * read-only treatment LearnerViewPage.jsx's PathwayCard already uses
+ * for a learner's own placement — same underlying getPathway default,
  * just shown here at the curriculum level instead of per-learner. What IS
  * still configured here is Placement Thresholds: the diagnostic score needed
  * to place a learner at each course. Per-learner placement (including
@@ -920,7 +920,7 @@ function LearningAreasPanel({ curriculumId }) {
  * but still referenced by the Learner page's legacy placement dropdown). */
 
 function LearningJourneyPanel({ curriculumId }) {
-  const { data: areas = [], isLoading: areasLoading, isError: areasError } = useLearningAreas(curriculumId);
+  const { data: areas = [], isLoading: areasLoading, isError: areasError } = usePathways(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { data: allBands = [], isLoading: bandsLoading, isError: bandsError } = usePerformanceBands(curriculumId);
   const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
@@ -939,15 +939,15 @@ function LearningJourneyPanel({ curriculumId }) {
         <div style={{ marginBottom: "18px" }}>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Course Sequence</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            The course a learner starts at in each learning area — the first course added to it, over on the Learning Areas tab.
+            The course a learner starts at in each pathway — the first course added to it, over on the Pathways tab.
           </p>
         </div>
         {areasWithCourses.length === 0 ? (
           <div className="cp-empty">
             <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
-            <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced learning areas yet</p>
+            <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced pathways yet</p>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-              Add courses to a Learning Area first, over on the Learning Areas tab.
+              Add courses to a Pathway first, over on the Pathways tab.
             </p>
           </div>
         ) : (
@@ -978,7 +978,7 @@ function LearningJourneyPanel({ curriculumId }) {
           <div className="cp-empty">
             <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
             <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-              Sequence a Learning Area's courses above first.
+              Sequence a Pathway's courses above first.
             </p>
           </div>
         ) : (
@@ -989,7 +989,7 @@ function LearningJourneyPanel({ curriculumId }) {
                 area={area}
                 ids={sequenceFor(area)}
                 courseNameById={courseNameById}
-                bands={allBands.filter((b) => b.learningAreaId === area.id)}
+                bands={allBands.filter((b) => b.pathwayId === area.id)}
                 onCreate={createBand}
                 onDelete={removeBand}
                 saving={creatingBand}
@@ -1020,7 +1020,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
     if (!courseId || minScore === "") return;
     const course = courseNameById.get(courseId) || "Course";
     onCreate(
-      { name: `${area.name} — ${course}`, minScore: Number(minScore), learningAreaId: area.id, courseId },
+      { name: `${area.name} — ${course}`, minScore: Number(minScore), pathwayId: area.id, courseId },
       { onSuccess: () => setAdding(false) }
     );
   }
@@ -1042,7 +1042,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
 
       {sorted.length === 0 && !adding && (
         <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-          No thresholds set — a diagnostic for this area always places at the first course in the sequence.
+          No thresholds set — a diagnostic for this pathway always places at the first course in the sequence.
         </p>
       )}
 
@@ -1058,7 +1058,7 @@ function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate
                 disabled={deleting}
                 onClick={() => requestDelete({
                   title: "Remove this placement threshold?",
-                  message: `Learners will no longer be placed into "${courseNameById.get(b.courseId) || "this course"}" at ${b.minScore}%+ on this area's diagnostic. This cannot be undone.`,
+                  message: `Learners will no longer be placed into "${courseNameById.get(b.courseId) || "this course"}" at ${b.minScore}%+ on this pathway's diagnostic. This cannot be undone.`,
                   onConfirm: () => onDelete(b.id),
                 })}
                 title="Remove threshold"
@@ -3006,11 +3006,11 @@ function PerformanceBandsPanel({ curriculumId }) {
     if (!stages.some((s) => s.id === selectedStageId)) setSelectedStageId(stages[0].id);
   }, [stages, selectedStageId]);
 
-  // Learning Journey reuses this same model for per-Learning-Area placement thresholds
-  // (learningAreaId set) — exclude those here (alongside the stage filter) so this panel only
+  // Pathway reuses this same model for per-Pathway placement thresholds
+  // (pathwayId set) — exclude those here (alongside the stage filter) so this panel only
   // ever shows Progress Arc bands.
   const { data: allBands = [], isLoading, isError } = usePerformanceBands(curriculumId);
-  const progressArcBands = allBands.filter((b) => !b.learningAreaId);
+  const progressArcBands = allBands.filter((b) => !b.pathwayId);
   const bands = !selectedStageId ? [] : progressArcBands
     .filter((b) => b.ageCategoryId === selectedStageId)
     .sort((a, b) => a.order - b.order);
@@ -3778,7 +3778,7 @@ export default function CompetenciesPage() {
           className={`cp-nav-btn${activeNav === "areas" ? " active" : ""}`}
           onClick={() => setActiveNav("areas")}
         >
-          Learning Areas
+          Pathways
         </button>
 
         <button
@@ -3801,7 +3801,7 @@ export default function CompetenciesPage() {
       {/* ── Panels ──────────────────────────────────────────────────── */}
       {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
       {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
-      {activeNav === "areas"        && <LearningAreasPanel    curriculumId={id} />}
+      {activeNav === "areas"        && <PathwaysPanel    curriculumId={id} />}
       {activeNav === "journey"      && <LearningJourneyPanel curriculumId={id} />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>

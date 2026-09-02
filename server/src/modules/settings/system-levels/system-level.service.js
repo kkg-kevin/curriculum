@@ -17,7 +17,7 @@ function duplicateNameError() {
   return err;
 }
 
-// Unlike the Learning Area catalog (copied into a curriculum on import, so the catalog and a
+// Unlike the Pathway catalog (copied into a curriculum on import, so the catalog and a
 // curriculum's copy are independent afterward), a curriculum's classes[] reference a System
 // Level by id directly and permanently — deleting one out from under a curriculum that still
 // maps a grade onto it would leave that grade pointing at nothing. Block it instead.

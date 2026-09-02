@@ -144,8 +144,8 @@ const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
 });
 
-const linkLearningAreaSchema = z.object({
-  learningAreaId: z.string().min(1, "learningAreaId is required"),
+const linkPathwaySchema = z.object({
+  pathwayId: z.string().min(1, "pathwayId is required"),
 });
 
 const linkInventoryItemSchema = z.object({
@@ -157,7 +157,7 @@ module.exports = {
   createAssessmentSchema,
   updateAssessmentSchema,
   linkCompetencySchema,
-  linkLearningAreaSchema,
+  linkPathwaySchema,
   linkInventoryItemSchema,
   ASSESSMENT_TYPES,
   DEFAULT_RATING_SCALE,

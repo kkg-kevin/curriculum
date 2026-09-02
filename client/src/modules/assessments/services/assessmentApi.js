@@ -19,15 +19,15 @@ export const assessmentApi = {
   unlinkCompetency: (assessmentId, competencyId) =>
     api.delete(`${ENDPOINT}/${assessmentId}/competencies/links/${competencyId}`).then((r) => r.data.data),
 
-  /* Learning Areas — this assessment's tagged learning areas (authored globally in Settings) */
-  getAssessmentLearningAreas: (assessmentId) =>
-    api.get(`${ENDPOINT}/${assessmentId}/learning-areas/links`).then((r) => r.data.data),
+  /* Pathways — this assessment's tagged pathways (authored globally in Settings) */
+  getAssessmentPathways: (assessmentId) =>
+    api.get(`${ENDPOINT}/${assessmentId}/pathways/links`).then((r) => r.data.data),
 
-  linkLearningArea: (assessmentId, learningAreaId) =>
-    api.post(`${ENDPOINT}/${assessmentId}/learning-areas/links`, { learningAreaId }).then((r) => r.data.data),
+  linkPathway: (assessmentId, pathwayId) =>
+    api.post(`${ENDPOINT}/${assessmentId}/pathways/links`, { pathwayId }).then((r) => r.data.data),
 
-  unlinkLearningArea: (assessmentId, learningAreaId) =>
-    api.delete(`${ENDPOINT}/${assessmentId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
+  unlinkPathway: (assessmentId, pathwayId) =>
+    api.delete(`${ENDPOINT}/${assessmentId}/pathways/links/${pathwayId}`).then((r) => r.data.data),
 
   /* Inventory — this project's linked materials, each with a quantity (authored globally in Settings) */
   getAssessmentInventory: (assessmentId) =>

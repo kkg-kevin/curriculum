@@ -8,7 +8,7 @@ export const COURSE_KEYS = {
   sessions: (courseId) => ["courses", "sessions", courseId],
   modules: (courseId) => ["courses", "modules", courseId],
   competencies: (courseId) => ["courses", "competencies", courseId],
-  learningAreas: (courseId) => ["courses", "learning-areas", courseId],
+  pathways: (courseId) => ["courses", "pathways", courseId],
   inventory: (courseId) => ["courses", "inventory", courseId],
   curricula: (courseId) => ["courses", "curricula", courseId],
   assessmentScoring: (courseId, assessmentId, curriculumId) => ["courses", "assessment-scoring", courseId, assessmentId, curriculumId],
@@ -96,12 +96,12 @@ export function useCourseCompetencies(courseId) {
   });
 }
 
-/* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
+/* ── Pathways (authored globally in Settings, tagged onto a course here) ── */
 
-export function useCourseLearningAreas(courseId) {
+export function useCoursePathways(courseId) {
   return useQuery({
-    queryKey: COURSE_KEYS.learningAreas(courseId),
-    queryFn: () => courseApi.getCourseLearningAreas(courseId),
+    queryKey: COURSE_KEYS.pathways(courseId),
+    queryFn: () => courseApi.getCoursePathways(courseId),
     enabled: !!courseId,
   });
 }

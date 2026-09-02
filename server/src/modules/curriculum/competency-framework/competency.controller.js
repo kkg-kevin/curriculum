@@ -7,9 +7,9 @@ const {
   updateCompetencyLinkSchema,
   createIndicatorSchema,
   updateIndicatorSchema,
-  createLearningAreaSchema,
-  updateLearningAreaSchema,
-  importLearningAreaSchema,
+  createPathwaySchema,
+  updatePathwaySchema,
+  importPathwaySchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,
@@ -89,33 +89,33 @@ exports.deleteCompetencyIndicator = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-/* ── Learning Areas ──────────────────────────────────────────────────────── */
+/* ── Pathways ──────────────────────────────────────────────────────── */
 
-exports.getLearningAreas = asyncHandler(async (req, res) => {
-  const data = await CompetencyService.getLearningAreas(req.params.id);
+exports.getPathways = asyncHandler(async (req, res) => {
+  const data = await CompetencyService.getPathways(req.params.id);
   res.json({ success: true, data });
 });
 
-exports.createLearningArea = asyncHandler(async (req, res) => {
-  const body = createLearningAreaSchema.parse(req.body);
-  const data = await CompetencyService.createLearningArea(req.params.id, body);
+exports.createPathway = asyncHandler(async (req, res) => {
+  const body = createPathwaySchema.parse(req.body);
+  const data = await CompetencyService.createPathway(req.params.id, body);
   res.status(201).json({ success: true, data });
 });
 
-exports.updateLearningArea = asyncHandler(async (req, res) => {
-  const body = onlySentKeys(updateLearningAreaSchema.parse(req.body), req.body);
-  const data = await CompetencyService.updateLearningArea(req.params.id, req.params.aId, body);
+exports.updatePathway = asyncHandler(async (req, res) => {
+  const body = onlySentKeys(updatePathwaySchema.parse(req.body), req.body);
+  const data = await CompetencyService.updatePathway(req.params.id, req.params.aId, body);
   res.json({ success: true, data });
 });
 
-exports.deleteLearningArea = asyncHandler(async (req, res) => {
-  await CompetencyService.deleteLearningArea(req.params.id, req.params.aId);
+exports.deletePathway = asyncHandler(async (req, res) => {
+  await CompetencyService.deletePathway(req.params.id, req.params.aId);
   res.json({ success: true });
 });
 
-exports.importLearningArea = asyncHandler(async (req, res) => {
-  const { learningAreaId } = importLearningAreaSchema.parse(req.body);
-  const data = await CompetencyService.importLearningArea(req.params.id, learningAreaId);
+exports.importPathway = asyncHandler(async (req, res) => {
+  const { pathwayId } = importPathwaySchema.parse(req.body);
+  const data = await CompetencyService.importPathway(req.params.id, pathwayId);
   res.status(201).json({ success: true, data });
 });
 
@@ -369,16 +369,16 @@ exports.getLearnerBandProgress = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-/* ── Learning Journey ────────────────────────────────────────────────────── */
+/* ── Pathway ────────────────────────────────────────────────────── */
 
-exports.getLearningJourney = asyncHandler(async (req, res) => {
+exports.getPathway = asyncHandler(async (req, res) => {
   const learnerId = req.params.learnerId;
   if (req.user.role === "learner") {
     assertOwn(learnerId === req.ownLearner?.id);
   } else {
     await assertLearnerHubAccess(req, learnerId);
   }
-  const data = await CompetencyService.getLearningJourney(req.params.id, learnerId);
+  const data = await CompetencyService.getPathway(req.params.id, learnerId);
   res.json({ success: true, data });
 });
 

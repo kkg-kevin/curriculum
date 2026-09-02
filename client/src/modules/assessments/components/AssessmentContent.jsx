@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { FiCheck, FiAlertTriangle, FiPackage, FiFlag } from "react-icons/fi";
-import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentLearningAreas, useAssessmentInventory } from "../hooks/useAssessment";
+import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
   TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks,
@@ -183,19 +183,19 @@ function StructureSection({ sections, entries }) {
 }
 
 /**
- * Read-only assessment body (Description/Items/Rubric/… + Details/Competencies/Learning Areas sidebar),
+ * Read-only assessment body (Description/Items/Rubric/… + Details/Competencies/Pathways sidebar),
  * shared between the standalone Assessments module view and any embedded context (e.g. a course session).
  */
 export default function AssessmentContent({ id, assessment: providedAssessment = null }) {
   const navigate = useNavigate();
   const { data: fetchedAssessment, isLoading, isError } = useAssessmentQuery(id, { enabled: !providedAssessment && !!id });
   const { data: fetchedCompetencies = [] } = useAssessmentCompetencies(id, { enabled: !providedAssessment && !!id });
-  const { data: fetchedLearningAreas = [] } = useAssessmentLearningAreas(id, { enabled: !providedAssessment && !!id });
+  const { data: fetchedPathways = [] } = useAssessmentPathways(id, { enabled: !providedAssessment && !!id });
   const { data: fetchedInventory = [] } = useAssessmentInventory(id, { enabled: !providedAssessment && !!id });
 
   const assessment = providedAssessment || fetchedAssessment;
   const competencies = providedAssessment?.competencies || fetchedCompetencies;
-  const learningAreas = providedAssessment?.learningAreas || fetchedLearningAreas;
+  const pathways = providedAssessment?.pathways || fetchedPathways;
   const inventory = providedAssessment?.inventory || fetchedInventory;
   const readOnly = !!providedAssessment;
 
@@ -373,17 +373,17 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
           )}
         </Section>
 
-        <Section title="Learning Areas">
-          {learningAreas.length === 0 ? (
+        <Section title="Pathways">
+          {pathways.length === 0 ? (
             <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
-              No learning areas tagged.{" "}
+              No pathways tagged.{" "}
               {!readOnly && (
                 <button type="button" onClick={() => navigate(`/assessments/${id}/edit`)} style={{ background: "none", border: "none", padding: 0, color: "#38aae1", fontWeight: "600", cursor: "pointer", fontSize: "12.5px", fontFamily: "Inter, sans-serif" }}>Add some →</button>
               )}
             </p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {learningAreas.map((area, idx) => (
+              {pathways.map((area, idx) => (
                 <Badge key={area.id} color={area.color || TAG_PALETTE[idx % TAG_PALETTE.length]}>{area.name}</Badge>
               ))}
             </div>

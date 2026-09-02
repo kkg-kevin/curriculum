@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAward, FiFileText } from "react-icons/fi";
 import { useMyReports } from "../../reports/hooks/useReports";
-import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
+import { useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { T, cardStyle } from "./profile/theme";
 
 // A session report (report.sessionId set) is a smaller, secondary row; the final course report
@@ -36,7 +36,7 @@ function ReportRow({ report, navigate, primary }) {
   );
 }
 
-// A graded, placement diagnostic (Developmental Stage or Learning-Area) — not a Report record at
+// A graded, placement diagnostic (Developmental Stage or Pathway) — not a Report record at
 // all (diagnostics are standalone, no course/class to key one on), so this reads straight off the
 // submission/assessment pair instead of report.content, and links to the assessment's own detail
 // page (which AssessmentDetailPage.jsx now also resolves diagnostic rows for) rather than a
@@ -89,7 +89,7 @@ export default function ReportsOverview({ limit, hubId } = {}) {
   // itself waits on.
   const { learner, cls } = useOutletContext() || {};
   const { data: stageRow, isLoading: stageLoading } = useDiagnosticForLearner(learner?.id, cls?.curriculumId);
-  const { data: areaRows = [], isLoading: areaLoading } = useLearningAreaDiagnosticsForLearner(learner?.id);
+  const { data: areaRows = [], isLoading: areaLoading } = usePathwayDiagnosticsForLearner(learner?.id);
   const diagnosticRows = [stageRow, ...areaRows]
     .filter(Boolean)
     .filter((row) => row.submission.status === "graded" && row.submission.reportPublished);

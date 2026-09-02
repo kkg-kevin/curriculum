@@ -42,7 +42,7 @@ async function assertClassAccess(req, cls) {
 // the learner is enrolled at a hub/class this caller owns. A "teacher" caller has no hub of
 // their own, so their access comes from the learner's class instead — same "any course-link in
 // the class is enough" precision assertClassAccess already uses for ordinary class-issued
-// grading, not narrowed down to the specific Learning Area's courses.
+// grading, not narrowed down to the specific Pathway's courses.
 async function assertLearnerHubAccess(req, learnerId) {
   if (req.user.role === "school") {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
@@ -195,17 +195,17 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: row });
 });
 
-// Same access shape as getDiagnosticForLearner, plural — this learner's Learning-Area
-// diagnostics, for the Learning Journey section of LearnerViewPage. Also readable by the
+// Same access shape as getDiagnosticForLearner, plural — this learner's Pathway
+// diagnostics, for the Pathway section of LearnerViewPage. Also readable by the
 // learner themselves (their own record only) — the learner-portal's first-login diagnostic
 // gate uses this same endpoint rather than a separate one.
-const getLearningAreaDiagnosticsForLearner = asyncHandler(async (req, res) => {
+const getPathwayDiagnosticsForLearner = asyncHandler(async (req, res) => {
   if (req.user.role === "learner") {
     assertOwn(req.params.learnerId === req.ownLearner?.id);
   } else {
     await assertLearnerHubAccess(req, req.params.learnerId);
   }
-  const rows = await AssessmentSubmissionService.getLearningAreaDiagnosticsForLearner(req.params.learnerId);
+  const rows = await AssessmentSubmissionService.getPathwayDiagnosticsForLearner(req.params.learnerId);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -422,7 +422,7 @@ module.exports = {
   revokeIssue,
   getIssuedForLearner,
   getDiagnosticForLearner,
-  getLearningAreaDiagnosticsForLearner,
+  getPathwayDiagnosticsForLearner,
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,

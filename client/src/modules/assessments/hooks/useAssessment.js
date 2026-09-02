@@ -6,7 +6,7 @@ export const ASSESSMENT_KEYS = {
   all: ["assessments"],
   detail: (id) => ["assessments", "detail", id],
   competencies: (id) => ["assessments", "competencies", id],
-  learningAreas: (id) => ["assessments", "learning-areas", id],
+  pathways: (id) => ["assessments", "pathways", id],
   inventory: (id) => ["assessments", "inventory", id],
 };
 
@@ -100,12 +100,12 @@ export function useAssessmentCompetencies(assessmentId, options = {}) {
   });
 }
 
-/* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
+/* ── Pathways (authored globally in Settings, tagged onto an assessment here) ── */
 
-export function useAssessmentLearningAreas(assessmentId, options = {}) {
+export function useAssessmentPathways(assessmentId, options = {}) {
   return useQuery({
-    queryKey: ASSESSMENT_KEYS.learningAreas(assessmentId),
-    queryFn: () => assessmentApi.getAssessmentLearningAreas(assessmentId),
+    queryKey: ASSESSMENT_KEYS.pathways(assessmentId),
+    queryFn: () => assessmentApi.getAssessmentPathways(assessmentId),
     enabled: options.enabled ?? !!assessmentId,
     ...options,
   });

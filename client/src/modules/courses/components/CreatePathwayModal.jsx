@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCreateLearningArea } from "../../settings/learning-areas/hooks/useLearningAreas";
+import { useCreatePathwayTemplate } from "../../settings/pathways/hooks/usePathwayTemplates";
 import CoursePickerField from "./CoursePickerField";
 
 const AREA_COLORS = [
@@ -8,12 +8,12 @@ const AREA_COLORS = [
   "#2e7db5", "#0A3880",
 ];
 
-// Shared by LearningAreasField (Courses/Assessments) — creating here always writes
+// Shared by PathwaysField (Courses/Assessments) — creating here always writes
 // to the global Settings catalog. Curriculum has its own richer local-copy create
-// form (see LearningAreasPanel in CompetenciesPage.jsx) that syncs to this same
+// form (see PathwayTemplatesPanel in CompetenciesPage.jsx) that syncs to this same
 // catalog separately, so it doesn't use this modal.
-export default function CreateLearningAreaModal({ initialName = "", onClose, onCreated }) {
-  const { mutate: createLearningArea, isPending } = useCreateLearningArea();
+export default function CreatePathwayModal({ initialName = "", onClose, onCreated }) {
+  const { mutate: create, isPending } = useCreatePathwayTemplate();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(AREA_COLORS[0]);
@@ -22,7 +22,7 @@ export default function CreateLearningAreaModal({ initialName = "", onClose, onC
 
   const submit = () => {
     if (!name.trim()) { setError("Name is required"); return; }
-    createLearningArea({ name: name.trim(), description: description.trim(), color, courses }, {
+    create({ name: name.trim(), description: description.trim(), color, courses }, {
       onSuccess: (newArea) => { onCreated(newArea.id); onClose(); },
     });
   };
@@ -34,7 +34,7 @@ export default function CreateLearningAreaModal({ initialName = "", onClose, onC
     >
       <div style={{ background: "#fff", borderRadius: "18px", width: "100%", maxWidth: "480px", boxShadow: "0 24px 64px rgba(0,0,0,0.25)", overflow: "hidden" }}>
         <div style={{ padding: "18px 22px", background: "linear-gradient(135deg,#1a3550 0%,#25476a 60%,#2e7db5 100%)" }}>
-          <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#fff" }}>New Learning Area</h2>
+          <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#fff" }}>New Pathway</h2>
           <p style={{ margin: "4px 0 0", fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>Added to the shared catalog in Settings</p>
         </div>
         <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -97,7 +97,7 @@ export default function CreateLearningAreaModal({ initialName = "", onClose, onC
             disabled={isPending}
             style={{ padding: "9px 18px", background: isPending ? "#fde3b0" : "#feb139", color: "#25476a", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: isPending ? "not-allowed" : "pointer" }}
           >
-            {isPending ? "Creating…" : "Create Learning Area"}
+            {isPending ? "Creating…" : "Create Pathway"}
           </button>
         </div>
       </div>
