@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiCheck, FiSlash } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip } from "../hooks/useTimetable";
+import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip, useOccurrenceAction } from "../hooks/useTimetable";
 import { useAuth } from "../../../context/AuthContext";
 import { sectionPath } from "../../../routes/portalPaths";
 
@@ -890,10 +890,84 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
               </div>
             )}
 
+            {enableReschedule && summary.occurrence && (
+              <SessionCloseoutSection classId={event.classId} occurrence={summary.occurrence} attendanceMarked={summary.attendance.marked} />
+            )}
+
             {enableReschedule && <RescheduleSection event={event} onDone={onClose} />}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// The two close-out actions on a past session's own detail view — "we taught this" and "no
+// attendance is coming for this one". Both write to the durable session_occurrence behind class
+// completion (see SessionOccurrenceService); the buttons only appear for a date that has already
+// happened (summary.occurrence is null otherwise) and on a teacher/school calendar (enableReschedule).
+function SessionCloseoutSection({ classId, occurrence, attendanceMarked }) {
+  const { mutate, isPending } = useOccurrenceAction(classId);
+  const taught = occurrence.status === "taught";
+  const cancelled = occurrence.status === "cancelled";
+  const attnLocked = occurrence.attendanceState === "locked_not_marked";
+
+  return (
+    <div>
+      <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 800, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Session Close-out</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button
+          type="button"
+          disabled={isPending || taught}
+          onClick={() => mutate({ occurrenceId: occurrence.id, action: taught ? "reopen" : "mark-taught" })}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 8,
+            fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending || taught ? "default" : "pointer",
+            border: `1.5px solid ${taught ? HEALTH.good.dot : T.border}`,
+            backgroundColor: taught ? HEALTH.good.bg : "#fff",
+            color: taught ? HEALTH.good.text : T.ink,
+          }}
+        >
+          <FiCheck size={13} /> {taught ? "Taught" : "Mark as taught"}
+        </button>
+
+        {!taught && (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => mutate({ occurrenceId: occurrence.id, action: cancelled ? "reopen" : "cancel" })}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 8,
+              fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "default" : "pointer",
+              border: `1.5px solid ${cancelled ? "#FECACA" : T.border}`,
+              backgroundColor: cancelled ? "#FEF2F2" : "#fff",
+              color: cancelled ? "#B91C1C" : T.inkMuted,
+            }}
+          >
+            <FiSlash size={13} /> {cancelled ? "Cancelled" : "Mark cancelled"}
+          </button>
+        )}
+
+        {!attendanceMarked && (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => mutate({ occurrenceId: occurrence.id, action: attnLocked ? "unlock-attendance" : "lock-attendance" })}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 8,
+              fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isPending ? "default" : "pointer",
+              border: `1.5px solid ${attnLocked ? T.border : "#FDE68A"}`,
+              backgroundColor: attnLocked ? "#F3F4F6" : "#FFFBEB",
+              color: attnLocked ? T.inkMuted : "#92400E",
+            }}
+          >
+            {attnLocked ? "Attendance closed — reopen" : "Close attendance (not marked)"}
+          </button>
+        )}
+      </div>
+      {occurrence.note && (
+        <p style={{ margin: "8px 0 0", fontSize: 11.5, color: T.inkMuted, fontStyle: "italic" }}>“{occurrence.note}”</p>
+      )}
     </div>
   );
 }

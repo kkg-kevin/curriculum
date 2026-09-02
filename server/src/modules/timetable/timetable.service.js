@@ -15,6 +15,8 @@ const ProgramModel = require("../programs/program.model");
 const AcademicYearVersionModel = require("../curriculum/academic-years/academic-year-versions.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const ReportService = require("../reports/report.service");
+const SessionOccurrenceService = require("./session-occurrence.service");
+const SessionOccurrenceModel = require("./session-occurrence.model");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
 
 function notFound(message) {
@@ -572,12 +574,33 @@ const TimetableService = {
       return { learnerId: a.learnerId, learner: learnersById.get(a.learnerId) || null, status: a.status, notes: a.notes || "" };
     });
 
+    // The durable occurrence record for this exact (class, session, date), so the summary view
+    // can show/offer the "mark taught" / "close attendance" close-out actions. Only materialised
+    // for a date that has already happened — a future session has nothing to close out yet.
+    // Uses the class-wide sync (not a bare create) so this one call also keeps every other past
+    // occurrence and the auto-lock sweep current, same lazy-on-read posture as the reports side.
+    let occurrence = null;
+    if (date <= new Date().toISOString().slice(0, 10)) {
+      await SessionOccurrenceService.syncClassOccurrences(classId, (args) => TimetableService.resolveCalendar(args));
+      occurrence = await SessionOccurrenceModel.findOne(classId, sessionId, date);
+    }
+
     return {
       session: { id: session.id, title: session.title, order: session.order, totalSessions },
       course: course ? { id: course.id, name: course.name } : null,
       class: { id: cls.id, gradeName: cls.gradeName, streamName: cls.streamName || "" },
       date,
       teacher: teacher ? { id: teacher.id, name: `${teacher.firstName} ${teacher.lastName}` } : null,
+      occurrence: occurrence
+        ? {
+            id: occurrence.id,
+            status: occurrence.status,
+            attendanceState: occurrence.attendanceState,
+            taughtAt: occurrence.taughtAt,
+            attendanceLockedAt: occurrence.attendanceLockedAt,
+            note: occurrence.note || "",
+          }
+        : null,
       attendance: {
         marked: attendanceRecords.length > 0,
         enrolledCount: enrolledLinks.length,

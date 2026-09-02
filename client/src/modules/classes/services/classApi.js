@@ -22,4 +22,10 @@ export const classApi = {
   // Grade-completion readiness + moving ready learners into the next grade's class.
   getPromotionReadiness: (classId) => api.get(`${BASE}/${classId}/promotion-readiness`).then((r) => r.data.data),
   promoteLearners: (classId, learnerIds) => api.post(`${BASE}/${classId}/promote-learners`, { learnerIds }).then((r) => r.data.data),
+
+  // Year-completion checklist: sessions taught / grading done / attendance closed / reports filed.
+  getCompletionStatus: (classId) => api.get(`${BASE}/${classId}/completion-status`).then((r) => r.data.data),
+  // Files a "not submitted" session report for a learner who never submitted a required assessment.
+  markSessionNotSubmitted: (classId, { courseId, sessionId, learnerId }) =>
+    api.post(`${BASE}/${classId}/mark-not-submitted`, { courseId, sessionId, learnerId }).then((r) => r.data.data),
 };

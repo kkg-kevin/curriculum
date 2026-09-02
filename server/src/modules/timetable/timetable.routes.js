@@ -7,6 +7,7 @@ const {
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
   getTeacherAvailabilityConflicts,
+  listOccurrences, runOccurrenceAction,
 } = require("./timetable.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -45,6 +46,12 @@ router.post("/sessions/status", authorize("admin", "school", "teacher"), getSess
 router.post("/skips", authorize("admin", "school", "teacher"), createSkip);
 router.get("/skips", authorize("admin", "school", "teacher"), listSkips);
 router.delete("/skips/:id", authorize("admin", "school", "teacher"), deleteSkip);
+
+// Session occurrences — the durable "was this session taught / was its attendance dealt with"
+// record behind class completion. Same day-to-day-teacher posture as skips/attendance (ownership
+// re-checked in the controller off the occurrence's own class).
+router.get("/occurrences", authorize("admin", "school", "teacher"), listOccurrences);
+router.post("/occurrences/:id/action", authorize("admin", "school", "teacher"), runOccurrenceAction);
 
 // Teacher/learner-facing: their own timetable, resolved from their own linked classes.
 router.get("/teacher/mine", authorize("teacher"), getMyTeacherTimetable);

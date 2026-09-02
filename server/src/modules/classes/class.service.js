@@ -10,6 +10,8 @@ const ClassGroupService = require("./groups/class-group.service");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const ReportService = require("../reports/report.service");
+const TimetableService = require("../timetable/timetable.service");
+const SessionOccurrenceService = require("../timetable/session-occurrence.service");
 
 // Tag is unique across every class, system-wide (not just within one hub) — it's how a specific
 // class instance gets referenced unambiguously in reports/attendance even though many hubs can
@@ -166,6 +168,87 @@ const ClassService = {
     return { ...nextInfo, totalCourses: courseIds.length, learners };
   },
 
+  // The four-metric close-out checklist for a class's academic year — the gate the Promotion
+  // panel and the class-detail "completion" panel both read. Each metric is derived live, never
+  // stored: nothing here is a flag someone sets, it's all computed from the same records the
+  // rest of the app already writes.
+  //
+  //   1. sessionsTaught    — every past session occurrence marked taught (or cancelled).
+  //   2. grading           — every session-attached assessment graded+published for every
+  //                          active learner (ReportService's existing readiness signal).
+  //   3. attendanceClosed  — every past session occurrence has attendance either taken or
+  //                          consciously locked as not-marked (never left as "not_taken").
+  //   4. reports           — every (learner, non-empty session) pair has a published session
+  //                          report — a real one, or a filed "not submitted" one.
+  //
+  // Metrics 1 & 3 come from SessionOccurrenceService; 2 & 4 from ReportService. `unresolved`
+  // lists the concrete work items still blocking 2 & 4 so the UI can link straight to them.
+  async getCompletionStatus(classId) {
+    const cls = await ClassService.getClassById(classId);
+    const courses = await CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId);
+    const courseIds = courses.map((c) => c.id);
+
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const activeLearnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+
+    const occurrence = await SessionOccurrenceService.getOccurrenceCompletion(
+      classId,
+      (args) => TimetableService.resolveCalendar(args)
+    );
+
+    // Grading + reports readiness, per course, reusing the exact signal the Reports page uses.
+    let readinessByCourse = {};
+    if (courseIds.length > 0 && activeLearnerIds.length > 0) {
+      readinessByCourse = await ReportService.getReadinessForClassCourses(classId, courseIds);
+    }
+    const allRows = courseIds.flatMap((id) => readinessByCourse[id] || []);
+    // "Grading done" = every per-learner row across every course is `ready` (its own readiness
+    // flag already means every session-attached assessment graded AND published).
+    const gradingTotal = allRows.length;
+    const gradingReady = allRows.filter((r) => r.ready).length;
+
+    const unresolved = (courseIds.length > 0 && activeLearnerIds.length > 0)
+      ? await ReportService.getUnresolvedSessionWork(classId, courseIds)
+      : { needsGrading: [], notSubmitted: [] };
+
+    const metrics = {
+      sessionsTaught: {
+        done: occurrence.sessionsTaught.pendingCount === 0 && occurrence.sessionsTaught.total > 0,
+        ...occurrence.sessionsTaught,
+      },
+      attendanceClosed: {
+        done: occurrence.attendanceClosed.pendingCount === 0 && occurrence.attendanceClosed.total > 0,
+        ...occurrence.attendanceClosed,
+      },
+      grading: {
+        done: gradingTotal > 0 && gradingReady === gradingTotal && unresolved.needsGrading.length === 0,
+        total: gradingTotal,
+        ready: gradingReady,
+        pendingCount: unresolved.needsGrading.length,
+      },
+      reports: {
+        done: gradingTotal > 0 && unresolved.needsGrading.length === 0 && unresolved.notSubmitted.length === 0,
+        pendingCount: unresolved.notSubmitted.length,
+      },
+    };
+
+    // A class with no active learners, or a grade with no courses, has nothing to complete —
+    // treated as "not applicable" rather than "complete" so it never reads as a finished year
+    // that just has no content.
+    const applicable = courseIds.length > 0 && activeLearnerIds.length > 0 && occurrence.sessionsTaught.total > 0;
+    const complete = applicable && Object.values(metrics).every((m) => m.done);
+
+    return {
+      classId,
+      applicable,
+      complete,
+      metrics,
+      unresolved,
+      totalCourses: courseIds.length,
+      activeLearners: activeLearnerIds.length,
+    };
+  },
+
   // Re-resolves readiness/next-class server-side rather than trusting whatever the client sends
   // — a stale or manipulated request can never move an unready or unenrolled learner. Only ever
   // moves a learner INTO an already-existing class shell (Set Up Year's job, not this one's).
@@ -210,6 +293,7 @@ const ClassService = {
     await CourseScheduleModel.deleteByClassId(id);
     await SessionSkipModel.deleteByClassId(id);
     await AttendanceModel.deleteByClassId(id);
+    await SessionOccurrenceService.deleteAllForClass(id);
     await ClassGroupService.deleteAllForClass(id);
     // Only class-owned issues (no learnerId — see AssessmentIssueModel's own comment) go with the
     // class, mirroring learner.service.js's deleteLearner doing the exact opposite: it removes

@@ -24,4 +24,12 @@ const createClassSchema = z.object({
 
 const updateClassSchema = createClassSchema.partial();
 
-module.exports = { createClassSchema, updateClassSchema };
+// Body for "file a not-submitted session report" — the completion-panel resolution for a learner
+// who never submitted a required assessment (see ReportService.markSessionNotSubmitted).
+const markNotSubmittedSchema = z.object({
+  courseId:  z.string().min(1, "Course is required"),
+  sessionId: z.string().min(1, "Session is required"),
+  learnerId: z.string().min(1, "Learner is required"),
+});
+
+module.exports = { createClassSchema, updateClassSchema, markNotSubmittedSchema };

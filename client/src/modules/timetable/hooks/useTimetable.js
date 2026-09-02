@@ -13,6 +13,7 @@ const TIMETABLE_KEYS = {
   calendarMineLearner: (from, to) => ["timetable", "calendar", "mine", "learner", from, to],
   sessionSummary: (sessionId, classId, date) => ["timetable", "session-summary", sessionId, classId, date],
   skips: (classId) => ["timetable", "skips", classId],
+  occurrences: (classId) => ["timetable", "occurrences", classId],
 };
 
 export function useClassTimetable(classId) {
@@ -246,5 +247,41 @@ export function useDeleteSkip() {
       toast.success("Reschedule undone");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to undo"),
+  });
+}
+
+// The class's session occurrences, each with its taught/attendance close-out state — feeds the
+// class-detail completion panel's session list.
+export function useClassOccurrences(classId) {
+  return useQuery({
+    queryKey: TIMETABLE_KEYS.occurrences(classId),
+    queryFn:  () => timetableApi.listOccurrences(classId),
+    enabled:  !!classId,
+  });
+}
+
+// Applies one close-out transition to a session occurrence (mark-taught / cancel / reopen /
+// lock-attendance / unlock-attendance). Invalidates the occurrence list, the session summary,
+// and the class completion status — all three surface this state. classId is passed so the
+// right occurrence list is refreshed; the completion-status key lives in the classes module so
+// it's invalidated by prefix.
+export function useOccurrenceAction(classId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ occurrenceId, action, note }) => timetableApi.runOccurrenceAction(occurrenceId, action, note),
+    onSuccess: (_data, { action }) => {
+      qc.invalidateQueries({ queryKey: TIMETABLE_KEYS.occurrences(classId) });
+      qc.invalidateQueries({ queryKey: ["timetable", "session-summary"] });
+      qc.invalidateQueries({ queryKey: ["classes", "detail", classId, "completion-status"] });
+      const msg = {
+        "mark-taught": "Session marked as taught",
+        "cancel": "Session marked as cancelled",
+        "reopen": "Session reopened",
+        "lock-attendance": "Attendance closed as not marked",
+        "unlock-attendance": "Attendance reopened",
+      }[action];
+      if (msg) toast.success(msg);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Action failed"),
   });
 }

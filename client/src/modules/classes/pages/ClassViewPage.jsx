@@ -11,6 +11,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import PromotionPanel from "../components/PromotionPanel";
+import ClassCompletionPanel from "../components/ClassCompletionPanel";
 import { formatClassName } from "../utils/classDisplay";
 
 function DetailRow({ label, value, empty = "—" }) {
@@ -313,6 +314,11 @@ export default function ClassViewPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Year-completion checklist — the four close-out metrics that gate promotion */}
+      <div style={{ marginBottom: 16 }}>
+        <ClassCompletionPanel classId={cls.id} />
       </div>
 
       {/* Grade-completion readiness + moving ready learners into the next grade's class */}

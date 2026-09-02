@@ -225,6 +225,45 @@ async function ensureSessionReportsGenerated(classId, courseId, learnerIds) {
   );
 }
 
+// Classifies one (learner, session) pair's outstanding assessment work into exactly one of:
+//   ready              — every required assessment graded+published; a real session report
+//                        exists or generateSessionReport can build one. Nothing to resolve.
+//   needs_grading      — the learner HAS a submission (submitted, or in progress past its due
+//                        window) for at least one required assessment that isn't graded yet.
+//                        Blocks completion — a teacher must actually grade it.
+//   not_submitted      — no submission at all for one or more required assessments, and no
+//                        not-submitted report has been filed yet. Resolvable via
+//                        markSessionNotSubmitted below.
+//   resolved_no_submit — a not-submitted report already stands for this pair. Counts as done.
+//   nothing_required   — the session attaches no still-existing assessment. Never blocks.
+// Deliberately read-only — it does not itself generate or file anything.
+async function classifySessionWork(learnerId, session, classId) {
+  const requiredIds = await getSessionRequiredAssessmentIds(session);
+  if (requiredIds.length === 0) return { state: "nothing_required", missingAssessmentIds: [], ungraded: [] };
+
+  const existingReport = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
+  if (existingReport?.content?.notSubmitted) return { state: "resolved_no_submit", missingAssessmentIds: [], ungraded: [] };
+
+  const publishedGradedIds = await getPublishedGradedAssessmentIds(learnerId);
+  const allSubs = await AssessmentSubmissionModel.findAll({ learnerId });
+  const subByAssessment = new Map(allSubs.map((s) => [s.assessmentId, s]));
+
+  const missingAssessmentIds = [];
+  const ungraded = [];
+  for (const id of requiredIds) {
+    if (publishedGradedIds.has(id)) continue;
+    const sub = subByAssessment.get(id);
+    if (!sub) missingAssessmentIds.push(id);
+    // A submission that exists but hasn't reached graded+published — the teacher owes it a grade
+    // (or a publish, if graded-but-unreleased). Either way it's "needs_grading" for our purposes.
+    else if (sub.status !== "graded" || !sub.reportPublished) ungraded.push(id);
+  }
+
+  if (ungraded.length > 0) return { state: "needs_grading", missingAssessmentIds, ungraded };
+  if (missingAssessmentIds.length > 0) return { state: "not_submitted", missingAssessmentIds, ungraded };
+  return { state: "ready", missingAssessmentIds: [], ungraded: [] };
+}
+
 // Shared by generateReport and publishReport — builds a course-level final report's content
 // (the union of every session's required assessments, as buildReportContent always did) and
 // attaches a sessionReports summary so the final report visibly shows what it combines.
@@ -352,6 +391,135 @@ const ReportService = {
       result[courseId] = await ReportService.getReadinessForClassCourse(classId, courseId);
     }));
     return result;
+  },
+
+  // Every unresolved (learner, session) work item across an entire class — the "what still stands
+  // between this class and a complete set of session reports" list, split into the two things a
+  // teacher can do about each: grade a submission that exists, or file a not-submitted report for
+  // one that doesn't. Read-only; the actual resolution goes through grade() (elsewhere) or
+  // markSessionNotSubmitted below. Runs ensureSessionReportsGenerated first so anything that
+  // silently became ready doesn't show as outstanding.
+  async getUnresolvedSessionWork(classId, courseIds) {
+    const cls = await ClassModel.findById(classId);
+    const links = await LearnerHubLinkModel.findByClassId(classId);
+    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    const learners = await LearnerModel.findAll({ ids: learnerIds });
+    const learnerById = new Map(learners.map((l) => [l.id, l]));
+
+    const needsGrading = [];
+    const notSubmitted = [];
+
+    for (const courseId of courseIds) {
+      const sessions = await SessionModel.findByCourseId(courseId);
+      await ensureSessionReportsGenerated(classId, courseId, learnerIds);
+      for (const session of sessions) {
+        for (const learnerId of learnerIds) {
+          const { state, missingAssessmentIds, ungraded } = await classifySessionWork(learnerId, session, classId);
+          if (state !== "needs_grading" && state !== "not_submitted") continue;
+          const base = {
+            learnerId,
+            learner: learnerById.get(learnerId) || null,
+            courseId,
+            sessionId: session.id,
+            sessionTitle: session.title || null,
+            sessionOrder: session.order,
+          };
+          if (state === "needs_grading") needsGrading.push({ ...base, assessmentIds: ungraded });
+          else notSubmitted.push({ ...base, assessmentIds: missingAssessmentIds });
+        }
+      }
+    }
+    return { classId, curriculumId: cls?.curriculumId || null, needsGrading, notSubmitted };
+  },
+
+  // Files a "not submitted" session report for one (learner, session) pair — the resolution for a
+  // learner who simply never submitted a required assessment. Refuses (409) if the learner
+  // actually HAS a submission that just hasn't been graded: that has to be graded, not written
+  // off. The report is published immediately (same as an ordinary session report — no draft
+  // stage) and carries content.notSubmitted so the report renderer shows "Not submitted" rather
+  // than a zero score, and so classifySessionWork treats the pair as resolved on the next pass.
+  // Idempotent: re-running for a pair that already has a not-submitted report returns it unchanged.
+  async markSessionNotSubmitted({ classId, courseId, sessionId, learnerId, actorId }) {
+    const session = await SessionModel.findById(sessionId);
+    if (!session) notFound("Session not found");
+    if (session.courseId !== courseId) {
+      const err = new Error("Session does not belong to that course");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const { state, missingAssessmentIds } = await classifySessionWork(learnerId, session, classId);
+    if (state === "resolved_no_submit") {
+      return ReportModel.findOne({ learnerId, courseId, classId, sessionId });
+    }
+    if (state === "ready") {
+      const err = new Error("This learner's work for this session is already graded — no not-submitted report is needed.");
+      err.statusCode = 409;
+      throw err;
+    }
+    if (state === "needs_grading") {
+      const err = new Error("This learner has a submission awaiting grading — grade it instead of marking it not submitted.");
+      err.statusCode = 409;
+      throw err;
+    }
+    if (state === "nothing_required") {
+      const err = new Error("This session has no assessments to report on.");
+      err.statusCode = 409;
+      throw err;
+    }
+
+    const missingAssessments = await Promise.all(
+      missingAssessmentIds.map(async (id) => {
+        const a = await AssessmentModel.findById(id);
+        return { assessmentId: id, name: a?.name || "Untitled assessment", type: a?.type || null };
+      })
+    );
+
+    // A not-submitted report still carries the same shell shape an ordinary session report has
+    // (empty assessments, zeroed overall) so every existing reader — the learner-portal list,
+    // buildCourseReportContent's sessionReports summary — keeps working without a special case.
+    const content = {
+      notSubmitted: true,
+      notSubmittedAssessments: missingAssessments,
+      assessments: [],
+      overall: { totalScore: 0, maxScore: 0, percent: 0 },
+      indicatorBreakdown: [],
+      competencyScores: [],
+      courseName: (await CourseModel.findById(courseId))?.name || null,
+      sessionName: session.title || null,
+    };
+
+    const existing = await ReportModel.findOne({ learnerId, courseId, classId, sessionId });
+    const now = new Date();
+    if (existing) {
+      return ReportModel.update(existing.id, {
+        content,
+        status: "published",
+        publishedAt: existing.publishedAt || now,
+        publishedBy: existing.publishedBy || actorId || "system",
+      });
+    }
+    const cls = await ClassModel.findById(classId);
+    const created = await ReportModel.create({
+      learnerId,
+      courseId,
+      classId,
+      sessionId,
+      hubId: cls?.schoolId || null,
+      status: "published",
+      generatedAt: now,
+      generatedBy: actorId || "system",
+      publishedAt: now,
+      publishedBy: actorId || "system",
+      remarks: "",
+      content,
+    });
+    // ReportModel.create hands back the pre-insert row with `content` still JSON-stringified;
+    // re-read so callers get the same parsed shape every other read path returns. Deliberately
+    // NOT notifying the learner here (unlike generateSessionReport) — a push announcing "new
+    // report — 0%" for work that was never submitted reads as a punishment, not information; it
+    // still appears in their reports list, which is the right level of visibility for this.
+    return (await ReportModel.findById(created.id)) || created;
   },
 
   // Idempotent: re-generating an already-existing report updates its draft snapshot instead of

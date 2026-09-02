@@ -1,7 +1,7 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail,
 } from "react-icons/fi";
 import logo from "../../assets/Logo-image.png";
 import LogoutButton from "./LogoutButton";
@@ -17,6 +17,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Classes", path: "/classes", icon: FiLayers },
   { name: "Programs", path: "/programs", icon: FiAward },
   { name: "Courses", path: "/courses", icon: FiBook },
+  { name: "Enquiries", path: "/enquiries", icon: FiMail },
   { name: "Assessments", path: "/assessments", icon: FiClipboard },
   { name: "Reports", path: "/reports", icon: FiBarChart2 },
   { name: "Billing", path: "/billing", icon: FiDollarSign },

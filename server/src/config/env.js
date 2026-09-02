@@ -8,6 +8,11 @@ const env = {
   // bypass login enforcement for local work. While false, `protect` lets every request through.
   AUTH_ENABLED: true,
   CLIENT_URL: process.env.CLIENT_URL,
+  // The public digifunzi-landing site — a second, cookie-less origin that only ever calls
+  // POST /api/public/leads and /api/public/contact. Optional: those two routes work fine with
+  // this unset (no browser CORS check applies to a same-origin curl/server-to-server call), it
+  // only matters once the landing site is actually deployed and calling this API from a browser.
+  PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL,
   DB_HOST: process.env.DB_HOST || "127.0.0.1",
   DB_PORT: Number(process.env.DB_PORT) || 3306,
   DB_USER: process.env.DB_USER,

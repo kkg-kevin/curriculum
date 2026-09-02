@@ -88,6 +88,7 @@ import ReceiptDetailPage from "../modules/billing/pages/ReceiptDetailPage";
 import StatementOfAccountPage from "../modules/billing/pages/StatementOfAccountPage";
 import CustomersListPage from "../modules/billing/pages/CustomersListPage";
 import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
+import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
 
 export default function AppRoutes() {
   return (
@@ -127,6 +128,7 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<AssessmentBuilderPage />} />
           <Route path=":id/view" element={<AssessmentViewPage />} />
         </Route>
+        <Route path="enquiries" element={<EnquiriesListPage />} />
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/customers" element={<CustomersListPage />} />
