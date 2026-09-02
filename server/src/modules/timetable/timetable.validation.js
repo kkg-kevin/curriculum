@@ -77,8 +77,18 @@ const createSkipSchema = z.object({
   path: ["newDate"],
 });
 
+// A close-out action on one session occurrence — see SessionOccurrenceService for what each does.
+// "unlock-attendance" is the admin/school-only escape hatch; the controller gates that one further.
+const OCCURRENCE_ACTIONS = ["mark-taught", "cancel", "reopen", "lock-attendance", "unlock-attendance"];
+
+const occurrenceActionSchema = z.object({
+  action: z.enum(OCCURRENCE_ACTIONS, { errorMap: () => ({ message: "Unknown occurrence action" }) }),
+  note: z.string().max(500).optional().default(""),
+});
+
 module.exports = {
   createSlotSchema, updateSlotSchema, DAYS_OF_WEEK,
   setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema,
   createSkipSchema, SKIP_MODES,
+  occurrenceActionSchema, OCCURRENCE_ACTIONS,
 };

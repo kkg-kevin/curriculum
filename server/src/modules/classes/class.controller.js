@@ -1,9 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const ClassService = require("./class.service");
+const ReportService = require("../reports/report.service");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 const TeacherModel = require("../teachers/teacher.model");
-const { createClassSchema, updateClassSchema } = require("./class.validation");
+const { createClassSchema, updateClassSchema, markNotSubmittedSchema } = require("./class.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // updateClassSchema is createClassSchema.partial(), but zod still materializes a field's
@@ -170,6 +171,38 @@ const promoteLearners = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Shared teacher/school ownership check for the class-scoped read endpoints below — a teacher may
+// only touch a class they have at least one course-educator link in, a school only its own hub's.
+async function assertClassReadAccess(req, record) {
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "teacher") {
+    const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
+  }
+}
+
+// The four-metric year-completion checklist for a class — all derived live (see
+// ClassService.getCompletionStatus). Same read access as promotion-readiness: anyone who can
+// already open this class's detail page.
+const getCompletionStatus = asyncHandler(async (req, res) => {
+  const record = await ClassService.getClassById(req.params.id);
+  await assertClassReadAccess(req, record);
+  const data = await ClassService.getCompletionStatus(req.params.id);
+  res.json({ success: true, data });
+});
+
+// Files a "not submitted" session report for one learner who never submitted a required
+// assessment — the resolution for a completion-blocking gap that isn't a grading backlog. Same
+// write posture as grading itself (teacher/school/admin), ownership off the class.
+const markSessionNotSubmitted = asyncHandler(async (req, res) => {
+  const record = await ClassService.getClassById(req.params.id);
+  await assertClassReadAccess(req, record);
+  const { courseId, sessionId, learnerId } = markNotSubmittedSchema.parse(req.body);
+  const actorId = req.ownTeacher?.id || req.user.id;
+  const data = await ReportService.markSessionNotSubmitted({ classId: req.params.id, courseId, sessionId, learnerId, actorId });
+  res.json({ success: true, data });
+});
+
 const updateClass = asyncHandler(async (req, res) => {
   const data = pickPresent(updateClassSchema.parse(req.body), req.body);
   if (req.user.role === "school") {
@@ -208,4 +241,5 @@ module.exports = {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
   getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,
+  getCompletionStatus, markSessionNotSubmitted,
 };

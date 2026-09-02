@@ -2,9 +2,11 @@ const asyncHandler = require("express-async-handler");
 const TimetableService = require("./timetable.service");
 const TimetableModel = require("./timetable.model");
 const SessionSkipModel = require("./session-skip.model");
+const SessionOccurrenceModel = require("./session-occurrence.model");
+const SessionOccurrenceService = require("./session-occurrence.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
-const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema } = require("./timetable.validation");
+const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // Same shape as attendance.controller.js's assertClassAccess — a timetable slot belongs to a
@@ -247,6 +249,63 @@ const listSkips = asyncHandler(async (req, res) => {
   res.json({ success: true, data: skips });
 });
 
+// --- Session occurrences (durable per-session "did it run / was attendance dealt with") -------
+
+// Loads the occurrence named by :id, then checks the caller owns its class exactly the way every
+// other class-scoped write here does (teacher must actually teach the class, school must own the
+// hub, admin unrestricted).
+async function loadOwnedOccurrenceOrThrow(req) {
+  const occ = await SessionOccurrenceModel.findById(req.params.id);
+  if (!occ) {
+    const err = new Error("Session occurrence not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  await assertClassAccess(req, await ClassModel.findById(occ.classId));
+  return occ;
+}
+
+// The hydrated occurrence list for a class — every past session with its taught/attendance
+// close-out state, for the class-detail "sessions" tab. Same read posture as listByClass.
+const listOccurrences = asyncHandler(async (req, res) => {
+  const { classId } = req.query;
+  if (!classId) {
+    const err = new Error("classId is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = await ClassModel.findById(classId);
+  await assertClassAccess(req, cls);
+  const data = await SessionOccurrenceService.listForClassHydrated(classId, (args) => TimetableService.resolveCalendar(args));
+  res.json({ success: true, data });
+});
+
+// The close-out actions. `action` in the body picks which transition; a plain note is optional.
+// The actor recorded is the teacher's own id when a teacher is acting, otherwise the user id.
+const runOccurrenceAction = asyncHandler(async (req, res) => {
+  const occ = await loadOwnedOccurrenceOrThrow(req);
+  const { action, note } = occurrenceActionSchema.parse(req.body);
+  const actorId = req.ownTeacher?.id || req.user.id;
+
+  // unlock is the admin-only escape hatch (a wrongly-locked attendance) — everyone else who can
+  // write to this class can run the ordinary close-outs.
+  if (action === "unlock-attendance" && req.user.role !== "admin" && req.user.role !== "school") {
+    const err = new Error("Only an admin or school can reopen a locked attendance");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const map = {
+    "mark-taught": () => SessionOccurrenceService.markTaught(occ.id, { actorId, note }),
+    "cancel": () => SessionOccurrenceService.cancel(occ.id, { actorId, note }),
+    "reopen": () => SessionOccurrenceService.reopen(occ.id, { actorId }),
+    "lock-attendance": () => SessionOccurrenceService.lockAttendanceUnmarked(occ.id, { actorId, note }),
+    "unlock-attendance": () => SessionOccurrenceService.unlockAttendance(occ.id),
+  };
+  const data = await map[action]();
+  res.json({ success: true, data });
+});
+
 module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
@@ -255,4 +314,5 @@ module.exports = {
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
   getTeacherAvailabilityConflicts,
+  listOccurrences, runOccurrenceAction,
 };

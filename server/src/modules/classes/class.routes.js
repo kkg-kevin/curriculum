@@ -3,6 +3,7 @@ const {
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
   getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,
+  getCompletionStatus, markSessionNotSubmitted,
 } = require("./class.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -42,5 +43,13 @@ router.route("/:id/promotion-readiness")
   .get(authorize("admin", "school", "teacher"), getPromotionReadiness);
 router.route("/:id/promote-learners")
   .post(authorize("admin", "school"), promoteLearners);
+
+// Year-completion checklist (sessions taught / grading / attendance closed / reports filed) and
+// the one write it needs that isn't grading — filing a not-submitted session report. Reads open
+// to teacher; the write is teacher-capable too (it's a grading-adjacent action).
+router.route("/:id/completion-status")
+  .get(authorize("admin", "school", "teacher"), getCompletionStatus);
+router.route("/:id/mark-not-submitted")
+  .post(authorize("admin", "school", "teacher"), markSessionNotSubmitted);
 
 module.exports = router;

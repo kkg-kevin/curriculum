@@ -7,6 +7,7 @@ const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const SessionSkipModel = require("../timetable/session-skip.model");
+const SessionOccurrenceModel = require("../timetable/session-occurrence.model");
 
 const TeacherService = {
   async createTeacher(data) {
@@ -79,6 +80,7 @@ const TeacherService = {
     await AssessmentSubmissionModel.clearGradedBy(id);
     await AssessmentIssueModel.clearIssuedBy(id);
     await SessionSkipModel.clearCreatedBy(id);
+    await SessionOccurrenceModel.clearActor(id);
     await TeacherAvailabilityModel.deleteByTeacherId(id);
     return { message: "Teacher deleted successfully" };
   },

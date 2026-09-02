@@ -30,6 +30,10 @@ const uploadRoutes = require("./modules/uploads/upload.routes");
 const programRoutes = require("./modules/programs/program.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
+const publicLeadRoutes = require("./modules/leads/public-lead.routes");
+const leadRoutes = require("./modules/leads/lead.routes");
+const publicSiteRoutes = require("./modules/public-site/public-site.routes");
+const adminSiteRoutes = require("./modules/public-site/admin-site.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
@@ -53,8 +57,13 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+// The admin client (CLIENT_URL) sends cookies and needs credentials: true. The public
+// digifunzi-landing site (PUBLIC_SITE_URL) never sends a JWT/cookie (see its src/services/api.js)
+// and only ever reaches the /api/public/* routes below, but still needs its origin allowed or the
+// browser blocks the POST before it reaches Express at all.
+const allowedOrigins = [env.CLIENT_URL, env.PUBLIC_SITE_URL].filter(Boolean);
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -90,6 +99,13 @@ app.use("/api/auth", authRoutes);
 // and scoped by learner.service.js's getPublicProfile to a hand-picked, deliberately narrow
 // field set — see that function's comment for exactly what it excludes.
 app.use("/api/public/learners", publicLearnerProfileRoutes);
+// Unauthenticated by design — the digifunzi-landing site's Enroll/Contact forms (see
+// public-lead.routes.js). Mounted at /api/public rather than /api/public/leads since it
+// serves both /api/public/leads and /api/public/contact.
+app.use("/api/public", publicLeadRoutes);
+// Unauthenticated by design — the digifunzi-landing site's Bootcamps/Projects listing and
+// detail pages (see public-site.routes.js).
+app.use("/api/public", publicSiteRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -135,6 +151,10 @@ app.use("/api/programs", protect, authorize("admin"), programRoutes);
 // router, no attachOwnRecords/authorize needed.
 app.use("/api/notifications", protect, notificationRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
+// Enquiries page — the staff-facing read/triage side of the public leads above.
+app.use("/api/leads", protect, authorize("admin"), leadRoutes);
+// Content authoring for the public Bootcamps/Projects pages above.
+app.use("/api/site", protect, authorize("admin"), adminSiteRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

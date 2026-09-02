@@ -42,4 +42,12 @@ export const timetableApi = {
   // conflicting teacher before save time, same role getAvailability plays for rooms.
   getTeacherAvailabilityConflicts: (params) =>
     api.get(`${BASE}/teachers/availability-conflicts`, { params }).then((r) => r.data.data),
+
+  // Session occurrences — the durable "was this session taught / was its attendance dealt with"
+  // record behind class completion. listOccurrences returns every past session hydrated with its
+  // taught/attendance close-out state; runOccurrenceAction applies one transition (action is one
+  // of "mark-taught" | "cancel" | "reopen" | "lock-attendance" | "unlock-attendance").
+  listOccurrences: (classId) => api.get(`${BASE}/occurrences`, { params: { classId } }).then((r) => r.data.data),
+  runOccurrenceAction: (occurrenceId, action, note) =>
+    api.post(`${BASE}/occurrences/${occurrenceId}/action`, { action, note }).then((r) => r.data.data),
 };

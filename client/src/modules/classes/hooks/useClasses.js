@@ -8,6 +8,7 @@ export const CLASS_KEYS = {
   courseTeachers: (classId)  => ["classes", "detail", classId, "course-teachers"],
   teacherLinks:   (teacherId) => ["classes", "course-teacher-links", teacherId],
   promotionReadiness: (classId) => ["classes", "detail", classId, "promotion-readiness"],
+  completionStatus: (classId) => ["classes", "detail", classId, "completion-status"],
 };
 
 export function useAllClassesQuery() {
@@ -153,5 +154,32 @@ export function usePromoteLearners() {
       if (data.skipped.length > 0 && data.promoted.length === 0) toast.error("No learners were ready to promote");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to promote learners"),
+  });
+}
+
+// The four-metric year-completion checklist for a class (sessions taught / grading done /
+// attendance closed / reports filed) — see ClassService.getCompletionStatus server-side. All
+// derived live, so this re-fetches whenever grading, attendance, or an occurrence action changes
+// something it depends on.
+export function useCompletionStatus(classId) {
+  return useQuery({
+    queryKey: CLASS_KEYS.completionStatus(classId),
+    queryFn:  () => classApi.getCompletionStatus(classId),
+    enabled:  !!classId,
+  });
+}
+
+// Files a "not submitted" session report for a learner who never submitted a required assessment
+// — the completion-panel resolution for a gap that isn't a grading backlog.
+export function useMarkSessionNotSubmitted() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, courseId, sessionId, learnerId }) => classApi.markSessionNotSubmitted(classId, { courseId, sessionId, learnerId }),
+    onSuccess: (_data, { classId }) => {
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.completionStatus(classId) });
+      qc.invalidateQueries({ queryKey: CLASS_KEYS.promotionReadiness(classId) });
+      toast.success("Filed as not submitted");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to file"),
   });
 }
