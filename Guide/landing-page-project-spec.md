@@ -4,6 +4,15 @@
 
 ---
 
+> **STATUS UPDATE (2 Sep 2026):** The `/api/public/*` endpoints this spec describes as "not built yet" **are now live** in the main system, deployed with the 2 Sep 2026 release:
+> - `POST /api/public/leads` — Enroll form (fields: `parentName`, `parentEmail`, `parentPhone?`, `learnerName?`, `learnerAge?`, `interestedIn?` = `bootcamp|project|quarky|general`, `referenceId?`, `note?`). Rate-limited 20 req / 15 min / IP. Returns `201 { success, message, data }`.
+> - `POST /api/public/contact` — Contact form (fields: `name`, `email`, `phone?`, `message`). Same rate limit and response shape.
+> - `GET /api/public/bootcamps` · `GET /api/public/bootcamps/:idOrSlug` · `GET /api/public/projects` · `GET /api/public/projects/:idOrSlug` — content is authored admin-side via `/api/site/*` (API only, no admin UI yet), so these return `[]` until content is entered.
+>
+> Server-side validation mirrors §4.5 exactly (Zod). Both `POST`s persist to a `leads` table **and** notify every admin in-app; staff triage them at the main system's admin **Enquiries** page. The landing site must be added to the main server's `PUBLIC_SITE_URL` env var (its exact origin) for browser CORS to allow the form POSTs. **§4 below is now a description of what exists, not a build request** — build the site against it directly.
+
+---
+
 ## 1. What this project is
 
 A public marketing/landing website for Digifunzi — the site a new visitor (parent, school administrator, or learner) sees when they search for or land on Digifunzi for the first time. Its job is to explain what Digifunzi offers, rank well on Google, and convert visitors into leads or enrollments.

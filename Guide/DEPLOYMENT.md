@@ -9,32 +9,45 @@
 
 ---
 
-## This release (1 Sep 2026) — what changed
+## This release (2 Sep 2026) — what changed
 
-**No new schema migration in this release.** No `package.json` change on either side. Deploy order doesn't strictly matter, but deploying **backend first, then frontend** is still the safe habit. Click **Run NPM Install** + **Restart** on the backend as usual (Restart is what reloads the code).
+**Three new schema migrations this release** (all apply automatically on **Restart**; all additive — new tables only, nothing existing is altered or backfilled):
+
+| Migration | Adds |
+|---|---|
+| `20260902100000_create_session_occurrences.js` | `session_occurrences` — one row per past class session, tracking whether it was taught and whether its attendance was dealt with (behind the new Class completion checklist). No rows backfilled; a class's occurrences populate lazily the first time its calendar/completion is loaded after deploy. |
+| `20260902103000_create_leads.js` | `leads` — public Enroll/Contact form submissions from the marketing site. |
+| `20260902110000_create_public_site_content.js` | `public_bootcamps`, `public_projects` — marketing copy for the public site's Bootcamps/Projects pages. |
+
+**No `package.json` change on either side.** Deploy **backend first, then frontend**. Click **Run NPM Install** + **Restart** on the backend (Restart is what runs the migrations and reloads code).
+
+**One new backend environment variable — `PUBLIC_SITE_URL`** (see the env table below). It's **optional**: leave it unset for now and nothing breaks. It only matters once the separate `digifunzi-landing` marketing site is deployed and calling this API from a browser — at that point set it to that site's origin so CORS lets the Enroll/Contact form POSTs through.
 
 **Backend** (`backend-deploy.zip`):
-- **Billing — Customers API.** New admin-only endpoints `GET /api/billing/customers` and `GET /api/billing/customers/:hubId`. A "customer" is derived on the fly (a learning hub the platform bills) — no new table, no migration. Returns per-hub invoice/payment aggregates and, for one hub, its full invoice + payment list.
-- **Competencies — duplicate a Performance Band's setup to the next level.** New endpoint `POST /api/curricula/:id/competencies/bands/:bandId/duplicate-to-next`. Copies a configured band's competencies, per-indicator % weights and advancement thresholds onto the next band in the *same* Developmental Stage's ladder (Explorer → Builder), overwriting that band's config. Scoped to one stage only — it never fans out across stages.
+- **Class completion tracking.** New admin/school/teacher endpoints:
+  - `GET /api/classes/:id/completion-status` — a four-metric year-completion checklist for a class, all derived live (never a stored flag): (1) every past session marked taught/cancelled, (2) every session assessment graded + published for every active learner, (3) attendance taken or consciously closed for every past session, (4) every learner–session report filed (a real one or a "not submitted" one).
+  - `POST /api/classes/:id/mark-not-submitted` — files a "not submitted" session report for a learner who never submitted a required assessment (refuses if a submission exists that just needs grading).
+  - `GET /api/timetable/occurrences` + `POST /api/timetable/occurrences/:id/action` — list a class's past sessions and run a close-out action (`mark-taught` / `cancel` / `reopen` / `lock-attendance` / `unlock-attendance`).
+  - Attendance that's never marked auto-locks 14 days after the session date (lazy sweep, no cron) so a forgotten session can't block completion forever.
+  - `getSessionSummary` (the calendar click-through) now also returns the session's `occurrence` record; all existing fields unchanged.
+- **Leads — public Enroll/Contact forms.** New **unauthenticated** endpoints `POST /api/public/leads` and `POST /api/public/contact` (rate-limited, 20/15min/IP) for the marketing site's forms. Each submission notifies every admin in-app. Staff read/triage them at the admin **Enquiries** page via `GET /api/leads` and `PATCH /api/leads/:id/status` (admin-only).
+- **Public site content API.** New **unauthenticated** read endpoints `GET /api/public/bootcamps[/:idOrSlug]` and `GET /api/public/projects[/:idOrSlug]` for the marketing site's listing/detail pages, plus admin-only authoring at `GET/POST/PUT/DELETE /api/site/bootcamps` and `/api/site/projects`. Its own tables, deliberately separate from the operational `programs`/`courses` — this is marketing copy, not curriculum. **No admin UI for authoring this content ships in this release** (API only).
+- **CORS now allows two origins** — the admin client (`CLIENT_URL`) and, when set, the public site (`PUBLIC_SITE_URL`).
 
 **Frontend** (`assets.zip` + `index.html`):
-- **Tech Educator portal → Assessments** page rebuilt as a **per-course carousel**: a course selector plus one session slide at a time (prev / next arrows + dots) instead of the old collapsible course-section stack. It pages through **every** session in the course (not only sessions with an assessment attached), so an empty session shows as an empty slide.
-- **Billing → Customers.** The admin Billing page is now split into **Customers · Invoices · Payments** tabs. The Customers tab lists every learning hub with its invoiced / outstanding totals; each opens a customer page showing that hub's invoices and payments, with **Add invoice** (jumps to the Invoices tab pre-scoped to that hub) and **View statement** (opens the existing Statement of Account pre-selected to that hub). School and learner billing views are unchanged.
-- **Curriculum → Progress Arc → Performance Bands.** Each band card's ⋮ menu has a **"Duplicate to \<next band\>"** action — copies that band's competencies, indicator weights and advancement thresholds onto the next level in the selected stage, with a confirm dialog first.
-- **Tech Educator portal → Claims** — new sidebar entry (between Timetable and My Profile) and a placeholder page. The claim submission / approval flow is not built yet; this only adds the navigation and a "coming soon" screen.
-- **Learning Hub view (Settings):** an **Activate / Deactivate Hub** button next to Edit/Delete, with a confirmation dialog that spells out the cascade (deactivating a hub deactivates every learner and educator tied to it and its branch hubs; reactivating brings them back; someone still active at another hub keeps their account). Only shows once a hub is live.
+- **Class detail page → "Year Completion" panel** (above the existing Promotion panel). An expandable four-item checklist — sessions taught / assessments graded / attendance closed / reports filed — with inline actions to resolve each pending item (mark a session taught or cancelled, close an unmarked attendance, file a learner's missing work as "not submitted"). Grading itself is still done from the assessment roster, not here.
+- **Calendar → session detail modal** gains a **"Session Close-out"** section on the teacher/school calendars (past dates only): *Mark as taught* / *Mark cancelled*, and *Close attendance (not marked)* when attendance was never taken.
+- **Admin sidebar → Enquiries** (new entry, between Courses and Assessments). Lists Enroll and Contact form submissions from the public site with New / Contacted / Closed filter tabs and a per-row status dropdown. (The notification bell shows new-enquiry notifications but clicking one doesn't yet deep-link — open Enquiries from the sidebar.)
 
-### Previous release (31 Aug 2026) — still included here
+### Previous release (1 Sep 2026) — still included here
 
 Shipped in the immediately preceding build, already baked into these same zips — listed for anyone who skipped that deploy:
 
-- **Migration** `20260831100000_add_advancement_min_to_performance_bands.js` — adds `advancementMin` to `performance_bands` (applies on Restart; existing bands get `0`). This is the latest migration; the backend zip includes every migration through it.
-- **Diagnostic issuing is strictly one-per-age-bracket.** A learner is issued exactly **one** Learning-Area diagnostic — the area whose `minAge`/`maxAge` range contains the learner's age. A learner with **no date of birth on file gets no auto-issued diagnostic**. Stale diagnostics from a different bracket the learner never started are **pruned automatically**; anything opened (in progress / submitted / graded) is left untouched. (`learner.service.js` only.)
-- Curriculum name unique (case/space-insensitive) — duplicate create/rename rejected with 409.
-- Account deactivation model — suspended learner / educator / hub can log in but is locked to an "Account Suspended" screen; writes refused server-side. `PATCH /api/teachers/:id/status`. Hub deactivation cascades to its (and its branches') learners and educators.
-- Billing documents return `issuedBy` + `learner` (name/photo) on invoices / receipts / statements.
-- Frontend: vector-PDF invoices / receipts / statements (selectable text, three logos); learner report Print / Download PDF; multi-hub learners no longer trapped on a diagnostic gate; sidebar collapse reflows immediately; Performance Bands advancement threshold is a min–max range with per-competency % subtotal.
-- Dependency `jspdf-autotable` (already in `client/package.json`, baked into the build — only matters if you rebuild the frontend yourself).
+- **Billing — Customers API.** Admin-only `GET /api/billing/customers` and `GET /api/billing/customers/:hubId` — a "customer" is a learning hub, derived on the fly (no table, no migration).
+- **Competencies — duplicate a Performance Band's setup to the next level.** `POST /api/curricula/:id/competencies/bands/:bandId/duplicate-to-next` — copies a band's competencies, per-indicator % weights and advancement thresholds onto the next band in the *same* Developmental Stage's ladder, overwriting it. One stage only, never across stages.
+- **Frontend:** Tech Educator → Assessments rebuilt as a per-course carousel (pages every session, not just ones with an assessment); Billing split into Customers · Invoices · Payments tabs; Performance Bands ⋮ menu "Duplicate to \<next band\>"; Tech Educator → Claims placeholder nav entry; Learning Hub Activate/Deactivate button with cascade confirm dialog.
+- **Migration** `20260831100000_add_advancement_min_to_performance_bands.js` (adds `advancementMin` to `performance_bands`, existing bands get `0`) — from the 31 Aug build, still included.
+- Diagnostic issuing one-per-age-bracket; no DOB → no auto-diagnostic; stale unstarted diagnostics pruned. Curriculum name unique (case/space-insensitive). Account deactivation model (`PATCH /api/teachers/:id/status`, hub cascade). Billing documents carry `issuedBy` + `learner`. Vector-PDF billing documents + learner report PDF. Dependency `jspdf-autotable` (already baked in).
 
 ---
 
@@ -96,6 +109,7 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 | Name | Value |
 |---|---|
 | CLIENT_URL | https://curriculum.digifunzi.com |
+| PUBLIC_SITE_URL | *(optional — new this release)* the marketing site's origin, e.g. `https://digifunzi.com`. Leave unset until that site is deployed; when unset the Enroll/Contact API routes still work, they just can't be called from a browser on another origin yet. |
 | NODE_ENV | development |
 | DB_HOST | 127.0.0.1 (or `localhost` — whatever cPanel's MySQL Databases tool shows) |
 | DB_PORT | 3306 |
@@ -117,7 +131,7 @@ Before the first deploy under MySQL, in cPanel go to **MySQL Databases**:
 
 ### Steps to Deploy / Re-deploy Backend
 
-> The app now migrates its own database schema and creates the first admin login automatically on every restart (see `src/server.js`) — there is no separate manual migration or data-sync step anymore. `backend-deploy.zip` is **code-only**: `src/`, `knexfile.js`, `package.json`, `package-lock.json`. **`knexfile.js` lives at the app root, not inside `src/`** — don't forget it when rebuilding the zip by hand, the app will fail to start without it.
+> The app now migrates its own database schema and creates the first admin login automatically on every restart (see `src/server.js`) — there is no separate manual migration or data-sync step anymore. **This release adds three new migrations** (see "This release" above) which the Restart applies for you; check the app log afterwards to confirm they ran without error. `backend-deploy.zip` is **code-only**: `src/`, `knexfile.js`, `package.json`, `package-lock.json`. **`knexfile.js` lives at the app root, not inside `src/`** — don't forget it when rebuilding the zip by hand, the app will fail to start without it.
 
 1. **Create the deployment zip** from the project root:
    - Include: `src/`, `knexfile.js`, `package.json`, `package-lock.json`
@@ -192,7 +206,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    - `index.html` from `client/dist/`
    - `assets.zip`
 
-7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-SUi4RgEX.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
+7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-CnTv3dkV.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
 
 8. **Delete** `assets.zip` after extraction
 
@@ -224,9 +238,9 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 262 files, includes every migration through `20260831100000`. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 283 files, includes every migration through `20260902110000_create_public_site_content.js`. |
 | `assets.zip` | Ready-to-upload frontend assets zip. Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-SUi4RgEX.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-CnTv3dkV.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
