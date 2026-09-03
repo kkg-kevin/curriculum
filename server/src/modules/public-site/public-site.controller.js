@@ -34,6 +34,22 @@ const getPublicProject = asyncHandler(async (req, res) => {
   res.json(record);
 });
 
+// Pathways — read-only projection of the `pathway_templates` catalog (authored in the main
+// portal's Settings → Pathways). No admin CRUD here; the frontend just needs to browse them.
+// getPublicPathway 404s an unknown id/slug OR a pathway whose every course is inactive/deleted
+// (nothing to show), matching how getPublicBootcamp 404s an unpublished record.
+
+const getPublicPathways = asyncHandler(async (req, res) => {
+  const records = await PublicSiteService.listPathways();
+  res.json(records);
+});
+
+const getPublicPathway = asyncHandler(async (req, res) => {
+  const record = await PublicSiteService.getPathway(req.params.idOrSlug);
+  if (!record) return res.status(404).json({ message: "Pathway not found" });
+  res.json(record);
+});
+
 // ---- Admin CRUD (normal { success, data } convention) ------------------------------------
 
 const createBootcamp = asyncHandler(async (req, res) => {
@@ -85,6 +101,8 @@ module.exports = {
   getPublicBootcamp,
   getPublicProjects,
   getPublicProject,
+  getPublicPathways,
+  getPublicPathway,
   createBootcamp,
   listBootcamps,
   updateBootcamp,
