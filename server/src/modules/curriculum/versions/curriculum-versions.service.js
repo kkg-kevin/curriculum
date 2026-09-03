@@ -49,7 +49,7 @@ const CurriculumVersionService = {
     });
 
     // Every course assigned anywhere in this new version — draft or not — adopts its
-    // competencies/learning areas into the curriculum too, same as attaching a course
+    // competencies/pathways into the curriculum too, same as attaching a course
     // directly (see CurriculumService.autoPopulateFromCourse). Runs on creation rather
     // than waiting for publish, so the curriculum reflects a version as soon as it's built.
     await Promise.all([...collectCourseIds(content)].map((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId)));
@@ -68,7 +68,7 @@ const CurriculumVersionService = {
     });
 
     // A course newly placed into this version's content (draft or otherwise) adopts its
-    // competencies/learning areas right away too — not just at create/publish time (see
+    // competencies/pathways right away too — not just at create/publish time (see
     // CurriculumService.autoPopulateFromCourse). Idempotent, so re-running for courses
     // already adopted is a harmless no-op.
     await Promise.all([...collectCourseIds(updated.content)].map((courseId) => CurriculumService.autoPopulateFromCourse(curriculumId, courseId)));

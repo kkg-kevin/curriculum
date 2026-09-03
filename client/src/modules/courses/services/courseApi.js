@@ -20,15 +20,15 @@ export const courseApi = {
   unlinkCompetency: (courseId, competencyId) =>
     api.delete(`${ENDPOINT}/${courseId}/competencies/links/${competencyId}`).then((r) => r.data.data),
 
-  /* Learning Areas — this course's tagged learning areas (authored globally in Settings) */
-  getCourseLearningAreas: (courseId) =>
-    api.get(`${ENDPOINT}/${courseId}/learning-areas/links`).then((r) => r.data.data),
+  /* Pathways — this course's tagged pathways (authored globally in Settings) */
+  getCoursePathways: (courseId) =>
+    api.get(`${ENDPOINT}/${courseId}/pathways/links`).then((r) => r.data.data),
 
-  linkLearningArea: (courseId, learningAreaId) =>
-    api.post(`${ENDPOINT}/${courseId}/learning-areas/links`, { learningAreaId }).then((r) => r.data.data),
+  linkPathway: (courseId, pathwayId) =>
+    api.post(`${ENDPOINT}/${courseId}/pathways/links`, { pathwayId }).then((r) => r.data.data),
 
-  unlinkLearningArea: (courseId, learningAreaId) =>
-    api.delete(`${ENDPOINT}/${courseId}/learning-areas/links/${learningAreaId}`).then((r) => r.data.data),
+  unlinkPathway: (courseId, pathwayId) =>
+    api.delete(`${ENDPOINT}/${courseId}/pathways/links/${pathwayId}`).then((r) => r.data.data),
 
   /* Inventory — this course's linked materials, each with a quantity (authored globally in Settings) */
   getCourseInventory: (courseId) =>

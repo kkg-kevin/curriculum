@@ -295,7 +295,7 @@ const transferLearnerHub = asyncHandler(async (req, res) => {
 });
 
 // Learner-portal-only: fired once from the first-login diagnostic gate before it reads this
-// learner's Learning-Area diagnostics, so an enrollment whose issuance was missed/incomplete
+// learner's Pathway diagnostics, so an enrollment whose issuance was missed/incomplete
 // still gets caught before the gate decides there's nothing to show.
 const ensureDiagnosticsIssued = asyncHandler(async (req, res) => {
   assertOwn(req.params.id === req.ownLearner?.id);

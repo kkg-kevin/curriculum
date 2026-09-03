@@ -1,8 +1,8 @@
 const CurriculumModel        = require("../curriculum.model");
 const CurriculumCompetencyLinkModel = require("./curriculum-competency-link.model");
 const CurriculumCompetencyIndicatorModel = require("./curriculum-competency-indicator.model");
-const LearningAreaModel      = require("./learning-area.model");
-const LearningAreaCatalogModel = require("../../settings/learning-areas/learning-area.model");
+const PathwayModel      = require("./pathway.model");
+const PathwayTemplateModel = require("../../settings/pathways/pathway-template.model");
 const CourseModel            = require("../../courses/course.model");
 const CompetencyModel        = require("../../settings/competencies/competency.model");
 const ProgressionLadderModel = require("./progression-ladder.model");
@@ -19,7 +19,7 @@ const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-
 const BuilderAssessmentModel         = require("../../assessments/assessment.model");
 const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-competency-link.model");
 const CurriculumVersionModel         = require("../versions/curriculum-versions.model");
-const LearnerJourneyModel            = require("./learner-journey.model");
+const LearnerPathwayModel            = require("./learner-pathway.model");
 const LearnerModel                   = require("../../learners/learner.model");
 const LearnerHubLinkModel            = require("../../learners/learner-hub-link.model");
 const ClassModel                     = require("../../classes/class.model");
@@ -28,7 +28,7 @@ const ClassModel                     = require("../../classes/class.model");
 // to it here would risk resolving to a stale/incomplete export depending on which module happens
 // to load first at server startup.
 
-// A Learning Area's `courses` field stores course ids only — reject anything
+// A Pathway's `courses` field stores course ids only — reject anything
 // that doesn't resolve to a real course so a dummy id can never sneak in.
 async function assertCoursesExist(courseIds) {
   if (!courseIds) return;
@@ -167,64 +167,64 @@ const CompetencyService = {
     await CurriculumCompetencyIndicatorModel.delete(id);
   },
 
-  /* ── Learning Areas ─────────────────────────────────────────────────── */
+  /* ── Pathways ─────────────────────────────────────────────────── */
 
-  async getLearningAreas(curriculumId) {
-    return LearningAreaModel.findByCurriculumId(curriculumId);
+  async getPathways(curriculumId) {
+    return PathwayModel.findByCurriculumId(curriculumId);
   },
 
-  async createLearningArea(curriculumId, data) {
-    const existing = await LearningAreaModel.findByCurriculumId(curriculumId);
+  async createPathway(curriculumId, data) {
+    const existing = await PathwayModel.findByCurriculumId(curriculumId);
     if (existing.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
-      const err = new Error("A learning area with this name already exists");
+      const err = new Error("A pathway with this name already exists");
       err.statusCode = 409;
       throw err;
     }
     await assertCoursesExist(data.courses);
-    return LearningAreaModel.create({ curriculumId, ...data });
+    return PathwayModel.create({ curriculumId, ...data });
   },
 
-  async updateLearningArea(curriculumId, id, data) {
-    const area = await LearningAreaModel.findById(id);
-    if (!area || area.curriculumId !== curriculumId) {
-      const err = new Error("Learning area not found");
+  async updatePathway(curriculumId, id, data) {
+    const pathway = await PathwayModel.findById(id);
+    if (!pathway || pathway.curriculumId !== curriculumId) {
+      const err = new Error("Pathway not found");
       err.statusCode = 404;
       throw err;
     }
     if (data.name) {
-      const all = await LearningAreaModel.findByCurriculumId(curriculumId);
-      const others = all.filter((a) => a.id !== id);
-      if (others.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
-        const err = new Error("A learning area with this name already exists");
+      const all = await PathwayModel.findByCurriculumId(curriculumId);
+      const others = all.filter((p) => p.id !== id);
+      if (others.some((p) => p.name.toLowerCase() === data.name.toLowerCase())) {
+        const err = new Error("A pathway with this name already exists");
         err.statusCode = 409;
         throw err;
       }
     }
     await assertCoursesExist(data.courses);
-    return LearningAreaModel.update(id, data);
+    return PathwayModel.update(id, data);
   },
 
-  async deleteLearningArea(curriculumId, id) {
-    const area = await LearningAreaModel.findById(id);
-    if (!area || area.curriculumId !== curriculumId) {
-      const err = new Error("Learning area not found");
+  async deletePathway(curriculumId, id) {
+    const pathway = await PathwayModel.findById(id);
+    if (!pathway || pathway.curriculumId !== curriculumId) {
+      const err = new Error("Pathway not found");
       err.statusCode = 404;
       throw err;
     }
-    await LearningAreaModel.delete(id);
+    await PathwayModel.delete(id);
   },
 
-  // Clones a catalog entry (authored in Settings) into a new, independent record
+  // Clones a pathway template (authored in Settings) into a new, independent record
   // owned by this curriculum — not a link. Once imported, editing this curriculum's
-  // copy never touches the Settings default, and vice versa.
-  async importLearningArea(curriculumId, learningAreaId) {
-    const source = await LearningAreaCatalogModel.findById(learningAreaId);
+  // copy never touches the template, and vice versa.
+  async importPathway(curriculumId, pathwayId) {
+    const source = await PathwayTemplateModel.findById(pathwayId);
     if (!source) {
-      const err = new Error("Learning area not found in catalog");
+      const err = new Error("Pathway template not found");
       err.statusCode = 404;
       throw err;
     }
-    return this.createLearningArea(curriculumId, {
+    return this.createPathway(curriculumId, {
       name:        source.name,
       description: source.description,
       color:       source.color,
@@ -474,7 +474,7 @@ const CompetencyService = {
 
     const evidenceTypes    = await EvidenceTypeModel.findByCurriculumId(curriculumId);
     const competencies     = await this.getCurriculumCompetencies(curriculumId);
-    // This stage's own ladder — findByCurriculumAndStage can never return a Learning-Journey
+    // This stage's own ladder — findByCurriculumAndStage can never return a Pathway
     // band (those never carry an ageCategoryId), so no separate exclusion filter is needed.
     const performanceBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId);
     const progressLevels   = await ProgressLevelModel.findByCurriculumId(curriculumId);
@@ -538,7 +538,7 @@ const CompetencyService = {
   // per indicator (marks earned / marks possible across graded work); passed in manually for
   // now, same shape `calculateScore`'s `evidenceScores` takes for the evidence pipeline.
   async calculateIndicatorProgress(curriculumId, ageCategoryId, indicatorAchievements) {
-    // findByCurriculumAndStage can never return a Learning-Journey band (those never carry an
+    // findByCurriculumAndStage can never return a Pathway band (those never carry an
     // ageCategoryId), so no separate exclusion filter is needed.
     const performanceBands = await PerformanceBandModel.findByCurriculumAndStage(curriculumId, ageCategoryId);
     return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
@@ -588,7 +588,7 @@ const CompetencyService = {
 
   async createPerformanceBand(curriculumId, data) {
     const created = await PerformanceBandModel.create(curriculumId, data);
-    if (!created.learningAreaId) await this._syncBandAcrossStages(curriculumId, created, "create");
+    if (!created.pathwayId) await this._syncBandAcrossStages(curriculumId, created, "create");
     return created;
   },
 
@@ -600,7 +600,7 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    if (before && !before.learningAreaId && data.name && data.name !== before.name) {
+    if (before && !before.pathwayId && data.name && data.name !== before.name) {
       await this._syncBandAcrossStages(curriculumId, band, "rename", before.name);
     }
     return band;
@@ -609,15 +609,15 @@ const CompetencyService = {
   async deletePerformanceBand(curriculumId, id) {
     const band = await PerformanceBandModel.findById(id);
     await PerformanceBandModel.delete(curriculumId, id);
-    if (band && !band.learningAreaId) {
+    if (band && !band.pathwayId) {
       await this._syncBandAcrossStages(curriculumId, band, "delete", band.name);
     }
   },
 
   async reorderPerformanceBands(curriculumId, ageCategoryId, orderedIds) {
     const reordered = await PerformanceBandModel.reorder(curriculumId, ageCategoryId, orderedIds);
-    const isLearningJourney = reordered.some((b) => b.learningAreaId);
-    if (!isLearningJourney) {
+    const isPathway = reordered.some((b) => b.pathwayId);
+    if (!isPathway) {
       await this._syncReorderAcrossStages(curriculumId, ageCategoryId, reordered.map((b) => b.name));
     }
     return reordered;
@@ -637,7 +637,7 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    if (source.learningAreaId) {
+    if (source.pathwayId) {
       const err = new Error("Only Progress Arc bands can be duplicated to the next level");
       err.statusCode = 400;
       throw err;
@@ -668,7 +668,7 @@ const CompetencyService = {
   // band lists can already be out of alignment (drift that pre-dates this sync feature, or a
   // stage with its own extra custom bands), and matching by position risks silently touching a
   // completely unrelated band that merely happens to share a numeric slot. Never called for
-  // Learning-Journey bands (learningAreaId set) — callers guard that before invoking this.
+  // Pathway bands (pathwayId set) — callers guard that before invoking this.
   async _syncBandAcrossStages(curriculumId, changedBand, action, matchName) {
     const stages = await AgeCategoryModel.findByCurriculumId(curriculumId);
     const otherStages = stages.filter((s) => s.id !== changedBand.ageCategoryId);
@@ -876,7 +876,7 @@ const CompetencyService = {
   },
 
   // This learner's confirmed Developmental Stage for THIS curriculum — same link/class walk
-  // getLearningJourney below performs, extracted since getLearnerCompetencyScores and
+  // getPathway below performs, extracted since getLearnerCompetencyScores and
   // getLearnerBandProgress both need it too. Returns null if the learner has no enrollment link
   // resolving to this curriculum, or hasn't been placed at a stage yet (currentStageId not set) —
   // both are legitimate, pre-placement states, not errors.
@@ -1056,16 +1056,16 @@ const CompetencyService = {
     }));
   },
 
-  /* ── Learning Journey ─────────────────────────────────────────────────
-   * A learner's placement timeline, per Learning Area: where they started, every time
+  /* ── Pathway ─────────────────────────────────────────────────
+   * A learner's placement timeline, per Pathway: where they started, every time
    * they've advanced, and wherever they currently stand. Nothing is persisted until a
    * placement is actually made — until then, a default is computed on the fly (Developmental
    * Stage's assignment for that area, falling back to the first course in its sequence). */
 
-  // One entry per Learning Area in this curriculum — either the learner's real journey
+  // One entry per Pathway in this curriculum — either the learner's real journey
   // record, or (if they've never been placed) a computed default that isn't saved until
   // placeLearner is called.
-  async getLearningJourney(curriculumId, learnerId) {
+  async getPathway(curriculumId, learnerId) {
     // Stage placement lives on the hub-enrollment link, not the learner record (a learner
     // enrolled at several hubs can be running a different curriculum at each) — find the one
     // link whose class resolves to THIS curriculum. See maybeAutoIssueDiagnostic's comment in
@@ -1078,14 +1078,14 @@ const CompetencyService = {
       if (cls?.curriculumId === curriculumId) { link = l; break; }
     }
     const stage = link?.currentStageId ? await AgeCategoryModel.findById(link.currentStageId) : null;
-    const areas = await LearningAreaModel.findByCurriculumId(curriculumId);
+    const pathways = await PathwayModel.findByCurriculumId(curriculumId);
 
-    return Promise.all(areas.map(async (area) => {
-      const journey = await LearnerJourneyModel.findOne(learnerId, area.id);
+    return Promise.all(pathways.map(async (pathway) => {
+      const journey = await LearnerPathwayModel.findOne(learnerId, pathway.id);
       if (journey) {
         return {
-          learningAreaId: area.id,
-          learningAreaName: area.name,
+          pathwayId: pathway.id,
+          pathwayName: pathway.name,
           currentCourseId: journey.currentCourseId,
           history: journey.history,
           isDefault: false,
@@ -1094,19 +1094,19 @@ const CompetencyService = {
 
       // Mirrors the client's own sequenceFor() (CompetenciesPage.jsx) exactly: courseSequence's
       // saved order first, then whatever's left in courses[] that was never explicitly
-      // sequenced. Course Sequence's editor shows an area's lone/first course as "1" the moment
+      // sequenced. Course Sequence's editor shows a pathway's lone/first course as "1" the moment
       // it's added — before anyone has ever reordered it or set a stage default, at which point
       // courseSequence is still `[]` — so reading courseSequence alone here left that course
       // reading as "not sequenced" for every learner despite the editor showing it placed.
-      const sequence = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
-      const sequencedIds = sequence.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
-      const orderedIds = [...sequencedIds, ...(area.courses || []).filter((cid) => !sequencedIds.includes(cid))];
+      const sequence = [...(pathway.courseSequence || [])].sort((a, b) => a.order - b.order);
+      const sequencedIds = sequence.map((s) => s.courseId).filter((cid) => (pathway.courses || []).includes(cid));
+      const orderedIds = [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
       const stageDefault = stage ? sequence.find((s) => (s.defaultForStages || []).includes(stage.id)) : null;
       const defaultCourseId = stageDefault?.courseId || orderedIds[0] || null;
 
       return {
-        learningAreaId: area.id,
-        learningAreaName: area.name,
+        pathwayId: pathway.id,
+        pathwayName: pathway.name,
         currentCourseId: defaultCourseId,
         history: [],
         isDefault: true,
@@ -1114,12 +1114,12 @@ const CompetencyService = {
     }));
   },
 
-  // Records a placement/advancement for one learner in one Learning Area — always appends
+  // Records a placement/advancement for one learner in one Pathway — always appends
   // to history rather than overwriting it.
-  async placeLearner(curriculumId, learnerId, learningAreaId, data) {
-    const area = await LearningAreaModel.findById(learningAreaId);
-    if (!area || area.curriculumId !== curriculumId) {
-      const err = new Error("Learning area not found");
+  async placeLearner(curriculumId, learnerId, pathwayId, data) {
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway || pathway.curriculumId !== curriculumId) {
+      const err = new Error("Pathway not found");
       err.statusCode = 404;
       throw err;
     }
@@ -1129,15 +1129,15 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    return LearnerJourneyModel.place(learnerId, curriculumId, learningAreaId, data.courseId, data.reason, data.assessmentId);
+    return LearnerPathwayModel.place(learnerId, curriculumId, pathwayId, data.courseId, data.reason, data.assessmentId);
   },
 
-  // Given a diagnostic score, which course in this Learning Area's ladder (its Performance
-  // Bands with learningAreaId+courseId set) the learner has earned. Walks bands by score
+  // Given a diagnostic score, which course in this Pathway's ladder (its Performance
+  // Bands with pathwayId+courseId set) the learner has earned. Walks bands by score
   // range and takes the highest one cleared; if none are cleared, falls back to the lowest
   // (a "prerequisite" placement rather than leaving the learner unplaced).
-  async resolvePlacementFromScore(curriculumId, learningAreaId, score) {
-    const bands = await PerformanceBandModel.findByLearningArea(curriculumId, learningAreaId);
+  async resolvePlacementFromScore(curriculumId, pathwayId, score) {
+    const bands = await PerformanceBandModel.findByPathway(curriculumId, pathwayId);
     if (bands.length === 0) return null;
     const cleared = bands.filter((b) => score >= b.minScore);
     const matched = cleared.length > 0 ? cleared[cleared.length - 1] : bands[0];
@@ -1151,7 +1151,7 @@ const CompetencyService = {
   // Identity Matrix preview describes, now persisted for the first time on a real learner.
   // Mirrors calculateScore's own band match (strict minScore/maxScore range) rather than
   // resolvePlacementFromScore's "highest cleared" rule, since that rule is specific to a
-  // Learning Area's course ladder. `hubId` is the enrollment this diagnostic was issued for
+  // Pathway's course ladder. `hubId` is the enrollment this diagnostic was issued for
   // (see issueDiagnostic) — placement is written onto that hub's link, not the learner record,
   // so a learner enrolled at several hubs keeps a separate placement at each.
   async placeLearnerFromDiagnostic(learnerId, hubId, ageCategoryId, scorePercent) {
@@ -1166,18 +1166,18 @@ const CompetencyService = {
     return { stageId: ageCategoryId, band };
   },
 
-  // Bridges a graded standalone Learning-Area diagnostic (see assessment-submission.service.js's
-  // maybePlaceFromDiagnostic) into that area's own Learning Journey: the score resolves a
+  // Bridges a graded standalone Pathway diagnostic (see assessment-submission.service.js's
+  // maybePlaceFromDiagnostic) into that area's own Pathway: the score resolves a
   // starting course via resolvePlacementFromScore's "highest cleared threshold" rule, and always
   // places the learner there, even if that's their current or a "lower" course — a first
   // diagnostic isn't an advancement to guard against moving backward from; it's establishing the
   // starting point.
-  async placeLearnerFromLearningAreaDiagnostic(learnerId, learningAreaId, scorePercent, assessmentId = null) {
-    const area = await LearningAreaModel.findById(learningAreaId);
-    if (!area) return null;
-    const courseId = await this.resolvePlacementFromScore(area.curriculumId, learningAreaId, scorePercent);
+  async placeLearnerFromPathwayDiagnostic(learnerId, pathwayId, scorePercent, assessmentId = null) {
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway) return null;
+    const courseId = await this.resolvePlacementFromScore(pathway.curriculumId, pathwayId, scorePercent);
     if (!courseId) return null;
-    return this.placeLearner(area.curriculumId, learnerId, learningAreaId, { courseId, reason: "diagnostic", assessmentId });
+    return this.placeLearner(pathway.curriculumId, learnerId, pathwayId, { courseId, reason: "diagnostic", assessmentId });
   },
 
 };

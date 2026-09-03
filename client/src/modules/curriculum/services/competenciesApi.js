@@ -30,21 +30,23 @@ export const competenciesApi = {
   deleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) =>
     api.delete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`).then((r) => r.data),
 
-  /* Learning Areas — grouping for competencies as used within this curriculum */
-  getLearningAreas: (curriculumId) =>
-    api.get(`${base(curriculumId)}/learning-areas`).then((r) => r.data.data),
+  /* Pathways — this curriculum's own roadmaps (courses + diagnostic + age + placement) */
+  getPathways: (curriculumId) =>
+    api.get(`${base(curriculumId)}/pathways`).then((r) => r.data.data),
 
-  createLearningArea: (curriculumId, data) =>
-    api.post(`${base(curriculumId)}/learning-areas`, data).then((r) => r.data.data),
+  createPathway: (curriculumId, data) =>
+    api.post(`${base(curriculumId)}/pathways`, data).then((r) => r.data.data),
 
-  updateLearningArea: (curriculumId, aId, data) =>
-    api.put(`${base(curriculumId)}/learning-areas/${aId}`, data).then((r) => r.data.data),
+  updatePathway: (curriculumId, pathwayId, data) =>
+    api.put(`${base(curriculumId)}/pathways/${pathwayId}`, data).then((r) => r.data.data),
 
-  deleteLearningArea: (curriculumId, aId) =>
-    api.delete(`${base(curriculumId)}/learning-areas/${aId}`).then((r) => r.data),
+  deletePathway: (curriculumId, pathwayId) =>
+    api.delete(`${base(curriculumId)}/pathways/${pathwayId}`).then((r) => r.data),
 
-  importLearningArea: (curriculumId, learningAreaId) =>
-    api.post(`${base(curriculumId)}/learning-areas/import`, { learningAreaId }).then((r) => r.data.data),
+  // pathwayId here is a pathway-template id (Settings library) — the server clones it into
+  // this curriculum as a fresh, independent pathway. The wire field stays `pathwayId`.
+  importPathway: (curriculumId, pathwayId) =>
+    api.post(`${base(curriculumId)}/pathways/import`, { pathwayId }).then((r) => r.data.data),
 
   /* Progression Ladder */
   getLadder: (curriculumId) =>
@@ -171,10 +173,10 @@ export const competenciesApi = {
   getLearnerBandProgress: (curriculumId, learnerId) =>
     api.get(`${base(curriculumId)}/bands/progress/learner/${learnerId}`).then((r) => r.data.data),
 
-  /* Learning Journey — per-learner, per-Learning-Area placement/history */
-  getLearningJourney: (curriculumId, learnerId) =>
-    api.get(`${base(curriculumId)}/learning-journey/${learnerId}`).then((r) => r.data.data),
+  /* Pathway — per-learner, per-Pathway placement/history */
+  getPathway: (curriculumId, learnerId) =>
+    api.get(`${base(curriculumId)}/pathway-placement/${learnerId}`).then((r) => r.data.data),
 
   placeLearner: (curriculumId, learnerId, areaId, data) =>
-    api.post(`${base(curriculumId)}/learning-journey/${learnerId}/${areaId}`, data).then((r) => r.data.data),
+    api.post(`${base(curriculumId)}/pathway-placement/${learnerId}/${areaId}`, data).then((r) => r.data.data),
 };

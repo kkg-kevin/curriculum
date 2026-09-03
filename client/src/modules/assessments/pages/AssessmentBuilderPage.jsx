@@ -2,16 +2,16 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
-  useAssessmentCompetencies, useAssessmentLearningAreas, useAssessmentInventory,
+  useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory,
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
-import { useLearningAreas } from "../../settings/learning-areas/hooks/useLearningAreas";
+import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { useInventory } from "../../settings/inventory/hooks/useInventory";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
 import { FiPlus, FiX, FiPackage, FiCheck, FiEdit3, FiAward, FiTool, FiFileText, FiEye } from "react-icons/fi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
-import CreateLearningAreaModal from "../../courses/components/CreateLearningAreaModal";
+import CreatePathwayModal from "../../courses/components/CreatePathwayModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
 import RichTextEditor from "../components/RichTextEditor";
 import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
@@ -273,7 +273,7 @@ function ChipList({ values, options, labels, onToggle }) {
   );
 }
 
-/* ── Competency / Learning Area tag picker ──────────────────────────────── */
+/* ── Competency / Pathway tag picker ──────────────────────────────── */
 
 function TagPicker({ label, items, selectedIds, onChange, onCreateNew }) {
   const [open, setOpen] = useState(false);
@@ -1341,11 +1341,11 @@ function buildBlankForm(type) {
   return {
     type, name: "", description: "", instructions: "", structureType: "mixed", overview: "",
     sections: [], items: [], indicators: [], deliverables: [], milestones: [], rubric: [],
-    competencyIds: [], learningAreaIds: [], inventory: [],
+    competencyIds: [], pathwayIds: [], inventory: [],
   };
 }
 
-function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
+function buildFormFromAssessment(a, competencyIds, pathwayIds, inventory) {
   return {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
     structureType: a.structureType || "mixed", overview: a.overview || "",
@@ -1355,7 +1355,7 @@ function buildFormFromAssessment(a, competencyIds, learningAreaIds, inventory) {
     deliverables: (a.deliverables || []).map((d) => ({ ...d, id: d.id || genId() })),
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
     rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), indicatorMarks: c.indicatorMarks || [], scoringCriteria: c.scoringCriteria || [] })),
-    competencyIds, learningAreaIds, inventory,
+    competencyIds, pathwayIds, inventory,
   };
 }
 
@@ -1368,22 +1368,22 @@ export default function AssessmentBuilderPage() {
 
   const { data: assessment, isLoading: loadingAssessment } = useAssessmentQuery(id);
   const { data: linkedCompetencies, isLoading: loadingCompetencies } = useAssessmentCompetencies(id);
-  const { data: linkedLearningAreas, isLoading: loadingLearningAreas } = useAssessmentLearningAreas(id);
+  const { data: linkedPathways, isLoading: loadingPathways } = useAssessmentPathways(id);
   const { data: linkedInventory, isLoading: loadingInventory } = useAssessmentInventory(id);
   const { mutate: createAssessment, isPending: creating } = useCreateAssessment();
   const { mutate: updateAssessment, isPending: updating } = useUpdateAssessment();
   const { data: allCompetencies = [] } = useCompetencies();
-  const { data: allLearningAreas = [] } = useLearningAreas();
+  const { data: allPathways = [] } = usePathwayTemplates();
   const { data: allInventory = [] } = useInventory();
 
   const [form, setForm] = useState(null);
-  const [originalTags, setOriginalTags] = useState({ competencyIds: [], learningAreaIds: [], inventory: [] });
+  const [originalTags, setOriginalTags] = useState({ competencyIds: [], pathwayIds: [], inventory: [] });
   const [activeTab, setActiveTab] = useState("info");
   const [focusedSectionId, setFocusedSectionId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createCompetencyOpen, setCreateCompetencyOpen] = useState(false);
-  const [createLearningAreaOpen, setCreateLearningAreaOpen] = useState(false);
+  const [createPathwayOpen, setCreatePathwayOpen] = useState(false);
   const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
 
   // `name` (competency — indicator) disambiguates in the picker dropdown when more than one
@@ -1425,16 +1425,16 @@ export default function AssessmentBuilderPage() {
   useEffect(() => {
     if (form) return;
     if (isEdit) {
-      if (loadingAssessment || loadingCompetencies || loadingLearningAreas || loadingInventory || !assessment) return;
+      if (loadingAssessment || loadingCompetencies || loadingPathways || loadingInventory || !assessment) return;
       const competencyIds = linkedCompetencies.map((c) => c.id);
-      const learningAreaIds = linkedLearningAreas.map((a) => a.id);
+      const pathwayIds = linkedPathways.map((a) => a.id);
       const inventory = linkedInventory.map((i) => ({ itemId: i.id, quantity: i.quantity }));
-      setForm(buildFormFromAssessment(assessment, competencyIds, learningAreaIds, inventory));
-      setOriginalTags({ competencyIds, learningAreaIds, inventory });
+      setForm(buildFormFromAssessment(assessment, competencyIds, pathwayIds, inventory));
+      setOriginalTags({ competencyIds, pathwayIds, inventory });
     } else {
       setForm(buildBlankForm(routeType));
     }
-  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingLearningAreas, loadingInventory, assessment, linkedCompetencies, linkedLearningAreas, linkedInventory, routeType]);
+  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingPathways, loadingInventory, assessment, linkedCompetencies, linkedPathways, linkedInventory, routeType]);
 
   useEffect(() => { document.title = "Assessment Builder"; }, []);
 
@@ -1554,12 +1554,12 @@ export default function AssessmentBuilderPage() {
   }
 
   async function reconcileTags(assessmentId) {
-    const { competencyIds, learningAreaIds, inventory } = form;
+    const { competencyIds, pathwayIds, inventory } = form;
     if (isEdit) {
       const compToAdd = competencyIds.filter((cid) => !originalTags.competencyIds.includes(cid));
       const compToRemove = originalTags.competencyIds.filter((cid) => !competencyIds.includes(cid));
-      const areaToAdd = learningAreaIds.filter((aid) => !originalTags.learningAreaIds.includes(aid));
-      const areaToRemove = originalTags.learningAreaIds.filter((aid) => !learningAreaIds.includes(aid));
+      const areaToAdd = pathwayIds.filter((aid) => !originalTags.pathwayIds.includes(aid));
+      const areaToRemove = originalTags.pathwayIds.filter((aid) => !pathwayIds.includes(aid));
       const invIds = inventory.map((l) => l.itemId);
       const origInvIds = originalTags.inventory.map((l) => l.itemId);
       const invToRemove = origInvIds.filter((iid) => !invIds.includes(iid));
@@ -1570,15 +1570,15 @@ export default function AssessmentBuilderPage() {
       await Promise.all([
         ...compToAdd.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
         ...compToRemove.map((cid) => assessmentApi.unlinkCompetency(assessmentId, cid)),
-        ...areaToAdd.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
-        ...areaToRemove.map((aid) => assessmentApi.unlinkLearningArea(assessmentId, aid)),
+        ...areaToAdd.map((aid) => assessmentApi.linkPathway(assessmentId, aid)),
+        ...areaToRemove.map((aid) => assessmentApi.unlinkPathway(assessmentId, aid)),
         ...invToUpsert.map((l) => assessmentApi.linkInventoryItem(assessmentId, l.itemId, l.quantity)),
         ...invToRemove.map((iid) => assessmentApi.unlinkInventoryItem(assessmentId, iid)),
       ]);
     } else {
       await Promise.all([
         ...competencyIds.map((cid) => assessmentApi.linkCompetency(assessmentId, cid)),
-        ...learningAreaIds.map((aid) => assessmentApi.linkLearningArea(assessmentId, aid)),
+        ...pathwayIds.map((aid) => assessmentApi.linkPathway(assessmentId, aid)),
         ...inventory.map((l) => assessmentApi.linkInventoryItem(assessmentId, l.itemId, l.quantity)),
       ]);
     }
@@ -1667,11 +1667,11 @@ export default function AssessmentBuilderPage() {
                   </div>
                   {isEdit && (
                     <div>
-                      <Label>Learning Areas</Label>
+                      <Label>Pathways</Label>
                       <TagPicker
-                        label="Learning Area" items={allLearningAreas} selectedIds={form.learningAreaIds}
-                        onChange={(ids) => setForm((f) => ({ ...f, learningAreaIds: ids }))}
-                        onCreateNew={() => setCreateLearningAreaOpen(true)}
+                        label="Pathway" items={allPathways} selectedIds={form.pathwayIds}
+                        onChange={(ids) => setForm((f) => ({ ...f, pathwayIds: ids }))}
+                        onCreateNew={() => setCreatePathwayOpen(true)}
                       />
                     </div>
                   )}
@@ -1730,10 +1730,10 @@ export default function AssessmentBuilderPage() {
           onCreated={(id) => setForm((f) => ({ ...f, competencyIds: [...f.competencyIds, id] }))}
         />
       )}
-      {isEdit && createLearningAreaOpen && (
-        <CreateLearningAreaModal
-          onClose={() => setCreateLearningAreaOpen(false)}
-          onCreated={(id) => setForm((f) => ({ ...f, learningAreaIds: [...f.learningAreaIds, id] }))}
+      {isEdit && createPathwayOpen && (
+        <CreatePathwayModal
+          onClose={() => setCreatePathwayOpen(false)}
+          onCreated={(id) => setForm((f) => ({ ...f, pathwayIds: [...f.pathwayIds, id] }))}
         />
       )}
       {createInventoryOpen && (

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FiCheck, FiSearch } from "react-icons/fi";
 import { useCoursesQuery } from "../hooks/useCourse";
 
-// Picks from real, existing courses only — no free text, so a Learning Area can
+// Picks from real, existing courses only — no free text, so a Pathway can
 // never end up "linked" to a course that doesn't exist.
 function AddCourseDropdown({ available, disabled, onAdd }) {
   const [open, setOpen] = useState(false);

@@ -13,9 +13,9 @@ import {
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
-import { useLadder, useLearningJourney, useLearningAreas, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
+import { useLadder, usePathway, usePathways, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useDiagnosticForLearner, usePathwayDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
@@ -26,7 +26,7 @@ const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 const ACCENT    = "#25476a";
 // Diagnostics are a distinct category from every other card on this page (Guardian, Learning
-// Hubs, Learning Journey, etc. all share the standard teal heading) — this violet accent plus
+// Hubs, Pathway, etc. all share the standard teal heading) — this violet accent plus
 // the FiActivity icon is what sets them apart at a glance.
 const DIAGNOSTIC_ACCENT = "#7C3AED";
 
@@ -75,7 +75,7 @@ function parseAgeRange(ageRange) {
   return { min, max };
 }
 
-// Where this learner currently sits on their curriculum's Learning Journey (Progression
+// Where this learner currently sits on their curriculum's Pathway (Progression
 // Ladder) — set manually here, e.g. by age at enrollment or after a diagnostic assessment. The
 // server already auto-places a rung by age on enroll/class-change (maybeAutoPlaceRung,
 // learner.service.js), but only when currentRungId is still empty at that moment — a learner
@@ -103,9 +103,9 @@ function JourneyPlacementCard({ learnerId, currentRungId, curriculumId, dateOfBi
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learning Journey Placement</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pathway Placement</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
-        Which stage of this curriculum's Learning Journey this learner is starting from.
+        Which stage of this curriculum's Pathway this learner is starting from.
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <select
@@ -159,10 +159,10 @@ function DiagnosticStatusBadge({ status }) {
 
 // Gives this learner another attempt at a diagnostic they didn't perform well on — creates a
 // new issue rather than resetting the graded one (see reissueToLearner's comment server-side),
-// so ageCategoryId/learningAreaId are carried over onto the new issue specifically so grading
-// the retake still re-triggers the learner's Stage/Learning-Area placement. Once clicked, this
+// so ageCategoryId/pathwayId are carried over onto the new issue specifically so grading
+// the retake still re-triggers the learner's Stage/Pathway placement. Once clicked, this
 // row's own "Grade Now" flow disappears — the fresh attempt shows up as a new row/card instead
-// (both cards key their query off getDiagnosticForLearner/getLearningAreaDiagnosticsForLearner,
+// (both cards key their query off getDiagnosticForLearner/getPathwayDiagnosticsForLearner,
 // which surface the most-recently-issued row first).
 function ReissueButton({ issueId, learnerId }) {
   const { mutate: reissue, isPending } = useReissueAssessment();
@@ -250,15 +250,15 @@ function DiagnosticAssessmentCard({ learnerId, currentStageId, currentBandId, cu
   );
 }
 
-// One diagnostic per Learning Area the learner's class exposes (see learner.service.js's
-// maybeAutoIssueLearningAreaDiagnostics) — a separate placement identity from the single
+// One diagnostic per Pathway the learner's class exposes (see learner.service.js's
+// maybeAutoIssuePathwayDiagnostics) — a separate placement identity from the single
 // Developmental Stage diagnostic above: grading one of these sets the learner's starting course
-// in that specific area (via CompetencyService.placeLearnerFromLearningAreaDiagnostic), reflected
-// below in the Learning Journey card once graded. Only one grading modal open at a time, keyed by
+// in that specific area (via CompetencyService.placeLearnerFromPathwayDiagnostic), reflected
+// below in the Pathway card once graded. Only one grading modal open at a time, keyed by
 // issue id so grading one row doesn't also open every other row's panel.
-function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
-  const { data: rows = [], isLoading } = useLearningAreaDiagnosticsForLearner(learnerId);
-  const { data: areas = [] } = useLearningAreas(curriculumId);
+function PathwayDiagnosticsCard({ learnerId, curriculumId }) {
+  const { data: rows = [], isLoading } = usePathwayDiagnosticsForLearner(learnerId);
+  const { data: areas = [] } = usePathways(curriculumId);
   const { mutate: grade, isPending: grading } = useGradeSubmission();
   const [gradeOpenId, setGradeOpenId] = useState(null);
 
@@ -269,16 +269,16 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, borderLeft: `4px solid ${DIAGNOSTIC_ACCENT}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><FiActivity size={14} /> Learning Area Diagnostics</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: DIAGNOSTIC_ACCENT, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><FiActivity size={14} /> Pathway Diagnostics</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
-        One diagnostic per learning area this learner's class exposes; grading one places them at a starting course in that area, below.
+        One diagnostic per pathway this learner's class exposes; grading one places them at a starting course in that area, below.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((row) => (
           <div key={row.issue.id} style={{ padding: "12px 14px", borderRadius: 10, background: "#FAFCFF", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: DIAGNOSTIC_ACCENT }}>{areaNameById.get(row.issue.learningAreaId) || "Unknown area"}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: DIAGNOSTIC_ACCENT }}>{areaNameById.get(row.issue.pathwayId) || "Unknown area"}</span>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{row.assessment.name}</p>
               <DiagnosticStatusBadge status={row.submission.status} />
               {row.submission.status === "graded" && (
@@ -311,18 +311,18 @@ function LearningAreaDiagnosticsCard({ learnerId, curriculumId }) {
   );
 }
 
-// Per-Learning-Area course placement — where the learner currently sits in each area's
+// Per-Pathway course placement — where the learner currently sits in each area's
 // course sequence (Robotics 1 → 2 → 3 → 4, etc.), read-only here (mirrors the learner-portal's
-// own read-only JourneyRow) — placement is resolved automatically from how each Learning Area's
+// own read-only JourneyRow) — placement is resolved automatically from how each Pathway's
 // courses are set up (its course order, plus a diagnostic assessment where one's configured),
 // not picked per area by hand. The Developmental Stage selector below is a separate, still-
 // manual control — it drives which diagnostics auto-issue and which stage-default a Learning
 // Area's placement falls back to, not a per-area override itself. Stage lives on the hub
 // enrollment link (`hubId`), not the learner record — see maybeAutoIssueDiagnostic's comment in
 // learner.service.js.
-function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId }) {
-  const { data: journey = [], isLoading: journeyLoading } = useLearningJourney(curriculumId, learnerId);
-  const { data: areas = [] } = useLearningAreas(curriculumId);
+function PathwayCard({ learnerId, hubId, currentStageId, curriculumId }) {
+  const { data: journey = [], isLoading: journeyLoading } = usePathway(curriculumId, learnerId);
+  const { data: areas = [] } = usePathways(curriculumId);
   const { data: stages = [] } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { mutate: updateHubLink, isPending: savingStage } = useUpdateLearnerHubLink();
@@ -336,9 +336,9 @@ function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId })
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learning Journey — Course Placement</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pathway — Course Placement</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
-        Where this learner currently sits in each learning area's course sequence.
+        Where this learner currently sits in each pathway's course sequence.
       </p>
 
       {stages.length > 0 && (
@@ -360,14 +360,14 @@ function LearningJourneyCard({ learnerId, hubId, currentStageId, curriculumId })
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {journey.map((j) => {
-          const area = areaById.get(j.learningAreaId);
+          const area = areaById.get(j.pathwayId);
           const areaColor = area?.color || "#25476a";
           const courseName = j.currentCourseId ? courseNameById.get(j.currentCourseId) : null;
           return (
-            <div key={j.learningAreaId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
+            <div key={j.pathwayId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 160, flex: 1 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.learningAreaName}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.pathwayName}</span>
               </div>
               {courseName ? (
                 <>
@@ -693,7 +693,7 @@ export default function LearnerViewPage() {
   if (!learner)  return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#EF4444" }}>Learner not found.</div>;
 
   // Multiple enrollments are possible now — the first active one is used as the "current"
-  // context for Learning Journey placement, same pragmatic default used elsewhere until a
+  // context for Pathway placement, same pragmatic default used elsewhere until a
   // dedicated hub-context switcher exists for learners.
   const primary = enrollments.find((e) => e.status === "active") || enrollments[0] || null;
   const curriculumId = primary?.class?.curriculumId;
@@ -802,10 +802,10 @@ export default function LearnerViewPage() {
         {(isAdmin || isSchool) && curriculumId && (
           <>
             <DiagnosticAssessmentCard learnerId={id} currentStageId={primary?.currentStageId} currentBandId={primary?.currentBandId} curriculumId={curriculumId} />
-            <LearningAreaDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
+            <PathwayDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
           </>
         )}
-        <LearningJourneyCard learnerId={id} hubId={primary?.id} currentStageId={primary?.currentStageId} curriculumId={curriculumId} />
+        <PathwayCard learnerId={id} hubId={primary?.id} currentStageId={primary?.currentStageId} curriculumId={curriculumId} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} dateOfBirth={learner.dateOfBirth} />
       </div>
 

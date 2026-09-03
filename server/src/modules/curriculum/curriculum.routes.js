@@ -34,11 +34,11 @@ const {
   createCompetencyIndicator,
   updateCompetencyIndicator,
   deleteCompetencyIndicator,
-  getLearningAreas,
-  createLearningArea,
-  updateLearningArea,
-  deleteLearningArea,
-  importLearningArea,
+  getPathways,
+  createPathway,
+  updatePathway,
+  deletePathway,
+  importPathway,
   getLadder,
   updateLadder,
   getAgeCategories,
@@ -75,7 +75,7 @@ const {
   getBandProgress,
   getLearnerCompetencyScores,
   getLearnerBandProgress,
-  getLearningJourney,
+  getPathway,
   placeLearner,
 } = require("./competency-framework/competency.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -96,12 +96,12 @@ function ownCurriculumOnly(req, res, next) {
 
 const router = express.Router();
 
-// The reads (and, for Learning Journey, one write) school/teacher/learner portals need from
+// The reads (and, for Pathway, one write) school/teacher/learner portals need from
 // this whole module. A school inherits its classes and courses from whatever curriculum it's
 // assigned, so it needs to read that curriculum's name/structure/periods and the courses live
 // right now for it; teacher/learner need the latter too, scoped to one grade. A school also
-// manages where its own learners sit on the curriculum's Learning Journey (see LearnerViewPage)
-// — that needs the ladder, learning areas, age categories, and the per-learner journey itself,
+// manages where its own learners sit on the curriculum's Pathway (see LearnerViewPage)
+// — that needs the ladder, pathways, age categories, and the per-learner pathway itself,
 // read AND (for placement) write. All ownership-checked (ownSchool's curriculumId must match).
 // A learner also needs its own curriculum's competency names and age-categories for the
 // learner-portal profile (read-only, no ownership check — same posture as the courses read
@@ -116,7 +116,7 @@ router.route("/:id").get(authorize("admin", "school", "teacher", "curriculumAdmi
 router.route("/:id/versions/current/courses").get(authorize("admin", "school", "teacher", "learner"), getCurrentCourses);
 router.route("/:id/competencies/links").get(authorize("admin", "learner"), getCurriculumCompetencies);
 router.route("/:id/competencies/ladder").get(authorize("admin", "school"), ownCurriculumOnly, getLadder);
-router.route("/:id/competencies/learning-areas").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearningAreas);
+router.route("/:id/competencies/pathways").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getPathways);
 router.route("/:id/competencies/age-categories").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getAgeCategories);
 // Progress Levels — plain name/description/score-range lookup, same non-sensitive posture as
 // age-categories above. Needed by the learner Dashboard to map an averaged competency score onto
@@ -128,8 +128,8 @@ router.route("/:id/competencies/levels").get(authorize("admin", "school", "learn
 // the blanket admin/curriculumAdmin gate below, same as the other learner-reachable reads above.
 router.route("/:id/competencies/scores/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerCompetencyScores);
 router.route("/:id/competencies/bands/progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerBandProgress);
-router.route("/:id/competencies/learning-journey/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearningJourney);
-router.route("/:id/competencies/learning-journey/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
+router.route("/:id/competencies/pathway-placement/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getPathway);
+router.route("/:id/competencies/pathway-placement/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
 // Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
 // stay global-admin-only actions; a curriculumAdmin only ever manages content *within* their
 // one assigned curriculum, never the roster of curricula or the record's own lifecycle.
@@ -146,7 +146,7 @@ router.route("/:id/admin")
   .delete(authorize("admin"), unassignCurriculumAdmin);
 
 // Everything below is curriculum-authoring content (courses, versions, academic years,
-// competencies, assessments, performance bands, learning journey) — admin is unrestricted;
+// competencies, assessments, performance bands, pathways) — admin is unrestricted;
 // curriculumAdmin may only touch the one curriculum they're assigned to (ownCurriculumOnly).
 // Mounted on "/:id" (not a path-less use()) so Express resolves req.params.id on this layer
 // itself before ownCurriculumOnly runs — a path-less use() sees req.params.id as undefined
@@ -177,11 +177,11 @@ router.route("/:id/competencies/links/:competencyId").put(updateCompetencyLink).
 router.route("/:id/competencies/links/:competencyId/indicators").get(getCompetencyIndicators).post(createCompetencyIndicator);
 router.route("/:id/competencies/links/:competencyId/indicators/:indicatorId").put(updateCompetencyIndicator).delete(deleteCompetencyIndicator);
 
-// Competencies — learning areas (curriculum-scoped groupings for adopted competencies)
+// Competencies — pathways (curriculum-scoped groupings for adopted competencies)
 // GET is registered above (school needs it too) — only the writes stay admin-only here.
-router.route("/:id/competencies/learning-areas").post(createLearningArea);
-router.route("/:id/competencies/learning-areas/import").post(importLearningArea);
-router.route("/:id/competencies/learning-areas/:aId").put(updateLearningArea).delete(deleteLearningArea);
+router.route("/:id/competencies/pathways").post(createPathway);
+router.route("/:id/competencies/pathways/import").post(importPathway);
+router.route("/:id/competencies/pathways/:aId").put(updatePathway).delete(deletePathway);
 
 // Competencies — progression ladder (GET registered above — school needs it too)
 router.route("/:id/competencies/ladder").put(updateLadder);
@@ -234,7 +234,7 @@ router.route("/:id/competencies/bands/progress").get(getBandProgress);
 router.route("/:id/competencies/bands/:bandId/duplicate-to-next").post(duplicatePerformanceBandToNext);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
 
-// Learning Journey — per-learner, per-Learning-Area placement/history (both registered above —
+// Pathway — per-learner, per-Pathway placement/history (both registered above —
 // school needs to read and place its own learners too).
 
 module.exports = router;

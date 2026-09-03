@@ -8,11 +8,11 @@ const ProgramModel = require("../programs/program.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
-const CourseLearningAreaLinkModel = require("../courses/course-learning-area-link.model");
+const CoursePathwayLinkModel = require("../courses/course-pathway-link.model");
 const AssessmentCompetencyLinkModel = require("../assessments/assessment-competency-link.model");
 const CurriculumCompetencyLinkModel = require("./competency-framework/curriculum-competency-link.model");
-const LearningAreaModel = require("./competency-framework/learning-area.model");
-const LearningAreaCatalogModel = require("../settings/learning-areas/learning-area.model");
+const PathwayModel = require("./competency-framework/pathway.model");
+const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
 const CurriculumCompetencyIndicatorModel = require("./competency-framework/curriculum-competency-indicator.model");
 const AgeCategoryModel      = require("./competency-framework/age-category.model");
 const ProgressLevelModel    = require("./competency-framework/progress-level.model");
@@ -24,7 +24,7 @@ const CurriculumAssessmentModel = require("./competency-framework/assessment.mod
 const CurriculumVersionModel = require("./versions/curriculum-versions.model");
 const AcademicYearGroupModel = require("./academic-years/academic-year-groups.model");
 const AcademicYearVersionModel = require("./academic-years/academic-year-versions.model");
-const LearnerJourneyModel = require("./competency-framework/learner-journey.model");
+const LearnerPathwayModel = require("./competency-framework/learner-pathway.model");
 const IndicatorAchievementModel = require("./competency-framework/indicator-achievement.model");
 const { collectCourseIds } = require("./versions/content.utils");
 const { getSessionAssessmentIds, sessionHasAssessment } = require("../courses/sessionAssessment.utils");
@@ -227,7 +227,7 @@ const CurriculumService = {
     // this method only ever cleaned up the course link).
     await CurriculumCompetencyLinkModel.deleteByCurriculumId(id);
     await CurriculumCompetencyIndicatorModel.deleteByCurriculumId(id);
-    await LearningAreaModel.deleteByCurriculumId(id);
+    await PathwayModel.deleteByCurriculumId(id);
     await AgeCategoryModel.deleteByCurriculumId(id);
     await ProgressLevelModel.deleteByCurriculumId(id);
     await AssessmentTypeModel.deleteByCurriculumId(id);
@@ -236,7 +236,7 @@ const CurriculumService = {
     await ProgressionLadderModel.deleteByCurriculumId(id);
     await CurriculumAssessmentModel.deleteByCurriculumId(id);
     await CurriculumVersionModel.deleteByCurriculumId(id);
-    await LearnerJourneyModel.deleteByCurriculumId(id);
+    await LearnerPathwayModel.deleteByCurriculumId(id);
     await IndicatorAchievementModel.deleteByCurriculumId(id);
     await LearningHubCurriculumLinkModel.deleteByCurriculumId(id);
     await LearningHubModel.clearCurriculumId(id);
@@ -286,7 +286,7 @@ const CurriculumService = {
   },
 
   // A course carries competencies (via the assessments attached to its sessions) and
-  // learning areas (tagged directly on it). When it's attached to a curriculum, adopt both
+  // pathways (tagged directly on it). When it's attached to a curriculum, adopt both
   // into the curriculum — a one-time copy taken at attach time, not a live sync: if the
   // course's assessments gain new competency tags afterward, curricula it's already
   // attached to won't pick those up automatically.
@@ -304,33 +304,33 @@ const CurriculumService = {
     }
     await Promise.all([...competencyIds].map((competencyId) => CurriculumCompetencyLinkModel.link(curriculumId, competencyId)));
 
-    // Learning areas — tagged directly on the course. Cloned into this curriculum's own
-    // list on first use (same pattern as CompetencyService.importLearningArea, matched by
-    // name to avoid duplicates) — but seeded with just this course, not the global catalog
-    // entry's own `courses` list (that's a separate, manually-curated field unrelated to why
-    // this area is being adopted here). If the curriculum already has this learning area
+    // Pathways — tagged directly on the course. Cloned into this curriculum's own
+    // list on first use (same pattern as CompetencyService.importPathway, matched by
+    // name to avoid duplicates) — but seeded with just this course, not the pathway
+    // template's own `courses` list (that's a separate, manually-curated field unrelated to why
+    // this pathway is being adopted here). If the curriculum already has this pathway
     // from an earlier course, this course is appended to it instead of being dropped.
-    const curriculumAreas = await LearningAreaModel.findByCurriculumId(curriculumId);
-    const areaByName = new Map(curriculumAreas.map((a) => [a.name.toLowerCase(), a]));
-    const courseAreaLinks = await CourseLearningAreaLinkModel.findByCourseId(courseId);
-    for (const link of courseAreaLinks) {
-      const source = await LearningAreaCatalogModel.findById(link.learningAreaId);
+    const curriculumPathways = await PathwayModel.findByCurriculumId(curriculumId);
+    const pathwayByName = new Map(curriculumPathways.map((p) => [p.name.toLowerCase(), p]));
+    const coursePathwayLinks = await CoursePathwayLinkModel.findByCourseId(courseId);
+    for (const link of coursePathwayLinks) {
+      const source = await PathwayTemplateModel.findById(link.pathwayId);
       if (!source) continue;
-      const existing = areaByName.get(source.name.toLowerCase());
+      const existing = pathwayByName.get(source.name.toLowerCase());
       if (existing) {
         if (!(existing.courses || []).includes(courseId)) {
-          const updated = await LearningAreaModel.update(existing.id, { courses: [...(existing.courses || []), courseId] });
-          areaByName.set(source.name.toLowerCase(), updated);
+          const updated = await PathwayModel.update(existing.id, { courses: [...(existing.courses || []), courseId] });
+          pathwayByName.set(source.name.toLowerCase(), updated);
         }
       } else {
-        const created = await LearningAreaModel.create({
+        const created = await PathwayModel.create({
           curriculumId,
           name:        source.name,
           description: source.description,
           color:       source.color,
           courses:     [courseId],
         });
-        areaByName.set(source.name.toLowerCase(), created);
+        pathwayByName.set(source.name.toLowerCase(), created);
       }
     }
   },
@@ -355,10 +355,10 @@ const CurriculumService = {
     return [...curriculumIds];
   },
 
-  // Re-adopt this course's competencies/learning areas into every curriculum it currently
+  // Re-adopt this course's competencies/pathways into every curriculum it currently
   // belongs to. Called whenever something upstream changes that could newly qualify a
-  // competency/learning area for adoption (a competency tagged on one of its assessments, a
-  // learning area tagged on the course, an assessment attached to one of its sessions) — safe
+  // competency/pathway for adoption (a competency tagged on one of its assessments, a
+  // pathway tagged on the course, an assessment attached to one of its sessions) — safe
   // to call speculatively since autoPopulateFromCourse only ever adds, never removes.
   async resyncCourseIntoCurricula(courseId) {
     const curriculumIds = await this.findCurriculaContainingCourse(courseId);

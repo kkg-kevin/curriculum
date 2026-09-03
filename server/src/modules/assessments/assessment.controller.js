@@ -4,7 +4,7 @@ const {
   createAssessmentSchema,
   updateAssessmentSchema,
   linkCompetencySchema,
-  linkLearningAreaSchema,
+  linkPathwaySchema,
   linkInventoryItemSchema,
 } = require("./assessment.validation");
 
@@ -52,19 +52,19 @@ const unlinkCompetency = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-const getAssessmentLearningAreas = asyncHandler(async (req, res) => {
-  const data = await AssessmentService.getAssessmentLearningAreas(req.params.id);
+const getAssessmentPathways = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.getAssessmentPathways(req.params.id);
   res.json({ success: true, data });
 });
 
-const linkLearningArea = asyncHandler(async (req, res) => {
-  const { learningAreaId } = linkLearningAreaSchema.parse(req.body);
-  const data = await AssessmentService.linkLearningArea(req.params.id, learningAreaId);
+const linkPathway = asyncHandler(async (req, res) => {
+  const { pathwayId } = linkPathwaySchema.parse(req.body);
+  const data = await AssessmentService.linkPathway(req.params.id, pathwayId);
   res.status(201).json({ success: true, data });
 });
 
-const unlinkLearningArea = asyncHandler(async (req, res) => {
-  const data = await AssessmentService.unlinkLearningArea(req.params.id, req.params.learningAreaId);
+const unlinkPathway = asyncHandler(async (req, res) => {
+  const data = await AssessmentService.unlinkPathway(req.params.id, req.params.pathwayId);
   res.json({ success: true, data });
 });
 
@@ -93,9 +93,9 @@ module.exports = {
   getAssessmentCompetencies,
   linkCompetency,
   unlinkCompetency,
-  getAssessmentLearningAreas,
-  linkLearningArea,
-  unlinkLearningArea,
+  getAssessmentPathways,
+  linkPathway,
+  unlinkPathway,
   getAssessmentInventory,
   linkInventoryItem,
   unlinkInventoryItem,

@@ -4,8 +4,8 @@ const SessionModel = require("./session.model");
 const ModuleModel = require("./module.model");
 const CourseCompetencyLinkModel = require("./course-competency-link.model");
 const CompetencyModel = require("../settings/competencies/competency.model");
-const CourseLearningAreaLinkModel = require("./course-learning-area-link.model");
-const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
+const CoursePathwayLinkModel = require("./course-pathway-link.model");
+const PathwayModel = require("../settings/pathways/pathway-template.model");
 const CourseCurriculumLinkModel = require("./course-curriculum-link.model");
 const CourseInventoryLinkModel = require("./course-inventory-link.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
@@ -168,13 +168,13 @@ const CourseService = {
     await SessionModel.deleteByCourseId(id);
     await ModuleModel.deleteByCourseId(id);
     await CourseCompetencyLinkModel.deleteByCourseId(id);
-    await CourseLearningAreaLinkModel.deleteByCourseId(id);
+    await CoursePathwayLinkModel.deleteByCourseId(id);
     await CourseCurriculumLinkModel.deleteByCourseId(id);
     await CourseInventoryLinkModel.deleteByCourseId(id);
     return { message: "Course deleted successfully" };
   },
 
-  // Deep-clones a course: the record itself, its learning-area/competency tags, and every
+  // Deep-clones a course: the record itself, its pathway/competency tags, and every
   // module + session (fresh ids throughout, since sessions hold the actual authored content).
   // Curriculum links are deliberately NOT copied — the duplicate starts unattached as a Draft,
   // so it never silently double-books a curriculum the original is already used in. The admin
@@ -198,8 +198,8 @@ const CourseService = {
       status: "draft",
     });
 
-    const learningAreaLinks = await CourseLearningAreaLinkModel.findByCourseId(id);
-    await Promise.all(learningAreaLinks.map((l) => CourseLearningAreaLinkModel.link(newCourse.id, l.learningAreaId)));
+    const pathwayLinks = await CoursePathwayLinkModel.findByCourseId(id);
+    await Promise.all(pathwayLinks.map((l) => CoursePathwayLinkModel.link(newCourse.id, l.pathwayId)));
     const competencyLinks = await CourseCompetencyLinkModel.findByCourseId(id);
     await Promise.all(competencyLinks.map((l) => CourseCompetencyLinkModel.link(newCourse.id, l.competencyId)));
 
@@ -259,36 +259,36 @@ const CourseService = {
     return this.getCourseCompetencies(courseId);
   },
 
-  /* ── Learning Areas (authored globally in Settings, tagged onto a course here) ── */
+  /* ── Pathways (authored globally in Settings, tagged onto a course here) ── */
 
-  async getCourseLearningAreas(courseId) {
-    const links = await CourseLearningAreaLinkModel.findByCourseId(courseId);
-    return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
+  async getCoursePathways(courseId) {
+    const links = await CoursePathwayLinkModel.findByCourseId(courseId);
+    return PathwayModel.findByIds(links.map((l) => l.pathwayId));
   },
 
-  async linkLearningArea(courseId, learningAreaId) {
+  async linkPathway(courseId, pathwayId) {
     const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
       err.statusCode = 404;
       throw err;
     }
-    const area = await LearningAreaModel.findById(learningAreaId);
-    if (!area) {
-      const err = new Error("Learning area not found");
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway) {
+      const err = new Error("Pathway not found");
       err.statusCode = 404;
       throw err;
     }
-    await CourseLearningAreaLinkModel.link(courseId, learningAreaId);
-    // Live-sync: any curriculum this course is already in picks up the new learning area
+    await CoursePathwayLinkModel.link(courseId, pathwayId);
+    // Live-sync: any curriculum this course is already in picks up the new pathway
     // immediately, no re-attach/republish needed.
     await CurriculumService.resyncCourseIntoCurricula(courseId);
-    return this.getCourseLearningAreas(courseId);
+    return this.getCoursePathways(courseId);
   },
 
-  async unlinkLearningArea(courseId, learningAreaId) {
-    await CourseLearningAreaLinkModel.unlink(courseId, learningAreaId);
-    return this.getCourseLearningAreas(courseId);
+  async unlinkPathway(courseId, pathwayId) {
+    await CoursePathwayLinkModel.unlink(courseId, pathwayId);
+    return this.getCoursePathways(courseId);
   },
 
   /* ── Inventory (authored globally in Settings, linked onto a course with a quantity) —

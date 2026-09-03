@@ -2,8 +2,8 @@ const AssessmentModel = require("./assessment.model");
 const AssessmentCompetencyLinkModel = require("./assessment-competency-link.model");
 const CurriculumService = require("../curriculum/curriculum.service");
 const CompetencyModel = require("../settings/competencies/competency.model");
-const AssessmentLearningAreaLinkModel = require("./assessment-learning-area-link.model");
-const LearningAreaModel = require("../settings/learning-areas/learning-area.model");
+const AssessmentPathwayLinkModel = require("./assessment-pathway-link.model");
+const PathwayModel = require("../settings/pathways/pathway-template.model");
 const AssessmentInventoryLinkModel = require("./assessment-inventory-link.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
 
@@ -43,7 +43,7 @@ const AssessmentService = {
       throw err;
     }
     await AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
-    await AssessmentLearningAreaLinkModel.deleteByAssessmentId(id);
+    await AssessmentPathwayLinkModel.deleteByAssessmentId(id);
     await AssessmentInventoryLinkModel.deleteByAssessmentId(id);
     return { message: "Assessment deleted successfully" };
   },
@@ -75,28 +75,28 @@ const AssessmentService = {
     return this.getAssessmentCompetencies(assessmentId);
   },
 
-  /* ── Learning Areas (authored globally in Settings, tagged onto an assessment here) ── */
+  /* ── Pathways (authored globally in Settings, tagged onto an assessment here) ── */
 
-  async getAssessmentLearningAreas(assessmentId) {
-    const links = await AssessmentLearningAreaLinkModel.findByAssessmentId(assessmentId);
-    return LearningAreaModel.findByIds(links.map((l) => l.learningAreaId));
+  async getAssessmentPathways(assessmentId) {
+    const links = await AssessmentPathwayLinkModel.findByAssessmentId(assessmentId);
+    return PathwayModel.findByIds(links.map((l) => l.pathwayId));
   },
 
-  async linkLearningArea(assessmentId, learningAreaId) {
+  async linkPathway(assessmentId, pathwayId) {
     await requireAssessment(assessmentId);
-    const area = await LearningAreaModel.findById(learningAreaId);
-    if (!area) {
-      const err = new Error("Learning area not found");
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway) {
+      const err = new Error("Pathway not found");
       err.statusCode = 404;
       throw err;
     }
-    await AssessmentLearningAreaLinkModel.link(assessmentId, learningAreaId);
-    return this.getAssessmentLearningAreas(assessmentId);
+    await AssessmentPathwayLinkModel.link(assessmentId, pathwayId);
+    return this.getAssessmentPathways(assessmentId);
   },
 
-  async unlinkLearningArea(assessmentId, learningAreaId) {
-    await AssessmentLearningAreaLinkModel.unlink(assessmentId, learningAreaId);
-    return this.getAssessmentLearningAreas(assessmentId);
+  async unlinkPathway(assessmentId, pathwayId) {
+    await AssessmentPathwayLinkModel.unlink(assessmentId, pathwayId);
+    return this.getAssessmentPathways(assessmentId);
   },
 
   /* ── Inventory (authored globally in Settings, linked onto a project with a quantity) ── */

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNER_KEYS } from "../../learners/hooks/useLearners";
 
-// Fired once by FirstLoginDiagnosticGate before it reads a learner's outstanding Learning-Area
+// Fired once by FirstLoginDiagnosticGate before it reads a learner's outstanding Pathway
 // diagnostics — catches any enrollment whose auto-issuance was missed or incomplete. Silent
 // (no toast): this runs automatically in the background, not from a user action.
 export function useEnsureDiagnosticsIssued() {

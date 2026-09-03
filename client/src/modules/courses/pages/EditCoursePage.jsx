@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCourseQuery, useUpdateCourse, useCourseLearningAreas, useCourseCompetencies, COURSE_KEYS } from "../hooks/useCourse";
+import { useCourseQuery, useUpdateCourse, useCoursePathways, useCourseCompetencies, COURSE_KEYS } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -15,7 +15,7 @@ export default function EditCoursePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: course, isLoading, isError } = useCourseQuery(id);
-  const { data: linkedLearningAreas, isLoading: learningAreasLoading } = useCourseLearningAreas(id);
+  const { data: linkedPathways, isLoading: pathwaysLoading } = useCoursePathways(id);
   const { data: linkedCompetencies, isLoading: competenciesLoading } = useCourseCompetencies(id);
   const { mutate: updateCourse, isPending } = useUpdateCourse();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -28,7 +28,7 @@ export default function EditCoursePage() {
   const { handleSubmit, reset, formState: { isDirty } } = methods;
 
   useEffect(() => {
-    if (course && linkedLearningAreas && linkedCompetencies) {
+    if (course && linkedPathways && linkedCompetencies) {
       reset({
         name: course.name || "",
         code: course.code || "",
@@ -37,29 +37,29 @@ export default function EditCoursePage() {
         coverImage: course.coverImage || null,
         ageMin: course.ageMin ?? "",
         ageMax: course.ageMax ?? "",
-        learningAreaIds: linkedLearningAreas.map((a) => a.id),
+        pathwayIds: linkedPathways.map((a) => a.id),
         competencyIds: linkedCompetencies.map((c) => c.id),
         requirements: course.requirements || [],
       });
     }
-  }, [course, linkedLearningAreas, linkedCompetencies, reset]);
+  }, [course, linkedPathways, linkedCompetencies, reset]);
 
-  const onSubmit = ({ learningAreaIds, competencyIds, ...data }) => {
+  const onSubmit = ({ pathwayIds, competencyIds, ...data }) => {
     updateCourse({ id, data }, {
       onSuccess: async () => {
-        const originalAreaIds = (linkedLearningAreas || []).map((a) => a.id);
-        const areasToAdd = learningAreaIds.filter((aid) => !originalAreaIds.includes(aid));
-        const areasToRemove = originalAreaIds.filter((aid) => !learningAreaIds.includes(aid));
+        const originalAreaIds = (linkedPathways || []).map((a) => a.id);
+        const areasToAdd = pathwayIds.filter((aid) => !originalAreaIds.includes(aid));
+        const areasToRemove = originalAreaIds.filter((aid) => !pathwayIds.includes(aid));
         const originalCompetencyIds = (linkedCompetencies || []).map((c) => c.id);
         const competenciesToAdd = competencyIds.filter((cid) => !originalCompetencyIds.includes(cid));
         const competenciesToRemove = originalCompetencyIds.filter((cid) => !competencyIds.includes(cid));
         await Promise.all([
-          ...areasToAdd.map((aid) => courseApi.linkLearningArea(id, aid)),
-          ...areasToRemove.map((aid) => courseApi.unlinkLearningArea(id, aid)),
+          ...areasToAdd.map((aid) => courseApi.linkPathway(id, aid)),
+          ...areasToRemove.map((aid) => courseApi.unlinkPathway(id, aid)),
           ...competenciesToAdd.map((cid) => courseApi.linkCompetency(id, cid)),
           ...competenciesToRemove.map((cid) => courseApi.unlinkCompetency(id, cid)),
         ]);
-        queryClient.invalidateQueries({ queryKey: COURSE_KEYS.learningAreas(id) });
+        queryClient.invalidateQueries({ queryKey: COURSE_KEYS.pathways(id) });
         queryClient.invalidateQueries({ queryKey: COURSE_KEYS.competencies(id) });
         navigate(`/courses/${id}/view`);
       },
@@ -71,7 +71,7 @@ export default function EditCoursePage() {
     else navigate(`/courses/${id}/view`);
   };
 
-  if (isLoading || learningAreasLoading || competenciesLoading) {
+  if (isLoading || pathwaysLoading || competenciesLoading) {
     return (
       <div style={{ fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "#9CA3AF", fontSize: "14px" }}>
         Loading course…

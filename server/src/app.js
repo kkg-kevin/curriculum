@@ -9,7 +9,7 @@ const env = require("./config/env");
 const authRoutes = require("./modules/auth/auth.routes");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
 const competencyRoutes = require("./modules/settings/competencies/competency.routes");
-const learningAreaRoutes = require("./modules/settings/learning-areas/learning-area.routes");
+const pathwayTemplateRoutes = require("./modules/settings/pathways/pathway-template.routes");
 const systemLevelRoutes = require("./modules/settings/system-levels/system-level.routes");
 const inventoryRoutes = require("./modules/settings/inventory/inventory.routes");
 const itemsRoutes = require("./modules/settings/items/items.routes");
@@ -117,7 +117,7 @@ app.use("/api/public", publicSiteRoutes);
 // a school/teacher/learner account can only ever touch its own school's data, never another's.
 app.use("/api/curricula", protect, attachOwnRecords, curriculumRoutes);
 app.use("/api/competencies", protect, authorize("admin"), competencyRoutes);
-app.use("/api/learning-areas", protect, authorize("admin"), learningAreaRoutes);
+app.use("/api/pathway-templates", protect, authorize("admin"), pathwayTemplateRoutes);
 app.use("/api/system-levels", protect, authorize("admin"), systemLevelRoutes);
 app.use("/api/inventory", protect, authorize("admin"), inventoryRoutes);
 app.use("/api/items", protect, authorize("admin"), itemsRoutes);

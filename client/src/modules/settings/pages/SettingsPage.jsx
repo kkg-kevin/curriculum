@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
-import LearningAreasPanel from "../learning-areas/components/LearningAreasPanel";
+import PathwayTemplatesPanel from "../pathways/components/PathwayTemplatesPanel";
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
@@ -248,7 +248,7 @@ const CSS = `
 
 const TABS = [
   { key: "competencies", label: "Competencies" },
-  { key: "learning-areas", label: "Learning Areas" },
+  { key: "pathways", label: "Pathways" },
   { key: "system-levels", label: "System Levels" },
   { key: "inventory", label: "Inventory" },
   { key: "items", label: "Items" },
@@ -276,7 +276,7 @@ export default function SettingsPage() {
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", position: "relative" }}>Settings</h1>
         <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "560px", position: "relative" }}>
-          Define shared catalogs here. Competencies are referenced live everywhere; learning areas are copied when a module imports them, so local edits stay local.
+          Define shared catalogs here. Competencies are referenced live everywhere; pathways are copied when a module imports them, so local edits stay local.
         </p>
       </div>
 
@@ -294,7 +294,7 @@ export default function SettingsPage() {
 
       <div className="stg-card">
         {activeTab === "competencies" && <CompetenciesPanel />}
-        {activeTab === "learning-areas" && <LearningAreasPanel />}
+        {activeTab === "pathways" && <PathwayTemplatesPanel />}
         {activeTab === "system-levels" && <SystemLevelsPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
         {activeTab === "items" && <ItemsPanel />}

@@ -108,11 +108,11 @@ export function useCreateCurriculumVersion(curriculumId) {
     mutationFn: (data) => curriculumVersionApi.create(curriculumId, data),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
-      // Creating a version can auto-populate this curriculum's competencies/learning areas
+      // Creating a version can auto-populate this curriculum's competencies/pathways
       // from every course in its content (see CurriculumVersionService.create) — refresh
       // those too so the Competencies page reflects it without a hard reload.
       qc.invalidateQueries({ queryKey: ["curriculum-competencies", curriculumId] });
-      qc.invalidateQueries({ queryKey: ["learning-areas", curriculumId] });
+      qc.invalidateQueries({ queryKey: ["pathways", curriculumId] });
       toast.success(`Version ${data.versionNumber} created!`);
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to create version"),
@@ -126,11 +126,11 @@ export function useChangeCurriculumVersionStatus(curriculumId) {
     onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: KEYS.all(curriculumId) });
       if (status === "published") {
-        // Publishing can auto-populate this curriculum's competencies/learning areas from
+        // Publishing can auto-populate this curriculum's competencies/pathways from
         // every course in the version's content (see CurriculumVersionService.changeStatus)
         // — refresh those too so the Competencies page reflects it without a hard reload.
         qc.invalidateQueries({ queryKey: ["curriculum-competencies", curriculumId] });
-        qc.invalidateQueries({ queryKey: ["learning-areas", curriculumId] });
+        qc.invalidateQueries({ queryKey: ["pathways", curriculumId] });
       }
       const label = status.charAt(0).toUpperCase() + status.slice(1);
       toast.success(`Status set to ${label}`);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiActivity, FiSend } from "react-icons/fi";
-import { useLearningAreas } from "../../curriculum/hooks/useCompetencies";
-import { useLearningAreaDiagnosticsForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { usePathways } from "../../curriculum/hooks/useCompetencies";
+import { usePathwayDiagnosticsForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import { useEnsureDiagnosticsIssued, useMarkHubOnboardingComplete } from "../hooks/usePortalOnboarding";
 import LogoutButton from "../../../components/ui/LogoutButton";
@@ -121,15 +121,15 @@ function DiagnosticStep({ row, index, total, contextLabel, onDone }) {
   );
 }
 
-// Blocks the rest of the learner-portal behind this until every Learning Area diagnostic the
+// Blocks the rest of the learner-portal behind this until every Pathway diagnostic the
 // learner's current hub/curriculum owes them has been GRADED — not merely submitted. Each
-// Learning Area diagnostic is already age-appropriate on its own (see
-// maybeAutoIssueLearningAreaDiagnostics in learner.service.js, gated by that area's own
+// Pathway diagnostic is already age-appropriate on its own (see
+// maybeAutoIssuePathwayDiagnostics in learner.service.js, gated by that area's own
 // minAge/maxAge), which is what places a learner at a starting course per subject; that
 // per-area, age-matched diagnostic is the sole mechanism now — Developmental Stages no longer
 // auto-issue a separate "overall" diagnostic of their own (removed in favor of this one
 // mechanism instead of two overlapping ones), though a stage's currentStageId is still set from
-// age on enrollment for display/Learning-Journey-defaulting purposes, just never gates this
+// age on enrollment for display/Pathway-defaulting purposes, just never gates this
 // screen. A manually-graded diagnostic only sets the learner's placement (see
 // maybePlaceFromDiagnostic in assessment-submission.service.js) once a teacher grades it, so
 // releasing the gate on submit alone would let a learner into a portal whose placement hasn't
@@ -158,14 +158,14 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   const { mutateAsync: ensureIssuedAsync } = useEnsureDiagnosticsIssued();
   const { mutateAsync: markCompleteAsync } = useMarkHubOnboardingComplete();
   const hasMarkedComplete = useRef(false);
-  const { data: rowsData, isLoading: areaRowsLoading, refetch: refetchAreaRows } = useLearningAreaDiagnosticsForLearner(learner.id);
-  const { data: areas = [], isLoading: areasLoading } = useLearningAreas(cls?.curriculumId);
+  const { data: rowsData, isLoading: areaRowsLoading, refetch: refetchAreaRows } = usePathwayDiagnosticsForLearner(learner.id);
+  const { data: areas = [], isLoading: areasLoading } = usePathways(cls?.curriculumId);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
 
   // areasLoading matters here too, not just the diagnostic query — areaIds (below) is derived
   // from `areas`, and filters areaRows down before anything else sees them. If areas resolves
   // slower than the diagnostic query, a render could see rowsLoading as "done" while areaIds is
-  // still the pre-load empty set, silently dropping every Learning-Area diagnostic for that one
+  // still the pre-load empty set, silently dropping every Pathway diagnostic for that one
   // render — exactly enough to lock totalRef.current (below) at an undercount.
   const rowsLoading = areaRowsLoading || areasLoading;
   // Stable identity (unlike an inline arrow function) — the polling effect below depends on
@@ -186,19 +186,19 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub?.id, cls?.id]);
 
-  // useLearningAreaDiagnosticsForLearner aggregates outstanding diagnostics across every hub
+  // usePathwayDiagnosticsForLearner aggregates outstanding diagnostics across every hub
   // the learner is active at, not just this one (the admin-facing LearnerViewPage wants that
   // full picture) — filtered down here to just the areas belonging to the CURRENTLY SELECTED
   // hub's curriculum, so a learner gated for this hub only ever sees this hub's diagnostics,
   // never one left outstanding at a different hub they haven't switched to yet.
   const areaIds = new Set(areas.map((a) => a.id));
-  const rows = (rowsData || []).filter((row) => areaIds.has(row.issue.learningAreaId));
+  const rows = (rowsData || []).filter((row) => areaIds.has(row.issue.pathwayId));
   // "pending" = still blocks the gate (not yet graded). "actionable" = the subset the learner
   // can actually do something with right now; the rest ("submitted") is waiting on a teacher.
   const pending = rows.filter((row) => !isGraded(row));
   const actionable = pending.filter(needsLearnerAction);
   const awaitingGradingCount = pending.length - actionable.length;
-  // Gated on !rowsLoading (the Learning-Area query and the areas list it depends on) —
+  // Gated on !rowsLoading (the Pathway query and the areas list it depends on) —
   // since they resolve independently, a render where only one has landed yet would lock in a
   // count that undercounts the other, permanently showing "Diagnostic 1 of 1" for a learner who
   // actually has 2 outstanding.
@@ -267,7 +267,7 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
         row={current}
         index={doneCount}
         total={total}
-        contextLabel={areaNameById.get(current.issue.learningAreaId)}
+        contextLabel={areaNameById.get(current.issue.pathwayId)}
         onDone={() => refetch()}
       />
 

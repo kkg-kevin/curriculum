@@ -9,9 +9,9 @@ const {
   getCourseCompetencies,
   linkCompetency,
   unlinkCompetency,
-  getCourseLearningAreas,
-  linkLearningArea,
-  unlinkLearningArea,
+  getCoursePathways,
+  linkPathway,
+  unlinkPathway,
   getCourseInventory,
   linkInventoryItem,
   unlinkInventoryItem,
@@ -35,7 +35,7 @@ const router = express.Router();
 // school portals only ever open a specific course they already know the id of (reached via the
 // curriculum's current-courses list) to read its content — never the bare catalog list, which
 // spans every school's curriculum. "school" does need the bare list too — LearnerViewPage's
-// Learning Journey card resolves course names for a learner's placement options from it.
+// Pathway card resolves course names for a learner's placement options from it.
 // getCourseById/getSessions/getModules additionally verify ownership via assertCourseAccess
 // (course.controller.js) — a course is reusable across curricula, so the role check alone isn't
 // enough; it traces back through the caller's own hub/class to confirm the course is actually
@@ -51,9 +51,9 @@ router.route("/:id/duplicate").post(authorize("admin"), duplicateCourse);
 router.route("/:id/competencies/links").get(authorize("admin"), getCourseCompetencies).post(authorize("admin"), linkCompetency);
 router.route("/:id/competencies/links/:competencyId").delete(authorize("admin"), unlinkCompetency);
 
-// Learning Areas — this course's tagged learning areas (authored globally under /api/learning-areas)
-router.route("/:id/learning-areas/links").get(authorize("admin"), getCourseLearningAreas).post(authorize("admin"), linkLearningArea);
-router.route("/:id/learning-areas/links/:learningAreaId").delete(authorize("admin"), unlinkLearningArea);
+// Pathways — this course's tagged pathways (authored globally under /api/pathway-templates)
+router.route("/:id/pathways/links").get(authorize("admin"), getCoursePathways).post(authorize("admin"), linkPathway);
+router.route("/:id/pathways/links/:pathwayId").delete(authorize("admin"), unlinkPathway);
 
 // Inventory — this course's linked materials, each with a quantity (authored globally under
 // /api/inventory), same shape/authoring posture as a Project assessment's own inventory links.

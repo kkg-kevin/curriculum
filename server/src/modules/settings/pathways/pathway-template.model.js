@@ -7,10 +7,10 @@ const {
   stringifyJsonFields,
 } = require("../../../shared/utils/model.utils");
 
-const TABLE = "learning_areas_catalog";
+const TABLE = "pathway_templates";
 const JSON_FIELDS = ["courses"];
 
-const LearningAreaModel = {
+const PathwayModel = {
   findAll() {
     return db(TABLE);
   },
@@ -36,4 +36,4 @@ const LearningAreaModel = {
   },
 };
 
-module.exports = LearningAreaModel;
+module.exports = PathwayModel;

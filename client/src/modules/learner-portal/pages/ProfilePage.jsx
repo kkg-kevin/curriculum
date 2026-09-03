@@ -23,7 +23,7 @@ import SummaryRow from "../components/profile/SummaryRow";
 import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
 import ProgressArcCard from "../components/ProgressArcCard";
-import LearningJourneyTabContent from "../components/profile/LearningJourneyTabContent";
+import PathwayTabContent from "../components/profile/PathwayTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
 
@@ -116,7 +116,7 @@ export default function ProfilePage() {
       {/* Only on Overview — Progress Arc otherwise lived further down, inside the Overview tab's
           own content below; moved up here, above Guardian Profile/My Learning Hubs, per the
           product decision this was built for. Still tab-scoped (not shown on Competencies/
-          Learning Journey/etc.) since CompetencyProgressGrid right below it already covers the
+          Pathway/etc.) since CompetencyProgressGrid right below it already covers the
           Overview-only Progress Arc + competency summary pairing those other tabs don't need. */}
       {activeTab === "Overview" && <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />}
 
@@ -149,8 +149,8 @@ export default function ProfilePage() {
         <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
       )}
 
-      {activeTab === "Learning Journey" && (
-        <LearningJourneyTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
+      {activeTab === "Pathway" && (
+        <PathwayTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
       )}
 
       {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}

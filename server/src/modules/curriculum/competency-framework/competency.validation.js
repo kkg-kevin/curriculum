@@ -17,16 +17,16 @@ const createIndicatorSchema = z.object({
 
 const updateIndicatorSchema = createIndicatorSchema.partial();
 
-// This Learning Area's courses, in the order a learner progresses through them (e.g.
-// Robotics 1 -> 2 -> 3 -> 4) — for Learning Journey. Additive alongside `courses` (which
+// This Pathway's courses, in the order a learner progresses through them (e.g.
+// Robotics 1 -> 2 -> 3 -> 4) — for Pathway. Additive alongside `courses` (which
 // stays the plain "which courses belong here" list untouched by this); a courseId here
 // should also appear in `courses`, but isn't required to — the service doesn't enforce it,
 // same leniency as the rest of this file.
-const learningAreaCourseSequenceEntrySchema = z.object({
+const pathwayCourseSequenceEntrySchema = z.object({
   courseId: z.string().min(1),
   order:    z.number().int().min(1),
   // Developmental Stage ids that default a learner into this course when they have no
-  // Learning Journey record yet — see CompetencyService.getLearningJourney's fallback.
+  // Pathway record yet — see CompetencyService.getPathway's fallback.
   defaultForStages: z.array(z.string().min(1)).optional().default([]),
 });
 
@@ -40,33 +40,33 @@ const ageRangeRefinementOptions = {
 // Kept as a plain (unrefined) object, same reason as ageCategoryFields below — Zod can't
 // .partial() a schema that already has .refine() attached, so create/update each apply their
 // own refine on top of these raw fields instead of one refining the other.
-const learningAreaFields = z.object({
+const pathwayFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
   color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
   // Course ids, not free-typed names — the service layer checks each id resolves
   // to a real course before saving.
   courses:     z.array(z.string().min(1)).optional().default([]),
-  courseSequence: z.array(learningAreaCourseSequenceEntrySchema).optional().default([]),
+  courseSequence: z.array(pathwayCourseSequenceEntrySchema).optional().default([]),
   // The one assessment auto-issued to a learner once a class places them in front of one of
   // this area's courses — one diagnostic per area, same "single FK" pattern as AgeCategory's
   // diagnosticAssessmentId. Its graded score resolves a starting course via this area's
-  // Placement Thresholds (Performance Bands with learningAreaId+courseId set) — see
-  // CompetencyService.placeLearnerFromLearningAreaDiagnostic.
+  // Placement Thresholds (Performance Bands with pathwayId+courseId set) — see
+  // CompetencyService.placeLearnerFromPathwayDiagnostic.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
   // Which learners this area's diagnostic even applies to, by age — same open-ended-range
   // shape as AgeCategory's minAge/maxAge. Both null (the default) means every age, which is
-  // also today's behavior for every pre-existing area — see maybeAutoIssueLearningAreaDiagnostics
+  // also today's behavior for every pre-existing area — see maybeAutoIssuePathwayDiagnostics
   // in learner.service.js for where this actually gates issuance.
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
 });
 
-const createLearningAreaSchema = learningAreaFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
-const updateLearningAreaSchema = learningAreaFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
+const createPathwaySchema = pathwayFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
+const updatePathwaySchema = pathwayFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
 
-const importLearningAreaSchema = z.object({
-  learningAreaId: z.string().min(1, "learningAreaId is required"),
+const importPathwaySchema = z.object({
+  pathwayId: z.string().min(1, "pathwayId is required"),
 });
 
 const assignmentSchema = z.object({
@@ -181,16 +181,16 @@ const bandIndicatorContributionSchema = z.object({
   percentage:   z.number().min(0).max(100),
 });
 
-// A Progress-Arc-purpose band (learningAreaId null) now belongs to exactly one Developmental
-// Stage — no more curriculum-wide fallback ladder. A Learning-Journey band (learningAreaId +
+// A Progress-Arc-purpose band (pathwayId null) now belongs to exactly one Developmental
+// Stage — no more curriculum-wide fallback ladder. A Pathway band (pathwayId +
 // courseId set) never has one; see the module-level comment in performance-band.model.js.
-const bandStageRefinement = (data) => data.learningAreaId != null || data.ageCategoryId != null;
+const bandStageRefinement = (data) => data.pathwayId != null || data.ageCategoryId != null;
 const bandStageRefinementOptions = {
-  message: "ageCategoryId is required for a Progress-Arc-purpose band (no learningAreaId)",
+  message: "ageCategoryId is required for a Progress-Arc-purpose band (no pathwayId)",
   path:    ["ageCategoryId"],
 };
 
-// Kept as a plain (unrefined) object, same reason as learningAreaFields/ageCategoryFields above —
+// Kept as a plain (unrefined) object, same reason as pathwayFields/ageCategoryFields above —
 // Zod can't .partial() a schema that already has .refine() attached.
 const performanceBandFields = z.object({
   name:          z.string().min(1, "Name is required").max(100),
@@ -210,14 +210,14 @@ const performanceBandFields = z.object({
   // progressed past this band to the next one (see runIndicatorProgressEngine's thresholdMet).
   advancementMin:         z.number().min(0).max(100).optional().default(0),
   advancementThreshold:   z.number().min(0).max(100).optional().default(0),
-  // Learning Journey reuses Performance Bands as a per-Learning-Area course ladder: when
-  // both of these are set, this band represents one rung in that Learning Area's course
+  // Pathway reuses Performance Bands as a per-Pathway course ladder: when
+  // both of these are set, this band represents one rung in that Pathway's course
   // sequence (matched by score range via minScore/maxScore) rather than a Developmental
   // Stage's Progress Arc ladder. Left null, a band behaves exactly as it always has.
-  learningAreaId:         z.string().nullable().optional().default(null),
+  pathwayId:         z.string().nullable().optional().default(null),
   courseId:               z.string().nullable().optional().default(null),
   // Which Developmental Stage's own ladder this band belongs to — required (via the refine
-  // below) unless this is a Learning-Journey band (learningAreaId set), which never gets one.
+  // below) unless this is a Pathway band (pathwayId set), which never gets one.
   ageCategoryId:          z.string().nullable().optional().default(null),
 });
 
@@ -287,9 +287,9 @@ module.exports = {
   updateCompetencyLinkSchema,
   createIndicatorSchema,
   updateIndicatorSchema,
-  createLearningAreaSchema,
-  updateLearningAreaSchema,
-  importLearningAreaSchema,
+  createPathwaySchema,
+  updatePathwaySchema,
+  importPathwaySchema,
   updateLadderSchema,
   createAgeCategorySchema,
   updateAgeCategorySchema,

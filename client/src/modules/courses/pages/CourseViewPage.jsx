@@ -11,7 +11,7 @@ import {
   useUpdateSession,
   useDeleteSession,
   useCourseCompetencies,
-  useCourseLearningAreas,
+  useCoursePathways,
   useCourseCurricula,
   useModules,
   useCreateModule,
@@ -446,7 +446,7 @@ export default function CourseViewPage() {
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
   const { data: modules = [] } = useModules(id);
   const { data: competencies = [] } = useCourseCompetencies(id);
-  const { data: learningAreas = [] } = useCourseLearningAreas(id);
+  const { data: pathways = [] } = useCoursePathways(id);
   const { data: linkedCurricula = [] } = useCourseCurricula(id);
   const attachedAssessmentMap = new Map();
   sessions.forEach((session) => {
@@ -760,15 +760,15 @@ export default function CourseViewPage() {
           </div>
 
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "18px 20px" }}>
-            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Learning Areas</h3>
-            {learningAreas.length === 0 ? (
+            <h3 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#111827" }}>Pathways</h3>
+            {pathways.length === 0 ? (
               <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
-                No learning areas tagged.{" "}
+                No pathways tagged.{" "}
                 <Link to={`/courses/${id}/edit`} style={{ color: "#38aae1", fontWeight: "600", textDecoration: "none" }}>Add some →</Link>
               </p>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {learningAreas.map((area, idx) => {
+                {pathways.map((area, idx) => {
                   const color = area.color || ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706"][idx % 6];
                   return (
                     <span

@@ -5,7 +5,7 @@ const ITEMS = [
   { icon: FiLayers,    label: "Curriculum",    sub: "Defines what is learned" },
   { icon: FiAward,     label: "Competencies",  sub: "Define what learners can do" },
   { icon: FiTrendingUp,label: "Indicators",    sub: "Show mastery at each level" },
-  { icon: FiBookOpen,  label: "Courses",       sub: "Learning journeys" },
+  { icon: FiBookOpen,  label: "Courses",       sub: "Multi-lesson learning units" },
   { icon: FiFileText,  label: "Lessons",       sub: "Daily learning experiences" },
   { icon: FiClipboard, label: "Assessments",   sub: "Measure growth & mastery" },
   { icon: FiUsers,     label: "Teachers",      sub: "Guide, coach, mentor" },

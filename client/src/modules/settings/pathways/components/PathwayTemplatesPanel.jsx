@@ -1,25 +1,25 @@
 import { useState } from "react";
 import { FiBookOpen, FiChevronDown, FiEdit2, FiFolder, FiMoreVertical, FiSearch, FiTrash2 } from "react-icons/fi";
 import {
-  useLearningAreas, useCreateLearningArea, useUpdateLearningArea, useDeleteLearningArea,
-} from "../hooks/useLearningAreas";
+  usePathwayTemplates, useCreatePathwayTemplate, useUpdatePathwayTemplate, useDeletePathwayTemplate,
+} from "../hooks/usePathwayTemplates";
 import { Modal, Label } from "../../components/Modal";
 import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
 import CoursePickerField from "../../../courses/components/CoursePickerField";
 
-const AREA_COLORS = PALETTE;
+const COLORS = PALETTE;
 
-function LearningAreaModal({ editTarget, onClose }) {
-  const { mutate: create, isPending: creating } = useCreateLearningArea();
-  const { mutate: update, isPending: updating } = useUpdateLearningArea();
+function PathwayModal({ editTarget, onClose }) {
+  const { mutate: create, isPending: creating } = useCreatePathwayTemplate();
+  const { mutate: update, isPending: updating } = useUpdatePathwayTemplate();
   const isPending = creating || updating;
 
   const [form, setForm] = useState(() => ({
     name: editTarget?.name || "",
     description: editTarget?.description || "",
-    color: editTarget?.color || AREA_COLORS[0],
+    color: editTarget?.color || COLORS[0],
   }));
   const [courses, setCourses] = useState(editTarget?.courses || []);
   const [error, setError] = useState("");
@@ -40,13 +40,13 @@ function LearningAreaModal({ editTarget, onClose }) {
 
   return (
     <Modal
-      title={editTarget ? "Edit Learning Area" : "Add Learning Area"}
-      subtitle="Available for other modules to import as a starting point"
+      title={editTarget ? "Edit Pathway" : "Add Pathway"}
+      subtitle="A reusable template a curriculum can import as a starting point"
       onClose={onClose}
       footer={<>
         <button type="button" className="stg-btn-secondary" onClick={onClose}>Cancel</button>
         <button type="button" className="stg-btn-primary" onClick={submit} disabled={isPending}>
-          {isPending ? "Saving…" : editTarget ? "Save Changes" : "Add Learning Area"}
+          {isPending ? "Saving…" : editTarget ? "Save Changes" : "Add Pathway"}
         </button>
       </>}
     >
@@ -54,7 +54,7 @@ function LearningAreaModal({ editTarget, onClose }) {
         {error && <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "10px", color: "#EF4444", fontSize: "13px" }}>{error}</div>}
         <div>
           <Label>Name *</Label>
-          <input className="stg-input" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Language & Literacy" />
+          <input className="stg-input" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Software Engineer" />
         </div>
         <div>
           <Label>Description</Label>
@@ -63,7 +63,7 @@ function LearningAreaModal({ editTarget, onClose }) {
         <div>
           <Label>Color</Label>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {AREA_COLORS.map((c) => (
+            {COLORS.map((c) => (
               <button
                 key={c} type="button" className={`stg-swatch${form.color === c ? " active" : ""}`}
                 style={{ backgroundColor: c }} onClick={() => setField("color", c)} title={c}
@@ -80,9 +80,9 @@ function LearningAreaModal({ editTarget, onClose }) {
   );
 }
 
-function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
-  const color = area.color || "#25476a";
-  const hasDetails = !!area.description || area.courses?.length > 0;
+function PathwayCard({ pathway, onEdit, onDelete, courseNameById }) {
+  const color = pathway.color || "#25476a";
+  const hasDetails = !!pathway.description || pathway.courses?.length > 0;
   const [expanded, setExpanded] = useState(false);
   const isOpen = hasDetails && expanded;
 
@@ -95,7 +95,7 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
       >
         <div className="stg-item-dot" style={{ backgroundColor: color }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="stg-item-name">{area.name}</div>
+          <div className="stg-item-name">{pathway.name}</div>
         </div>
         {hasDetails && (
           <FiChevronDown
@@ -114,9 +114,9 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
 
       {isOpen && (
         <>
-          {area.description && <div className="stg-item-sub" style={{ marginTop: "8px" }}>{area.description}</div>}
+          {pathway.description && <div className="stg-item-sub" style={{ marginTop: "8px" }}>{pathway.description}</div>}
 
-          {area.courses?.length > 0 && (
+          {pathway.courses?.length > 0 && (
             <div className="stg-course-section">
               <div className="stg-course-header">
                 <div className="stg-course-header-left">
@@ -124,11 +124,11 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
                   <span className="stg-course-title">Courses</span>
                 </div>
                 <span className="stg-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
-                  {area.courses.length}
+                  {pathway.courses.length}
                 </span>
               </div>
               <div className="stg-course-list">
-                {area.courses.map((id) => (
+                {pathway.courses.map((id) => (
                   <div key={id} className="stg-course-row">
                     <span className="stg-course-dot" style={{ backgroundColor: color }} />
                     <span className="stg-course-name">{courseNameById.get(id) || "Unknown course"}</span>
@@ -143,9 +143,9 @@ function LearningAreaCard({ area, onEdit, onDelete, courseNameById }) {
   );
 }
 
-export default function LearningAreasPanel() {
-  const { data: areas = [], isLoading } = useLearningAreas();
-  const { mutate: deleteArea } = useDeleteLearningArea();
+export default function PathwayTemplatesPanel() {
+  const { data: pathways = [], isLoading } = usePathwayTemplates();
+  const { mutate: deletePathway } = useDeletePathwayTemplate();
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
   const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
@@ -155,7 +155,7 @@ export default function LearningAreasPanel() {
   const [search, setSearch] = useState("");
 
   const query = search.trim().toLowerCase();
-  const filteredAreas = query ? areas.filter((a) => a.name.toLowerCase().includes(query)) : areas;
+  const filtered = query ? pathways.filter((p) => p.name.toLowerCase().includes(query)) : pathways;
 
   if (isLoading) return <div className="stg-spinner" />;
 
@@ -163,27 +163,27 @@ export default function LearningAreasPanel() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", gap: "12px", flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Learning Areas</h2>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Pathways</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {areas.length} area{areas.length !== 1 ? "s" : ""} defined — modules import a copy, so local edits never change the default
+            {pathways.length} pathway{pathways.length !== 1 ? "s" : ""} defined — a curriculum imports a copy, so local edits never change the template
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-          + Add Learning Area
+          + Add Pathway
         </button>
       </div>
 
-      {areas.length === 0 ? (
+      {pathways.length === 0 ? (
         <div className="stg-empty">
           <div style={{ marginBottom: "12px", color: "#25476a" }}>
             <FiFolder size={40} strokeWidth={1.8} />
           </div>
-          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No learning areas yet</p>
+          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No pathway templates yet</p>
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
-            Define learning areas here so other modules can import them as a starting point.
+            Build a reusable pathway here so any curriculum can import it as a starting point.
           </p>
           <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-            + Add Learning Area
+            + Add Pathway
           </button>
         </div>
       ) : (
@@ -194,11 +194,11 @@ export default function LearningAreasPanel() {
               className="stg-search-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${areas.length} learning area${areas.length !== 1 ? "s" : ""}…`}
+              placeholder={`Search ${pathways.length} pathway${pathways.length !== 1 ? "s" : ""}…`}
             />
           </div>
 
-          {filteredAreas.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="stg-empty" style={{ padding: "40px 24px" }}>
               <div style={{ marginBottom: "10px", color: "#25476a" }}>
                 <FiSearch size={32} strokeWidth={1.8} />
@@ -207,12 +207,12 @@ export default function LearningAreasPanel() {
             </div>
           ) : (
             <div className="stg-list">
-              {filteredAreas.map((area) => (
-                <LearningAreaCard
-                  key={area.id}
-                  area={area}
-                  onEdit={() => { setEditTarget(area); setModalOpen(true); }}
-                  onDelete={() => setDeleteTarget(area)}
+              {filtered.map((pw) => (
+                <PathwayCard
+                  key={pw.id}
+                  pathway={pw}
+                  onEdit={() => { setEditTarget(pw); setModalOpen(true); }}
+                  onDelete={() => setDeleteTarget(pw)}
                   courseNameById={courseNameById}
                 />
               ))}
@@ -221,13 +221,13 @@ export default function LearningAreasPanel() {
         </>
       )}
 
-      {modalOpen && <LearningAreaModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
+      {modalOpen && <PathwayModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Learning Area"
-        message={`"${deleteTarget?.name}" will be removed from the catalog. Copies already imported into curricula or other modules are unaffected. This cannot be undone.`}
+        title="Delete Pathway"
+        message={`"${deleteTarget?.name}" will be removed from the template library. Copies already imported into curricula are unaffected. This cannot be undone.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
-        onConfirm={() => { deleteArea(deleteTarget.id); setDeleteTarget(null); }}
+        onConfirm={() => { deletePathway(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />
     </div>

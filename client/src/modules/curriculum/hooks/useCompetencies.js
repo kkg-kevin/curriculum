@@ -7,7 +7,7 @@ const STALE = 5 * 60 * 1000; // 5 minutes — data is fresh across tab switches
 const KEYS = {
   comps:            (cid) => ["curriculum-competencies", cid],
   indicators:       (cid, compId) => ["curriculum-competency-indicators", cid, compId],
-  areas:            (cid) => ["learning-areas", cid],
+  areas:            (cid) => ["pathways", cid],
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
   progressLevels:   (cid) => ["progress-levels", cid],
@@ -15,7 +15,7 @@ const KEYS = {
   evidenceTypes:    (cid) => ["evidence-types", cid],
   performanceBands: (cid) => ["performance-bands", cid],
   compWeights:      (cid) => ["competency-weights", cid],
-  learningJourney:  (cid, learnerId) => ["learning-journey", cid, learnerId],
+  pathway:  (cid, learnerId) => ["pathway-placement", cid, learnerId],
   indicatorAchievements: (cid) => ["indicator-achievements", cid],
   competencyScores:      (cid, ageCategoryId) => ["competency-scores", cid, ageCategoryId],
   bandProgress:          (cid, ageCategoryId) => ["band-progress", cid, ageCategoryId],
@@ -123,65 +123,65 @@ export function useDeleteCompetencyIndicator(curriculumId, competencyId) {
   });
 }
 
-/* ── Learning Areas (grouping for competencies as used within this curriculum) ── */
+/* ── Pathways (grouping for competencies as used within this curriculum) ── */
 
-export function useLearningAreas(curriculumId) {
+export function usePathways(curriculumId) {
   return useQuery({
     queryKey:  KEYS.areas(curriculumId),
-    queryFn:   () => competenciesApi.getLearningAreas(curriculumId),
+    queryFn:   () => competenciesApi.getPathways(curriculumId),
     enabled:   !!curriculumId,
     staleTime: STALE,
   });
 }
 
-export function useCreateLearningArea(curriculumId) {
+export function useCreatePathway(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data) => competenciesApi.createLearningArea(curriculumId, data),
+    mutationFn: (data) => competenciesApi.createPathway(curriculumId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Learning area created");
+      toast.success("Pathway created");
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to create learning area"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to create pathway"),
   });
 }
 
-export function useUpdateLearningArea(curriculumId) {
+export function useUpdatePathway(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateLearningArea(curriculumId, id, data),
+    mutationFn: ({ id, data }) => competenciesApi.updatePathway(curriculumId, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Learning area updated");
+      toast.success("Pathway updated");
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update learning area"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update pathway"),
   });
 }
 
-export function useDeleteLearningArea(curriculumId) {
+export function useDeletePathway(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id) => competenciesApi.deleteLearningArea(curriculumId, id),
+    mutationFn: (id) => competenciesApi.deletePathway(curriculumId, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
       qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-      toast.success("Learning area deleted");
+      toast.success("Pathway deleted");
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete learning area"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete pathway"),
   });
 }
 
-// Clones a learning area from the Settings catalog into this curriculum. The result is
+// Clones a pathway from the Settings catalog into this curriculum. The result is
 // a brand-new, independent record — editing it afterwards never touches the catalog default.
-export function useImportLearningArea(curriculumId) {
+export function useImportPathway(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (learningAreaId) => competenciesApi.importLearningArea(curriculumId, learningAreaId),
+    mutationFn: (pathwayId) => competenciesApi.importPathway(curriculumId, pathwayId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Learning area imported");
+      toast.success("Pathway imported");
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to import learning area"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to import pathway"),
   });
 }
 
@@ -203,7 +203,7 @@ export function useUpdateLadder(curriculumId) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
     },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update learning journey"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update pathway placement"),
   });
 }
 
@@ -525,12 +525,12 @@ export function useDuplicatePerformanceBandToNext(curriculumId) {
   });
 }
 
-/* ── Learning Journey (per-learner, per-Learning-Area placement/history) ──── */
+/* ── Pathway (per-learner, per-Pathway placement/history) ──── */
 
-export function useLearningJourney(curriculumId, learnerId) {
+export function usePathway(curriculumId, learnerId) {
   return useQuery({
-    queryKey: KEYS.learningJourney(curriculumId, learnerId),
-    queryFn:  () => competenciesApi.getLearningJourney(curriculumId, learnerId),
+    queryKey: KEYS.pathway(curriculumId, learnerId),
+    queryFn:  () => competenciesApi.getPathway(curriculumId, learnerId),
     enabled:  !!curriculumId && !!learnerId,
   });
 }
@@ -540,7 +540,7 @@ export function usePlaceLearner(curriculumId, learnerId) {
   return useMutation({
     mutationFn: ({ areaId, data }) => competenciesApi.placeLearner(curriculumId, learnerId, areaId, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.learningJourney(curriculumId, learnerId) });
+      qc.invalidateQueries({ queryKey: KEYS.pathway(curriculumId, learnerId) });
       toast.success("Learner placed");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to place learner"),

@@ -8,7 +8,7 @@ const KEYS = {
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId, curriculumId) => ["assessment-issues", "diagnostic", learnerId, curriculumId || null],
-  learningAreaDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "learning-areas", learnerId],
+  pathwayDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "pathways", learnerId],
   indicatorProgress: (learnerId, curriculumId) => ["assessment-issues", "indicator-progress", learnerId, curriculumId || null],
 };
 
@@ -156,7 +156,7 @@ export function useSubmitAssessment() {
     onSuccess: (submission) => {
       qc.setQueryData(KEYS.submission(submission.id), submission);
       qc.invalidateQueries({ queryKey: KEYS.issuedLearner() });
-      // Covers both KEYS.diagnostic(learnerId) and KEYS.learningAreaDiagnostics(learnerId) —
+      // Covers both KEYS.diagnostic(learnerId) and KEYS.pathwayDiagnostics(learnerId) —
       // a submitted diagnostic needs to drop out of the first-login gate's outstanding list
       // immediately, not just after the next full page load.
       qc.invalidateQueries({ queryKey: ["assessment-issues", "diagnostic"] });
@@ -178,12 +178,12 @@ export function useDiagnosticForLearner(learnerId, curriculumId = null) {
   });
 }
 
-// Plural counterpart — every Learning-Area diagnostic this learner currently holds, drives the
+// Plural counterpart — every Pathway diagnostic this learner currently holds, drives the
 // per-area diagnostic cards on LearnerViewPage.
-export function useLearningAreaDiagnosticsForLearner(learnerId) {
+export function usePathwayDiagnosticsForLearner(learnerId) {
   return useQuery({
-    queryKey: KEYS.learningAreaDiagnostics(learnerId),
-    queryFn:  () => assessmentSubmissionApi.getLearningAreaDiagnosticsForLearner(learnerId),
+    queryKey: KEYS.pathwayDiagnostics(learnerId),
+    queryFn:  () => assessmentSubmissionApi.getPathwayDiagnosticsForLearner(learnerId),
     enabled:  !!learnerId,
   });
 }
@@ -226,11 +226,11 @@ export function useGradeSubmission() {
       // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
       // so LearnerViewPage reflects the new placement without a manual reload.
       if (submission.learnerId) qc.invalidateQueries({ queryKey: ["learners", "detail", submission.learnerId] });
-      // A graded Learning-Area diagnostic may have just placed this learner at a starting
-      // course (see CompetencyService.placeLearnerFromLearningAreaDiagnostic) — no cheap way to
+      // A graded Pathway diagnostic may have just placed this learner at a starting
+      // course (see CompetencyService.placeLearnerFromPathwayDiagnostic) — no cheap way to
       // know which (curriculumId, learnerId) pair from here, so invalidate every Learning
       // Journey query rather than skip the refresh.
-      qc.invalidateQueries({ queryKey: ["learning-journey"] });
+      qc.invalidateQueries({ queryKey: ["pathway-placement"] });
       toast.success("Grade saved — released to the learner");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save grade"),

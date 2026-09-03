@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
-import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, useLearningAreaDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
+import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
 import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
@@ -202,13 +202,13 @@ export default function AssessmentDetailPage() {
   const navigate = useNavigate();
   const { cls, learner } = useOutletContext();
   const { data, isLoading } = useIssuedForLearner();
-  // A Developmental Stage or Learning-Area diagnostic never shows up in useIssuedForLearner()
+  // A Developmental Stage or Pathway diagnostic never shows up in useIssuedForLearner()
   // above — getIssuedRowsForLearner (server) deliberately excludes them, since the general "My
   // Assessments" list they normally feed isn't where diagnostics belong. But once graded, a
   // diagnostic's own result page still needs to resolve here — it's what the Reports list's
   // "Diagnostics" section (see ReportsOverview.jsx's DiagnosticRow) links to.
   const { data: stageRow, isLoading: stageLoading } = useDiagnosticForLearner(learner?.id, cls?.curriculumId);
-  const { data: areaRows = [], isLoading: areaLoading } = useLearningAreaDiagnosticsForLearner(learner?.id);
+  const { data: areaRows = [], isLoading: areaLoading } = usePathwayDiagnosticsForLearner(learner?.id);
   const diagnosticRows = [stageRow, ...areaRows].filter(Boolean);
   const row = (data?.data || []).find((r) => r.issue.id === issueId) || diagnosticRows.find((r) => r.issue.id === issueId);
   // If this issue was created by a teacher's "Reissue" action, its origin issue targeted this

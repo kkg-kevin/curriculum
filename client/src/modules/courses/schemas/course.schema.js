@@ -17,13 +17,13 @@ export const courseSchema = z.object({
   coverImage:    z.string().nullable().optional().default(null),
   ageMin:        optionalAge,
   ageMax:        optionalAge,
-  // Not part of the Course record itself — reconciled into course-learning-area
+  // Not part of the Course record itself — reconciled into course-pathway
   // links after save. See CreateCoursePage/EditCoursePage onSubmit.
-  learningAreaIds: z.array(z.string()).optional().default([]),
-  // Same shape/posture as learningAreaIds — reconciled into course-competency links after save.
+  pathwayIds: z.array(z.string()).optional().default([]),
+  // Same shape/posture as pathwayIds — reconciled into course-competency links after save.
   competencyIds: z.array(z.string()).optional().default([]),
   // Freeform typed requirements — IS part of the Course record itself (unlike
-  // learningAreaIds above), saved directly with the rest of the form.
+  // pathwayIds above), saved directly with the rest of the form.
   requirements: z.array(z.string().min(1)).optional().default([]),
 }).refine(
   (data) => data.ageMin == null || data.ageMax == null || data.ageMax >= data.ageMin,

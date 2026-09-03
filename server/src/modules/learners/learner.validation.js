@@ -34,7 +34,7 @@ const baseLearnerSchema = z.object({
   // of email - see auth.service.js's setOrCreatePasswordByUsername.
   learnerPassword: z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   // Which Progression Ladder rung this learner is currently placed at - superseded by
-  // Learning Journey (see currentStageId + learner-journey.model.js) but left as-is since
+  // Pathway (see currentStageId + learner-pathway.model.js) but left as-is since
   // the old ladder UI/data still exists; not read by anything new.
   currentRungId: z.string().optional().nullable().default(null),
   // Profile photo - set via the shared upload pipeline (see uploads module); a bare URL string,

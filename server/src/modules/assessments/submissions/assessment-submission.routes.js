@@ -8,7 +8,7 @@ const {
   revokeIssue,
   getIssuedForLearner,
   getDiagnosticForLearner,
-  getLearningAreaDiagnosticsForLearner,
+  getPathwayDiagnosticsForLearner,
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,
@@ -56,10 +56,10 @@ router.post("/submissions/:id/publish-report", authorize("admin", "school", "tea
 // learner-facing (own record only, enforced in the controller) — the portal's first-login gate
 // reads this directly, scoped to its own curriculum via ?curriculumId.
 router.get("/diagnostic/:learnerId", authorize("admin", "school", "learner"), getDiagnosticForLearner);
-// Same, plural — every Learning-Area diagnostic this learner currently holds. Also learner-
+// Same, plural — every Pathway diagnostic this learner currently holds. Also learner-
 // facing (own record only, enforced in the controller) — the portal's first-login gate reads
 // this directly rather than duplicating the query.
-router.get("/diagnostic/learning-areas/:learnerId", authorize("admin", "school", "learner"), getLearningAreaDiagnosticsForLearner);
+router.get("/diagnostic/pathways/:learnerId", authorize("admin", "school", "learner"), getPathwayDiagnosticsForLearner);
 
 // A learner's own accumulating competency progress, or an admin/school reviewing it.
 router.get("/learner/:learnerId/competency-progress", authorize("admin", "school", "learner"), getLearnerIndicatorProgress);

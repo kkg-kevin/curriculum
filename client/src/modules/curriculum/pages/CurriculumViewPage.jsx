@@ -25,7 +25,7 @@ import { useCurriculumQuery, useCurriculumCourses, useLinkCourse, useUnlinkCours
 import { useCurriculumVersions } from "../hooks/useCurriculumVersion";
 import { useAcademicYears } from "../hooks/useAcademicYear";
 import {
-  useCompetencies, useLearningAreas, useAgeCategories, useProgressLevels,
+  useCompetencies, usePathways, useAgeCategories, useProgressLevels,
   useAssessmentTypes, useEvidenceTypes, usePerformanceBands,
 } from "../hooks/useCompetencies";
 import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLevels";
@@ -656,17 +656,17 @@ export default function CurriculumViewPage() {
   // Competency Framework (built in the Competencies wizard step) — fetched independently
   // so it never blocks the page's initial paint; each panel below just shows "0" until ready.
   const { data: fwCompetencies = [] }  = useCompetencies(id);
-  const { data: fwLearningAreas = [] } = useLearningAreas(id);
+  const { data: fwPathways = [] } = usePathways(id);
   const { data: fwAgeCategories = [] } = useAgeCategories(id);
   const { data: fwProgressLevels = [] } = useProgressLevels(id);
   const { data: fwAssessmentTypes = [] } = useAssessmentTypes(id);
   const { data: fwEvidenceTypes = [] }   = useEvidenceTypes(id);
   const { data: fwPerformanceBandsRaw = [] } = usePerformanceBands(id);
-  // Bands with a learningAreaId are repurposed as a Learning Area's course-sequence rung for
-  // Learning Journey placement, not a real curriculum-wide Progress Arc band — the server's
+  // Bands with a pathwayId are repurposed as a Pathway's course-sequence rung for
+  // Pathway placement, not a real curriculum-wide Progress Arc band — the server's
   // own scoring engine excludes them the same way (competency.service.js calculateScore/
   // calculateIndicatorProgress), so the summary below does too.
-  const fwPerformanceBands = fwPerformanceBandsRaw.filter((b) => !b.learningAreaId);
+  const fwPerformanceBands = fwPerformanceBandsRaw.filter((b) => !b.pathwayId);
 
   const { data: schoolsData } = useQuery({
     queryKey: ["schools", "byCurriculum", id],
@@ -1144,17 +1144,17 @@ export default function CurriculumViewPage() {
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#111827" }}>Competency Framework</h2>
-            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Competencies, learning areas, progress arc, and assessment design for this curriculum</p>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Competencies, pathways, progress arc, and assessment design for this curriculum</p>
           </div>
           <ManageLink onClick={() => navigate(`/curriculum/${id}/competencies`)} />
         </div>
 
-        {fwCompetencies.length === 0 && fwLearningAreas.length === 0 && fwPerformanceBands.length === 0 && fwProgressLevels.length === 0 && fwAssessmentTypes.length === 0 ? (
+        {fwCompetencies.length === 0 && fwPathways.length === 0 && fwPerformanceBands.length === 0 && fwProgressLevels.length === 0 && fwAssessmentTypes.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
             <div style={{ fontSize: "28px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "8px" }}><TrackChangesIcon fontSize="inherit" /></div>
             <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: "700", color: "#374151" }}>No competency framework set up yet</p>
             <p style={{ margin: "0 0 16px", fontSize: "12.5px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
-              Adopt competencies, group them into learning areas, build the progress arc, and design assessments for this curriculum.
+              Adopt competencies, group them into pathways, build the progress arc, and design assessments for this curriculum.
             </p>
             <button type="button" onClick={() => navigate(`/curriculum/${id}/competencies`)}
               style={{ padding: "9px 20px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: "9px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -1170,11 +1170,11 @@ export default function CurriculumViewPage() {
               {fwCompetencies.length > 6 && <FrameworkTag label={`+${fwCompetencies.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
             </FrameworkPanel>
 
-            <FrameworkPanel icon={<FolderIcon fontSize="small" />} title="Learning Areas" count={fwLearningAreas.length} emptyText="None added yet">
-              {fwLearningAreas.slice(0, 6).map((a) => (
+            <FrameworkPanel icon={<FolderIcon fontSize="small" />} title="Pathways" count={fwPathways.length} emptyText="None added yet">
+              {fwPathways.slice(0, 6).map((a) => (
                 <FrameworkTag key={a.id} label={a.name} color={a.color || "#25476a"} bg={`${a.color || "#25476a"}12`} border={`${a.color || "#25476a"}40`} />
               ))}
-              {fwLearningAreas.length > 6 && <FrameworkTag label={`+${fwLearningAreas.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
+              {fwPathways.length > 6 && <FrameworkTag label={`+${fwPathways.length - 6} more`} color="#9CA3AF" bg="#F9FAFB" border="#E5E7EB" />}
             </FrameworkPanel>
 
             <FrameworkPanel icon={<TrendingUpIcon fontSize="small" />} title="Progress Arc" count={fwPerformanceBands.length} emptyText="No performance bands yet">
