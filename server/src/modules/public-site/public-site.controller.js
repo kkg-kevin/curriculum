@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const PublicSiteService = require("./public-site.service");
+const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 const {
   bootcampSchema,
   updateBootcampSchema,
@@ -11,27 +12,32 @@ const {
 // Bare array/object responses, not { success, data } — this matches digifunzi-landing's
 // src/services/api.js (publicApi.listBootcamps().then(r => r.data)) and its mock adapter's
 // shape exactly, so USE_MOCK can flip to false with no frontend change needed.
+//
+// coverImage is absolutized here (not in the service) because listBootcamps/getBootcamp/
+// listProjects/getProject are shared with the admin /api/site routes, which want the raw
+// stored path — only these public responses need the cross-origin-safe absolute URL.
+const withAbsoluteCover = (r) => (r ? { ...r, coverImage: toAbsoluteMediaUrl(r.coverImage) } : r);
 
 const getPublicBootcamps = asyncHandler(async (req, res) => {
   const records = await PublicSiteService.listBootcamps({ publishedOnly: true });
-  res.json(records);
+  res.json(records.map(withAbsoluteCover));
 });
 
 const getPublicBootcamp = asyncHandler(async (req, res) => {
   const record = await PublicSiteService.getBootcamp(req.params.idOrSlug);
   if (!record || !record.isPublished) return res.status(404).json({ message: "Bootcamp not found" });
-  res.json(record);
+  res.json(withAbsoluteCover(record));
 });
 
 const getPublicProjects = asyncHandler(async (req, res) => {
   const records = await PublicSiteService.listProjects({ publishedOnly: true });
-  res.json(records);
+  res.json(records.map(withAbsoluteCover));
 });
 
 const getPublicProject = asyncHandler(async (req, res) => {
   const record = await PublicSiteService.getProject(req.params.idOrSlug);
   if (!record || !record.isPublished) return res.status(404).json({ message: "Project not found" });
-  res.json(record);
+  res.json(withAbsoluteCover(record));
 });
 
 // Pathways — read-only projection of the `pathway_templates` catalog (authored in the main

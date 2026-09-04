@@ -3,6 +3,7 @@ const PublicProjectModel = require("./public-project.model");
 const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
 const CourseModel = require("../courses/course.model");
 const { slugify } = require("../../shared/utils/slugify");
+const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 
 // Course descriptions in the operational `courses` table are authored as rich-text HTML
 // (TipTap). The landing site renders pathway course blurbs as plain text, so flatten tags
@@ -168,7 +169,8 @@ const PublicSiteService = {
         description: htmlToText(c.description),
         ageMin: c.ageMin ?? null,
         ageMax: c.ageMax ?? null,
-        coverImage: c.coverImage || null,
+        // Absolutized — this projection is public-only (getPathway is never called by admin code).
+        coverImage: toAbsoluteMediaUrl(c.coverImage),
       })),
     };
   },

@@ -56,3 +56,7 @@ Thumbs.db
 # Uploaded file storage (runtime data, not the server/src/modules/uploads/ source module —
 # an unanchored "uploads/" would also match that source folder and hide it from git)
 /server/uploads/
+
+# Scratch holding area for work-in-progress files deliberately kept out of src/ so they can't be
+# picked up by a migrate run or a deploy-zip rebuild while unfinished — see Guide/DEPLOYMENT.md.
+/.wip-not-for-deploy/

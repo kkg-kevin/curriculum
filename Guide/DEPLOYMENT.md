@@ -9,7 +9,84 @@
 
 ---
 
-## This release (3 Sep 2026) — what changed
+## This release (4 Sep 2026) — what changed
+
+### Leads — the loop is now closed, not just receiving
+
+The 3 Sep release could receive Enroll/Contact submissions and let staff triage
+them (New/Contacted/Closed). This release adds everything needed to actually
+**act on** an enquiry from inside the system, plus lets staff **author** the
+public Bootcamps/Projects content that was API-only before.
+
+**One new migration** (additive, applies automatically on Restart):
+
+| Migration | Adds |
+|---|---|
+| `20260904071000_create_lead_messages.js` | `lead_messages` — the reply/notes thread behind each lead (see below). |
+
+**New backend dependency** — `nodemailer` (in `package.json`/`package-lock.json`,
+baked into `backend-deploy.zip`; **Run NPM Install** on Restart picks it up, no
+manual step).
+
+**New optional environment variables — outbound email** (see the env table
+below). All optional: **leave every one unset and nothing changes** — auto-ack
+and reply emails silently no-op (logged, not thrown) exactly like the existing
+`PUBLIC_SITE_URL` pattern. Set them once you've picked a provider to turn real
+sending on, no code/deploy change needed at that point.
+
+**Backend** (`backend-deploy.zip`):
+- **Reply from the Enquiries page.** `POST /api/leads/:id/reply` (admin-only)
+  — emails the enquirer (`Reply-To: MAIL_REPLY_TO`), persists the message even
+  if the send fails/no-ops, and auto-flips the lead's status `New` →
+  `Contacted` on the first reply.
+- **Internal follow-up notes.** `POST /api/leads/:id/notes` (admin-only) —
+  staff-only, never emailed, shared timeline entry ("left voicemail, try
+  Tuesday") for whoever picks up the enquiry next.
+- **Thread view.** `GET /api/leads/:id/timeline` — every reply + note for one
+  lead, oldest first.
+- **Auto-acknowledgement email.** Fires on every successful
+  `POST /api/public/leads` / `/contact`, fire-and-forget (never delays or
+  fails the visitor's response). No-ops until SMTP env vars are set.
+- **`referenceId` resolved to a name.** `GET /api/leads` now also returns a
+  `reference: { referenceType, referenceName, referenceSlug }` per row —
+  resolved against the live bootcamp/project/pathway catalogs — instead of a
+  bare, unreadable slug/id string.
+- **Content-authoring UI backing is unchanged** — `/api/site/bootcamps` and
+  `/api/site/projects` (admin-only CRUD) were already live; this release adds
+  the client UI that actually calls them (see below). No API change.
+
+**Frontend** (`assets.zip` + `index.html`):
+- **Enquiries page** — each card gets a **"Reply / Notes"** expander: shows
+  the full thread, and a compose box that toggles between "Reply by email"
+  and "Internal note". Cards also show **"Enquired from: \<name\>"** when the
+  submission has a resolved `referenceId`.
+- **New admin sidebar entry — "Website Content"** (`/site-content`). A
+  tabbed Bootcamps / Projects list with full create/edit forms — the first
+  client UI for the `/api/site/*` content-authoring API from the 3 Sep
+  release, which was API-only until now. Cover image uses the existing
+  upload component, not a raw URL box.
+- **Notification bell** — a `lead_submitted` notification now deep-links to
+  `/enquiries?lead=<id>`, which scrolls to and flashes that exact row,
+  instead of just opening the Enquiries page generically.
+
+**Not included in this release** — a `programs`-table migration exploring
+"a bootcamp is a deployed Program" was started but not finished (service/
+controller rewiring incomplete); it's held out of `backend-deploy.zip` on
+purpose. `public_bootcamps`/`public_projects` remain their own tables this
+release, unchanged from 3 Sep.
+
+**Known gap — `nodeapp.digifunzi.com` may be behind.** A check against prod
+during this release's prep (`curl https://nodeapp.digifunzi.com/api/public/pathways`)
+returned `404 {"message":"Route not found"}` — a real response, meaning
+*something* is running there, but not the `/api/public/*` routes shipped in
+the 3 Sep release. **Before telling the `digifunzi-landing` team the
+integration is live, confirm this backend zip has actually been deployed to
+`nodeapp.digifunzi.com`** (Deploy step 7 below) — don't assume the last
+deploy landed just because the domain resolves.
+
+---
+
+## Previous release (3 Sep 2026)
 
 ### Learning Areas → Pathways (rename, with a live-data migration)
 
@@ -126,7 +203,11 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 | Name | Value |
 |---|---|
 | CLIENT_URL | https://curriculum.digifunzi.com |
-| PUBLIC_SITE_URL | *(optional — new this release)* the marketing site's origin, e.g. `https://digifunzi.com`. Leave unset until that site is deployed; when unset the Enroll/Contact API routes still work, they just can't be called from a browser on another origin yet. |
+| PUBLIC_SITE_URL | *(optional)* the marketing site's origin(s), **comma-separated** — e.g. `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (deployed site + its build-time prerender origin + the landing team's local dev, per `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §5). Leave unset and the `/api/public/*` routes still work for server-to-server calls; only a browser on an unlisted origin gets CORS-blocked. |
+| API_PUBLIC_URL | *(optional, new this release's predecessor — carried forward)* this API's own external base, e.g. `https://nodeapp.digifunzi.com`. Used to turn stored `/uploads/...` paths into absolute URLs in `/api/public/*` responses, since the landing site reads them cross-origin. Leave unset in a pinch — public responses fall back to the raw stored path. |
+| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | *(optional, new this release)* outbound email for lead auto-ack + staff reply. Leave every one unset and both features silently no-op — nothing else breaks. Any standard SMTP account works (a Google Workspace mailbox + an App Password is the cheapest way to start; a transactional provider like Resend/Postmark/SendGrid is more reliable at volume). `SMTP_PORT` defaults to `587`. |
+| MAIL_FROM | *(optional, new this release)* the From header for outbound mail, e.g. `Digifunzi <hello@digifunzi.com>`. Falls back to `SMTP_USER` if unset. |
+| MAIL_REPLY_TO | *(optional, new this release)* Reply-To header on outbound mail, e.g. `enquiries@digifunzi.com` — where an enquirer's reply-to-the-reply lands. |
 | NODE_ENV | development |
 | DB_HOST | 127.0.0.1 (or `localhost` — whatever cPanel's MySQL Databases tool shows) |
 | DB_PORT | 3306 |
@@ -255,10 +336,24 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 284 files, includes every migration through `20260903090000_rename_learning_areas_to_pathways.js`. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 289 files, includes every migration through `20260904071000_create_lead_messages.js`. Adds the `nodemailer` dependency — **Run NPM Install** on Restart picks it up automatically. |
 | `assets.zip` | Ready-to-upload frontend assets zip. Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-LSzeJgmb.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-nUT5sjCT.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
+
+**Verified before this build was packaged** (Git Bash, from the project root):
+```bash
+unzip -l Guide/assets.zip | grep -cF '\'          # 0 — no Windows backslash paths
+unzip -l Guide/backend-deploy.zip | grep -cF '\'  # 0 — no Windows backslash paths
+unzip -l Guide/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry exists
+```
+All three passed. A migration exploring "bootcamps are deployed Programs"
+(`20260904081043_bootcamps_are_programs.js`) was started but not finished —
+it's held in `.wip-not-for-deploy/` at the repo root (gitignored, kept out of
+`src/db/migrations/` so it can't accidentally get picked up by a migrate run
+or a deploy-zip rebuild) until its service/controller rewiring is complete.
+Local dev DB was rolled back to match before this build was packaged, so
+`backend-deploy.zip` and the local dev environment are in the same state.
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 
