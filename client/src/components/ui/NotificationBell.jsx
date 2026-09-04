@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck } from "react-icons/fi";
+import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 
 const ICONS = {
@@ -10,6 +10,7 @@ const ICONS = {
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
+  lead_submitted: { Icon: FiMail, color: "#2e7db5" },
 };
 
 // Where each notification type actually lives, per its own payload (see notification.service.js
@@ -31,6 +32,9 @@ function resolveNotificationPath(n) {
       return p.learnerId ? `/learner-portal?child=${p.learnerId}` : "/learner-portal";
     case "invoice_issued":
       return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
+    case "lead_submitted":
+      // The admin Enquiries page — ?lead= scrolls to and highlights the row (see EnquiriesListPage).
+      return p.leadId ? `/enquiries?lead=${p.leadId}` : (p.route || "/enquiries");
     default:
       return null;
   }

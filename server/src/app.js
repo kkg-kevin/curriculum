@@ -60,10 +60,28 @@ app.use(
 // The admin client (CLIENT_URL) sends cookies and needs credentials: true. The public
 // digifunzi-landing site (PUBLIC_SITE_URL) never sends a JWT/cookie (see its src/services/api.js)
 // and only ever reaches the /api/public/* routes below, but still needs its origin allowed or the
-// browser blocks the POST before it reaches Express at all.
-const allowedOrigins = [env.CLIENT_URL, env.PUBLIC_SITE_URL].filter(Boolean);
+// browser blocks the request before it reaches Express at all.
+//
+// PUBLIC_SITE_URL is comma-separated: the landing site is served from more than one origin
+// (apex + www + staging) and its build-time prerender step runs from yet another origin
+// (http://localhost:4199) — see Guide/WEBSITE_INTEGRATION_CONTRACT.md §5. A request with no
+// Origin header at all (server-to-server curl, same-origin) is always allowed.
+const allowedOrigins = [
+  env.CLIENT_URL,
+  ...String(env.PUBLIC_SITE_URL || "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
+].filter(Boolean);
 app.use(cors({
-  origin: allowedOrigins,
+  // A disallowed origin gets `false` (no CORS headers set → the browser blocks it), not a
+  // thrown Error — throwing would surface as a confusing 500 in our logs for what is really
+  // just an un-whitelisted caller. A request with no Origin header (server-to-server curl,
+  // the prerender step in some modes) is always allowed.
+  origin(origin, cb) {
+    cb(null, !origin || allowedOrigins.includes(origin));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true,
 }));
 app.use(express.json());

@@ -39,4 +39,23 @@ const updateLeadStatusSchema = z.object({
   status: z.enum(["new", "contacted", "closed"]),
 });
 
-module.exports = { createLeadSchema, createContactSchema, updateLeadStatusSchema, INTEREST_VALUES };
+// POST /api/leads/:id/reply — staff compose box. subject is optional (lead.emails.js falls back
+// to a generic "Re: your enquiry" line); body is what actually gets emailed.
+const replyLeadSchema = z.object({
+  subject: z.string().trim().max(200).optional().or(z.literal("")),
+  body: z.string().trim().min(1, "Reply body is required").max(5000),
+});
+
+// POST /api/leads/:id/notes — staff-only, never emailed.
+const addLeadNoteSchema = z.object({
+  body: z.string().trim().min(1, "Note is required").max(2000),
+});
+
+module.exports = {
+  createLeadSchema,
+  createContactSchema,
+  updateLeadStatusSchema,
+  replyLeadSchema,
+  addLeadNoteSchema,
+  INTEREST_VALUES,
+};
