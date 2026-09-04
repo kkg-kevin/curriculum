@@ -50,9 +50,19 @@ live only in this system.
 **Bottom line:** the entire loop described in the original version of this doc is
 now built. Every remaining item is **configuration, not code** — outbound email
 (auto-ack, staff replies, any future digest) silently no-ops until SMTP
-credentials are set in `server/.env` (see §2.6). Content for the public
-Bootcamps/Projects pages can now be authored from the admin portal itself
-(**Website Content** in the sidebar) instead of curl/Postman.
+credentials are set in `server/.env` (see §2.6).
+
+**Bootcamps/Projects content authoring — removed (4 Sep 2026, later same day).**
+The "Website Content" admin page and its backing `/api/site/*` +
+`/api/public/{bootcamps,projects}` API were built earlier this release, then
+removed at the user's request once it became clear "bootcamp" already has a
+real meaning in this system (a deployed **Program** — curriculum + hub +
+dates + auto-created classes, see `server/src/modules/programs/`) that the
+standalone `public_bootcamps` table duplicated rather than reused. The
+`public_bootcamps`/`public_projects` tables are dropped
+(`20260904103225_drop_public_bootcamps_and_projects.js`). `GET /api/public/pathways`
+is unaffected — untouched by any of this. See §2.7 for how `referenceId`
+resolution changed as a result.
 
 ---
 
@@ -137,24 +147,16 @@ What staff can do on this page today:
   picks up the enquiry next).
 - Count of total + "N new" at the top.
 
-### 2.5 Content authoring — Website Content page
+### 2.5 Content authoring — removed
 
-The public Bootcamps/Projects listings (`/api/public/bootcamps`,
-`/api/public/projects`) had a working API since the integration was first built,
-but no client UI — content had to be POSTed with curl. That gap is closed:
-
-| Piece | Where |
-|---|---|
-| Page | [SiteContentPage.jsx](../client/src/modules/site-content/pages/SiteContentPage.jsx) — tabbed Bootcamps / Projects list |
-| Routes | `/site-content`, `/site-content/bootcamps/create\|:id/edit`, `/site-content/projects/create\|:id/edit` |
-| Sidebar link | "Website Content" |
-| API | `GET/POST /api/site/bootcamps[/:id]`, same for `/projects` — admin-only, unchanged from the original contract |
-| Forms | [BootcampForm.jsx](../client/src/modules/site-content/components/BootcampForm.jsx), [ProjectForm.jsx](../client/src/modules/site-content/components/ProjectForm.jsx) — react-hook-form + Zod, field-for-field mirror of the server's validation schemas; cover image uses the existing upload-based `ImageUploadField`, not a raw URL box |
-
-A bootcamp/project created or edited here is immediately live on
-`/api/public/bootcamps` (or `/projects`) once `isPublished` is on — verified
-end-to-end (create → visible on the public read → unpublish → 404s → delete →
-gone).
+A "Website Content" admin page (tabbed Bootcamps/Projects list + create/edit
+forms, `client/src/modules/site-content/`) and its backing
+`GET/POST/PUT/DELETE /api/site/{bootcamps,projects}` + public
+`GET /api/public/{bootcamps,projects}` API existed briefly earlier this
+release. Both are now removed — see the top of this doc for why. Nothing
+public-facing needs updating on the `digifunzi-landing` side beyond removing
+any reliance on those two endpoints; **`GET /api/public/pathways` is
+unaffected**.
 
 ### 2.6 Outbound email
 
@@ -187,12 +189,14 @@ persisted and visible in the thread either way).
 ### 2.7 `referenceId` → human context
 
 [lead.service.js](../server/src/modules/leads/lead.service.js) `_resolveReference`
-probes all three catalogs a `referenceId` can point at — `public_bootcamps`,
-`public_projects`, `pathway_templates` (by id, then by slug for pathways, which
-compute their slug at read time) — and attaches
+resolves a `referenceId` against `pathway_templates` (by id, then by slug,
+which is computed at read time) and attaches
 `{ referenceType, referenceName, referenceSlug }` to every row `GET /api/leads`
-returns. `null` when there's no `referenceId`, or it no longer resolves to
-anything (e.g. the bootcamp was since deleted).
+returns. `null` when there's no `referenceId`, or it doesn't resolve —
+including a `referenceId` that used to point at a bootcamp/project, since
+those catalogs were removed (§2.5). A lead tagged `interestedIn: "bootcamp"`
+or `"project"` still shows that tag either way; only the "Enquired from:
+\<name\>" label depends on resolution succeeding.
 
 ---
 
@@ -236,8 +240,8 @@ website with server-side verification here.
 
 ### 3.4 🟡 Delete / archive a lead
 
-**Current:** no delete. `LeadModel` has no `delete` (unlike other models, and
-unlike the new site-content models which do). Leads accumulate forever.
+**Current:** no delete. `LeadModel` has no `delete` (unlike most other models
+in this codebase). Leads accumulate forever.
 
 **What to build:** either a soft `archived` status, or `DELETE /api/leads/:id`
 (admin-only) for obvious spam. Low priority.
@@ -272,4 +276,4 @@ the live API today:
 | Auto-ack + reply emails | `server/src/modules/leads/lead.emails.js` | `server/src/modules/leads/lead.service.js` |
 | Reply + notes | `server/src/db/migrations/20260904071000_create_lead_messages.js`, `server/src/modules/leads/lead-message.model.js` | `lead.routes.js`, `lead.controller.js`, `lead.service.js`, `lead.validation.js`, `EnquiriesListPage.jsx`, `leadApi.js`, `useLeads.js` |
 | `referenceId` resolution | — | `lead.service.js` (`_resolveReference`, wired into `listAll`), `EnquiriesListPage.jsx` |
-| Content-authoring UI | `client/src/modules/site-content/**` (services, hooks, schemas, components, pages) | `client/src/routes/AppRoutes.jsx`, `client/src/components/ui/Sidebar.jsx` |
+| Content-authoring UI (built, then removed same release) | `server/src/db/migrations/20260904103225_drop_public_bootcamps_and_projects.js` (drops the tables) | `public-site.controller.js`, `public-site.service.js`, `public-site.routes.js`, `app.js`, `lead.service.js` (reference resolution narrowed to pathways only); deleted: `admin-site.routes.js`, `public-bootcamp.model.js`, `public-project.model.js`, `public-site.validation.js`, `client/src/modules/site-content/**` |

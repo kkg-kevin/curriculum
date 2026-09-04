@@ -2,8 +2,6 @@ const LeadModel = require("./lead.model");
 const LeadMessageModel = require("./lead-message.model");
 const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
-const PublicBootcampModel = require("../public-site/public-bootcamp.model");
-const PublicProjectModel = require("../public-site/public-project.model");
 const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -68,16 +66,12 @@ const LeadService = {
   },
 
   // referenceId arrives as a bare, untyped string (slug or uuid — see the public leads schema's
-  // comment). Nothing on the row records which catalog it came from, so a lookup has to probe
-  // all three the Enroll form can point at: bootcamp, project, pathway. First match wins — a
-  // collision across catalogs is not expected in practice (see Guide/LEADS_IMPLEMENTATION.md
-  // §3.6), and this only ever feeds a display label, never an authorization decision.
+  // comment). The bootcamp/project public catalogs were removed (see Guide/DEPLOYMENT.md) — only
+  // pathways are resolvable now. This only ever feeds a display label, never an authorization
+  // decision, so an unresolved referenceId (still tagged bootcamp/project/quarky by
+  // interestedIn) just shows no reference label rather than erroring.
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
-    const bootcamp = await PublicBootcampModel.findByIdOrSlug(referenceId);
-    if (bootcamp) return { referenceType: "bootcamp", referenceName: bootcamp.name, referenceSlug: bootcamp.slug };
-    const project = await PublicProjectModel.findByIdOrSlug(referenceId);
-    if (project) return { referenceType: "project", referenceName: project.name, referenceSlug: project.slug };
     // pathway_templates has no slug column (see public-site.service.js) — same findById-then-
     // scan-by-computed-slug approach getPathway() uses.
     let pathway = await PathwayTemplateModel.findById(referenceId);
@@ -91,7 +85,8 @@ const LeadService = {
 
   // Admin Enquiries list — each row gets its referenceId resolved to a human-readable
   // { referenceType, referenceName, referenceSlug } (null when there's no referenceId, or it no
-  // longer resolves to anything — e.g. the bootcamp was since deleted).
+  // longer resolves to anything — e.g. the pathway was since deleted, or it points at a
+  // bootcamp/project that no longer has a public catalog to resolve against).
   async listAll(filters) {
     const records = await LeadModel.findAll(filters);
     const resolved = await Promise.all(records.map((r) => LeadService._resolveReference(r.referenceId)));
