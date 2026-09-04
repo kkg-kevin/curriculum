@@ -33,7 +33,6 @@ const billingRoutes = require("./modules/billing/billing.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
-const adminSiteRoutes = require("./modules/public-site/admin-site.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
@@ -121,8 +120,8 @@ app.use("/api/public/learners", publicLearnerProfileRoutes);
 // public-lead.routes.js). Mounted at /api/public rather than /api/public/leads since it
 // serves both /api/public/leads and /api/public/contact.
 app.use("/api/public", publicLeadRoutes);
-// Unauthenticated by design — the digifunzi-landing site's Bootcamps/Projects listing and
-// detail pages (see public-site.routes.js).
+// Unauthenticated by design — the digifunzi-landing site's Pathways listing and detail pages
+// (see public-site.routes.js).
 app.use("/api/public", publicSiteRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
@@ -171,8 +170,6 @@ app.use("/api/notifications", protect, notificationRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Enquiries page — the staff-facing read/triage side of the public leads above.
 app.use("/api/leads", protect, authorize("admin"), leadRoutes);
-// Content authoring for the public Bootcamps/Projects pages above.
-app.use("/api/site", protect, authorize("admin"), adminSiteRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

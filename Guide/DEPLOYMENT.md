@@ -2,10 +2,103 @@
 
 ## Overview
 
-| Part | Technology | Live URL |
-|---|---|---|
-| Frontend | React 19 + Vite | https://curriculum.digifunzi.com |
-| Backend | Node.js + Express | https://nodeapp.digifunzi.com |
+Two independent environments, same codebase, **separate databases** — see
+"Two environments" below before deploying to either.
+
+| Environment | Part | Technology | URL |
+|---|---|---|---|
+| **Dev** | Frontend | React 19 + Vite | https://curriculum.digifunzi.com |
+| **Dev** | Backend | Node.js + Express | https://nodeapp.digifunzi.com |
+| **Live** | Frontend | React 19 + Vite | https://dcf.digifunzi.com |
+| **Live** | Backend | Node.js + Express | https://dcf-api.digifunzi.com |
+
+---
+
+## Two environments — Dev vs. Live
+
+**Dev** (`curriculum.digifunzi.com` / `nodeapp.digifunzi.com`) is where new
+work gets tested before it's trusted. **Live** (`dcf.digifunzi.com` /
+`dcf-api.digifunzi.com`) is what real users see. They are **two completely
+separate stacks** — separate cPanel Node.js app, separate MySQL database,
+separate `uploads/` folder, separate secrets (`JWT_SECRET`, `ADMIN_PASSWORD`).
+Nothing is shared between them on purpose: a bug, a bad migration, or test
+data created while developing against Dev must never be able to reach Live.
+
+Everything in the rest of this guide (migrations, env vars, the deploy steps)
+applies identically to either environment — just point it at the right
+subdomain pair and database. The one genuinely different step is the
+**frontend build**, because `VITE_API_URL` gets baked into the JS bundle at
+build time, so Dev and Live need two separate builds:
+
+```bash
+cd client
+npm run build          # Dev build — reads .env.production, bakes in https://nodeapp.digifunzi.com
+npm run build:live     # Live build — reads .env.live, bakes in https://dcf-api.digifunzi.com
+```
+
+Each writes to the same `client/dist/` — **build and package one environment
+completely (zip it, move the zip aside) before building the other**, or the
+second build's `dist/` overwrites the first's before you've packaged it.
+
+### One-time setup for Live (cPanel side — manual, not scriptable from here)
+
+1. **Create two new domains** (cPanel → **Domains** → **Create A New Domain**):
+   `dcf.digifunzi.com` and `dcf-api.digifunzi.com`. Same tool/page that shows
+   `curriculum.digifunzi.com` and `nodeapp.digifunzi.com` today — accept the
+   default Document Root cPanel suggests for each.
+2. **Create a new MySQL database + user** (cPanel → MySQL Databases) — a
+   second one, fully separate from Dev's. Same one-time steps as "Backend
+   Deployment" → "One-time: create the MySQL database" below, just don't
+   reuse the existing database/user. Note the new (cPanel-prefixed)
+   `DB_NAME`/`DB_USER`/`DB_PASSWORD`.
+3. **Create a second cPanel Node.js App**, application root e.g.
+   `dcf-api.digifunzi` (parallel to the existing `curriculum.digifunzi` root),
+   Application URL `dcf-api.digifunzi.com`, startup file `src/server.js` —
+   same settings as the "cPanel Node.js App Settings" table below, just a
+   different app instance so Dev and Live run as genuinely separate Node
+   processes (not one process serving both).
+4. **Set Live's own environment variables** in that new app's panel — same
+   variable names as the table below, but with Live's own values:
+   - `CLIENT_URL=https://dcf.digifunzi.com`
+   - `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` — the **new**
+     database from step 2, never Dev's
+   - `JWT_SECRET` — generate a **new, different** long random string; never
+     reuse Dev's (a compromised dev secret would otherwise also compromise
+     live sessions)
+   - `ADMIN_EMAIL`/`ADMIN_PASSWORD` — Live's own first-admin login, not Dev's
+   - `PUBLIC_SITE_URL`/`API_PUBLIC_URL`/`SMTP_*`/`MAIL_*` — same meaning as
+     Dev, set independently if/when Live needs them (e.g. `API_PUBLIC_URL=https://dcf-api.digifunzi.com`)
+5. **Deploy backend to the new app** — same "Steps to Deploy / Re-deploy
+   Backend" below, targeting the `dcf-api.digifunzi` app root instead of
+   `curriculum.digifunzi`. The automatic startup migration runs against
+   Live's fresh database on first Restart — Live starts with an empty schema
+   that gets built from scratch, same as Dev's very first deploy did.
+6. **Deploy frontend to the new subdomain** — same "Steps to Deploy /
+   Re-deploy Frontend" below, but build with `npm run build:live` (not
+   `npm run build`) and upload to the `dcf.digifunzi.com` document root
+   instead of `curriculum.digifunzi.com`'s.
+7. **Test** — visit `https://dcf-api.digifunzi.com` (expect
+   `{ "message": "API is running" }`), then log into
+   `https://dcf.digifunzi.com` with Live's own `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+
+### Re-deploying after this, per environment
+
+Every future code change gets deployed to **both** environments, but as two
+separate deploy passes — Dev first (to verify), then Live once confirmed:
+
+```bash
+# Dev
+cd client && npm run build && cd ..
+# package + upload to curriculum.digifunzi.com / nodeapp.digifunzi.com, as below
+
+# Live — once Dev is confirmed working
+cd client && npm run build:live && cd ..
+# package + upload to dcf.digifunzi.com / dcf-api.digifunzi.com, as below
+```
+
+The backend zip (`backend-deploy.zip`) is **identical for both** — it's the
+same code either way, only the `.env` on each cPanel Node app differs. Only
+the frontend needs a second, separately-built zip.
 
 ---
 
@@ -15,14 +108,15 @@
 
 The 3 Sep release could receive Enroll/Contact submissions and let staff triage
 them (New/Contacted/Closed). This release adds everything needed to actually
-**act on** an enquiry from inside the system, plus lets staff **author** the
-public Bootcamps/Projects content that was API-only before.
+**act on** an enquiry from inside the system. It also briefly added, then
+removed, a Bootcamps/Projects content-authoring feature — see below.
 
-**One new migration** (additive, applies automatically on Restart):
+**Two new migrations** (both apply automatically on Restart):
 
-| Migration | Adds |
+| Migration | Effect |
 |---|---|
-| `20260904071000_create_lead_messages.js` | `lead_messages` — the reply/notes thread behind each lead (see below). |
+| `20260904071000_create_lead_messages.js` | Additive — adds `lead_messages`, the reply/notes thread behind each lead (see below). |
+| `20260904103225_drop_public_bootcamps_and_projects.js` | **Drops** `public_bootcamps` and `public_projects` (added 3 Sep, both empty in every environment checked before dropping). Reversible (`migrate:rollback`) if this content ever needs to come back — see below for why it was removed. |
 
 **New backend dependency** — `nodemailer` (in `package.json`/`package-lock.json`,
 baked into `backend-deploy.zip`; **Run NPM Install** on Restart picks it up, no
@@ -48,32 +142,32 @@ sending on, no code/deploy change needed at that point.
   `POST /api/public/leads` / `/contact`, fire-and-forget (never delays or
   fails the visitor's response). No-ops until SMTP env vars are set.
 - **`referenceId` resolved to a name.** `GET /api/leads` now also returns a
-  `reference: { referenceType, referenceName, referenceSlug }` per row —
-  resolved against the live bootcamp/project/pathway catalogs — instead of a
-  bare, unreadable slug/id string.
-- **Content-authoring UI backing is unchanged** — `/api/site/bootcamps` and
-  `/api/site/projects` (admin-only CRUD) were already live; this release adds
-  the client UI that actually calls them (see below). No API change.
+  `reference: { referenceType, referenceName, referenceSlug }` per row when
+  it resolves against the **pathway** catalog. `null` for a bootcamp/project
+  `referenceId` — see the removal note below.
+- **Bootcamps/Projects public API + admin authoring API — built, then
+  removed, same release.** `GET /api/public/{bootcamps,projects}` and
+  `/api/site/{bootcamps,projects}` (admin CRUD) briefly shipped in this
+  release, then were pulled once it became clear "bootcamp" duplicates what
+  this system already calls a **Program** (`server/src/modules/programs/` —
+  a deployed curriculum + hub + dates). The `public_bootcamps`/
+  `public_projects` tables (added 3 Sep) are **dropped** by migration
+  `20260904103225_drop_public_bootcamps_and_projects.js` — both were empty in
+  every environment checked before dropping. **`GET /api/public/pathways` is
+  completely unaffected.** If `digifunzi-landing` was ever pointed at the
+  bootcamp/project endpoints, tell them those routes now 404 — see
+  `Guide/WEBSITE_INTEGRATION_CONTRACT.md`'s top-of-file notice.
 
 **Frontend** (`assets.zip` + `index.html`):
 - **Enquiries page** — each card gets a **"Reply / Notes"** expander: shows
   the full thread, and a compose box that toggles between "Reply by email"
   and "Internal note". Cards also show **"Enquired from: \<name\>"** when the
-  submission has a resolved `referenceId`.
-- **New admin sidebar entry — "Website Content"** (`/site-content`). A
-  tabbed Bootcamps / Projects list with full create/edit forms — the first
-  client UI for the `/api/site/*` content-authoring API from the 3 Sep
-  release, which was API-only until now. Cover image uses the existing
-  upload component, not a raw URL box.
+  submission has a resolved `referenceId` (pathways only now).
 - **Notification bell** — a `lead_submitted` notification now deep-links to
   `/enquiries?lead=<id>`, which scrolls to and flashes that exact row,
   instead of just opening the Enquiries page generically.
-
-**Not included in this release** — a `programs`-table migration exploring
-"a bootcamp is a deployed Program" was started but not finished (service/
-controller rewiring incomplete); it's held out of `backend-deploy.zip` on
-purpose. `public_bootcamps`/`public_projects` remain their own tables this
-release, unchanged from 3 Sep.
+- **No "Website Content" sidebar entry** — it existed briefly during this
+  release's development and was removed before shipping (see above).
 
 **Known gap — `nodeapp.digifunzi.com` may be behind.** A check against prod
 during this release's prep (`curl https://nodeapp.digifunzi.com/api/public/pathways`)
@@ -124,7 +218,7 @@ The curriculum **"Learning Area"** concept is renamed to **"Pathway"** everywher
   - Attendance that's never marked auto-locks 14 days after the session date (lazy sweep, no cron) so a forgotten session can't block completion forever.
   - `getSessionSummary` (the calendar click-through) now also returns the session's `occurrence` record; all existing fields unchanged.
 - **Leads — public Enroll/Contact forms.** New **unauthenticated** endpoints `POST /api/public/leads` and `POST /api/public/contact` (rate-limited, 20/15min/IP) for the marketing site's forms. Each submission notifies every admin in-app. Staff read/triage them at the admin **Enquiries** page via `GET /api/leads` and `PATCH /api/leads/:id/status` (admin-only).
-- **Public site content API.** New **unauthenticated** read endpoints `GET /api/public/bootcamps[/:idOrSlug]` and `GET /api/public/projects[/:idOrSlug]` for the marketing site's listing/detail pages, plus admin-only authoring at `GET/POST/PUT/DELETE /api/site/bootcamps` and `/api/site/projects`. Its own tables, deliberately separate from the operational `programs`/`courses` — this is marketing copy, not curriculum. **No admin UI for authoring this content ships in this release** (API only).
+- **Public site content API.** New **unauthenticated** read endpoints `GET /api/public/bootcamps[/:idOrSlug]` and `GET /api/public/projects[/:idOrSlug]` for the marketing site's listing/detail pages, plus admin-only authoring at `GET/POST/PUT/DELETE /api/site/bootcamps` and `/api/site/projects`. Its own tables, deliberately separate from the operational `programs`/`courses` — this is marketing copy, not curriculum. **No admin UI for authoring this content ships in this release** (API only). **⚠️ Removed 4 Sep 2026** — see "This release" above; these routes 404 as of the current build.
 - **CORS now allows two origins** — the admin client (`CLIENT_URL`) and, when set, the public site (`PUBLIC_SITE_URL`).
 
 **Frontend** (`assets.zip` + `index.html`):
@@ -193,7 +287,7 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 ### cPanel Node.js App Settings
 | Setting | Value |
 |---|---|
-| Node.js version | 22.22.3 |
+| Node.js version | 22.23.2 |
 | Application mode | Development |
 | Application root | `curriculum.digifunzi` |
 | Application URL | `nodeapp.digifunzi.com` |
@@ -336,9 +430,9 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 289 files, includes every migration through `20260904071000_create_lead_messages.js`. Adds the `nodemailer` dependency — **Run NPM Install** on Restart picks it up automatically. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 286 files, includes every migration through `20260904103225_drop_public_bootcamps_and_projects.js`. Adds the `nodemailer` dependency — **Run NPM Install** on Restart picks it up automatically. |
 | `assets.zip` | Ready-to-upload frontend assets zip. Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-nUT5sjCT.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
+| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-D-XFENvk.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
 | `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
 
 **Verified before this build was packaged** (Git Bash, from the project root):
@@ -347,13 +441,16 @@ unzip -l Guide/assets.zip | grep -cF '\'          # 0 — no Windows backslash p
 unzip -l Guide/backend-deploy.zip | grep -cF '\'  # 0 — no Windows backslash paths
 unzip -l Guide/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry exists
 ```
-All three passed. A migration exploring "bootcamps are deployed Programs"
-(`20260904081043_bootcamps_are_programs.js`) was started but not finished —
-it's held in `.wip-not-for-deploy/` at the repo root (gitignored, kept out of
+All three passed, plus a boot test (server started clean, `/api/public/pathways`
+still `200`, `/api/public/bootcamps` correctly `404` not `500`, leads still
+work end-to-end). A migration exploring "bootcamps are deployed Programs"
+(`20260904081043_bootcamps_are_programs.js`) is still unfinished and still
+held in `.wip-not-for-deploy/` at the repo root (gitignored, kept out of
 `src/db/migrations/` so it can't accidentally get picked up by a migrate run
-or a deploy-zip rebuild) until its service/controller rewiring is complete.
-Local dev DB was rolled back to match before this build was packaged, so
-`backend-deploy.zip` and the local dev environment are in the same state.
+or a deploy-zip rebuild) — moot for now since the bootcamps-are-Programs
+direction it explored was superseded by removing bootcamps/projects
+entirely (see "This release" above). Local dev DB matches exactly what's in
+`backend-deploy.zip`.
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 

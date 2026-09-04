@@ -5,6 +5,19 @@
 resolution is recorded inline and the backend has been changed to match — see
 §8 changelog.
 
+> **⚠️ Bootcamps/Projects removed (4 Sep 2026).** `GET /api/public/bootcamps`,
+> `GET /api/public/projects`, and the admin-only `/api/site/*` authoring API
+> are **gone** — routes now 404. This was a same-day build-then-remove: a
+> `public_bootcamps`/`public_projects` marketing-content table duplicated what
+> a "bootcamp" already means in this system (a deployed **Program**), so it
+> was pulled rather than left as dead weight to reconcile later. **Only
+> `GET /api/public/pathways[/:idOrSlug]` and the two `POST` lead/contact
+> endpoints are live** — every table/section below marked ✅ for bootcamps or
+> projects is now stale; treat this notice as authoritative over those. If
+> `digifunzi-landing` still calls the bootcamp/project endpoints, those calls
+> will 404 until/unless a replacement ships (see
+> [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--removed)).
+
 - **Website:** `digifunzi-landing` — standalone Vite + React SPA.
   Deployed at **`https://africa.digifunzi.com`** (Truehost cPanel subdomain).
   Own origin for canonical/sitemap: `VITE_SITE_URL`.
@@ -31,45 +44,44 @@ HTTP status. (The two POST endpoints are the one exception — see §4.)
               digifunzi-landing (website)                    Curriculum backend (this repo)
               https://africa.digifunzi.com                   https://nodeapp.digifunzi.com
               ────────────────────────────                   ─────────────────────────────
- visitor ──►  Bootcamps / Projects / Pathways pages  ──GET──►  /api/public/*      (no auth)
+ visitor ──►  Pathways pages                         ──GET──►  /api/public/*      (no auth)
  visitor ──►  Enroll form / Contact form             ──POST─►  /api/public/leads
                                                               /api/public/contact
                                                                     │
                                                                     ├─► writes `leads` table
                                                                     └─► notifies every admin in-app
- build   ──►  scripts/prerender.js (from :4199)      ──GET──►  /api/public/{bootcamps,projects,pathways}
+ build   ──►  scripts/prerender.js (from :4199)      ──GET──►  /api/public/pathways
                                                                     │
  staff   ──►  Admin portal → Enquiries page          ──GET──►  /api/leads         (admin JWT)
  staff   ──►  Admin portal → Enquiries page          ─PATCH─►  /api/leads/:id/status
- staff   ──►  Admin portal → content authoring       ─CRUD──►  /api/site/*        (admin JWT)
 ```
 
-- All content the website reads is **authored inside this system** by an admin
-  (`/api/site/*` for bootcamps/projects; the portal's Settings → Pathways for
-  pathways). The website is read-only for content.
+- Pathway content the website reads is **authored inside this system** (the
+  portal's Settings → Pathways). Bootcamps/Projects pages have no backing
+  content API right now — see the notice at the top of this doc.
 - The website's only write is a **lead** (Enroll / Contact submission). Nothing
   it sends creates a User or Learner account.
 - A lead's `referenceId` is a **bare string** — no FK, no validation. It may be a
-  slug or a uuid; the backend stores whatever it's given (see §4.1).
+  slug or a uuid; the backend stores whatever it's given (see §4.1). It's only
+  resolvable against pathways now (bootcamp/project catalogs are gone).
 
 ---
 
-## 2. Status — everything the website needs is SHIPPED
+## 2. Status
 
-Released 3 Sep 2026. Backend module: `server/src/modules/public-site/` +
-`server/src/modules/leads/`.
+Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 
 | Method | Path | Purpose | Status |
 |---|---|---|---|
-| `GET` | `/api/public/bootcamps` | Bootcamp list | ✅ live |
-| `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ✅ live |
-| `GET` | `/api/public/projects` | Project (course) list | ✅ live |
-| `GET` | `/api/public/projects/:idOrSlug` | Project detail | ✅ live |
+| `GET` | `/api/public/bootcamps` | Bootcamp list | ❌ removed 4 Sep 2026 — 404s |
+| `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ❌ removed 4 Sep 2026 — 404s |
+| `GET` | `/api/public/projects` | Project (course) list | ❌ removed 4 Sep 2026 — 404s |
+| `GET` | `/api/public/projects/:idOrSlug` | Project detail | ❌ removed 4 Sep 2026 — 404s |
 | `GET` | `/api/public/pathways` | Pathway list | ✅ live (on `modules` branch → master) |
 | `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses) | ✅ live |
 | `POST` | `/api/public/leads` | Enrol-interest capture → notify admins | ✅ live |
 | `POST` | `/api/public/contact` | General enquiry → notify admins | ✅ live (separate endpoint kept — see §4.2) |
-| `GET` | `/api/site/*`, `GET/POST/PUT/DELETE` | Admin content authoring | ✅ API only — **no admin UI yet** |
+| `GET/POST/PUT/DELETE` | `/api/site/*` | Admin content authoring | ❌ removed 4 Sep 2026 — 404s |
 
 > **"Is the pathways endpoint merged?"** (website §5) — yes. It's in the
 > `learning-areas → pathways` work, now merged to `master` (commit `98e3938`).
@@ -81,6 +93,16 @@ Released 3 Sep 2026. Backend module: `server/src/modules/public-site/` +
 `:idOrSlug` resolves by `id` (uuid) first, then by slug. Slugs are derived
 server-side from `name` via `server/src/shared/utils/slugify.js`. Website cards
 link by **slug**.
+
+### 3.1–3.4 Bootcamps/Projects — REMOVED, kept below for historical reference only
+
+**These four endpoints no longer exist** (removed 4 Sep 2026 — see the notice
+at the top of this doc). The shapes below describe what they *used to* return;
+do not build against them. Kept here in case this content ever gets
+reintroduced (most likely reusing the operational `programs`/`curricula`
+tables rather than a standalone marketing table — see
+[LEADS_IMPLEMENTATION.md](LEADS_IMPLEMENTATION.md) for the design discussion
+that led to removal).
 
 ### 3.1 `GET /api/public/bootcamps` → `200`, array
 
@@ -211,8 +233,8 @@ across all `/api/*`).
   "parentPhone": "string 7–20 chars, /^[+0-9()\\-\\s]+$/ — optional server-side; the Enroll form requires it client-side",
   "learnerName": "string ≤120 chars — optional (\"\" allowed, e.g. from the Contact form)",
   "learnerAge":  "integer 3–19 — optional / null",
-  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\"",
-  "referenceId": "string ≤100 chars — optional / null. The bootcamp/project/pathway it came from. SLUG OR UUID — backend stores the string as-is, no validation.",
+  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". Still accepted/stored as-is even though bootcamp/project no longer have a backing catalog — see the notice at the top of this doc.",
+  "referenceId": "string ≤100 chars — optional / null. Still accepted and stored as-is (no validation) — but only resolves to a display name server-side (GET /api/leads) when it's a pathway slug/id. A bootcamp/project referenceId is stored and shown as a bare string, unresolved.",
   "note":        "string ≤1000 chars — optional (\"\" allowed)"
 }
 ```
@@ -326,15 +348,14 @@ middleware; allowed methods are `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 **absolute URL**: a stored `/uploads/x.png` comes back as
 `https://nodeapp.digifunzi.com/uploads/x.png`. Values already absolute (a pasted
 CDN/stock URL), protocol-relative (`//…`), or `data:` URIs pass through
-unchanged. Applies to bootcamps, projects, and pathway-detail course covers.
+unchanged. Applies to pathway-detail course covers — **the bootcamp/project
+endpoints this originally also applied to are removed**, see the notice at
+the top of this doc.
 
 Driven by `API_PUBLIC_URL` (§5). If unset (local dev), the raw stored value is
 returned and the landing site's own `resolveMediaUrl` fallback prefixes
 `VITE_API_URL`. If uploads later move to a CDN, point `API_PUBLIC_URL` at the CDN
 — no website change.
-
-The admin `/api/site/*` responses keep the raw stored path (the portal resolves
-it itself).
 
 ---
 
@@ -342,12 +363,12 @@ it itself).
 
 | # | Item | Owner | Notes |
 |---|---|---|---|
-| 1 | ~~**No admin UI** to author bootcamps/projects~~ — **RESOLVED**: built, see [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--website-content-page). | — | Admin portal → **Website Content** in the sidebar. `/api/site/*` unchanged. |
+| 1 | **Bootcamps/Projects content (API + admin UI) removed entirely**, 4 Sep 2026 — see the notice at the top of this doc. Was briefly built same-release, then pulled once it became clear "bootcamp" duplicates the existing `programs` concept. | Backend | Not blocking — website should drop any dependency on `/api/public/{bootcamps,projects}`. See [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--removed) if/when this gets rebuilt on top of `programs` instead. |
 | 2 | ~~`coverImage` absolute vs relative~~ — **RESOLVED**: backend returns absolute (§6, §8). | — | Done. |
 | 3 | Pathway slugs are computed from `name` — renaming a pathway changes its public URL. | Both | Acceptable for now; add a `slug` column + 301 map if it becomes a problem. Not blocking (pathways on fixtures at launch). |
 | 4 | Lead **email** (SMTP) — **mostly RESOLVED**: mailer, auto-ack, and in-portal reply are all built (see [LEADS_IMPLEMENTATION.md §2.6](LEADS_IMPLEMENTATION.md#26-outbound-email)). Only real SMTP credentials are still missing (§3.1 there) — until set, sends silently no-op and behavior matches the old in-app-only state. | Backend | Remaining: pick a provider, set `SMTP_HOST/PORT/USER/PASS` + `MAIL_FROM`/`MAIL_REPLY_TO` on the backend host. Staff email digest (Option B's last piece) still open. |
 | 5 | ~~`interestedIn: "quarky"`~~ — **RESOLVED**: standalone product enquiry, `referenceId: null`, no programme record. | — | Enquiries page shows "Interested in: Quarky robot" with no link. |
-| 5b | ~~`referenceId` → human context~~ — **RESOLVED**: `GET /api/leads` now resolves it against bootcamps/projects/pathways and the Enquiries card shows "Enquired from: <name>". | — | See [LEADS_IMPLEMENTATION.md §2.7](LEADS_IMPLEMENTATION.md#27-referenceid--human-context). |
+| 5b | `referenceId` → human context — **partially resolved**: `GET /api/leads` resolves it against pathways only (bootcamp/project catalogs are gone, see item 1) and the Enquiries card shows "Enquired from: <name>" when it does. | — | See [LEADS_IMPLEMENTATION.md §2.7](LEADS_IMPLEMENTATION.md#27-referenceid--human-context). |
 | 6 | Any "lead submitted" **webhook** back to the website (analytics)? | Website | None today, none requested; backend never calls the website. |
 | 7 | ~~Prod `PUBLIC_SITE_URL`~~ — **RESOLVED**: `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (§5). | — | Backend to deploy. |
 | 8 | Honeypot field (`companyWebsite`) — landing team can forward it for a server-side backstop. | Both | Deferred — client check + 20/15min IP rate limit deemed enough for launch. Revisit if spam gets through. |
@@ -421,19 +442,19 @@ No migration, no `package.json` change. Restart the server.
 
 ```
 # Public (no auth) — the website uses these
-GET   /api/public/bootcamps
-GET   /api/public/bootcamps/:idOrSlug
-GET   /api/public/projects
-GET   /api/public/projects/:idOrSlug
 GET   /api/public/pathways
 GET   /api/public/pathways/:idOrSlug
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
 
+# REMOVED 4 Sep 2026 — 404 now, do not call:
+#   GET   /api/public/bootcamps[/:idOrSlug]
+#   GET   /api/public/projects[/:idOrSlug]
+#   GET|POST|PUT|DELETE  /api/site/bootcamps[/:id]
+#   GET|POST|PUT|DELETE  /api/site/projects[/:id]
+
 # Admin (JWT, role: admin) — the boundary, for reference
 GET    /api/leads?status=&source=
 PATCH  /api/leads/:id/status          { status: "new" | "contacted" | "closed" }
-GET|POST|PUT|DELETE  /api/site/bootcamps[/:id]
-GET|POST|PUT|DELETE  /api/site/projects[/:id]
 ```

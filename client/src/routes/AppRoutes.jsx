@@ -89,11 +89,6 @@ import StatementOfAccountPage from "../modules/billing/pages/StatementOfAccountP
 import CustomersListPage from "../modules/billing/pages/CustomersListPage";
 import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
-import SiteContentPage from "../modules/site-content/pages/SiteContentPage";
-import CreateBootcampPage from "../modules/site-content/pages/CreateBootcampPage";
-import EditBootcampPage from "../modules/site-content/pages/EditBootcampPage";
-import CreateProjectPage from "../modules/site-content/pages/CreateProjectPage";
-import EditProjectPage from "../modules/site-content/pages/EditProjectPage";
 
 export default function AppRoutes() {
   return (
@@ -134,13 +129,6 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<AssessmentViewPage />} />
         </Route>
         <Route path="enquiries" element={<EnquiriesListPage />} />
-        <Route path="site-content">
-          <Route index element={<SiteContentPage />} />
-          <Route path="bootcamps/create" element={<CreateBootcampPage />} />
-          <Route path="bootcamps/:id/edit" element={<EditBootcampPage />} />
-          <Route path="projects/create" element={<CreateProjectPage />} />
-          <Route path="projects/:id/edit" element={<EditProjectPage />} />
-        </Route>
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/customers" element={<CustomersListPage />} />
