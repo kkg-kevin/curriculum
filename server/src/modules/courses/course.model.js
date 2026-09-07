@@ -23,11 +23,15 @@ const CourseModel = {
   },
 
   // limit/offset are optional and additive — omitted (as every current caller does), this
-  // returns the full result set exactly as before.
-  findAll({ limit, offset } = {}) {
+  // returns the full result set exactly as before. ownerAdminId is optional for the same reason
+  // as learning-hub.model.js's findAll — non-admin-scoped callers (assertCourseAccess tracing a
+  // course through its curricula, resyncCourseIntoCurricula, etc) have no tenant of their own to
+  // filter by; admin-facing controllers always pass it.
+  findAll({ limit, offset, ownerAdminId } = {}) {
     // id as a secondary sort key — see class.model.js's findAll for why a tie-breaker matters
     // once LIMIT/OFFSET pagination is in play.
     let query = db(TABLE).orderBy([{ column: "createdAt", order: "desc" }, { column: "id", order: "asc" }]);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
     if (limit) query = query.limit(limit);
     if (offset) query = query.offset(offset);
     return query;

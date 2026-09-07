@@ -92,7 +92,16 @@ async function assertLearnerAtHub(learnerId, hubId) {
 }
 
 async function assertAccess(req, invoice) {
-  if (req.user.role === "admin") return;
+  if (req.user.role === "admin") {
+    // hubId inherits ownerAdminId transitively through the hub it belongs to — billing_invoices
+    // has no owner column of its own (see the migration's comment on why only learning_hubs/
+    // curricula/courses/assessments got one). issuerHubId/payerHubId (platform-vs-hub and
+    // hub-vs-hub billing flows) are deliberately left unchecked here — only the primary hubId
+    // (which hub this invoice is actually about) gates tenant access.
+    const hub = await LearningHubService.getLearningHubById(invoice.hubId);
+    if (hub.ownerAdminId !== req.ownerAdminId) throw forbidden("You do not have access to this invoice");
+    return;
+  }
   if (req.user.role === "school") {
     if (invoice.hubId !== req.ownSchool?.id) throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
     return;
@@ -105,6 +114,10 @@ async function assertAccess(req, invoice) {
 const BillingService = {
   async resolveBulkLearners(data, req) {
     if (req.user.role === "school" && data.hubId !== req.ownSchool?.id) throw forbidden("You can only invoice your own learning hub");
+    if (req.user.role === "admin") {
+      const hub = await LearningHubService.getLearningHubById(data.hubId);
+      if (hub.ownerAdminId !== req.ownerAdminId) throw forbidden("You can only invoice your own learning hub");
+    }
     await LearningHubService.getLearningHubById(data.hubId);
     let links;
     if (data.scopeType === "class") {
@@ -160,8 +173,18 @@ const BillingService = {
   },
 
   async listBatches(req) {
-    const filters = req.user.role === "school" ? { hubId: req.ownSchool?.id || "__none__" } : {};
-    return BillingModel.findBatches(filters);
+    if (req.user.role === "school") {
+      return BillingModel.findBatches({ hubId: req.ownSchool?.id || "__none__" });
+    }
+    if (req.user.role === "admin") {
+      // A batch has its own hubId but findBatches' filter takes one exact value at a time — an
+      // admin can own more than one hub, so fetch per-hub and merge (same shape as
+      // listInvoices' own admin branch above).
+      const ownHubIds = (await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id);
+      const perHub = await Promise.all(ownHubIds.map((hubId) => BillingModel.findBatches({ hubId })));
+      return perHub.flat();
+    }
+    return BillingModel.findBatches({});
   },
 
   async createInvoice(data, req) {
@@ -194,6 +217,10 @@ const BillingService = {
       if (!payerUserId && learner.guardianEmail) payerUserId = (await UserModel.findByEmail(learner.guardianEmail))?.id || null;
     } else {
       if (data.invoiceType !== "hub_subscription") throw badRequest("Admin invoices must be hub subscription invoices");
+      // Each admin's billing is its own tenant now — a hub_subscription invoice is this admin
+      // billing one of their OWN hubs, never another admin's (there's no cross-tenant "platform
+      // bills every hub" relationship anymore).
+      if (hub.ownerAdminId !== req.ownerAdminId) throw Object.assign(new Error("You can only invoice your own learning hub"), { statusCode: 403 });
       payerHubId = data.hubId;
     }
 
@@ -233,7 +260,15 @@ const BillingService = {
       if (req.user.username) return [];
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
-    const invoices = await BillingModel.findInvoices(filters);
+    let invoices = await BillingModel.findInvoices(filters);
+    // hubId inherits ownerAdminId transitively — findInvoices' filter object only takes a single
+    // exact value per column (no whereIn), and an admin can own more than one hub, so this
+    // resolves the admin's own hub ids first and filters in JS, same as learning-hub.model.js's
+    // county filter does for a JSON-nested field that SQL can't filter directly.
+    if (req.user.role === "admin") {
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      invoices = invoices.filter((invoice) => ownHubIds.has(invoice.hubId));
+    }
     return Promise.all(invoices.map(async (invoice) => decorate(invoice, await BillingModel.findItems(invoice.id), await BillingModel.findPayments(invoice.id))));
   },
 
@@ -336,7 +371,13 @@ const BillingService = {
       if (req.user.username) return [];
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
-    const invoices = await BillingModel.findInvoices(filters);
+    let invoices = await BillingModel.findInvoices(filters);
+    // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
+    // transitively, and an admin can own more than one hub, so filter in JS after the fact.
+    if (req.user.role === "admin") {
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      invoices = invoices.filter((invoice) => ownHubIds.has(invoice.hubId));
+    }
     const invoiceById = new Map(invoices.map((inv) => [inv.id, inv]));
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
     return Promise.all(payments.map(async (payment) => {
@@ -365,7 +406,19 @@ const BillingService = {
       } else {
         hubId = req.ownSchool.id; // a school's view of a guardian's statement is always scoped to their own hub, never the guardian's full history
       }
-    } else if (req.user.role !== "admin") {
+    } else if (req.user.role === "admin") {
+      // A hub statement's payerId is directly the hub's own id — must be one of this admin's own
+      // hubs.
+      if (payerType === "hub") {
+        const hub = await LearningHubService.getLearningHubById(payerId).catch(() => null);
+        if (!hub || hub.ownerAdminId !== req.ownerAdminId) throw forbidden("You do not have access to this statement");
+      }
+      // A user (guardian) statement has no hub of its own on the request — its invoices are
+      // narrowed to this admin's own hubs below, after fetching (an admin can own more than one
+      // hub, so this can't be a single-value hubId filter the way "school" narrows to just its
+      // own). Without this, an admin could read any guardian's full cross-tenant payment history
+      // by user id.
+    } else {
       throw forbidden("You do not have access to this statement");
     }
 
@@ -375,7 +428,11 @@ const BillingService = {
 
     const filters = payerType === "hub" ? { payerHubId: payerId } : { payerUserId: payerId };
     if (hubId) filters.hubId = hubId;
-    const invoices = (await BillingModel.findInvoices(filters)).filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
+    let invoices = (await BillingModel.findInvoices(filters)).filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
+    if (req.user.role === "admin" && payerType === "user") {
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      invoices = invoices.filter((inv) => ownHubIds.has(inv.hubId));
+    }
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
 
     // Two independently date-filtered sums, not "payments against invoices dated before from" —
@@ -429,14 +486,16 @@ const BillingService = {
     };
   },
 
-  // Customers — admin-only. A "customer" for the platform admin is a learning hub it bills
-  // (invoiceType hub_subscription, payerHubId set). Derived on the fly from existing hubs +
-  // invoices + payments, no dedicated table. Every hub is listed, including ones never invoiced,
-  // so the admin can open one and raise its first invoice.
+  // Customers — admin-only, and tenant-scoped like everything else: a "customer" is one of THIS
+  // admin's own learning hubs being billed (invoiceType hub_subscription, payerHubId set).
+  // Derived on the fly from existing hubs + invoices + payments, no dedicated table. Every hub
+  // this admin owns is listed, including ones never invoiced, so the admin can open one and
+  // raise its first invoice — never another admin's hubs.
   async listCustomers(req) {
     if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
-    const hubs = await LearningHubService.getAllLearningHubs({ includeDrafts: true });
-    const invoices = (await BillingModel.findInvoices({})).filter((inv) => inv.payerHubId && RECEIVABLE_STATUSES.includes(inv.status));
+    const hubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    const hubIds = new Set(hubs.map((h) => h.id));
+    const invoices = (await BillingModel.findInvoices({})).filter((inv) => inv.payerHubId && hubIds.has(inv.payerHubId) && RECEIVABLE_STATUSES.includes(inv.status));
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
     const paidByInvoice = new Map();
     for (const p of payments) paidByInvoice.set(p.invoiceId, money((paidByInvoice.get(p.invoiceId) || 0) + Number(p.amount)));
@@ -465,6 +524,7 @@ const BillingService = {
   async getCustomer(hubId, req) {
     if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
     const hub = await LearningHubService.getLearningHubById(hubId);
+    if (hub.ownerAdminId !== req.ownerAdminId) throw forbidden("You do not have access to this customer");
     const invoices = (await BillingModel.findInvoices({ payerHubId: hubId })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
     const invoiceById = new Map(invoices.map((inv) => [inv.id, inv]));

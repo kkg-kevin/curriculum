@@ -10,7 +10,7 @@ const {
   attachHubCurriculumSchema,
   updateHubCurriculumStatusSchema,
 } = require("./learning-hub.validation");
-const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnHub, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 
 // updateLearningHubSchema is baseLearningHubSchema.partial(), but zod still materializes a field's
 // default when its key is absent from the request body. Keep only keys actually present in the raw
@@ -25,6 +25,22 @@ function pickPresent(parsed, raw) {
       : parsed[key];
   }
   return result;
+}
+
+// Same-tenant guard for attaching a hub to a curriculum (core at create/update time, or a
+// secondary curriculum via attachHubCurriculum below) — a hub and the curriculum it runs must
+// belong to the same admin, mirroring the same-tenant restriction on every other cross-entity
+// link once ownerAdminId scoping is in play (see courses/assessments' link endpoints for the
+// same pattern). No-op for a non-admin caller — a school/curriculumAdmin can't set this field at
+// all (updateLearningHubSchema strips curriculumId for "school", and only an admin ever reaches
+// attachHubCurriculum).
+function assertSameTenant(req, curriculum) {
+  if (req.user.role !== "admin" || !curriculum) return;
+  if (curriculum.ownerAdminId !== req.ownerAdminId) {
+    const err = new Error("That curriculum belongs to a different admin and can't be linked here");
+    err.statusCode = 403;
+    throw err;
+  }
 }
 
 // Defensive, one-level-only rule: a hub cannot be its own parent, and a hub that is already a
@@ -54,11 +70,14 @@ const createLearningHub = asyncHandler(async (req, res) => {
       err.statusCode = 404;
       throw err;
     }
+    assertSameTenant(req, curriculum);
   }
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.name, email: data.email, password, role: "school" });
   }
-  const record = await LearningHubService.createLearningHub(data);
+  // ownerAdminId is never client-supplied — always the creating admin's own tenant id, same
+  // posture as curriculum.controller.js keeping curriculumAdminId out of the general write path.
+  const record = await LearningHubService.createLearningHub({ ...data, ownerAdminId: req.ownerAdminId });
   res.status(201).json({ success: true, data: record });
 });
 
@@ -76,12 +95,17 @@ const getAllLearningHubs = asyncHandler(async (req, res) => {
     filters.email = req.ownSchool.email;
     filters.includeDrafts = true;
   }
+  if (req.user.role === "admin") {
+    filters.ownerAdminId = req.ownerAdminId;
+    filters.includeDrafts = true;
+  }
   const records = await LearningHubService.getAllLearningHubs(filters);
   res.json({ success: true, data: records, count: records.length });
 });
 
 const getLearningHubById = asyncHandler(async (req, res) => {
   const record = await LearningHubService.getLearningHubById(req.params.id);
+  if (req.user.role === "admin") assertOwn(isOwnedByAdmin(req, record));
   if (req.user.role === "school") assertOwn(isOwnHub(req, record.id));
   if (req.user.role === "teacher") {
     const linked = req.ownTeacher
@@ -100,12 +124,18 @@ const getLearningHubById = asyncHandler(async (req, res) => {
 
 const getHubTeachers = asyncHandler(async (req, res) => {
   if (req.user.role === "school") assertOwn(isOwnHub(req, req.params.id));
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
+  }
   const teachers = await LearningHubService.getHubTeachers(req.params.id);
   res.json({ success: true, data: teachers, count: teachers.length });
 });
 
 const getHubCurricula = asyncHandler(async (req, res) => {
   if (req.user.role === "school") assertOwn(isOwnHub(req, req.params.id));
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
+  }
   const curricula = await LearningHubService.getHubCurricula(req.params.id);
   res.json({ success: true, data: curricula, count: curricula.length });
 });
@@ -122,6 +152,9 @@ const updateLearningHub = asyncHandler(async (req, res) => {
     data.hubType = existing.hubType;
     data.parentHubId = existing.parentHubId;
   } else {
+    if (req.user.role === "admin") {
+      assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
+    }
     await assertValidParentHub(data.parentHubId, req.params.id);
     if (Object.prototype.hasOwnProperty.call(data, "curriculumId") && data.curriculumId) {
       const curriculum = await CurriculumModel.findById(data.curriculumId);
@@ -130,6 +163,7 @@ const updateLearningHub = asyncHandler(async (req, res) => {
         err.statusCode = 404;
         throw err;
       }
+      assertSameTenant(req, curriculum);
     }
   }
 
@@ -147,6 +181,10 @@ const updateLearningHub = asyncHandler(async (req, res) => {
 
 const attachHubCurriculum = asyncHandler(async (req, res) => {
   const { curriculumId, role } = attachHubCurriculumSchema.parse(req.body);
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
+    assertSameTenant(req, await CurriculumModel.findById(curriculumId));
+  }
   const record = await LearningHubService.attachSecondaryCurriculum(req.params.id, curriculumId, role);
   res.status(201).json({ success: true, data: record });
 });
@@ -168,6 +206,9 @@ const detachHubCurriculum = asyncHandler(async (req, res) => {
 });
 
 const deleteLearningHub = asyncHandler(async (req, res) => {
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
+  }
   const result = await LearningHubService.deleteLearningHub(req.params.id);
   res.json({ success: true, ...result });
 });

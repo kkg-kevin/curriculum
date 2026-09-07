@@ -96,8 +96,10 @@ async function replaceIndicators(trx, competencyId, indicators) {
 }
 
 const CompetencyModel = {
-  async findAll() {
-    const rows = await db(TABLE).orderBy("createdAt", "asc");
+  async findAll({ ownerAdminId } = {}) {
+    let query = db(TABLE);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
+    const rows = await query.orderBy("createdAt", "asc");
     return attachIndicators(rows);
   },
 

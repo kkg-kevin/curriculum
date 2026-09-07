@@ -87,6 +87,14 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     req.ownCurriculum = curricula.find((c) => c.curriculumAdminId === id) || null;
   }
 
+  // Each admin is its own tenant — no DB lookup needed (unlike school/teacher/learner above),
+  // the tenant id is just the admin's own user id. See learning_hubs/curricula/courses/
+  // assessments' ownerAdminId column and withOwnerScope in model.utils.js for how this is
+  // actually enforced on queries.
+  if (role === "admin") {
+    req.ownerAdminId = id;
+  }
+
   next();
 });
 
@@ -111,4 +119,16 @@ function isOwnHub(req, hubId) {
   return false;
 }
 
-module.exports = { attachOwnRecords, assertOwn, isOwnHub };
+// True whenever `record` belongs to the caller's own admin tenant — a no-op (true) for every
+// role other than "admin", same posture as isOwnHub being a no-op (false) for roles it doesn't
+// apply to; the difference in default is deliberate: isOwnHub only ever gates the "school" role,
+// while this gates admin-role access to the four ownerAdminId-bearing tables (learning_hubs,
+// curricula, courses, assessments), and every other role's access to those tables is already
+// decided by other checks (isOwnHub, curriculum ownership, assertCourseAccess, etc) before this
+// would ever run — so this must not accidentally block them.
+function isOwnedByAdmin(req, record) {
+  if (req.user.role !== "admin") return true;
+  return record?.ownerAdminId === req.ownerAdminId;
+}
+
+module.exports = { attachOwnRecords, assertOwn, isOwnHub, isOwnedByAdmin };

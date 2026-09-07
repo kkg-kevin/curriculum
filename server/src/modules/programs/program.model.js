@@ -15,9 +15,10 @@ const ProgramModel = {
     return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  findAll({ curriculumId } = {}) {
+  findAll({ curriculumId, hubId } = {}) {
     let query = db(TABLE);
     if (curriculumId) query = query.where({ curriculumId });
+    if (hubId) query = query.where({ hubId });
     return query.orderBy("createdAt", "desc");
   },
 

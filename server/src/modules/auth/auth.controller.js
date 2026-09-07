@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
-const { loginSchema, signupSchema, updateMeSchema, verifyPasswordSchema } = require("./auth.validation");
+const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
@@ -54,4 +54,18 @@ const verifyPassword = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { signup, login, logout, me, updateMe, verifyPassword };
+// Admin-only, and deliberately admin-only in effect too: createUserSchema's role field still
+// accepts the other USER_ROLES values, but every other role is already created through its own
+// dedicated flow (a school/teacher/learner portal login, via AuthService.setOrCreatePassword*)
+// tied to the record it belongs to — this route exists specifically so a second (and third, ...)
+// tenant admin can be created at all, since ADMIN_EMAIL/ADMIN_PASSWORD only ever bootstraps the
+// first one (see server.js's ensureAdmin). Force role to "admin" here rather than trusting the
+// body, so this route can never become a second, less-scoped way to create a school/teacher/
+// learner login.
+const createAdmin = asyncHandler(async (req, res) => {
+  const data = createUserSchema.parse({ ...req.body, role: "admin" });
+  const user = await AuthService.createUser(data);
+  res.status(201).json({ success: true, data: user });
+});
+
+module.exports = { signup, login, logout, me, updateMe, verifyPassword, createAdmin };

@@ -10,29 +10,39 @@ const AssessmentCompetencyLinkModel = require("../../assessments/assessment-comp
 const CompetencyService = {
   /* ── Competencies ───────────────────────────────────────────────────── */
 
-  async getCompetencies() {
-    return CompetencyModel.findAll();
+  async getCompetencies(ownerAdminId) {
+    return CompetencyModel.findAll({ ownerAdminId });
   },
 
   async createCompetency(data) {
     return CompetencyModel.create(data);
   },
 
-  async updateCompetency(id, data) {
+  async updateCompetency(id, data, ownerAdminId) {
     const comp = await CompetencyModel.findById(id);
     if (!comp) {
       const err = new Error("Competency not found");
       err.statusCode = 404;
       throw err;
     }
+    if (comp.ownerAdminId !== ownerAdminId) {
+      const err = new Error("You do not have permission to access this record");
+      err.statusCode = 403;
+      throw err;
+    }
     return CompetencyModel.update(id, data);
   },
 
-  async deleteCompetency(id) {
+  async deleteCompetency(id, ownerAdminId) {
     const comp = await CompetencyModel.findById(id);
     if (!comp) {
       const err = new Error("Competency not found");
       err.statusCode = 404;
+      throw err;
+    }
+    if (comp.ownerAdminId !== ownerAdminId) {
+      const err = new Error("You do not have permission to access this record");
+      err.statusCode = 403;
       throw err;
     }
     await CompetencyModel.delete(id);

@@ -4,8 +4,10 @@ const { createRecord, updateRecord, deleteRecord, firstOrNull } = require("../..
 const TABLE = "inventory";
 
 const InventoryModel = {
-  findAll() {
-    return db(TABLE);
+  findAll({ ownerAdminId } = {}) {
+    let query = db(TABLE);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
+    return query;
   },
   findByIds(ids) {
     return db(TABLE).whereIn("id", ids);

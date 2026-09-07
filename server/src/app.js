@@ -133,11 +133,11 @@ app.use("/api/public", publicSiteRoutes);
 // own routes files apply per-method role checks plus attachOwnRecords-based ownership scoping —
 // a school/teacher/learner account can only ever touch its own school's data, never another's.
 app.use("/api/curricula", protect, attachOwnRecords, curriculumRoutes);
-app.use("/api/competencies", protect, authorize("admin"), competencyRoutes);
-app.use("/api/pathway-templates", protect, authorize("admin"), pathwayTemplateRoutes);
-app.use("/api/system-levels", protect, authorize("admin"), systemLevelRoutes);
-app.use("/api/inventory", protect, authorize("admin"), inventoryRoutes);
-app.use("/api/items", protect, authorize("admin"), itemsRoutes);
+app.use("/api/competencies", protect, attachOwnRecords, authorize("admin"), competencyRoutes);
+app.use("/api/pathway-templates", protect, attachOwnRecords, authorize("admin"), pathwayTemplateRoutes);
+app.use("/api/system-levels", protect, attachOwnRecords, authorize("admin"), systemLevelRoutes);
+app.use("/api/inventory", protect, attachOwnRecords, authorize("admin"), inventoryRoutes);
+app.use("/api/items", protect, attachOwnRecords, authorize("admin"), itemsRoutes);
 app.use("/api/learning-hubs", protect, attachOwnRecords, learningHubRoutes);
 app.use("/api/teachers", protect, attachOwnRecords, teacherRoutes);
 app.use("/api/classes", protect, attachOwnRecords, classRoutes);
@@ -151,7 +151,7 @@ app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
 app.use("/api/timetable", protect, attachOwnRecords, timetableRoutes);
 // Authoring stays admin-only, but one read (an assessment's linked competencies) is needed by
 // teacher/school too, when grading — see assessment.routes.js for the per-route split.
-app.use("/api/assessments", protect, assessmentRoutes);
+app.use("/api/assessments", protect, attachOwnRecords, assessmentRoutes);
 // Issuing/taking/grading is not authoring — teacher/school/learner reach it here, scoped by
 // attachOwnRecords, while the assessment *builder* above stays admin-only.
 app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubmissionRoutes);
@@ -163,7 +163,7 @@ app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 // teacher/school need this too, for their own profile-photo uploads (teacher-portal/
 // school-portal profile pages, and the admin-side Teacher/LearningHub forms).
 app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner"), uploadRoutes);
-app.use("/api/programs", protect, authorize("admin"), programRoutes);
+app.use("/api/programs", protect, attachOwnRecords, authorize("admin"), programRoutes);
 // Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
 // router, no attachOwnRecords/authorize needed.
 app.use("/api/notifications", protect, notificationRoutes);
