@@ -3,10 +3,11 @@ const CurriculumService = require("./curriculum.service");
 const AuthService = require("../auth/auth.service");
 const LearningHubService = require("../learning-hubs/learning-hub.service");
 const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema, assignAdminSchema } = require("./curriculum.validation");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const SchoolModel = require("../learning-hubs/learning-hub.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const ProgramModel = require("../programs/program.model");
+const CourseModel = require("../courses/course.model");
 
 async function getTeacherAccessibleCurriculumIds(req) {
   if (!req.ownTeacher) return [];
@@ -21,13 +22,17 @@ async function getTeacherAccessibleCurriculumIds(req) {
 
 const createCurriculum = asyncHandler(async (req, res) => {
   const data = createCurriculumSchema.parse(req.body);
-  const curriculum = await CurriculumService.createCurriculum(data);
+  // ownerAdminId is never client-supplied — always the creating admin's own tenant id, same
+  // posture as curriculumAdminId being set only through the dedicated assign endpoint below.
+  const curriculum = await CurriculumService.createCurriculum({ ...data, ownerAdminId: req.ownerAdminId });
   res.status(201).json({ success: true, data: curriculum });
 });
 
 const getAllCurricula = asyncHandler(async (req, res) => {
   const { framework, academicYear } = req.query;
-  const curricula = await CurriculumService.getAllCurricula({ framework, academicYear });
+  const filters = { framework, academicYear };
+  if (req.user.role === "admin") filters.ownerAdminId = req.ownerAdminId;
+  const curricula = await CurriculumService.getAllCurricula(filters);
   res.json({ success: true, data: curricula, count: curricula.length });
 });
 
@@ -44,7 +49,9 @@ const getMyCurriculum = asyncHandler(async (req, res) => {
 const getCurriculumById = asyncHandler(async (req, res) => {
   const curriculum = await CurriculumService.getCurriculumById(req.params.id);
 
-  if (req.user.role === "school") {
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, curriculum));
+  } else if (req.user.role === "school") {
     const accessible = new Set(req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []));
     const isOwnCurriculum = accessible.has(curriculum.id);
     const deployedPrograms = await ProgramModel.findAll({ curriculumId: curriculum.id });
@@ -67,11 +74,17 @@ const getCurriculumById = asyncHandler(async (req, res) => {
 
 const updateCurriculum = asyncHandler(async (req, res) => {
   const data = updateCurriculumSchema.parse(req.body);
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await CurriculumService.getCurriculumById(req.params.id)));
+  }
   const curriculum = await CurriculumService.updateCurriculum(req.params.id, data);
   res.json({ success: true, data: curriculum });
 });
 
 const deleteCurriculum = asyncHandler(async (req, res) => {
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await CurriculumService.getCurriculumById(req.params.id)));
+  }
   const result = await CurriculumService.deleteCurriculum(req.params.id);
   res.json({ success: true, ...result });
 });
@@ -95,6 +108,19 @@ const getCurriculumCourses = asyncHandler(async (req, res) => {
 
 const linkCourse = asyncHandler(async (req, res) => {
   const { courseId } = linkCourseSchema.parse(req.body);
+  // The curriculum side is already confirmed same-tenant by ownCurriculumOnly (curriculum.routes.js's
+  // router-level gate this route sits behind) — this only additionally confirms the COURSE being
+  // linked belongs to the same admin, mirroring learning-hub.controller.js's assertSameTenant for
+  // the hub<->curriculum link. No-op for curriculumAdmin (can't cross tenants at all — every
+  // curriculum they touch is already scoped to the one they manage).
+  if (req.user.role === "admin") {
+    const course = await CourseModel.findById(courseId);
+    if (course && course.ownerAdminId !== req.ownerAdminId) {
+      const err = new Error("That course belongs to a different admin and can't be linked here");
+      err.statusCode = 403;
+      throw err;
+    }
+  }
   const data = await CurriculumService.linkCourse(req.params.id, courseId);
   res.status(201).json({ success: true, data });
 });

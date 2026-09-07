@@ -4,8 +4,10 @@ const { createRecord, updateRecord, deleteRecord, firstOrNull } = require("../..
 const TABLE = "billing_items";
 
 const ItemsModel = {
-  findAll() {
-    return db(TABLE).orderBy("name", "asc");
+  findAll({ ownerAdminId } = {}) {
+    let query = db(TABLE);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
+    return query.orderBy("name", "asc");
   },
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));

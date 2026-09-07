@@ -66,9 +66,11 @@ function assertValidAgeRange(ageMin, ageMax) {
 // Courses have no DB-level unique constraint on name (same posture as every other table in
 // this codebase — integrity is enforced at the app layer). Case/whitespace-insensitive so
 // "Reading Basics" and "reading basics " are still caught as the same course. Only guards
-// createCourse — duplicateCourse deliberately reuses the source's exact name on purpose.
-async function assertUniqueName(name) {
-  const courses = await CourseModel.findAll();
+// createCourse — duplicateCourse deliberately reuses the source's exact name on purpose. Scoped
+// to ownerAdminId, same reasoning as curriculum.service.js's assertUniqueName — two different
+// admins' tenants are independent, so both may freely name a course "Reading Basics".
+async function assertUniqueName(name, ownerAdminId) {
+  const courses = await CourseModel.findAll({ ownerAdminId });
   const normalized = name.trim().toLowerCase();
   const clash = courses.find((c) => c.name.trim().toLowerCase() === normalized);
   if (clash) {
@@ -122,14 +124,14 @@ function hydrateSessionAssessments(session, assessmentsById, visibleKeys = null)
 const CourseService = {
   async createCourse(data) {
     assertValidAgeRange(data.ageMin, data.ageMax);
-    await assertUniqueName(data.name);
+    await assertUniqueName(data.name, data.ownerAdminId);
     return CourseModel.create(data);
   },
 
-  async getAllCourses({ limit, offset } = {}) {
+  async getAllCourses({ limit, offset, ownerAdminId } = {}) {
     const counts = await SessionModel.countPerCourse();
     const countByCourseId = new Map(counts.map((r) => [r.courseId, r.count]));
-    const courses = await CourseModel.findAll({ limit, offset });
+    const courses = await CourseModel.findAll({ limit, offset, ownerAdminId });
     return courses.map((course) => ({
       ...course,
       sessionCount: countByCourseId.get(course.id) || 0,

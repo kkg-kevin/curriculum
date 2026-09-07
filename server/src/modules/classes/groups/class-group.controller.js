@@ -2,12 +2,18 @@ const asyncHandler = require("express-async-handler");
 const ClassGroupService = require("./class-group.service");
 const ClassModel = require("../class.model");
 const ClassCourseTeacherLinkModel = require("../class-course-teacher-link.model");
+const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const { createGroupSchema, renameGroupSchema, addMemberSchema } = require("./class-group.validation");
 
-// Groups are a class-scoped resource with the same three-role ownership story attendance
-// already uses: school via isOwnHub, teacher via a course-educator link in the class. Admin
-// passes through unrestricted, same as every other class-scoped controller.
+async function isOwnHubForAdmin(req, hubId) {
+  if (!hubId) return false;
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.some((h) => h.id === hubId);
+}
+
+// Groups are a class-scoped resource with the same ownership story attendance already uses:
+// school via isOwnHub, admin via isOwnHubForAdmin, teacher via a course-educator link in the class.
 async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
@@ -15,6 +21,7 @@ async function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));

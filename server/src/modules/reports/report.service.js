@@ -754,26 +754,29 @@ const ReportService = {
     };
   },
 
-  // The platform-admin sibling of getHubAnalytics above — same computation, unscoped across every
-  // hub, plus a hub-by-hub breakdown (the admin-only view a single school's own Reports page can
-  // never show: which hubs are thriving vs falling behind). Deliberately reads the raw
-  // Report/Attendance rows directly rather than composing from N calls to getHubAnalytics — that
-  // would mean re-averaging already-rounded per-hub numbers, compounding rounding error and losing
-  // the correct per-report/per-record weighting the single-hub version gets for free.
-  async getPlatformAnalytics({ days = 30 } = {}) {
-    const hubs = await LearningHubModel.findAll({});
-    const classes = await ClassModel.findAll();
+  // The platform-admin sibling of getHubAnalytics above — same computation, scoped across every
+  // hub THIS ADMIN OWNS (each admin is its own tenant — see the ownerAdminId migrations), plus a
+  // hub-by-hub breakdown (the admin-only view a single school's own Reports page can never show:
+  // which hubs are thriving vs falling behind). Deliberately reads the raw Report/Attendance rows
+  // directly rather than composing from N calls to getHubAnalytics — that would mean re-averaging
+  // already-rounded per-hub numbers, compounding rounding error and losing the correct
+  // per-report/per-record weighting the single-hub version gets for free.
+  async getPlatformAnalytics({ days = 30, ownerAdminId } = {}) {
+    const hubs = await LearningHubModel.findAll({ ownerAdminId });
+    const hubIds = new Set(hubs.map((h) => h.id));
+    const classes = (await ClassModel.findAll()).filter((c) => hubIds.has(c.schoolId));
+    const classIds = new Set(classes.map((c) => c.id));
     const hubIdByClassId = {};
     classes.forEach((c) => { hubIdByClassId[c.id] = c.schoolId; });
 
-    const links = await LearnerHubLinkModel.findAll();
+    const links = (await LearnerHubLinkModel.findAll()).filter((l) => hubIds.has(l.hubId));
     const activeLinks = links.filter((l) => l.status === "active");
     const activeLearnerCountByHub = {};
     activeLinks.forEach((l) => {
       activeLearnerCountByHub[l.hubId] = (activeLearnerCountByHub[l.hubId] || 0) + 1;
     });
 
-    const allReports = await ReportModel.findAll({});
+    const allReports = (await ReportModel.findAll({})).filter((r) => hubIds.has(r.hubId));
     const finalReports = allReports.filter((r) => r.sessionId === null);
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
@@ -813,10 +816,11 @@ const ReportService = {
     }));
 
     const dateFrom = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    // One unscoped query across every class, instead of getHubAnalytics's per-class loop — that
-    // loop exists there because AttendanceModel.findAll only takes one classId at a time; fetching
-    // every hub's worth of classes individually here would mean one query per class platform-wide.
-    const allAttendance = await AttendanceModel.findAll({ dateFrom });
+    // One query across every class platform-wide, then filtered down to this admin's own classes
+    // in JS — instead of getHubAnalytics's per-class loop (that loop exists there because
+    // AttendanceModel.findAll only takes one classId at a time; fetching each of this admin's
+    // classes individually here would mean one query per class instead of one query total).
+    const allAttendance = (await AttendanceModel.findAll({ dateFrom })).filter((a) => classIds.has(a.classId));
     const attendanceRate = allAttendance.length
       ? Math.round((allAttendance.filter((a) => a.status === "present").length / allAttendance.length) * 100)
       : null;

@@ -2,13 +2,20 @@ const asyncHandler = require("express-async-handler");
 const ReportService = require("./report.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { generateReportSchema, updateRemarksSchema } = require("./report.validation");
 
+async function isOwnHubForAdmin(req, hubId) {
+  if (!hubId) return false;
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.some((h) => h.id === hubId);
+}
+
 // Same ownership shape as assessment-submission.controller.js's assertClassAccess — a report
 // always has a classId (a course report only ever comes from a class enrollment), so a
-// teacher/school can only reach reports for a class they have at least one course-educator
-// link in / their own school.
+// teacher/school/admin can only reach reports for a class they have at least one course-educator
+// link in / their own hub(s).
 async function assertClassAccess(req, cls) {
   if (!cls) {
     const err = new Error("Class not found");
@@ -16,6 +23,7 @@ async function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
@@ -67,6 +75,7 @@ const getHubAnalytics = asyncHandler(async (req, res) => {
     throw err;
   }
   if (req.user.role === "school") assertOwn(hubId === req.ownSchool?.id);
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, hubId));
   if (gender && !["male", "female", "other"].includes(gender)) {
     const err = new Error("gender must be male, female, or other");
     err.statusCode = 400;
@@ -76,11 +85,12 @@ const getHubAnalytics = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-// Platform-wide sibling of getHubAnalytics — admin-only (see report.routes.js), no hubId/ownership
-// check needed since it's unscoped by design.
+// Sibling of getHubAnalytics, but rolled up across every hub THIS ADMIN owns rather than one
+// (admin-only, see report.routes.js) — req.ownerAdminId is the scope, resolved inside the
+// service alongside the raw Report/Attendance/etc reads it already does.
 const getPlatformAnalytics = asyncHandler(async (req, res) => {
   const { days } = req.query;
-  const data = await ReportService.getPlatformAnalytics({ days: days ? Number(days) : undefined });
+  const data = await ReportService.getPlatformAnalytics({ days: days ? Number(days) : undefined, ownerAdminId: req.ownerAdminId });
   res.json({ success: true, data });
 });
 

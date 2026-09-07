@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AssessmentService = require("./assessment.service");
+const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const {
   createAssessmentSchema,
   updateAssessmentSchema,
@@ -10,28 +11,36 @@ const {
 
 const createAssessment = asyncHandler(async (req, res) => {
   const data = createAssessmentSchema.parse(req.body);
-  const assessment = await AssessmentService.createAssessment(data);
+  // ownerAdminId is never client-supplied — always the creating admin's own tenant id.
+  const assessment = await AssessmentService.createAssessment({ ...data, ownerAdminId: req.ownerAdminId });
   res.status(201).json({ success: true, data: assessment });
 });
 
 const getAllAssessments = asyncHandler(async (req, res) => {
   const { type } = req.query;
-  const assessments = await AssessmentService.getAllAssessments({ type });
+  const assessments = await AssessmentService.getAllAssessments({ type, ownerAdminId: req.ownerAdminId });
   res.json({ success: true, data: assessments, count: assessments.length });
 });
 
 const getAssessmentById = asyncHandler(async (req, res) => {
   const assessment = await AssessmentService.getAssessmentById(req.params.id);
+  if (req.user.role === "admin") assertOwn(isOwnedByAdmin(req, assessment));
   res.json({ success: true, data: assessment });
 });
 
 const updateAssessment = asyncHandler(async (req, res) => {
   const data = updateAssessmentSchema.parse(req.body);
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await AssessmentService.getAssessmentById(req.params.id)));
+  }
   const assessment = await AssessmentService.updateAssessment(req.params.id, data);
   res.json({ success: true, data: assessment });
 });
 
 const deleteAssessment = asyncHandler(async (req, res) => {
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await AssessmentService.getAssessmentById(req.params.id)));
+  }
   const result = await AssessmentService.deleteAssessment(req.params.id);
   res.json({ success: true, ...result });
 });

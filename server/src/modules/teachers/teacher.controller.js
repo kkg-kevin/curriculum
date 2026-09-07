@@ -5,8 +5,19 @@ const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+
+// A teacher has no ownerAdminId of its own (see the migration's comment on why only
+// learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
+// hub(s) it's linked to, same as isLinkedToOwnHub does for the "school" role but across every
+// hub this admin owns (an admin can own more than one hub, unlike a school login which acts as
+// exactly one hub at a time).
+async function adminOwnedHubIds(req) {
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.map((h) => h.id);
+}
 
 // True whenever `teacherId` is linked to `hubId` via the teacher-hub link table — the
 // membership test that replaced the old single teacher.schoolId equality check everywhere
@@ -18,9 +29,15 @@ async function isLinkedToHub(teacherId, hubId) {
 
 // Same membership test, scoped to a "school" account's currently active hub (see
 // scope.middleware.js's req.ownSchool — a parent hub's admin switching into a branch hub gets
-// this for free, no change needed here).
+// this for free, no change needed here) — or, for "admin", any of the hubs they own (an admin
+// can own more than one hub, so this is an "any", not a single-hub equality check).
 async function isLinkedToOwnHub(req, teacherId) {
   if (req.user.role === "school") return isLinkedToHub(teacherId, req.ownSchool?.id);
+  if (req.user.role === "admin") {
+    const links = await TeacherHubLinkModel.findByTeacherId(teacherId);
+    const ownHubIds = new Set(await adminOwnedHubIds(req));
+    return links.some((l) => ownHubIds.has(l.hubId));
+  }
   return false;
 }
 
@@ -46,6 +63,10 @@ const createTeacher = asyncHandler(async (req, res) => {
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
     linkHubId = req.ownSchool.id;
+  } else if (req.user.role === "admin" && linkHubId) {
+    // A client-supplied hubId must actually be one of this admin's own hubs — otherwise an
+    // admin could plant a brand-new teacher directly into another admin's tenant.
+    assertOwn((await adminOwnedHubIds(req)).includes(linkHubId));
   }
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a teacher record with no login.
@@ -66,6 +87,12 @@ const getAllTeachers = asyncHandler(async (req, res) => {
   } else if (req.user.role === "teacher") {
     if (!req.ownTeacher) return res.json({ success: true, data: [], count: 0 });
     filters.email = req.ownTeacher.email;
+  } else if (req.user.role === "admin") {
+    // A teacher has no owner column of its own — scoped here to every teacher linked to any
+    // hub this admin owns, same "any of my hubs" shape as isLinkedToOwnHub above.
+    const ownHubIds = await adminOwnedHubIds(req);
+    const links = (await Promise.all(ownHubIds.map((hubId) => TeacherHubLinkModel.findByHubId(hubId)))).flat();
+    filters.ids = [...new Set(links.map((l) => l.teacherId))];
   }
   const teachers = await TeacherService.getAllTeachers(filters);
   res.json({ success: true, data: teachers, count: teachers.length });
@@ -74,6 +101,7 @@ const getAllTeachers = asyncHandler(async (req, res) => {
 const getTeacherById = asyncHandler(async (req, res) => {
   const teacher = await TeacherService.getTeacherById(req.params.id);
   if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, teacher.id));
+  if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, teacher.id));
   if (req.user.role === "teacher") assertOwn(teacher.id === req.ownTeacher?.id);
   if (req.user.role === "learner") assertOwn(await isMyClassTeacher(teacher.id, req.ownLearner?.id));
   res.json({ success: true, data: teacher });
@@ -98,7 +126,7 @@ const updateTeacher = asyncHandler(async (req, res) => {
   // learner.controller.js/learning-hub.controller.js. Only keys the caller actually sent survive.
   const present = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   const { password, ...data } = present;
-  if (req.user.role === "school") {
+  if (req.user.role === "school" || req.user.role === "admin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(await isLinkedToOwnHub(req, existing.id));
   } else if (req.user.role === "teacher") {
@@ -126,7 +154,7 @@ const updateTeacher = asyncHandler(async (req, res) => {
 // teacher's very next request (see auth.service.js's assertSessionActive).
 const updateTeacherStatus = asyncHandler(async (req, res) => {
   const { status } = updateTeacherStatusSchema.parse(req.body);
-  if (req.user.role === "school") {
+  if (req.user.role === "school" || req.user.role === "admin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(await isLinkedToOwnHub(req, existing.id));
   }
@@ -136,8 +164,14 @@ const updateTeacherStatus = asyncHandler(async (req, res) => {
 
 // True delete is admin-only (see teacher.routes.js) — a "school" losing access to a teacher
 // shared with another hub must unlink (DELETE /:id/hubs/links/:hubId), never destroy the
-// underlying record.
+// underlying record. An admin may only delete a teacher linked to one of their own hubs — same
+// ownership check as every other write here, since delete is otherwise the most destructive
+// unscoped action of the bunch.
 const deleteTeacher = asyncHandler(async (req, res) => {
+  if (req.user.role === "admin") {
+    const existing = await TeacherService.getTeacherById(req.params.id);
+    assertOwn(await isLinkedToOwnHub(req, existing.id));
+  }
   const result = await TeacherService.deleteTeacher(req.params.id);
   res.json({ success: true, ...result });
 });
@@ -151,29 +185,49 @@ const getTeacherHubs = asyncHandler(async (req, res) => {
     // hub a shared teacher also happens to teach at.
     hubs = hubs.filter((h) => isOwnHub(req, h.id));
   }
+  if (req.user.role === "admin") {
+    assertOwn(await isLinkedToOwnHub(req, req.params.id));
+    // Same narrowing as "school" above, just across every hub this admin owns rather than one.
+    const ownHubIds = new Set(await adminOwnedHubIds(req));
+    hubs = hubs.filter((h) => ownHubIds.has(h.id));
+  }
   res.json({ success: true, data: hubs, count: hubs.length });
 });
 
 const linkTeacherHub = asyncHandler(async (req, res) => {
   const { hubId } = req.body;
   if (req.user.role === "school") assertOwn(isOwnHub(req, hubId));
+  if (req.user.role === "admin") {
+    // Both ends of this link must be this admin's own: the hub being linked to (a hub-ownership
+    // check, same as "school"'s isOwnHub above) AND the teacher already having at least one link
+    // to one of this admin's hubs, OR being a brand-new teacher with no hub links at all yet
+    // (createTeacher's own flow calls this route right after creating the record — see
+    // teacher.routes.js). Without the second half, an admin could link an unrelated teacher
+    // who's exclusively another admin's into their own tenant.
+    const ownHubIds = await adminOwnedHubIds(req);
+    assertOwn(ownHubIds.includes(hubId));
+    const existingLinks = await TeacherHubLinkModel.findByTeacherId(req.params.id);
+    assertOwn(existingLinks.length === 0 || existingLinks.some((l) => ownHubIds.includes(l.hubId)));
+  }
   const hubs = await TeacherService.linkHub(req.params.id, hubId);
   res.status(201).json({ success: true, data: hubs });
 });
 
 const unlinkTeacherHub = asyncHandler(async (req, res) => {
   if (req.user.role === "school") assertOwn(isOwnHub(req, req.params.hubId));
+  if (req.user.role === "admin") assertOwn((await adminOwnedHubIds(req)).includes(req.params.hubId));
   const hubs = await TeacherService.unlinkHub(req.params.id, req.params.hubId);
   res.json({ success: true, data: hubs });
 });
 
 // A teacher's own "here's when I can teach" weekly windows — same ownership posture as
-// hubs/links above: "teacher" only ever reads/writes its own, "school" only a teacher linked to
-// its own hub, "admin" unrestricted. Read is open to "school" too (not just admin/self) so a
-// school can check a teacher's availability before assigning them to a timetable slot.
+// hubs/links above: "teacher" only ever reads/writes its own, "school"/"admin" only a teacher
+// linked to their own hub(s). Read is open to "school" too (not just admin/self) so a school can
+// check a teacher's availability before assigning them to a timetable slot.
 const getTeacherAvailability = asyncHandler(async (req, res) => {
   if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
   if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, req.params.id));
   const slots = await TeacherService.getAvailability(req.params.id);
   res.json({ success: true, data: slots, count: slots.length });
 });
@@ -181,6 +235,7 @@ const getTeacherAvailability = asyncHandler(async (req, res) => {
 const addTeacherAvailabilitySlot = asyncHandler(async (req, res) => {
   if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
   if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, req.params.id));
   const data = createAvailabilitySlotSchema.parse(req.body);
   const slot = await TeacherService.addAvailabilitySlot(req.params.id, data);
   res.status(201).json({ success: true, data: slot });
@@ -195,6 +250,7 @@ async function loadOwnedAvailabilitySlotOrThrow(req) {
   }
   if (req.user.role === "teacher") assertOwn(slot.teacherId === req.ownTeacher?.id);
   if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, slot.teacherId));
+  if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, slot.teacherId));
   return slot;
 }
 

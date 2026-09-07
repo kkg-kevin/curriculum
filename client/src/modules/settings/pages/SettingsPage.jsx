@@ -6,6 +6,7 @@ import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import InventoryPanel from "../inventory/components/InventoryPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
+import AdminsPanel from "../admins/components/AdminsPanel";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -253,6 +254,7 @@ const TABS = [
   { key: "inventory", label: "Inventory" },
   { key: "items", label: "Items" },
   { key: "learning-hubs", label: "Learning Hubs" },
+  { key: "admins", label: "Admins" },
 ];
 
 export default function SettingsPage() {
@@ -299,6 +301,7 @@ export default function SettingsPage() {
         {activeTab === "inventory" && <InventoryPanel />}
         {activeTab === "items" && <ItemsPanel />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
+        {activeTab === "admins" && <AdminsPanel />}
       </div>
     </div>
   );

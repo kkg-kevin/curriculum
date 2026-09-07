@@ -1,4 +1,7 @@
 const express = require("express");
+const asyncHandler = require("express-async-handler");
+const CourseModel = require("./course.model");
+const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const {
   createCourse,
   getAllCourses,
@@ -46,6 +49,21 @@ router.route("/:id")
   .put(authorize("admin"), updateCourse)
   .delete(authorize("admin"), deleteCourse);
 router.route("/:id/duplicate").post(authorize("admin"), duplicateCourse);
+
+// Everything under "/:id/..." below is course-authoring content (competency/pathway/inventory
+// links, sessions, modules) reached only by admin, EXCEPT /:id/sessions and /:id/modules' GETs,
+// which teacher/learner/school also reach (see those routes further down) — so this can't gate
+// on authorize("admin") the way curriculum.routes.js's ownCurriculumOnly does (a router.use()
+// runs for every method under this path, including those two GETs). isOwnedByAdmin is already a
+// no-op (true) for every non-admin role, so this only ever blocks an admin trying to reach
+// another tenant's course; every other role's access to those two GETs is unaffected and still
+// resolved by assertCourseAccess inline in the controller.
+router.use("/:id", asyncHandler(async (req, res, next) => {
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await CourseModel.findById(req.params.id)));
+  }
+  next();
+}));
 
 // Competencies — this course's tagged competencies (authored globally under /api/competencies)
 router.route("/:id/competencies/links").get(authorize("admin"), getCourseCompetencies).post(authorize("admin"), linkCompetency);

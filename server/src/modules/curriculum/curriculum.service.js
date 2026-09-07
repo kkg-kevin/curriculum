@@ -131,9 +131,10 @@ async function enrichCurriculum(curriculum, meta) {
 // renamed, so re-saving a curriculum without changing its name doesn't flag it against itself.
 // Covers program-curricula too — a Program is a `curricula` row with isProgram: true, authored
 // through this same createCurriculum flow, and a name shared between the two lists is just as
-// ambiguous.
-async function assertUniqueName(name, excludeId = null) {
-  const curricula = await CurriculumModel.findAll();
+// ambiguous. Scoped to ownerAdminId — two different admins' tenants are independent, so both may
+// freely name a curriculum "STEM Program"; only a clash within the SAME tenant is blocked.
+async function assertUniqueName(name, ownerAdminId, excludeId = null) {
+  const curricula = await CurriculumModel.findAll({ ownerAdminId });
   const normalized = name.trim().toLowerCase();
   const clash = curricula.find(
     (c) => c.id !== excludeId && (c.name || "").trim().toLowerCase() === normalized
@@ -149,7 +150,7 @@ async function assertUniqueName(name, excludeId = null) {
 
 const CurriculumService = {
   async createCurriculum(data) {
-    await assertUniqueName(data.name);
+    await assertUniqueName(data.name, data.ownerAdminId);
     return CurriculumModel.create(data);
   },
 
@@ -172,7 +173,7 @@ const CurriculumService = {
   async updateCurriculum(id, data) {
     const existing = await CurriculumModel.findById(id);
     // A rename can't collide with a name another curriculum already uses (same rule as create).
-    if (data.name !== undefined) await assertUniqueName(data.name, id);
+    if (data.name !== undefined) await assertUniqueName(data.name, existing?.ownerAdminId, id);
     const curriculum = await CurriculumModel.update(id, data);
     if (!curriculum) {
       const err = new Error("Curriculum not found");

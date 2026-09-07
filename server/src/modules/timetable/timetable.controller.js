@@ -6,8 +6,15 @@ const SessionOccurrenceModel = require("./session-occurrence.model");
 const SessionOccurrenceService = require("./session-occurrence.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+
+async function isOwnHubForAdmin(req, hubId) {
+  if (!hubId) return false;
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.some((h) => h.id === hubId);
+}
 
 // Same shape as attendance.controller.js's assertClassAccess — a timetable slot belongs to a
 // Class, so ownership is resolved through that class exactly the same way attendance already
@@ -20,6 +27,7 @@ async function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
@@ -168,6 +176,7 @@ const getHubCalendar = asyncHandler(async (req, res) => {
     throw err;
   }
   if (req.user.role === "school") assertOwn(isOwnHub(req, hubId));
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, hubId));
   const { from, to } = calendarRangeSchema.parse(req.query);
   const { events, breaks, skippedSessions } = await TimetableService.resolveHubCalendar(hubId, from, to);
   res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });

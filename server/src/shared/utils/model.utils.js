@@ -57,6 +57,21 @@ async function deleteRecord(db, table, id) {
   return count > 0;
 }
 
+// Applies a mandatory tenant filter to a query builder — used by the four ownerAdminId-bearing
+// models (learning_hubs, curricula, courses, assessments) instead of the usual optional
+// `if (x) query.where({x})` pattern every other filter in this codebase uses. Deliberately
+// throws rather than silently returning an unfiltered query when ownerAdminId is missing: every
+// other filter in this codebase fails "safe" when omitted (a school with no resolved hub gets an
+// empty list, not everyone's data — see learning-hub.controller.js's getAllLearningHubs) but an
+// omitted tenant filter here would fail "unsafe" (silently return every tenant's rows), so a
+// missing value is a caller bug that must be caught immediately, not a query that quietly leaks.
+function withOwnerScope(query, ownerAdminId) {
+  if (!ownerAdminId) {
+    throw new Error("withOwnerScope: ownerAdminId is required for this query");
+  }
+  return query.where({ ownerAdminId });
+}
+
 module.exports = {
   generateId,
   toJson,
@@ -66,4 +81,5 @@ module.exports = {
   createRecord,
   updateRecord,
   deleteRecord,
+  withOwnerScope,
 };

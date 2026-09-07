@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../modules/auth/services/authApi";
 
 const AuthContext = createContext(null);
@@ -6,6 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // A suspended (deactivated) account IS logged in — `user` is a real session — but their
   // account is flagged. `user.suspended` carries the reason ("learner" | "teacher" | "hub") or
@@ -26,11 +28,21 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Clears every cached query on login/logout — without this, React Query keeps serving the
+  // PREVIOUS session's cached responses (hubs, curricula, courses, assessments, ...) under their
+  // same query keys for up to their staleTime (5 min, see main.jsx) after a different account
+  // logs in on the same tab. That's always been a staleness bug, but it became a real cross-
+  // tenant data leak once "admin" stopped being one interchangeable role: logging in as a
+  // second admin right after the first, in the same tab, would briefly render the first admin's
+  // cached tenant data as if it belonged to the second. Clearing on both login AND logout (not
+  // just logout) covers the common case of switching accounts without an intermediate full page
+  // reload.
   const login = useCallback(async (identifier, password) => {
+    queryClient.clear();
     const loggedInUser = await authApi.login(identifier, password);
     setUser(loggedInUser);
     return loggedInUser;
-  }, []);
+  }, [queryClient]);
 
   const signup = useCallback(async (payload) => {
     return authApi.signup(payload);
@@ -39,7 +51,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
-  }, []);
+    queryClient.clear();
+  }, [queryClient]);
 
   // Shallow-merges a patch into the current session's user — e.g. after the header avatar
   // popover uploads a new photo, so the rest of the app reflects it immediately without a

@@ -1,6 +1,7 @@
 const asyncHandler      = require("express-async-handler");
 const CompetencyService = require("./competency.service");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const CurriculumModel = require("../curriculum.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   linkCompetencySchema,
@@ -44,6 +45,14 @@ function onlySentKeys(parsed, rawBody) {
 /* ── Curriculum ↔ Competency links ─────────────────────────────────────── */
 
 exports.getCurriculumCompetencies = asyncHandler(async (req, res) => {
+  // Registered ahead of curriculum.routes.js's router-wide ownCurriculumOnly gate so "learner"
+  // can reach it (a plain name lookup, not ownership-sensitive for that role) — but for "admin"
+  // that means this route was otherwise completely unscoped, unlike every other curriculum
+  // sub-resource. Check directly here rather than relying on a gate this route sits ahead of.
+  if (req.user.role === "admin") {
+    const curriculum = await CurriculumModel.findById(req.params.id);
+    assertOwn(curriculum && curriculum.ownerAdminId === req.ownerAdminId);
+  }
   const data = await CompetencyService.getCurriculumCompetencies(req.params.id);
   res.json({ success: true, data });
 });

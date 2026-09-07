@@ -2,8 +2,15 @@ const asyncHandler = require("express-async-handler");
 const AttendanceService = require("./attendance.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { markAttendanceSchema } = require("./attendance.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+
+async function isOwnHubForAdmin(req, hubId) {
+  if (!hubId) return false;
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.some((h) => h.id === hubId);
+}
 
 // Attendance belongs to a Class, which itself belongs to a school and (for the teacher case) is
 // gated by whether that teacher has at least one course-educator link in the class — so every
@@ -16,6 +23,7 @@ async function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school") assertOwn(isOwnHub(req, cls.schoolId));
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") {
     const links = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
     assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));

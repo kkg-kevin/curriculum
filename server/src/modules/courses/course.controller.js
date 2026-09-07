@@ -1,10 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const CourseService = require("./course.service");
+const CourseModel = require("./course.model");
 const CurriculumService = require("../curriculum/curriculum.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const {
   createCourseSchema,
   updateCourseSchema,
@@ -25,7 +26,11 @@ const {
 // unrestricted; every other role here (teacher/learner/school) previously had no check at all —
 // any authenticated account could fetch any course by id.
 async function assertCourseAccess(req, courseId) {
-  if (req.user.role === "admin") return;
+  if (req.user.role === "admin") {
+    const course = await CourseModel.findById(courseId);
+    assertOwn(isOwnedByAdmin(req, course));
+    return;
+  }
   const curriculumIds = await CurriculumService.findCurriculaContainingCourse(courseId);
 
   if (req.user.role === "school") {
@@ -68,7 +73,8 @@ function pickPresent(parsed, raw) {
 
 const createCourse = asyncHandler(async (req, res) => {
   const data = createCourseSchema.parse(req.body);
-  const course = await CourseService.createCourse(data);
+  // ownerAdminId is never client-supplied — always the creating admin's own tenant id.
+  const course = await CourseService.createCourse({ ...data, ownerAdminId: req.ownerAdminId });
   res.status(201).json({ success: true, data: course });
 });
 
@@ -77,6 +83,7 @@ const getAllCourses = asyncHandler(async (req, res) => {
   const courses = await CourseService.getAllCourses({
     limit: limit ? Number(limit) : undefined,
     offset: offset ? Number(offset) : undefined,
+    ownerAdminId: req.user.role === "admin" ? req.ownerAdminId : undefined,
   });
   res.json({ success: true, data: courses, count: courses.length });
 });
@@ -89,16 +96,19 @@ const getCourseById = asyncHandler(async (req, res) => {
 
 const updateCourse = asyncHandler(async (req, res) => {
   const data = pickPresent(updateCourseSchema.parse(req.body), req.body);
+  await assertCourseAccess(req, req.params.id);
   const course = await CourseService.updateCourse(req.params.id, data);
   res.json({ success: true, data: course });
 });
 
 const deleteCourse = asyncHandler(async (req, res) => {
+  await assertCourseAccess(req, req.params.id);
   const result = await CourseService.deleteCourse(req.params.id);
   res.json({ success: true, ...result });
 });
 
 const duplicateCourse = asyncHandler(async (req, res) => {
+  await assertCourseAccess(req, req.params.id);
   const course = await CourseService.duplicateCourse(req.params.id);
   res.status(201).json({ success: true, data: course });
 });

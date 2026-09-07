@@ -4,7 +4,14 @@ const AssessmentModel = require("../assessment.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-link.model");
+const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
+
+async function isOwnHubForAdmin(req, hubId) {
+  if (!hubId) return false;
+  const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  return hubs.some((h) => h.id === hubId);
+}
 const {
   issueAssessmentSchema,
   issueOnSessionCompleteSchema,
@@ -34,6 +41,7 @@ async function assertClassAccess(req, cls) {
     throw err;
   }
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") assertOwn(await teacherLinkedToClass(req, cls.id));
 }
 
@@ -48,6 +56,10 @@ async function assertLearnerHubAccess(req, learnerId) {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const hubIds = links.map((l) => l.hubId);
     assertOwn(hubIds.some((hubId) => isOwnHub(req, hubId)));
+  } else if (req.user.role === "admin") {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const results = await Promise.all(links.map((l) => isOwnHubForAdmin(req, l.hubId)));
+    assertOwn(results.some(Boolean));
   } else if (req.user.role === "teacher") {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const classIds = links.filter((l) => l.classId).map((l) => l.classId);

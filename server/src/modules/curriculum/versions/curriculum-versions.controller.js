@@ -7,7 +7,7 @@ const SchoolModel = require("../../learning-hubs/learning-hub.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ProgramModel = require("../../programs/program.model");
-const { assertOwn } = require("../../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnedByAdmin } = require("../../../shared/middleware/scope.middleware");
 
 async function getTeacherAccessibleCurriculumIds(req) {
   if (!req.ownTeacher) return [];
@@ -21,7 +21,11 @@ async function getTeacherAccessibleCurriculumIds(req) {
 }
 
 async function assertCurriculumAccess(req, curriculumId) {
-  if (req.user.role === "admin" || req.user.role === "curriculumAdmin") return;
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await CurriculumModel.findById(curriculumId)));
+    return;
+  }
+  if (req.user.role === "curriculumAdmin") return;
 
   if (req.user.role === "school") {
     const accessible = new Set(req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []));

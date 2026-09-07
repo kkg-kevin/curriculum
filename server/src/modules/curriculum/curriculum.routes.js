@@ -78,21 +78,28 @@ const {
   getPathway,
   placeLearner,
 } = require("./competency-framework/competency.controller");
+const asyncHandler = require("express-async-handler");
 const { authorize } = require("../../shared/middleware/auth.middleware");
-const { assertOwn } = require("../../shared/middleware/scope.middleware");
+const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
+const CurriculumModel = require("./curriculum.model");
 
-// A school only ever reads/writes within its own assigned curriculum, and a curriculumAdmin
-// only ever reads/writes the one curriculum they're assigned to manage — never another
-// curriculum, even by guessing an id. No-op for every other role (their own authorize(...) call
-// already decided whether they belong on the route at all — admin is always unrestricted here).
-function ownCurriculumOnly(req, res, next) {
+// A school only ever reads/writes within its own assigned curriculum, a curriculumAdmin only
+// ever reads/writes the one curriculum they're assigned to manage, and now an admin only ever
+// reads/writes curricula (and everything hanging off one — competencies, pathways, age
+// categories, assessment types, performance bands, etc, all reached via this same "/:id" mount)
+// in their own tenant — never another curriculum, even by guessing an id. No-op for every other
+// role (their own authorize(...) call already decided whether they belong on the route at all).
+const ownCurriculumOnly = asyncHandler(async (req, res, next) => {
   if (req.user.role === "school") {
     const accessible = req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []);
     assertOwn(accessible.includes(req.params.id));
   }
   if (req.user.role === "curriculumAdmin") assertOwn(req.ownCurriculum?.id === req.params.id);
+  if (req.user.role === "admin") {
+    assertOwn(isOwnedByAdmin(req, await CurriculumModel.findById(req.params.id)));
+  }
   next();
-}
+});
 
 const router = express.Router();
 

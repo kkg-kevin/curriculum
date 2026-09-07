@@ -17,12 +17,12 @@ async function assertCoursesExist(courseIds) {
 }
 
 const PathwayTemplateService = {
-  async getPathways() {
-    return PathwayTemplateModel.findAll();
+  async getPathways(ownerAdminId) {
+    return PathwayTemplateModel.findAll({ ownerAdminId });
   },
 
   async createPathway(data) {
-    const existing = await PathwayTemplateModel.findAll();
+    const existing = await PathwayTemplateModel.findAll({ ownerAdminId: data.ownerAdminId });
     if (existing.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
       const err = new Error("A pathway with this name already exists");
       err.statusCode = 409;
@@ -32,15 +32,20 @@ const PathwayTemplateService = {
     return PathwayTemplateModel.create(data);
   },
 
-  async updatePathway(id, data) {
+  async updatePathway(id, data, ownerAdminId) {
     const template = await PathwayTemplateModel.findById(id);
     if (!template) {
       const err = new Error("Pathway template not found");
       err.statusCode = 404;
       throw err;
     }
+    if (template.ownerAdminId !== ownerAdminId) {
+      const err = new Error("You do not have permission to access this record");
+      err.statusCode = 403;
+      throw err;
+    }
     if (data.name) {
-      const all = await PathwayTemplateModel.findAll();
+      const all = await PathwayTemplateModel.findAll({ ownerAdminId });
       const others = all.filter((a) => a.id !== id);
       if (others.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
         const err = new Error("A pathway with this name already exists");
@@ -52,11 +57,16 @@ const PathwayTemplateService = {
     return PathwayTemplateModel.update(id, data);
   },
 
-  async deletePathway(id) {
+  async deletePathway(id, ownerAdminId) {
     const template = await PathwayTemplateModel.findById(id);
     if (!template) {
       const err = new Error("Pathway template not found");
       err.statusCode = 404;
+      throw err;
+    }
+    if (template.ownerAdminId !== ownerAdminId) {
+      const err = new Error("You do not have permission to access this record");
+      err.statusCode = 403;
       throw err;
     }
     await PathwayTemplateModel.delete(id);

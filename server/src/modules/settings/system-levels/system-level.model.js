@@ -8,8 +8,10 @@ const TABLE = "system_levels";
 // means the same developmental position everywhere regardless of what any one curriculum
 // calls it. Always read/returned in sequence order since that order is the entire point.
 const SystemLevelModel = {
-  findAll() {
-    return db(TABLE).orderBy("sequence", "asc");
+  findAll({ ownerAdminId } = {}) {
+    let query = db(TABLE);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
+    return query.orderBy("sequence", "asc");
   },
 
   findById(id) {
@@ -17,7 +19,7 @@ const SystemLevelModel = {
   },
 
   async create(data) {
-    const [{ maxSequence }] = await db(TABLE).max({ maxSequence: "sequence" });
+    const [{ maxSequence }] = await db(TABLE).where({ ownerAdminId: data.ownerAdminId }).max({ maxSequence: "sequence" });
     const now = new Date();
     const item = { ...data, id: generateId(), sequence: (maxSequence || 0) + 1, createdAt: now, updatedAt: now };
     await db(TABLE).insert(item);

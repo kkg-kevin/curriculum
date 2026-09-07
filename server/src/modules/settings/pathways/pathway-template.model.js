@@ -11,8 +11,10 @@ const TABLE = "pathway_templates";
 const JSON_FIELDS = ["courses"];
 
 const PathwayModel = {
-  findAll() {
-    return db(TABLE);
+  findAll({ ownerAdminId } = {}) {
+    let query = db(TABLE);
+    if (ownerAdminId) query = query.where({ ownerAdminId });
+    return query;
   },
 
   findById(id) {
