@@ -5,14 +5,17 @@
 resolution is recorded inline and the backend has been changed to match — see
 §8 changelog.
 
-> **⚠️ Bootcamps removed (4 Sep 2026); Projects reintroduced differently
+> **⚠️ Bootcamps removed (4 Sep 2026); Projects + Store reintroduced differently
 > (9 Sep 2026).** `GET /api/public/bootcamps[/:idOrSlug]` and the admin-only
 > `/api/site/*` authoring API are **gone** — "bootcamp" duplicated the existing
 > **Program** concept. **`GET /api/public/projects[/:idOrSlug]` is back, but as a
 > different feature**: it now serves the designated admin's `type: "project"`
 > **assessments** flipped "For sale" in the Assessment Builder — not the old
-> `public_projects` marketing table (which is still dropped). See §3.3/§3.4. The
-> live public reads are `/api/public/{pathways,projects}[/:idOrSlug]` and the
+> `public_projects` marketing table (which is still dropped). See §3.3/§3.4.
+> **`GET /api/public/store[/:idOrSlug]` is new**: the designated admin's shared
+> **`inventory`** items flipped "For sale" in the portal's Inventory panel — the
+> Quarky robot, kits, accessories. See §3.5/§3.6. The live public reads are
+> `/api/public/{pathways,projects,store}[/:idOrSlug]` and the
 > `/api/public/diagnostics/*` set, plus the two `POST` lead/contact endpoints.
 
 - **Website:** `digifunzi-landing` — standalone Vite + React SPA.
@@ -74,6 +77,8 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 | `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ❌ removed 4 Sep 2026 — 404s |
 | `GET` | `/api/public/projects` | Project list — the designated admin's **for-sale `type: project` assessments** (§3.3) | ✅ live (9 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
 | `GET` | `/api/public/projects/:idOrSlug` | Project detail (build steps, deliverables, kit) | ✅ live — same scoping (§3.4) |
+| `GET` | `/api/public/store` | Store list — the designated admin's **for-sale `inventory` items** (§3.10) | ✅ live (9 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
+| `GET` | `/api/public/store/:idOrSlug` | Store item detail (highlights, "what you get", specs) | ✅ live — same scoping (§3.11) |
 | `GET` | `/api/public/pathways` | Pathway list — the designated admin's **operational** pathways (§3.5) | ✅ live — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
 | `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses + `diagnostic`) | ✅ live — same scoping |
 | `POST` | `/api/public/leads` | Enrol-interest capture → notify admins | ✅ live |
@@ -387,6 +392,68 @@ unguessable, so the id in the URL is the only access control (same posture as
 > report returns `items: []` / `itemResults: []` and the page shows score + competency
 > breakdown only. Every attempt created since always has the full per-question section.
 
+### 3.10 `GET /api/public/store` → `200`, array  ·  `503` if unconfigured  *(NEW 9 Sep 2026)*
+
+**A "store item" is a shared `inventory` row** — the same catalog Projects/Courses
+link materials from — flipped **"For sale on the website"** in the portal's
+**Settings → Inventory** panel. Reads the `inventory` table, scoped to
+`PUBLIC_CONTENT_ADMIN_ID` (503 if unset), `saleStatus = 'for_sale'` only. The
+operational `category` (Robots/Electronics/…), `unit` and stock fields are never
+exposed — the website uses its own `storeCategory`.
+
+```jsonc
+[
+  {
+    "id": "uuid",
+    "slug": "quarky-robot-kit",          // slugify(name), computed at read time
+    "name": "Quarky Robot Kit",
+    "tagline": "The hands-on robot at the heart of Digifunzi",   // "" if unset
+    "storeCategory": "kit" | "bundle" | "accessory" | null,
+    "badge": "Core kit",                  // short marketing tag, "" if unset
+    "stockStatus": "available" | "preorder" | "coming_soon",     // drives the buy button
+    "image": "string | null",             // absolutized (§6) — an upload URL or null
+    "price": {                            // null when no amount is set → "Enquire for pricing"
+      "amount": 14500,                    // whole currency units (KES 14,500), no fractional pricing
+      "currency": "KES",
+      "unit": "each" | null,              // "/ each", "/ learner", …
+      "note": "School and bulk pricing available.",
+      "compareAt": 21300 | null           // optional strike-through "was" price
+    },
+    "highlightCount": integer             // # of selling-point bullets (detail has the list)
+  }
+]
+```
+
+Newest first, then sorted by name. Slug collisions collapse to one — prefer the
+one with an image, then a price, then the first.
+
+### 3.11 `GET /api/public/store/:idOrSlug` → `200` | `404`
+
+List item **plus** the marketing detail:
+
+```jsonc
+{
+  "id": "uuid", "slug": "...", "name": "...", "tagline": "...",
+  "storeCategory": "kit" | null, "badge": "...", "stockStatus": "available",
+  "image": "https://.../uploads/x.png" | null,
+  "price": { "amount": 14500, "currency": "KES", "unit": "each", "note": "...", "compareAt": null } | null,
+  "highlightCount": 4,
+  "description": "string",              // inventory.description — plain text
+  "highlights": ["Beginner-friendly block coding", "…"],   // selling points
+  "includes":   ["Quarky main board", "USB cable", "…"],   // "what you get"
+  "specs":      [ { "label": "Programming", "value": "Block editor and Python" } ],
+  "gallery":    ["https://.../uploads/a.png", "…"]          // extra images beyond `image`, absolutized
+}
+```
+
+`404 { "message": "Store item not found" }` for an unknown id/slug, an item owned
+by a different admin, or one that isn't `for_sale` — undifferentiated.
+
+**Buying:** no checkout. The website's "Enquire to buy" links to
+`/enroll?interestedIn=<quarky|general>&referenceId=<slug>` → `POST /api/public/leads`
+(§4.1). The Enquiries page resolves the slug to the item name server-side
+(`referenceType: "store_item"`).
+
 ---
 
 ## 4. Write endpoints — Enroll & Contact
@@ -409,8 +476,8 @@ across all `/api/*`).
   "parentPhone": "string 7–20 chars, /^[+0-9()\\-\\s]+$/ — optional server-side; the Enroll form requires it client-side",
   "learnerName": "string ≤120 chars — optional (\"\" allowed, e.g. from the Contact form)",
   "learnerAge":  "integer 3–19 — optional / null",
-  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". Still accepted/stored as-is even though bootcamp/project no longer have a backing catalog — see the notice at the top of this doc.",
-  "referenceId": "string ≤100 chars — optional / null. Still accepted and stored as-is (no validation) — but only resolves to a display name server-side (GET /api/leads) when it's a pathway slug/id. A bootcamp/project referenceId is stored and shown as a bare string, unresolved.",
+  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". A Store enquiry uses \"quarky\" (a kit) or \"general\" (bundle/accessory); the exact item is in referenceId. \"bootcamp\" is still accepted/stored as-is even though it has no backing catalog.",
+  "referenceId": "string ≤100 chars — optional / null. Stored as-is (no validation). Resolves to a display name server-side (GET /api/leads) when it's the slug/id of: an operational pathway, a for-sale project assessment (§3.3), or a for-sale inventory item (§3.10). Otherwise stored and shown as a bare string.",
   "note":        "string ≤1000 chars — optional (\"\" allowed)"
 }
 ```
@@ -601,9 +668,8 @@ middleware; allowed methods are `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 **absolute URL**: a stored `/uploads/x.png` comes back as
 `https://nodeapp.digifunzi.com/uploads/x.png`. Values already absolute (a pasted
 CDN/stock URL), protocol-relative (`//…`), or `data:` URIs pass through
-unchanged. Applies to pathway-detail course covers — **the bootcamp/project
-endpoints this originally also applied to are removed**, see the notice at
-the top of this doc.
+unchanged. Applies to pathway-detail course covers, **project `coverImage`
+(§3.3/§3.4), and store `image` + `gallery[]` (§3.10/§3.11)**.
 
 Driven by `API_PUBLIC_URL` (§5). If unset (local dev), the raw stored value is
 returned and the landing site's own `resolveMediaUrl` fallback prefixes
@@ -738,6 +804,8 @@ GET   /api/public/pathways
 GET   /api/public/pathways/:idOrSlug
 GET   /api/public/projects                  # for-sale `type: project` assessments (§3.3)
 GET   /api/public/projects/:idOrSlug        # + build steps / deliverables / kit (§3.4)
+GET   /api/public/store                     # for-sale `inventory` items — robots, kits (§3.10)
+GET   /api/public/store/:idOrSlug           # + highlights / "what you get" / specs (§3.11)
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
@@ -758,7 +826,8 @@ POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, childName?, c
 # REMOVED 4 Sep 2026 — 404 now, do not call:
 #   GET   /api/public/bootcamps[/:idOrSlug]
 #   GET|POST|PUT|DELETE  /api/site/*
-#   (/api/public/projects came BACK 9 Sep 2026 as a different feature — see §3.3)
+#   (/api/public/projects came BACK 9 Sep 2026 as a different feature — see §3.3;
+#    /api/public/store is also NEW 9 Sep 2026 — see §3.10)
 
 # Admin (JWT, role: admin) — the boundary, for reference
 GET    /api/leads?status=&source=
