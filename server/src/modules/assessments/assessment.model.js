@@ -24,10 +24,22 @@ const AssessmentModel = {
   // own comment for why that asymmetry matters) — this caught a real bug during development
   // (attachOwnRecords wasn't mounted on /api/assessments, so req.ownerAdminId was always
   // undefined; the optional-filter version silently returned everyone's assessments).
-  findAll({ type, ownerAdminId } = {}) {
+  findAll({ type, saleStatus, ownerAdminId } = {}) {
     let query = withOwnerScope(db(TABLE), ownerAdminId);
     if (type) query = query.where({ type });
+    if (saleStatus) query = query.where({ saleStatus });
     return query.orderBy("createdAt", "desc");
+  },
+
+  // The designated public-content admin's project assessments that are marked for sale — the
+  // one query the public /api/public/projects endpoints run. `ownerAdminId` is required here
+  // (unlike findAll's optional filter) because a missing scope would leak every tenant's
+  // for-sale projects to an anonymous visitor.
+  findForSaleProjects(ownerAdminId) {
+    if (!ownerAdminId) throw new Error("findForSaleProjects requires an ownerAdminId");
+    return db(TABLE)
+      .where({ ownerAdminId, type: "project", saleStatus: "for_sale" })
+      .orderBy("createdAt", "desc");
   },
 
   findById(id) {

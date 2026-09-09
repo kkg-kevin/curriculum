@@ -3,6 +3,10 @@ const LeadMessageModel = require("./lead-message.model");
 const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
 const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
+const CurriculumModel = require("../curriculum/curriculum.model");
+const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const AssessmentModel = require("../assessments/assessment.model");
+const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
 
@@ -66,20 +70,55 @@ const LeadService = {
   },
 
   // referenceId arrives as a bare, untyped string (slug or uuid — see the public leads schema's
-  // comment). The bootcamp/project public catalogs were removed (see Guide/DEPLOYMENT.md) — only
-  // pathways are resolvable now. This only ever feeds a display label, never an authorization
-  // decision, so an unresolved referenceId (still tagged bootcamp/project/quarky by
-  // interestedIn) just shows no reference label rather than erroring.
+  // comment). The website's Enroll / diagnostic links pass an OPERATIONAL pathway's own computed
+  // slug; the Projects section's "Enquire to buy" passes a for-sale project assessment's computed
+  // slug. Resolve against the designated admin's operational `pathways` first, then their
+  // for-sale project assessments, then fall back to the `pathway_templates` catalog for older
+  // leads. This only ever feeds a display label, never an authorization decision — an unresolved
+  // referenceId (deleted/renamed, or `PUBLIC_CONTENT_ADMIN_ID` unset) just shows no label.
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
-    // pathway_templates has no slug column (see public-site.service.js) — same findById-then-
-    // scan-by-computed-slug approach getPathway() uses.
-    let pathway = await PathwayTemplateModel.findById(referenceId);
-    if (!pathway) {
-      const all = await PathwayTemplateModel.findAll();
-      pathway = all.find((t) => (slugify(t.name) || "pathway") === referenceId) || null;
+
+    // 1. operational pathways owned by the designated public-content admin.
+    if (env.PUBLIC_CONTENT_ADMIN_ID) {
+      try {
+        const curricula = await CurriculumModel.findAll({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID });
+        const pathways = (
+          await Promise.all(curricula.map((c) => PathwayModel.findByCurriculumId(c.id)))
+        ).flat();
+        const match =
+          pathways.find((p) => p.id === referenceId) ||
+          pathways.find((p) => (slugify(p.name) || "pathway") === referenceId) ||
+          null;
+        if (match) {
+          return { referenceType: "pathway", referenceName: match.name, referenceSlug: slugify(match.name) || "pathway" };
+        }
+      } catch {
+        /* fall through */
+      }
+
+      // 2. for-sale project assessments owned by the designated admin.
+      try {
+        const projects = await AssessmentModel.findForSaleProjects(env.PUBLIC_CONTENT_ADMIN_ID);
+        const project =
+          projects.find((a) => a.id === referenceId) ||
+          projects.find((a) => (slugify(a.name) || "project") === referenceId) ||
+          null;
+        if (project) {
+          return { referenceType: "project", referenceName: project.name, referenceSlug: slugify(project.name) || "project" };
+        }
+      } catch {
+        /* fall through */
+      }
     }
-    if (pathway) return { referenceType: "pathway", referenceName: pathway.name, referenceSlug: slugify(pathway.name) || "pathway" };
+
+    // 3. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
+    let template = await PathwayTemplateModel.findById(referenceId);
+    if (!template) {
+      const all = await PathwayTemplateModel.findAll();
+      template = all.find((t) => (slugify(t.name) || "pathway") === referenceId) || null;
+    }
+    if (template) return { referenceType: "pathway", referenceName: template.name, referenceSlug: slugify(template.name) || "pathway" };
     return null;
   },
 

@@ -112,6 +112,16 @@ function TypeBadge({ type }) {
   );
 }
 
+// Shown on a project assessment that's flipped "for sale" in the builder — mirrors the
+// green "PUBLIC" pill on a public-diagnostic pathway.
+function ForSaleBadge() {
+  return (
+    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "800", letterSpacing: "0.03em", backgroundColor: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+      FOR SALE
+    </span>
+  );
+}
+
 function MenuButton({ icon, label, onClick, danger = false }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -203,6 +213,7 @@ function AssessmentCard({ assessment }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
               <TypeBadge type={assessment.type} />
+              {assessment.saleStatus === "for_sale" && <ForSaleBadge />}
               <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>{summary}{totalPoints ? ` · ${totalPoints} pts` : ""}</span>
             </div>
           </div>

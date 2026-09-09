@@ -17,8 +17,25 @@ async function requireAssessment(id) {
   return assessment;
 }
 
+// "For sale on the public website" only makes sense for a Project assessment — a quiz or an
+// observation has nothing to sell. Enforced here (service layer) rather than in the Zod schema
+// because on an UPDATE the `type` may be absent from the patch while `saleStatus` flips on, so
+// the effective type has to be resolved from the existing row. The price/image/level can all be
+// filled in later — a for-sale project with no price just shows "Enquire for pricing" — so this
+// only guards the type pairing, nothing else.
+function assertSellableProject(data, existing) {
+  if (data.saleStatus !== "for_sale") return;
+  const effectiveType = "type" in data ? data.type : existing?.type;
+  if (effectiveType !== "project") {
+    const err = new Error("Only Project assessments can be marked for sale on the website");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
 const AssessmentService = {
   async createAssessment(data) {
+    assertSellableProject(data, null);
     return AssessmentModel.create(data);
   },
 
@@ -31,7 +48,8 @@ const AssessmentService = {
   },
 
   async updateAssessment(id, data) {
-    await requireAssessment(id);
+    const existing = await requireAssessment(id);
+    assertSellableProject(data, existing);
     return AssessmentModel.update(id, data);
   },
 
