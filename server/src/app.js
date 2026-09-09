@@ -33,6 +33,8 @@ const billingRoutes = require("./modules/billing/billing.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
+const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
+const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
@@ -123,6 +125,11 @@ app.use("/api/public", publicLeadRoutes);
 // Unauthenticated by design — the digifunzi-landing site's Pathways listing and detail pages
 // (see public-site.routes.js).
 app.use("/api/public", publicSiteRoutes);
+// Unauthenticated by design — the anonymous public diagnostic feature (pick a pathway, take a
+// diagnostic, see a graded report on the spot). Reads/grades against the ONE admin tenant
+// PUBLIC_CONTENT_ADMIN_ID designates (see env.js) — never the caller's own tenant, since there
+// is no caller identity here at all. Own rate limiters, see public-diagnostic.routes.js.
+app.use("/api/public", publicDiagnosticRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -170,6 +177,11 @@ app.use("/api/notifications", protect, notificationRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Enquiries page — the staff-facing read/triage side of the public leads above.
 app.use("/api/leads", protect, authorize("admin"), leadRoutes);
+// One-time operational tool: move a hub/curriculum/course/assessment the calling admin owns to
+// a different admin, by email. See reassign-owner.service.js's header comment for why this
+// exists — the 2026-09-07 tenant-isolation backfill had no per-row creator to recover ownership
+// from, so pre-existing Live data landed on one admin and needs manual redistribution.
+app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), reassignOwnerRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

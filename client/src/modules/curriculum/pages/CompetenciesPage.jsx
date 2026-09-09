@@ -601,35 +601,44 @@ function PathwaysPanel({ curriculumId }) {
   const [minAge,   setMinAge]     = useState("");
   const [maxAge,   setMaxAge]     = useState("");
   const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
+  const [publicDiagnosticEnabled, setPublicDiagnosticEnabled] = useState(false);
   const nameRef = useRef(null);
 
   // Quick diagnostic assign/change — separate from the create/edit form so it can be set
   // directly from the card without opening full edit mode (see openDiagPicker/saveDiagPicker).
   const [diagPickerAreaId, setDiagPickerAreaId] = useState(null);
   const [diagPickerValue,  setDiagPickerValue]  = useState("");
+  // publicDiagnosticEnabled toggled alongside the assessment picker on the card — same
+  // "quick assign" flow, not the full edit form (see the form's own toggle below for create).
+  const [diagPickerPublic, setDiagPickerPublic] = useState(false);
 
   function openDiagPicker(area) {
     setDiagPickerAreaId(area.id);
     setDiagPickerValue(area.diagnosticAssessmentId || "");
+    setDiagPickerPublic(!!area.publicDiagnosticEnabled);
   }
   function closeDiagPicker() { setDiagPickerAreaId(null); }
   function saveDiagPicker(area) {
-    update({ id: area.id, data: { diagnosticAssessmentId: diagPickerValue || null } }, { onSuccess: closeDiagPicker });
+    update(
+      { id: area.id, data: { diagnosticAssessmentId: diagPickerValue || null, publicDiagnosticEnabled: diagPickerValue ? diagPickerPublic : false } },
+      { onSuccess: closeDiagPicker }
+    );
   }
   function clearDiagnostic(area) {
-    update({ id: area.id, data: { diagnosticAssessmentId: null } });
+    update({ id: area.id, data: { diagnosticAssessmentId: null, publicDiagnosticEnabled: false } });
   }
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
     setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]);
-    setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setShowForm(true);
+    setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setPublicDiagnosticEnabled(false); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
     setCourses(area.courses || []);
-    setMinAge(area.minAge ?? ""); setMaxAge(area.maxAge ?? ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || ""); setShowForm(true);
+    setMinAge(area.minAge ?? ""); setMaxAge(area.maxAge ?? ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || "");
+    setPublicDiagnosticEnabled(!!area.publicDiagnosticEnabled); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
@@ -642,6 +651,9 @@ function PathwaysPanel({ curriculumId }) {
       minAge: minAge === "" ? null : Number(minAge),
       maxAge: maxAge === "" ? null : Number(maxAge),
       diagnosticAssessmentId: diagnosticAssessmentId || null,
+      // Can only ever be true alongside an assessment — the checkbox is disabled without one
+      // (see the form below), but guard here too in case state gets out of sync.
+      publicDiagnosticEnabled: diagnosticAssessmentId ? publicDiagnosticEnabled : false,
     };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
@@ -773,6 +785,22 @@ function PathwaysPanel({ curriculumId }) {
                 <option value="">— None —</option>
                 {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
+
+              <label
+                className="cp-comp-check-row"
+                style={{ marginTop: "8px", opacity: diagnosticAssessmentId ? 1 : 0.5 }}
+                title={diagnosticAssessmentId ? undefined : "Choose a diagnostic assessment first"}
+              >
+                <input
+                  type="checkbox"
+                  checked={publicDiagnosticEnabled}
+                  disabled={!diagnosticAssessmentId}
+                  onChange={(e) => setPublicDiagnosticEnabled(e.target.checked)}
+                />
+                <span style={{ fontSize: "12.5px", color: "#374151" }}>
+                  Offer this diagnostic to anonymous visitors on the public website
+                </span>
+              </label>
             </div>
           )}
 
@@ -867,7 +895,7 @@ function PathwaysPanel({ curriculumId }) {
                   </div>
 
                   {diagPickerAreaId === area.id ? (
-                    <div className="cp-diag-picker">
+                    <div className="cp-diag-picker" style={{ flexWrap: "wrap" }}>
                       <select
                         className="cp-select" style={{ flex: 1, minWidth: "160px" }}
                         value={diagPickerValue}
@@ -880,10 +908,39 @@ function PathwaysPanel({ curriculumId }) {
                         {updating ? "Saving…" : "Save"}
                       </button>
                       <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={closeDiagPicker}>Cancel</button>
+
+                      <label
+                        className="cp-comp-check-row"
+                        style={{ width: "100%", marginTop: "4px", opacity: diagPickerValue ? 1 : 0.5 }}
+                        title={diagPickerValue ? undefined : "Choose a diagnostic assessment first"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={diagPickerPublic}
+                          disabled={!diagPickerValue}
+                          onChange={(e) => setDiagPickerPublic(e.target.checked)}
+                        />
+                        <span style={{ fontSize: "12.5px", color: "#374151" }}>
+                          Offer this diagnostic to anonymous visitors on the public website
+                        </span>
+                      </label>
                     </div>
                   ) : area.diagnosticAssessmentId ? (
                     <div className="cp-diag-row">
-                      <span className="cp-diag-name">{assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}</span>
+                      <span className="cp-diag-name">
+                        {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
+                        {area.publicDiagnosticEnabled && (
+                          <span
+                            style={{
+                              marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
+                              backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
+                              padding: "2px 8px", verticalAlign: "middle",
+                            }}
+                          >
+                            Public
+                          </span>
+                        )}
+                      </span>
                       <div className="cp-diag-actions">
                         <button type="button" className="cp-diag-btn cp-diag-btn-change" onClick={() => openDiagPicker(area)}>Change</button>
                         <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => clearDiagnostic(area)} disabled={updating}>Clear</button>

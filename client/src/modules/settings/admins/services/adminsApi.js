@@ -8,4 +8,9 @@ const BASE = "/api/auth/admins";
 export const adminsApi = {
   createAdmin: (data) =>
     api.post(BASE, data).then((r) => r.data.data),
+  // See reassign-owner.service.js on the backend — moves a hub/curriculum/course/assessment the
+  // caller currently owns to a different admin, identified by email (there's no admin list to
+  // pick from, same reasoning as the comment above).
+  reassignOwner: (data) =>
+    api.post("/api/admin-tools/reassign-owner", data).then((r) => r.data.data),
 };

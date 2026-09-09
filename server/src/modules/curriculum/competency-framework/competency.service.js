@@ -17,6 +17,7 @@ const SessionModel                   = require("../../courses/session.model");
 const { getSessionAssessmentIds } = require("../../courses/sessionAssessment.utils");
 const CourseCurriculumLinkModel      = require("../../courses/course-curriculum-link.model");
 const BuilderAssessmentModel         = require("../../assessments/assessment.model");
+const { requiresManualGrading }      = require("../../assessments/submissions/grading.utils");
 const AssessmentCompetencyLinkModel  = require("../../assessments/assessment-competency-link.model");
 const CurriculumVersionModel         = require("../versions/curriculum-versions.model");
 const LearnerPathwayModel            = require("./learner-pathway.model");
@@ -173,6 +174,36 @@ const CompetencyService = {
     return PathwayModel.findByCurriculumId(curriculumId);
   },
 
+  // publicDiagnosticEnabled can only be true if the EFFECTIVE diagnosticAssessmentId (the
+  // incoming value if this request sets one, else whatever the pathway already has) resolves to
+  // an assessment that's fully auto-gradable — a public website visitor has no teacher
+  // relationship to route a manually-graded attempt to. Checked here (service layer), not in
+  // competency.validation.js's Zod schema, because an update payload can legitimately omit
+  // diagnosticAssessmentId while still flipping publicDiagnosticEnabled on (e.g. a dedicated
+  // toggle UI touching only that one field) — only the service layer has both the existing row
+  // and the incoming patch to resolve the effective value from.
+  async assertPublicDiagnosticAllowed(data, existingPathway) {
+    if (!data.publicDiagnosticEnabled) return;
+    const effectiveAssessmentId =
+      "diagnosticAssessmentId" in data ? data.diagnosticAssessmentId : existingPathway?.diagnosticAssessmentId;
+    if (!effectiveAssessmentId) {
+      const err = new Error("Set a diagnostic assessment before offering it publicly");
+      err.statusCode = 400;
+      throw err;
+    }
+    const assessment = await BuilderAssessmentModel.findById(effectiveAssessmentId);
+    if (!assessment) {
+      const err = new Error("Diagnostic assessment not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (requiresManualGrading(assessment)) {
+      const err = new Error("This assessment includes manually-graded items and can't be used for the public diagnostic");
+      err.statusCode = 400;
+      throw err;
+    }
+  },
+
   async createPathway(curriculumId, data) {
     const existing = await PathwayModel.findByCurriculumId(curriculumId);
     if (existing.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
@@ -181,6 +212,7 @@ const CompetencyService = {
       throw err;
     }
     await assertCoursesExist(data.courses);
+    await this.assertPublicDiagnosticAllowed(data, null);
     return PathwayModel.create({ curriculumId, ...data });
   },
 
@@ -201,6 +233,7 @@ const CompetencyService = {
       }
     }
     await assertCoursesExist(data.courses);
+    await this.assertPublicDiagnosticAllowed(data, pathway);
     return PathwayModel.update(id, data);
   },
 

@@ -77,10 +77,15 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 | `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ❌ removed 4 Sep 2026 — 404s |
 | `GET` | `/api/public/projects` | Project (course) list | ❌ removed 4 Sep 2026 — 404s |
 | `GET` | `/api/public/projects/:idOrSlug` | Project detail | ❌ removed 4 Sep 2026 — 404s |
-| `GET` | `/api/public/pathways` | Pathway list | ✅ live (on `modules` branch → master) |
-| `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses) | ✅ live |
+| `GET` | `/api/public/pathways` | Pathway list — the designated admin's **operational** pathways (§3.5) | ✅ live — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
+| `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses + `diagnostic`) | ✅ live — same scoping |
 | `POST` | `/api/public/leads` | Enrol-interest capture → notify admins | ✅ live |
 | `POST` | `/api/public/contact` | General enquiry → notify admins | ✅ live (separate endpoint kept — see §4.2) |
+| `GET` | `/api/public/diagnostics/:pathwayIdOrSlug/availability` | Does this pathway offer a public diagnostic | ✅ live — see §3.8 |
+| `GET` | `/api/public/diagnostics/:pathwayIdOrSlug?age=` | Diagnostic question set for an age | ✅ live — see §3.8 |
+| `GET` | `/api/public/diagnostics/attempts/:attemptId` | The permanent, shareable graded report for a completed attempt | ✅ live — see §3.9 |
+| `POST` | `/api/public/diagnostics/:pathwayIdOrSlug/submit` | Submit answers → instant graded report + `attemptId`. **No contact info, no lead.** | ✅ live — see §4.3 |
+| `PATCH` | `/api/public/leads/:id` | ~~post-report contact details~~ | ❌ removed 9 Sep 2026 — the diagnostic no longer creates a lead |
 | `GET/POST/PUT/DELETE` | `/api/site/*` | Admin content authoring | ❌ removed 4 Sep 2026 — 404s |
 
 > **"Is the pathways endpoint merged?"** (website §5) — yes. It's in the
@@ -162,38 +167,68 @@ an unpublished record.
 
 Same object. `404 { "message": "Project not found" }`.
 
-### 3.5 `GET /api/public/pathways` → `200`, array
+### 3.5 `GET /api/public/pathways` → `200`, array  ·  `503` if unconfigured
 
 ```jsonc
 [
   {
-    "id": "uuid",
-    "slug": "robotics",            // computed from name at read time — no slug column
+    "id": "uuid",                   // the operational pathway's own id
+    "slug": "robotics",             // computed from name at read time — no slug column
     "name": "Robotics",
     "description": "string",
-    "color": "#25476a",            // brand colour, default "#25476a"
-    "courseCount": integer         // ids in pathway_templates.courses that still resolve to an active course
+    "color": "#25476a",             // brand colour, default "#25476a"
+    "courseCount": integer          // courses in this pathway that still resolve to an active `courses` row
   }
 ]
 ```
 
-**Every pathway template is public the moment it exists** — there is no
-published/draft flag (website §5). A pathway with 0 resolvable active courses
-still appears here with `courseCount: 0`; only its *detail* route 404s.
+**Source: the designated admin's OPERATIONAL pathways** (changed 9 Sep 2026 — see
+§8 changelog). These are the `pathways` rows authored in the portal's **Curriculum
+→ Competency Framework** — the same records that carry the real courses, age
+range and diagnostic. *(Previously this read a separate `pathway_templates`
+"reusable template library" from Settings → Pathways, which turned out to be a
+hand-maintained list that drifted from the actual curriculum. That table still
+exists for the portal's own template feature; the public site just no longer
+reads it, and there is no marketing-template ↔ diagnostic link to configure.)*
+
+**Scoped to `PUBLIC_CONTENT_ADMIN_ID`.** `pathways` has no `ownerAdminId` of its
+own — it's tenant-scoped transitively through `curriculumId → curricula.ownerAdminId`.
+The endpoint reads across **every curriculum the designated admin owns**. If
+`PUBLIC_CONTENT_ADMIN_ID` is unset both `/api/public/pathways` endpoints return
+`503 { "success": false, "message": "Public content is not configured" }`.
+
+Two of the admin's pathways can share a computed slug (names are unique only
+*within* one curriculum, and an admin can own several). When that happens **only
+one appears** — the one with active courses, else the one with a public
+diagnostic, else the first.
+
+**Every such pathway is public the moment it has ≥1 active course** — there is
+no published/draft flag (website §5). A pathway with 0 resolvable active courses
+is **omitted from the list entirely** (not shown with `courseCount: 0` — that was
+the `pathway_templates` behaviour); its detail route 404s.
+(The website also drops `courseCount: 0` entries and de-dupes by slug client-side as
+defence-in-depth — `digifunzi-landing/src/hooks/usePathways.js`.)
 
 ### 3.6 `GET /api/public/pathways/:idOrSlug` → `200` | `404`
 
-List item **plus** an **ordered** `courses` array (template order = learning
-sequence). Exactly these fields per course:
+List item **plus** a `diagnostic` object **plus** an **ordered** `courses` array.
+`:idOrSlug` is the operational pathway's own id or computed slug. Course order is
+the pathway's `courseSequence` (the portal's Course Sequence editor), then any
+`courses[]` never explicitly sequenced.
 
 ```jsonc
 {
   "id": "uuid", "slug": "...", "name": "...", "description": "...",
   "color": "#25476a", "courseCount": 3,
+  "diagnostic": {                 // one fewer round-trip for the CTA
+    "available": true,            // is a public diagnostic offerable right now (see §3.8)
+    "minAge": 8,                  // integer | null — the offered age range (both set, or both null)
+    "maxAge": 14
+  },
   "courses": [
     {
       "name": "string",
-      "description": "string",     // plain text
+      "description": "string",     // plain text (course rich-text HTML flattened server-side)
       "ageMin": integer | null,
       "ageMax": integer | null,
       "coverImage": "string | null"
@@ -203,13 +238,157 @@ sequence). Exactly these fields per course:
 ```
 
 Only `active` courses. Internal course id is **never** exposed.
-`404 { "message": "Pathway not found" }` for an unknown id/slug **or** a pathway
-whose every course is inactive.
+`404 { "message": "Pathway not found" }` for an unknown id/slug, a pathway owned
+by a different admin, **or** a pathway with no active courses.
+
+The `diagnostic` block comes from the pathway's own `publicDiagnosticEnabled` +
+`diagnosticAssessmentId` + `minAge`/`maxAge` (Curriculum → Competency Framework).
+`available:false` (with `minAge`/`maxAge` null) when the flag is off, the
+assessment isn't auto-gradable, **or its min/max age isn't set**. A
+diagnostic-config problem never breaks this response.
 
 ### 3.7 `GET /api/public/learners/:publicToken` → `200` | `404`
 
 The "share via QR" learner profile. Read-only, deliberately narrow field set.
 **Not marketing-site relevant** — listed for completeness only.
+
+### 3.8 Public diagnostics — pick a Pathway, take a diagnostic, see a graded report
+
+**Content source is ONE designated admin's tenant, not every admin.** The
+curriculum system is multi-tenant (each admin's hubs/curricula/pathways are
+isolated from every other admin's) — an anonymous visitor has no admin login,
+so the backend is told explicitly which one tenant's content to serve via the
+`PUBLIC_CONTENT_ADMIN_ID` env var (`server/src/config/env.js`). If that's
+unset in a given environment, every endpoint below returns `503`.
+
+A pathway is offerable here only when **all** of these hold on the operational
+`pathways` row (the **same rows** `/api/public/pathways` §3.5–3.6 now serve — one
+table, not two any more):
+
+1. `publicDiagnosticEnabled: true`
+2. its `diagnosticAssessmentId` resolves to a fully **auto-gradable** assessment
+   (no rubric/manual items — a live re-check, not just the save-time guard). No
+   manual grading, no waiting, no human in the loop, ever, on this path.
+3. **both `minAge` and `maxAge` are set**. A public diagnostic with no age bounds
+   is treated as not-yet-configured, **not** "open to any age" — the anonymous
+   path fails safe. (The authenticated learner flow, which has a real learner +
+   teacher, is unaffected — it never touches this.)
+
+> **`:pathwayIdOrSlug` is the operational pathway's own id or computed slug** —
+> the same slug `/api/public/pathways` returns, since 9 Sep 2026 that endpoint
+> serves operational pathways directly (§3.5). No `pathway_templates` indirection.
+> All of this pathway's public config (courses, age range, diagnostic) lives on
+> the one `pathways` row, authored in Curriculum → Competency Framework.
+
+#### `GET /api/public/diagnostics/:pathwayIdOrSlug/availability` → `200`
+
+```jsonc
+{ "diagnosticAvailable": true, "minAge": 8, "maxAge": 14 }
+```
+
+`minAge`/`maxAge` added 8 Sep 2026 (both null when unavailable) so the website can
+bound its age input. The same info is now embedded in the §3.6 pathway-detail
+response as `diagnostic`, so a detail page usually doesn't need this call at all —
+it's a fallback. Never errors (aside from the `503`-if-unconfigured case above) —
+an unknown pathway or one with no offerable diagnostic both just resolve to
+`diagnosticAvailable: false`. Use
+this to decide whether to show a diagnostic CTA without fetching the full
+question set.
+
+#### `GET /api/public/diagnostics/:pathwayIdOrSlug?age=<int>` → `200` | `404`
+
+```jsonc
+{
+  "pathwayId": "uuid",
+  "pathwayName": "string",
+  "assessmentId": "uuid",
+  "name": "string",                  // the assessment's own name
+  "instructions": "string",
+  "minAge": 8,                       // added 8 Sep 2026 — always set on a 200 (the gate requires it)
+  "maxAge": 14,
+  "items": [
+    {
+      "id": "string", "kind": "mcqSingle | trueFalse | mcqMultiple | fillBlank | ordering | matching",
+      "question": "string (HTML)", "points": number,
+      "options": ["string", ...],     // mcqSingle/mcqMultiple/trueFalse only
+      "blanks": ["", ...],            // fillBlank only — length is real (how many boxes to render), each entry blanked
+      "sequence": ["string", ...],    // ordering only — SHUFFLED, not the real order (that's the answer)
+      "pairs": [{ "left": "string", "right": "" }],  // matching only — right is blanked
+      "rightOptions": ["string", ...],// matching only — the real right-hand values, shuffled, to populate the picker
+      "indicatorNames": ["string", ...]  // competency indicator names this item is tagged with, if any
+    }
+  ]
+}
+```
+
+**No `correctAnswer` field, ever, on any item** — stripped server-side before
+this response is built. `sequence`/`pairs.right`/`blanks` are deliberately
+**not** the real solution (see the field-by-field note above) — sending them
+as-is would trivially reveal the answer before grading. `AssessmentTaker`'s
+existing rendering logic for `ordering`/`matching` already treats these
+fields as "the starting state to rearrange," so a shuffled `sequence` and
+blanked `pairs` render correctly with zero client-side changes.
+
+`404 { "message": "No public diagnostic available" }` for: an unknown
+pathway, an age outside every offered pathway's range, or a pathway with no
+public diagnostic configured/offerable right now — deliberately
+undifferentiated, so a probing client can't distinguish "this pathway
+doesn't exist" from "it exists but isn't public yet."
+
+**Rate limit: 60 requests / 15 min / IP** — tighter than the write endpoints
+below, since a GET creates no record and could otherwise be probed
+repeatedly to reconstruct answer patterns from many sanitized responses.
+
+### 3.9 `GET /api/public/diagnostics/attempts/:attemptId` → `200` | `404`
+
+The **permanent, shareable graded report** for a completed diagnostic. `:attemptId`
+is the opaque uuid returned in the submit response's `data.attemptId` (§4.3). The
+report is **never emailed** — this link is how a visitor keeps, shares, re-opens, or
+prints (browser "Save as PDF") their report. The attempt row is write-once and kept
+indefinitely, so the link never expires.
+
+```jsonc
+{
+  "attemptId": "uuid",
+  "pathwayName": "string",
+  "assessmentName": "string",
+  "childName": "string | null",       // as entered at submit — optional there, so may be null
+  "childAge": integer | null,
+  "completedAt": "ISO-8601",
+  "totalScore": number,
+  "maxScore": number,
+  "items": [                          // the SAME sanitized item projection as §3.8 (no correctAnswer,
+    { "id", "kind", "question", "points", "options"?, "blanks"?, "sequence"?, ... }
+  ],                                  //   sequence shuffled, blanks/pairs.right blanked)
+  "answers": [ { "itemId": "string", "response": /* the visitor's own answer */ } ],
+  "itemResults": [
+    { "itemId": "string", "correct": boolean, "marksAwarded": number, "maxMarks": number }
+  ],
+  "indicatorBreakdown": [
+    { "indicatorId": "uuid", "name": "string | null", "marksEarned": number, "marksPossible": number }
+  ]
+}
+```
+
+`items` + `answers` + `itemResults` are stored on the attempt at submit time (a
+`itemsSnapshot` / `itemResults` column pair), so the report renders identically even
+after an admin later edits/reorders/deletes questions on the live assessment.
+
+**Deliberately narrow** — the diagnostic collects no contact info at all, so there's
+none to leak; the request's `ipHash` is never exposed either. The `attemptId` uuid is
+unguessable, so the id in the URL is the only access control (same posture as
+`/api/public/learners/:publicToken`).
+
+`404 { "message": "Report not found" }` for an unknown/garbage `attemptId`.
+
+**Rate limit: 60 requests / 15 min / IP** (shared with §3.8's read limiter).
+
+> **Route order:** `/api/public/diagnostics/attempts/:attemptId` is matched **before**
+> `/api/public/diagnostics/:pathwayIdOrSlug`, so a pathway can't be named `attempts`.
+
+> **Attempts created before this endpoint shipped** have no stored snapshot — their
+> report returns `items: []` / `itemResults: []` and the page shows score + competency
+> breakdown only. Every attempt created since always has the full per-question section.
 
 ---
 
@@ -303,6 +482,82 @@ effectively one inbox with a source tag. If the website later prefers a single
 endpoint, flip `ContactForm` to `useLeadsEndpoint` (posts to `/leads` with
 `interestedIn: "general"`) — that path already works, no backend change.
 
+### 4.3 `POST /api/public/diagnostics/:pathwayIdOrSlug/submit`
+
+Grades the answers **synchronously** (same request, no polling) and returns the
+report. **No contact info is asked for, and no lead is created** — the visitor
+submits their answers and sees their graded report immediately, plus a permanent
+shareable link to it. Enrolment is a separate, later step via the normal
+`POST /api/public/leads` (§4.1), which collects name/email there. Body:
+
+```jsonc
+{
+  "answers": [
+    { "itemId": "string", "response": /* string | string[] | [{left,right}] — shape depends on the item's kind, same contract AssessmentTaker already produces */ }
+  ],
+  "childName": "string ≤120 chars — OPTIONAL (just so the report reads nicely, e.g. \"… for Amara, age 10\")",
+  "childAge":  "integer 3–19 — REQUIRED (must fall within the pathway's configured age range or this 404s, same as the GET)"
+}
+```
+
+Unknown extra keys (a stray `parentName`/`parentEmail`) are **silently stripped** —
+sending the old body still works, the contact fields are just ignored.
+
+**Success — `201`:**
+
+```jsonc
+{
+  "ok": true,
+  "success": true,
+  "message": "Here's how it went!",
+  "data": {
+    "attemptId": "uuid",
+    "pathwayName": "string",
+    "assessmentName": "string",
+    "totalScore": number,
+    "maxScore": number,
+    "itemResults": [
+      { "itemId": "string", "correct": boolean, "marksAwarded": number, "maxMarks": number }
+    ],
+    "indicatorBreakdown": [
+      { "indicatorId": "uuid", "name": "string | null", "marksEarned": number, "marksPossible": number }
+    ]
+  }
+}
+```
+
+No `leadId` (there is no lead). `data` carries everything needed to render the
+report in one response — no second fetch. `overallFeedback`/`gradedByName` are
+never present (auto-graded only, no teacher ever touches it).
+
+**`data.attemptId`** is the key to the permanent shareable report (§3.9). The
+website builds the report URL as
+`/pathways/<slug>/diagnostic/report/<attemptId>` and shows it on the results
+screen (copy-to-clipboard + an "open & download" link). **The report is never
+emailed** — this link is the only way it's kept. The diagnostic sends no mail at
+all.
+
+`404 { "message": "No public diagnostic available" }` — same undifferentiated
+shape and same causes as the GET endpoint (§3.8): unknown pathway, age out of
+range, or no longer offerable (e.g. an admin turned the flag off, or edited
+the assessment to add a manual item, between the visitor loading the page
+and submitting).
+
+Validation error (missing/out-of-range `childAge`): same `400` shape as §4.1.
+
+**Rate limit: 20 requests / 15 min / IP** — same shape/ceiling as §4.1/§4.2
+(`publicLeadLimiter`), since this is structurally the same kind of endpoint
+(a form submission that creates a lead and notifies admins), just with
+grading attached.
+
+Every completed attempt is stored server-side (`public_diagnostic_attempts`,
+`leadId` now nullable — it's always null for the diagnostic) as a full audit
+trail and for completion analytics. One projection of it **is** exposed publicly
+— the shareable report at `GET /api/public/diagnostics/attempts/:attemptId` (§3.9)
+— but only a narrow, PII-safe subset (no `ipHash`); the rest stays admin-only.
+**Retakes are unlimited** — no uniqueness constraint; each attempt gets its own
+shareable report.
+
 ---
 
 ## 5. CORS / environment
@@ -315,6 +570,7 @@ endpoint, flip `ContactForm` to `useLeadsEndpoint` (posts to `/leads` with
 | `CLIENT_URL` | backend | `https://curriculum.digifunzi.com` | Admin portal. Sends cookies, `credentials: true`. **Required.** |
 | `PUBLIC_SITE_URL` | backend | **comma-separated** — see below | Website origin(s). Optional (routes work for server-to-server without it). |
 | `API_PUBLIC_URL` | backend | `https://nodeapp.digifunzi.com` | This API's own external base — used to absolutize `coverImage` (§6). Optional. |
+| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — the operational `pathways` / curricula behind **all five** endpoints in §3.5–3.6 and §3.8. Unset → all five return `503`. Set it to the `users.id` of whichever admin's Curriculum → Competency Framework is the public-facing one. |
 
 ### `PUBLIC_SITE_URL` — comma-separated
 
@@ -365,19 +621,58 @@ returned and the landing site's own `resolveMediaUrl` fallback prefixes
 |---|---|---|---|
 | 1 | **Bootcamps/Projects content (API + admin UI) removed entirely**, 4 Sep 2026 — see the notice at the top of this doc. Was briefly built same-release, then pulled once it became clear "bootcamp" duplicates the existing `programs` concept. | Backend | Not blocking — website should drop any dependency on `/api/public/{bootcamps,projects}`. See [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--removed) if/when this gets rebuilt on top of `programs` instead. |
 | 2 | ~~`coverImage` absolute vs relative~~ — **RESOLVED**: backend returns absolute (§6, §8). | — | Done. |
-| 3 | Pathway slugs are computed from `name` — renaming a pathway changes its public URL. | Both | Acceptable for now; add a `slug` column + 301 map if it becomes a problem. Not blocking (pathways on fixtures at launch). |
+| 3 | Pathway (template) slugs are still computed from `name` — renaming a template still changes its public URL. **The diagnostic link is no longer affected** (it's a real FK now, §3.8), but inbound links / SEO history to the old URL still break. | Both | Acceptable for now; add a `slug` column + 301 map if it becomes a problem. |
 | 4 | Lead **email** (SMTP) — **mostly RESOLVED**: mailer, auto-ack, and in-portal reply are all built (see [LEADS_IMPLEMENTATION.md §2.6](LEADS_IMPLEMENTATION.md#26-outbound-email)). Only real SMTP credentials are still missing (§3.1 there) — until set, sends silently no-op and behavior matches the old in-app-only state. | Backend | Remaining: pick a provider, set `SMTP_HOST/PORT/USER/PASS` + `MAIL_FROM`/`MAIL_REPLY_TO` on the backend host. Staff email digest (Option B's last piece) still open. |
 | 5 | ~~`interestedIn: "quarky"`~~ — **RESOLVED**: standalone product enquiry, `referenceId: null`, no programme record. | — | Enquiries page shows "Interested in: Quarky robot" with no link. |
 | 5b | `referenceId` → human context — **partially resolved**: `GET /api/leads` resolves it against pathways only (bootcamp/project catalogs are gone, see item 1) and the Enquiries card shows "Enquired from: <name>" when it does. | — | See [LEADS_IMPLEMENTATION.md §2.7](LEADS_IMPLEMENTATION.md#27-referenceid--human-context). |
 | 6 | Any "lead submitted" **webhook** back to the website (analytics)? | Website | None today, none requested; backend never calls the website. |
 | 7 | ~~Prod `PUBLIC_SITE_URL`~~ — **RESOLVED**: `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (§5). | — | Backend to deploy. |
 | 8 | Honeypot field (`companyWebsite`) — landing team can forward it for a server-side backstop. | Both | Deferred — client check + 20/15min IP rate limit deemed enough for launch. Revisit if spam gets through. |
+| 9 | ~~Public diagnostics — website not built yet~~ — **RESOLVED**: the full flow (pathway detail CTA → age → questions → contact → graded report → details → enroll) is built and verified end-to-end. **What's left is content authoring, not code** (item 12). | Website / Curriculum | Website done. |
+| 12 | **Public diagnostics have no real per-pathway content.** The designated admin's public pathways currently share one placeholder assessment ("Robotics Starting-Point Diagnostic"), no pathway has `minAge`/`maxAge` set (so — with the strict gate — **nothing is offerable**), and no assessment items carry competency `indicatorMarks` (so the report's learner-profile "Competency Breakdown" section never renders). | **Curriculum team** (portal, no code) | Per public pathway (Curriculum → Competency Framework): author a dedicated auto-gradable assessment with items tagged to indicators; set the pathway's min/max age; set `diagnosticAssessmentId` + `publicDiagnosticEnabled`. The report's breakdown section lights up automatically once items are tagged. See `Guide/PUBLIC_DIAGNOSTIC_SETUP.md`. |
+| 10 | Admin notification copy for a diagnostic lead currently reads the raw `interestedIn` value verbatim ("...is interested in pathway_diagnostic for..." — same generic phrasing every other `interestedIn` value gets, since `_notifyAdmins` only special-cases `"general"`). | Backend | Cosmetic — the lead itself and its `message` (the actual score) are correct; only the notification bell's phrasing reads awkwardly. A one-line addition to `lead.service.js`'s `_notifyAdmins` label logic fixes it. |
+
+| 11 | ~~`GET /api/public/pathways` showed the wrong data~~ — **RESOLVED** (§8 item 0). First it leaked every admin's `pathway_templates` (fixed by scoping to `PUBLIC_CONTENT_ADMIN_ID`); then it became clear `pathway_templates` was the wrong table entirely — a Settings-side "reusable template" list that had drifted from the real curriculum. Now serves the designated admin's **operational** `pathways` (Curriculum → Competency Framework). | — | Done. `PUBLIC_CONTENT_ADMIN_ID` is required for all five public endpoints. |
 
 ---
 
 ## 8. Backend changelog — changes made to match this contract
 
 On the `modules` branch (website-reconciliation pass):
+
+0. **`server/src/modules/public-site/public-site.service.js` — public pathways now
+   come from the OPERATIONAL `pathways` table** *(9 Sep 2026)*. `listPathways` /
+   `getPathway` read the designated admin's `pathways` rows (across every
+   curriculum they own — `pathways` is tenant-scoped via
+   `curriculumId → curricula.ownerAdminId`), not the `pathway_templates` catalog.
+   The templates catalog turned out to be a hand-maintained Settings-side list
+   that drifted from the actual curriculum — the real courses / age range /
+   diagnostic all live on the operational pathway. Course order = the pathway's
+   `courseSequence` then any unsequenced `courses[]`. 0-course pathways are
+   omitted from the list. Slug collisions (two of the admin's pathways, same
+   computed name) collapse to the one with courses / a diagnostic / first.
+   `503` if `PUBLIC_CONTENT_ADMIN_ID` unset. **The `pathway_templates` table and
+   its `pathway-template.*` module are untouched** — the portal's "reusable
+   template library" feature keeps working; the public site just stopped reading it.
+
+0b. **Strict age gate + richer diagnostic responses** *(8–9 Sep 2026)*:
+   - **`public-diagnostic.service.js`** — a public diagnostic is offerable only
+     when the pathway has **both** `minAge` and `maxAge` set (a missing bound used
+     to mean "any age" — now "not configured", so the anonymous path fails safe).
+     `resolveDesignatedPathway` resolves `:idOrSlug` against the operational
+     pathways by id then computed slug. New `diagnosticInfo()` (available + age
+     range); `getDiagnostic` echoes `minAge`/`maxAge`.
+   - **`public-site.service.js`** — `getPathway` embeds a `diagnostic` object
+     (§3.6). **`public-diagnostic.controller.js`** — `/availability` returns
+     `minAge`/`maxAge` too.
+   - **`pathway-template.validation.js`** — unrelated bug fix found along the way:
+     `updatePathwaySchema` was `createSchema.partial()`, but Zod's `.default()`
+     still fires for absent keys, so a partial `PUT /api/pathway-templates/:id`
+     would silently blank `description`/`color`/`courses`. Rebuilt from no-default
+     field schemas.
+   - **Website** — `PathwayDetailPage` reads the embedded `diagnostic` (falls
+     back to `/availability`); `DiagnosticPage`'s age step is bounded to the
+     offered range. Mocks/fixtures updated to match.
 
 1. **`server/src/modules/leads/lead.controller.js`** — `POST /api/public/leads`
    and `/contact` success bodies now include `ok: true` alongside the existing
@@ -447,6 +742,19 @@ GET   /api/public/pathways/:idOrSlug
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
+
+# Public diagnostics (no auth) — see §3.8, §3.9, §4.3. Backend + website both live.
+GET   /api/public/diagnostics/:pathwayIdOrSlug/availability
+GET   /api/public/diagnostics/:pathwayIdOrSlug?age=
+GET   /api/public/diagnostics/attempts/:attemptId            # permanent shareable graded report (§3.9)
+POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, childName?, childAge }
+#   → 201 { data: { attemptId, ... } }  — NO contact info, NO lead
+#   website report URL = /pathways/<slug>/diagnostic/report/<attemptId>
+#   the report is shown on-screen + at that link — NEVER emailed
+#   enrolment is separate: POST /api/public/leads via /enroll?referenceId=<slug>
+
+# REMOVED 9 Sep 2026 — 404 now, do not call:
+#   PATCH /api/public/leads/:id   (was the diagnostic's post-report details step — no lead any more)
 
 # REMOVED 4 Sep 2026 — 404 now, do not call:
 #   GET   /api/public/bootcamps[/:idOrSlug]

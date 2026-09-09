@@ -100,8 +100,14 @@ async function ensureSessionsGrouped(courseId) {
   await Promise.all(orphans.map((s) => SessionModel.update(s.id, { moduleId: targetModuleId })));
 }
 
-async function buildAssessmentLookup() {
-  const assessments = await AssessmentModel.findAll();
+// AssessmentModel.findAll() has required ownerAdminId ever since the multi-tenant isolation
+// migration (see that model's own comment) — every call site below already has the course row
+// in hand (from CourseModel.findById earlier in the same method), so its ownerAdminId is what's
+// passed here, not the caller's own: a teacher/school/learner viewing a course has no
+// ownerAdminId of their own, but the course they're looking at always does, and that's the
+// correct tenant to resolve its assessments against regardless of who's asking.
+async function buildAssessmentLookup(ownerAdminId) {
+  const assessments = await AssessmentModel.findAll({ ownerAdminId });
   return new Map(assessments.map((assessment) => [assessment.id, assessment]));
 }
 
@@ -466,7 +472,7 @@ const CourseService = {
       throw err;
     }
     await ensureSessionsGrouped(courseId);
-    const assessmentsById = await buildAssessmentLookup();
+    const assessmentsById = await buildAssessmentLookup(course.ownerAdminId);
     const sessions = await SessionModel.findByCourseId(courseId);
     const visibleKeys = learnerId
       ? await AssessmentSubmissionService.getIssuedSessionAssessmentKeysForLearner(learnerId)
@@ -487,7 +493,7 @@ const CourseService = {
     // Live-sync: a session created with assessments already attached feeds this course's
     // curricula immediately, same as attaching them via a later update.
     if (data.assessmentIds?.length || data.assessmentAttachments?.length) await CurriculumService.resyncCourseIntoCurricula(courseId);
-    const assessmentsById = await buildAssessmentLookup();
+    const assessmentsById = await buildAssessmentLookup(course.ownerAdminId);
     return hydrateSessionAssessments(session, assessmentsById);
   },
 
@@ -512,7 +518,7 @@ const CourseService = {
       notes: [{ id: generateId(), title: "", content: "" }],
       resources: [],
     }));
-    const assessmentsById = await buildAssessmentLookup();
+    const assessmentsById = await buildAssessmentLookup(course.ownerAdminId);
     const created = await SessionModel.createMany(sessionsData);
     return created.map((session) => hydrateSessionAssessments(session, assessmentsById));
   },
@@ -535,7 +541,7 @@ const CourseService = {
     // immediately. No diffing needed — resync is idempotent, so this is a no-op if nothing
     // about assessmentIds actually changed.
     if (data.assessmentIds !== undefined || data.assessmentAttachments !== undefined) await CurriculumService.resyncCourseIntoCurricula(courseId);
-    const assessmentsById = await buildAssessmentLookup();
+    const assessmentsById = await buildAssessmentLookup(course.ownerAdminId);
     return hydrateSessionAssessments(updated, assessmentsById);
   },
 

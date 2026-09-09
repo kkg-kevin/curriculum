@@ -102,7 +102,140 @@ the frontend needs a second, separately-built zip.
 
 ---
 
-## This release (4 Sep 2026) — what changed
+## This release (8 Sep 2026) — what changed
+
+### ⚠️ Read before deploying: multi-tenant admin isolation + a required manual step after
+
+This release makes every admin's data private to that admin (previously every admin could see
+every other admin's hubs/curricula/courses/assessments). **Live has more than one admin
+account** — that matters for the migration below.
+
+**Five new migrations** (apply automatically on Restart, in this order):
+
+| Migration | Effect |
+|---|---|
+| `20260907090000_add_owner_admin_id_to_root_tables.js` | Adds nullable `ownerAdminId` to `learning_hubs`, `curricula`, `courses`, `assessments`, then backfills **every existing row to whichever admin has the oldest `createdAt`** — there is no `createdBy`/creator field anywhere in the pre-existing schema to recover real per-row ownership from (checked exhaustively — see the migration's own comment). **This means every admin's pre-existing data will appear to belong to one admin (the oldest account) immediately after this migration runs.** |
+| `20260907090100_make_owner_admin_id_not_nullable.js` | Flips those four columns to `NOT NULL` once the backfill above has run. |
+| `20260907105000_add_owner_admin_id_to_settings_tables.js` | Same `ownerAdminId` column + same oldest-admin backfill, on the five tenant-owned settings catalogs (system levels, evidence types, etc. — see the migration for the exact list). |
+| `20260907105100_make_settings_owner_admin_id_not_nullable.js` | `NOT NULL` flip for the settings tables, same as above. |
+| `20260907105700_scope_system_levels_unique_name_per_admin.js` | Changes `system_levels`' unique-name constraint from global to per-admin (so two admins can each have their own "Level 1", etc). |
+
+**Required manual step immediately after this deploy**: every admin other than the one that
+ends up owning everything (check the app log or query `SELECT DISTINCT ownerAdminId FROM
+learning_hubs` to see which admin id the backfill picked) needs to move their own hubs,
+curricula, courses, and assessments back to themselves. Use the **new admin-tools "Move to
+Another Admin" feature** — Settings → Admins → pick a hub/curriculum/course/assessment → Move to
+Another Admin → enter the correct admin's email. This is deliberately one-at-a-time, not a bulk
+operation, since a hub's linked curriculum/courses/assessments are independently-owned root
+entities and moving one does not imply moving what's linked to it. **Until this manual step is
+done, every admin other than the backfilled one will see an empty Curriculum/Courses/
+Assessments/Learning Hubs section on login** — this is expected immediately after the migration,
+not a new bug; it resolves entity-by-entity as each gets moved.
+
+**New backend module** — `server/src/modules/admin-tools/` (`reassign-owner.controller.js`,
+`.routes.js`, `.service.js`), mounted at `POST /api/admin-tools/reassign-owner` (admin-only). No
+new dependency, no new env var.
+
+**Backend** (`backend-deploy.zip`):
+- **Multi-tenant isolation.** Every `GET`/list endpoint that used to return every admin's data
+  now scopes to the calling admin's own `ownerAdminId` — hubs, curricula, courses, assessments,
+  and the five settings catalogs above.
+- **Fixed: module/session creation was broken for any course under a multi-admin setup.**
+  `course.service.js`'s session-related methods (`getSessions`, `createSession`,
+  `createSessionsBulk`, `updateSession`) called `AssessmentModel.findAll()` with no
+  `ownerAdminId` — that model requires one unconditionally since the tenant-isolation work above,
+  so it threw `withOwnerScope: ownerAdminId is required for this query` on every attempt to view
+  a course's sessions, create a session, bulk-create sessions (what the "New Module" dialog does
+  when its session count is > 0), or update a session. Now correctly resolves the assessment
+  lookup against the **course's own** `ownerAdminId` (not the caller's), since a
+  teacher/school/learner viewing a course has no `ownerAdminId` of their own but the course they're
+  looking at always does.
+- **New: public diagnostics for the marketing website.** See `Guide/WEBSITE_INTEGRATION_CONTRACT.md`
+  §3.8/§4.3 for the full contract. New unauthenticated endpoints:
+  `GET /api/public/diagnostics/:pathwayIdOrSlug/availability`,
+  `GET /api/public/diagnostics/:pathwayIdOrSlug?age=`,
+  `POST /api/public/diagnostics/:pathwayIdOrSlug/submit` — lets an anonymous website visitor pick
+  a pathway, take a short diagnostic matched to their age, and see an instant graded report,
+  which also creates a `leads` row. Reads/grades against **one designated admin's tenant only**,
+  set via the new **`PUBLIC_CONTENT_ADMIN_ID`** environment variable (see the env table below) —
+  every admin is now an isolated tenant, so the public site needs to be told explicitly whose
+  content to show. Two new migrations (already listed with the others above under a different
+  date — see `20260907131100_add_public_diagnostic_enabled_to_pathways.js` and
+  `20260907131200_create_public_diagnostic_attempts.js`): adds `publicDiagnosticEnabled` to the
+  operational `pathways` table (a curriculum-scoped Pathway needs this flag + a fully
+  auto-gradable `diagnosticAssessmentId` before it's offered publicly — set from Curriculum →
+  Pathways panel's "Diagnostic Assessment" section), and a new `public_diagnostic_attempts` table
+  (full audit trail of every anonymous attempt, admin-only if ever surfaced, never exposed via any
+  public endpoint).
+- **New: `PATCH /api/public/leads/:id`** — unauthenticated, narrowly scoped (only ever writes
+  `phone`/`learnerName`, and only on a lead created by the public-diagnostic flow above) — lets
+  the website fill in phone/child's-name on a lead after the visitor has already seen their
+  report, without a second lead being created.
+
+**Environment variable `PUBLIC_CONTENT_ADMIN_ID`** (see env table below). Introduced with the
+public-diagnostic work; **the 9 Sep follow-on makes it required** for the public marketing
+site's Pathways section too (not just the diagnostic). Leave unset and all five
+`/api/public/{pathways,diagnostics}` endpoints return a clean `503` — nothing else in the app
+depends on it.
+
+**Frontend** (`assets.zip` + `index.html`):
+- **Settings → Admins — "Move to Another Admin."** New action on a hub/curriculum/course/
+  assessment card: pick a target admin by email, moves that one entity's ownership. This is the
+  tool referenced in the required manual step above.
+- **Curriculum → Pathways panel — public-diagnostic toggle.** Each pathway's "Diagnostic
+  Assessment" section (both the create form and the per-card picker) now has an "Offer this
+  diagnostic to anonymous visitors on the public website" checkbox, disabled until a diagnostic
+  assessment is assigned. A pathway with it on shows a green "Public" badge next to its assigned
+  assessment.
+
+### Follow-on (9 Sep 2026) — public pathways now come from the Competency Framework
+
+Additive follow-up to the public-diagnostic work above. **No new migration, no new dependency,
+no data-reshaping, no new required manual step.** Backend-code-only + a small website change.
+
+**The problem this fixes:** `GET /api/public/pathways` was serving the `pathway_templates`
+catalog (Settings → Pathways — a "reusable template library"). That turned out to be a
+hand-maintained list, owned by whichever admin, that had drifted from the real curriculum —
+so the public site showed generic placeholder pathways with placeholder courses, not the
+Competency Framework the team actually authors.
+
+**Backend** (`backend-deploy.zip`):
+- **`GET /api/public/pathways[/:idOrSlug]` now reads the designated admin's OPERATIONAL
+  `pathways`** (Curriculum → Competency Framework) — the same rows that carry the real
+  courses, Course Sequence, age range and diagnostic. Across every curriculum that admin
+  owns. Course order = the pathway's Course Sequence, then any unsequenced courses.
+  A pathway with 0 active courses is omitted from the list; its detail 404s. Slug collisions
+  (two of the admin's pathways with the same computed name) collapse to one.
+- **Scoped to `PUBLIC_CONTENT_ADMIN_ID`** (unset → `503`). This is now a hard dependency for
+  the pathways pages, not just the diagnostic. (Still "optional" at the env level — the
+  endpoints just return `503` until it's set.)
+- **The `pathway_templates` table and its `/api/pathway-templates` module are untouched** —
+  the portal's "reusable template" feature keeps working exactly as before. The public site
+  just stopped reading it. No marketing-template ↔ diagnostic link to configure any more.
+- **Strict age gate.** A pathway's public diagnostic is only offerable when **both** `minAge`
+  and `maxAge` are set on it (a missing bound used to mean "any age" — now "not configured",
+  so the anonymous flow fails safe). Consequence for this deploy: **until the curriculum team
+  sets an age range on each public pathway, no diagnostic appears on the website** — intended,
+  see `Guide/PUBLIC_DIAGNOSTIC_SETUP.md`. (The authenticated in-app learner diagnostic is a
+  different code path and is unaffected.)
+- **Richer responses**: `GET /api/public/pathways/:idOrSlug` embeds a `diagnostic:
+  { available, minAge, maxAge }` object; `/diagnostics/:idOrSlug/availability` and the question
+  set include `minAge`/`maxAge`. See `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §3.5/§3.6/§3.8.
+- **Bug fix (unrelated, found along the way): `PUT /api/pathway-templates/:id` was silently
+  wiping fields.** The update schema was `createSchema.partial()`, but Zod's `.default()`
+  still fired for absent keys — so a PUT that only sent one field blanked
+  `description`/`color`/`courses`. The portal always sends every field so it never surfaced in
+  the UI, but any partial PUT would lose data. Fixed to leave omitted fields untouched.
+
+**Frontend** (`assets.zip` + `index.html`): no change from this follow-on — the earlier
+public-diagnostic UI (Competency Framework's "offer diagnostic publicly" toggle) is all
+that's needed.
+
+**No env change.**
+
+---
+
+## Previous release (4 Sep 2026) — still included here
 
 ### Leads — the loop is now closed, not just receiving
 
@@ -251,34 +384,39 @@ API Server (nodeapp.digifunzi.com)
 MySQL database
 ```
 
-### What each part does
+### What each part does — **this file is the Live copy** (`dcf.digifunzi.com` / `dcf-api.digifunzi.com`)
 
-**Frontend** (`curriculum.digifunzi.com`)
+> This `Guide/live/DEPLOYMENT.md` and `Guide/dev/DEPLOYMENT.md` started as the same file — the
+> steps are identical either way (see "Two environments" above), only the domains/zips differ.
+> Every domain below is Live's own; the Dev copy under `Guide/dev/` uses
+> `curriculum.digifunzi.com` / `nodeapp.digifunzi.com` instead.
+
+**Frontend** (`dcf.digifunzi.com`)
 - Serves static HTML, CSS and JavaScript files
 - Has no data of its own
 - Every page load or user action sends an API request to the backend
 
-**Backend** (`nodeapp.digifunzi.com`)
+**Backend** (`dcf-api.digifunzi.com`)
 - A running Node.js/Express server
 - Receives requests from the frontend
 - Reads and writes data via a MySQL database (through Knex)
 - Sends data back as JSON responses
 
 ### Example — creating a curriculum:
-1. User fills the form and clicks **Save** on `curriculum.digifunzi.com`
-2. Frontend sends `POST https://nodeapp.digifunzi.com/api/curricula`
+1. User fills the form and clicks **Save** on `dcf.digifunzi.com`
+2. Frontend sends `POST https://dcf-api.digifunzi.com/api/curricula`
 3. Backend receives it, saves it to the `curricula` table
 4. Backend responds with the saved data
 5. Frontend updates the UI
 
 ### The connection point
-`VITE_API_URL=https://nodeapp.digifunzi.com` in `client/.env.production` is what tells the frontend where to send all API requests. This value gets baked into the build — which is why rebuilding is required whenever it changes.
+`VITE_API_URL=https://dcf-api.digifunzi.com` in `client/.env.live` is what tells the Live frontend build where to send all API requests (`npm run build:live` reads this file — see "Two environments" above; plain `npm run build` reads `client/.env.production`, Dev's own URL, instead). This value gets baked into the build — which is why rebuilding is required whenever it changes.
 
-`client/.env.production` is a separate file from `client/.env` (which holds `VITE_API_URL=http://localhost:5000` for local dev). Vite automatically picks `.env.production` over `.env` when running `npm run build` — so `client/.env` never needs to be edited or switched back afterward. If `client/.env.production` doesn't exist, create it before building:
+`client/.env.live` is a separate file from `client/.env` (local dev, `http://localhost:5000`) and `client/.env.production` (Dev deploy, `https://nodeapp.digifunzi.com`). If `client/.env.live` doesn't exist, create it before building:
 ```
-VITE_API_URL=https://nodeapp.digifunzi.com
+VITE_API_URL=https://dcf-api.digifunzi.com
 ```
-Without it, a production build silently falls back to `client/.env` and bakes `http://localhost:5000` into the live site.
+Without it, `npm run build:live` falls back to the next env file Vite finds and bakes in the wrong backend URL.
 
 ---
 
@@ -289,28 +427,29 @@ Without it, a production build silently falls back to `client/.env` and bakes `h
 |---|---|
 | Node.js version | 22.23.2 |
 | Application mode | Development |
-| Application root | `curriculum.digifunzi` |
-| Application URL | `nodeapp.digifunzi.com` |
+| Application root | `dcf-api.digifunzi` |
+| Application URL | `dcf-api.digifunzi.com` |
 | Application startup file | `src/server.js` |
 
 ### Environment Variables (set in cPanel Node.js panel)
 | Name | Value |
 |---|---|
-| CLIENT_URL | https://curriculum.digifunzi.com |
+| CLIENT_URL | https://dcf.digifunzi.com |
 | PUBLIC_SITE_URL | *(optional)* the marketing site's origin(s), **comma-separated** — e.g. `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (deployed site + its build-time prerender origin + the landing team's local dev, per `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §5). Leave unset and the `/api/public/*` routes still work for server-to-server calls; only a browser on an unlisted origin gets CORS-blocked. |
-| API_PUBLIC_URL | *(optional, new this release's predecessor — carried forward)* this API's own external base, e.g. `https://nodeapp.digifunzi.com`. Used to turn stored `/uploads/...` paths into absolute URLs in `/api/public/*` responses, since the landing site reads them cross-origin. Leave unset in a pinch — public responses fall back to the raw stored path. |
-| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | *(optional, new this release)* outbound email for lead auto-ack + staff reply. Leave every one unset and both features silently no-op — nothing else breaks. Any standard SMTP account works (a Google Workspace mailbox + an App Password is the cheapest way to start; a transactional provider like Resend/Postmark/SendGrid is more reliable at volume). `SMTP_PORT` defaults to `587`. |
-| MAIL_FROM | *(optional, new this release)* the From header for outbound mail, e.g. `Digifunzi <hello@digifunzi.com>`. Falls back to `SMTP_USER` if unset. |
-| MAIL_REPLY_TO | *(optional, new this release)* Reply-To header on outbound mail, e.g. `enquiries@digifunzi.com` — where an enquirer's reply-to-the-reply lands. |
+| API_PUBLIC_URL | *(optional, carried forward)* this API's own external base, e.g. `https://dcf-api.digifunzi.com`. Used to turn stored `/uploads/...` paths into absolute URLs in `/api/public/*` responses, since the landing site reads them cross-origin. Leave unset in a pinch — public responses fall back to the raw stored path. |
+| PUBLIC_CONTENT_ADMIN_ID | **Required for the public marketing site's Pathways and Diagnostic pages** (as of the 9 Sep follow-on — see "This release" above). The `users.id` of the admin whose **Curriculum → Competency Framework** is the public-facing one — `/api/public/pathways[/:idOrSlug]` and `/api/public/diagnostics/*` (five endpoints) serve **only that admin's** operational pathways. **This id is database-specific** — Dev and Live have separate databases with separate admin accounts, so each environment needs its own value (do **not** copy Dev's into Live). To find it for an environment: log into that environment's portal as the intended public-content admin and `GET /api/auth/me` (or check the URL / a network response — it returns `{ "id": "…" }`); or run `SELECT id, email FROM users WHERE role='admin'` against that environment's DB. **Leave unset and all five of those endpoints return `503`** and the website's Pathways section shows an empty state. Nothing else in the app depends on it. |
+| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | *(optional, carried forward)* outbound email for lead auto-ack + staff reply. Leave every one unset and both features silently no-op — nothing else breaks. Any standard SMTP account works (a Google Workspace mailbox + an App Password is the cheapest way to start; a transactional provider like Resend/Postmark/SendGrid is more reliable at volume). `SMTP_PORT` defaults to `587`. |
+| MAIL_FROM | *(optional, carried forward)* the From header for outbound mail, e.g. `Digifunzi <hello@digifunzi.com>`. Falls back to `SMTP_USER` if unset. |
+| MAIL_REPLY_TO | *(optional, carried forward)* Reply-To header on outbound mail, e.g. `enquiries@digifunzi.com` — where an enquirer's reply-to-the-reply lands. |
 | NODE_ENV | development |
 | DB_HOST | 127.0.0.1 (or `localhost` — whatever cPanel's MySQL Databases tool shows) |
 | DB_PORT | 3306 |
-| DB_USER | the MySQL user created for this app (cPanel prefixes it, e.g. `cpaneluser_digifunzi`) |
+| DB_USER | the MySQL user created for **Live's own** database (cPanel-prefixed, e.g. `cpaneluser_dcf`) — never Dev's user |
 | DB_PASSWORD | that MySQL user's password |
-| DB_NAME | the MySQL database created for this app (also cPanel-prefixed) |
-| JWT_SECRET | a long random string — reuse the local one or generate a new one, just don't lose it once set |
-| ADMIN_EMAIL | the email for the first admin login |
-| ADMIN_PASSWORD | the password for the first admin login |
+| DB_NAME | the MySQL database created for **Live** (also cPanel-prefixed) — never Dev's database |
+| JWT_SECRET | a long random string, **different from Dev's** — a compromised dev secret must not also compromise live sessions |
+| ADMIN_EMAIL | Live's own first-admin login email — not Dev's |
+| ADMIN_PASSWORD | Live's own first-admin login password — not Dev's |
 | ADMIN_NAME | optional, defaults to "Admin User" |
 
 ### One-time: create the MySQL database
@@ -323,14 +462,14 @@ Before the first deploy under MySQL, in cPanel go to **MySQL Databases**:
 
 ### Steps to Deploy / Re-deploy Backend
 
-> The app now migrates its own database schema and creates the first admin login automatically on every restart (see `src/server.js`) — there is no separate manual migration or data-sync step anymore. **This release adds three new migrations** (see "This release" above) which the Restart applies for you; check the app log afterwards to confirm they ran without error. `backend-deploy.zip` is **code-only**: `src/`, `knexfile.js`, `package.json`, `package-lock.json`. **`knexfile.js` lives at the app root, not inside `src/`** — don't forget it when rebuilding the zip by hand, the app will fail to start without it.
+> The app now migrates its own database schema and creates the first admin login automatically on every restart (see `src/server.js`) — there is no separate manual migration or data-sync step anymore. **This release adds five new migrations** (see "This release" above — read the ⚠️ note before restarting) which the Restart applies for you; check the app log afterwards to confirm they ran without error. `backend-deploy.zip` is **code-only**: `src/`, `knexfile.js`, `package.json`, `package-lock.json`. **`knexfile.js` lives at the app root, not inside `src/`** — don't forget it when rebuilding the zip by hand, the app will fail to start without it.
 
 1. **Create the deployment zip** from the project root:
    - Include: `src/`, `knexfile.js`, `package.json`, `package-lock.json`
    - Exclude: `node_modules/`, `.env`, `uploads/`
-   - The ready-made zip is: `backend-deploy.zip`
+   - The ready-made zip is: `backend-deploy.zip` (this one, under `Guide/live/`)
 
-2. **In cPanel File Manager**, navigate to `curriculum.digifunzi` folder
+2. **In cPanel File Manager**, navigate to the `dcf-api.digifunzi` folder — **not** `curriculum.digifunzi` (that's Dev's app root; Live is a completely separate cPanel Node.js app, see "Two environments" above)
 
 3. **Delete** existing files (code only — leave `uploads/` alone):
    - `src/` folder
@@ -339,23 +478,30 @@ Before the first deploy under MySQL, in cPanel go to **MySQL Databases**:
    - `package-lock.json`
    - the old `data/` folder, if still present from before the MySQL migration — it's no longer read by the app at all and can be removed once you're confident the cutover worked
 
-4. **Upload** `backend-deploy.zip` into `curriculum.digifunzi`
+4. **Upload** `backend-deploy.zip` into `dcf-api.digifunzi`
 
 5. **Extract** — right-click `backend-deploy.zip` → Extract
-   - After extraction, confirm `src/server.js`, `knexfile.js`, and `src/modules/auth/auth.routes.js` are directly inside `curriculum.digifunzi`
+   - After extraction, confirm `src/server.js`, `knexfile.js`, and `src/modules/auth/auth.routes.js` are directly inside `dcf-api.digifunzi`
    - If the zip extracted into an extra nested folder, move the contents up one level before restarting the app
 
-6. **In cPanel Node.js panel**:
-    - Confirm the `DB_*`/`JWT_SECRET`/`ADMIN_*` environment variables above are set
+6. **In cPanel Node.js panel** (the `dcf-api.digifunzi` app, not Dev's):
+    - Confirm the `DB_*`/`JWT_SECRET`/`ADMIN_*` environment variables above are set to **Live's own values**
+    - **Set `PUBLIC_CONTENT_ADMIN_ID`** to Live's own value — see the env table. Get it by logging into `https://dcf.digifunzi.com` as the admin whose Competency Framework should be public and checking `GET https://dcf-api.digifunzi.com/api/auth/me` (or `SELECT id,email FROM users WHERE role='admin'` on Live's DB). **This is different from Dev's value — do not reuse it.** If you skip this, `/api/public/pathways` and every diagnostic endpoint return `503` and the marketing site's Pathways section is empty.
     - Click **Run NPM Install** — wait for it to complete
     - Click **Restart** — this is what actually builds the database schema and creates the admin login (via the automatic startup migration). Check the app's log after restarting to confirm it started cleanly rather than crash-looping (a bad `DB_*` value is the most likely cause of a failed start).
+    - **Then do the required manual step from "This release" above** — reassign each admin's hubs/curricula/courses/assessments back to themselves via Settings → Admins → Move to Another Admin, once the frontend deploy below is also done (that UI ships in this same release).
 
-7. **Test** — visit `https://nodeapp.digifunzi.com`  
-   Expected response: `{ "message": "API is running" }`, then confirm you can log in at `https://curriculum.digifunzi.com` with the `ADMIN_EMAIL`/`ADMIN_PASSWORD` above.
+7. **Test** — visit `https://dcf-api.digifunzi.com`  
+   Expected response: `{ "message": "API is running" }`, then confirm you can log in at `https://dcf.digifunzi.com` with Live's own `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+
+8. **Verify the public pathways feed** — `curl https://dcf-api.digifunzi.com/api/public/pathways`:
+   - `503` → `PUBLIC_CONTENT_ADMIN_ID` is unset or wrong (step 6).
+   - `[]` (empty array) → the env var is set, but that admin's Competency Framework has **no pathway with an active course** yet. Add courses to at least one pathway (portal → Curriculum → Competency Framework). The marketing site only shows pathways that have courses.
+   - A non-empty array of real pathway names → working. Open one on the site to confirm its courses render.
 
 ### Uploaded files (cover images, inline images, attached documents)
 
-Uploaded files are saved to `server/uploads/` and served directly at `https://nodeapp.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
+Uploaded files are saved to `server/uploads/` and served directly at `https://dcf-api.digifunzi.com/uploads/<filename>` — no extra cPanel configuration is needed, the server does this itself (`app.js` already serves that folder statically).
 
 ### Login/data sync
 
@@ -371,23 +517,26 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 
 ### Steps to Deploy / Re-deploy Frontend
 
-1. **Confirm `client/.env.production` exists** with:
+1. **Confirm `client/.env.live` exists** with:
    ```
-   VITE_API_URL=https://nodeapp.digifunzi.com
+   VITE_API_URL=https://dcf-api.digifunzi.com
    ```
-   (See "The connection point" above — create it if missing. `client/.env`, used for local dev, does not need to change.)
+   (See "The connection point" above — create it if missing. `client/.env` and
+   `client/.env.production`, used for local dev and Dev's own deploy, do not need to change.)
 
-2. **Build** the React app:
+2. **Build** the React app **for Live specifically** — not plain `npm run build`, which bakes in
+   Dev's API URL instead:
    ```bash
-   cd client && npm run build
+   cd client && npm run build:live
    ```
    This generates `client/dist/` containing `index.html` and `assets/`
 
 3. **Zip the assets folder** (needed because cPanel cannot upload folders directly):
    - Zip the `assets` **folder itself**, not its loose contents — from `client/dist/` run `zip -r assets.zip assets` so the archive holds `assets/…` paths and extracts back into an `assets/` folder.
-   - The ready-made zip is: `assets.zip` (already built this way — 66 entries, all under `assets/`).
+   - The ready-made zip is: `assets.zip` (under `Guide/live/`, already built this way — 66 entries, all under `assets/`).
 
-4. **In cPanel File Manager**, navigate to `curriculum.digifunzi.com` folder
+4. **In cPanel File Manager**, navigate to the `dcf.digifunzi.com` document root — **not**
+   `curriculum.digifunzi.com` (Dev's own static site root)
 
 5. **Delete the previous build's files** so old hashed chunks don't linger:
    - the whole `assets/` folder
@@ -395,14 +544,14 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    (Leave `.htaccess` alone.)
 
 6. **Upload**:
-   - `index.html` from `client/dist/`
-   - `assets.zip`
+   - `index.html` from `Guide/live/` (or `client/dist/`, same file)
+   - `assets.zip` from `Guide/live/`
 
-7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-LSzeJgmb.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
+7. **Extract** `assets.zip` — right-click → Extract. It creates `dcf.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-DpzXMqtJ.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
 
 8. **Delete** `assets.zip` after extraction
 
-9. **Create `.htaccess`** file in `curriculum.digifunzi.com` (if not already there):
+9. **Create `.htaccess`** file in `dcf.digifunzi.com` (if not already there):
    ```apache
    Options -MultiViews
    RewriteEngine On
@@ -410,7 +559,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    RewriteRule ^ index.html [QSA,L]
    ```
 
-10. **Test** — visit `https://curriculum.digifunzi.com`
+10. **Test** — visit `https://dcf.digifunzi.com`
 
 ---
 
@@ -423,34 +572,32 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 - Repeat Frontend steps 1–10
 
 ### Both changed:
-- Deploy backend first, then frontend
+- Deploy backend first, then frontend — **and do the required manual reassignment step
+  ("This release" above) only after both are deployed**, since the "Move to Another Admin" UI is
+  itself part of this frontend deploy.
 
 ---
 
-## Deployment Files
+## Deployment Files (this folder, `Guide/live/`)
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). 286 files, includes every migration through `20260904103225_drop_public_bootcamps_and_projects.js`. Adds the `nodemailer` dependency — **Run NPM Install** on Restart picks it up automatically. |
-| `assets.zip` | Ready-to-upload frontend assets zip. Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
-| `index.html` | The built frontend entry file (`client/dist/index.html`) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-D-XFENvk.js`** in this build; the CSS is unchanged at `index-CPRP9smp.css`. |
-| `login-users.zip` | Obsolete — was for syncing the old JSON-based `data/users.json`. No longer applicable now that auth lives in MySQL; safe to delete. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). Includes every migration through `20260907131200_create_public_diagnostic_attempts.js` (see "This release" above — **read the ⚠️ note before restarting the live app**). No new dependency this release — `package.json`/`package-lock.json` are unchanged from the previous deploy, so **Run NPM Install** on Restart is a no-op but still safe to click. |
+| `assets.zip` | Ready-to-upload frontend assets zip, built with `npm run build:live` (bakes in `https://dcf-api.digifunzi.com`, **not** Dev's URL). Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
+| `index.html` | The built frontend entry file (`client/dist/index.html`, Live build) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-DpzXMqtJ.js`** in this build; CSS is **`index-CPRP9smp.css`**. |
 
 **Verified before this build was packaged** (Git Bash, from the project root):
 ```bash
-unzip -l Guide/assets.zip | grep -cF '\'          # 0 — no Windows backslash paths
-unzip -l Guide/backend-deploy.zip | grep -cF '\'  # 0 — no Windows backslash paths
-unzip -l Guide/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry exists
+unzip -l Guide/live/assets.zip | grep -cF '\'          # 0 — no Windows backslash paths
+unzip -l Guide/live/backend-deploy.zip | grep -cF '\'  # 0 — no Windows backslash paths
+unzip -l Guide/live/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry exists
 ```
-All three passed, plus a boot test (server started clean, `/api/public/pathways`
-still `200`, `/api/public/bootcamps` correctly `404` not `500`, leads still
-work end-to-end). A migration exploring "bootcamps are deployed Programs"
-(`20260904081043_bootcamps_are_programs.js`) is still unfinished and still
-held in `.wip-not-for-deploy/` at the repo root (gitignored, kept out of
-`src/db/migrations/` so it can't accidentally get picked up by a migrate run
-or a deploy-zip rebuild) — moot for now since the bootcamps-are-Programs
-direction it explored was superseded by removing bootcamps/projects
-entirely (see "This release" above). Local dev DB matches exactly what's in
-`backend-deploy.zip`.
+All three passed. The zipped `server/src/` was also diffed byte-for-byte against the local
+`server/src/` that had just been exercised live (module creation → bulk session creation →
+viewing sessions, the exact bug this release fixes) with zero differences, and
+`client/dist/assets/index-DpzXMqtJ.js` was grepped to confirm `dcf-api.digifunzi.com` is the URL
+actually baked into this build, not `nodeapp.digifunzi.com`. A true cPanel boot test (real
+`node_modules`, Live's actual database) still has to happen after upload — that can't be
+simulated locally without touching the live database.
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 

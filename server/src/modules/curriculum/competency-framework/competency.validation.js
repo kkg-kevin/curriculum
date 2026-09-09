@@ -60,8 +60,22 @@ const pathwayFields = z.object({
   // in learner.service.js for where this actually gates issuance.
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
+  // Offers this pathway's diagnosticAssessmentId to anonymous website visitors (see
+  // public-diagnostic.service.js), not just enrolled learners — piggybacks on the one existing
+  // assessment FK rather than a second publicDiagnosticAssessmentId, since there's no product
+  // need for a different assessment publicly vs. internally. Guarded below: can only be set true
+  // if that assessment is fully auto-gradable — a public visitor has no teacher relationship to
+  // route a manually-graded attempt to.
+  publicDiagnosticEnabled: z.boolean().optional().default(false),
 });
 
+// publicDiagnosticEnabled's own guard (must the referenced assessment be auto-gradable) is NOT
+// done here — an update payload can legitimately omit diagnosticAssessmentId while still setting
+// publicDiagnosticEnabled true (e.g. a dedicated toggle UI flipping just that one field on a
+// pathway that already has a diagnostic configured from an earlier save), and this schema has no
+// way to see the pathway's EXISTING diagnosticAssessmentId — only what's in this one request. See
+// CompetencyService.assertPublicDiagnosticAllowed, which runs in the service layer instead, where
+// the full (existing + incoming) picture and the pathway's real id are both available.
 const createPathwaySchema = pathwayFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
 const updatePathwaySchema = pathwayFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
 

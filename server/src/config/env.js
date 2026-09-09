@@ -22,6 +22,13 @@ const env = {
   // there would resolve against the landing site's own origin, not this API). Optional: if
   // unset, public responses fall back to returning the raw stored value.
   API_PUBLIC_URL: process.env.API_PUBLIC_URL,
+  // Which admin's tenant (hubs/curricula/pathways) the public digifunzi-landing site's diagnostic
+  // feature reads from — see public-diagnostic.service.js. Each admin is its own isolated tenant
+  // now (no shared data by default), so the public site needs to be told explicitly whose
+  // content to show rather than guessing "the first admin" or merging everyone's. Optional: the
+  // public diagnostic endpoints return a clean 503 if unset, same posture as the other optional
+  // public-site vars above — nothing else in the app depends on this.
+  PUBLIC_CONTENT_ADMIN_ID: process.env.PUBLIC_CONTENT_ADMIN_ID,
   // Outbound email — all optional. Unset means mailer.js silently no-ops (logs, doesn't throw),
   // so auto-ack/reply/digest emails degrade to a no-op instead of blocking the request that
   // triggered them. Works against any standard SMTP account (Google Workspace, a transactional
