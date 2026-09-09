@@ -46,9 +46,10 @@ pathways (multi-tenant isolation — see §4).
 > hand-maintained and drifted from the real curriculum. Since **9 Sep 2026** the
 > public endpoints read the operational `pathways` table directly. `pathway_templates`
 > still exists for the portal's own template feature; the public site just no longer
-> reads it. (`lead.service.js`'s `_resolveReference` still resolves a lead's
-> `referenceId` against `pathway_templates` — that's a separate display-label lookup,
-> noted in §7 as a known inconsistency.)
+> reads it. (`lead.service.js`'s `_resolveReference` — which turns a lead's
+> `referenceId` into a display name on the Enquiries card — was updated to match:
+> it resolves against the designated admin's operational `pathways` first, then falls
+> back to `pathway_templates` for older leads.)
 
 ---
 
@@ -653,6 +654,7 @@ curl -s -o /dev/null -w "%{http_code}\n" "$BASE/api/public/diagnostics/attempts/
 | Browser CORS error, curl works | The site's origin isn't in `PUBLIC_SITE_URL` (comma-separated, exact origin, no trailing slash) |
 | Can save `publicDiagnosticEnabled` but it never appears publicly | Save-time guard passed, then the assessment was edited to add a manual item — the live re-check now blocks it. Fix the assessment or pick another. |
 | Diagnostic completions not showing in Enquiries | **By design** — the diagnostic creates no lead. Only submitting the `/enroll` form does. Check `public_diagnostic_attempts` (admin-only) for completion data. |
+| Enquiries card shows a bare slug instead of the pathway name | The lead's `referenceId` slug doesn't match any of the `PUBLIC_CONTENT_ADMIN_ID` admin's operational pathways (deleted / renamed pathway), OR `PUBLIC_CONTENT_ADMIN_ID` is unset. `_resolveReference` resolves against operational `pathways` first, then `pathway_templates` — an unmatched slug just shows no label. |
 | `POST .../submit` returns `400` | Missing or out-of-range `childAge` — it's the only required field. `parentName`/`parentEmail` are no longer accepted (silently ignored if sent). |
 | `PATCH /api/public/leads/:id` returns `404` | **Removed.** The post-report details step is gone (no lead to patch). |
 | Shareable report link 404s | Unknown/garbage `attemptId`, OR the attempt row was manually deleted. The uuid is exact — a truncated/edited link won't resolve. |
