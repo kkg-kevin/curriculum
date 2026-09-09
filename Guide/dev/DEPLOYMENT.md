@@ -102,6 +102,93 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Sep 2026, second follow-on) — contact-free public diagnostic + shareable report
+
+Additive on top of the 8–9 Sep public-diagnostic work below. **Two new migrations (auto-apply
+on Restart), no new dependency, no new env var, no manual step.** Backend + frontend both change;
+the digifunzi-landing website changes too (its own repo — `africa-digifunzi-com-dist.zip`).
+
+### What changed for a visitor
+
+The public diagnostic (`/pathways/:slug/diagnostic` on the marketing site) no longer asks for a
+name or email, and **no longer creates a lead / Enquiries entry**. The visitor picks an age,
+answers the questions, hits **"Submit & see my report"**, and the graded report renders
+immediately — plus a **permanent shareable link** to it (`/pathways/:slug/diagnostic/report/
+:attemptId`) with a **"Download PDF"** button (browser print, no library). Enrolment is a
+separate step from the report screen (the normal Enroll form, which still collects contact
+details). Nothing about the diagnostic is ever emailed.
+
+### Backend (`backend-deploy.zip`)
+
+**Two new migrations** (apply automatically on Restart, in this order):
+
+| Migration | Effect |
+|---|---|
+| `20260909104300_add_items_snapshot_to_public_diagnostic_attempts.js` | Adds two nullable JSON columns to `public_diagnostic_attempts` — `itemsSnapshot` (the sanitized question set as served, no answer key) and `itemResults` (per-item outcome as graded). These let the shareable report render its per-question section identically even after the assessment is later edited. Idempotent `up`/`down` (`hasColumn` guards). Pre-existing attempt rows get NULLs and their report shows score + competency breakdown only. |
+| `20260909110000_make_public_diagnostic_attempt_lead_nullable.js` | `public_diagnostic_attempts.leadId` → nullable. The diagnostic no longer creates a lead, so new attempt rows have `leadId: NULL`. Existing rows (which all have one) are untouched. `down` deletes any null-`leadId` rows first so the `NOT NULL` can be re-applied. |
+
+**Code changes:**
+- **`POST /api/public/diagnostics/:slug/submit`** now takes `{ answers, childName?, childAge }`
+  only — **no `parentName`/`parentEmail`**. Grades synchronously, stores the attempt (with the
+  sanitized `itemsSnapshot` + `itemResults`), returns the report + an `attemptId`. **Creates no
+  lead**, sends no admin notification, sends no email. Unknown extra keys in the body are
+  silently stripped (an old-shape request still works, contact fields ignored).
+- **New `GET /api/public/diagnostics/attempts/:attemptId`** — the permanent shareable report.
+  Opaque uuid = the only access control (same posture as the QR learner-profile route). Narrow
+  projection: pathway/assessment name, child first name + age, score, competency breakdown,
+  per-question feedback. No `ipHash`, no contact info (there is none). 404s an unknown id.
+  Registered *before* `/:pathwayIdOrSlug` so `attempts` can't be read as a slug. Shares the
+  60/15min read limiter.
+- **Removed `PATCH /api/public/leads/:id`** — the old "post-report details" step (route,
+  controller `updateLeadContactDetails`, `LeadService.updateContactDetails`, and the
+  `updateLeadContactDetailsSchema`). It now 404s. Nothing on the website calls it any more.
+- `lead.service.js` `submitLead` — the ack-email special-case for `pathway_diagnostic` was
+  removed (that value is no longer produced anywhere).
+
+**No env change.** `PUBLIC_CONTENT_ADMIN_ID` is still the one required var for the public
+pathways + diagnostic endpoints (see the 9 Sep follow-on below).
+
+### Frontend (`assets.zip` + `index.html`) — curriculum portal
+
+**No functional change** in the admin portal from this follow-on. The Curriculum → Pathways
+public-diagnostic toggle (8 Sep) is all the portal needs. The zip is rebuilt only to stay in
+lockstep with the repo; if you already deployed the 8–9 Sep `assets.zip` you can skip the
+portal frontend this pass (backend + website are what actually changed).
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+Rebuilt with `VITE_API_URL` pointing at this environment's backend
+(`https://nodeapp.digifunzi.com` — its `.env.production`). Changes in it:
+- Diagnostic flow reduced to 3 steps (age → questions → report), no contact form.
+- New standalone report page + route (`/pathways/:slug/diagnostic/report/:attemptId`).
+- `DiagnosticReport` restyled to match the curriculum system's public shared-learner-profile
+  card (gradient hero, initials avatar, snapshot tiles, score ring, competency bars).
+- Pathway detail: **"Take the diagnostic"** button (header + bottom CTA) when a public
+  diagnostic is configured; the old age-only "starting point finder" widget was removed.
+- `@media print` rules in the global stylesheet so "Download PDF" prints only the report card.
+- Also in this zip (bundled branch work): Store + Projects sections replacing the Quarky page;
+  bootcamp UI removed; the standalone `server/` folder removed (the site talks only to this
+  backend now).
+
+Deploy it the same way as any other website release — upload to the
+`africa.digifunzi.com` document root in cPanel and Extract (overwrite). No env change on the
+hosting side.
+
+> **Pathway detail pages ship as SPA-only HTML in this zip** — the build-time prerender needs
+> `https://nodeapp.digifunzi.com/api/public/pathways` reachable, which it was not on the build
+> machine. The pages work fine (rendered client-side at runtime); they're just not
+> pre-rendered for SEO. To fix: rebuild `digifunzi-landing` (`npm run deploy:build`) on a
+> machine that can reach the Dev backend, then re-upload.
+
+### Deploy order
+
+1. Backend zip → the Node app → **Run NPM Install** → **Restart** (the two migrations apply).
+2. (Optional) Portal `assets.zip` + `index.html` → the frontend document root.
+3. Website `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+4. Smoke test (see "Post-deploy smoke test" at the end of this file).
+
+---
+
 ## This release (8 Sep 2026) — what changed
 
 ### ⚠️ Read before deploying: multi-tenant admin isolation + a required manual step after
@@ -570,40 +657,75 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files (this folder, `Guide/dev/`)
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). Includes every migration through `20260907131200_create_public_diagnostic_attempts.js` (see "This release" above — **read the ⚠️ note before restarting the dev app**). No new dependency this release — `package.json`/`package-lock.json` are unchanged from the previous deploy, so **Run NPM Install** on Restart is a no-op but still safe to click. |
-| `assets.zip` | Ready-to-upload frontend assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder**, so it extracts to an `assets/` folder (not loose files). 66 entries (65 asset files + the folder entry). |
-| `index.html` | The built frontend entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. Its `<script src>` hash must match the `index-*.js` inside `assets.zip` — both are **`index-DjcsDXfi.js`** in this build; CSS is **`index-CPRP9smp.css`**. |
-
-**Verified before this build was packaged** (Git Bash, from the project root):
-```bash
-unzip -l Guide/dev/assets.zip | grep -cF '\'          # 0 — no Windows backslash paths
-unzip -l Guide/dev/backend-deploy.zip | grep -cF '\'  # 0 — no Windows backslash paths
-unzip -l Guide/dev/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry exists
-```
-All three passed. The zipped `server/src/` is byte-for-byte the local `server/src/` that was
-exercised live for this release (multi-tenant isolation + the public pathway/diagnostic work),
-and `client/dist/assets/index-DjcsDXfi.js` was grepped to confirm `nodeapp.digifunzi.com` (Dev's
-URL) is what's baked in. The `backend-deploy.zip` here is **identical** to `Guide/live/`'s — same
-code, only each cPanel Node app's `.env` differs.
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 9 Sep 2026** — includes every migration through `20260909110000_make_public_diagnostic_attempt_lead_nullable.js` (the two new ones this release apply automatically on Restart — see the top "This release" section). `nodemailer` (added 4 Sep) is already in `package.json`; no new dependency this release. **Identical to `Guide/live/backend-deploy.zip`** — same code, only each cPanel Node app's `.env` differs. |
+| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder**. **Rebuilt 9 Sep 2026** — `index-DjcsDXfi.js` / CSS `index-CPRP9smp.css`. No portal-UI change this release; deploying it is optional if the 8 Sep portal build is already live. |
+| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-DjcsDXfi.js`**. |
+| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo — `github.com/kkg-kevin/curriculum-web`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com`. **Pathway detail pages ship as SPA-only HTML** — the build-time prerender needs the API reachable, which it wasn't on the build machine (the pages work at runtime, just not pre-rendered for SEO). Re-run `npm run deploy:build` in that repo from a machine that can reach the backend to fix it. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 
-Use Info-Zip `zip`, **not** PowerShell `Compress-Archive` (it writes `\` path separators that break Linux/cPanel extraction — you'd get a single file literally named `assets\index-….js`).
+Use Info-Zip `zip`, **not** PowerShell `Compress-Archive` (it writes `\` path separators that
+break Linux/cPanel extraction).
 
 ```bash
-# frontend
+# --- curriculum portal (Dev build) ---
 cd client && npm install && npm run build && cd ..
-cp client/dist/index.html Guide/index.html
-rm -f Guide/assets.zip
-# zip the "assets" directory itself (not its contents) so it extracts back into an assets/ folder
-(cd client/dist && zip -r -X -q ../../Guide/assets.zip assets)
+cp client/dist/index.html Guide/dev/index.html
+rm -f Guide/dev/assets.zip
+(cd client/dist && zip -r -X -q ../../Guide/dev/assets.zip assets)
 
-# backend
-rm -f Guide/backend-deploy.zip
-(cd server && zip -r -X -q ../Guide/backend-deploy.zip src knexfile.js package.json package-lock.json)
+# --- curriculum backend (same zip for Dev and Live) ---
+rm -f Guide/dev/backend-deploy.zip Guide/live/backend-deploy.zip
+(cd server && zip -r -X -q /tmp/backend-deploy.zip src knexfile.js package.json package-lock.json -x "src/**/*.test.js")
+cp /tmp/backend-deploy.zip Guide/dev/backend-deploy.zip
+cp /tmp/backend-deploy.zip Guide/live/backend-deploy.zip
 
-# verify — no backslash paths (both must print 0), and assets.zip must hold assets/… paths
-unzip -l Guide/assets.zip | grep -cF '\'          # must be 0
-unzip -l Guide/backend-deploy.zip | grep -cF '\'  # must be 0
-unzip -l Guide/assets.zip | grep -c '^\s*0.*assets/$'   # must be 1 (the folder entry)
+# --- digifunzi-landing website (its own repo, checked out at ./digifunzi-landing) ---
+cd digifunzi-landing && npm install && npm run deploy:build && cd ..
+cp digifunzi-landing/Guide/africa-digifunzi-com-dist.zip Guide/dev/africa-digifunzi-com-dist.zip
+cp digifunzi-landing/Guide/africa-digifunzi-com-dist.zip Guide/live/africa-digifunzi-com-dist.zip
+
+# --- verify — no backslash paths (all must print 0) ---
+unzip -l Guide/dev/assets.zip | grep -cF '\'
+unzip -l Guide/dev/backend-deploy.zip | grep -cF '\'
+unzip -l Guide/dev/africa-digifunzi-com-dist.zip | grep -cF '\'
+unzip -l Guide/dev/assets.zip | grep -c '^\s*0.*assets/$'   # 1 — the assets/ folder entry
+grep -o 'nodeapp.digifunzi.com\|dcf-api.digifunzi.com\|localhost:5000' client/dist/assets/index-*.js | sort -u   # Dev portal → nodeapp only
 ```
+
+---
+
+## Post-deploy smoke test
+
+Run these after the backend Restart (backend URL: `https://nodeapp.digifunzi.com` for Dev).
+
+```bash
+BE=https://nodeapp.digifunzi.com
+
+curl -s $BE/                                             # → {"message":"API is running"}
+curl -s $BE/api/public/pathways | head -c 200            # → JSON array (503 if PUBLIC_CONTENT_ADMIN_ID unset)
+curl -s "$BE/api/public/pathways/<some-slug>" | grep -o '"diagnostic":{[^}]*}'
+
+# contact-free diagnostic submit → attemptId, NO leadId
+curl -s -X POST "$BE/api/public/diagnostics/<some-slug>/submit" \
+  -H 'Content-Type: application/json' \
+  -d '{"answers":[],"childName":"Smoke Test","childAge":10}' | grep -o '"attemptId":"[^"]*"'
+
+# shareable report fetch (paste the attemptId)
+curl -s "$BE/api/public/diagnostics/attempts/<attemptId>" | head -c 200
+
+# removed route is gone
+curl -s -o /dev/null -w '%{http_code}\n' -X PATCH "$BE/api/public/leads/x"   # → 404
+
+# enroll lead path still works
+curl -s -X POST "$BE/api/public/leads" -H 'Content-Type: application/json' \
+  -d '{"parentName":"Smoke Test","parentEmail":"smoke@example.com","interestedIn":"project"}' | grep -o '"ok":true'
+```
+
+Then in a browser at `https://africa.digifunzi.com`: `/pathways` renders cards; a configured
+pathway shows "Take the diagnostic"; taking one shows the report on submit with a working
+"Download PDF"; the portal's **Enquiries** page gets **no** entry from the diagnostic (only the
+Enroll form creates one).
+
+Clean up: `DELETE FROM public_diagnostic_attempts WHERE childName='Smoke Test'; DELETE FROM
+leads WHERE email='smoke@example.com';`
