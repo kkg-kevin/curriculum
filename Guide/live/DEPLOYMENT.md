@@ -102,6 +102,77 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Sep 2026, fourth follow-on) — sell Inventory items in the website Store
+
+Additive. **One new migration (auto-applies on Restart), no new dependency, no new env var, no
+manual step.** Backend + portal frontend + website all change. Same shape as the "third
+follow-on" (for-sale Projects) below — this is the Store equivalent, driven by Inventory.
+
+### What changed
+
+A shared **Inventory** item (Settings → Inventory) can now be marked **"For sale on the
+website"**. When it is, it appears in the public **Store** section
+(`africa.digifunzi.com/store`) with a price and an "Enquire to buy" button (which posts a lead
+— no checkout). This replaces the hardcoded placeholder store items — **the Store is now
+driven by Inventory in the curriculum system**.
+
+### Backend (`backend-deploy.zip`)
+
+**One new migration:**
+
+| Migration | Effect |
+|---|---|
+| `20260909161500_add_sale_fields_to_inventory.js` | Adds 14 nullable/defaulted columns to `inventory`: `saleStatus` (`internal` default \| `for_sale`), `storeCategory` (`kit`\|`bundle`\|`accessory`), `stockStatus` (`available` default \| `preorder` \| `coming_soon`), `tagline`, `badge`, `priceAmount`, `priceCurrency` (default `KES`), `priceUnit`, `priceNote`, `compareAtAmount`, and JSON `highlights` / `includes` / `specs` / `gallery`. Every existing item gets `saleStatus = 'internal'` — behaviour unchanged; Projects still link materials from the same catalog. Idempotent `up`/`down` (`hasColumn` guards). |
+
+**Code:**
+- **New `GET /api/public/store[/:idOrSlug]`** — the designated admin's `inventory` rows where
+  `saleStatus = 'for_sale'`. Scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset, same as
+  Pathways/Projects). Hand-built projection: name/tagline/storeCategory/badge/stockStatus/price/
+  image + (detail) description, highlights, includes ("what you get"), specs, gallery. The ops
+  `category`/`unit`/stock fields are **never exposed**. See
+  `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §3.10/§3.11.
+- **`inventory.validation.js`** — refactored to a plain fields object; defaults on the create
+  schema only (a partial update never resets an untouched column); `compareAt > price`
+  refinement on both.
+- **`inventory.model.js`** — `findForSaleItems(ownerAdminId)` (required scope) + JSON-field
+  (de)serialization for the new list columns.
+- **`lead.service.js` `_resolveReference`** — a lead's `referenceId` now also resolves against
+  the designated admin's for-sale inventory items, so the Enquiries card shows "Enquired from:
+  <item name>" (`referenceType: "store_item"`).
+
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- **Settings → Inventory → the item modal → "Selling" section** (collapsed until "For sale on
+  the website" is ticked). Store category, availability, tagline, badge, price (+ unit, note,
+  compare-at), highlights, "what you get", specs. Image + Description come from the item's
+  normal fields.
+- **Inventory cards** — a green "IN STORE" pill + a price/category line on `for_sale` items;
+  the panel subheading reads "N items defined · M in the website Store".
+- **Enquiries list** — the `store_item` reference type is labelled "Store item".
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- `/store` and `/store/:slug` now read `GET /api/public/store` instead of the hardcoded
+  `src/content/store.js`. New `StoreItemCard` in the same brand-blue visual language as the
+  Pathway / Project cards; a rewritten `StoreItemPage` (highlights, "what you get", specs,
+  price + "Enquire to buy" / "Notify me when available").
+- Empty state until the curriculum team marks an item for sale (see `Guide/STORE_SETUP.md`).
+- A "bundle" is now just a store item with `storeCategory: "bundle"` — the old static
+  bundle→projects cross-link is dropped.
+
+### Deploy order
+
+1. Backend zip → Node app → **Run NPM Install** → **Restart** (the migration applies).
+2. Portal `assets.zip` + `index.html` → the frontend document root (the Inventory Selling
+   section).
+3. Website `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+4. Flip an Inventory item "For sale", check `/store`. Or run
+   `node src/scripts/seedSampleStoreItem.js` on the server for a sample "Quarky Robot Kit".
+
+---
+
 ## This release (9 Sep 2026, third follow-on) — sell Project assessments on the website
 
 Additive. **One new migration (auto-applies on Restart), no new dependency, no new env var, no

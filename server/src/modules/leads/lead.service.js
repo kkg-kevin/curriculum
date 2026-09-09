@@ -6,6 +6,7 @@ const PathwayTemplateModel = require("../settings/pathways/pathway-template.mode
 const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AssessmentModel = require("../assessments/assessment.model");
+const InventoryModel = require("../settings/inventory/inventory.model");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -72,10 +73,12 @@ const LeadService = {
   // referenceId arrives as a bare, untyped string (slug or uuid — see the public leads schema's
   // comment). The website's Enroll / diagnostic links pass an OPERATIONAL pathway's own computed
   // slug; the Projects section's "Enquire to buy" passes a for-sale project assessment's computed
-  // slug. Resolve against the designated admin's operational `pathways` first, then their
-  // for-sale project assessments, then fall back to the `pathway_templates` catalog for older
-  // leads. This only ever feeds a display label, never an authorization decision — an unresolved
-  // referenceId (deleted/renamed, or `PUBLIC_CONTENT_ADMIN_ID` unset) just shows no label.
+  // slug; the Store's "Enquire to buy" passes a for-sale inventory item's computed slug. Resolve
+  // against the designated admin's operational `pathways` first, then their for-sale project
+  // assessments, then their for-sale inventory items, then fall back to the `pathway_templates`
+  // catalog for older leads. This only ever feeds a display label, never an authorization
+  // decision — an unresolved referenceId (deleted/renamed, or `PUBLIC_CONTENT_ADMIN_ID` unset)
+  // just shows no label.
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
 
@@ -110,9 +113,23 @@ const LeadService = {
       } catch {
         /* fall through */
       }
+
+      // 3. for-sale inventory items (the Store) owned by the designated admin.
+      try {
+        const items = await InventoryModel.findForSaleItems(env.PUBLIC_CONTENT_ADMIN_ID);
+        const item =
+          items.find((i) => i.id === referenceId) ||
+          items.find((i) => (slugify(i.name) || "item") === referenceId) ||
+          null;
+        if (item) {
+          return { referenceType: "store_item", referenceName: item.name, referenceSlug: slugify(item.name) || "item" };
+        }
+      } catch {
+        /* fall through */
+      }
     }
 
-    // 3. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
+    // 4. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
     let template = await PathwayTemplateModel.findById(referenceId);
     if (!template) {
       const all = await PathwayTemplateModel.findAll();

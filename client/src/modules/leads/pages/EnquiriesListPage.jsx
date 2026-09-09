@@ -47,7 +47,7 @@ const INTEREST_LABELS = {
   general: "Not sure yet",
 };
 
-const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway" };
+const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item" };
 
 function StatusBadge({ status }) {
   const c = STATUS_COLORS[status] || STATUS_COLORS.new;
