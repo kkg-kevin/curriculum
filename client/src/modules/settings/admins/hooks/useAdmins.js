@@ -10,3 +10,11 @@ export function useCreateAdmin() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to create admin"),
   });
 }
+
+export function useReassignOwner() {
+  return useMutation({
+    mutationFn: adminsApi.reassignOwner,
+    onSuccess: (result) => toast.success(`Moved to ${result.movedTo.email}`),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to reassign"),
+  });
+}

@@ -61,3 +61,8 @@ Thumbs.db
 # Scratch holding area for work-in-progress files deliberately kept out of src/ so they can't be
 # picked up by a migrate run or a deploy-zip rebuild while unfinished — see Guide/DEPLOYMENT.md.
 /.wip-not-for-deploy/
+
+# The public marketing site is its own repo (github.com/kkg-kevin/curriculum-web), checked out
+# here as a sibling working copy for local dev against this backend. It has its own .git and is
+# committed/pushed separately — never track it from this repo.
+/digifunzi-landing/
