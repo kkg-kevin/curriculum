@@ -15,6 +15,7 @@ import CreatePathwayModal from "../../courses/components/CreatePathwayModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
 import RichTextEditor from "../components/RichTextEditor";
 import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
+import ImageUploadField from "../../../components/ImageUploadField";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
@@ -247,6 +248,148 @@ function SegmentedControl({ options, value, onChange }) {
           {STRUCTURE_MODE_LABELS[opt] || opt}
         </button>
       ))}
+    </div>
+  );
+}
+
+const SALE_LEVEL_LABELS = { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
+
+// Info-tab card, Project only. Flip "For sale on the website" on and the marketing fields
+// (cover image, price, level, age, tagline) appear. When off, everything stays authored but the
+// public /api/public/projects endpoint won't serve this assessment. The description / overview /
+// deliverables / milestones the buyer sees come from the assessment's own fields elsewhere in
+// the builder — this panel only adds the shopfront metadata.
+function SellingPanel({ form, setForm }) {
+  const on = form.saleStatus === "for_sale";
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const ageInvalid =
+    form.ageMin !== "" && form.ageMax !== "" && Number(form.ageMax) < Number(form.ageMin);
+
+  return (
+    <div className="tb-card">
+      <p className="tb-card-title">Selling</p>
+
+      <label style={{ display: "flex", alignItems: "flex-start", gap: "9px", cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => set({ saleStatus: e.target.checked ? "for_sale" : "internal" })}
+          style={{ marginTop: "2px", width: "15px", height: "15px", flexShrink: 0 }}
+        />
+        <span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>
+            For sale on the website
+          </span>
+          <span style={{ display: "block", fontSize: "11.5px", color: "#9CA3AF", marginTop: "1px" }}>
+            Appears in the public Projects section (africa.digifunzi.com/projects). Off = internal
+            use only.
+          </span>
+        </span>
+      </label>
+
+      {on && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
+          <div>
+            <Label>Cover Image</Label>
+            <ImageUploadField value={form.coverImage} onChange={(url) => set({ coverImage: url || "" })} />
+          </div>
+
+          <div>
+            <Label>Short Tagline</Label>
+            <input
+              className="tb-input"
+              placeholder="e.g. Make a model room that reacts to you"
+              maxLength={200}
+              value={form.saleTagline}
+              onChange={(e) => set({ saleTagline: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label>Price</Label>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                className="tb-input"
+                style={{ width: "70px", flexShrink: 0 }}
+                value={form.priceCurrency}
+                onChange={(e) => set({ priceCurrency: e.target.value })}
+                aria-label="Currency"
+              />
+              <input
+                className="tb-input"
+                type="number"
+                min="0"
+                style={{ width: "120px", flexShrink: 0 }}
+                placeholder="1800"
+                value={form.priceAmount}
+                onChange={(e) => set({ priceAmount: e.target.value })}
+                aria-label="Amount"
+              />
+              <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>
+                Leave blank to show &ldquo;Enquire for pricing&rdquo;
+              </span>
+            </div>
+            <input
+              className="tb-input"
+              style={{ marginTop: "6px" }}
+              placeholder="Price note (e.g. One-time purchase — lifetime access)"
+              maxLength={300}
+              value={form.priceNote}
+              onChange={(e) => set({ priceNote: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label>Level</Label>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {["beginner", "intermediate", "advanced"].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => set({ saleLevel: form.saleLevel === lvl ? "" : lvl })}
+                  style={{
+                    padding: "5px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                    border: `1.5px solid ${form.saleLevel === lvl ? "#25476a" : "#E5E7EB"}`,
+                    background: form.saleLevel === lvl ? "#e8f5fb" : "#fff",
+                    color: form.saleLevel === lvl ? "#25476a" : "#6B7280",
+                  }}
+                >
+                  {SALE_LEVEL_LABELS[lvl]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label>Age Range <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></Label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                className="tb-input" type="number" min="0" max="25" style={{ width: "80px" }}
+                placeholder="Min" value={form.ageMin}
+                onChange={(e) => set({ ageMin: e.target.value })}
+              />
+              <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+              <input
+                className="tb-input" type="number" min="0" max="25" style={{ width: "80px" }}
+                placeholder="Max" value={form.ageMax}
+                onChange={(e) => set({ ageMax: e.target.value })}
+              />
+              <span style={{ color: "#9CA3AF", fontSize: "12px" }}>years</span>
+            </div>
+            {ageInvalid && (
+              <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>
+                Max age must be greater than or equal to min age.
+              </p>
+            )}
+          </div>
+
+          <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF", lineHeight: 1.5 }}>
+            The buyer also sees this project&rsquo;s Description, Project Overview, Deliverables and
+            Milestones — author those in the tabs above. Linked inventory shows as &ldquo;what
+            you&rsquo;ll need&rdquo;.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1337,11 +1480,40 @@ function PreviewModal({ form, entries, onClose }) {
 
 /* ── form (de)serialization ─────────────────────────────────────────────── */
 
+// The "Selling" fields — only ever authored for a Project, only sent to the API for a Project
+// (see buildPayload). Blank/internal defaults so a non-project form carries them harmlessly.
+const BLANK_SALE = {
+  saleStatus: "internal",
+  coverImage: "",
+  priceAmount: "",
+  priceCurrency: "KES",
+  priceNote: "",
+  saleLevel: "",
+  saleTagline: "",
+  ageMin: "",
+  ageMax: "",
+};
+
+function saleFromAssessment(a) {
+  return {
+    saleStatus: a.saleStatus || "internal",
+    coverImage: a.coverImage || "",
+    priceAmount: a.priceAmount ?? "",
+    priceCurrency: a.priceCurrency || "KES",
+    priceNote: a.priceNote || "",
+    saleLevel: a.saleLevel || "",
+    saleTagline: a.saleTagline || "",
+    ageMin: a.ageMin ?? "",
+    ageMax: a.ageMax ?? "",
+  };
+}
+
 function buildBlankForm(type) {
   return {
     type, name: "", description: "", instructions: "", structureType: "mixed", overview: "",
     sections: [], items: [], indicators: [], deliverables: [], milestones: [], rubric: [],
     competencyIds: [], pathwayIds: [], inventory: [],
+    ...BLANK_SALE,
   };
 }
 
@@ -1356,6 +1528,7 @@ function buildFormFromAssessment(a, competencyIds, pathwayIds, inventory) {
     milestones: (a.milestones || []).map((m) => ({ ...m, id: m.id || genId() })),
     rubric: (a.rubric || []).map((c) => ({ ...c, id: c.id || genId(), indicatorMarks: c.indicatorMarks || [], scoringCriteria: c.scoringCriteria || [] })),
     competencyIds, pathwayIds, inventory,
+    ...saleFromAssessment(a),
   };
 }
 
@@ -1550,6 +1723,22 @@ export default function AssessmentBuilderPage() {
     payload.rubric = registry?.supportsRubric ? form.rubric : [];
     if (registry?.supportsDeliverables) payload.deliverables = form.deliverables;
     if (registry?.supportsMilestones) payload.milestones = form.milestones;
+
+    // Selling fields — only for a Project (the only sellable type; the backend guards this too).
+    // Empty strings from the form's number/text inputs become null so the DB stores a clean
+    // "not set" rather than 0 / "".
+    if (type === "project") {
+      const numOrNull = (v) => (v === "" || v == null ? null : Number(v));
+      payload.saleStatus = form.saleStatus === "for_sale" ? "for_sale" : "internal";
+      payload.coverImage = form.coverImage || null;
+      payload.priceAmount = numOrNull(form.priceAmount);
+      payload.priceCurrency = (form.priceCurrency || "KES").trim();
+      payload.priceNote = form.priceNote.trim();
+      payload.saleLevel = form.saleLevel || null;
+      payload.saleTagline = form.saleTagline.trim();
+      payload.ageMin = numOrNull(form.ageMin);
+      payload.ageMax = numOrNull(form.ageMax);
+    }
     return payload;
   }
 
@@ -1677,7 +1866,10 @@ export default function AssessmentBuilderPage() {
                   )}
                 </div>
               </div>
-              <SummaryCard form={form} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
+                {type === "project" && <SellingPanel form={form} setForm={setForm} />}
+                <SummaryCard form={form} />
+              </div>
             </div>
           )}
 

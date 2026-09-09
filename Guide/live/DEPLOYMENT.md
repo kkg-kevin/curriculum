@@ -102,6 +102,73 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Sep 2026, third follow-on) — sell Project assessments on the website
+
+Additive. **One new migration (auto-applies on Restart), no new dependency, no new env var, no
+manual step.** Backend + portal frontend + website all change.
+
+### What changed
+
+A `type: "project"` assessment can now be marked **"For sale on the website"** in the Assessment
+Builder. When it is, it appears in the public **Projects** section
+(`africa.digifunzi.com/projects`) with a price and an "Enquire to buy" button (which posts a
+lead — no checkout). This replaces the hardcoded placeholder projects the site shipped with.
+
+### Backend (`backend-deploy.zip`)
+
+**One new migration:**
+
+| Migration | Effect |
+|---|---|
+| `20260909144200_add_sale_fields_to_assessments.js` | Adds 9 nullable/defaulted columns to `assessments`: `saleStatus` (`internal` default \| `for_sale`), `coverImage`, `priceAmount`, `priceCurrency` (default `KES`), `priceNote`, `saleLevel`, `saleTagline`, `ageMin`, `ageMax`. Every existing assessment gets `saleStatus = 'internal'` and NULLs — behaviour is unchanged for internal use. Idempotent `up`/`down` (`hasColumn` guards). |
+
+**Code:**
+- **New `GET /api/public/projects[/:idOrSlug]`** — the designated admin's `type: "project"`
+  assessments where `saleStatus = 'for_sale'`. Scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset,
+  same as Pathways). Hand-built projection: name/tagline/level/age/price/coverImage + (detail)
+  description + overview (HTML→text), deliverables, ordered milestones, linked-inventory names.
+  **Never exposes grading content** (`items`/`rubric`/`indicators`/answers). See
+  `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §3.3/§3.4. (This is a *different* feature from the
+  course-catalog `/api/public/projects` removed 4 Sep — that read `courses`; this reads
+  `assessments`.)
+- **`assessment.service.js` guard** — `saleStatus: 'for_sale'` is only allowed on `type:
+  'project'` (400 otherwise). Price/image/level are all optional.
+- **`lead.service.js` `_resolveReference`** — a lead's `referenceId` now also resolves against
+  the designated admin's for-sale projects, so the Enquiries card shows "Enquired from: <project
+  name>".
+- Refactor: `requirePublicContentAdminId` + `htmlToText` moved to
+  `server/src/shared/utils/public-content.js` (shared by the pathways and projects services).
+
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- **Assessment Builder → Assessment Information tab → "Selling" panel** (Project type only). A
+  "For sale on the website" toggle; when on, reveals cover image, tagline, price, level, age
+  range. The buyer-facing Description / Overview / Deliverables / Milestones come from the
+  assessment's own tabs.
+- **Assessments list** — a green "FOR SALE" pill on a project row that's `for_sale`.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- `/projects` and `/projects/:slug` now read `GET /api/public/projects` instead of the hardcoded
+  `src/content/projects.js`. New `ProjectCard` in the same brand-blue visual language as the
+  Pathway cards; a dedicated `ProjectDetailPage` (build steps, "what you'll build", "what you'll
+  need", price + "Enquire to buy").
+- Empty state until the curriculum team marks a project for sale (see
+  `Guide/PROJECT_SALE_SETUP.md`).
+- The Store (`/store`, physical goods) is unchanged — still hardcoded content.
+
+### Deploy order
+
+1. Backend zip → Node app → **Run NPM Install** → **Restart** (the migration applies).
+2. Portal `assets.zip` + `index.html` → the frontend document root (the builder Selling panel).
+3. Website `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+4. In the portal: author a Project and flip it "For sale" (`Guide/PROJECT_SALE_SETUP.md`), then
+   check `/projects` on the site.
+
+---
+
 ## This release (9 Sep 2026, second follow-on) — contact-free public diagnostic + shareable report
 
 Additive on top of the 8–9 Sep public-diagnostic work below. **Two new migrations (auto-apply

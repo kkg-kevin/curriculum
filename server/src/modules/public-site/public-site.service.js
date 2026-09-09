@@ -2,43 +2,10 @@ const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const CourseModel = require("../courses/course.model");
 const AssessmentModel = require("../assessments/assessment.model");
-const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
-
-// The public marketing site (digifunzi-landing) reads ONE designated admin's content — the
-// admin whose `users.id` is in PUBLIC_CONTENT_ADMIN_ID. Every admin is an isolated tenant, so
-// an anonymous visitor (no login) needs the backend told explicitly whose pathways to show.
-// Unset → 503, the same "not configured" posture the diagnostic endpoints use.
-function requirePublicContentAdminId() {
-  if (!env.PUBLIC_CONTENT_ADMIN_ID) {
-    const err = new Error("Public content is not configured");
-    err.statusCode = 503;
-    throw err;
-  }
-  return env.PUBLIC_CONTENT_ADMIN_ID;
-}
-
-// Course descriptions in the operational `courses` table are authored as rich-text HTML
-// (TipTap). The landing site renders pathway course blurbs as plain text, so flatten tags
-// and decode the handful of entities the editor emits before exposing them publicly.
-function htmlToText(html) {
-  if (!html) return "";
-  return String(html)
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]+\n/g, "\n")
-    .trim();
-}
+const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");
 
 // The designated admin's operational Pathways, across every curriculum they own.
 // `pathways` has no ownerAdminId of its own — it's tenant-scoped transitively via

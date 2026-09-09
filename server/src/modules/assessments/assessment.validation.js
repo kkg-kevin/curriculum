@@ -123,7 +123,33 @@ const milestoneSchema = z.object({
   points:      z.number().min(0).optional().default(0),
 });
 
-const createAssessmentSchema = z.object({
+// Sellable-Project fields. Only meaningful when `type === "project"` and `saleStatus ===
+// "for_sale"` — the service layer (assessment.service.js's assertSellableProject) enforces that
+// pairing; the schema just validates shapes/ranges so a bad payload never reaches the DB.
+// Everything is optional with an internal-only default, so an existing quiz/exam/observation
+// payload that never sends any of these validates exactly as before.
+const SALE_STATUSES = ["internal", "for_sale"];
+const SALE_LEVELS = ["beginner", "intermediate", "advanced"];
+
+const saleFields = {
+  saleStatus:    z.enum(SALE_STATUSES).optional().default("internal"),
+  // A stored "/uploads/x.png" path or an absolute URL — same shape as course.coverImage.
+  coverImage:    z.string().max(500).optional().nullable(),
+  // Whole currency units, no fractional pricing (see the migration comment). Coerced so the
+  // portal's number input (which yields a string) is accepted.
+  priceAmount:   z.coerce.number().int().min(0).max(10000000).optional().nullable(),
+  priceCurrency: z.string().trim().max(8).optional().default("KES"),
+  priceNote:     z.string().trim().max(300).optional().default(""),
+  saleLevel:     z.enum(SALE_LEVELS).optional().nullable(),
+  saleTagline:   z.string().trim().max(200).optional().default(""),
+  ageMin:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  ageMax:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+};
+
+// Kept as a plain (unrefined) object so `.partial()` works for the update schema — Zod can't
+// `.partial()` a schema that already has `.refine()` attached. create/update each apply the
+// age-range refinement on top.
+const assessmentFields = z.object({
   name:          z.string().min(1, "Assessment name is required").max(150, "Max 150 characters"),
   type:          z.enum(ASSESSMENT_TYPES, { errorMap: () => ({ message: "Select a valid assessment type" }) }),
   description:   z.string().max(20000).optional().default(""),
@@ -136,9 +162,17 @@ const createAssessmentSchema = z.object({
   indicators:    z.array(indicatorSchema).optional().default([]),
   deliverables:  z.array(deliverableSchema).optional().default([]),
   milestones:    z.array(milestoneSchema).optional().default([]),
+  ...saleFields,
 });
 
-const updateAssessmentSchema = createAssessmentSchema.partial();
+const ageRangeRefinement = (d) => d.ageMin == null || d.ageMax == null || d.ageMax >= d.ageMin;
+const ageRangeRefinementOptions = {
+  message: "Maximum age must be greater than or equal to minimum age",
+  path: ["ageMax"],
+};
+
+const createAssessmentSchema = assessmentFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
+const updateAssessmentSchema = assessmentFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
 
 const linkCompetencySchema = z.object({
   competencyId: z.string().min(1, "competencyId is required"),
@@ -160,6 +194,8 @@ module.exports = {
   linkPathwaySchema,
   linkInventoryItemSchema,
   ASSESSMENT_TYPES,
+  SALE_STATUSES,
+  SALE_LEVELS,
   DEFAULT_RATING_SCALE,
   DEFAULT_SURVEY_SCALE,
 };

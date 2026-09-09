@@ -102,6 +102,64 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Sep 2026, third follow-on) — sell Project assessments on the website
+
+Additive. **One new migration (auto-applies on Restart), no new dependency, no new env var, no
+manual step.** Backend + portal frontend + website all change.
+
+### What changed
+
+A `type: "project"` assessment can now be marked **"For sale on the website"** in the Assessment
+Builder. When it is, it appears in the public **Projects** section
+(`africa.digifunzi.com/projects`) with a price and an "Enquire to buy" button (which posts a
+lead — no checkout). This replaces the hardcoded placeholder projects the site shipped with.
+
+### Backend (`backend-deploy.zip`)
+
+**One new migration** — `20260909144200_add_sale_fields_to_assessments.js` — adds 9
+nullable/defaulted columns to `assessments` (`saleStatus` default `internal`, `coverImage`,
+`priceAmount`, `priceCurrency`, `priceNote`, `saleLevel`, `saleTagline`, `ageMin`, `ageMax`).
+Every existing assessment stays `internal` with NULLs — no behaviour change for internal use.
+Idempotent `up`/`down`.
+
+**Code:**
+- **New `GET /api/public/projects[/:idOrSlug]`** — the designated admin's `type: "project"`
+  assessments where `saleStatus = 'for_sale'`, scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if
+  unset). Marketing projection only — grading content (`items`/`rubric`/answers) is never
+  exposed. See `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §3.3/§3.4. (Different feature from the
+  course-catalog `/api/public/projects` removed 4 Sep.)
+- **`assessment.service.js` guard** — `for_sale` is only valid on `type: 'project'` (400
+  otherwise).
+- **`lead.service.js`** — `_resolveReference` also resolves for-sale project slugs so the
+  Enquiries card shows the project name.
+- Refactor: shared `requirePublicContentAdminId` + `htmlToText` in
+  `server/src/shared/utils/public-content.js`.
+
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- **Assessment Builder → Assessment Information → "Selling" panel** (Project type only): a "For
+  sale on the website" toggle + cover image / tagline / price / level / age range.
+- **Assessments list** — a green "FOR SALE" pill on `for_sale` project rows.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- `/projects` + `/projects/:slug` now API-driven (`GET /api/public/projects`), replacing the
+  hardcoded `src/content/projects.js`. New `ProjectCard` in the Pathway-card visual language;
+  dedicated `ProjectDetailPage`.
+- Empty state until a project is marked for sale (see `Guide/PROJECT_SALE_SETUP.md`).
+- The Store (`/store`) is unchanged.
+
+### Deploy order
+
+1. Backend zip → **Run NPM Install** → **Restart** (migration applies).
+2. Portal `assets.zip` + `index.html` (the builder Selling panel).
+3. Website `africa-digifunzi-com-dist.zip`.
+4. Author a Project, flip "For sale", check `/projects`.
+
+---
+
 ## This release (9 Sep 2026, second follow-on) — contact-free public diagnostic + shareable report
 
 Additive on top of the 8–9 Sep public-diagnostic work below. **Two new migrations (auto-apply

@@ -5,6 +5,7 @@ const NotificationService = require("../notifications/notification.service");
 const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const AssessmentModel = require("../assessments/assessment.model");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -70,12 +71,11 @@ const LeadService = {
 
   // referenceId arrives as a bare, untyped string (slug or uuid — see the public leads schema's
   // comment). The website's Enroll / diagnostic links pass an OPERATIONAL pathway's own computed
-  // slug (that's what `GET /api/public/pathways` serves since 9 Sep 2026 — see
-  // public-site.service.js), so resolve it against the designated admin's operational `pathways`
-  // first: id, then computed slug, across every curriculum that admin owns. Fall back to the
-  // `pathway_templates` catalog for any older lead that referenced a template. This only ever
-  // feeds a display label, never an authorization decision — an unresolved referenceId (a
-  // deleted pathway, or `PUBLIC_CONTENT_ADMIN_ID` unset) just shows no label rather than erroring.
+  // slug; the Projects section's "Enquire to buy" passes a for-sale project assessment's computed
+  // slug. Resolve against the designated admin's operational `pathways` first, then their
+  // for-sale project assessments, then fall back to the `pathway_templates` catalog for older
+  // leads. This only ever feeds a display label, never an authorization decision — an unresolved
+  // referenceId (deleted/renamed, or `PUBLIC_CONTENT_ADMIN_ID` unset) just shows no label.
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
 
@@ -94,11 +94,25 @@ const LeadService = {
           return { referenceType: "pathway", referenceName: match.name, referenceSlug: slugify(match.name) || "pathway" };
         }
       } catch {
-        /* fall through to the template lookup */
+        /* fall through */
+      }
+
+      // 2. for-sale project assessments owned by the designated admin.
+      try {
+        const projects = await AssessmentModel.findForSaleProjects(env.PUBLIC_CONTENT_ADMIN_ID);
+        const project =
+          projects.find((a) => a.id === referenceId) ||
+          projects.find((a) => (slugify(a.name) || "project") === referenceId) ||
+          null;
+        if (project) {
+          return { referenceType: "project", referenceName: project.name, referenceSlug: slugify(project.name) || "project" };
+        }
+      } catch {
+        /* fall through */
       }
     }
 
-    // 2. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
+    // 3. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
     let template = await PathwayTemplateModel.findById(referenceId);
     if (!template) {
       const all = await PathwayTemplateModel.findAll();

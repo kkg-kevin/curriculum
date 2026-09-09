@@ -5,18 +5,15 @@
 resolution is recorded inline and the backend has been changed to match — see
 §8 changelog.
 
-> **⚠️ Bootcamps/Projects removed (4 Sep 2026).** `GET /api/public/bootcamps`,
-> `GET /api/public/projects`, and the admin-only `/api/site/*` authoring API
-> are **gone** — routes now 404. This was a same-day build-then-remove: a
-> `public_bootcamps`/`public_projects` marketing-content table duplicated what
-> a "bootcamp" already means in this system (a deployed **Program**), so it
-> was pulled rather than left as dead weight to reconcile later. **Only
-> `GET /api/public/pathways[/:idOrSlug]` and the two `POST` lead/contact
-> endpoints are live** — every table/section below marked ✅ for bootcamps or
-> projects is now stale; treat this notice as authoritative over those. If
-> `digifunzi-landing` still calls the bootcamp/project endpoints, those calls
-> will 404 until/unless a replacement ships (see
-> [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--removed)).
+> **⚠️ Bootcamps removed (4 Sep 2026); Projects reintroduced differently
+> (9 Sep 2026).** `GET /api/public/bootcamps[/:idOrSlug]` and the admin-only
+> `/api/site/*` authoring API are **gone** — "bootcamp" duplicated the existing
+> **Program** concept. **`GET /api/public/projects[/:idOrSlug]` is back, but as a
+> different feature**: it now serves the designated admin's `type: "project"`
+> **assessments** flipped "For sale" in the Assessment Builder — not the old
+> `public_projects` marketing table (which is still dropped). See §3.3/§3.4. The
+> live public reads are `/api/public/{pathways,projects}[/:idOrSlug]` and the
+> `/api/public/diagnostics/*` set, plus the two `POST` lead/contact endpoints.
 
 - **Website:** `digifunzi-landing` — standalone Vite + React SPA.
   Deployed at **`https://africa.digifunzi.com`** (Truehost cPanel subdomain).
@@ -75,8 +72,8 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 |---|---|---|---|
 | `GET` | `/api/public/bootcamps` | Bootcamp list | ❌ removed 4 Sep 2026 — 404s |
 | `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ❌ removed 4 Sep 2026 — 404s |
-| `GET` | `/api/public/projects` | Project (course) list | ❌ removed 4 Sep 2026 — 404s |
-| `GET` | `/api/public/projects/:idOrSlug` | Project detail | ❌ removed 4 Sep 2026 — 404s |
+| `GET` | `/api/public/projects` | Project list — the designated admin's **for-sale `type: project` assessments** (§3.3) | ✅ live (9 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
+| `GET` | `/api/public/projects/:idOrSlug` | Project detail (build steps, deliverables, kit) | ✅ live — same scoping (§3.4) |
 | `GET` | `/api/public/pathways` | Pathway list — the designated admin's **operational** pathways (§3.5) | ✅ live — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
 | `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses + `diagnostic`) | ✅ live — same scoping |
 | `POST` | `/api/public/leads` | Enrol-interest capture → notify admins | ✅ live |
@@ -99,73 +96,73 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 server-side from `name` via `server/src/shared/utils/slugify.js`. Website cards
 link by **slug**.
 
-### 3.1–3.4 Bootcamps/Projects — REMOVED, kept below for historical reference only
+### 3.1–3.2 Bootcamps — REMOVED (4 Sep 2026)
 
-**These four endpoints no longer exist** (removed 4 Sep 2026 — see the notice
-at the top of this doc). The shapes below describe what they *used to* return;
-do not build against them. Kept here in case this content ever gets
-reintroduced (most likely reusing the operational `programs`/`curricula`
-tables rather than a standalone marketing table — see
-[LEADS_IMPLEMENTATION.md](LEADS_IMPLEMENTATION.md) for the design discussion
-that led to removal).
+`GET /api/public/bootcamps[/:idOrSlug]` no longer exist — they 404. "Bootcamp"
+duplicated the existing **Program** concept. See the notice at the top of this
+doc.
 
-### 3.1 `GET /api/public/bootcamps` → `200`, array
+### 3.3 `GET /api/public/projects` → `200`, array  ·  `503` if unconfigured  *(NEW 9 Sep 2026)*
 
-```jsonc
-[
-  {
-    "id": "uuid",
-    "name": "Junior Robotics Bootcamp",
-    "slug": "junior-robotics-bootcamp",
-    "description": "string",           // as authored
-    "coverImage": "string | null",     // see §6 — may be absolute URL or /uploads/... path
-    "status": "upcoming" | "active" | "completed",
-    "startDate": "YYYY-MM-DD | null",
-    "endDate": "YYYY-MM-DD | null",
-    "educationLevel": "string | null",
-    "gradeFrom": "string | null",
-    "gradeTo": "string | null",
-    "classes": ["string", ...],        // detail-page extra; present in list too, may be []
-    "courses": [{ "name": "string", "slug": "string" }],  // detail-page extra; may be []
-    "isPublished": true,
-    "createdAt": "ISO-8601",
-    "updatedAt": "ISO-8601"
-  }
-]
-```
-
-Published only (`isPublished: true`), newest first.
-
-### 3.2 `GET /api/public/bootcamps/:idOrSlug` → `200` | `404`
-
-Same object. `404 { "message": "Bootcamp not found" }` for unknown id/slug **or**
-an unpublished record.
-
-### 3.3 `GET /api/public/projects` → `200`, array  *(Projects = Courses)*
+**A "project" is a `type: "project"` assessment** authored in the portal's
+**Assessment Builder** and flipped **"For sale on the website"** in its Selling
+panel. This is a *deliberate, different* feature from the removed course-catalog
+endpoint above — it reads the `assessments` table, scoped to
+`PUBLIC_CONTENT_ADMIN_ID` (503 if unset), `saleStatus = 'for_sale'` only.
 
 ```jsonc
 [
   {
     "id": "uuid",
-    "name": "Intro to Robotics",
-    "slug": "intro-to-robotics",
-    "description": "string",           // course rich-text HTML flattened to plain text server-side
-    "coverImage": "string | null",
-    "ageMin": 0-25 | null,
-    "ageMax": 0-25 | null,
-    "sessionCount": integer | null,
-    "requirements": ["string", ...],
-    "modules": ["string", ...],        // detail-page extra
-    "isPublished": true,
-    "createdAt": "ISO-8601",
-    "updatedAt": "ISO-8601"
+    "slug": "smart-home-starter",       // slugify(name), computed at read time
+    "name": "Smart Home Starter",
+    "tagline": "Make a model room that reacts to you",   // saleTagline, "" if unset
+    "level": "beginner" | "intermediate" | "advanced" | null,
+    "ageMin": integer | null,
+    "ageMax": integer | null,
+    "coverImage": "string | null",       // absolutized (§6) — an upload URL or null
+    "price": {                           // null when no price is set → show "Enquire for pricing"
+      "amount": 1800,                    // whole currency units (KES 1,800), no fractional pricing
+      "currency": "KES",
+      "note": "One-time purchase — lifetime access."
+    },
+    "deliverableCount": integer,         // # of the assessment's deliverables
+    "milestoneCount": integer            // # of its milestones
   }
 ]
 ```
+
+Newest first. Slug collisions (two of the admin's for-sale projects, same
+computed name) collapse to one — prefer the one with a cover image, then a
+price, then the first. **The assessment's grading content (`items`, `rubric`,
+`indicators`, correct answers, `indicatorMarks`) is NEVER exposed.**
 
 ### 3.4 `GET /api/public/projects/:idOrSlug` → `200` | `404`
 
-Same object. `404 { "message": "Project not found" }`.
+List item **plus** the marketing detail:
+
+```jsonc
+{
+  "id": "uuid", "slug": "...", "name": "...", "tagline": "...",
+  "level": "beginner" | null, "ageMin": 8, "ageMax": 12,
+  "coverImage": "https://.../uploads/x.png" | null,
+  "price": { "amount": 1800, "currency": "KES", "note": "..." } | null,
+  "deliverableCount": 2, "milestoneCount": 4,
+  "description": "string",              // assessment.description — rich-text HTML → plain text
+  "overview": "string",                 // assessment.overview ("Project Overview") — HTML → text
+  "deliverables": [ { "name": "string", "description": "string" } ],   // "what you'll build"
+  "milestones":   [ { "name": "string", "description": "string" } ],   // ordered — the build steps
+  "requirements": ["Quarky robot ×1", "A laptop"]   // names of the assessment's linked inventory
+}
+```
+
+`404 { "message": "Project not found" }` for an unknown id/slug, a project owned
+by a different admin, or one that isn't `for_sale` — undifferentiated.
+
+**Buying:** no checkout. The website's "Enquire to buy" button links to
+`/enroll?interestedIn=project&referenceId=<slug>` → `POST /api/public/leads`
+(§4.1). The Enquiries page resolves the slug to the project name server-side
+(`referenceType: "project"`).
 
 ### 3.5 `GET /api/public/pathways` → `200`, array  ·  `503` if unconfigured
 
@@ -739,6 +736,8 @@ No migration, no `package.json` change. Restart the server.
 # Public (no auth) — the website uses these
 GET   /api/public/pathways
 GET   /api/public/pathways/:idOrSlug
+GET   /api/public/projects                  # for-sale `type: project` assessments (§3.3)
+GET   /api/public/projects/:idOrSlug        # + build steps / deliverables / kit (§3.4)
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
@@ -758,9 +757,8 @@ POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, childName?, c
 
 # REMOVED 4 Sep 2026 — 404 now, do not call:
 #   GET   /api/public/bootcamps[/:idOrSlug]
-#   GET   /api/public/projects[/:idOrSlug]
-#   GET|POST|PUT|DELETE  /api/site/bootcamps[/:id]
-#   GET|POST|PUT|DELETE  /api/site/projects[/:id]
+#   GET|POST|PUT|DELETE  /api/site/*
+#   (/api/public/projects came BACK 9 Sep 2026 as a different feature — see §3.3)
 
 # Admin (JWT, role: admin) — the boundary, for reference
 GET    /api/leads?status=&source=
