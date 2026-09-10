@@ -22,7 +22,10 @@ function ackBody(lead) {
 
 // Fire-and-forget auto-acknowledgement to the enquirer, sent right after their lead is stored.
 // Never throws — a failed/skipped send must not affect the public POST that triggered it.
+// A "diagnostic"-sourced lead has no email (the diagnostic form asks name + phone only), so
+// there's nothing to acknowledge to — skip cleanly.
 async function sendLeadAcknowledgement(lead) {
+  if (!lead.email) return false;
   const { text, html } = ackBody(lead);
   return sendMail({
     to: lead.email,

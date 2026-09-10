@@ -9,14 +9,22 @@ const answerSchema = z.object({
   response: z.any(),
 });
 
-// POST /api/public/diagnostics/:slug/submit — grades and returns the report ONLY. No contact
-// info: the anonymous visitor sees their result straight after submitting, with nothing asked
-// upfront. `childAge` is still required — it must be inside the pathway's configured range
-// (same gate as the GET), and `childName` is optional context stored on the attempt. No lead is
-// created here any more; the visitor enrols via the normal /enroll form afterwards (which
-// collects name/email), pre-filled with the pathway.
+// POST /api/public/diagnostics/:slug/submit — grades, creates a lead, and returns the report.
+// The visitor must give a name + phone before seeing their result (source: "diagnostic" lead,
+// admins notified). `childAge` is still required — it must be inside the pathway's configured
+// range (same gate as the GET). `childName` stays optional context for the report.
+// `parentPhone` mirrors the enrol/contact form's phone rule (7–20 chars, +0-9()- only).
+const phone = z
+  .string()
+  .trim()
+  .min(7, "Enter a valid phone number")
+  .max(20, "Enter a valid phone number")
+  .regex(/^[+0-9()\-\s]+$/, "Enter a valid phone number");
+
 const submitDiagnosticSchema = z.object({
   answers: z.array(answerSchema).default([]),
+  parentName: z.string().trim().min(2, "Please enter your name").max(120),
+  parentPhone: phone,
   childName: z.string().trim().max(120).optional().or(z.literal("")),
   childAge: z.coerce.number().int().min(3).max(19),
 });

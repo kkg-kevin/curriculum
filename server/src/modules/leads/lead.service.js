@@ -53,7 +53,12 @@ const LeadService = {
   async _notifyAdmins(lead) {
     const admins = await UserModel.findAll();
     const adminIds = admins.filter((u) => u.role === "admin").map((u) => u.id);
-    const label = lead.source === "enroll" ? "New enrolment interest" : "New contact message";
+    const LABEL = {
+      enroll: "New enrolment interest",
+      contact: "New contact message",
+      diagnostic: "New diagnostic result",
+    };
+    const label = LABEL[lead.source] || LABEL.contact;
     // Friendly phrasing per interestedIn value — falls back to the raw value for anything not
     // listed (e.g. an older "pathway_diagnostic" lead — see WEBSITE_INTEGRATION_CONTRACT §7 #10).
     const INTEREST_PHRASE = {
@@ -62,10 +67,15 @@ const LeadService = {
       project: "a project",
       quarky: "the Quarky robot",
     };
-    const message =
-      lead.source === "enroll"
-        ? `${lead.name} is interested in ${INTEREST_PHRASE[lead.interestedIn] || lead.interestedIn}${lead.learnerName ? ` for ${lead.learnerName}` : ""}.`
-        : `${lead.name} sent a message via the contact form.`;
+    let message;
+    if (lead.source === "enroll") {
+      message = `${lead.name} is interested in ${INTEREST_PHRASE[lead.interestedIn] || lead.interestedIn}${lead.learnerName ? ` for ${lead.learnerName}` : ""}.`;
+    } else if (lead.source === "diagnostic") {
+      // The score itself is in lead.message; this is just the notification line.
+      message = `${lead.name} completed a pathway diagnostic${lead.learnerName ? ` for ${lead.learnerName}` : ""} and left a phone number.`;
+    } else {
+      message = `${lead.name} sent a message via the contact form.`;
+    }
     await Promise.all(
       adminIds.map((recipientId) =>
         NotificationService._notify(recipientId, {
@@ -203,6 +213,13 @@ const LeadService = {
     if (!lead) {
       const err = new Error("Lead not found");
       err.statusCode = 404;
+      throw err;
+    }
+    // A diagnostic lead has no email (name + phone only) — there's nothing to email a reply to.
+    // The Enquiries UI hides the "Reply by email" tab for these, but guard the API too.
+    if (!lead.email) {
+      const err = new Error("This enquiry has no email address — add a follow-up note instead, or call them.");
+      err.statusCode = 400;
       throw err;
     }
     const message = await LeadMessageModel.create({

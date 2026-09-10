@@ -73,15 +73,17 @@ On the live site (or a build pointed at this backend):
 2. `/pathways/<slug>` — courses render in sequence order; the **"Take the
    diagnostic"** panel shows with the age range you set ("for ages 8–14").
 3. `/pathways/<slug>/diagnostic` — the age step is bounded to that range; an
-   in-range age loads the questions; an out-of-range age is rejected. **No
-   name/email is asked.**
+   in-range age loads the questions. On the questions step there's a **required
+   "Your name" + "Phone number"** block (the learner's first name stays optional);
+   submit is blocked until name + phone are filled and valid.
 4. Submit — the report shows **immediately** on the same page: score,
    per-question feedback, and (if you tagged indicators in step 1) the competency
    breakdown. There's a permanent shareable link + "Download PDF".
-5. **Nothing lands in Enquiries** from the diagnostic — it's a self-serve results
-   screen, not a lead form. (Clicking "Enroll in this pathway" on the report goes
-   to the normal `/enroll` form; submitting *that* creates the Enquiries entry.)
-   Completed attempts are stored in `public_diagnostic_attempts` (admin-only).
+5. **A "Diagnostic result" enquiry lands in Enquiries** — a `source: "diagnostic"`
+   lead with the name + phone, the learner name/age, the pathway ("Enquired from"),
+   and the score in the message. It has **no email**, so the Enquiries card shows
+   "Reply by email" as unavailable — follow up by phone or add an internal note.
+   The completed attempt is also stored in `public_diagnostic_attempts` (admin-only).
 
 ### Quick API check (no browser)
 
