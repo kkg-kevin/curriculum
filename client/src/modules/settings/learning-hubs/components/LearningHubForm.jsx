@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
-import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Close as CloseIcon, Coffee as CoffeeIcon, CorporateFare as CorporateFareIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
+import { AccessTime as AccessTimeIcon, AutoAwesome as AutoAwesomeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, Chair as ChairIcon, Close as CloseIcon, Coffee as CoffeeIcon, CorporateFare as CorporateFareIcon, EventSeat as EventSeatIcon, Language as LanguageIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon } from "@mui/icons-material";
 import {
-  KENYA_COUNTIES, LEARNING_HUB_TYPES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
+  KENYA_COUNTIES, LEARNING_HUB_TYPES, DELIVERY_MODES, AMENITY_OPTIONS, DAYS_OF_WEEK, SPACE_TYPES, PRICING_MODELS, generateHubCode,
 } from "../../../learning-hubs/schemas/learningHub.schema";
 import { useCurriculaQuery } from "../../../curriculum/hooks/useCurriculum";
 import {
@@ -80,6 +80,40 @@ function Field({ label, error, required, children, hint }) {
       {hint && !error && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{hint}</p>}
       {error && <p style={{ margin: 0, fontSize: "12px", color: "#EF4444" }}>{error}</p>}
     </div>
+  );
+}
+
+// Segmented control for deliveryMode — In person / Online / Hybrid. Drives whether the Address
+// card or a "Joining link" field shows below.
+function DeliveryModeField() {
+  const { watch, setValue } = useFormContext();
+  const value = watch("deliveryMode") || "in_person";
+  return (
+    <Field label="Delivery" required hint="Online hubs skip the physical address and use a joining link instead.">
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {DELIVERY_MODES.map((m) => {
+          const active = value === m.value;
+          return (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setValue("deliveryMode", m.value, { shouldDirty: true, shouldValidate: true })}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                padding: "8px 14px", borderRadius: "9px", cursor: "pointer",
+                fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+                border: `1.5px solid ${active ? ACCENT : "#E5E7EB"}`,
+                backgroundColor: active ? "#e8f5fb" : "#F9FAFB",
+                color: active ? ACCENT : "#6B7280",
+              }}
+            >
+              {m.value === "virtual" ? <LanguageIcon fontSize="small" /> : m.value === "hybrid" ? <VideocamIcon fontSize="small" /> : <LocationOnIcon fontSize="small" />}
+              {m.label}
+            </button>
+          );
+        })}
+      </div>
+    </Field>
   );
 }
 
@@ -572,6 +606,9 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
   const parentHubOptions = allHubs.filter((h) => h.id !== id && !h.parentHubId);
   const hubType = watch("hubType");
   const isSchool = hubType === "school";
+  const deliveryMode = watch("deliveryMode") || "in_person";
+  const isVirtual = deliveryMode === "virtual";
+  const isOnline = deliveryMode !== "in_person"; // virtual OR hybrid — has a joining link
 
   const { fields, append, remove } = useFieldArray({ control, name: "spaces" });
 
@@ -587,6 +624,10 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
               </select>
             </Field>
           </div>
+
+          {/* Delivery mode — not shown for a School (schools are always in person and run on
+              their own term/session schedule). */}
+          {!isSchool && <DeliveryModeField />}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <CodeField isSchool={isSchool} autoGenerate={autoGenerateCode} existingCodes={existingCodes} />
             <Field label="Status" required hint="New hubs start as Draft — only visible in Settings until activated.">
@@ -642,39 +683,62 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
         </div>
       </SectionCard>
 
-      <SectionCard icon={<LocationOnIcon fontSize="small" />} title="Address">
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <Input name="address.street" label="Street / Area" placeholder="e.g. Ngong Road, Karen" />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <Input name="address.city" label="City / Town" placeholder="e.g. Nairobi" />
-            <Field
-              label="County"
-              required
-              error={errors?.address?.county?.message}
-            >
-              <select
-                {...register("address.county")}
-                style={{
-                  ...selectStyle,
-                  borderColor: errors?.address?.county ? "#FCA5A5" : "#E5E7EB",
-                  backgroundColor: errors?.address?.county ? "#FFF5F5" : "#F9FAFB",
-                }}
-              >
-                <option value="">Select county…</option>
-                {KENYA_COUNTIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
+      {/* An online / hybrid hub carries a joining link; a purely virtual hub has no address at
+          all. A physical or hybrid hub still fills in its address. */}
+      {isOnline && (
+        <SectionCard
+          icon={<LanguageIcon fontSize="small" />}
+          title="Joining Link"
+          subtitle="Where learners join the online session (Zoom, Google Meet, etc.)"
+        >
           <Input
-            name="mapLink"
-            label="Google Maps Link"
-            placeholder="https://maps.app.goo.gl/..."
-            hint="Paste a share link from Google Maps so visitors can find this location easily."
+            name="meetingLink"
+            label="Meeting link"
+            placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+            hint={isVirtual ? "Sent to enrolled learners." : "The online option for this hybrid hub."}
           />
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
+
+      {!isVirtual && (
+        <SectionCard
+          icon={<LocationOnIcon fontSize="small" />}
+          title="Address"
+          subtitle={deliveryMode === "hybrid" ? "The physical location for in-person sessions" : undefined}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <Input name="address.street" label="Street / Area" placeholder="e.g. Ngong Road, Karen" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <Input name="address.city" label="City / Town" placeholder="e.g. Nairobi" />
+              <Field
+                label="County"
+                required
+                error={errors?.address?.county?.message}
+              >
+                <select
+                  {...register("address.county")}
+                  style={{
+                    ...selectStyle,
+                    borderColor: errors?.address?.county ? "#FCA5A5" : "#E5E7EB",
+                    backgroundColor: errors?.address?.county ? "#FFF5F5" : "#F9FAFB",
+                  }}
+                >
+                  <option value="">Select county…</option>
+                  {KENYA_COUNTIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Input
+              name="mapLink"
+              label="Google Maps Link"
+              placeholder="https://maps.app.goo.gl/..."
+              hint="Paste a share link from Google Maps so visitors can find this location easily."
+            />
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Assigned Curriculum" subtitle="Core curriculum only. Complementary and substitutional curricula are managed below when editing an existing hub.">
         <Field label="Curriculum" error={errors?.curriculumId?.message}>
@@ -722,14 +786,15 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
         <AmenitiesField />
       </SectionCard>
 
-      {/* Operational Information — not meaningful for a "School" (it runs on the curriculum's
-          term/session schedule instead of open/close hours) */}
+      {/* Operational Information — the session times / days. Not meaningful for a "School" (runs
+          on the curriculum's term/session schedule instead), but it DOES apply to a virtual
+          hub — an online session still runs at a set time on set days. */}
       {!isSchool && (
-        <SectionCard icon={<AccessTimeIcon fontSize="small" />} title="Operational Information" subtitle="Working hours and availability schedule" badge="Non-school types">
+        <SectionCard icon={<AccessTimeIcon fontSize="small" />} title="Operational Information" subtitle={isVirtual ? "When the online sessions run" : "Working hours and availability schedule"} badge="Non-school types">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <Input name="operatingHours.opensAt" label="Opening Time" type="time" required />
-              <Input name="operatingHours.closesAt" label="Closing Time" type="time" required />
+              <Input name="operatingHours.opensAt" label={isVirtual ? "Session start" : "Opening Time"} type="time" required />
+              <Input name="operatingHours.closesAt" label={isVirtual ? "Session end" : "Closing Time"} type="time" required />
             </div>
             <Field label="Available Days" required>
               <OperatingDaysField />
@@ -738,10 +803,9 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
         </SectionCard>
       )}
 
-      {/* Spaces, Capacity & Pricing — data capture only; there is no learner-facing
-          booking/reservation flow built yet, this just records what's on offer. Not applicable
-          to "School", which enrolls learners rather than renting seats. */}
-      {!isSchool && (
+      {/* Spaces, Capacity & Pricing — physical bookable seating. Not applicable to a "School"
+          (enrols learners rather than renting seats) or a purely virtual hub (no physical space). */}
+      {!isSchool && !isVirtual && (
         <SectionCard
           icon={<ChairIcon fontSize="small" />}
           title="Spaces, Capacity & Pricing"

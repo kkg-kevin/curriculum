@@ -43,13 +43,21 @@ function townOf(hub) {
   return [a.city, a.county].filter(Boolean).join(", ");
 }
 
+const DELIVERY_LABELS = { in_person: "In person", virtual: "Online", hybrid: "In person or online" };
+
 function projectHub(hub) {
+  const deliveryMode = hub.deliveryMode || "in_person";
+  const isVirtual = deliveryMode === "virtual";
   return {
     id: hub.id,
     name: hub.name,
     hubType: hub.hubType,
     hubTypeLabel: TYPE_LABELS[hub.hubType] || hub.hubType,
-    town: townOf(hub),
+    deliveryMode,
+    deliveryLabel: DELIVERY_LABELS[deliveryMode] || deliveryMode,
+    isVirtual,
+    // A purely virtual hub has no town — it's "Online". A hybrid still has a place.
+    town: isVirtual ? "Online" : townOf(hub),
     schedule: scheduleOf(hub),
   };
 }

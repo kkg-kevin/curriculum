@@ -558,9 +558,12 @@ designated admin's `status: "active"` learning hubs whose `hubType` is **not**
     "name": "Westlands Tech Club",
     "hubType": "tech_club",
     "hubTypeLabel": "Tech club",
-    "town": "Nairobi, Nairobi",           // address.city + address.county, "" if unset
+    "deliveryMode": "in_person" | "virtual" | "hybrid",   // how it runs
+    "deliveryLabel": "In person" | "Online" | "In person or online",
+    "isVirtual": false,                   // true only for "virtual" — a shorthand for the website
+    "town": "Nairobi, Nairobi",           // address.city + address.county; "Online" for a virtual hub
     "schedule": {
-      "opensAt": "15:00",                 // "HH:MM", "" if unset
+      "opensAt": "15:00",                 // "HH:MM", "" if unset — a virtual hub still has session times
       "closesAt": "18:00",
       "days": ["Tuesday", "Thursday", "Saturday"]   // sorted into week order
     }
@@ -568,10 +571,17 @@ designated admin's `status: "active"` learning hubs whose `hubType` is **not**
 ]
 ```
 
-**Never exposed:** email, code, `spaces`/pricing, `ownerAdminId`, parent hub —
-only "which type, where, and when is it open". A hub that never set its hours
-comes back with empty `opensAt`/`closesAt` and `days: []` (the website shows "to
-be confirmed"). An unknown `?type=` yields `[]`.
+**Never exposed:** email, code, `spaces`/pricing, `ownerAdminId`, parent hub, the
+actual `meetingLink` (that's sent to enrolled learners, not to a browsing visitor)
+— only "which type, in person or online, and when it runs". A hub that never set
+its hours comes back with empty `opensAt`/`closesAt` and `days: []` (the website
+shows "to be confirmed"). An unknown `?type=` yields `[]`.
+
+`deliveryMode` is orthogonal to `hubType` — a virtual makerspace and a virtual
+tech club are both valid. It's stored in a `learning_hubs.deliveryMode` column
+(migration `20260910133000`), defaulting to `in_person` so every existing hub is
+unchanged. A virtual hub has no address; a hybrid has both an address and a
+`meetingLink`.
 
 The chosen type + hub name are folded into the lead's `note`
 ("Preferred hub type: Tech club / Chosen hub: Westlands Tech Club") — they're not

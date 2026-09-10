@@ -207,7 +207,11 @@ export default function LearningHubViewPage() {
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)" }}>
-                {typeLabel}{hub.code ? ` · ${hub.code}` : ""}
+                {typeLabel}
+                {hub.deliveryMode && hub.deliveryMode !== "in_person"
+                  ? ` · ${hub.deliveryMode === "virtual" ? "Online" : "Hybrid"}`
+                  : ""}
+                {hub.code ? ` · ${hub.code}` : ""}
               </p>
             </div>
           </div>
@@ -279,12 +283,32 @@ export default function LearningHubViewPage() {
         <Section title="Learning Hub Details">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <DetailRow icon={<LocalOfferIcon fontSize="small" />} label="Type" value={typeLabel} />
+            {hub.deliveryMode && hub.deliveryMode !== "in_person" && (
+              <DetailRow
+                icon={<LocationOnIcon fontSize="small" />}
+                label="Delivery"
+                value={hub.deliveryMode === "virtual" ? "Online" : "Hybrid (in person + online)"}
+              />
+            )}
             {hub.code && <DetailRow icon={<span style={{ fontSize: 13, fontWeight: 700 }}>#</span>} label="Code" value={hub.code} />}
-            <DetailRow
-              icon={<LocationOnIcon fontSize="small" />}
-              label="Address" value={address || "Not provided"}
-            />
-            {hub.mapLink && (
+            {hub.deliveryMode !== "virtual" && (
+              <DetailRow
+                icon={<LocationOnIcon fontSize="small" />}
+                label="Address" value={address || "Not provided"}
+              />
+            )}
+            {hub.meetingLink && (
+              <DetailRow
+                icon={<LocationOnIcon fontSize="small" />}
+                label="Joining link"
+                value={
+                  <a href={hub.meetingLink} target="_blank" rel="noopener noreferrer" style={{ color: "#38aae1", fontWeight: 600, textDecoration: "none" }}>
+                    Open meeting link ↗
+                  </a>
+                }
+              />
+            )}
+            {hub.mapLink && hub.deliveryMode !== "virtual" && (
               <DetailRow
                 icon={<LocationOnIcon fontSize="small" />}
                 label="Google Maps"

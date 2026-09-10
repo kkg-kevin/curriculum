@@ -20,7 +20,7 @@ export default function CreateLearningHubPage() {
   const methods = useForm({
     resolver: zodResolver(learningHubSchema),
     defaultValues: {
-      name: "", hubType: "school", code: "",
+      name: "", hubType: "school", deliveryMode: "in_person", meetingLink: "", code: "",
       address: { street: "", city: "", county: "" },
       mapLink: "",
       contactPerson: "", email: "", password: "", phone: "",

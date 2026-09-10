@@ -17,12 +17,24 @@ const LEARNING_HUB_TYPES = [
   "school", "co_working_space", "innovation_lab", "makerspace", "tech_club",
 ];
 
+// How a hub is delivered — orthogonal to hubType. `virtual` hubs have no physical address (the
+// county requirement below is relaxed for them) and carry a `meetingLink` instead. Every
+// existing hub is `in_person`.
+const DELIVERY_MODES = ["in_person", "virtual", "hybrid"];
+
+// county is required for a physical presence (in_person / hybrid) and optional — "" allowed —
+// for a purely virtual hub. The conditional check runs in the schema's superRefine so it can
+// see deliveryMode.
 const addressSchema = z.object({
   street: z.string().max(200).default(""),
   city: z.string().max(100).default(""),
-  county: z.string().refine((v) => KENYA_COUNTIES.includes(v), {
-    message: "Please select a valid county",
-  }),
+  county: z
+    .string()
+    .max(60)
+    .default("")
+    .refine((v) => v === "" || KENYA_COUNTIES.includes(v), {
+      message: "Please select a valid county",
+    }),
 });
 
 const operatingHoursSchema = z.object({
@@ -52,6 +64,10 @@ const spaceSchema = z.object({
 const baseLearningHubSchema = z.object({
   name: z.string().min(1, "Learning hub name is required").max(150, "Max 150 characters"),
   hubType: z.enum(LEARNING_HUB_TYPES, { errorMap: () => ({ message: "Select a valid learning hub type" }) }).default("school"),
+  deliveryMode: z.enum(DELIVERY_MODES, { errorMap: () => ({ message: "Select a valid delivery mode" }) }).default("in_person"),
+  // The join link for a virtual / hybrid hub (Zoom, Meet, …). Optional here — a hub can be
+  // marked virtual before the link is sorted; the portal form nudges for it.
+  meetingLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
   code: z
     .string()
     .max(20, "Max 20 characters")
@@ -88,15 +104,18 @@ const baseLearningHubSchema = z.object({
   spaces: z.array(spaceSchema).default([]),
 });
 
-// Code stays required only for hubType "school" — this is what keeps the school-creation
-// flow behaving exactly as it did before the merge, without forcing every other hub type
-// to carry a code too.
+// Code stays required only for hubType "school"; county stays required for a physical presence
+// (in_person / hybrid). This keeps the school-creation flow and every existing physical hub
+// behaving exactly as before, while letting a purely virtual hub skip the address.
 const createLearningHubSchema = baseLearningHubSchema.superRefine((data, ctx) => {
   if (data.hubType === "school" && !data.code) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["code"], message: "School code is required" });
   }
   if (data.password && !data.email) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
+  }
+  if (data.deliveryMode !== "virtual" && !data.address?.county) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["address", "county"], message: "County is required for a physical hub" });
   }
 });
 
@@ -120,5 +139,6 @@ module.exports = {
   attachHubCurriculumSchema,
   updateHubCurriculumStatusSchema,
   LEARNING_HUB_TYPES,
+  DELIVERY_MODES,
   KENYA_COUNTIES,
 };
