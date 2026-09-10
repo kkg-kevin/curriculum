@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FiArrowRight, FiLayers, FiEdit2 } from "react-icons/fi";
 import { useProgramQuery, useDeleteProgram, useUpdateProgram } from "../hooks/usePrograms";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import ProgramCompetitionsSection from "../../competitions/components/ProgramCompetitionsSection";
 
 const STATUS_LABEL = { upcoming: "Upcoming", active: "Active", completed: "Completed" };
 
@@ -172,6 +173,8 @@ export default function ProgramViewPage() {
           ))}
         </div>
       </div>
+
+      <ProgramCompetitionsSection curriculumId={program.curriculumId} />
 
       <ConfirmDialog
         isOpen={confirmDelete}

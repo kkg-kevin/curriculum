@@ -4,6 +4,7 @@ const { getPublicProjects, getPublicProject } = require("./public-project.contro
 const { getPublicStoreItems, getPublicStoreItem } = require("./public-store.controller");
 const { getPublicBootcamps, getPublicBootcamp } = require("./public-bootcamp.controller");
 const { getPublicHubTypes, getPublicHubs } = require("./public-hub.controller");
+const { getPublicCompetitions, getPublicCompetition } = require("./public-competition.controller");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -35,5 +36,10 @@ router.get("/store/:idOrSlug", getPublicStoreItem);
 // picker (see public-hub.service.js). `/types` lists the choosable types + a hub count each.
 router.get("/hubs/types", getPublicHubTypes);
 router.get("/hubs", getPublicHubs);
+
+// Competitions = the designated admin's `competitions` rows marked isPublic (see
+// public-competition.service.js) — the Track cards on africa.digifunzi.com/competitions.
+router.get("/competitions", getPublicCompetitions);
+router.get("/competitions/:idOrSlug", getPublicCompetition);
 
 module.exports = router;
