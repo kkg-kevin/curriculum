@@ -5,18 +5,23 @@
 resolution is recorded inline and the backend has been changed to match — see
 §8 changelog.
 
-> **⚠️ Bootcamps removed (4 Sep 2026); Projects + Store reintroduced differently
-> (9 Sep 2026).** `GET /api/public/bootcamps[/:idOrSlug]` and the admin-only
-> `/api/site/*` authoring API are **gone** — "bootcamp" duplicated the existing
-> **Program** concept. **`GET /api/public/projects[/:idOrSlug]` is back, but as a
-> different feature**: it now serves the designated admin's `type: "project"`
-> **assessments** flipped "For sale" in the Assessment Builder — not the old
-> `public_projects` marketing table (which is still dropped). See §3.3/§3.4.
-> **`GET /api/public/store[/:idOrSlug]` is new**: the designated admin's shared
-> **`inventory`** items flipped "For sale" in the portal's Inventory panel — the
-> Quarky robot, kits, accessories. See §3.5/§3.6. The live public reads are
-> `/api/public/{pathways,projects,store}[/:idOrSlug]` and the
-> `/api/public/diagnostics/*` set, plus the two `POST` lead/contact endpoints.
+> **⚠️ The old marketing-table endpoints were removed (4 Sep 2026); everything
+> was reintroduced as for-sale flags on existing entities (9–10 Sep 2026).** The
+> admin-only `/api/site/*` authoring API and the `public_projects` /
+> `public_bootcamps` tables are **gone**. In their place:
+> - **`GET /api/public/projects[/:idOrSlug]`** — the designated admin's
+>   `type: "project"` **assessments** flipped "For sale" in the Assessment
+>   Builder. See §3.3/§3.4.
+> - **`GET /api/public/store[/:idOrSlug]`** — the designated admin's shared
+>   **`inventory`** items flipped "For sale" in the portal's Inventory panel — the
+>   Quarky robot, kits, accessories. See §3.10/§3.11.
+> - **`GET /api/public/bootcamps[/:idOrSlug]`** *(back 10 Sep 2026, as a different
+>   feature)* — the designated admin's **Program curricula** (`curricula.isProgram
+>   = 1`) flipped "List on the website" in the portal's Program view. NOT the old
+>   `public_bootcamps` table. See §3.1/§3.2.
+>
+> The live public reads are `/api/public/{pathways,projects,store,bootcamps}[/:idOrSlug]`
+> and the `/api/public/diagnostics/*` set, plus the two `POST` lead/contact endpoints.
 
 - **Website:** `digifunzi-landing` — standalone Vite + React SPA.
   Deployed at **`https://africa.digifunzi.com`** (Truehost cPanel subdomain).
@@ -50,20 +55,24 @@ HTTP status. (The two POST endpoints are the one exception — see §4.)
                                                                     │
                                                                     ├─► writes `leads` table
                                                                     └─► notifies every admin in-app
- build   ──►  scripts/prerender.js (from :4199)      ──GET──►  /api/public/pathways
+ build   ──►  scripts/prerender.js (from :4199)      ──GET──►  /api/public/{pathways,projects,store,bootcamps}
                                                                     │
  staff   ──►  Admin portal → Enquiries page          ──GET──►  /api/leads         (admin JWT)
  staff   ──►  Admin portal → Enquiries page          ─PATCH─►  /api/leads/:id/status
 ```
 
-- Pathway content the website reads is **authored inside this system** (the
-  portal's Settings → Pathways). Bootcamps/Projects pages have no backing
-  content API right now — see the notice at the top of this doc.
+- All four content sections the website reads — Pathways, Projects, Store,
+  Bootcamps — are **authored inside this system** (Curriculum → Competency
+  Framework for pathways; the Assessment Builder for projects; Settings →
+  Inventory for the store; a Program's Selling card for bootcamps). Each is a
+  for-sale flag on an existing entity, scoped to `PUBLIC_CONTENT_ADMIN_ID`.
 - The website's only write is a **lead** (Enroll / Contact submission). Nothing
   it sends creates a User or Learner account.
 - A lead's `referenceId` is a **bare string** — no FK, no validation. It may be a
-  slug or a uuid; the backend stores whatever it's given (see §4.1). It's only
-  resolvable against pathways now (bootcamp/project catalogs are gone).
+  slug or a uuid; the backend stores whatever it's given (see §4.1). It's
+  resolved for display against the designated admin's operational pathways,
+  for-sale projects, for-sale inventory items and for-sale bootcamps, then the
+  legacy `pathway_templates` catalog.
 
 ---
 
@@ -73,8 +82,8 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 
 | Method | Path | Purpose | Status |
 |---|---|---|---|
-| `GET` | `/api/public/bootcamps` | Bootcamp list | ❌ removed 4 Sep 2026 — 404s |
-| `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail | ❌ removed 4 Sep 2026 — 404s |
+| `GET` | `/api/public/bootcamps` | Bootcamp list — the designated admin's **for-sale Program curricula** (§3.1) | ✅ live (10 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset). NOT the old `public_bootcamps` table. |
+| `GET` | `/api/public/bootcamps/:idOrSlug` | Bootcamp detail (highlights, upcoming runs) | ✅ live — same scoping (§3.2) |
 | `GET` | `/api/public/projects` | Project list — the designated admin's **for-sale `type: project` assessments** (§3.3) | ✅ live (9 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
 | `GET` | `/api/public/projects/:idOrSlug` | Project detail (build steps, deliverables, kit) | ✅ live — same scoping (§3.4) |
 | `GET` | `/api/public/store` | Store list — the designated admin's **for-sale `inventory` items** (§3.10) | ✅ live (9 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
@@ -86,8 +95,8 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 | `GET` | `/api/public/diagnostics/:pathwayIdOrSlug/availability` | Does this pathway offer a public diagnostic | ✅ live — see §3.8 |
 | `GET` | `/api/public/diagnostics/:pathwayIdOrSlug?age=` | Diagnostic question set for an age | ✅ live — see §3.8 |
 | `GET` | `/api/public/diagnostics/attempts/:attemptId` | The permanent, shareable graded report for a completed attempt | ✅ live — see §3.9 |
-| `POST` | `/api/public/diagnostics/:pathwayIdOrSlug/submit` | Submit answers → instant graded report + `attemptId`. **No contact info, no lead.** | ✅ live — see §4.3 |
-| `PATCH` | `/api/public/leads/:id` | ~~post-report contact details~~ | ❌ removed 9 Sep 2026 — the diagnostic no longer creates a lead |
+| `POST` | `/api/public/diagnostics/:pathwayIdOrSlug/submit` | Submit answers + name + phone → instant graded report + `attemptId`; creates a `source: "diagnostic"` lead. | ✅ live — see §4.3 |
+| `PATCH` | `/api/public/leads/:id` | ~~post-report contact details~~ | ❌ removed 9 Sep 2026 — the diagnostic collects name + phone at submit instead (§4.3) |
 | `GET/POST/PUT/DELETE` | `/api/site/*` | Admin content authoring | ❌ removed 4 Sep 2026 — 404s |
 
 > **"Is the pathways endpoint merged?"** (website §5) — yes. It's in the
@@ -101,11 +110,79 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 server-side from `name` via `server/src/shared/utils/slugify.js`. Website cards
 link by **slug**.
 
-### 3.1–3.2 Bootcamps — REMOVED (4 Sep 2026)
+### 3.1 `GET /api/public/bootcamps` → `200`, array  ·  `503` if unconfigured  *(BACK 10 Sep 2026)*
 
-`GET /api/public/bootcamps[/:idOrSlug]` no longer exist — they 404. "Bootcamp"
-duplicated the existing **Program** concept. See the notice at the top of this
-doc.
+**A "bootcamp" is a Program curriculum** — a `curricula` row with `isProgram = 1`
+(authored through the normal curriculum Basic Info → Structure → Competencies →
+Version Control flow, flagged "This is a Program" on the Structure step) — that an
+admin flipped **"List on the website"** in the Selling card on the portal's
+Program view. This reads the `curricula` table, scoped to
+`PUBLIC_CONTENT_ADMIN_ID` (503 if unset), `isProgram = 1 AND saleStatus =
+'for_sale'` only. **This is NOT the old `public_bootcamps` marketing table
+(removed 4 Sep 2026 and still dropped)** — it's a deliberate for-sale flag on the
+existing Program concept, the direct parallel to §3.3 (for-sale assessments) and
+§3.10 (for-sale inventory).
+
+```jsonc
+[
+  {
+    "id": "uuid",
+    "slug": "robot-builders-holiday-bootcamp",  // slugify(name), computed at read time
+    "name": "Robot Builders Holiday Bootcamp",
+    "tagline": "A full robot build, coded and driven, in one week",  // saleTagline, "" if unset
+    "format": "holiday" | "weekend" | "after_school" | "online" | null,
+    "duration": "1 week",               // durationLabel free text, "" if unset
+    "ageMin": integer | null,
+    "ageMax": integer | null,
+    "coverImage": "string | null",       // absolutized (§6) — an upload URL or null
+    "price": {                           // null when no amount is set → "Enquire for pricing"
+      "amount": 12000,                   // whole currency units (KES 12,000), no fractional pricing
+      "currency": "KES",
+      "note": "Includes all materials. Sibling discount available."
+    },
+    "highlightCount": integer            // # of "what you'll build" bullets (detail has the list)
+  }
+]
+```
+
+Newest first, then sorted by name. Slug collisions (two of the admin's for-sale
+bootcamps, same computed name) collapse to one — prefer the one with a cover
+image, then a price, then the first. **The Program's structure, cohorts,
+competency framework, course list and version content are NEVER exposed.**
+
+### 3.2 `GET /api/public/bootcamps/:idOrSlug` → `200` | `404`
+
+List item **plus** the marketing detail:
+
+```jsonc
+{
+  "id": "uuid", "slug": "...", "name": "...", "tagline": "...",
+  "format": "holiday" | null, "duration": "1 week",
+  "ageMin": 9, "ageMax": 14,
+  "coverImage": "https://.../uploads/x.png" | null,
+  "price": { "amount": 12000, "currency": "KES", "note": "..." } | null,
+  "highlightCount": 4,
+  "description": "string",              // curricula.description — rich-text HTML → plain text
+  "highlights": ["Build a working robot from a bare board", "…"],   // "what you'll build / learn"
+  "upcomingRuns": [                     // this Program's deployments whose end date hasn't passed
+    {
+      "hubName": "Nairobi — Westlands Hub" | null,
+      "startDate": "2026-12-08",        // "YYYY-MM-DD"
+      "endDate": "2026-12-12",
+      "status": "upcoming" | "active"   // finished runs ("completed") are filtered out
+    }
+  ]                                     // [] when the Program isn't deployed anywhere yet
+}
+```
+
+`404 { "message": "Bootcamp not found" }` for an unknown id/slug, a bootcamp owned
+by a different admin, or one that isn't `for_sale` — undifferentiated.
+
+**Booking:** no checkout. The website's "Enquire to book" button links to
+`/enroll?interestedIn=bootcamp&referenceId=<slug>` → `POST /api/public/leads`
+(§4.1) — this uses the **full** enrol form (learner name + age), not the lighter
+enquiry variant, since a bootcamp booking is for a named child. The Enquiries page
+resolves the slug to the bootcamp name server-side (`referenceType: "bootcamp"`).
 
 ### 3.3 `GET /api/public/projects` → `200`, array  ·  `503` if unconfigured  *(NEW 9 Sep 2026)*
 
@@ -376,10 +453,11 @@ indefinitely, so the link never expires.
 `itemsSnapshot` / `itemResults` column pair), so the report renders identically even
 after an admin later edits/reorders/deletes questions on the live assessment.
 
-**Deliberately narrow** — the diagnostic collects no contact info at all, so there's
-none to leak; the request's `ipHash` is never exposed either. The `attemptId` uuid is
-unguessable, so the id in the URL is the only access control (same posture as
-`/api/public/learners/:publicToken`).
+**Deliberately narrow** — even though a lead (name + phone) is created at submit,
+none of that is in this projection: no name, no phone, no `leadId`, and the
+request's `ipHash` is never exposed either. Only the child's first name (optional)
+and age appear. The `attemptId` uuid is unguessable, so the id in the URL is the
+only access control (same posture as `/api/public/learners/:publicToken`).
 
 `404 { "message": "Report not found" }` for an unknown/garbage `attemptId`.
 
@@ -476,8 +554,8 @@ across all `/api/*`).
   "parentPhone": "string 7–20 chars, /^[+0-9()\\-\\s]+$/ — optional server-side; the Enroll form requires it client-side",
   "learnerName": "string ≤120 chars — optional (\"\" allowed, e.g. from the Contact form)",
   "learnerAge":  "integer 3–19 — optional / null",
-  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". A Store enquiry uses \"quarky\" (a kit) or \"general\" (bundle/accessory); the exact item is in referenceId. \"bootcamp\" is still accepted/stored as-is even though it has no backing catalog.",
-  "referenceId": "string ≤100 chars — optional / null. Stored as-is (no validation). Resolves to a display name server-side (GET /api/leads) when it's the slug/id of: an operational pathway, a for-sale project assessment (§3.3), or a for-sale inventory item (§3.10). Otherwise stored and shown as a bare string.",
+  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". A Store enquiry uses \"quarky\" (a kit) or \"general\" (bundle/accessory); the exact item is in referenceId. \"bootcamp\" is used by the Bootcamps section's \"Enquire to book\" (§3.2).",
+  "referenceId": "string ≤100 chars — optional / null. Stored as-is (no validation). Resolves to a display name server-side (GET /api/leads) when it's the slug/id of: an operational pathway, a for-sale project assessment (§3.3), a for-sale inventory item (§3.10), or a for-sale bootcamp / Program curriculum (§3.1). Otherwise stored and shown as a bare string.",
   "note":        "string ≤1000 chars — optional (\"\" allowed)"
 }
 ```
@@ -540,32 +618,36 @@ Kept as a **separate endpoint** (answer to website §5 "one inbox or two?"). Bod
 
 Validation error: same `400` shape as §4.1.
 
-Both endpoints land in the same `leads` table, distinguished by
-`source` (`"enroll"` vs `"contact"`), and both notify all admins — so it's
-effectively one inbox with a source tag. If the website later prefers a single
-endpoint, flip `ContactForm` to `useLeadsEndpoint` (posts to `/leads` with
-`interestedIn: "general"`) — that path already works, no backend change.
+The `leads` table now has **three** `source` values — `"enroll"`, `"contact"`,
+`"diagnostic"` (§4.3) — and its `email` column is **nullable** (a diagnostic lead
+asks name + phone only). All three notify every admin.
 
 ### 4.3 `POST /api/public/diagnostics/:pathwayIdOrSlug/submit`
 
 Grades the answers **synchronously** (same request, no polling) and returns the
-report. **No contact info is asked for, and no lead is created** — the visitor
-submits their answers and sees their graded report immediately, plus a permanent
-shareable link to it. Enrolment is a separate, later step via the normal
-`POST /api/public/leads` (§4.1), which collects name/email there. Body:
+report. **The visitor must give a name + phone before submitting** — that becomes
+a `source: "diagnostic"` lead (admins notified, same as the enrol form), so the
+team can follow up. The report response and the shareable report link never
+expose the name/phone. Body:
 
 ```jsonc
 {
   "answers": [
     { "itemId": "string", "response": /* string | string[] | [{left,right}] — shape depends on the item's kind, same contract AssessmentTaker already produces */ }
   ],
-  "childName": "string ≤120 chars — OPTIONAL (just so the report reads nicely, e.g. \"… for Amara, age 10\")",
-  "childAge":  "integer 3–19 — REQUIRED (must fall within the pathway's configured age range or this 404s, same as the GET)"
+  "parentName":  "string, 2–120 chars — REQUIRED",
+  "parentPhone": "string 7–20 chars, /^[+0-9()\\-\\s]+$/ — REQUIRED (same rule as the enrol form's phone)",
+  "childName":   "string ≤120 chars — OPTIONAL (just so the report reads nicely, e.g. \"… for Amara, age 10\"); also stored as the lead's learnerName",
+  "childAge":    "integer 3–19 — REQUIRED (must fall within the pathway's configured age range or this 404s, same as the GET); also stored as the lead's learnerAge"
 }
 ```
 
-Unknown extra keys (a stray `parentName`/`parentEmail`) are **silently stripped** —
-sending the old body still works, the contact fields are just ignored.
+The lead is created with `source: "diagnostic"`, `email: null`,
+`interestedIn: "general"`, `referenceId` = the pathway's computed slug (so the
+Enquiries card resolves it to the pathway name, `referenceType: "pathway"`), and
+`message` = a one-line score summary. If the lead write fails for any reason the
+report is still returned — the visitor's result never depends on lead capture.
+Unknown extra keys (a stray `parentEmail`) are silently stripped.
 
 **Success — `201`:**
 
@@ -590,16 +672,19 @@ sending the old body still works, the contact fields are just ignored.
 }
 ```
 
-No `leadId` (there is no lead). `data` carries everything needed to render the
-report in one response — no second fetch. `overallFeedback`/`gradedByName` are
-never present (auto-graded only, no teacher ever touches it).
+No `leadId` in `data` — the lead is created server-side and its id is stored on
+the attempt row, but never exposed to the website (nothing in the public response
+or the shareable report resolves the visitor's identity). `data` carries
+everything needed to render the report in one response — no second fetch.
+`overallFeedback`/`gradedByName` are never present (auto-graded only, no teacher
+ever touches it).
 
 **`data.attemptId`** is the key to the permanent shareable report (§3.9). The
 website builds the report URL as
 `/pathways/<slug>/diagnostic/report/<attemptId>` and shows it on the results
 screen (copy-to-clipboard + an "open & download" link). **The report is never
-emailed** — this link is the only way it's kept. The diagnostic sends no mail at
-all.
+emailed** — this link is the only way it's kept. The diagnostic sends no mail to
+the visitor at all (there's no email on file — the follow-up is by phone).
 
 `404 { "message": "No public diagnostic available" }` — same undifferentiated
 shape and same causes as the GET endpoint (§3.8): unknown pathway, age out of
@@ -607,7 +692,8 @@ range, or no longer offerable (e.g. an admin turned the flag off, or edited
 the assessment to add a manual item, between the visitor loading the page
 and submitting).
 
-Validation error (missing/out-of-range `childAge`): same `400` shape as §4.1.
+Validation error (missing/out-of-range `childAge`, or missing/invalid
+`parentName`/`parentPhone`): same `400` shape as §4.1.
 
 **Rate limit: 20 requests / 15 min / IP** — same shape/ceiling as §4.1/§4.2
 (`publicLeadLimiter`), since this is structurally the same kind of endpoint
@@ -615,12 +701,12 @@ Validation error (missing/out-of-range `childAge`): same `400` shape as §4.1.
 grading attached.
 
 Every completed attempt is stored server-side (`public_diagnostic_attempts`,
-`leadId` now nullable — it's always null for the diagnostic) as a full audit
-trail and for completion analytics. One projection of it **is** exposed publicly
-— the shareable report at `GET /api/public/diagnostics/attempts/:attemptId` (§3.9)
-— but only a narrow, PII-safe subset (no `ipHash`); the rest stays admin-only.
-**Retakes are unlimited** — no uniqueness constraint; each attempt gets its own
-shareable report.
+`leadId` set to the created lead's id) as a full audit trail and for completion
+analytics. One projection of it **is** exposed publicly — the shareable report at
+`GET /api/public/diagnostics/attempts/:attemptId` (§3.9) — but only a narrow,
+PII-safe subset (no `ipHash`, no `leadId`, no name/phone); the rest stays
+admin-only. **Retakes are unlimited** — no uniqueness constraint; each attempt
+gets its own lead and shareable report.
 
 ---
 
@@ -634,7 +720,7 @@ shareable report.
 | `CLIENT_URL` | backend | `https://curriculum.digifunzi.com` | Admin portal. Sends cookies, `credentials: true`. **Required.** |
 | `PUBLIC_SITE_URL` | backend | **comma-separated** — see below | Website origin(s). Optional (routes work for server-to-server without it). |
 | `API_PUBLIC_URL` | backend | `https://nodeapp.digifunzi.com` | This API's own external base — used to absolutize `coverImage` (§6). Optional. |
-| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — the operational `pathways` / curricula behind **all five** endpoints in §3.5–3.6 and §3.8. Unset → all five return `503`. Set it to the `users.id` of whichever admin's Curriculum → Competency Framework is the public-facing one. |
+| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — behind **every** `/api/public/*` read: pathways (§3.5–3.6), the diagnostic (§3.8), projects (§3.3), store (§3.10) and bootcamps (§3.1). Unset → all of them return `503`. Set it to the `users.id` of whichever admin's Curriculum / Assessments / Inventory / Programs are the public-facing ones. |
 
 ### `PUBLIC_SITE_URL` — comma-separated
 
@@ -682,18 +768,18 @@ returned and the landing site's own `resolveMediaUrl` fallback prefixes
 
 | # | Item | Owner | Notes |
 |---|---|---|---|
-| 1 | **Bootcamps/Projects content (API + admin UI) removed entirely**, 4 Sep 2026 — see the notice at the top of this doc. Was briefly built same-release, then pulled once it became clear "bootcamp" duplicates the existing `programs` concept. | Backend | Not blocking — website should drop any dependency on `/api/public/{bootcamps,projects}`. See [LEADS_IMPLEMENTATION.md §2.5](LEADS_IMPLEMENTATION.md#25-content-authoring--removed) if/when this gets rebuilt on top of `programs` instead. |
+| 1 | ~~Bootcamps/Projects content (API + admin UI) removed entirely, 4 Sep 2026~~ — **RESOLVED**. The `public_projects` / `public_bootcamps` marketing tables and `/api/site/*` are gone for good; each section came back as a **for-sale flag on the existing entity**: Projects on `assessments` (9 Sep, §3.3), Store on `inventory` (9 Sep, §3.10), Bootcamps on Program `curricula` (10 Sep, §3.1). No standalone marketing catalog, no content-authoring API. | — | Done. |
 | 2 | ~~`coverImage` absolute vs relative~~ — **RESOLVED**: backend returns absolute (§6, §8). | — | Done. |
 | 3 | Pathway (template) slugs are still computed from `name` — renaming a template still changes its public URL. **The diagnostic link is no longer affected** (it's a real FK now, §3.8), but inbound links / SEO history to the old URL still break. | Both | Acceptable for now; add a `slug` column + 301 map if it becomes a problem. |
 | 4 | Lead **email** (SMTP) — **mostly RESOLVED**: mailer, auto-ack, and in-portal reply are all built (see [LEADS_IMPLEMENTATION.md §2.6](LEADS_IMPLEMENTATION.md#26-outbound-email)). Only real SMTP credentials are still missing (§3.1 there) — until set, sends silently no-op and behavior matches the old in-app-only state. | Backend | Remaining: pick a provider, set `SMTP_HOST/PORT/USER/PASS` + `MAIL_FROM`/`MAIL_REPLY_TO` on the backend host. Staff email digest (Option B's last piece) still open. |
 | 5 | ~~`interestedIn: "quarky"`~~ — **RESOLVED**: standalone product enquiry, `referenceId: null`, no programme record. | — | Enquiries page shows "Interested in: Quarky robot" with no link. |
-| 5b | `referenceId` → human context — **partially resolved**: `GET /api/leads` resolves it against pathways only (bootcamp/project catalogs are gone, see item 1) and the Enquiries card shows "Enquired from: <name>" when it does. | — | See [LEADS_IMPLEMENTATION.md §2.7](LEADS_IMPLEMENTATION.md#27-referenceid--human-context). |
+| 5b | `referenceId` → human context — **RESOLVED**: `GET /api/leads` resolves it against the designated admin's operational pathways, for-sale projects (§3.3), for-sale inventory items (§3.10) and for-sale bootcamps (§3.1), then the legacy `pathway_templates` catalog, and the Enquiries card shows "Enquired from: <name>" with the matching `referenceType`. | — | See [LEADS_IMPLEMENTATION.md §2.7](LEADS_IMPLEMENTATION.md#27-referenceid--human-context). |
 | 6 | Any "lead submitted" **webhook** back to the website (analytics)? | Website | None today, none requested; backend never calls the website. |
 | 7 | ~~Prod `PUBLIC_SITE_URL`~~ — **RESOLVED**: `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (§5). | — | Backend to deploy. |
 | 8 | Honeypot field (`companyWebsite`) — landing team can forward it for a server-side backstop. | Both | Deferred — client check + 20/15min IP rate limit deemed enough for launch. Revisit if spam gets through. |
-| 9 | ~~Public diagnostics — website not built yet~~ — **RESOLVED**: the full flow (pathway detail CTA → age → questions → contact → graded report → details → enroll) is built and verified end-to-end. **What's left is content authoring, not code** (item 12). | Website / Curriculum | Website done. |
+| 9 | ~~Public diagnostics — website not built yet~~ — **RESOLVED**: the full flow (pathway detail CTA → age → questions + name/phone → graded report + shareable link) is built and verified end-to-end. Submitting now creates a `source: "diagnostic"` lead (10 Sep 2026 — reversed the earlier no-contact design). **What's left is content authoring, not code** (item 12). | Website / Curriculum | Website done. |
 | 12 | **Public diagnostics have no real per-pathway content.** The designated admin's public pathways currently share one placeholder assessment ("Robotics Starting-Point Diagnostic"), no pathway has `minAge`/`maxAge` set (so — with the strict gate — **nothing is offerable**), and no assessment items carry competency `indicatorMarks` (so the report's learner-profile "Competency Breakdown" section never renders). | **Curriculum team** (portal, no code) | Per public pathway (Curriculum → Competency Framework): author a dedicated auto-gradable assessment with items tagged to indicators; set the pathway's min/max age; set `diagnosticAssessmentId` + `publicDiagnosticEnabled`. The report's breakdown section lights up automatically once items are tagged. See `Guide/PUBLIC_DIAGNOSTIC_SETUP.md`. |
-| 10 | Admin notification copy for a diagnostic lead currently reads the raw `interestedIn` value verbatim ("...is interested in pathway_diagnostic for..." — same generic phrasing every other `interestedIn` value gets, since `_notifyAdmins` only special-cases `"general"`). | Backend | Cosmetic — the lead itself and its `message` (the actual score) are correct; only the notification bell's phrasing reads awkwardly. A one-line addition to `lead.service.js`'s `_notifyAdmins` label logic fixes it. |
+| 10 | ~~Admin notification copy for a diagnostic lead reads the raw `interestedIn` value verbatim~~ — **RESOLVED** (§8 item -2). `_notifyAdmins` now has a per-source label ("New diagnostic result") and a per-`interestedIn` phrase map; the diagnostic lead's `message` carries the score. | — | Done. |
 
 | 11 | ~~`GET /api/public/pathways` showed the wrong data~~ — **RESOLVED** (§8 item 0). First it leaked every admin's `pathway_templates` (fixed by scoping to `PUBLIC_CONTENT_ADMIN_ID`); then it became clear `pathway_templates` was the wrong table entirely — a Settings-side "reusable template" list that had drifted from the real curriculum. Now serves the designated admin's **operational** `pathways` (Curriculum → Competency Framework). | — | Done. `PUBLIC_CONTENT_ADMIN_ID` is required for all five public endpoints. |
 
@@ -702,6 +788,69 @@ returned and the landing site's own `resolveMediaUrl` fallback prefixes
 ## 8. Backend changelog — changes made to match this contract
 
 On the `modules` branch (website-reconciliation pass):
+
+-2. **Public diagnostic now captures name + phone and creates a lead** *(10 Sep 2026 —
+   reverses the 9 Sep "no contact, no lead" design)*.
+   - **Migration `20260910120000_leads_add_diagnostic_source_and_nullable_email.js`**
+     — widens `leads.source` to `('enroll','contact','diagnostic')` and makes
+     `leads.email` nullable (the diagnostic form asks name + phone only).
+   - **`public-diagnostic.validation.js`** — `submitDiagnosticSchema` gains
+     required `parentName` (2–120) + `parentPhone` (same regex as the enrol form).
+   - **`public-diagnostic.service.js` `submitDiagnostic`** — creates a
+     `source: "diagnostic"` lead (`email: null`, phone, `learnerName`/`learnerAge`
+     from `childName`/`childAge`, `interestedIn: "general"`, `referenceId` = the
+     pathway's computed slug, `message` = the score summary), notifies admins via
+     `LeadService._notifyAdmins`, and stores the lead id on the attempt
+     (`public_diagnostic_attempts.leadId`). A failed lead write does NOT fail the
+     report. `getAttemptReport` still returns nothing that identifies the visitor
+     (no name/phone/`leadId`).
+   - **`lead.service.js`** — `_notifyAdmins` handles the `"diagnostic"` source
+     ("New diagnostic result"); `reply()` 400s when a lead has no email (the
+     diagnostic ones), telling staff to add a note or call.
+   - **`lead.emails.js`** — `sendLeadAcknowledgement` skips cleanly when there's
+     no email.
+   - **Portal** — `EnquiriesListPage` labels the `diagnostic` source, shows the
+     learner line for it, tolerates a missing email, and hides the "Reply by
+     email" tab (opening the thread on "Internal note") for a no-email lead.
+   - **Website** — `DiagnosticPage`'s questions step now has a required
+     name + phone block (react-hook-form + `diagnosticContactSchema`); the
+     learner's first name stays optional. Submit is blocked until it validates.
+     Mock + tests updated.
+
+-1. **Bootcamps reintroduced as a for-sale flag on Program curricula** *(10 Sep 2026)*.
+   - **Migration `20260910093200_add_sale_fields_to_curricula.js`** — adds
+     `saleStatus` (`internal` default \| `for_sale`) + index, `coverImage`,
+     `priceAmount`, `priceCurrency` (default `KES`), `priceNote`, `saleTagline`,
+     `saleFormat` (`holiday`\|`weekend`\|`after_school`\|`online`), `durationLabel`,
+     `ageMin`, `ageMax`, JSON `highlights` to `curricula`. All nullable/defaulted —
+     every existing curriculum reads back unchanged. Idempotent (`hasColumn`
+     guards).
+   - **`curriculum.model.js`** — `findAll` gains `isProgram` / `saleStatus`
+     filters; `highlights` added to `JSON_FIELDS`; new
+     `findForSaleBootcamps(ownerAdminId)` (required scope), mirroring
+     `AssessmentModel.findForSaleProjects`.
+   - **`curriculum.validation.js`** — a `saleFields` block on create/update
+     (coerced numbers, age-range refinement); nothing defaulted on update so a
+     partial `PUT` leaves the columns untouched.
+   - **`curriculum.service.js`** — `assertSellableBootcamp`: `saleStatus:
+     "for_sale"` is only valid when the effective `isProgram` is true (400
+     otherwise). Mirrors `assessment.service.js`'s `assertSellableProject`.
+   - **`public-site/public-bootcamp.{service,controller}.js`** + **routes** —
+     `GET /api/public/bootcamps[/:idOrSlug]` (§3.1/§3.2). Hand-built projection;
+     detail adds `highlights` + `upcomingRuns` (the Program's non-completed
+     deployments, hub name + dates). Scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if
+     unset).
+   - **`lead.service.js` `_resolveReference`** — a lead's `referenceId` now also
+     resolves against the designated admin's for-sale bootcamps
+     (`referenceType: "bootcamp"`), after pathways / projects / store items and
+     before the `pathway_templates` fallback. `_notifyAdmins` gains a friendly
+     phrase map for `interestedIn` (fixes open item #10 for the common values).
+   - **`scripts/seedSampleForSaleBootcamp.js`** — a sample "Robot Builders
+     Holiday Bootcamp" Program marked for sale (idempotent).
+   - **Website** (`digifunzi-landing`) — `usePublicBootcamps` hook, `BootcampCard`,
+     a rewritten API-driven `BootcampsPage` (keeps the old "coming soon" copy as
+     the empty state), new `BootcampDetailPage`, the `/bootcamps/:slug` route,
+     mock fixture + adapter branches, and the prerender / sitemap scripts.
 
 0. **`server/src/modules/public-site/public-site.service.js` — public pathways now
    come from the OPERATIONAL `pathways` table** *(9 Sep 2026)*. `listPathways` /
@@ -754,6 +903,12 @@ On the `modules` branch (website-reconciliation pass):
 
 **Not changed** (and why):
 
+- `curriculum.controller.js` / `program.*` — the Program deploy-to-hub flow,
+  `isProgram` semantics and curriculum authoring are all untouched. A bootcamp is
+  the same Program record with a for-sale flag; deployments still work exactly as
+  before whether or not it's listed.
+- `lead.validation.js` — `interestedIn: "bootcamp"` was already in the enum
+  (`INTEREST_VALUES`); no change needed.
 - Validation errors stay `400` (not `422`) — that's the system-wide
   `error.middleware.js` shape; special-casing the public routes would be
   inconsistent. The body carries `message` + `errors[]`; the landing site's
@@ -806,6 +961,8 @@ GET   /api/public/projects                  # for-sale `type: project` assessmen
 GET   /api/public/projects/:idOrSlug        # + build steps / deliverables / kit (§3.4)
 GET   /api/public/store                     # for-sale `inventory` items — robots, kits (§3.10)
 GET   /api/public/store/:idOrSlug           # + highlights / "what you get" / specs (§3.11)
+GET   /api/public/bootcamps                 # for-sale Program curricula — short-run cohorts (§3.1)
+GET   /api/public/bootcamps/:idOrSlug       # + highlights / upcoming runs (§3.2)
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
@@ -814,20 +971,20 @@ GET   /api/public/learners/:publicToken     (QR share — not website-relevant)
 GET   /api/public/diagnostics/:pathwayIdOrSlug/availability
 GET   /api/public/diagnostics/:pathwayIdOrSlug?age=
 GET   /api/public/diagnostics/attempts/:attemptId            # permanent shareable graded report (§3.9)
-POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, childName?, childAge }
-#   → 201 { data: { attemptId, ... } }  — NO contact info, NO lead
+POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, parentName, parentPhone, childName?, childAge }
+#   → 201 { data: { attemptId, ... } }  — name + phone REQUIRED; creates a source:"diagnostic" lead
 #   website report URL = /pathways/<slug>/diagnostic/report/<attemptId>
-#   the report is shown on-screen + at that link — NEVER emailed
-#   enrolment is separate: POST /api/public/leads via /enroll?referenceId=<slug>
+#   the report is shown on-screen + at that link — never emailed (no email on file; follow-up by phone)
 
 # REMOVED 9 Sep 2026 — 404 now, do not call:
-#   PATCH /api/public/leads/:id   (was the diagnostic's post-report details step — no lead any more)
+#   PATCH /api/public/leads/:id   (was the diagnostic's post-report details step — name + phone
+#                                  are now collected at submit instead, see §4.3)
 
 # REMOVED 4 Sep 2026 — 404 now, do not call:
-#   GET   /api/public/bootcamps[/:idOrSlug]
-#   GET|POST|PUT|DELETE  /api/site/*
-#   (/api/public/projects came BACK 9 Sep 2026 as a different feature — see §3.3;
-#    /api/public/store is also NEW 9 Sep 2026 — see §3.10)
+#   GET|POST|PUT|DELETE  /api/site/*   (content-authoring API — gone for good)
+#   (the marketing tables public_projects / public_bootcamps are dropped; each
+#    section came BACK as a for-sale flag on an existing entity —
+#    /api/public/projects §3.3 (9 Sep), /store §3.10 (9 Sep), /bootcamps §3.1 (10 Sep))
 
 # Admin (JWT, role: admin) — the boundary, for reference
 GET    /api/leads?status=&source=

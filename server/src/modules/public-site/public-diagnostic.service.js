@@ -3,6 +3,8 @@ const PathwayModel = require("../curriculum/competency-framework/pathway.model")
 const AssessmentModel = require("../assessments/assessment.model");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const PublicDiagnosticAttemptModel = require("./public-diagnostic-attempt.model");
+const LeadModel = require("../leads/lead.model");
+const LeadService = require("../leads/lead.service");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const {
@@ -193,14 +195,13 @@ const PublicDiagnosticService = {
     return (await this.diagnosticInfo(pathwayIdOrSlug)).available;
   },
 
-  // POST /api/public/diagnostics/:pathwayIdOrSlug/submit — grades and returns the report ONLY.
-  // No contact info is asked for: the anonymous visitor submits their answers and sees the graded
-  // report straight away, with a shareable link to it. NO LEAD is created here — the visitor
-  // enrols later via the normal /enroll form (which collects name/email), pre-filled with this
-  // pathway. Every attempt is still stored (public_diagnostic_attempts, now with a nullable
-  // leadId) for the shareable report link and for completion analytics.
+  // POST /api/public/diagnostics/:pathwayIdOrSlug/submit — grades, creates a lead, and returns
+  // the report. The visitor gives a name + phone before seeing their result; that becomes a
+  // `source: "diagnostic"` lead (admins notified, same as the enrol form). The attempt row still
+  // holds everything for the shareable report link and completion analytics, and now also carries
+  // the lead id. `childName` stays optional context for how the report reads.
   async submitDiagnostic(pathwayIdOrSlug, body, ipHash) {
-    const { answers, childName, childAge } = body;
+    const { answers, parentName, parentPhone, childName, childAge } = body;
     const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
     if (!pathway) throw notFound("Pathway not found");
     if (!ageInRange(pathway, childAge)) throw notFound("No diagnostic available for this age");
@@ -228,10 +229,38 @@ const PublicDiagnosticService = {
         .filter(Boolean),
     }));
 
+    // A "diagnostic"-sourced lead: name + phone from the form, the pathway as `referenceId` (so
+    // the Enquiries card resolves it the same way an /enroll?referenceId= lead does), and the
+    // score summary as the message. No email — the diagnostic form doesn't ask for one (leads.email
+    // is nullable for exactly this). Notify admins the same way the enrol form does. If the lead
+    // write fails for any reason, still return the report — the visitor's result must not depend
+    // on lead capture succeeding.
+    let leadId = null;
+    try {
+      const pathwaySlug = slugify(pathway.name) || "pathway";
+      const lead = await LeadModel.create({
+        source: "diagnostic",
+        name: parentName,
+        email: null,
+        phone: parentPhone,
+        learnerName: childName || null,
+        learnerAge: childAge,
+        interestedIn: "general",
+        referenceId: pathwaySlug,
+        message:
+          `Completed the ${pathway.name} diagnostic — scored ${autoScore}/${maxScore}` +
+          `${childName ? ` for ${childName}` : ""} (age ${childAge}).`,
+      });
+      leadId = lead.id;
+      await LeadService._notifyAdmins(lead);
+    } catch {
+      /* lead capture failed — the report still goes out */
+    }
+
     const attempt = await PublicDiagnosticAttemptModel.create({
       pathwayId: pathway.id,
       assessmentId: assessment.id,
-      leadId: null, // no lead — enrolment happens later via /enroll
+      leadId,
       childAge,
       childName: childName || null,
       answers,
@@ -262,11 +291,12 @@ const PublicDiagnosticService = {
   // the URL is the only access control (same posture as the QR-code learner-profile route). The
   // row is write-once and kept indefinitely, so this link never expires.
   //
-  // Deliberately NARROW: pathway/assessment name, the child's first name + age (both may be
-  // null — childName was optional at submit), score, per-competency breakdown, and the
-  // per-question feedback rebuilt from the stored `answers` + `itemsSnapshot` pair. Never the
-  // parent's name/email/phone (those live on the lead, admin-only), never the raw ipHash, never
-  // anything that resolves the visitor's identity. Returns null → the controller's 404.
+  // Deliberately NARROW: pathway/assessment name, the child's first name + age (childName may be
+  // null — it's optional at submit), score, per-competency breakdown, and the per-question
+  // feedback rebuilt from the stored `answers` + `itemsSnapshot` pair. NEVER the parent's name or
+  // phone (those live on the lead, admin-only), never the raw ipHash, never the leadId — nothing
+  // that resolves the visitor's identity, even though a lead is now created at submit. Returns
+  // null → the controller's 404.
   async getAttemptReport(attemptId) {
     const attempt = await PublicDiagnosticAttemptModel.findById(attemptId);
     if (!attempt) return null;

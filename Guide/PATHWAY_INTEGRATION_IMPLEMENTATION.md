@@ -64,7 +64,7 @@ pathways (multi-tenant isolation — see §4).
 | `src/modules/public-site/public-site.service.js` | **All pathway projection logic** — tenant scoping, slug computation, course ordering, HTML→text, `coverImage` absolutization, embedded `diagnostic` block |
 | `src/modules/public-site/public-diagnostic.routes.js` | `GET /diagnostics/attempts/:attemptId`, `GET /diagnostics/:p/availability`, `GET /diagnostics/:p?age=`, `POST /diagnostics/:p/submit` + rate limiters |
 | `src/modules/public-site/public-diagnostic.controller.js` | Thin — `hashIp`, response wrappers, `getAttemptReport` |
-| `src/modules/public-site/public-diagnostic.service.js` | **All diagnostic logic** — resolve pathway, offerability gate, item sanitization, synchronous grading (no lead), `getAttemptReport` (the shareable link) |
+| `src/modules/public-site/public-diagnostic.service.js` | **All diagnostic logic** — resolve pathway, offerability gate, item sanitization, synchronous grading + `source: "diagnostic"` lead creation, `getAttemptReport` (the shareable link) |
 | `src/modules/public-site/public-diagnostic.validation.js` | Zod schema for `POST .../submit` — just `{ answers, childName?, childAge }` |
 | `src/modules/public-site/public-diagnostic-attempt.model.js` | `public_diagnostic_attempts` — write-once row; `create` + `findById` (for the shareable link) |
 | `src/modules/leads/public-lead.routes.js` | `POST /api/public/leads`, `POST /api/public/contact` (the `PATCH /leads/:id` route was removed) |
@@ -80,7 +80,8 @@ pathways (multi-tenant isolation — see §4).
 | `src/db/migrations/20260907131100_add_public_diagnostic_enabled_to_pathways.js` | Adds `pathways.publicDiagnosticEnabled` (default `false`) |
 | `src/db/migrations/20260907131200_create_public_diagnostic_attempts.js` | Creates `public_diagnostic_attempts` |
 | `src/db/migrations/20260909104300_add_items_snapshot_to_public_diagnostic_attempts.js` | Adds `itemsSnapshot` + `itemResults` JSON columns (for the shareable report link) |
-| `src/db/migrations/20260909110000_make_public_diagnostic_attempt_lead_nullable.js` | `leadId` → nullable (the diagnostic no longer creates a lead) |
+| `src/db/migrations/20260909110000_make_public_diagnostic_attempt_lead_nullable.js` | `leadId` → nullable (kept — the lead write can still fail without failing the report) |
+| `src/db/migrations/20260910120000_leads_add_diagnostic_source_and_nullable_email.js` | `leads.source` gains `"diagnostic"`; `leads.email` → nullable (the diagnostic asks name + phone only) |
 | `src/scripts/seedDiagnosticAssessment.js` | One-off — seeds a sample fully-auto-gradable assessment owned by `PUBLIC_CONTENT_ADMIN_ID` |
 
 ### 2.2 Frontend — admin portal (`client/`)
@@ -153,7 +154,7 @@ and grading it unconditionally attempts a competency-placement write against a r
 | `totalScore` | float | |
 | `maxScore` | float | |
 | `indicatorBreakdown` | JSON / null | per-competency-indicator marks |
-| `leadId` | string(36) / **null** | **Nullable since migration `20260909110000`.** The diagnostic no longer creates a lead, so every new attempt has `leadId: null`. |
+| `leadId` | string(36) / **null** | Nullable since migration `20260909110000`. Since 10 Sep 2026 the diagnostic **does** create a `source: "diagnostic"` lead (name + phone), and this holds that lead's id. Still null on pre-10-Sep attempts, or if the lead write failed (the report is returned regardless). Never exposed by the shareable-report endpoint. |
 | `ipHash` | string(64) / null | **SHA-256 of the IP, never the raw IP** — abuse visibility only |
 | `createdAt` | timestamp | no `updatedAt` — write-once |
 
@@ -161,21 +162,28 @@ Indexes: `pathwayId`, `leadId`, `createdAt`. The row is read back by exactly one
 public endpoint — `GET /api/public/diagnostics/attempts/:attemptId` (§6.6) — which
 projects a **narrow** subset (no `ipHash`). Otherwise admin-only.
 
-### 3.3 `leads` — NOT touched by the diagnostic
+### 3.3 `leads` — the diagnostic creates a `source: "diagnostic"` lead *(since 10 Sep 2026)*
 
-The diagnostic flow **does not create a lead.** It's a self-serve results screen; a
-completed attempt produces a `public_diagnostic_attempts` row (with `leadId: null`)
-and nothing else. There is no Enquiries-page entry, no admin notification, no ack
-email from taking the diagnostic.
+Submitting the diagnostic requires a **name + phone** (no email — the `leads.email`
+column was made nullable for this). On submit the service creates a lead with
+`source: "diagnostic"`, `email: null`, the phone, `learnerName`/`learnerAge` from
+`childName`/`childAge`, `interestedIn: "general"`, `referenceId` = the pathway's
+computed slug, and `message` = a one-line score summary; then it notifies every
+admin (same as the enrol form). The lead's id is stored on the attempt
+(`leadId`). If that write fails the graded report is still returned — the
+visitor's result never depends on lead capture.
 
-Enrolment is a separate step: the report screen's **"Enroll in this pathway"** button
-links to `/enroll?interestedIn=project&referenceId=<slug>`, and the existing Enroll
-form (`POST /api/public/leads`) collects name/email/phone there. That's the only path
-a pathway-related lead reaches staff.
+The shareable report (`GET /api/public/diagnostics/attempts/:attemptId`) exposes
+**none** of this — no name, no phone, no `leadId`.
 
-> **Historical:** the diagnostic *used to* call `LeadService.submitLead` with
-> `interestedIn: "pathway_diagnostic"` and a `PATCH /api/public/leads/:id` follow-up
-> step. Both are removed — see §6.4/§6.5.
+The report screen's **"Enroll in this pathway"** button still links to
+`/enroll?interestedIn=project&referenceId=<slug>` for a fuller enrolment, but the
+team already has a contactable lead from the diagnostic itself.
+
+> **Historical:** the diagnostic first (pre-9 Sep) called `LeadService.submitLead`
+> with `interestedIn: "pathway_diagnostic"` and a `PATCH /api/public/leads/:id`
+> follow-up; then (9–10 Sep) collected nothing and created no lead; now collects
+> name + phone at submit. The `PATCH` route stays removed.
 
 ---
 
@@ -353,26 +361,31 @@ submitDiagnostic(slug, body, ipHash)
   └─ computeIndicatorBreakdown(assessment, …)   ┘  directly, no fork
   └─ buildIndicatorNameMap()  → resolve indicatorBreakdown rows to names
   └─ itemsSnapshot = assessment.items.map(sanitizeItem + indicatorNames)   ← stored for the link
+  └─ LeadModel.create({ source: "diagnostic", name: parentName, email: null,
+                        phone: parentPhone, learnerName: childName, learnerAge: childAge,
+                        interestedIn: "general", referenceId: pathwaySlug,
+                        message: "<score summary>" })   → leadId   (try/catch — report wins)
+  └─ LeadService._notifyAdmins(lead)
   └─ PublicDiagnosticAttemptModel.create({ …, answers, itemsSnapshot, itemResults,
-                                           leadId: null, ipHash })
+                                           leadId, ipHash })
   └─ return { attemptId, pathwayName, assessmentName, totalScore, maxScore,
-              itemResults[], indicatorBreakdown[] }
+              itemResults[], indicatorBreakdown[] }   ← no leadId, no name/phone
 ```
 
 **Response `201`** wrapped `{ ok, success, message: "Here's how it went!", data }`.
 `data` carries the whole report — no second fetch. `overallFeedback` / `gradedByName`
 are **never** present (auto-graded only, no human ever touches this path).
 
-- **No lead is created.** The diagnostic is a self-serve results screen — nothing goes
-  to the Enquiries page from it. Enrolment happens afterwards via the normal `/enroll`
-  form (which does collect name/email), pre-filled with this pathway
-  (`referenceId=<slug>`).
+- **A `source: "diagnostic"` lead IS created** (since 10 Sep 2026) from the required
+  name + phone, and every admin is notified — the completion shows in the Enquiries
+  page. The lead has no email (follow-up is by phone). If the lead write fails the
+  report is still returned. `data` never carries the `leadId` or the name/phone.
 - **Grading is synchronous** — same request, no polling, no manual-review queue.
 - **The report is NEVER emailed.** The visitor sees it on-screen the instant they
   submit and gets a permanent shareable link (§6.6).
-- **Every attempt is still stored** (`public_diagnostic_attempts`, `leadId` now
-  nullable — migration `20260909110000`) for the shareable report link and completion
-  analytics.
+- **Every attempt is stored** (`public_diagnostic_attempts`, `leadId` = the created
+  lead's id, or null if the lead write failed / a pre-10-Sep attempt) for the
+  shareable report link and completion analytics.
 - **`itemsSnapshot` + `itemResults` are stored on the attempt row** at submit time so
   the standalone report page (§6.6) renders the per-question section identically even
   after an admin later edits the assessment. `itemsSnapshot` is the **sanitized** item
@@ -385,8 +398,9 @@ are **never** present (auto-graded only, no human ever touches this path).
 
 ### 6.5 ~~`PATCH /api/public/leads/:id`~~ — REMOVED
 
-The post-report "details" step (phone + child's name filled into a lead) is gone,
-because the diagnostic no longer creates a lead. Route, controller
+The post-report "details" step (phone + child's name filled into a lead) is gone.
+Name + phone are now collected **at submit** instead (§6.4), so there's nothing to
+patch afterwards. Route, controller
 (`updateLeadContactDetails`), service (`LeadService.updateContactDetails`), and Zod
 schema (`updateLeadContactDetailsSchema`) all removed. `PATCH /api/public/leads/:id`
 now 404s.
@@ -653,7 +667,7 @@ curl -s -o /dev/null -w "%{http_code}\n" "$BASE/api/public/diagnostics/attempts/
 | `coverImage` broken on the website | `API_PUBLIC_URL` unset **and** the website's `VITE_API_URL` fallback isn't resolving — set `API_PUBLIC_URL` |
 | Browser CORS error, curl works | The site's origin isn't in `PUBLIC_SITE_URL` (comma-separated, exact origin, no trailing slash) |
 | Can save `publicDiagnosticEnabled` but it never appears publicly | Save-time guard passed, then the assessment was edited to add a manual item — the live re-check now blocks it. Fix the assessment or pick another. |
-| Diagnostic completions not showing in Enquiries | **By design** — the diagnostic creates no lead. Only submitting the `/enroll` form does. Check `public_diagnostic_attempts` (admin-only) for completion data. |
+| Diagnostic completions not showing in Enquiries | Since 10 Sep 2026 each completion **does** create a `source: "diagnostic"` lead (name + phone). If one's missing, the lead write may have failed (the report is still returned) — check `public_diagnostic_attempts` for a row with `leadId: null`. Pre-10-Sep attempts have no lead by design. |
 | Enquiries card shows a bare slug instead of the pathway name | The lead's `referenceId` slug doesn't match any of the `PUBLIC_CONTENT_ADMIN_ID` admin's operational pathways (deleted / renamed pathway), OR `PUBLIC_CONTENT_ADMIN_ID` is unset. `_resolveReference` resolves against operational `pathways` first, then `pathway_templates` — an unmatched slug just shows no label. |
 | `POST .../submit` returns `400` | Missing or out-of-range `childAge` — it's the only required field. `parentName`/`parentEmail` are no longer accepted (silently ignored if sent). |
 | `PATCH /api/public/leads/:id` returns `404` | **Removed.** The post-report details step is gone (no lead to patch). |

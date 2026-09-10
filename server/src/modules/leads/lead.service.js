@@ -53,11 +53,29 @@ const LeadService = {
   async _notifyAdmins(lead) {
     const admins = await UserModel.findAll();
     const adminIds = admins.filter((u) => u.role === "admin").map((u) => u.id);
-    const label = lead.source === "enroll" ? "New enrolment interest" : "New contact message";
-    const message =
-      lead.source === "enroll"
-        ? `${lead.name} is interested in ${lead.interestedIn === "general" ? "our programmes" : lead.interestedIn}${lead.learnerName ? ` for ${lead.learnerName}` : ""}.`
-        : `${lead.name} sent a message via the contact form.`;
+    const LABEL = {
+      enroll: "New enrolment interest",
+      contact: "New contact message",
+      diagnostic: "New diagnostic result",
+    };
+    const label = LABEL[lead.source] || LABEL.contact;
+    // Friendly phrasing per interestedIn value — falls back to the raw value for anything not
+    // listed (e.g. an older "pathway_diagnostic" lead — see WEBSITE_INTEGRATION_CONTRACT §7 #10).
+    const INTEREST_PHRASE = {
+      general: "our programmes",
+      bootcamp: "a bootcamp",
+      project: "a project",
+      quarky: "the Quarky robot",
+    };
+    let message;
+    if (lead.source === "enroll") {
+      message = `${lead.name} is interested in ${INTEREST_PHRASE[lead.interestedIn] || lead.interestedIn}${lead.learnerName ? ` for ${lead.learnerName}` : ""}.`;
+    } else if (lead.source === "diagnostic") {
+      // The score itself is in lead.message; this is just the notification line.
+      message = `${lead.name} completed a pathway diagnostic${lead.learnerName ? ` for ${lead.learnerName}` : ""} and left a phone number.`;
+    } else {
+      message = `${lead.name} sent a message via the contact form.`;
+    }
     await Promise.all(
       adminIds.map((recipientId) =>
         NotificationService._notify(recipientId, {
@@ -73,12 +91,13 @@ const LeadService = {
   // referenceId arrives as a bare, untyped string (slug or uuid — see the public leads schema's
   // comment). The website's Enroll / diagnostic links pass an OPERATIONAL pathway's own computed
   // slug; the Projects section's "Enquire to buy" passes a for-sale project assessment's computed
-  // slug; the Store's "Enquire to buy" passes a for-sale inventory item's computed slug. Resolve
-  // against the designated admin's operational `pathways` first, then their for-sale project
-  // assessments, then their for-sale inventory items, then fall back to the `pathway_templates`
-  // catalog for older leads. This only ever feeds a display label, never an authorization
-  // decision — an unresolved referenceId (deleted/renamed, or `PUBLIC_CONTENT_ADMIN_ID` unset)
-  // just shows no label.
+  // slug; the Store's "Enquire to buy" passes a for-sale inventory item's computed slug; the
+  // Bootcamps section's "Enquire to book" passes a for-sale program-curriculum's computed slug.
+  // Resolve against the designated admin's operational `pathways` first, then their for-sale
+  // project assessments, then their for-sale inventory items, then their for-sale bootcamps,
+  // then fall back to the `pathway_templates` catalog for older leads. This only ever feeds a
+  // display label, never an authorization decision — an unresolved referenceId (deleted/renamed,
+  // or `PUBLIC_CONTENT_ADMIN_ID` unset) just shows no label.
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
 
@@ -127,9 +146,23 @@ const LeadService = {
       } catch {
         /* fall through */
       }
+
+      // 4. for-sale bootcamps (program-curricula) owned by the designated admin.
+      try {
+        const bootcamps = await CurriculumModel.findForSaleBootcamps(env.PUBLIC_CONTENT_ADMIN_ID);
+        const bootcamp =
+          bootcamps.find((b) => b.id === referenceId) ||
+          bootcamps.find((b) => (slugify(b.name) || "bootcamp") === referenceId) ||
+          null;
+        if (bootcamp) {
+          return { referenceType: "bootcamp", referenceName: bootcamp.name, referenceSlug: slugify(bootcamp.name) || "bootcamp" };
+        }
+      } catch {
+        /* fall through */
+      }
     }
 
-    // 4. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
+    // 5. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
     let template = await PathwayTemplateModel.findById(referenceId);
     if (!template) {
       const all = await PathwayTemplateModel.findAll();
@@ -141,8 +174,8 @@ const LeadService = {
 
   // Admin Enquiries list — each row gets its referenceId resolved to a human-readable
   // { referenceType, referenceName, referenceSlug } (null when there's no referenceId, or it no
-  // longer resolves to anything — e.g. the pathway was since deleted, or it points at a
-  // bootcamp/project that no longer has a public catalog to resolve against).
+  // longer resolves to anything — e.g. the pathway/project/store item/bootcamp it named was
+  // since deleted or taken off sale).
   async listAll(filters) {
     const records = await LeadModel.findAll(filters);
     const resolved = await Promise.all(records.map((r) => LeadService._resolveReference(r.referenceId)));
@@ -180,6 +213,13 @@ const LeadService = {
     if (!lead) {
       const err = new Error("Lead not found");
       err.statusCode = 404;
+      throw err;
+    }
+    // A diagnostic lead has no email (name + phone only) — there's nothing to email a reply to.
+    // The Enquiries UI hides the "Reply by email" tab for these, but guard the API too.
+    if (!lead.email) {
+      const err = new Error("This enquiry has no email address — add a follow-up note instead, or call them.");
+      err.statusCode = 400;
       throw err;
     }
     const message = await LeadMessageModel.create({

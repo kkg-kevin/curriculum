@@ -38,7 +38,7 @@ const STATUS_COLORS = {
   closed: { bg: "#DCFCE7", fg: "#166534" },
 };
 
-const SOURCE_LABELS = { enroll: "Enrol interest", contact: "Contact form" };
+const SOURCE_LABELS = { enroll: "Enrol interest", contact: "Contact form", diagnostic: "Diagnostic result" };
 
 const INTEREST_LABELS = {
   bootcamp: "A bootcamp",
@@ -59,11 +59,13 @@ function StatusBadge({ status }) {
 }
 
 // The reply/note thread for one lead — fetched lazily, only while its card is expanded.
-function LeadThread({ leadId }) {
+// `canEmail` is false for a diagnostic lead (no email on file — name + phone only): the
+// "Reply by email" tab is hidden and the thread opens straight on "Internal note".
+function LeadThread({ leadId, canEmail = true }) {
   const { data, isLoading } = useLeadTimeline(leadId, true);
   const replyMutation = useReplyToLead();
   const noteMutation = useAddLeadNote();
-  const [mode, setMode] = useState("reply"); // "reply" | "note"
+  const [mode, setMode] = useState(canEmail ? "reply" : "note"); // "reply" | "note"
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
 
@@ -117,7 +119,7 @@ function LeadThread({ leadId }) {
 
       <form onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", gap: 6 }}>
-          {["reply", "note"].map((m) => (
+          {(canEmail ? ["reply", "note"] : ["note"]).map((m) => (
             <button
               key={m}
               type="button"
@@ -197,12 +199,13 @@ function LeadRow({ lead, highlighted, rowRef }) {
             <span style={{ fontSize: 11, color: "#6B7280" }}>· {SOURCE_LABELS[lead.source] || lead.source}</span>
           </div>
           <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-            {lead.email} {lead.phone && <>· {lead.phone}</>}
+            {/* A diagnostic lead has no email — it asks name + phone only. */}
+            {[lead.email, lead.phone].filter(Boolean).join(" · ") || "No contact details"}
           </div>
-          {lead.source === "enroll" && (
+          {(lead.source === "enroll" || lead.source === "diagnostic") && (lead.learnerName || lead.learnerAge) && (
             <div style={{ fontSize: 12, color: "#374151", marginTop: 6 }}>
               Learner: <strong>{lead.learnerName || "—"}</strong>{lead.learnerAge ? ` (age ${lead.learnerAge})` : ""}
-              {lead.interestedIn && <> · {INTEREST_LABELS[lead.interestedIn] || lead.interestedIn}</>}
+              {lead.source === "enroll" && lead.interestedIn && <> · {INTEREST_LABELS[lead.interestedIn] || lead.interestedIn}</>}
             </div>
           )}
           {lead.reference && (
@@ -241,7 +244,7 @@ function LeadRow({ lead, highlighted, rowRef }) {
           {expanded ? "Hide" : "Reply / Notes"}
         </button>
       </div>
-      {expanded && <LeadThread leadId={lead.id} />}
+      {expanded && <LeadThread leadId={lead.id} canEmail={!!lead.email} />}
     </div>
   );
 }

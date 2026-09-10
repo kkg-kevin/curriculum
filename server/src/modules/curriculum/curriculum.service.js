@@ -148,9 +148,27 @@ async function assertUniqueName(name, ownerAdminId, excludeId = null) {
   }
 }
 
+// "For sale on the public website" only makes sense for a Program curriculum (a bootcamp) — a
+// regular school curriculum isn't a thing a parent books their child onto for a holiday. Enforced
+// here (service layer) rather than in the Zod schema because on an UPDATE `isProgram` may be
+// absent from the patch while `saleStatus` flips on, so the effective flag has to be resolved
+// from the existing row. Mirrors assessment.service.js's assertSellableProject. The
+// price/tagline/format can all be filled in later — a for-sale bootcamp with no price just
+// shows "Enquire for pricing" — so this only guards the isProgram pairing, nothing else.
+function assertSellableBootcamp(data, existing) {
+  if (data.saleStatus !== "for_sale") return;
+  const effectiveIsProgram = "isProgram" in data ? data.isProgram : existing?.isProgram;
+  if (!effectiveIsProgram) {
+    const err = new Error("Only Program curricula (bootcamps) can be listed for sale on the website");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
 const CurriculumService = {
   async createCurriculum(data) {
     await assertUniqueName(data.name, data.ownerAdminId);
+    assertSellableBootcamp(data, null);
     return CurriculumModel.create(data);
   },
 
@@ -174,6 +192,7 @@ const CurriculumService = {
     const existing = await CurriculumModel.findById(id);
     // A rename can't collide with a name another curriculum already uses (same rule as create).
     if (data.name !== undefined) await assertUniqueName(data.name, existing?.ownerAdminId, id);
+    assertSellableBootcamp(data, existing);
     const curriculum = await CurriculumModel.update(id, data);
     if (!curriculum) {
       const err = new Error("Curriculum not found");
