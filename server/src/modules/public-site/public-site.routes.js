@@ -2,9 +2,10 @@ const express = require("express");
 const { getPublicPathways, getPublicPathway } = require("./public-site.controller");
 const { getPublicProjects, getPublicProject } = require("./public-project.controller");
 const { getPublicStoreItems, getPublicStoreItem } = require("./public-store.controller");
+const { getPublicBootcamps, getPublicBootcamp } = require("./public-bootcamp.controller");
 
-// Unauthenticated by design — digifunzi-landing's Pathways, Projects and Store pages (see the
-// integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
+// Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
+// (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
 const router = express.Router();
 
 router.get("/pathways", getPublicPathways);
@@ -15,6 +16,12 @@ router.get("/pathways/:idOrSlug", getPublicPathway);
 // different, deliberate feature — a project assessment an admin flips "for sale" in the builder.
 router.get("/projects", getPublicProjects);
 router.get("/projects/:idOrSlug", getPublicProject);
+
+// Bootcamps = for-sale program-curricula (`curricula.isProgram = 1`, see
+// public-bootcamp.service.js). Reintroduced 10 Sep 2026 as a for-sale flag on the existing
+// Program concept — NOT the old `public_bootcamps` marketing table removed 4 Sep 2026.
+router.get("/bootcamps", getPublicBootcamps);
+router.get("/bootcamps/:idOrSlug", getPublicBootcamp);
 
 // Store = for-sale rows of the shared `inventory` catalog (see public-store.service.js) — the
 // Quarky robot, kits, accessories. An admin flips an inventory item "for sale" in the portal's

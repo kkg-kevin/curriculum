@@ -230,6 +230,14 @@ export default function CurriculumCard({ curriculum }) {
             {curriculum.name}
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+            {/* A for-sale flag only ever lands on a Program curriculum (server-enforced — see
+                curriculum.service.js's assertSellableBootcamp), so this pill is program-only in
+                practice even though the card is shared with the main Curriculum list. */}
+            {curriculum.saleStatus === "for_sale" && (
+              <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0", whiteSpace: "nowrap" }}>
+                IN STORE
+              </span>
+            )}
             {curriculum.curriculumType && (
               <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#fff8e6", color: "#b07800", border: "1px solid #fcd97a", whiteSpace: "nowrap" }}>
                 {curriculum.curriculumType}

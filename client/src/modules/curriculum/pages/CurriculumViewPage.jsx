@@ -32,6 +32,7 @@ import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLev
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
+import BootcampSellingCard from "../../programs/components/BootcampSellingCard";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -933,6 +934,9 @@ export default function CurriculumViewPage() {
           )}
         </div>
       )}
+
+      {/* ── Selling (Programs only) — list this bootcamp on the public website ── */}
+      {curriculum.isProgram && <BootcampSellingCard curriculum={curriculum} />}
 
       {/* ── Course Assignments Section ───────────────────────────────────── */}
       <div id="course-assignments" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>

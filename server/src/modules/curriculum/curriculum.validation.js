@@ -35,6 +35,37 @@ const periodSchema = z
     }
   });
 
+// Sellable-Bootcamp fields. Only meaningful when `isProgram === true` and `saleStatus ===
+// "for_sale"` — curriculum.service.js's assertSellableBootcamp enforces that pairing; the
+// schema just validates shapes/ranges so a bad payload never reaches the DB. Everything is
+// optional with an internal-only default, so an existing curriculum payload that never sends
+// any of these validates exactly as before. Mirrors assessment.validation.js's saleFields.
+const SALE_STATUSES = ["internal", "for_sale"];
+const SALE_FORMATS = ["holiday", "weekend", "after_school", "online"];
+
+const saleFields = {
+  saleStatus:    z.enum(SALE_STATUSES).optional().default("internal"),
+  // A stored "/uploads/x.png" path or an absolute URL — same shape as course.coverImage.
+  coverImage:    z.string().max(500).optional().nullable(),
+  // Whole currency units, no fractional pricing. Coerced so the portal's number input
+  // (which yields a string) is accepted.
+  priceAmount:   z.coerce.number().int().min(0).max(10000000).optional().nullable(),
+  priceCurrency: z.string().trim().max(8).optional().default("KES"),
+  priceNote:     z.string().trim().max(300).optional().default(""),
+  saleTagline:   z.string().trim().max(200).optional().default(""),
+  saleFormat:    z.enum(SALE_FORMATS).optional().nullable(),
+  durationLabel: z.string().trim().max(60).optional().default(""),
+  ageMin:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  ageMax:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  highlights:    z.array(z.string().trim().min(1).max(200)).max(20).optional().default([]),
+};
+
+const saleAgeRefinement = (d) => d.ageMin == null || d.ageMax == null || d.ageMax >= d.ageMin;
+const saleAgeRefinementOptions = {
+  message: "Maximum age must be greater than or equal to minimum age",
+  path: ["ageMax"],
+};
+
 const classSchema = z.object({
   id:   z.string().min(1),
   // The curriculum's own name for this grade (e.g. "Grade 4") — what this session's earlier
@@ -74,6 +105,9 @@ const createCurriculumSchema = z.object({
   academicCycleModel: z.string().optional().default("terms"),
   periods: z.array(periodSchema).optional().default([]),
   classes: z.array(classSchema).optional().default([]),
+  ...saleFields,
+}).superRefine((data, ctx) => {
+  if (!saleAgeRefinement(data)) ctx.addIssue({ code: z.ZodIssueCode.custom, ...saleAgeRefinementOptions });
 });
 
 // curriculumAdminId (the one account delegated to author this curriculum — mirrors
@@ -102,6 +136,23 @@ const updateCurriculumSchema = z.object({
   academicCycleModel: z.string().optional(),
   periods: z.array(periodSchema).optional(),
   classes: z.array(classSchema).optional(),
+  // Sale fields — same shapes as create, but nothing is defaulted on update so a partial
+  // PUT that never mentions them leaves the stored columns untouched.
+  saleStatus:    z.enum(SALE_STATUSES).optional(),
+  coverImage:    z.string().max(500).optional().nullable(),
+  priceAmount:   z.coerce.number().int().min(0).max(10000000).optional().nullable(),
+  priceCurrency: z.string().trim().max(8).optional(),
+  priceNote:     z.string().trim().max(300).optional(),
+  saleTagline:   z.string().trim().max(200).optional(),
+  saleFormat:    z.enum(SALE_FORMATS).optional().nullable(),
+  durationLabel: z.string().trim().max(60).optional(),
+  ageMin:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  ageMax:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  highlights:    z.array(z.string().trim().min(1).max(200)).max(20).optional(),
+}).superRefine((data, ctx) => {
+  if (data.ageMin != null && data.ageMax != null && data.ageMax < data.ageMin) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, ...saleAgeRefinementOptions });
+  }
 });
 
 const linkCourseSchema = z.object({
@@ -116,4 +167,12 @@ const assignAdminSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-module.exports = { createCurriculumSchema, updateCurriculumSchema, periodSchema, linkCourseSchema, assignAdminSchema };
+module.exports = {
+  createCurriculumSchema,
+  updateCurriculumSchema,
+  periodSchema,
+  linkCourseSchema,
+  assignAdminSchema,
+  SALE_STATUSES,
+  SALE_FORMATS,
+};
