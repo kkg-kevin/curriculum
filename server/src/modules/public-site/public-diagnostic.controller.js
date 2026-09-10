@@ -39,7 +39,7 @@ const getAttemptReport = asyncHandler(async (req, res) => {
 });
 
 // { ok, success, message, data } wrapper on POST — matches lead.controller.js's existing two
-// POSTs exactly. `data` carries the graded report (score, indicatorBreakdown, per-item results)
+// POSTs exactly. `data` carries the graded report (score, competencyBreakdown, indicatorBreakdown)
 // so the website can render the report from this one response, no second round-trip.
 const submitDiagnostic = asyncHandler(async (req, res) => {
   const body = submitDiagnosticSchema.parse(req.body);
