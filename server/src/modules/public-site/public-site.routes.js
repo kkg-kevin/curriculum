@@ -3,6 +3,7 @@ const { getPublicPathways, getPublicPathway } = require("./public-site.controlle
 const { getPublicProjects, getPublicProject } = require("./public-project.controller");
 const { getPublicStoreItems, getPublicStoreItem } = require("./public-store.controller");
 const { getPublicBootcamps, getPublicBootcamp } = require("./public-bootcamp.controller");
+const { getPublicHubTypes, getPublicHubs } = require("./public-hub.controller");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -28,5 +29,11 @@ router.get("/bootcamps/:idOrSlug", getPublicBootcamp);
 // Inventory panel and it appears here.
 router.get("/store", getPublicStoreItems);
 router.get("/store/:idOrSlug", getPublicStoreItem);
+
+// Hubs = the designated admin's ACTIVE, NON-SCHOOL learning hubs (co-working space, innovation
+// lab, makerspace, tech club) with their operational schedule — for the enrolment flow's "Type"
+// picker (see public-hub.service.js). `/types` lists the choosable types + a hub count each.
+router.get("/hubs/types", getPublicHubTypes);
+router.get("/hubs", getPublicHubs);
 
 module.exports = router;

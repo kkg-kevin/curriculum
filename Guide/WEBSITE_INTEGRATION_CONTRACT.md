@@ -532,6 +532,51 @@ by a different admin, or one that isn't `for_sale` — undifferentiated.
 (§4.1). The Enquiries page resolves the slug to the item name server-side
 (`referenceType: "store_item"`).
 
+### 3.12 `GET /api/public/hubs/types` and `GET /api/public/hubs` → `200`, array · `503` if unconfigured  *(NEW 10 Sep 2026)*
+
+For the enrolment flow's **"Type of learning hub"** picker. When a parent enrols a
+learner into a pathway (from a pathway page or the diagnostic report — the link
+carries `?flow=pathway`), the enrol form asks which **non-school** learning hub
+they'd attend and shows that hub's real operational schedule read-only. Serves the
+designated admin's `status: "active"` learning hubs whose `hubType` is **not**
+`"school"` (schools run their own admissions). Scoped to `PUBLIC_CONTENT_ADMIN_ID`
+(503 if unset).
+
+```jsonc
+// GET /api/public/hubs/types
+[
+  { "type": "co_working_space", "label": "Co-working space", "hubCount": 2 },
+  { "type": "innovation_lab",   "label": "Innovation lab",   "hubCount": 0 },
+  { "type": "makerspace",       "label": "Makerspace",       "hubCount": 1 },
+  { "type": "tech_club",        "label": "Tech club",         "hubCount": 3 }
+]
+
+// GET /api/public/hubs?type=tech_club        (type optional — omit for all non-school hubs)
+[
+  {
+    "id": "uuid",
+    "name": "Westlands Tech Club",
+    "hubType": "tech_club",
+    "hubTypeLabel": "Tech club",
+    "town": "Nairobi, Nairobi",           // address.city + address.county, "" if unset
+    "schedule": {
+      "opensAt": "15:00",                 // "HH:MM", "" if unset
+      "closesAt": "18:00",
+      "days": ["Tuesday", "Thursday", "Saturday"]   // sorted into week order
+    }
+  }
+]
+```
+
+**Never exposed:** email, code, `spaces`/pricing, `ownerAdminId`, parent hub —
+only "which type, where, and when is it open". A hub that never set its hours
+comes back with empty `opensAt`/`closesAt` and `days: []` (the website shows "to
+be confirmed"). An unknown `?type=` yields `[]`.
+
+The chosen type + hub name are folded into the lead's `note`
+("Preferred hub type: Tech club / Chosen hub: Westlands Tech Club") — they're not
+first-class lead columns.
+
 ---
 
 ## 4. Write endpoints — Enroll & Contact
@@ -720,7 +765,7 @@ gets its own lead and shareable report.
 | `CLIENT_URL` | backend | `https://curriculum.digifunzi.com` | Admin portal. Sends cookies, `credentials: true`. **Required.** |
 | `PUBLIC_SITE_URL` | backend | **comma-separated** — see below | Website origin(s). Optional (routes work for server-to-server without it). |
 | `API_PUBLIC_URL` | backend | `https://nodeapp.digifunzi.com` | This API's own external base — used to absolutize `coverImage` (§6). Optional. |
-| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — behind **every** `/api/public/*` read: pathways (§3.5–3.6), the diagnostic (§3.8), projects (§3.3), store (§3.10) and bootcamps (§3.1). Unset → all of them return `503`. Set it to the `users.id` of whichever admin's Curriculum / Assessments / Inventory / Programs are the public-facing ones. |
+| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — behind **every** `/api/public/*` read: pathways (§3.5–3.6), the diagnostic (§3.8), projects (§3.3), store (§3.10), bootcamps (§3.1) and hubs (§3.12). Unset → all of them return `503`. Set it to the `users.id` of whichever admin's Curriculum / Assessments / Inventory / Programs / Learning Hubs are the public-facing ones. |
 
 ### `PUBLIC_SITE_URL` — comma-separated
 
@@ -788,6 +833,23 @@ returned and the landing site's own `resolveMediaUrl` fallback prefixes
 ## 8. Backend changelog — changes made to match this contract
 
 On the `modules` branch (website-reconciliation pass):
+
+-3. **Public learning-hub endpoints for the enrolment "Type" picker** *(10 Sep 2026)*.
+   - **`public-site/public-hub.{service,controller}.js`** + **routes** —
+     `GET /api/public/hubs/types` and `GET /api/public/hubs?type=` (§3.12). Serves
+     the designated admin's `active`, non-`school` learning hubs with a narrow
+     projection: name, `hubType` + label, a town string, and the schedule
+     (`operatingHours` → `opensAt` / `closesAt` / week-ordered `days`). Scoped to
+     `PUBLIC_CONTENT_ADMIN_ID` (503 if unset). No new tables — reads
+     `learning_hubs` directly.
+   - **Website** (`digifunzi-landing`) — the diagnostic / pathway "Enrol" links
+     now carry `?flow=pathway`, which `EnrollPage` maps to the **full** enrol form
+     (never the light enquiry variant) plus a new `HubTypeSchedule` component: a
+     "Type of learning hub" `<select>` (non-school types), and — once picked — the
+     matching hubs' schedule shown read-only (opening/closing time + day pills, the
+     same shape as the portal's Operational Information), with a hub picker when
+     there's more than one. `usePublicHubs` hook, mock fixture + adapter branches.
+     The chosen type/hub go into the lead's `note`.
 
 -2. **Public diagnostic now captures name + phone and creates a lead** *(10 Sep 2026 —
    reverses the 9 Sep "no contact, no lead" design)*.
@@ -963,6 +1025,8 @@ GET   /api/public/store                     # for-sale `inventory` items — rob
 GET   /api/public/store/:idOrSlug           # + highlights / "what you get" / specs (§3.11)
 GET   /api/public/bootcamps                 # for-sale Program curricula — short-run cohorts (§3.1)
 GET   /api/public/bootcamps/:idOrSlug       # + highlights / upcoming runs (§3.2)
+GET   /api/public/hubs/types                # non-school learning-hub types + a hub count each (§3.12)
+GET   /api/public/hubs?type=<hubType>       # active non-school hubs + operational schedule (§3.12)
 POST  /api/public/leads      { parentName, parentEmail, parentPhone?, learnerName?, learnerAge?, interestedIn?, referenceId?, note? }
 POST  /api/public/contact    { name, email, phone?, message }
 GET   /api/public/learners/:publicToken     (QR share — not website-relevant)

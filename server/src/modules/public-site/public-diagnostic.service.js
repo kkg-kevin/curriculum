@@ -134,15 +134,45 @@ function sanitizeItem(item) {
   return clean;
 }
 
-// { indicatorId -> name }, resolved once per request. Indicator names are plain display strings,
-// not sensitive/scoped data — same posture as assessment-submission.service.js's own
-// resolveIndicator, which also reads the global competency catalog unscoped for exactly this
-// "resolve a name for display" purpose.
-async function buildIndicatorNameMap() {
+// { indicatorId -> { name, competencyId, competencyName } }, resolved once per request.
+// Indicator/competency names are plain display strings, not sensitive/scoped data — same
+// posture as assessment-submission.service.js's own resolveIndicator, which also reads the
+// global competency catalog unscoped for exactly this "resolve a name for display" purpose.
+async function buildIndicatorMeta() {
   const competencies = await CompetencyModel.findAll();
   const map = new Map();
-  competencies.forEach((c) => (c.indicators || []).forEach((i) => map.set(i.id, i.name)));
+  competencies.forEach((c) =>
+    (c.indicators || []).forEach((i) =>
+      map.set(i.id, { name: i.name, competencyId: c.id, competencyName: c.name }),
+    ),
+  );
   return map;
+}
+
+// Roll a flat per-indicator breakdown up to its parent competencies. Each competency row sums
+// its indicators' marks and carries the indicator sub-rows for the website's expandable
+// disclosure. An indicator that doesn't resolve to a competency (deleted/renamed) is grouped
+// under a synthetic "Other" bucket keyed by its own id so nothing is silently dropped.
+function groupByCompetency(indicatorBreakdown, indicatorMeta) {
+  const byCompetency = new Map();
+  for (const row of indicatorBreakdown || []) {
+    const meta = indicatorMeta.get(row.indicatorId);
+    const competencyId = meta?.competencyId || `indicator:${row.indicatorId}`;
+    const competencyName = meta?.competencyName || "Other";
+    if (!byCompetency.has(competencyId)) {
+      byCompetency.set(competencyId, { competencyId, name: competencyName, marksEarned: 0, marksPossible: 0, indicators: [] });
+    }
+    const bucket = byCompetency.get(competencyId);
+    bucket.marksEarned = Math.round((bucket.marksEarned + (Number(row.marksEarned) || 0)) * 100) / 100;
+    bucket.marksPossible += Number(row.marksPossible) || 0;
+    bucket.indicators.push({
+      indicatorId: row.indicatorId,
+      name: meta?.name || null,
+      marksEarned: Number(row.marksEarned) || 0,
+      marksPossible: Number(row.marksPossible) || 0,
+    });
+  }
+  return [...byCompetency.values()];
 }
 
 const PublicDiagnosticService = {
@@ -158,7 +188,7 @@ const PublicDiagnosticService = {
     const assessment = await loadOfferableAssessment(pathway);
     if (!assessment) return null;
 
-    const indicatorNames = await buildIndicatorNameMap();
+    const indicatorMeta = await buildIndicatorMeta();
     return {
       pathwayId: pathway.id,
       pathwayName: pathway.name,
@@ -172,7 +202,7 @@ const PublicDiagnosticService = {
       items: (assessment.items || []).map((item) => ({
         ...sanitizeItem(item),
         indicatorNames: (item.indicatorMarks || [])
-          .map((m) => indicatorNames.get(m.indicatorId))
+          .map((m) => indicatorMeta.get(m.indicatorId)?.name)
           .filter(Boolean),
       })),
     };
@@ -217,15 +247,17 @@ const PublicDiagnosticService = {
     const maxScore = computeMaxScore(assessment);
     const indicatorBreakdown = computeIndicatorBreakdown(assessment, itemResults, []);
 
-    const indicatorNames = await buildIndicatorNameMap();
+    const indicatorMeta = await buildIndicatorMeta();
 
     // The exact SANITIZED items the visitor answered — stored alongside `answers` so the
-    // permanent report link (getAttemptReport below) renders the per-question section identically
-    // even after an admin later edits/reorders/deletes questions on the live assessment.
+    // permanent report link (getAttemptReport below) can still rebuild the raw answer trail
+    // even after an admin later edits/reorders/deletes questions on the live assessment. (The
+    // website report no longer shows a per-question section, but the snapshot stays for the
+    // audit trail / future use.)
     const itemsSnapshot = (assessment.items || []).map((item) => ({
       ...sanitizeItem(item),
       indicatorNames: (item.indicatorMarks || [])
-        .map((m) => indicatorNames.get(m.indicatorId))
+        .map((m) => indicatorMeta.get(m.indicatorId)?.name)
         .filter(Boolean),
     }));
 
@@ -279,10 +311,13 @@ const PublicDiagnosticService = {
       totalScore: autoScore,
       maxScore,
       itemResults,
+      // Per-indicator (kept for back-compat) AND rolled up to parent competencies — the website
+      // report shows the competency rows, each expandable to its indicators.
       indicatorBreakdown: indicatorBreakdown.map((row) => ({
         ...row,
-        name: indicatorNames.get(row.indicatorId) || null,
+        name: indicatorMeta.get(row.indicatorId)?.name || null,
       })),
+      competencyBreakdown: groupByCompetency(indicatorBreakdown, indicatorMeta),
     };
   },
 
@@ -292,27 +327,21 @@ const PublicDiagnosticService = {
   // row is write-once and kept indefinitely, so this link never expires.
   //
   // Deliberately NARROW: pathway/assessment name, the child's first name + age (childName may be
-  // null — it's optional at submit), score, per-competency breakdown, and the per-question
-  // feedback rebuilt from the stored `answers` + `itemsSnapshot` pair. NEVER the parent's name or
-  // phone (those live on the lead, admin-only), never the raw ipHash, never the leadId — nothing
-  // that resolves the visitor's identity, even though a lead is now created at submit. Returns
-  // null → the controller's 404.
+  // null — it's optional at submit), score, and the per-competency breakdown (each competency
+  // expandable to its indicators). NEVER the parent's name or phone (those live on the lead,
+  // admin-only), never the raw ipHash, never the leadId — nothing that resolves the visitor's
+  // identity, even though a lead is now created at submit. Returns null → the controller's 404.
   async getAttemptReport(attemptId) {
     const attempt = await PublicDiagnosticAttemptModel.findById(attemptId);
     if (!attempt) return null;
 
-    const [pathway, assessment, indicatorNames] = await Promise.all([
+    const [pathway, assessment, indicatorMeta] = await Promise.all([
       PathwayModel.findById(attempt.pathwayId),
       AssessmentModel.findById(attempt.assessmentId),
-      buildIndicatorNameMap(),
+      buildIndicatorMeta(),
     ]);
 
-    // The per-question section is rebuilt from the stored snapshot + stored results (NOT
-    // re-graded — sanitizeItem shuffled/blanked the snapshot). A pre-snapshot attempt has
-    // neither → empty arrays → the page shows score + competency breakdown only, still a valid
-    // report.
-    const items = Array.isArray(attempt.itemsSnapshot) ? attempt.itemsSnapshot : [];
-    const itemResults = Array.isArray(attempt.itemResults) ? attempt.itemResults : [];
+    const storedBreakdown = Array.isArray(attempt.indicatorBreakdown) ? attempt.indicatorBreakdown : [];
 
     return {
       attemptId: attempt.id,
@@ -323,13 +352,13 @@ const PublicDiagnosticService = {
       completedAt: attempt.createdAt,
       totalScore: attempt.totalScore,
       maxScore: attempt.maxScore,
-      items, // the sanitized question set — carries `question`/`kind`, needed to render each row
-      answers: attempt.answers || [], // the visitor's own responses, for "Your answer: …"
-      itemResults,
-      indicatorBreakdown: (attempt.indicatorBreakdown || []).map((row) => ({
+      // Per-indicator (kept for back-compat) and rolled up to competencies. Grouping resolves the
+      // stored indicatorIds against the live catalog, so an old attempt renders the same way.
+      indicatorBreakdown: storedBreakdown.map((row) => ({
         ...row,
-        name: indicatorNames.get(row.indicatorId) || null,
+        name: indicatorMeta.get(row.indicatorId)?.name || null,
       })),
+      competencyBreakdown: groupByCompetency(storedBreakdown, indicatorMeta),
     };
   },
 };
