@@ -65,6 +65,8 @@ import GradeStreamsPage from "../modules/classes/pages/GradeStreamsPage";
 import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateProgramPage from "../modules/programs/pages/CreateProgramPage";
 import ProgramViewPage from "../modules/programs/pages/ProgramViewPage";
+import CreateCompetitionPage from "../modules/competitions/pages/CreateCompetitionPage";
+import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
@@ -113,6 +115,12 @@ export default function AppRoutes() {
           <Route index element={<ProgramsListPage />} />
           <Route path="create" element={<CreateProgramPage />} />
           <Route path=":id/view" element={<ProgramViewPage />} />
+          {/* Competitions are their own feature but live under the Programs module on the
+              admin side (no separate sidebar item). The /api/competitions routes and the
+              public website are unchanged. A competition can optionally link to a Program. */}
+          <Route path="competitions/create" element={<CreateCompetitionPage />} />
+          <Route path="competitions/:id/view" element={<CompetitionViewPage />} />
+          <Route path="competitions/:id/edit" element={<CreateCompetitionPage />} />
         </Route>
         <Route path="courses">
           <Route index element={<CoursesPage />} />

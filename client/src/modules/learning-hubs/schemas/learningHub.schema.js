@@ -21,6 +21,14 @@ export const LEARNING_HUB_TYPES = [
   { value: "tech_club",        label: "Tech Club" },
 ];
 
+// How a hub is delivered — orthogonal to type. A `virtual` hub has no physical address and
+// carries a `meetingLink` instead; `hybrid` has both.
+export const DELIVERY_MODES = [
+  { value: "in_person", label: "In person" },
+  { value: "virtual",   label: "Online" },
+  { value: "hybrid",    label: "Hybrid (in person + online)" },
+];
+
 export const AMENITY_OPTIONS = [
   { value: "wifi",             label: "WiFi",             icon: "wifi" },
   { value: "charging_ports",   label: "Charging Ports",   icon: "power" },
@@ -55,13 +63,16 @@ export const PRICING_MODELS = [
   { value: "free",   label: "Free" },
 ];
 
+// county is validated conditionally in the schema's superRefine (required for a physical
+// presence, optional for a purely virtual hub) so it can see deliveryMode.
 const addressSchema = z.object({
   street: z.string().max(200).default(""),
   city: z.string().max(100).default(""),
-  county: z.string().min(1, "County is required").refine(
-    (v) => KENYA_COUNTIES.includes(v),
-    { message: "Select a valid Kenyan county" }
-  ),
+  county: z
+    .string()
+    .max(60)
+    .default("")
+    .refine((v) => v === "" || KENYA_COUNTIES.includes(v), { message: "Select a valid Kenyan county" }),
 });
 
 const operatingHoursSchema = z.object({
@@ -95,6 +106,8 @@ export const learningHubSchema = z
   .object({
     name: z.string().min(1, "Learning hub name is required").max(150, "Max 150 characters"),
     hubType: z.enum(LEARNING_HUB_TYPES.map((t) => t.value), { errorMap: () => ({ message: "Select a valid learning hub type" }) }).default("school"),
+    deliveryMode: z.enum(DELIVERY_MODES.map((d) => d.value), { errorMap: () => ({ message: "Select a delivery mode" }) }).default("in_person"),
+    meetingLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
     code: z
       .string()
       .max(20, "Max 20 characters")
@@ -129,6 +142,10 @@ export const learningHubSchema = z
     }
     if (data.password && !data.email) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
+    }
+    // A physical presence (in_person / hybrid) needs a county; a purely virtual hub doesn't.
+    if (data.deliveryMode !== "virtual" && !data.address?.county) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["address", "county"], message: "County is required for a physical hub" });
     }
   });
 

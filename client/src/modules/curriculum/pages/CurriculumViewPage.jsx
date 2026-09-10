@@ -33,6 +33,7 @@ import { learningHubApi as schoolApi } from "../../learning-hubs/services/learni
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
 import BootcampSellingCard from "../../programs/components/BootcampSellingCard";
+import ProgramCompetitionsSection from "../../competitions/components/ProgramCompetitionsSection";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -934,6 +935,9 @@ export default function CurriculumViewPage() {
           )}
         </div>
       )}
+
+      {/* ── Competitions (Programs only) — its own module, admin UI nested here ── */}
+      {curriculum.isProgram && <ProgramCompetitionsSection curriculumId={id} variant="bordered" />}
 
       {/* ── Selling (Programs only) — list this bootcamp on the public website ── */}
       {curriculum.isProgram && <BootcampSellingCard curriculum={curriculum} />}

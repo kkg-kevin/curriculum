@@ -99,8 +99,13 @@ export function LearningHubCard({ hub, curriculaMap }) {
               >
                 {hub.name}
               </h3>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{typeLabel}</p>
+                {hub.deliveryMode && hub.deliveryMode !== "in_person" && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20, backgroundColor: "#e8f5fb", color: "#2e7db5", border: "1px solid #a8d5ee", whiteSpace: "nowrap" }}>
+                    {hub.deliveryMode === "virtual" ? "ONLINE" : "HYBRID"}
+                  </span>
+                )}
                 {hub.code && (
                   <>
                     <span style={{ color: "#D1D5DB" }}>·</span>
@@ -123,7 +128,11 @@ export function LearningHubCard({ hub, curriculaMap }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10, fontSize: 13, color: "#6B7280" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <LocationOnIcon fontSize="small" />
-            <span>{[hub.address?.city, hub.address?.county].filter(Boolean).join(", ") || "No address"}</span>
+            <span>
+              {hub.deliveryMode === "virtual"
+                ? "Online"
+                : [hub.address?.city, hub.address?.county].filter(Boolean).join(", ") || "No address"}
+            </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <MenuBookIcon fontSize="small" />

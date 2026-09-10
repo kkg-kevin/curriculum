@@ -20,8 +20,12 @@ resolution is recorded inline and the backend has been changed to match — see
 >   = 1`) flipped "List on the website" in the portal's Program view. NOT the old
 >   `public_bootcamps` table. See §3.1/§3.2.
 >
-> The live public reads are `/api/public/{pathways,projects,store,bootcamps}[/:idOrSlug]`
-> and the `/api/public/diagnostics/*` set, plus the two `POST` lead/contact endpoints.
+> The live public reads are
+> `/api/public/{pathways,projects,store,bootcamps,competitions}[/:idOrSlug]` and
+> the `/api/public/{diagnostics,hubs}/*` sets, plus the two `POST` lead/contact
+> endpoints. Competitions *(10 Sep 2026)* are the one section with a real
+> dedicated table (`competitions`) — an independent module whose admin UI lives
+> under the Programs module, ticked "Show on the website". See §3.13.
 
 - **Website:** `digifunzi-landing` — standalone Vite + React SPA.
   Deployed at **`https://africa.digifunzi.com`** (Truehost cPanel subdomain).
@@ -90,6 +94,8 @@ Backend module: `server/src/modules/public-site/` + `server/src/modules/leads/`.
 | `GET` | `/api/public/store/:idOrSlug` | Store item detail (highlights, "what you get", specs) | ✅ live — same scoping (§3.11) |
 | `GET` | `/api/public/pathways` | Pathway list — the designated admin's **operational** pathways (§3.5) | ✅ live — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
 | `GET` | `/api/public/pathways/:idOrSlug` | Pathway detail (ordered courses + `diagnostic`) | ✅ live — same scoping |
+| `GET` | `/api/public/competitions` | Competition list — the designated admin's **public `competitions`** records, status open/closed (§3.13) | ✅ live (10 Sep 2026) — scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset) |
+| `GET` | `/api/public/competitions/:idOrSlug` | Competition detail (description + Track cards) | ✅ live — same scoping (§3.13) |
 | `POST` | `/api/public/leads` | Enrol-interest capture → notify admins | ✅ live |
 | `POST` | `/api/public/contact` | General enquiry → notify admins | ✅ live (separate endpoint kept — see §4.2) |
 | `GET` | `/api/public/diagnostics/:pathwayIdOrSlug/availability` | Does this pathway offer a public diagnostic | ✅ live — see §3.8 |
@@ -558,9 +564,12 @@ designated admin's `status: "active"` learning hubs whose `hubType` is **not**
     "name": "Westlands Tech Club",
     "hubType": "tech_club",
     "hubTypeLabel": "Tech club",
-    "town": "Nairobi, Nairobi",           // address.city + address.county, "" if unset
+    "deliveryMode": "in_person" | "virtual" | "hybrid",   // how it runs
+    "deliveryLabel": "In person" | "Online" | "In person or online",
+    "isVirtual": false,                   // true only for "virtual" — a shorthand for the website
+    "town": "Nairobi, Nairobi",           // address.city + address.county; "Online" for a virtual hub
     "schedule": {
-      "opensAt": "15:00",                 // "HH:MM", "" if unset
+      "opensAt": "15:00",                 // "HH:MM", "" if unset — a virtual hub still has session times
       "closesAt": "18:00",
       "days": ["Tuesday", "Thursday", "Saturday"]   // sorted into week order
     }
@@ -568,14 +577,86 @@ designated admin's `status: "active"` learning hubs whose `hubType` is **not**
 ]
 ```
 
-**Never exposed:** email, code, `spaces`/pricing, `ownerAdminId`, parent hub —
-only "which type, where, and when is it open". A hub that never set its hours
-comes back with empty `opensAt`/`closesAt` and `days: []` (the website shows "to
-be confirmed"). An unknown `?type=` yields `[]`.
+**Never exposed:** email, code, `spaces`/pricing, `ownerAdminId`, parent hub, the
+actual `meetingLink` (that's sent to enrolled learners, not to a browsing visitor)
+— only "which type, in person or online, and when it runs". A hub that never set
+its hours comes back with empty `opensAt`/`closesAt` and `days: []` (the website
+shows "to be confirmed"). An unknown `?type=` yields `[]`.
+
+`deliveryMode` is orthogonal to `hubType` — a virtual makerspace and a virtual
+tech club are both valid. It's stored in a `learning_hubs.deliveryMode` column
+(migration `20260910133000`), defaulting to `in_person` so every existing hub is
+unchanged. A virtual hub has no address; a hybrid has both an address and a
+`meetingLink`.
 
 The chosen type + hub name are folded into the lead's `note`
 ("Preferred hub type: Tech club / Chosen hub: Westlands Tech Club") — they're not
 first-class lead columns.
+
+---
+
+### 3.13 `GET /api/public/competitions` and `GET /api/public/competitions/:idOrSlug` → `200`, array/object · `503` if unconfigured  *(NEW 10 Sep 2026)*
+
+For the **Competitions** section (`/competitions` + `/competitions/:slug`). A
+competition is a row in the **`competitions` table** — an independent module, a
+sibling of Curriculum/Programs (NOT an `isCompetition` flag on `curricula`). Its
+`programId` **optionally** soft-links to a Program (a `curricula` row with
+`isProgram: true`) — it can also stand alone (`programId: null`). On the admin side
+the competition UI lives under the Programs module (the "Programs & Competitions"
+page); an admin creates one there and ticks **"Show on the website"**.
+
+Served: the designated `PUBLIC_CONTENT_ADMIN_ID`'s competitions with
+`isPublic = 1` **and** `status` in (`open`, `closed`) — a `draft` never appears
+even if `isPublic` is set. Scoped like every other public read (503 if unset).
+
+```jsonc
+// GET /api/public/competitions        — newest first, then by name; slug collisions collapse to one
+[
+  {
+    "id": "uuid",
+    "slug": "codeavour-8-0",             // slugify(name), computed at read time (no slug column)
+    "name": "Codeavour 8.0",
+    "edition": "2026 · 8.0",             // "" if unset
+    "level": "Ages 7–18",                // "" if unset
+    "format": "individual" | "pairs" | "team" | null,
+    "cadence": "one_off" | "annual" | "termly" | null,
+    "startDate": "2026-08-01",           // "YYYY-MM-DD" or ""
+    "endDate": "2026-11-30",
+    "coverImage": "https://…" | null,    // absolutized
+    "status": "open" | "closed",         // never "draft"
+    "trackCount": 3
+  }
+]
+
+// GET /api/public/competitions/:idOrSlug  → 200 | 404
+{
+  // …all list fields above, plus:
+  "description": "plain text",           // htmlToText() — rich text flattened
+  "tracks": [
+    {
+      "id": "track-1",                   // author-supplied id, else "track-<n>"
+      "name": "Innovation and Entrepreneurship",
+      "subtitle": "Build a startup idea",   // "" if unset — rendered as the green subtitle
+      "description": "plain text",          // htmlToText()
+      "highlights": ["…", "…"],             // bullet list, [] if none
+      "registerUrl": "https://…" | "",      // external link OR an in-app path like "/enroll?…"; "" → generic enquiry
+      "knowMoreUrl": "https://…" | ""       // external link; "" → button hidden
+    }
+  ]
+}
+```
+
+**Never exposed:** `ownerAdminId`, `programId`, `isPublic`, timestamps — a visitor
+sees the event copy, the dates and the Track cards only.
+
+`404 { "message": "Competition not found" }` for an unknown id/slug, a competition
+owned by a different admin, or one that isn't public / is still draft.
+
+**No dedicated write path.** A track's "Register now" button uses `registerUrl` as
+authored: an external `https://…` opens in a new tab; a bare/relative value (e.g.
+`/enroll?…`) is an in-app route; empty falls back to
+`/contact?subject=<competition name> — entry details`. No `interestedIn` value is
+reserved for competitions — entry enquiries are plain contact messages (§4.2).
 
 ---
 
@@ -765,7 +846,7 @@ gets its own lead and shareable report.
 | `CLIENT_URL` | backend | `https://curriculum.digifunzi.com` | Admin portal. Sends cookies, `credentials: true`. **Required.** |
 | `PUBLIC_SITE_URL` | backend | **comma-separated** — see below | Website origin(s). Optional (routes work for server-to-server without it). |
 | `API_PUBLIC_URL` | backend | `https://nodeapp.digifunzi.com` | This API's own external base — used to absolutize `coverImage` (§6). Optional. |
-| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — behind **every** `/api/public/*` read: pathways (§3.5–3.6), the diagnostic (§3.8), projects (§3.3), store (§3.10), bootcamps (§3.1) and hubs (§3.12). Unset → all of them return `503`. Set it to the `users.id` of whichever admin's Curriculum / Assessments / Inventory / Programs / Learning Hubs are the public-facing ones. |
+| `PUBLIC_CONTENT_ADMIN_ID` | backend | one admin's `users.id` | Which tenant's content the whole public site shows — behind **every** `/api/public/*` read: pathways (§3.5–3.6), the diagnostic (§3.8), projects (§3.3), store (§3.10), bootcamps (§3.1), hubs (§3.12) and competitions (§3.13). Unset → all of them return `503`. Set it to the `users.id` of whichever admin's Curriculum / Assessments / Inventory / Programs / Competitions / Learning Hubs are the public-facing ones. |
 
 ### `PUBLIC_SITE_URL` — comma-separated
 
@@ -833,6 +914,76 @@ returned and the landing site's own `resolveMediaUrl` fallback prefixes
 ## 8. Backend changelog — changes made to match this contract
 
 On the `modules` branch (website-reconciliation pass):
+
+-5. **Competitions module + public Competitions section** *(10 Sep 2026)*.
+   - **Migration `20260910143000_create_competitions.js`** — new `competitions`
+     table: `id`, `ownerAdminId` (indexed), `programId` (nullable soft-link to a
+     Program's `curricula.id`, indexed), `name`, `description`, `edition`, `format`
+     (individual/pairs/team), `level`, `cadence` (one_off/annual/termly),
+     `startDate`/`endDate`, `coverImage`, `status` (draft/open/closed, default
+     draft), `isPublic` (default false), `tracks` (JSON), timestamps. No FK
+     constraints (app-layer integrity, per the house style).
+   - **`modules/competitions/`** — a standalone module (sibling of Curriculum /
+     Programs, **not** an `isCompetition` flag on `curricula`): `competition.model`
+     / `.validation` (Zod) / `.service` / `.controller` / `.routes`. Mounted at
+     `/api/competitions` behind `protect + attachOwnRecords + authorize("admin")`.
+     The `programId`, when set, must point at a Program the same admin owns
+     (`assertProgramOwnedBy`). The service enriches each record with `trackCount`
+     and a display-only `programName`.
+   - **`curriculum.service.js` `deleteCurriculum`** — when a Program (an
+     `isProgram` curriculum) is deleted, `CompetitionService.unlinkProgram` nulls
+     the `programId` of any competitions that linked to it rather than orphaning
+     them — same "the record has a life of its own" posture as
+     `ProgramModel.delete` leaving classes standing.
+   - **`public-site/public-competition.{service,controller}.js`** + **routes** —
+     `GET /api/public/competitions` and `GET /api/public/competitions/:idOrSlug`
+     (§3.13). Serves the designated admin's `isPublic`, non-`draft` competitions;
+     computed slug from `name`; hand-built projection that never exposes
+     `ownerAdminId` / `programId` / `isPublic`; track descriptions flattened via
+     `htmlToText`. Scoped to `PUBLIC_CONTENT_ADMIN_ID` (503 if unset).
+   - **Portal** (`client/src/modules/competitions/`) — Competitions are their own
+     feature but live **under the Programs module** (no separate sidebar item). The
+     Programs page (`/programs`, retitled "Programs & Competitions") has two hero
+     buttons — **+ New Program** and **+ New Competition** — and shows two
+     sections: the Programs grid, then a full Competitions grid (all of the admin's
+     competitions). Competition create/edit/view pages live at
+     `/programs/competitions/*`. The create form has a repeatable **Track editor**
+     (name, subtitle, description, highlights, register + know-more URLs), an
+     optional **Linked Program** `<select>` (a competition can belong to a Program
+     or stand alone), and a "Show on the website" toggle. A `ProgramCompetitionsSection`
+     also renders on a program-curriculum's view (`/curriculum/:id/view`) and a
+     deployment's view (`/programs/:id/view`), listing just that program's
+     competitions and deep-linking to the same pages (its "+ New" pre-selects the
+     program via `?programId=`).
+   - **Website** (`digifunzi-landing`) — `/competitions` is now **API-driven** (was
+     hand-authored static content in `src/content/competitions.js`, now deleted —
+     there was no competitions model then). New `CompetitionCard`,
+     `CompetitionsPage` (grid), `CompetitionDetailPage` (the Codeavour-style Track
+     cards: name, green subtitle, description, bullet highlights, "Know more" +
+     "Register now"). `usePublicCompetitions` hook, `publicApi.listCompetitions` /
+     `getCompetition`, mock fixture + adapter branches, `/competitions/:slug`
+     route, prerender + sitemap discovery.
+
+-4. **Virtual / hybrid learning hubs** *(10 Sep 2026)*.
+   - **Migration `20260910133000_add_delivery_mode_to_learning_hubs.js`** — adds
+     `deliveryMode` (`in_person` default \| `virtual` \| `hybrid`) + index, and
+     `meetingLink` (VARCHAR) to `learning_hubs`. Orthogonal to `hubType`. Every
+     existing hub is `in_person` — no behaviour change.
+   - **`learning-hub.validation.js`** — `deliveryMode` + `meetingLink` on the
+     schema; `address.county` is now conditionally required (in the `superRefine`)
+     — needed for `in_person` / `hybrid`, optional (empty) for a purely `virtual`
+     hub. Same conditional mirrored in the client schema.
+   - **`public-hub.service.js`** — the projection gains `deliveryMode`,
+     `deliveryLabel`, `isVirtual`; `town` becomes `"Online"` for a virtual hub.
+     `meetingLink` is **never** exposed publicly.
+   - **Portal** (`LearningHubForm`) — a "Delivery" segmented control (In person /
+     Online / Hybrid, non-school only); an online/hybrid hub gets a "Joining Link"
+     card and a virtual hub hides the Address + Spaces sections. The hub card /
+     view page show an "Online" / "Hybrid" chip and swap the address line.
+   - **Website** (`HubTypeSchedule`'s schedule card) — an "Online" / "Hybrid"
+     chip on the hub name and a "🌐 Online — join from anywhere" line for a
+     virtual hub; the session times + day pills are unchanged (a virtual hub still
+     runs at a set time).
 
 -3. **Public learning-hub endpoints for the enrolment "Type" picker** *(10 Sep 2026)*.
    - **`public-site/public-hub.{service,controller}.js`** + **routes** —

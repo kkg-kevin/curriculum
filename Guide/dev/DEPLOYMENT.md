@@ -102,6 +102,99 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (10 Sep 2026) — Bootcamps for sale · diagnostic name+phone · competency-grouped report · public hubs + virtual hubs · Competitions module
+
+Additive. **Five new migrations, all auto-applied on Restart. No new dependency, no
+new env var.** This rolls up everything since the 9 Sep "fourth follow-on" below —
+if you already deployed a 10 Sep build you can skip whatever you've done. Backend,
+portal frontend and the website (`digifunzi-landing`, its own repo) all change.
+
+### New migrations (apply automatically on Restart, in order)
+
+| Migration | Adds | Existing rows |
+|---|---|---|
+| `20260910093200_add_sale_fields_to_curricula` | sale fields on `curricula` (a Program can be "listed on the website" as a bootcamp) | unchanged — every curriculum stays unlisted |
+| `20260910120000_leads_add_diagnostic_source_and_nullable_email` | `leads.source`, makes `leads.email` nullable | unchanged |
+| `20260910133000_add_delivery_mode_to_learning_hubs` | `learning_hubs.deliveryMode` (default `in_person`) + `meetingLink` | every hub becomes `in_person` — no behaviour change |
+| `20260910143000_create_competitions` | new `competitions` table | n/a (new table) |
+
+(`20260909161500_add_sale_fields_to_inventory` from the 9 Sep release is also in
+this zip — it applies too if you never deployed that one.)
+
+### What changed
+
+1. **Bootcamps for sale** — a Program (an `isProgram` curriculum) can be flipped
+   "List on the website" in the portal's Program view. `GET /api/public/bootcamps[/:idOrSlug]`
+   serves those; the website's `/bootcamps` section is now API-driven (was a
+   "coming soon" placeholder). Not the old `public_bootcamps` table.
+2. **Public diagnostic requires parent name + phone** — the submit endpoint now
+   needs `parentName` + `parentPhone` and creates a `source: "diagnostic"` lead.
+   The report itself still exposes no PII. `leads.email` is now nullable.
+3. **Diagnostic report — competency grouping** — the report groups by competency
+   with an expandable breakdown of contributing indicators; the question-by-question
+   list is gone. Full-width report page. A "next steps" panel (Enroll / Get started
+   / Speak to a mentor) replaces the old 3-button row. Real PDF download.
+4. **Public learning-hub endpoints** — `GET /api/public/hubs/types` and
+   `GET /api/public/hubs?type=` feed the post-diagnostic Enroll flow's "Type of
+   learning hub" picker (a two-step wizard), showing a real non-school hub's
+   operational schedule read-only.
+5. **Virtual / hybrid learning hubs** — a hub's `deliveryMode` is `in_person`
+   (default), `virtual` or `hybrid`. The public hub projection gains
+   `deliveryMode` / `deliveryLabel` / `isVirtual`; a virtual hub's town shows
+   "Online". `meetingLink` is never exposed publicly. Portal hub form gets a
+   Delivery control; a virtual hub hides Address + Spaces.
+6. **Competitions module** — a new standalone `competitions` table (an independent
+   module, sibling of Curriculum/Programs — *not* a flag on `curricula`). A
+   competition optionally soft-links to a Program. `GET /api/public/competitions[/:idOrSlug]`
+   serves the designated admin's public, non-draft competitions with their
+   **Track cards** (name, subtitle, description, highlights, register + know-more
+   URLs). Portal UI lives **under the Programs module** — the Programs page is now
+   "Programs & Competitions" with a **+ New Competition** button and a competitions
+   grid alongside the programs grid. Deleting a Program detaches (never orphans)
+   its competitions.
+   See `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §3.13.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — includes all five migrations above, the new
+`modules/competitions/*`, `modules/public-site/public-competition.*`, the
+`/api/competitions` mount in `app.js`, and the hub/curriculum/lead/diagnostic
+changes. `knexfile.js` at the app root as always. **No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-DpPz0DUj.js`** / CSS `index-CPRP9smp.css`.
+- Live build (`npm run build:live`): **`index-CJsTNRbk.js`** / same CSS.
+- New: "Programs & Competitions" page with the competition create/edit/view
+  screens and Track editor; a Competitions section on a Program's view; the
+  Program "List on the website" (bootcamp) card; the hub Delivery control; the
+  competency-grouped diagnostic report bits are website-side only.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- `/bootcamps` + `/bootcamps/:slug` API-driven; `/competitions` +
+  `/competitions/:slug` API-driven (was hand-authored static content) with the
+  Codeavour-style Track cards; the post-diagnostic Enroll two-step wizard with the
+  hub-type picker (physical + online hubs); virtual-hub "Online" chip.
+- `scripts/{prerender,generate-sitemap}.js` also discover `/bootcamps` and
+  `/competitions` slugs from the API.
+
+### Deploy order (per environment — Dev first, then Live once confirmed)
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the
+   app log: five migrations should apply cleanly (or fewer, if some already ran).
+2. **Portal** `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's from
+   `Guide/live/` (different JS hash, don't cross them).
+3. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` doc root.
+4. **Verify:**
+   - `curl https://<api>/api/public/competitions` → `[]` (or real data) not `503`.
+   - `curl https://<api>/api/public/bootcamps` → same.
+   - In the portal, open **Programs & Competitions**, click **+ New Competition**,
+     save a draft, then tick "Show on the website" and set status Open → it appears
+     on `/competitions`.
+
+---
+
 ## This release (9 Sep 2026, fourth follow-on) — sell Inventory items in the website Store
 
 Additive. **One new migration (auto-applies on Restart), no new dependency, no new env var, no
@@ -155,6 +248,12 @@ materials from the same catalog. Idempotent `up`/`down`.
 - Empty state until an item is marked for sale (see `Guide/STORE_SETUP.md`).
 - The old static bundle→projects cross-link is dropped (a "bundle" is now just a store item
   with `storeCategory: "bundle"`).
+- `scripts/{prerender,generate-sitemap}.js` now discover `/store` **and** `/projects` slugs
+  from the API (like `/pathways`) — they no longer read `src/content/store.js`. If the backend
+  isn't reachable from the build machine, those detail pages ship SPA-only and a re-build once
+  the API is live fills them in (same as the existing Pathways note).
+- **Nav reordered:** Pathways · Projects · Bootcamps · Competitions · Store · About · Contact.
+  New **`/bootcamps`** placeholder page ("coming soon" + contact CTA — no content/model yet).
 
 ### Deploy order
 
@@ -747,7 +846,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
    - `index.html` from `client/dist/`
    - `assets.zip`
 
-7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-DjcsDXfi.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
+7. **Extract** `assets.zip` — right-click → Extract. It creates `curriculum.digifunzi.com/assets/` with all the JS/CSS/font files inside. Confirm `assets/index-DpPz0DUj.js` exists after extracting; if the extractor made a nested `assets/assets/`, move it up one level.
 
 8. **Delete** `assets.zip` after extraction
 
@@ -779,10 +878,10 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files (this folder, `Guide/dev/`)
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 9 Sep 2026** — includes every migration through `20260909110000_make_public_diagnostic_attempt_lead_nullable.js` (the two new ones this release apply automatically on Restart — see the top "This release" section). `nodemailer` (added 4 Sep) is already in `package.json`; no new dependency this release. **Identical to `Guide/live/backend-deploy.zip`** — same code, only each cPanel Node app's `.env` differs. |
-| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder**. **Rebuilt 9 Sep 2026** — `index-DjcsDXfi.js` / CSS `index-CPRP9smp.css`. No portal-UI change this release; deploying it is optional if the 8 Sep portal build is already live. |
-| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-DjcsDXfi.js`**. |
-| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo — `github.com/kkg-kevin/curriculum-web`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com`. **Pathway detail pages ship as SPA-only HTML** — the build-time prerender needs the API reachable, which it wasn't on the build machine (the pages work at runtime, just not pre-rendered for SEO). Re-run `npm run deploy:build` in that repo from a machine that can reach the backend to fix it. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 10 Sep 2026** — includes every migration through `20260910143000_create_competitions.js` (the five 10 Sep migrations apply automatically on Restart — see "This release (10 Sep 2026)" at the top). No new dependency. **Identical to `Guide/live/backend-deploy.zip`** — same code, only each cPanel Node app's `.env` differs. |
+| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder** (66 entries). **Rebuilt 10 Sep 2026** — `index-DpPz0DUj.js` / CSS `index-CPRP9smp.css`. Portal UI changed this release ("Programs & Competitions" page + Track editor, Program bootcamp-sale card, hub Delivery control). |
+| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-DpPz0DUj.js`**. |
+| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo — `github.com/kkg-kevin/curriculum-web`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com`. **Rebuilt 10 Sep 2026** — API-driven `/bootcamps` and `/competitions` (Track cards), the post-diagnostic Enroll hub-type wizard, virtual-hub "Online" chip. List pages pre-rendered; **`/bootcamps/:slug` and `/competitions/:slug` ship SPA-only** — those endpoints 404'd on the deployed backend at build time (they're in *this* release's `backend-deploy.zip`). **Deploy the backend first, then re-run `npm run deploy:build` in `digifunzi-landing` and re-upload** to pre-render them for SEO. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 

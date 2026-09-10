@@ -29,6 +29,8 @@ export default function EditLearningHubPage() {
       reset({
         name: hub.name || "",
         hubType: hub.hubType || "school",
+        deliveryMode: hub.deliveryMode || "in_person",
+        meetingLink: hub.meetingLink || "",
         code: hub.code || "",
         address: {
           street: hub.address?.street || "",

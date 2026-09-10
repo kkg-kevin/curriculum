@@ -275,6 +275,11 @@ const CurriculumService = {
       }
       await ProgramModel.delete(program.id);
     }
+    // A Program IS this `curricula` row (isProgram) — competitions link to it by this id.
+    // Detach them rather than orphan them with a dangling programId; a competition has a life
+    // of its own (same posture as a program's classes surviving an un-deploy).
+    // Lazy require: competition.service → competition.model, no cycle back to curriculum.
+    await require("../competitions/competition.service").unlinkProgram(id);
     return { message: "Curriculum deleted successfully" };
   },
 
