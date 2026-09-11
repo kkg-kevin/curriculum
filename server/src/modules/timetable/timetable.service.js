@@ -11,7 +11,7 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearnerModel = require("../learners/learner.model");
 const TeacherModel = require("../teachers/teacher.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
-const ProgramModel = require("../programs/program.model");
+const EventModel = require("../events/event.model");
 const AcademicYearVersionModel = require("../curriculum/academic-years/academic-year-versions.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const ReportService = require("../reports/report.service");
@@ -121,14 +121,14 @@ function weekdayOf(dateStr) {
 // *names* (set on the curriculum's Structure step, used to scaffold the course-structure content
 // by period) and never gets real dates written onto it by anything in the app.
 //
-// - A Program curriculum never has (or can have — Academic Year setup is hidden for it, see
+// - An Event curriculum never has (or can have — Academic Year setup is hidden for it, see
 //   CurriculumViewPage) dated periods of its own: it runs on the fixed startDate/endDate set on
-//   its Program deployment instead of an academic-year cycle. So for those, the deployment's own
+//   its Event deployment instead of an academic-year cycle. So for those, the deployment's own
 //   dates stand in as a single implicit period.
 // - Every other curriculum's real period dates+breaks live on whichever Academic Year version is
 //   currently published for it (see academic-years.service.js) — that's the one and only source
 //   with actual dates a school ever fills in.
-// Missing class/curriculum, a Program with no deployment yet, or a curriculum with no published
+// Missing class/curriculum, an Event with no deployment yet, or a curriculum with no published
 // Academic Year, all degrade to [] (unrestricted — see isDateSchedulable) rather than blocking
 // scheduling outright — dates are opt-in constraints, not a prerequisite for having a timetable.
 async function getPeriodsForClass(classId) {
@@ -136,10 +136,10 @@ async function getPeriodsForClass(classId) {
   if (!cls?.curriculumId) return [];
   const curriculum = await CurriculumModel.findById(cls.curriculumId);
   if (!curriculum) return [];
-  if (curriculum.isProgram) {
-    const program = await ProgramModel.findByClassId(classId);
-    if (!program?.startDate || !program?.endDate) return [];
-    return [{ name: curriculum.name, startDate: program.startDate, endDate: program.endDate, breakStartDate: "", breakEndDate: "" }];
+  if (curriculum.isEvent) {
+    const event = await EventModel.findByClassId(classId);
+    if (!event?.startDate || !event?.endDate) return [];
+    return [{ name: curriculum.name, startDate: event.startDate, endDate: event.endDate, breakStartDate: "", breakEndDate: "" }];
   }
   const publishedVersion = await AcademicYearVersionModel.findPublished(curriculum.id);
   return publishedVersion?.periods || [];

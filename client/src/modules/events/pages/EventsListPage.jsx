@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { FiLayers, FiFlag, FiAlertTriangle, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiLayers, FiFlag, FiAward, FiAlertTriangle, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import CurriculumCard from "../../curriculum/components/CurriculumCard";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
+import { useBootcampsQuery } from "../../bootcamps/hooks/useBootcamps";
 
 const ACCENT = "#25476a";
 
@@ -12,6 +13,12 @@ const COMP_STATUS = {
   closed: { bg: "#FEE2E2", fg: "#B91C1C", label: "Closed" },
 };
 const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
+const BOOTCAMP_FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
+
+function formatBootcampPrice(b) {
+  if (b.priceAmount == null) return "Enquire for pricing";
+  return `${b.priceCurrency || "KES"} ${Number(b.priceAmount).toLocaleString()}`;
+}
 
 function SectionHeader({ title, hint, actionLabel, onAction }) {
   return (
@@ -31,7 +38,7 @@ function SectionHeader({ title, hint, actionLabel, onAction }) {
   );
 }
 
-function ProgramsSkeleton() {
+function EventsSkeleton() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
       {[1, 2, 3].map((n) => (
@@ -96,14 +103,39 @@ function CompetitionCard({ competition, onOpen }) {
           <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, backgroundColor: s.bg, color: s.fg, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>{s.label}</span>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", marginTop: "auto" }}>
-          {[competition.edition, competition.format && FORMAT_LABEL[competition.format], `${trackCount} ${trackCount === 1 ? "track" : "tracks"}`, competition.programName].filter(Boolean).join(" · ")}
+          {[competition.edition, competition.format && FORMAT_LABEL[competition.format], `${trackCount} ${trackCount === 1 ? "track" : "tracks"}`, competition.eventName].filter(Boolean).join(" · ")}
         </p>
       </div>
     </button>
   );
 }
 
-export default function ProgramsListPage() {
+function BootcampCard({ bootcamp, onOpen }) {
+  const live = bootcamp.saleStatus === "for_sale";
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      style={{ textAlign: "left", backgroundColor: "#ffffff", borderRadius: 16, padding: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid #E5E7EB", cursor: "pointer", fontFamily: "Inter, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}
+    >
+      <div style={{ height: 96, background: bootcamp.coverImage ? `center / cover no-repeat url(${bootcamp.coverImage})` : "linear-gradient(135deg, #1a3550, #2e7db5)", position: "relative" }}>
+        <span title={live ? "On the website" : "Not published"} style={{ position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.92)", color: live ? "#15803D" : "#9CA3AF" }}>
+          {live ? <FiEye size={13} /> : <FiEyeOff size={13} />}
+        </span>
+      </div>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+          <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#111827", lineHeight: 1.35 }}>{bootcamp.name}</h3>
+        </div>
+        <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", marginTop: "auto" }}>
+          {[bootcamp.format && BOOTCAMP_FORMAT_LABEL[bootcamp.format], formatBootcampPrice(bootcamp), bootcamp.eventName].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+export default function EventsListPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useCurriculaQuery();
   const {
@@ -112,9 +144,15 @@ export default function ProgramsListPage() {
     isError: compsError,
     error: compsErr,
   } = useCompetitionsQuery();
+  const {
+    data: bootcamps = [],
+    isLoading: loadingBootcamps,
+    isError: bootcampsError,
+    error: bootcampsErr,
+  } = useBootcampsQuery();
 
-  // Programs are curricula flagged isProgram: true on the Structure step.
-  const programs = (data?.data || []).filter((c) => c.isProgram);
+  // Events are curricula flagged isEvent: true on the Structure step.
+  const events = (data?.data || []).filter((c) => c.isEvent);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -124,7 +162,7 @@ export default function ProgramsListPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative", flexWrap: "wrap" }}>
           <div>
             <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-              Programs &amp; Competitions
+              Events &amp; Competitions
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
               Short-run cohort curricula, and the competitions that go alongside them — editions, tracks and registration windows.
@@ -133,45 +171,52 @@ export default function ProgramsListPage() {
           <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => navigate("/curriculum/create")}
+              onClick={() => navigate("/curriculum/create?isEvent=1")}
               style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New Program
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New Event
             </button>
             <button
               type="button"
-              onClick={() => navigate("/programs/competitions/create")}
+              onClick={() => navigate("/events/competitions/create")}
               style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
             >
               <FiFlag size={14} /> New Competition
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/events/bootcamps/create")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              <FiAward size={14} /> New Bootcamp
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Programs ─────────────────────────────────────────────── */}
+      {/* ── Events ─────────────────────────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
         <SectionHeader
-          title="Programs"
+          title="Events"
           hint="Bootcamps and intensives — authored the same way as any curriculum, then deployed to a hub as a running class."
-          actionLabel="New Program"
-          onAction={() => navigate("/curriculum/create")}
+          actionLabel="New Event"
+          onAction={() => navigate("/curriculum/create?isEvent=1")}
         />
         {isLoading ? (
-          <ProgramsSkeleton />
+          <EventsSkeleton />
         ) : isError ? (
-          <ErrorRow label="programs" message={error?.message} />
-        ) : programs.length === 0 ? (
+          <ErrorRow label="events" message={error?.message} />
+        ) : events.length === 0 ? (
           <EmptyBox
             icon={FiLayers}
-            title="No programs yet"
-            body="A Program is a curriculum flagged “This is a Program” on its Structure step."
-            cta="+ New Program"
-            onCta={() => navigate("/curriculum/create")}
+            title="No events yet"
+            body="An Event is a curriculum flagged “This is an Event” on its Structure step."
+            cta="+ New Event"
+            onCta={() => navigate("/curriculum/create?isEvent=1")}
           />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-            {programs.map((curriculum) => (
+            {events.map((curriculum) => (
               <CurriculumCard key={curriculum.id} curriculum={curriculum} />
             ))}
           </div>
@@ -179,12 +224,12 @@ export default function ProgramsListPage() {
       </div>
 
       {/* ── Competitions ─────────────────────────────────────────── */}
-      <div>
+      <div style={{ marginBottom: 32 }}>
         <SectionHeader
           title="Competitions"
-          hint="Editions with tracks and a registration window. Link one to a Program or let it stand alone. Publish it to feature it on the website."
+          hint="Editions with tracks and a registration window. Link one to an Event or let it stand alone. Publish it to feature it on the website."
           actionLabel="New Competition"
-          onAction={() => navigate("/programs/competitions/create")}
+          onAction={() => navigate("/events/competitions/create")}
         />
         {loadingComps ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
@@ -206,12 +251,51 @@ export default function ProgramsListPage() {
             title="No competitions yet"
             body="Create one — an edition with its tracks and a registration window."
             cta="+ New Competition"
-            onCta={() => navigate("/programs/competitions/create")}
+            onCta={() => navigate("/events/competitions/create")}
           />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
             {competitions.map((c) => (
-              <CompetitionCard key={c.id} competition={c} onOpen={() => navigate(`/programs/competitions/${c.id}/view`)} />
+              <CompetitionCard key={c.id} competition={c} onOpen={() => navigate(`/events/competitions/${c.id}/view`)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Bootcamps ─────────────────────────────────────────────── */}
+      <div>
+        <SectionHeader
+          title="Bootcamps"
+          hint="Sellable listings for the public website. Link one to an Event or let it stand alone."
+          actionLabel="New Bootcamp"
+          onAction={() => navigate("/events/bootcamps/create")}
+        />
+        {loadingBootcamps ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+            {[1, 2, 3].map((n) => (
+              <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+                <div style={{ height: 96, backgroundColor: "#F3F4F6" }} />
+                <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ height: 14, width: "70%", backgroundColor: "#F3F4F6", borderRadius: 5 }} />
+                  <div style={{ height: 10, width: "45%", backgroundColor: "#F3F4F6", borderRadius: 5 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : bootcampsError ? (
+          <ErrorRow label="bootcamps" message={bootcampsErr?.message} />
+        ) : bootcamps.length === 0 ? (
+          <EmptyBox
+            icon={FiAward}
+            title="No bootcamps yet"
+            body="Create one — a sellable listing for the public website."
+            cta="+ New Bootcamp"
+            onCta={() => navigate("/events/bootcamps/create")}
+          />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+            {bootcamps.map((b) => (
+              <BootcampCard key={b.id} bootcamp={b} onOpen={() => navigate(`/events/bootcamps/${b.id}/view`)} />
             ))}
           </div>
         )}

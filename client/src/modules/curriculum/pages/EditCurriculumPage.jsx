@@ -35,7 +35,7 @@ function EditCurriculumForm({ curriculum }) {
   } = methods;
 
   // Editing Basic Info is part of authoring, which always happens under Curriculum regardless
-  // of isProgram — see CurriculumStructurePage.jsx for the same reasoning.
+  // of isEvent — see CurriculumStructurePage.jsx for the same reasoning.
   const exitPath = "/curriculum";
 
   const onSubmit = (data) => {

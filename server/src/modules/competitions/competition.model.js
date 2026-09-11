@@ -20,10 +20,10 @@ const CompetitionModel = {
   // ownerAdminId optional here so the same findAll can serve callers that scope a different
   // way (none yet — but matches the pattern in curriculum/learning-hub models). Admin-facing
   // controllers always pass it.
-  findAll({ ownerAdminId, programId, status, isPublic } = {}) {
+  findAll({ ownerAdminId, eventId, status, isPublic } = {}) {
     let query = db(TABLE);
     if (ownerAdminId) query = query.where({ ownerAdminId });
-    if (programId) query = query.where({ programId });
+    if (eventId) query = query.where({ eventId });
     if (status) query = query.where({ status });
     if (isPublic !== undefined) query = query.where({ isPublic });
     return query.orderBy("createdAt", "desc");
@@ -36,7 +36,7 @@ const CompetitionModel = {
   // The designated public-content admin's competitions that are marked public AND not draft —
   // the one query the public /api/public/competitions endpoint runs. `ownerAdminId` required
   // (a missing scope would leak every tenant's competitions), mirroring
-  // AssessmentModel.findForSaleProjects / CurriculumModel.findForSaleBootcamps.
+  // AssessmentModel.findForSaleProjects / BootcampModel.findPublic.
   findPublic(ownerAdminId) {
     if (!ownerAdminId) throw new Error("findPublic requires an ownerAdminId");
     return db(TABLE)

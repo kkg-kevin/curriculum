@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
   Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon,
   FolderOpen as FolderOpenIcon, MedicalServices as MedicalServicesIcon,
@@ -3769,7 +3769,13 @@ function ProgressArcPanel({ curriculumId, arcSub = "age-categories", onArcSubCha
 export default function CompetenciesPage() {
   const { id }    = useParams();
   const navigate  = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Carries the "authoring an Event" intent from CreateCurriculumPage's ?isEvent=1 through this
+  // step — curriculum.isEvent itself isn't set server-side until the Structure step, so a
+  // brand-new record's own flag can't be trusted here yet.
+  const isEvent = searchParams.get("isEvent") === "1";
   const { data: curriculum } = useCurriculumQuery(id);
+  const isEventCurriculum = isEvent || !!curriculum?.isEvent;
 
   const [activeNav, setActiveNav] = useState("competencies");
   const [arcSub,    setArcSub]    = useState("age-categories");
@@ -3789,8 +3795,8 @@ export default function CompetenciesPage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px", flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: "12px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
-              Curriculum
+            <button type="button" onClick={() => navigate(isEventCurriculum ? "/events" : "/curriculum")} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: "12px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
+              {isEventCurriculum ? "Events" : "Curriculum"}
             </button>
             <span style={{ color: "#E5E7EB" }}>/</span>
             <span style={{ fontSize: "12px", color: "#9CA3AF", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{curriculum?.name}</span>
@@ -3801,10 +3807,10 @@ export default function CompetenciesPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>Pick which competencies this curriculum uses, and configure its progress arc and assessments.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          <button type="button" onClick={() => navigate("/curriculum")} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          <button type="button" onClick={() => navigate(isEventCurriculum ? "/events" : "/curriculum")} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
             Done
           </button>
-          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/structure`)}>
+          <button type="button" className="cp-btn-primary" style={{ background: "#0F2645" }} onClick={() => navigate(`/curriculum/${id}/structure${isEvent ? "?isEvent=1" : ""}`)}>
             Next: Structure →
           </button>
         </div>

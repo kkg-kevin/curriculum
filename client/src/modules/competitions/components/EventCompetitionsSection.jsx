@@ -19,23 +19,23 @@ function StatusPill({ status }) {
 }
 
 /**
- * The "Competitions" section shown inside a Program (on its curriculum view, and on a
+ * The "Competitions" section shown inside an Event (on its curriculum view, and on a
  * deployment's view). Competitions are their own module server-side and on the public
- * website; on the admin side they're only reachable from inside a Program.
+ * website; on the admin side they're only reachable from inside an Event.
  *
- * `curriculumId` is the Program's `curricula.id` — it's both what a competition's `programId`
- * links to AND the `:programId` route segment for the nested competition pages.
+ * `curriculumId` is the Event's `curricula.id` — it's both what a competition's `eventId`
+ * links to AND the `:eventId` route segment for the nested competition pages.
  * `variant` tweaks the outer card to match the surrounding page ("plain" card on
- * ProgramViewPage, bordered like the other sections on CurriculumViewPage).
+ * EventViewPage, bordered like the other sections on CurriculumViewPage).
  */
-export default function ProgramCompetitionsSection({ curriculumId, variant = "card" }) {
+export default function EventCompetitionsSection({ curriculumId, variant = "card" }) {
   const navigate = useNavigate();
   const { data: competitions = [], isLoading, isError, error } = useCompetitionsQuery(
-    curriculumId ? { programId: curriculumId } : undefined,
+    curriculumId ? { eventId: curriculumId } : undefined,
   );
 
-  const createPath = `/programs/competitions/create?programId=${curriculumId}`;
-  const viewPath = (id) => `/programs/competitions/${id}/view`;
+  const createPath = `/events/competitions/create?eventId=${curriculumId}`;
+  const viewPath = (id) => `/events/competitions/${id}/view`;
 
   const outerStyle =
     variant === "bordered"
@@ -86,7 +86,7 @@ export default function ProgramCompetitionsSection({ curriculumId, variant = "ca
               <FiFlag size={17} strokeWidth={1.8} />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#374151" }}>No competitions in this program yet</p>
+              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#374151" }}>No competitions in this event yet</p>
               <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#6B7280" }}>
                 Add one with{" "}
                 <button type="button" onClick={() => navigate(createPath)} disabled={!curriculumId} style={{ background: "none", border: "none", color: "#25476a", fontWeight: 600, cursor: curriculumId ? "pointer" : "not-allowed", fontSize: 12.5, fontFamily: "Inter, sans-serif", padding: 0 }}>+ New Competition</button>.

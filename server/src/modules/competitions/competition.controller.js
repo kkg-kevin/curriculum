@@ -4,7 +4,7 @@ const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { createCompetitionSchema, updateCompetitionSchema } = require("./competition.validation");
 
 // This whole module is authorize("admin")-only (see app.js/competition.routes.js). A competition
-// carries its own ownerAdminId, so ownership is a direct match, same shape as programs.
+// carries its own ownerAdminId, so ownership is a direct match, same shape as events.
 function isOwn(req, competition) {
   return competition && competition.ownerAdminId === req.ownerAdminId;
 }
@@ -17,8 +17,8 @@ const createCompetition = asyncHandler(async (req, res) => {
 });
 
 const getAllCompetitions = asyncHandler(async (req, res) => {
-  const { programId, status } = req.query;
-  const records = await CompetitionService.getAllCompetitions({ ownerAdminId: req.ownerAdminId, programId, status });
+  const { eventId, status } = req.query;
+  const records = await CompetitionService.getAllCompetitions({ ownerAdminId: req.ownerAdminId, eventId, status });
   res.json({ success: true, data: records, count: records.length });
 });
 

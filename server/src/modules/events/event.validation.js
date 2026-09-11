@@ -1,13 +1,13 @@
 const { z } = require("zod");
 
-// A Program deploys an already-authored program-curriculum (created via the normal curriculum
-// Basic Info -> Structure -> Competencies -> Version Control flow, flagged isProgram: true) onto
+// An Event deploys an already-authored event-curriculum (created via the normal curriculum
+// Basic Info -> Structure -> Competencies -> Version Control flow, flagged isEvent: true) onto
 // a Learning Hub as a real running cohort. It doesn't author anything itself — no name,
 // description, course list, or cohort/grade name here: cohorts were already defined on the
-// curriculum's Structure step, and program.service.js creates a Class for each one automatically.
+// curriculum's Structure step, and event.service.js creates a Class for each one automatically.
 // Tech educator and capacity aren't set here either — deployment can create several classes at
 // once (one per cohort), so those are per-class decisions made afterward from the Classes module.
-const createProgramSchema = z.object({
+const createEventSchema = z.object({
   curriculumId: z.string().min(1, "Curriculum is required"),
   hubId:        z.string().min(1, "Learning hub is required"),
   startDate:    z.string().min(1, "Start date is required"),
@@ -18,7 +18,7 @@ const createProgramSchema = z.object({
   }
 });
 
-const updateProgramSchema = z.object({
+const updateEventSchema = z.object({
   startDate: z.string().min(1).optional(),
   endDate:   z.string().min(1).optional(),
 }).superRefine((data, ctx) => {
@@ -27,4 +27,4 @@ const updateProgramSchema = z.object({
   }
 });
 
-module.exports = { createProgramSchema, updateProgramSchema };
+module.exports = { createEventSchema, updateEventSchema };

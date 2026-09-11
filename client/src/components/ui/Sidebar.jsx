@@ -15,7 +15,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Learners", path: "/learners", icon: FiUsers },
   { name: "Educators", path: "/teachers", icon: FiUserCheck },
   { name: "Classes", path: "/classes", icon: FiLayers },
-  { name: "Programs", path: "/programs", icon: FiAward },
+  { name: "Events", path: "/events", icon: FiAward },
   { name: "Courses", path: "/courses", icon: FiBook },
   { name: "Enquiries", path: "/enquiries", icon: FiMail },
   { name: "Assessments", path: "/assessments", icon: FiClipboard },

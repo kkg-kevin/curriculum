@@ -66,8 +66,8 @@ export default function CompetitionViewPage() {
   const { mutate: updateCompetition, isPending: saving } = useUpdateCompetition();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const backToList = "/programs";
-  const editPath = `/programs/competitions/${id}/edit`;
+  const backToList = "/events";
+  const editPath = `/events/competitions/${id}/edit`;
 
   if (isLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -87,7 +87,7 @@ export default function CompetitionViewPage() {
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <button type="button" onClick={() => navigate(backToList)} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-          ← Programs &amp; Competitions
+          ← Events &amp; Competitions
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{competition.name}</span>
@@ -103,7 +103,7 @@ export default function CompetitionViewPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{competition.name}</h1>
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>
-                {[competition.edition, STATUS_LABEL[competition.status] || competition.status, competition.programName].filter(Boolean).join(" · ")}
+                {[competition.edition, STATUS_LABEL[competition.status] || competition.status, competition.eventName].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function CompetitionViewPage() {
               <DetailRow label="Cadence" value={CADENCE_LABEL[competition.cadence]} />
             </div>
             <DetailRow label="Dates" value={dateRange} />
-            <DetailRow label="Linked Program" value={competition.programName} empty="Standalone" />
+            <DetailRow label="Linked Event" value={competition.eventName} empty="Standalone" />
           </div>
         </div>
 

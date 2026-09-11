@@ -1,5 +1,5 @@
-// One-off operational script: creates a sample Program curriculum (a bootcamp) owned by
-// PUBLIC_CONTENT_ADMIN_ID and flipped `saleStatus: "for_sale"`, so it appears immediately on
+// One-off operational script: creates a sample Event curriculum owned by PUBLIC_CONTENT_ADMIN_ID
+// plus a Bootcamp linked to it, flipped `saleStatus: "for_sale"`, so it appears immediately on
 // the public marketing site's Bootcamps section (africa.digifunzi.com/bootcamps) with a price
 // and an "Enquire to book" button. See Guide/BOOTCAMP_SALE_SETUP.md and
 // Guide/WEBSITE_INTEGRATION_CONTRACT.md §3.1/§3.2.
@@ -14,6 +14,7 @@ require("dotenv").config();
 const env = require("../config/env");
 const db = require("../config/db");
 const CurriculumModel = require("../modules/curriculum/curriculum.model");
+const BootcampModel = require("../modules/bootcamps/bootcamp.model");
 
 const BOOTCAMP_NAME = "Robot Builders Holiday Bootcamp";
 
@@ -35,16 +36,20 @@ async function run() {
     return;
   }
 
-  const existing = await db("curricula")
+  const existingCurriculum = await db("curricula")
     .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID, name: BOOTCAMP_NAME })
     .first();
-  if (existing) {
-    console.log(`A curriculum named "${BOOTCAMP_NAME}" already exists (${existing.id}) — nothing to do.`);
-    console.log(`isProgram: ${existing.isProgram} · saleStatus: ${existing.saleStatus}`);
+  const existingBootcamp = await db("bootcamps")
+    .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID, name: BOOTCAMP_NAME })
+    .first();
+  if (existingCurriculum || existingBootcamp) {
+    console.log(`"${BOOTCAMP_NAME}" already exists — nothing to do.`);
+    if (existingCurriculum) console.log(`curriculum: ${existingCurriculum.id} (isEvent: ${existingCurriculum.isEvent})`);
+    if (existingBootcamp) console.log(`bootcamp: ${existingBootcamp.id} (saleStatus: ${existingBootcamp.saleStatus})`);
     process.exit(0);
   }
 
-  const record = await CurriculumModel.create({
+  const curriculum = await CurriculumModel.create({
     ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID,
     name: BOOTCAMP_NAME,
     code: "RB-HOLIDAY",
@@ -53,13 +58,18 @@ async function run() {
       "finish with a robot they built, coded and can drive around an obstacle course — with a " +
       "showcase for families on the last afternoon. No prior coding needed.",
     status: "active",
-    isProgram: true,
+    isEvent: true,
     academicCycleModel: "terms",
-    // --- Selling panel ---
-    saleStatus: "for_sale",
+  });
+
+  const bootcamp = await BootcampModel.create({
+    ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID,
+    eventId: curriculum.id,
+    name: BOOTCAMP_NAME,
+    description: curriculum.description,
+    tagline: "A full robot build, coded and driven, in one week",
     coverImage: null, // no image → the card shows a brand-blue band with the name
-    saleTagline: "A full robot build, coded and driven, in one week",
-    saleFormat: "holiday",
+    format: "holiday",
     durationLabel: "1 week",
     priceAmount: 12000,
     priceCurrency: "KES",
@@ -72,21 +82,23 @@ async function run() {
       "Drive it through an obstacle course you design",
       "Showcase for families on the final afternoon",
     ],
+    saleStatus: "for_sale",
   });
 
+  console.log("Created Event curriculum:", { id: curriculum.id, name: curriculum.name, isEvent: curriculum.isEvent });
   console.log("Created for-sale bootcamp:", {
-    id: record.id,
-    name: record.name,
-    isProgram: record.isProgram,
-    saleStatus: record.saleStatus,
-    price: `${record.priceCurrency} ${record.priceAmount}`,
+    id: bootcamp.id,
+    name: bootcamp.name,
+    eventId: bootcamp.eventId,
+    saleStatus: bootcamp.saleStatus,
+    price: `${bootcamp.priceCurrency} ${bootcamp.priceAmount}`,
   });
 
   console.log(
     "\nIt's live now. Check GET /api/public/bootcamps, or open /bootcamps on the landing site.\n" +
-      "To edit it: Programs > \"" +
+      "To edit it: Events > Bootcamps > \"" +
       BOOTCAMP_NAME +
-      "\" > the Selling card. Deploy it to a hub from the same page to give it real run dates.",
+      "\". Deploy the linked Event to a hub to give it real run dates.",
   );
   process.exit(0);
 }

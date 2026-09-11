@@ -6,7 +6,7 @@ const { createCurriculumSchema, updateCurriculumSchema, linkCourseSchema, assign
 const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const SchoolModel = require("../learning-hubs/learning-hub.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
-const ProgramModel = require("../programs/program.model");
+const EventModel = require("../events/event.model");
 const CourseModel = require("../courses/course.model");
 
 async function getTeacherAccessibleCurriculumIds(req) {
@@ -54,17 +54,17 @@ const getCurriculumById = asyncHandler(async (req, res) => {
   } else if (req.user.role === "school") {
     const accessible = new Set(req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []));
     const isOwnCurriculum = accessible.has(curriculum.id);
-    const deployedPrograms = await ProgramModel.findAll({ curriculumId: curriculum.id });
-    const isDeployedProgram = deployedPrograms.some((p) => p.hubId === req.ownSchool?.id);
-    assertOwn(isOwnCurriculum || isDeployedProgram);
+    const deployedEvents = await EventModel.findAll({ curriculumId: curriculum.id });
+    const isDeployedEvent = deployedEvents.some((e) => e.hubId === req.ownSchool?.id);
+    assertOwn(isOwnCurriculum || isDeployedEvent);
   } else if (req.user.role === "teacher") {
     const hubIds = req.ownTeacher ? (await TeacherHubLinkModel.findByTeacherId(req.ownTeacher.id)).map((l) => l.hubId) : [];
     const hubs = await Promise.all(hubIds.map((hid) => SchoolModel.findById(hid)));
     const accessible = new Set(await getTeacherAccessibleCurriculumIds(req));
     const isOwnCurriculum = accessible.has(curriculum.id) || hubs.some((hub) => hub?.curriculumId === curriculum.id);
-    const deployedPrograms = await ProgramModel.findAll({ curriculumId: curriculum.id });
-    const isDeployedProgram = deployedPrograms.some((p) => hubIds.includes(p.hubId));
-    assertOwn(isOwnCurriculum || isDeployedProgram);
+    const deployedEvents = await EventModel.findAll({ curriculumId: curriculum.id });
+    const isDeployedEvent = deployedEvents.some((e) => hubIds.includes(e.hubId));
+    assertOwn(isOwnCurriculum || isDeployedEvent);
   } else if (req.user.role === "curriculumAdmin") {
     assertOwn(req.ownCurriculum?.id === curriculum.id);
   }

@@ -6,7 +6,7 @@ import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAcademicYears } from "../../curriculum/hooks/useAcademicYear";
-import { useProgramsByCurriculumQuery } from "../../programs/hooks/usePrograms";
+import { useEventsByCurriculumQuery } from "../../events/hooks/useEvents";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
   useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar, useHubCalendar,
@@ -226,21 +226,21 @@ function DaySlotRow({ slot, teacherLabel, courseName, roomName, onEdit, onDelete
 // wrong to anchor on — the calendar engine already skips forward to the next valid schedulable
 // day on its own (see isDateSchedulable/resolveCoursePlacements in timetable.service.js) — this
 // is purely a clarity signal so the school isn't left wondering why Session 1 didn't land where
-// they expected, and points at exactly where to go to change it. isProgram picks the wording
-// (and where to fix it) since a Program's one window comes from its deployment dates, while every
+// they expected, and points at exactly where to go to change it. isEvent picks the wording
+// (and where to fix it) since an Event's one window comes from its deployment dates, while every
 // other curriculum's terms/breaks come from its published Academic Year.
-function describeNonSchedulable(dateStr, periods, isProgram) {
+function describeNonSchedulable(dateStr, periods, isEvent) {
   if (!dateStr || !periods.length) return null;
   const covering = periods.find((p) => p.startDate && p.endDate && dateStr >= p.startDate && dateStr <= p.endDate);
   if (covering) {
     if (covering.breakStartDate && covering.breakEndDate && dateStr >= covering.breakStartDate && dateStr <= covering.breakEndDate) {
-      return `Falls inside ${covering.name || "a"} break (${fmtShort(covering.breakStartDate)} – ${fmtShort(covering.breakEndDate)}) — Session 1 will automatically land on the next open day after it. No action needed, unless the break dates themselves are wrong — fix those in ${isProgram ? "Programs" : "Academic Year"}.`;
+      return `Falls inside ${covering.name || "a"} break (${fmtShort(covering.breakStartDate)} – ${fmtShort(covering.breakEndDate)}) — Session 1 will automatically land on the next open day after it. No action needed, unless the break dates themselves are wrong — fix those in ${isEvent ? "Events" : "Academic Year"}.`;
     }
     return null;
   }
-  if (isProgram) {
+  if (isEvent) {
     const { startDate, endDate } = periods[0];
-    return `Falls outside this program's run (${fmtShort(startDate)} – ${fmtShort(endDate)}) — pick a date in that range, or change the run's dates from Programs.`;
+    return `Falls outside this event's run (${fmtShort(startDate)} – ${fmtShort(endDate)}) — pick a date in that range, or change the run's dates from Events.`;
   }
   return "Falls outside any configured term — pick a date covered by a published Academic Year term, or go to Academic Year to add/extend one.";
 }
@@ -248,12 +248,12 @@ function describeNonSchedulable(dateStr, periods, isProgram) {
 // A course's Sessions only start landing on the calendar once its start date is set — this row
 // is how a school anchors "Session 1 lines up with this date" for a course that already has
 // weekday slots configured above.
-function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isProgram = false }) {
+function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isEvent = false }) {
   const [value, setValue] = useState(startDate || "");
   const [applyToClassIds, setApplyToClassIds] = useState([]);
   useEffect(() => setValue(startDate || ""), [startDate]);
   const dirty = value !== (startDate || "");
-  const hint = describeNonSchedulable(value, periods, isProgram);
+  const hint = describeNonSchedulable(value, periods, isEvent);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -327,21 +327,21 @@ export default function TimetablePage() {
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
   const { data: selectedCurriculum } = useCurriculumQuery(selectedClass?.curriculumId);
 
-  // A Program curriculum has no dated periods of its own (Academic Year setup is hidden for
-  // it — see CurriculumViewPage) — it runs on the fixed startDate/endDate of its Program
+  // An Event curriculum has no dated periods of its own (Academic Year setup is hidden for
+  // it — see CurriculumViewPage) — it runs on the fixed startDate/endDate of its Event
   // deployment instead. Every other curriculum's real term/break dates live on whichever Academic
   // Year version is currently published for it — curriculum.periods itself only ever holds period
   // *names*, never dates (see getPeriodsForClass in timetable.service.js for the server-side
   // mirror of both these sources — this must agree with it or the hint below would lie about what
   // the server is actually going to schedule).
-  const isProgram = !!selectedCurriculum?.isProgram;
-  const { data: curriculumPrograms = [] } = useProgramsByCurriculumQuery(isProgram ? selectedClass?.curriculumId : undefined);
-  const { data: ayData } = useAcademicYears(!isProgram && selectedCurriculum ? selectedClass?.curriculumId : undefined);
-  const deployedProgram = isProgram
-    ? curriculumPrograms.find((p) => (p.classes || []).some((c) => c.id === selectedClassId))
+  const isEvent = !!selectedCurriculum?.isEvent;
+  const { data: curriculumEvents = [] } = useEventsByCurriculumQuery(isEvent ? selectedClass?.curriculumId : undefined);
+  const { data: ayData } = useAcademicYears(!isEvent && selectedCurriculum ? selectedClass?.curriculumId : undefined);
+  const deployedEvent = isEvent
+    ? curriculumEvents.find((e) => (e.classes || []).some((c) => c.id === selectedClassId))
     : null;
-  const periods = deployedProgram
-    ? [{ name: selectedCurriculum.name, startDate: deployedProgram.startDate, endDate: deployedProgram.endDate, breakStartDate: "", breakEndDate: "" }]
+  const periods = deployedEvent
+    ? [{ name: selectedCurriculum.name, startDate: deployedEvent.startDate, endDate: deployedEvent.endDate, breakStartDate: "", breakEndDate: "" }]
     : ayData?.publishedVersion?.periods || [];
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
@@ -394,7 +394,7 @@ export default function TimetablePage() {
   const classNameById = new Map(classes.map((c) => [c.id, `${c.gradeName}${c.streamName ? ` — ${c.streamName}` : ""}`]));
 
   // Course names across every grade at the hub, for "All Classes" mode — mirrors teacher-portal's
-  // own merged calendar (useCurriculumCoursesByGrade). Program-deployed classes on a different
+  // own merged calendar (useCurriculumCoursesByGrade). Event-deployed classes on a different
   // curriculum than the hub's own aren't covered by this lookup; they just fall back to "Course"
   // below, same tolerance every other unresolved-name spot in this file already has.
   const allGradeIds = [...new Set(classes.map((c) => c.gradeId))];
@@ -600,7 +600,7 @@ export default function TimetablePage() {
                     isSaving={savingSchedule || savingScheduleBulk}
                     siblingClasses={siblingClasses}
                     periods={periods}
-                    isProgram={isProgram}
+                    isEvent={isEvent}
                     onSave={(startDate, applyToClassIds) => handleSaveCourseSchedule(courseId, startDate, applyToClassIds)}
                   />
                 ))}

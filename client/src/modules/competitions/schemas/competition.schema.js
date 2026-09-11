@@ -40,7 +40,7 @@ export const competitionSchema = z
     startDate:   dateStr,
     endDate:     dateStr,
     coverImage:  z.string().nullable().default(null),
-    programId:   z.string().nullable().default(null),
+    eventId:     z.string().nullable().default(null),
     status:      z.enum(["draft", "open", "closed"]).default("draft"),
     isPublic:    z.boolean().default(false),
     tracks:      z.array(trackSchema).max(12).default([]),
