@@ -14,7 +14,7 @@ const ATTENDANCE_AUTOLOCK_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Same "today as a plain YYYY-MM-DD, walked in UTC" convention attendance.service.js and
-// program.service.js already use — client and server agree on where the day boundary is.
+// event.service.js already use — client and server agree on where the day boundary is.
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }

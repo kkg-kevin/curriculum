@@ -7,6 +7,7 @@ const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
+const BootcampModel = require("../bootcamps/bootcamp.model");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -147,9 +148,9 @@ const LeadService = {
         /* fall through */
       }
 
-      // 4. for-sale bootcamps (program-curricula) owned by the designated admin.
+      // 4. for-sale bootcamps owned by the designated admin.
       try {
-        const bootcamps = await CurriculumModel.findForSaleBootcamps(env.PUBLIC_CONTENT_ADMIN_ID);
+        const bootcamps = await BootcampModel.findPublic(env.PUBLIC_CONTENT_ADMIN_ID);
         const bootcamp =
           bootcamps.find((b) => b.id === referenceId) ||
           bootcamps.find((b) => (slugify(b.name) || "bootcamp") === referenceId) ||

@@ -62,11 +62,13 @@ import EditClassPage from "../modules/classes/pages/EditClassPage";
 import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
 import GradeStreamsPage from "../modules/classes/pages/GradeStreamsPage";
-import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
-import CreateProgramPage from "../modules/programs/pages/CreateProgramPage";
-import ProgramViewPage from "../modules/programs/pages/ProgramViewPage";
+import EventsListPage from "../modules/events/pages/EventsListPage";
+import CreateEventPage from "../modules/events/pages/CreateEventPage";
+import EventViewPage from "../modules/events/pages/EventViewPage";
 import CreateCompetitionPage from "../modules/competitions/pages/CreateCompetitionPage";
 import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPage";
+import CreateBootcampPage from "../modules/bootcamps/pages/CreateBootcampPage";
+import BootcampViewPage from "../modules/bootcamps/pages/BootcampViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
@@ -111,16 +113,20 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["admin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="programs">
-          <Route index element={<ProgramsListPage />} />
-          <Route path="create" element={<CreateProgramPage />} />
-          <Route path=":id/view" element={<ProgramViewPage />} />
-          {/* Competitions are their own feature but live under the Programs module on the
-              admin side (no separate sidebar item). The /api/competitions routes and the
-              public website are unchanged. A competition can optionally link to a Program. */}
+        <Route path="events">
+          <Route index element={<EventsListPage />} />
+          <Route path="create" element={<CreateEventPage />} />
+          <Route path=":id/view" element={<EventViewPage />} />
+          {/* Competitions and Bootcamps are their own standalone features but live under the
+              Events module on the admin side (no separate sidebar item). The /api/competitions
+              and /api/bootcamps routes and the public website are unchanged. Either can
+              optionally link to an Event via eventId. */}
           <Route path="competitions/create" element={<CreateCompetitionPage />} />
           <Route path="competitions/:id/view" element={<CompetitionViewPage />} />
           <Route path="competitions/:id/edit" element={<CreateCompetitionPage />} />
+          <Route path="bootcamps/create" element={<CreateBootcampPage />} />
+          <Route path="bootcamps/:id/view" element={<BootcampViewPage />} />
+          <Route path="bootcamps/:id/edit" element={<CreateBootcampPage />} />
         </Route>
         <Route path="courses">
           <Route index element={<CoursesPage />} />

@@ -1,7 +1,7 @@
 const AttendanceModel = require("./attendance.model");
 
 // "Today" as a plain YYYY-MM-DD calendar date, in UTC — same formula the client's todayStr()
-// uses and the same one program.service.js already uses for its own date guards, so client and
+// uses and the same one event.service.js already uses for its own date guards, so client and
 // server agree on where the boundary is.
 function todayStr() {
   return new Date().toISOString().slice(0, 10);

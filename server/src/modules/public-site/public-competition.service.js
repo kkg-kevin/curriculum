@@ -5,11 +5,11 @@ const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/
 
 // The public marketing site's Competitions section (digifunzi-landing's /competitions). A
 // competition is a row in the `competitions` table (an independent module — a sibling of
-// Curriculum/Programs) that an admin marked `isPublic: true` and that isn't `draft`. Only the
+// Curriculum/Events) that an admin marked `isPublic: true` and that isn't `draft`. Only the
 // designated PUBLIC_CONTENT_ADMIN_ID's competitions are ever served — same tenant-scoping
 // posture as pathways / projects / store / bootcamps / hubs (503 if that env var is unset).
 //
-// The projection is hand-built. Internal fields (ownerAdminId, programId, isPublic) are never
+// The projection is hand-built. Internal fields (ownerAdminId, eventId, isPublic) are never
 // exposed — a visitor sees the event copy, the dates and the Track cards.
 
 // `competitions` has no slug column — computed at read time from `name`, same as the rest.

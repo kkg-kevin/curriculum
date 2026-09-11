@@ -21,7 +21,7 @@ const trackSchema = z.object({
   knowMoreUrl: z.string().url("Enter a valid URL").or(z.literal("")).optional().default(""),
 });
 
-// Dates are plain "YYYY-MM-DD" strings, same convention as programs.
+// Dates are plain "YYYY-MM-DD" strings, same convention as events.
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.literal(""));
 
 const competitionFields = z.object({
@@ -34,9 +34,9 @@ const competitionFields = z.object({
   startDate:   dateStr.optional().default(""),
   endDate:     dateStr.optional().default(""),
   coverImage:  z.string().max(500).optional().nullable(),
-  // programId is never client-forced into the general payload beyond an id string — the
+  // eventId is never client-forced into the general payload beyond an id string — the
   // controller checks it belongs to the same admin (same posture as curriculum.linkCourse).
-  programId:   z.string().max(36).optional().nullable(),
+  eventId:     z.string().max(36).optional().nullable(),
   status:      z.enum(STATUSES).optional().default("draft"),
   isPublic:    z.boolean().optional().default(false),
   tracks:      z.array(trackSchema).max(12).optional().default([]),

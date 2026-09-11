@@ -4,7 +4,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LearningHubCurriculumLinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
 const ClassModel = require("../classes/class.model");
 const ClassService = require("../classes/class.service");
-const ProgramModel = require("../programs/program.model");
+const EventModel = require("../events/event.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
@@ -88,8 +88,8 @@ async function buildCurriculumMeta(curricula) {
       }
 
       let effectiveStatus;
-      if (curriculum.isProgram) {
-        // Programs run on their own fixed startDate/endDate (set on the Program record when
+      if (curriculum.isEvent) {
+        // Events run on their own fixed startDate/endDate (set on the Event record when
         // deployed to a hub), not an academic year cycle — so publishing only ever depends on
         // the curriculum version, never on an academic year being set up at all.
         effectiveStatus = cvPublishedIds.has(curriculum.id) ? "published" : (curriculum.status || "draft");
@@ -114,7 +114,7 @@ async function enrichCurriculum(curriculum, meta) {
   if (!curriculum) return curriculum;
   const enriched = { ...curriculum, ...meta.getMeta(curriculum) };
   // Resolved fresh from the live user record each read, never stored, so it can't drift if
-  // that account's name/email changes later (same posture as program.service.js's enrich()).
+  // that account's name/email changes later (same posture as event.service.js's enrich()).
   if (curriculum.curriculumAdminId) {
     const admin = await UserModel.findById(curriculum.curriculumAdminId);
     enriched.curriculumAdmin = admin ? { id: admin.id, name: admin.name, email: admin.email } : null;
@@ -129,10 +129,10 @@ async function enrichCurriculum(curriculum, meta) {
 // assertUniqueName, mirrored here). Case- and whitespace-insensitive so "STEM Curriculum" and
 // "stem curriculum " are still caught as the same name. `excludeId` skips the record being
 // renamed, so re-saving a curriculum without changing its name doesn't flag it against itself.
-// Covers program-curricula too — a Program is a `curricula` row with isProgram: true, authored
+// Covers event-curricula too — an Event is a `curricula` row with isEvent: true, authored
 // through this same createCurriculum flow, and a name shared between the two lists is just as
 // ambiguous. Scoped to ownerAdminId — two different admins' tenants are independent, so both may
-// freely name a curriculum "STEM Program"; only a clash within the SAME tenant is blocked.
+// freely name a curriculum "STEM Event"; only a clash within the SAME tenant is blocked.
 async function assertUniqueName(name, ownerAdminId, excludeId = null) {
   const curricula = await CurriculumModel.findAll({ ownerAdminId });
   const normalized = name.trim().toLowerCase();
@@ -148,27 +148,9 @@ async function assertUniqueName(name, ownerAdminId, excludeId = null) {
   }
 }
 
-// "For sale on the public website" only makes sense for a Program curriculum (a bootcamp) — a
-// regular school curriculum isn't a thing a parent books their child onto for a holiday. Enforced
-// here (service layer) rather than in the Zod schema because on an UPDATE `isProgram` may be
-// absent from the patch while `saleStatus` flips on, so the effective flag has to be resolved
-// from the existing row. Mirrors assessment.service.js's assertSellableProject. The
-// price/tagline/format can all be filled in later — a for-sale bootcamp with no price just
-// shows "Enquire for pricing" — so this only guards the isProgram pairing, nothing else.
-function assertSellableBootcamp(data, existing) {
-  if (data.saleStatus !== "for_sale") return;
-  const effectiveIsProgram = "isProgram" in data ? data.isProgram : existing?.isProgram;
-  if (!effectiveIsProgram) {
-    const err = new Error("Only Program curricula (bootcamps) can be listed for sale on the website");
-    err.statusCode = 400;
-    throw err;
-  }
-}
-
 const CurriculumService = {
   async createCurriculum(data) {
     await assertUniqueName(data.name, data.ownerAdminId);
-    assertSellableBootcamp(data, null);
     return CurriculumModel.create(data);
   },
 
@@ -192,7 +174,6 @@ const CurriculumService = {
     const existing = await CurriculumModel.findById(id);
     // A rename can't collide with a name another curriculum already uses (same rule as create).
     if (data.name !== undefined) await assertUniqueName(data.name, existing?.ownerAdminId, id);
-    assertSellableBootcamp(data, existing);
     const curriculum = await CurriculumModel.update(id, data);
     if (!curriculum) {
       const err = new Error("Curriculum not found");
@@ -206,7 +187,7 @@ const CurriculumService = {
   },
 
   // A cohort's `name` here is copied onto Class.gradeName once, at the moment a Class is
-  // created from it (Program deployment / Set Up Year) — never re-read after that. Renaming a
+  // created from it (Event deployment / Set Up Year) — never re-read after that. Renaming a
   // cohort on the curriculum would otherwise leave every already-created Class showing the old
   // name forever, with nothing to signal the drift. Push the rename onto them here instead.
   async syncClassGradeNames(curriculumId, oldClasses, newClasses) {
@@ -260,26 +241,27 @@ const CurriculumService = {
     await IndicatorAchievementModel.deleteByCurriculumId(id);
     await LearningHubCurriculumLinkModel.deleteByCurriculumId(id);
     await LearningHubModel.clearCurriculumId(id);
-    // A Program deployed from this curriculum (see program.service.js's createProgram) has no
-    // life outside it either — unlike ProgramModel.delete's own deliberate choice to leave a
-    // program's Classes standing when just the Program record is removed (that's a real cohort's
+    // An Event deployed from this curriculum (see event.service.js's createEvent) has no
+    // life outside it either — unlike EventModel.delete's own deliberate choice to leave an
+    // event's Classes standing when just the Event record is removed (that's a real cohort's
     // history surviving an admin un-deploying it), everything the deployed Classes depended on to
     // function — this curriculum's course list, competency framework, versions — is being wiped
     // right here, so leaving them behind would just orphan them with nothing left to resolve.
-    const programs = await ProgramModel.findAll({ curriculumId: id });
-    for (const program of programs) {
+    const events = await EventModel.findAll({ curriculumId: id });
+    for (const event of events) {
       // A classId can already be gone (e.g. deleted individually from the Classes page earlier) —
       // skip those rather than let ClassService.deleteClass's 404 abort the curriculum delete.
-      for (const classId of program.classIds || []) {
+      for (const classId of event.classIds || []) {
         if (await ClassModel.findById(classId)) await ClassService.deleteClass(classId);
       }
-      await ProgramModel.delete(program.id);
+      await EventModel.delete(event.id);
     }
-    // A Program IS this `curricula` row (isProgram) — competitions link to it by this id.
-    // Detach them rather than orphan them with a dangling programId; a competition has a life
-    // of its own (same posture as a program's classes surviving an un-deploy).
-    // Lazy require: competition.service → competition.model, no cycle back to curriculum.
-    await require("../competitions/competition.service").unlinkProgram(id);
+    // An Event IS this `curricula` row (isEvent) — competitions and bootcamps link to it by
+    // this id. Detach them rather than orphan them with a dangling eventId; each has a life
+    // of its own (same posture as an event's classes surviving an un-deploy).
+    // Lazy require: competition/bootcamp.service → their own models, no cycle back to curriculum.
+    await require("../competitions/competition.service").unlinkEvent(id);
+    await require("../bootcamps/bootcamp.service").unlinkEvent(id);
     return { message: "Curriculum deleted successfully" };
   },
 

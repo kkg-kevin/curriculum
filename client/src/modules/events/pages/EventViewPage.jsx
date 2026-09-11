@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiArrowRight, FiLayers, FiEdit2 } from "react-icons/fi";
-import { useProgramQuery, useDeleteProgram, useUpdateProgram } from "../hooks/usePrograms";
+import { useEventQuery, useDeleteEvent, useUpdateEvent } from "../hooks/useEvents";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import ProgramCompetitionsSection from "../../competitions/components/ProgramCompetitionsSection";
+import EventCompetitionsSection from "../../competitions/components/EventCompetitionsSection";
+import EventBootcampsSection from "../../bootcamps/components/EventBootcampsSection";
 
 const STATUS_LABEL = { upcoming: "Upcoming", active: "Active", completed: "Completed" };
 
@@ -21,25 +22,25 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function ProgramViewPage() {
+export default function EventViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: program, isLoading } = useProgramQuery(id);
-  const { mutate: deleteProgram } = useDeleteProgram();
-  const { mutate: updateProgram, isPending: savingDates } = useUpdateProgram();
+  const { data: event, isLoading } = useEventQuery(id);
+  const { mutate: deleteEvent } = useDeleteEvent();
+  const { mutate: updateEvent, isPending: savingDates } = useUpdateEvent();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingDates, setEditingDates] = useState(false);
   const [startDraft, setStartDraft] = useState("");
   const [endDraft, setEndDraft] = useState("");
 
   const beginEditDates = () => {
-    setStartDraft(program.startDate?.slice(0, 10) || "");
-    setEndDraft(program.endDate?.slice(0, 10) || "");
+    setStartDraft(event.startDate?.slice(0, 10) || "");
+    setEndDraft(event.endDate?.slice(0, 10) || "");
     setEditingDates(true);
   };
 
   const saveDates = () => {
-    updateProgram(
+    updateEvent(
       { id, data: { startDate: startDraft, endDate: endDraft } },
       { onSuccess: () => setEditingDates(false) }
     );
@@ -48,18 +49,18 @@ export default function ProgramViewPage() {
   if (isLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
   }
-  if (!program) {
-    return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#EF4444" }}>Program not found.</div>;
+  if (!event) {
+    return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#EF4444" }}>Event not found.</div>;
   }
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <button type="button" onClick={() => navigate("/programs")} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-          ← Programs
+        <button type="button" onClick={() => navigate("/events")} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          ← Events
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
-        <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{program.name}</span>
+        <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{event.name}</span>
       </div>
 
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
@@ -70,9 +71,9 @@ export default function ProgramViewPage() {
               <FiLayers size={28} strokeWidth={1.8} />
             </div>
             <div>
-              <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{program.name}</h1>
+              <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{event.name}</h1>
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>
-                {program.hubName || "Unknown hub"} · {STATUS_LABEL[program.status] || program.status}
+                {event.hubName || "Unknown hub"} · {STATUS_LABEL[event.status] || event.status}
               </p>
             </div>
           </div>
@@ -88,11 +89,11 @@ export default function ProgramViewPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Program Info</h3>
+          <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Event Info</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <DetailRow label="Description"  value={program.description} />
-            <DetailRow label="Curriculum"   value={program.curriculumName} />
-            <DetailRow label="Learning Hub" value={program.hubName} />
+            <DetailRow label="Description"  value={event.description} />
+            <DetailRow label="Curriculum"   value={event.curriculumName} />
+            <DetailRow label="Learning Hub" value={event.hubName} />
 
             {editingDates ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -122,8 +123,8 @@ export default function ProgramViewPage() {
             ) : (
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
                 <div style={{ display: "flex", gap: 24 }}>
-                  <DetailRow label="Start Date" value={formatDate(program.startDate)} />
-                  <DetailRow label="End Date"   value={formatDate(program.endDate)} />
+                  <DetailRow label="Start Date" value={formatDate(event.startDate)} />
+                  <DetailRow label="End Date"   value={formatDate(event.endDate)} />
                 </div>
                 <button type="button" onClick={beginEditDates} title="Edit dates"
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -132,22 +133,22 @@ export default function ProgramViewPage() {
               </div>
             )}
 
-            <DetailRow label="Status" value={STATUS_LABEL[program.status] || program.status} />
+            <DetailRow label="Status" value={STATUS_LABEL[event.status] || event.status} />
           </div>
         </div>
 
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 12 }}>
           <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Manage</h3>
           <p style={{ margin: "0 0 8px", fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>
-            Structure, competencies, courses, and version control all live on the program curriculum itself — same authoring
+            Structure, competencies, courses, and version control all live on the event curriculum itself — same authoring
             flow as any curriculum. Rosters, attendance, and the class tech educator live on each class.
           </p>
           <button
             type="button"
-            onClick={() => navigate(`/curriculum/${program.curriculumId}/view`)}
+            onClick={() => navigate(`/curriculum/${event.curriculumId}/view`)}
             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", backgroundColor: "#25476a", color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
           >
-            View Program Curriculum <FiArrowRight size={14} strokeWidth={2} />
+            View Event Curriculum <FiArrowRight size={14} strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -155,10 +156,10 @@ export default function ProgramViewPage() {
       <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Classes</h3>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6B7280" }}>
-          One class per cohort defined on the program's Structure step — created automatically when deployed.
+          One class per cohort defined on the event's Structure step — created automatically when deployed.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {(program.classes || []).map((cls) => (
+          {(event.classes || []).map((cls) => (
             <div key={cls.id} onClick={() => navigate(`/classes/${cls.id}/view`)}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
@@ -174,18 +175,20 @@ export default function ProgramViewPage() {
         </div>
       </div>
 
-      <ProgramCompetitionsSection curriculumId={program.curriculumId} />
+      <EventCompetitionsSection curriculumId={event.curriculumId} />
+
+      <EventBootcampsSection curriculumId={event.curriculumId} />
 
       <ConfirmDialog
         isOpen={confirmDelete}
-        title="Delete Program"
-        message={`"${program.name}" will be removed. Its class and curriculum content stay intact — only the program record itself is deleted.`}
+        title="Delete Event"
+        message={`"${event.name}" will be removed. Its class and curriculum content stay intact — only the event record itself is deleted.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          deleteProgram(id, { onSuccess: () => navigate("/programs") });
+          deleteEvent(id, { onSuccess: () => navigate("/events") });
         }}
         onCancel={() => setConfirmDelete(false)}
       />

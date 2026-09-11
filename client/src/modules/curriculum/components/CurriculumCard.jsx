@@ -147,7 +147,11 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
               { label: "Competencies",   path: `/curriculum/${curriculum.id}/competencies`,   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg> },
               { label: "Structure",       path: `/curriculum/${curriculum.id}/structure`,       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/></svg> },
               { label: "Version Control", path: `/curriculum/${curriculum.id}/versions`,        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-              ...(curriculum.isProgram ? [{ label: "Deploy to Hub", path: `/programs/create?curriculumId=${curriculum.id}`, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> }] : []),
+              ...(curriculum.isEvent ? [
+                { label: "Deploy to Hub", path: `/events/create?curriculumId=${curriculum.id}`, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                { label: "New Competition", path: `/events/competitions/create?eventId=${curriculum.id}`, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="4" y1="22" x2="4" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
+                { label: "New Bootcamp", path: `/events/bootcamps/create?eventId=${curriculum.id}`, icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="6" stroke="currentColor" strokeWidth="2"/><path d="M8.5 13.5 6 22l6-3 6 3-2.5-8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+              ] : []),
             ].map(({ label, path, icon }) => (
               <MenuButton key={label} icon={icon} label={label} onClick={() => go(path)} />
             ))}
@@ -164,9 +168,9 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
   );
 }
 
-// Shared by CurriculumPage (curriculumType !== program) and ProgramsListPage (isProgram) — both
+// Shared by CurriculumPage (curriculumType !== event) and EventsListPage (isEvent) — both
 // list the same underlying Curriculum records, just filtered differently. See
-// CurriculumStructurePage's "This is a Program" toggle for how a curriculum ends up in one list
+// CurriculumStructurePage's "This is an Event" toggle for how a curriculum ends up in one list
 // or the other.
 export default function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
@@ -181,14 +185,14 @@ export default function CurriculumCard({ curriculum }) {
   const cycle        = CYCLE_LABELS[curriculum.academicCycleModel] || curriculum.academicCycleModel || "—";
   const academicYear = curriculum.publishedAcademicYear || null;
 
-  // Programs run on their own fixed start/end date (set on the Program record when deployed to
+  // Events run on their own fixed start/end date (set on the Event record when deployed to
   // a hub) instead of an academic year cycle, and don't use the Core/Complementary/Substitutional
   // curriculum-stack classification at all — so neither counts toward their completion.
-  const pct = curriculum.isProgram
+  const pct = curriculum.isEvent
     ? (periodCount > 0 ? 50 : 0) + (classCount > 0 ? 50 : 0)
     : (curriculum.curriculumType ? 25 : 0) + (periodCount > 0 ? 25 : 0) + (classCount > 0 ? 25 : 0) + (academicYear ? 25 : 0);
 
-  const missingItems = curriculum.isProgram
+  const missingItems = curriculum.isEvent
     ? [periodCount === 0 && "periods", classCount === 0 && "classes"].filter(Boolean)
     : [
         !curriculum.curriculumType && "type",
@@ -230,8 +234,8 @@ export default function CurriculumCard({ curriculum }) {
             {curriculum.name}
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-            {/* A for-sale flag only ever lands on a Program curriculum (server-enforced — see
-                curriculum.service.js's assertSellableBootcamp), so this pill is program-only in
+            {/* A for-sale flag only ever lands on an Event curriculum (server-enforced — see
+                curriculum.service.js's assertSellableBootcamp), so this pill is event-only in
                 practice even though the card is shared with the main Curriculum list. */}
             {curriculum.saleStatus === "for_sale" && (
               <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0", whiteSpace: "nowrap" }}>

@@ -118,9 +118,9 @@ export default function CurriculumPage() {
     return <Navigate to={`/curriculum/${myCurriculum.id}/view`} replace />;
   }
 
-  // Program-flagged curricula live under /programs instead — see CurriculumStructurePage's
-  // "This is a Program" toggle.
-  const curricula  = (data?.data || []).filter((c) => !c.isProgram);
+  // Event-flagged curricula live under /events instead — see CurriculumStructurePage's
+  // "This is an Event" toggle.
+  const curricula  = (data?.data || []).filter((c) => !c.isEvent);
   const hasFilters = !!filters.framework || !!filters.academicYear;
 
   /* Aggregate stats */

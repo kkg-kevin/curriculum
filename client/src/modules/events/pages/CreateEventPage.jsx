@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProgram } from "../hooks/usePrograms";
+import { useCreateEvent } from "../hooks/useEvents";
 import { useCurriculaQuery, useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -11,7 +11,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 const ACCENT = "#25476a";
 
 const createSchema = z.object({
-  curriculumId: z.string().min(1, "Program is required"),
+  curriculumId: z.string().min(1, "Event is required"),
   hubId:        z.string().min(1, "Learning hub is required"),
   startDate:    z.string().min(1, "Start date is required"),
   endDate:      z.string().min(1, "End date is required"),
@@ -33,16 +33,16 @@ const S = {
   error:     { fontSize: 12, color: "#DC2626" },
 };
 
-export default function CreateProgramPage() {
+export default function CreateEventPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const lockedCurriculumId = searchParams.get("curriculumId") || "";
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  const { mutate: createProgram, isPending } = useCreateProgram();
+  const { mutate: createEvent, isPending } = useCreateEvent();
   const { data: curriculaData } = useCurriculaQuery();
   const { data: hubsData } = useAllLearningHubsQuery({});
-  const programCurricula = (curriculaData?.data || []).filter((c) => c.isProgram);
+  const eventCurricula = (curriculaData?.data || []).filter((c) => c.isEvent);
   const hubs = hubsData?.data || [];
 
   const { register, handleSubmit, watch, formState: { isDirty, errors } } = useForm({
@@ -58,12 +58,12 @@ export default function CreateProgramPage() {
   const noCohorts = !!curriculumId && curriculumClasses.length === 0;
 
   const onSubmit = (data) => {
-    createProgram(data, { onSuccess: (record) => navigate(`/programs/${record.id}/view`) });
+    createEvent(data, { onSuccess: (record) => navigate(`/events/${record.id}/view`) });
   };
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate("/programs");
+    else navigate("/events");
   };
 
   return (
@@ -72,14 +72,14 @@ export default function CreateProgramPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Programs
+              ← Events
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>Deploy</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Deploy Program</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Deploy Event</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            Put an already-authored program curriculum onto a hub as a real running cohort.
+            Put an already-authored event curriculum onto a hub as a real running cohort.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -88,7 +88,7 @@ export default function CreateProgramPage() {
           </button>
           <button
             type="submit"
-            form="create-program-form"
+            form="create-event-form"
             disabled={isPending || noCohorts}
             style={{ padding: "10px 24px", backgroundColor: (isPending || noCohorts) ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: (isPending || noCohorts) ? "not-allowed" : "pointer" }}
           >
@@ -98,14 +98,14 @@ export default function CreateProgramPage() {
       </div>
 
       <div style={{ maxWidth: 560 }}>
-        <form id="create-program-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form id="create-event-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           <div style={S.card}>
             <h3 style={S.cardTitle}>Deployment Target</h3>
 
             {lockedCurriculumId ? (
               <div style={S.field}>
-                <label style={S.label}>Program</label>
+                <label style={S.label}>Event</label>
                 <div style={{ padding: "10px 14px", borderRadius: 10, border: "1.5px solid #a8d5ee", backgroundColor: "#F8FAFF", fontSize: 14, fontWeight: 600, color: "#111827" }}>
                   {curriculum?.name || "Loading…"}
                 </div>
@@ -113,10 +113,10 @@ export default function CreateProgramPage() {
               </div>
             ) : (
               <div style={S.field}>
-                <label style={S.label}>Program <span style={{ color: "#EF4444" }}>*</span></label>
-                <select {...register("curriculumId")} style={S.select} disabled={!programCurricula.length}>
-                  <option value="">{programCurricula.length ? "Select program…" : "No programs authored yet"}</option>
-                  {programCurricula.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <label style={S.label}>Event <span style={{ color: "#EF4444" }}>*</span></label>
+                <select {...register("curriculumId")} style={S.select} disabled={!eventCurricula.length}>
+                  <option value="">{eventCurricula.length ? "Select event…" : "No events authored yet"}</option>
+                  {eventCurricula.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 {errors.curriculumId && <span style={S.error}>{errors.curriculumId.message}</span>}
               </div>
@@ -136,7 +136,7 @@ export default function CreateProgramPage() {
             <div style={{ padding: "14px 18px", borderRadius: 14, border: `1.5px solid ${noCohorts ? "#FECACA" : "#a8d5ee"}`, backgroundColor: noCohorts ? "#FFF5F5" : "#F0F7FF", display: "flex", flexDirection: "column", gap: 10 }}>
               {noCohorts ? (
                 <p style={{ margin: 0, fontSize: 13, color: "#DC2626" }}>
-                  This program has no cohorts defined yet — add one on its Structure step first.
+                  This event has no cohorts defined yet — add one on its Structure step first.
                 </p>
               ) : (
                 <>
@@ -151,7 +151,7 @@ export default function CreateProgramPage() {
                     ))}
                   </div>
                   <p style={{ margin: 0, fontSize: 12, color: "#5b7a99" }}>
-                    Already defined on the program's Structure step — no need to pick again here. Assign a tech educator and
+                    Already defined on the event's Structure step — no need to pick again here. Assign a tech educator and
                     capacity for each class afterward, from the Classes module.
                   </p>
                 </>
@@ -183,7 +183,7 @@ export default function CreateProgramPage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/programs")}
+        onConfirm={() => navigate("/events")}
         onCancel={() => setConfirmLeave(false)}
       />
     </div>

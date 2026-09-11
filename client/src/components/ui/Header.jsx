@@ -1,12 +1,13 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiMenu } from "react-icons/fi";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../modules/auth/services/authApi";
 import ImageUploadField from "../ImageUploadField";
 import NotificationBell from "./NotificationBell";
+import { useCurriculumQuery } from "../../modules/curriculum/hooks/useCurriculum";
 
 // Admin is the only role with no dedicated "My Profile" page (Learner/Teacher/School each have
 // their own portal profile page where photo upload lives instead) — so this popover is admin's
@@ -112,6 +113,15 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   const { user, updateUser } = useAuth();
   const avatarPhoto = photo ?? user?.photo;
 
+  // Only meaningful on /curriculum/:id/(view|structure|edit) (see getPageTitle below) — reads
+  // the same cached record the page itself already fetched via useCurriculumQuery, so this
+  // never fires a second network request; it's just a cache read keyed by the same id. Harmless
+  // no-op (id undefined, query disabled) on every other route.
+  const { id: routeCurriculumId } = useParams();
+  const isCurriculumSubroute = location.pathname.startsWith("/curriculum/") &&
+    (location.pathname.endsWith("/view") || location.pathname.endsWith("/structure") || location.pathname.endsWith("/edit"));
+  const { data: routeCurriculum } = useCurriculumQuery(isCurriculumSubroute ? routeCurriculumId : undefined);
+
   const initial = user?.name?.trim()?.[0]?.toUpperCase() || "?";
   // "teacher" is still the underlying role value (auth, permissions, users.json) — only the
   // displayed label changes here, same as everywhere else "Teacher" was renamed to "Educator"
@@ -123,7 +133,6 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/learning-hubs": "Learning Hubs",
     "/settings/learning-hubs/create": "Add Learning Hub",
     "/curriculum": "Curriculum",
-    "/curriculum/create": "Create Curriculum",
     "/learners": "Learners",
     "/teachers": "Educators",
     "/classes": "Classes",
@@ -145,14 +154,20 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/learner-portal/progress": "Progress",
   };
 
-  const getPageTitle = (pathname) => {
+  const getPageTitle = (pathname, search) => {
     if (pageTitles[pathname]) return pageTitles[pathname];
+    // "+ New Event" links here with ?isEvent=1 (see CreateCurriculumPage) — the record itself
+    // isn't flagged isEvent server-side until the Structure step, so the query param is the
+    // only signal available this early in the wizard.
+    const presetIsEvent = new URLSearchParams(search).get("isEvent") === "1";
+    if (pathname === "/curriculum/create")
+      return presetIsEvent ? "Create Event" : "Create Curriculum";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/structure"))
-      return "Structure Builder";
+      return (presetIsEvent || routeCurriculum?.isEvent) ? "Event Structure" : "Structure Builder";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/edit"))
-      return "Edit Curriculum";
+      return routeCurriculum?.isEvent ? "Edit Event" : "Edit Curriculum";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/view"))
-      return "Curriculum View";
+      return routeCurriculum?.isEvent ? "Event View" : "Curriculum View";
     if (pathname.startsWith("/teacher-portal/classes/"))
       return "My Class";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))
@@ -172,7 +187,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     return "Dashboard";
   };
 
-  const pageTitle = getPageTitle(location.pathname);
+  const pageTitle = getPageTitle(location.pathname, location.search);
 
   return (
     <header

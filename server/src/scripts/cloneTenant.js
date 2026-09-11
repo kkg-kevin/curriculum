@@ -73,7 +73,7 @@ const maps = {
   performance_bands: new Map(),
   course_sessions: new Map(),
   classes: new Map(),
-  programs: new Map(),
+  events: new Map(),
   learners: new Map(),
   teachers: new Map(),
   users: new Map(), // original users.id -> new users.id, only for people actually cloned
@@ -683,7 +683,7 @@ async function cloneTenant(trx, sourceAdmin, targetAdmin) {
     }, ["outcomes", "mainConcepts", "activities", "notes", "resources"]));
   }
 
-  // ===== Step 8: classes, programs ===============================================================
+  // ===== Step 8: classes, events ===============================================================
   const classes = hubIds.length ? await trx("classes").whereIn("schoolId", hubIds) : [];
   for (const row of classes) {
     const newId = generateId();
@@ -701,11 +701,11 @@ async function cloneTenant(trx, sourceAdmin, targetAdmin) {
   }
   const classIds = classes.map((c) => c.id);
 
-  const programs = hubIds.length ? await trx("programs").whereIn("hubId", hubIds) : [];
-  for (const row of programs) {
+  const events = hubIds.length ? await trx("events").whereIn("hubId", hubIds) : [];
+  for (const row of events) {
     const newId = generateId();
-    maps.programs.set(row.id, newId);
-    await insertClone(trx, "programs", {
+    maps.events.set(row.id, newId);
+    await insertClone(trx, "events", {
       ...row,
       id: newId,
       hubId: remapId("learning_hubs", row.hubId),

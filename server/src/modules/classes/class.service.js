@@ -116,7 +116,7 @@ const ClassService = {
   },
 
   async bulkCreateClasses(items) {
-    // Bulk-created items (Set Up Year, Program deployment) never carry a tag today, but guard
+    // Bulk-created items (Set Up Year, Event deployment) never carry a tag today, but guard
     // against both a collision with an already-saved class and a duplicate within this same
     // batch, same as a one-at-a-time create would catch.
     const seen = new Set();
@@ -131,7 +131,7 @@ const ClassService = {
       seen.add(key);
       await assertTagAvailable(item.tag, null);
     }
-    // Set Up Year / Program deployment each create exactly one class per grade per batch, so
+    // Set Up Year / Event deployment each create exactly one class per grade per batch, so
     // there's never a same-grade collision within the batch itself — only against classes that
     // already exist from an earlier run.
     for (const item of items) {

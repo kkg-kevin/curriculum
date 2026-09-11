@@ -11,7 +11,7 @@ const createClassSchema = z.object({
   // A short code unique to this one class instance (e.g. "HUB-A-G1"), distinct from gradeName —
   // two hubs both running "Grade 1" off the same curriculum are the same gradeId but need their
   // own tag to be told apart in reports/attendance. Optional at creation since bulk flows
-  // (Set Up Year, Program deployment) create several classes at once with no per-class input;
+  // (Set Up Year, Event deployment) create several classes at once with no per-class input;
   // set later from the class's own edit page.
   tag:             z.string().trim().min(1, "Tag cannot be empty").nullable().optional().default(null),
   // Splits one grade at one hub into parallel sections (e.g. "Blue", "A") that each get their

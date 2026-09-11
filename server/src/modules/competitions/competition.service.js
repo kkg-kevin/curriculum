@@ -1,13 +1,13 @@
 const CompetitionModel = require("./competition.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 
-// A competition can optionally belong to a Program. A Program IS a `curricula` row with
-// isProgram: true (see program.service.js) — so "resolve the program name" means resolve the
+// A competition can optionally belong to an Event. An Event IS a `curricula` row with
+// isEvent: true (see event.service.js) — so "resolve the event name" means resolve the
 // curriculum. Kept as a display-only enrichment, never stored, so it can't drift.
-async function resolveProgramName(programId) {
-  if (!programId) return null;
-  const curriculum = await CurriculumModel.findById(programId);
-  return curriculum?.isProgram ? curriculum.name : null;
+async function resolveEventName(eventId) {
+  if (!eventId) return null;
+  const curriculum = await CurriculumModel.findById(eventId);
+  return curriculum?.isEvent ? curriculum.name : null;
 }
 
 // createRecord/updateRecord return the record with `tracks` as whatever was written — a JSON
@@ -33,18 +33,18 @@ async function enrich(competition) {
     ...competition,
     tracks,
     trackCount: tracks.length,
-    programName: await resolveProgramName(competition.programId),
+    eventName: await resolveEventName(competition.eventId),
   };
 }
 
-// A competition's programId, when set, must point at a Program (isProgram curriculum) the SAME
-// admin owns — a competition can't be attached to another tenant's program. Mirrors
+// A competition's eventId, when set, must point at an Event (isEvent curriculum) the SAME
+// admin owns — a competition can't be attached to another tenant's event. Mirrors
 // curriculum.controller.js's linkCourse same-tenant check.
-async function assertProgramOwnedBy(programId, ownerAdminId) {
-  if (!programId) return;
-  const curriculum = await CurriculumModel.findById(programId);
-  if (!curriculum || !curriculum.isProgram || curriculum.ownerAdminId !== ownerAdminId) {
-    const err = new Error("That program doesn't exist or belongs to a different admin");
+async function assertEventOwnedBy(eventId, ownerAdminId) {
+  if (!eventId) return;
+  const curriculum = await CurriculumModel.findById(eventId);
+  if (!curriculum || !curriculum.isEvent || curriculum.ownerAdminId !== ownerAdminId) {
+    const err = new Error("That event doesn't exist or belongs to a different admin");
     err.statusCode = 400;
     throw err;
   }
@@ -52,7 +52,7 @@ async function assertProgramOwnedBy(programId, ownerAdminId) {
 
 const CompetitionService = {
   async createCompetition(data) {
-    await assertProgramOwnedBy(data.programId, data.ownerAdminId);
+    await assertEventOwnedBy(data.eventId, data.ownerAdminId);
     const record = await CompetitionModel.create(data);
     return enrich(record);
   },
@@ -79,8 +79,8 @@ const CompetitionService = {
       err.statusCode = 404;
       throw err;
     }
-    // programId may be absent from a partial patch — only re-check when it's actually changing.
-    if ("programId" in data) await assertProgramOwnedBy(data.programId, ownerAdminId);
+    // eventId may be absent from a partial patch — only re-check when it's actually changing.
+    if ("eventId" in data) await assertEventOwnedBy(data.eventId, ownerAdminId);
     const record = await CompetitionModel.update(id, data);
     return enrich(record);
   },
@@ -95,21 +95,21 @@ const CompetitionService = {
     return { message: "Competition deleted successfully" };
   },
 
-  // Every competition linked to a given Program — feeds the Program view's "Competitions"
-  // section. A Program's id is its curriculum id.
-  async getByProgram(programId) {
-    const records = await CompetitionModel.findAll({ programId });
+  // Every competition linked to a given Event — feeds the Event view's "Competitions"
+  // section. An Event's id is its curriculum id.
+  async getByEvent(eventId) {
+    const records = await CompetitionModel.findAll({ eventId });
     return Promise.all(records.map(enrich));
   },
 
-  // Called from CurriculumService.deleteCurriculum when a Program is deleted — detach its
-  // competitions rather than orphan them with a dangling programId. A competition survives its
-  // program (unlike the program's classes), same "the record has a life of its own" posture as
-  // ProgramModel.delete leaving classes standing.
-  async unlinkProgram(programId) {
-    if (!programId) return;
-    const records = await CompetitionModel.findAll({ programId });
-    await Promise.all(records.map((c) => CompetitionModel.update(c.id, { programId: null })));
+  // Called from CurriculumService.deleteCurriculum when an Event is deleted — detach its
+  // competitions rather than orphan them with a dangling eventId. A competition survives its
+  // event (unlike the event's classes), same "the record has a life of its own" posture as
+  // EventModel.delete leaving classes standing.
+  async unlinkEvent(eventId) {
+    if (!eventId) return;
+    const records = await CompetitionModel.findAll({ eventId });
+    await Promise.all(records.map((c) => CompetitionModel.update(c.id, { eventId: null })));
   },
 };
 

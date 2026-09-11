@@ -19,9 +19,9 @@ router.get("/pathways/:idOrSlug", getPublicPathway);
 router.get("/projects", getPublicProjects);
 router.get("/projects/:idOrSlug", getPublicProject);
 
-// Bootcamps = for-sale program-curricula (`curricula.isProgram = 1`, see
-// public-bootcamp.service.js). Reintroduced 10 Sep 2026 as a for-sale flag on the existing
-// Program concept — NOT the old `public_bootcamps` marketing table removed 4 Sep 2026.
+// Bootcamps = its own standalone `bootcamps` table (see public-bootcamp.service.js), optionally
+// linked to an Event via eventId — NOT the old `public_bootcamps` marketing table removed
+// 4 Sep 2026, nor the bolted-onto-curricula sale flag it briefly was before this module existed.
 router.get("/bootcamps", getPublicBootcamps);
 router.get("/bootcamps/:idOrSlug", getPublicBootcamp);
 

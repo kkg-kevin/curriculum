@@ -22,14 +22,15 @@ import {
 const ACCENT = "#25476a";
 
 const S = {
-  card:      { backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 },
+  card:      { backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 },
   cardTitle: { margin: 0, fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" },
-  row:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
+  row:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
+  row3:      { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 },
   field:     { display: "flex", flexDirection: "column", gap: 6 },
   label:     { fontSize: 13, fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 3 },
   input:     { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
   select:    { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", cursor: "pointer" },
-  textarea:  { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", resize: "vertical", minHeight: 70 },
+  textarea:  { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff", resize: "vertical", minHeight: 64 },
   hint:      { fontSize: 12, color: "#6B7280" },
   error:     { fontSize: 12, color: "#DC2626" },
 };
@@ -44,7 +45,7 @@ const toFormValues = (c) => ({
   startDate: c?.startDate || "",
   endDate: c?.endDate || "",
   coverImage: c?.coverImage || null,
-  programId: c?.programId || null,
+  eventId: c?.eventId || null,
   status: c?.status || "draft",
   isPublic: !!c?.isPublic,
   tracks: (c?.tracks || []).map((t) => ({
@@ -63,7 +64,7 @@ const clean = (v) => {
   const out = { ...v };
   out.format = out.format || null;
   out.cadence = out.cadence || null;
-  out.programId = out.programId || null;
+  out.eventId = out.eventId || null;
   out.tracks = (out.tracks || []).map((t) => ({
     ...t,
     highlights: (t.highlights || []).map((h) => h.trim()).filter(Boolean),
@@ -178,23 +179,23 @@ function HighlightsInput({ value, onChange }) {
   );
 }
 
-const backToCompetition = (compId) => `/programs/competitions/${compId}/view`;
-const backToList = "/programs";
+const backToCompetition = (compId) => `/events/competitions/${compId}/view`;
+const backToList = "/events";
 
 export default function CreateCompetitionPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
   const [searchParams] = useSearchParams();
-  // Optional: /programs/competitions/create?programId=<curriculumId> pre-selects the program
-  // (used by a Program view's "+ New Competition").
-  const presetProgramId = searchParams.get("programId") || null;
+  // Optional: /events/competitions/create?eventId=<curriculumId> pre-selects the event
+  // (used by an Event view's "+ New Competition").
+  const presetEventId = searchParams.get("eventId") || null;
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  // Program-curricula for the "Linked Program" dropdown — a competition can belong to one or
+  // Event-curricula for the "Linked Event" dropdown — a competition can belong to one or
   // stand alone.
   const { data: curriculaData } = useCurriculaQuery();
-  const programs = (curriculaData?.data || []).filter((c) => c.isProgram);
+  const events = (curriculaData?.data || []).filter((c) => c.isEvent);
 
   const { data: existing, isLoading: loadingExisting } = useCompetitionQuery(id);
   const { mutate: createCompetition, isPending: creating } = useCreateCompetition();
@@ -205,7 +206,7 @@ export default function CreateCompetitionPage() {
     formState: { isDirty, errors },
   } = useForm({
     resolver: zodResolver(competitionSchema),
-    defaultValues: { ...toFormValues(null), programId: presetProgramId },
+    defaultValues: { ...toFormValues(null), eventId: presetEventId },
     mode: "onTouched",
     values: isEdit && existing ? toFormValues(existing) : undefined,
   });
@@ -237,14 +238,14 @@ export default function CreateCompetitionPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Programs &amp; Competitions
+              ← Events &amp; Competitions
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{isEdit ? "Edit competition" : "New competition"}</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>{isEdit ? "Edit Competition" : "New Competition"}</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            The edition, its tracks, and where people register. Optionally link it to a Program. Publish it to feature it on the website.
+            The edition, its tracks, and where people register. Optionally link it to an Event. Publish it to feature it on the website.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
@@ -263,7 +264,7 @@ export default function CreateCompetitionPage() {
       </div>
 
       <div style={{ maxWidth: 780 }}>
-        <form id="competition-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form id="competition-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           <div style={S.card}>
             <h3 style={S.cardTitle}>Basics</h3>
@@ -271,12 +272,6 @@ export default function CreateCompetitionPage() {
               <label style={S.label}>Name <span style={{ color: "#EF4444" }}>*</span></label>
               <input {...register("name")} style={S.input} placeholder="Codeavour 8.0" />
               {errors.name && <span style={S.error}>{errors.name.message}</span>}
-            </div>
-
-            <div style={S.field}>
-              <label style={S.label}>Description</label>
-              <textarea {...register("description")} style={S.textarea} placeholder="What the competition is, who it's for…" />
-              {errors.description && <span style={S.error}>{errors.description.message}</span>}
             </div>
 
             <div style={S.row}>
@@ -290,6 +285,54 @@ export default function CreateCompetitionPage() {
               </div>
             </div>
 
+            <div style={S.field}>
+              <label style={S.label}>Description</label>
+              <textarea {...register("description")} style={S.textarea} placeholder="What the competition is, who it's for…" />
+              {errors.description && <span style={S.error}>{errors.description.message}</span>}
+            </div>
+
+            <div style={S.field}>
+              <label style={S.label}>Cover image</label>
+              <Controller
+                control={control}
+                name="coverImage"
+                render={({ field }) => (
+                  <ImageUploadField value={field.value || ""} onChange={field.onChange} width="260px" height="150px" />
+                )}
+              />
+            </div>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Placement &amp; visibility</h3>
+            <div style={S.field}>
+              <label style={S.label}>Linked Event</label>
+              <select {...register("eventId")} style={S.select}>
+                <option value="">Standalone — not linked to an event</option>
+                {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+              <span style={S.hint}>Optional. A competition can belong to an Event or stand on its own.</span>
+            </div>
+
+            <div style={S.row}>
+              <div style={S.field}>
+                <label style={S.label}>Status</label>
+                <select {...register("status")} style={S.select}>
+                  {COMPETITION_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+              <div style={{ ...S.field, justifyContent: "flex-end" }}>
+                <label style={{ ...S.label, cursor: "pointer" }}>
+                  <input type="checkbox" {...register("isPublic")} style={{ width: 16, height: 16, cursor: "pointer" }} />
+                  Show on the website
+                </label>
+                <span style={S.hint}>A draft never appears publicly, even if this is on.</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Format, cadence &amp; dates</h3>
             <div style={S.row}>
               <div style={S.field}>
                 <label style={S.label}>Format</label>
@@ -317,45 +360,6 @@ export default function CreateCompetitionPage() {
                 <label style={S.label}>End date</label>
                 <input type="date" {...register("endDate")} style={S.input} />
                 {errors.endDate && <span style={S.error}>{errors.endDate.message}</span>}
-              </div>
-            </div>
-
-            <div style={S.field}>
-              <label style={S.label}>Cover image</label>
-              <Controller
-                control={control}
-                name="coverImage"
-                render={({ field }) => (
-                  <ImageUploadField value={field.value || ""} onChange={field.onChange} width="260px" height="150px" />
-                )}
-              />
-            </div>
-          </div>
-
-          <div style={S.card}>
-            <h3 style={S.cardTitle}>Placement &amp; visibility</h3>
-            <div style={S.field}>
-              <label style={S.label}>Linked Program</label>
-              <select {...register("programId")} style={S.select}>
-                <option value="">Standalone — not linked to a program</option>
-                {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <span style={S.hint}>Optional. A competition can belong to a Program or stand on its own.</span>
-            </div>
-
-            <div style={S.row}>
-              <div style={S.field}>
-                <label style={S.label}>Status</label>
-                <select {...register("status")} style={S.select}>
-                  {COMPETITION_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              <div style={{ ...S.field, justifyContent: "flex-end" }}>
-                <label style={{ ...S.label, cursor: "pointer" }}>
-                  <input type="checkbox" {...register("isPublic")} style={{ width: 16, height: 16, cursor: "pointer" }} />
-                  Show on the website
-                </label>
-                <span style={S.hint}>A draft never appears publicly, even if this is on.</span>
               </div>
             </div>
           </div>

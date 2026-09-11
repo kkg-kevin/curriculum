@@ -949,8 +949,8 @@ export default function CurriculumVersionControlPage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "28px", gap: "16px", flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-            <button type="button" onClick={() => navigate("/curriculum")} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: "12px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
-              Curriculum
+            <button type="button" onClick={() => navigate(curriculum?.isEvent ? "/events" : "/curriculum")} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: "12px", fontFamily: "Inter,sans-serif", cursor: "pointer", padding: 0 }}>
+              {curriculum?.isEvent ? "Events" : "Curriculum"}
             </button>
             <span style={{ color: "#E5E7EB" }}>/</span>
             <span style={{ fontSize: "12px", color: "#9CA3AF", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{curriculum?.name}</span>
@@ -962,7 +962,7 @@ export default function CurriculumVersionControlPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button type="button" onClick={() => navigate(`/curriculum/${id}/structure`)} className="vc-btn-secondary">← Structure</button>
-          <button type="button" onClick={() => navigate("/curriculum")} className="vc-btn-primary">Done</button>
+          <button type="button" onClick={() => navigate(curriculum?.isEvent ? `/curriculum/${id}/view` : "/curriculum")} className="vc-btn-primary">Done</button>
         </div>
       </div>
 

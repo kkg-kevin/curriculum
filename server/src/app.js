@@ -27,8 +27,9 @@ const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const reportRoutes = require("./modules/reports/report.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
-const programRoutes = require("./modules/programs/program.routes");
+const eventRoutes = require("./modules/events/event.routes");
 const competitionRoutes = require("./modules/competitions/competition.routes");
+const bootcampRoutes = require("./modules/bootcamps/bootcamp.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
@@ -171,10 +172,13 @@ app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 // teacher/school need this too, for their own profile-photo uploads (teacher-portal/
 // school-portal profile pages, and the admin-side Teacher/LearningHub forms).
 app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner"), uploadRoutes);
-app.use("/api/programs", protect, attachOwnRecords, authorize("admin"), programRoutes);
-// Competitions — an independent module (a sibling of curriculum/programs), admin-only. A
-// competition can optionally link to a Program via programId.
+app.use("/api/events", protect, attachOwnRecords, authorize("admin"), eventRoutes);
+// Competitions — an independent module (a sibling of curriculum/events), admin-only. A
+// competition can optionally link to an Event via eventId.
 app.use("/api/competitions", protect, attachOwnRecords, authorize("admin"), competitionRoutes);
+// Bootcamps — an independent module (a sibling of curriculum/events/competitions), admin-only.
+// A bootcamp can optionally link to an Event via eventId.
+app.use("/api/bootcamps", protect, attachOwnRecords, authorize("admin"), bootcampRoutes);
 // Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
 // router, no attachOwnRecords/authorize needed.
 app.use("/api/notifications", protect, notificationRoutes);
