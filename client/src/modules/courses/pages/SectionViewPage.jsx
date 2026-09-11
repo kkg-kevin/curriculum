@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
-import { SECTIONS, SECTION_LABELS, sessionLabel, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
+import { SECTIONS, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
@@ -97,9 +97,10 @@ function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, l
   // order, holding just the sessions that resolve to it, then an "Ungrouped" bucket for anything
   // left over (no moduleId, or pointing at a module that's since been deleted). A course that
   // doesn't use modules at all just renders one bucket with every session in it, unchanged from
-  // before this feature existed. `idx` (used for sessionLabel's continuous numbering) is looked
-  // up from the whole-course index, not recomputed per group, so numbering doesn't change.
-  const globalIndexById = new Map(sessions.map((s, i) => [s.id, i]));
+  // before this feature existed. `idx` (used for sessionLabel's numbering) is looked up per-module
+  // via buildModuleLocalSessionIndex, so each module's sessions are numbered 1..N of their own,
+  // matching the admin authoring view instead of counting continuously across the whole course.
+  const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
   const sortedModules = [...(modules || [])].sort((a, b) => a.order - b.order);
   const sessionsByModuleId = new Map(sortedModules.map((m) => [m.id, []]));
   const ungroupedSessions = [];
@@ -178,7 +179,7 @@ function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, l
             </div>
           )}
           {group.sessions.map((session) => {
-        const idx = globalIndexById.get(session.id);
+        const idx = sessionPosition.get(session.id)?.index ?? 0;
         const isCurrentSession = session.id === activeSessionId;
         const expanded = expandedIds.has(session.id);
         const locked = showProgress && lockedSessionIds?.has(session.id);
@@ -469,6 +470,9 @@ export default function SectionViewPage() {
   const { data: sessions = [], isLoading } = useSessions(id);
   const { data: modules = [] } = useModules(id);
   const queryClient = useQueryClient();
+  // Numbers each session relative to its own module (Module 2 restarts at "Session 1") instead
+  // of counting continuously across the whole course — shared with SessionSidebar below.
+  const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
 
   // Auto-completion is passive: just opening a section is what marks it done for the
   // learner, per the product decision behind this feature — no separate "Mark Complete" click.
@@ -598,7 +602,10 @@ export default function SectionViewPage() {
     );
   }
 
-  const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+  // Module-local for display (matches the sidebar and the admin authoring view); Prev/Next above
+  // still traverses `flat`, the whole-course sequence, so navigation keeps crossing module
+  // boundaries seamlessly — only the displayed number resets per module.
+  const sessionIndex = sessionPosition.get(sessionId)?.index ?? 0;
   const showsSubItem = isRepeatable || (isAssessmentsSection && !!effectiveItemId);
   const pageTitle = isRepeatable
     ? (item ? repeatableItemLabel(sectionKey, item, itemIndex) : SECTION_LABELS[sectionKey])
