@@ -12,27 +12,46 @@
 //
 // No index touches either renamed column today — no compound-index dance needed here, unlike
 // the Learning Areas → Pathways rename this one otherwise mirrors.
+//
+// Each step below checks the current schema before acting: MySQL commits every DDL statement
+// immediately (renameTable/alterTable are not rolled back by a later failure in the same
+// migration, unlike Postgres), so if this migration crashes partway through, a bare retry would
+// otherwise error on the step that already succeeded (e.g. "table 'events' already exists" /
+// unknown column 'isProgram'). Guarding each step makes a retry after a partial failure a
+// harmless no-op for whatever already ran, instead of requiring manual DB surgery.
 
 exports.up = async function up(knex) {
-  await knex.schema.renameTable("programs", "events");
+  if (await knex.schema.hasTable("programs")) {
+    await knex.schema.renameTable("programs", "events");
+  }
 
-  await knex.schema.alterTable("curricula", (t) => {
-    t.renameColumn("isProgram", "isEvent");
-  });
+  if (await knex.schema.hasColumn("curricula", "isProgram")) {
+    await knex.schema.alterTable("curricula", (t) => {
+      t.renameColumn("isProgram", "isEvent");
+    });
+  }
 
-  await knex.schema.alterTable("competitions", (t) => {
-    t.renameColumn("programId", "eventId");
-  });
+  if (await knex.schema.hasColumn("competitions", "programId")) {
+    await knex.schema.alterTable("competitions", (t) => {
+      t.renameColumn("programId", "eventId");
+    });
+  }
 };
 
 exports.down = async function down(knex) {
-  await knex.schema.alterTable("competitions", (t) => {
-    t.renameColumn("eventId", "programId");
-  });
+  if (await knex.schema.hasColumn("competitions", "eventId")) {
+    await knex.schema.alterTable("competitions", (t) => {
+      t.renameColumn("eventId", "programId");
+    });
+  }
 
-  await knex.schema.alterTable("curricula", (t) => {
-    t.renameColumn("isEvent", "isProgram");
-  });
+  if (await knex.schema.hasColumn("curricula", "isEvent")) {
+    await knex.schema.alterTable("curricula", (t) => {
+      t.renameColumn("isEvent", "isProgram");
+    });
+  }
 
-  await knex.schema.renameTable("events", "programs");
+  if (await knex.schema.hasTable("events")) {
+    await knex.schema.renameTable("events", "programs");
+  }
 };

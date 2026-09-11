@@ -108,6 +108,19 @@ Backend + portal frontend + website all change. **Two new migrations, auto-appli
 on Restart. No new dependency, no new env var.** Read the whole section before
 deploying — the rename touches a table name and a column name directly.
 
+⚠️ **Both migrations are now idempotent — safe to re-run after a crash.** The first Dev
+deploy of this release hit a real issue: MySQL commits every DDL statement immediately
+(no transactional rollback across `CREATE`/`ALTER`/`RENAME` the way Postgres has), so when
+either migration crashed partway through (in this case, apparently a transient DB hiccup —
+nothing wrong with the SQL itself), it left the schema half-changed and Knex's
+`knex_migrations_lock` stuck at `is_locked=1`, which then blocked every subsequent restart
+with `MigrationLocked` before the app ever got a chance to retry. Recovered manually via
+`Guide/dev/recover_stuck_migration.sql` / `recover_stuck_bootcamps_migration.sql` (kept in
+that folder for reference). **Both migration files now check the current schema/data before
+each step** (`hasTable`/`hasColumn`/per-row existence checks) so a bare restart-and-retry is
+now enough to recover from any future partial failure — no manual SQL should ever be needed
+again for these two. Rebuilt `backend-deploy.zip` below carries the fixed versions.
+
 ### New migrations (apply automatically on Restart, in order)
 
 | Migration | Does | Existing rows |
