@@ -102,6 +102,113 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (11 Sep 2026, follow-on) — Program renamed to Event · Bootcamp becomes standalone
+
+Backend + portal frontend + website all change. **Two new migrations, auto-applied
+on Restart. No new dependency, no new env var.** Read the whole section before
+deploying — the rename touches a table name and a column name directly.
+
+### New migrations (apply automatically on Restart, in order)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260911100000_rename_program_to_event` | renames table `programs` → `events`, `curricula.isProgram` → `isEvent`, `competitions.programId` → `eventId` | preserved — same rows, renamed columns/table only |
+| `20260911150000_create_bootcamps` | new `bootcamps` table; copies every existing for-sale Event-curriculum into it (`eventId` auto-linked back to its source curriculum); drops the 11 sale/marketing columns from `curricula` | the ~5 existing for-sale bootcamps keep their name/price/highlights/etc. and their "upcoming runs" display, just moved to their own table |
+
+### What changed
+
+1. **Program renamed to Event, everywhere** — this was previously "the bootcamp
+   *is* the Program curriculum"; that coupling is gone. An Event is just a
+   short-run cohort curriculum (`curricula.isEvent = true`), deployed to a hub
+   the same way as before (**Deploy to Hub**, unchanged). The admin nav item
+   "Programs" is now **"Events"**.
+2. **Bootcamp is now a standalone entity**, structurally identical to
+   Competition — its own `bootcamps` table, own CRUD module
+   (`server/src/modules/bootcamps/*`), an **optional** `eventId` soft-link (no
+   DB FK). A Bootcamp no longer has to be an Event — it can stand entirely
+   alone, or attach to one. Deleting an Event detaches (never orphans) its
+   Bootcamps and Competitions.
+3. **Events list page** (`/events`) now shows three independent sections —
+   Events, Competitions, Bootcamps — each with its own "+ New" button
+   (**+ New Event**, **+ New Competition**, **+ New Bootcamp**).
+4. **An Event's kebab menu / view page** gains **New Competition** and **New
+   Bootcamp** actions (pre-linking the new record to that Event), alongside the
+   existing **Deploy to Hub**. The Event's own view page now clearly reads as
+   "EVENT" (badge + header title), separate from a regular Curriculum's view.
+5. **"View on Website" button** added to the Bootcamp view page, matching
+   Competition's existing parity.
+6. **Bugfix: Deploy to Hub was crashing** (`classIds.map is not a function`,
+   HTTP 500) — a pre-existing bug inherited unchanged from the old Program
+   module, now fixed in `EventService.enrich()`.
+7. **Dashboard "Curriculum Overview"** no longer lists Events (it was
+   incorrectly showing e.g. "Robot Builders Holiday Bootcamp" as if it were a
+   plain curriculum) — Events are a distinct admin section.
+8. **Creating a new Event now exits back into `/events`** at every step of the
+   authoring wizard (Basic Info → Competencies → Structure → Version Control),
+   instead of dropping back into the plain Curriculum list/section titles.
+9. **Public bootcamps API contract is unchanged** — `GET /api/public/bootcamps[/:idOrSlug]`
+   still serves the same response shape, now reading the new `bootcamps` table
+   instead of sale-flagged curricula. No change needed on the website side
+   beyond terminology in comments.
+10. Bootcamp/Competition creation form layouts polished for spacing/hierarchy
+    consistency between the two (same section order, denser field grouping).
+
+See `Guide/WEBSITE_INTEGRATION_CONTRACT.md` if it documents the Program/Event
+naming — check for stale "Program" references there too.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — includes both migrations above, the new
+`modules/events/*` (renamed from `modules/programs/*`) and `modules/bootcamps/*`,
+the `/api/events` and `/api/bootcamps` mounts in `app.js`, and the
+competition/curriculum/lead/class/timetable/version-control changes that follow
+from the rename. `knexfile.js` at the app root as always. **`Guide/live/backend-deploy.zip`
+is byte-identical to `Guide/dev/backend-deploy.zip`** — only each cPanel Node
+app's `.env` differs. **No env change.**
+
+⚠️ **The `programs` table is renamed, not dropped** — the migration renames it
+to `events` in place, so no data is lost. Still, take a `mysqldump` backup
+before restarting on Live, same as any schema-changing release.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-DLLeAw_B.js`** / CSS `index-CPRP9smp.css`.
+- Live build (`npm run build:live`): **`index-mpJeZQSl.js`** / same CSS.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+Comment-only "Program" → "Event" terminology updates; the public API contract
+and every component's actual behavior is unchanged. **This bundle was built in
+a sandboxed environment that could not reach `nodeapp.digifunzi.com`** to
+prerender the API-driven sections (Pathways/Projects/Store/Bootcamps/Competitions)
+— those ship as SPA-only HTML this time (still fully functional for visitors,
+client-side fetch; just no prerendered/SEO snapshot for those routes). **Recommended:**
+once this release is live, rebuild `digifunzi-landing` (`npm run build`) from a
+machine that can actually reach the target API, and re-upload — that restores
+full prerendering for those sections.
+
+### Deploy order
+
+1. **Backend** → the app root → **Run NPM Install** → **Restart**. Check the
+   app log: both migrations should apply cleanly (or fewer, if already run).
+2. **Portal** `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's
+   from `Guide/live/` (different JS hash, don't cross them). Delete the old
+   `assets/` + `index.html` first.
+3. **Website** `africa-digifunzi-com-dist.zip` → the website doc root.
+4. **Verify:**
+   - `curl <api>/api/public/bootcamps` → `[]` or real data, not `503`/`500`.
+   - `curl <api>/api/public/competitions` → same.
+   - Log in, open **Events**, confirm three sections (Events/Competitions/
+     Bootcamps) each with their own "+ New" button.
+   - Open an Event, click its kebab menu → **New Bootcamp** → confirm the form
+     opens with that Event pre-selected.
+   - **Deploy an Event to a hub** (the bug this release fixes) → confirm it
+     succeeds with a "Event created successfully!" toast, not a 500.
+   - Dashboard → confirm the "Curriculum Overview" widget no longer lists any
+     Event-flagged curricula.
+
+---
+
 ## This release (11 Sep 2026) — session numbering resets per module
 
 Frontend-only. **No migration, no new dependency, no env var, no backend change.**
