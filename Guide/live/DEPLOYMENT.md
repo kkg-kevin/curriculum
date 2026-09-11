@@ -102,6 +102,57 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (11 Sep 2026) — session numbering resets per module
+
+Frontend-only. **No migration, no new dependency, no env var, no backend change.**
+
+### What changed
+
+Fixed: when a course has more than one Module, opening a session's content (the
+sidebar list, its breadcrumb, and the "SESSION n" header on the detail page)
+numbered sessions **continuously across the whole course** instead of restarting
+at 1 for each new Module — so Module 2's first session showed as "Session 13"
+instead of "Session 1". Session storage/ordering (the `order` column) is
+unchanged; only the *displayed* number is now computed per-module, matching
+the numbering the Admin authoring view (`CourseViewPage.jsx`) already used
+correctly. Prev/Next navigation still moves seamlessly across module
+boundaries — only the displayed count resets.
+
+Fixed in `client/src/modules/courses/pages/SectionViewPage.jsx` (learner/
+teacher/school content-viewing page — sidebar, breadcrumb, header) and
+`client/src/modules/courses/pages/CourseContentLandingPage.jsx` (course
+landing list), both now using the existing `buildModuleLocalSessionIndex`
+helper from `sectionConfig.js` instead of a flat whole-course array index.
+
+Not touched: the Calendar/timetable session labels and the Teacher Portal's
+Assessments/Reports "Session n of N" navigators, which intentionally walk the
+whole course's session sequence for scheduling/grading flows rather than
+per-module display — a separate decision if that's ever wanted too.
+
+**Follow-up same day:** the first cut of this fix left `SectionViewPage.jsx`'s
+breadcrumb/header referencing a `sessionPosition` variable that only existed
+inside the sidebar sub-component, not the page's own scope — a
+`ReferenceError` that blanked the entire session-content page for every role.
+Fixed by computing `sessionPosition` once in the page component itself.
+Verified end-to-end (logged in, opened a Module 2 session's content) before
+rebuilding these zips — the hashes below are the corrected build.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-Dh08y7yp.js`** / CSS `index-CPRP9smp.css`.
+- Live build (`npm run build:live`): **`index-BZlNowAW.js`** / same CSS.
+
+### Deploy order
+
+1. Portal `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's from
+   `Guide/live/` (different JS hash, don't cross them).
+2. Backend unchanged — no redeploy needed for this fix.
+3. **Verify:** open a course with 2+ Modules as any role, click into Module 2's
+   first session — the sidebar, breadcrumb, and page header should all show
+   "Session 1", not a number continuing from Module 1.
+
+---
+
 ## This release (10 Sep 2026) — Bootcamps for sale · diagnostic name+phone · competency-grouped report · public hubs + virtual hubs · Competitions module
 
 Additive. **Five new migrations, all auto-applied on Restart. No new dependency, no
