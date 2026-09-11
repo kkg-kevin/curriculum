@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { FiAlertTriangle } from "react-icons/fi";
-import { useCourseQuery, useSessions, useCoursePathways } from "../hooks/useCourse";
-import { sessionLabel } from "../sectionConfig";
+import { useCourseQuery, useSessions, useModules, useCoursePathways } from "../hooks/useCourse";
+import { sessionLabel, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseCatalogPath, sectionPath } from "../../../routes/portalPaths";
 
@@ -21,7 +21,11 @@ export default function CourseContentLandingPage() {
 
   const { data: course, isLoading: courseLoading } = useCourseQuery(courseId);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(courseId);
+  const { data: modules = [] } = useModules(courseId);
   const { data: pathways = [] } = useCoursePathways(courseId);
+  // Numbers each session relative to its own module (Module 2 restarts at "Session 1") instead
+  // of counting continuously across the whole course — matches the sidebar/admin authoring view.
+  const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
 
   if (courseLoading || sessionsLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -75,7 +79,7 @@ export default function CourseContentLandingPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {sessions.map((session, idx) => (
+          {sessions.map((session) => (
             <div
               key={session.id}
               onClick={() => navigate(sectionPath(role, courseId, session.id, "outcomes"))}
@@ -84,7 +88,7 @@ export default function CourseContentLandingPage() {
               onMouseLeave={(e) => e.currentTarget.style.borderColor = "#E5E7EB"}
             >
               <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>{sessionLabel(session, idx)}</p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>{sessionLabel(session, sessionPosition.get(session.id)?.index ?? 0)}</p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>
                   {(session.outcomes?.length ?? 0)} learning outcome{(session.outcomes?.length ?? 0) !== 1 ? "s" : ""}
                 </p>
