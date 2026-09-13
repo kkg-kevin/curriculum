@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiFlag, FiEdit2, FiExternalLink } from "react-icons/fi";
+import { FiFlag, FiEdit2, FiExternalLink, FiPlus, FiX } from "react-icons/fi";
 import { useCompetitionQuery, useDeleteCompetition, useUpdateCompetition } from "../hooks/useCompetitions";
+import { useCompetitionHubsQuery, useCreateCompetitionHub, useDeleteCompetitionHub } from "../hooks/useCompetitionHubs";
+import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 
 const STATUS_LABEL = { draft: "Draft", open: "Open", closed: "Closed" };
 const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
@@ -22,6 +25,110 @@ function formatDate(iso) {
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
+const OFFERING_STATUS = {
+  upcoming:  { bg: "#fff8e6", color: "#b07800", label: "Upcoming"  },
+  active:    { bg: "#e8f5fb", color: "#25476a", label: "Active"    },
+  completed: { bg: "#F9FAFB", color: "#6B7280", label: "Completed" },
+};
+
+// "Run at a Hub" replaces the old standalone Event-deployment flow — picking a competition + a
+// hub here auto-creates one Class per cohort at that hub, same UX as the old "Deploy to Hub".
+function RunsAtHubsSection({ competition }) {
+  const { data: offerings = [], isLoading } = useCompetitionHubsQuery(competition.id);
+  const { data: hubsData } = useAllLearningHubsQuery({});
+  const { mutate: addHub, isPending: adding } = useCreateCompetitionHub(competition.id);
+  const { mutate: removeHub } = useDeleteCompetitionHub(competition.id);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedHubId, setSelectedHubId] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(null);
+
+  const canRun = !!competition.curriculumId && !!competition.startDate && !!competition.endDate;
+  const runningHubIds = new Set(offerings.map((o) => o.hubId));
+  const availableHubs = (hubsData?.data || []).filter((h) => !runningHubIds.has(h.id));
+
+  const handleAdd = () => {
+    if (!selectedHubId) return;
+    addHub({ hubId: selectedHubId }, { onSuccess: () => { setPickerOpen(false); setSelectedHubId(""); } });
+  };
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 4 }}>
+        <div>
+          <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Runs at these hubs</h3>
+          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
+            {canRun ? "One class per cohort is created automatically at each hub." : "Link a curriculum and set start/end dates before running this competition at a hub."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPickerOpen((v) => !v)}
+          disabled={!canRun}
+          title={canRun ? undefined : "Link a curriculum and set dates first"}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "none", backgroundColor: canRun ? "#25476a" : "#E5E7EB", color: canRun ? "#fff" : "#9CA3AF", fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: canRun ? "pointer" : "not-allowed", flexShrink: 0, whiteSpace: "nowrap" }}
+        >
+          <FiPlus size={13} /> Run at a Hub
+        </button>
+      </div>
+
+      {pickerOpen && (
+        <div style={{ display: "flex", gap: 8, marginTop: 14, padding: "12px 14px", borderRadius: 10, border: "1.5px solid #a8d5ee", backgroundColor: "#F0F7FF" }}>
+          <select value={selectedHubId} onChange={(e) => setSelectedHubId(e.target.value)} style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+            <option value="">Select a hub…</option>
+            {availableHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+          <button type="button" onClick={handleAdd} disabled={!selectedHubId || adding} style={{ padding: "8px 18px", borderRadius: 8, border: "none", backgroundColor: "#25476a", color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: !selectedHubId || adding ? "not-allowed" : "pointer" }}>
+            {adding ? "Adding…" : "Add"}
+          </button>
+        </div>
+      )}
+
+      <div style={{ marginTop: 14 }}>
+        {isLoading ? (
+          <div style={{ height: 48, borderRadius: 10, backgroundColor: "#F9FAFB", border: "1px solid #F3F4F6" }} />
+        ) : offerings.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Not running at any hub yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {offerings.map((o) => {
+              const s = OFFERING_STATUS[o.status] || OFFERING_STATUS.upcoming;
+              return (
+                <div key={o.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#111827" }}>{o.hubName}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>
+                      {(o.classes || []).length} class{(o.classes || []).length !== 1 ? "es" : ""} · {o.learnerCount} learner{o.learnerCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {s && (
+                      <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: s.bg, color: s.color, whiteSpace: "nowrap" }}>{s.label}</span>
+                    )}
+                    <button type="button" onClick={() => setConfirmRemove(o)} title="Remove from this hub" style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", display: "flex", padding: 4 }}>
+                      <FiX size={15} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmRemove}
+        title="Remove from this hub"
+        message={`This will remove "${confirmRemove?.hubName}" and delete the classes it created there. This can't be undone.`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => { removeHub(confirmRemove.id); setConfirmRemove(null); }}
+        onCancel={() => setConfirmRemove(null)}
+      />
+    </div>
+  );
 }
 
 function TrackCard({ track, index }) {
@@ -77,7 +184,9 @@ export default function CompetitionViewPage() {
   }
 
   const tracks = competition.tracks || [];
+  const coursePricing = competition.coursePricing || [];
   const dateRange = [formatDate(competition.startDate), formatDate(competition.endDate)].filter(Boolean).join(" – ");
+  const registrationRange = [formatDate(competition.registrationOpenDate), formatDate(competition.registrationCloseDate)].filter(Boolean).join(" – ");
 
   const togglePublic = () => {
     updateCompetition({ id, data: { isPublic: !competition.isPublic } });
@@ -103,7 +212,7 @@ export default function CompetitionViewPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{competition.name}</h1>
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>
-                {[competition.edition, STATUS_LABEL[competition.status] || competition.status, competition.eventName].filter(Boolean).join(" · ")}
+                {[competition.edition, STATUS_LABEL[competition.status] || competition.status, competition.curriculumName].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
@@ -140,7 +249,8 @@ export default function CompetitionViewPage() {
               <DetailRow label="Cadence" value={CADENCE_LABEL[competition.cadence]} />
             </div>
             <DetailRow label="Dates" value={dateRange} />
-            <DetailRow label="Linked Event" value={competition.eventName} empty="Standalone" />
+            <DetailRow label="Registration" value={registrationRange} empty="Not set" />
+            <DetailRow label="Curriculum" value={competition.curriculumName} empty="Standalone" />
           </div>
         </div>
 
@@ -169,6 +279,18 @@ export default function CompetitionViewPage() {
           </div>
         </div>
       </div>
+
+      {coursePricing.length > 0 && (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Course pricing</h3>
+          <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6B7280" }}>
+            Priced courses from this competition&rsquo;s curriculum, grouped by pathway.
+          </p>
+          <CoursePricingDisplay curriculumId={competition.curriculumId} coursePricing={coursePricing} />
+        </div>
+      )}
+
+      <RunsAtHubsSection competition={competition} />
 
       <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tracks</h3>

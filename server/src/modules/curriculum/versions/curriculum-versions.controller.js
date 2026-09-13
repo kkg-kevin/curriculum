@@ -1,12 +1,12 @@
 const asyncHandler = require("express-async-handler");
 const CurriculumVersionService = require("./curriculum-versions.service");
 const CurriculumModel = require("../curriculum.model");
+const CurriculumService = require("../curriculum.service");
 const LearningHubService = require("../../learning-hubs/learning-hub.service");
 const TeacherHubLinkModel = require("../../teachers/teacher-hub-link.model");
 const SchoolModel = require("../../learning-hubs/learning-hub.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
-const EventModel = require("../../events/event.model");
 const { assertOwn, isOwnedByAdmin } = require("../../../shared/middleware/scope.middleware");
 
 async function getTeacherAccessibleCurriculumIds(req) {
@@ -30,8 +30,8 @@ async function assertCurriculumAccess(req, curriculumId) {
   if (req.user.role === "school") {
     const accessible = new Set(req.ownSchoolCurriculumIds || (req.ownSchool?.curriculumId ? [req.ownSchool.curriculumId] : []));
     if (accessible.has(curriculumId)) return;
-    const deployedEvents = await EventModel.findAll({ curriculumId });
-    if (deployedEvents.some((e) => e.hubId === req.ownSchool?.id)) return;
+    const runningHubIds = await CurriculumService.getHubIdsRunningCurriculum(curriculumId);
+    if (runningHubIds.includes(req.ownSchool?.id)) return;
     throw Object.assign(new Error("You do not have permission to access this record"), { statusCode: 403 });
   }
 
@@ -41,8 +41,8 @@ async function assertCurriculumAccess(req, curriculumId) {
     if (accessible.has(curriculumId)) return;
     const hubs = await Promise.all(hubIds.map((hid) => SchoolModel.findById(hid)));
     if (hubs.some((hub) => hub?.curriculumId === curriculumId)) return;
-    const deployedEvents = await EventModel.findAll({ curriculumId });
-    if (deployedEvents.some((e) => hubIds.includes(e.hubId))) return;
+    const runningHubIds = await CurriculumService.getHubIdsRunningCurriculum(curriculumId);
+    if (runningHubIds.some((hubId) => hubIds.includes(hubId))) return;
     throw Object.assign(new Error("You do not have permission to access this record"), { statusCode: 403 });
   }
 

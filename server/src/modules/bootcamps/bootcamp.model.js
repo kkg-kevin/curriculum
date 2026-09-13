@@ -8,9 +8,10 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "bootcamps";
-// `highlights` is stored as a JSON column — mysql2 auto-parses it back on read, but doesn't
-// auto-serialize a raw JS array on write (see CLAUDE.md), so it goes through stringifyJsonFields.
-const JSON_FIELDS = ["highlights"];
+// `highlights`/`coursePricing` are stored as JSON columns — mysql2 auto-parses them back on
+// read, but doesn't auto-serialize a raw JS array on write (see CLAUDE.md), so they go through
+// stringifyJsonFields.
+const JSON_FIELDS = ["highlights", "coursePricing"];
 
 const BootcampModel = {
   create(data) {
@@ -20,10 +21,10 @@ const BootcampModel = {
   // ownerAdminId optional here so the same findAll can serve callers that scope a different
   // way (none yet — but matches the pattern in curriculum/learning-hub models). Admin-facing
   // controllers always pass it.
-  findAll({ ownerAdminId, eventId, saleStatus } = {}) {
+  findAll({ ownerAdminId, curriculumId, saleStatus } = {}) {
     let query = db(TABLE);
     if (ownerAdminId) query = query.where({ ownerAdminId });
-    if (eventId) query = query.where({ eventId });
+    if (curriculumId) query = query.where({ curriculumId });
     if (saleStatus) query = query.where({ saleStatus });
     return query.orderBy("createdAt", "desc");
   },

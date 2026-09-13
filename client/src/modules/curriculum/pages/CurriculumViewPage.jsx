@@ -31,9 +31,8 @@ import {
 import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLevels";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
-import { useEventsByCurriculumQuery } from "../../events/hooks/useEvents";
-import EventCompetitionsSection from "../../competitions/components/EventCompetitionsSection";
-import EventBootcampsSection from "../../bootcamps/components/EventBootcampsSection";
+import CurriculumCompetitionsSection from "../../competitions/components/CurriculumCompetitionsSection";
+import CurriculumBootcampsSection from "../../bootcamps/components/CurriculumBootcampsSection";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -63,14 +62,6 @@ const STATUS_CONFIG = {
   draft:     { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#D97706", label: "Draft"     },
   inactive:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Inactive"  },
   archived:  { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", dot: "#9CA3AF", label: "Archived"  },
-};
-
-// Event deployment status — computed server-side (event.service.js's computeStatus) from a
-// deployment's own start/end dates, distinct from the curriculum version's draft/published status.
-const DEPLOYMENT_STATUS = {
-  upcoming:  { bg: "#fff8e6", color: "#b07800", border: "#fcd97a", label: "Upcoming"  },
-  active:    { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active"    },
-  completed: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Completed" },
 };
 
 const COURSE_SHADES = [
@@ -684,11 +675,6 @@ export default function CurriculumViewPage() {
   const { mutate: linkCourse }   = useLinkCourse(id);
   const { mutate: unlinkCourse } = useUnlinkCourse(id);
 
-  // An event curriculum can be deployed to more than one hub (or redeployed for a different
-  // run) — each deployment is its own Event record. Only relevant once isEvent is known,
-  // but the hook itself has to run unconditionally (rules of hooks), same as every query above.
-  const { data: deployments } = useEventsByCurriculumQuery(id);
-
   const [activePeriod, setActivePeriod] = useState(0);
 
   if (currLoading || vLoading) return <LoadingState />;
@@ -766,7 +752,7 @@ export default function CurriculumViewPage() {
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
         <button
           type="button"
-          onClick={() => navigate(curriculum.isEvent ? "/events" : "/curriculum")}
+          onClick={() => navigate("/curriculum")}
           style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             padding: "7px 14px", backgroundColor: "#ffffff", color: "#374151",
@@ -778,7 +764,7 @@ export default function CurriculumViewPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          {curriculum.isEvent ? "All Events" : "All Curricula"}
+          All Curricula
         </button>
         <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
         <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "220px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -811,20 +797,6 @@ export default function CurriculumViewPage() {
               }}>
                 {curriculum.framework || "No Framework"}
               </span>
-              {curriculum.isEvent && (
-                // Marks this as an Event's own page rather than a generic curriculum page —
-                // this is where a Bootcamp/Competition gets attached and published (below),
-                // and where it's deployed to a hub, distinct from the authoring-only pages a
-                // regular curriculum shares this same route/layout with.
-                <span style={{
-                  padding: "4px 13px", borderRadius: "20px",
-                  backgroundColor: "#feb139", color: "#25476a",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  fontSize: "11px", fontWeight: "800", letterSpacing: "0.04em",
-                }}>
-                  EVENT
-                </span>
-              )}
               {curriculumType && (
                 <span style={{
                   padding: "4px 13px", borderRadius: "20px",
@@ -842,9 +814,7 @@ export default function CurriculumViewPage() {
                 items={[
                   { label: "Edit Details", icon: <EditIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/edit`) },
                   { label: "Structure", icon: <AccountTreeIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/structure`) },
-                  ...(!curriculum.isEvent
-                    ? [{ label: "Academic Year", icon: <CalendarMonthIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/academic-year`) }]
-                    : []),
+                  { label: "Academic Year", icon: <CalendarMonthIcon fontSize="small" />, onClick: () => navigate(`/curriculum/${id}/academic-year`) },
                 ]}
               />
               <button type="button" onClick={() => navigate(`/curriculum/${id}/versions`)}
@@ -902,59 +872,11 @@ export default function CurriculumViewPage() {
         navigate={navigate}
       />
 
-      {/* ── Deployments (Events only) ──────────────────────────────────── */}
-      {curriculum.isEvent && (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "16px 20px", marginBottom: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-            <div>
-              <h2 style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Deployments</h2>
-              <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Every hub this event has been deployed to — deploy it to another anytime.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate(`/events/create?curriculumId=${id}`)}
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", backgroundColor: "#25476a", color: "#ffffff", border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
-            >
-              + Deploy to Hub
-            </button>
-          </div>
+      {/* ── Competitions — its own module, admin UI nested here ── */}
+      <CurriculumCompetitionsSection curriculumId={id} variant="bordered" />
 
-          {!deployments?.length ? (
-            <p style={{ margin: "14px 0 4px", fontSize: "13px", color: "#9CA3AF" }}>Not deployed to any hub yet.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
-              {deployments.map((d) => {
-                const dsc = DEPLOYMENT_STATUS[d.status] || DEPLOYMENT_STATUS.upcoming;
-                return (
-                  <div
-                    key={d.id}
-                    onClick={() => navigate(`/events/${d.id}/view`)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E7EB", cursor: "pointer", transition: "background-color 0.12s" }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F9FAFB"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <div>
-                      <p style={{ margin: 0, fontSize: "13.5px", fontWeight: "600", color: "#111827" }}>{d.hubName}</p>
-                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-                        {fmtDate(d.startDate)} → {fmtDate(d.endDate)} · {d.learnerCount} learner{d.learnerCount !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10.5px", fontWeight: "700", backgroundColor: dsc.bg, color: dsc.color, border: `1px solid ${dsc.border}`, whiteSpace: "nowrap" }}>
-                      {dsc.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Competitions (Events only) — its own module, admin UI nested here ── */}
-      {curriculum.isEvent && <EventCompetitionsSection curriculumId={id} variant="bordered" />}
-
-      {/* ── Bootcamps (Events only) — its own module, admin UI nested here ── */}
-      {curriculum.isEvent && <EventBootcampsSection curriculumId={id} variant="bordered" />}
+      {/* ── Bootcamps — its own module, admin UI nested here ── */}
+      <CurriculumBootcampsSection curriculumId={id} variant="bordered" />
 
       {/* ── Course Assignments Section ───────────────────────────────────── */}
       <div id="course-assignments" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "20px", scrollMarginTop: "76px" }}>
@@ -1407,9 +1329,7 @@ export default function CurriculumViewPage() {
               <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", fontWeight: "700", color: "#111827" }}>
                 <CalendarMonthIcon fontSize="small" style={{ color: "#25476a" }} /> Academic Year
               </span>
-              {!curriculum.isEvent && (
-                <ManageLink onClick={() => navigate(`/curriculum/${id}/academic-year`)} />
-              )}
+              <ManageLink onClick={() => navigate(`/curriculum/${id}/academic-year`)} />
             </div>
             {!publishedAYVersion ? (
               <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>{ayVersions.length === 0 ? "No academic year set up yet" : "No published calendar yet"}</p>

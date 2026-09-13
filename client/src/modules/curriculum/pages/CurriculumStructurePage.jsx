@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Check as CheckIcon } from "@mui/icons-material";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useCurriculumQuery, useUpdateCurriculum } from "../hooks/useCurriculum";
 import { useAgeCategories } from "../hooks/useCompetencies";
 import { useSystemLevels } from "../../settings/system-levels/hooks/useSystemLevels";
@@ -200,11 +200,6 @@ function derivePeriodNames(cycleModel, customNames) {
 export default function CurriculumStructurePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  // Carries the "authoring an Event" intent from CreateCurriculumPage's ?isEvent=1 through to
-  // here, where the flag is actually persisted — pre-checks the box below so the admin doesn't
-  // have to re-declare intent they already stated when they clicked "+ New Event".
-  const presetIsEvent = searchParams.get("isEvent") === "1";
   const { data: curriculum, isLoading, isError } = useCurriculumQuery(id);
   const { mutate: updateCurriculum, isPending } = useUpdateCurriculum();
   const { data: systemLevels = [] } = useSystemLevels();
@@ -212,7 +207,6 @@ export default function CurriculumStructurePage() {
 
   /* Settings */
   const [curriculumType, setCurriculumType] = useState("");
-  const [isEvent,      setIsEvent]      = useState(presetIsEvent);
   const [cycleModel,   setCycleModel]   = useState("terms");
 
   /* Custom cycle */
@@ -234,7 +228,6 @@ export default function CurriculumStructurePage() {
     if (!curriculum) return;
 
     setCurriculumType(curriculum.curriculumType || "");
-    setIsEvent(!!curriculum.isEvent || presetIsEvent);
 
     const model = curriculum.academicCycleModel || "terms";
     setCycleModel(model);
@@ -354,15 +347,12 @@ export default function CurriculumStructurePage() {
     });
 
     updateCurriculum(
-      { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType: isEvent ? "" : curriculumType, isEvent } },
+      { id: curriculum.id, data: { academicCycleModel: cycleModel, periods, classes, curriculumType } },
       { onSuccess: () => navigate(destination) }
     );
   };
 
-  // Once flagged as an Event (on this step, live via the checkbox below), authoring exits
-  // back to the Events list instead of the Curriculum list — Events and Curricula are
-  // separate admin sections even though they share the same authoring wizard.
-  const exitPath = isEvent ? "/events" : "/curriculum";
+  const exitPath = "/curriculum";
 
   /* ── Loading ─────────────────────────────────────────────────────── */
   if (isLoading) {
@@ -395,7 +385,7 @@ export default function CurriculumStructurePage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
             <button type="button" onClick={() => navigate(exitPath)} style={{ background: "none", border: "none", color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer", padding: 0 }}>
-              ← {isEvent ? "Events" : "Curriculum"}
+              ← Curriculum
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#6B7280", maxWidth: "160px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curriculum.name}</span>
@@ -437,35 +427,22 @@ export default function CurriculumStructurePage() {
               Curriculum Framework
             </h4>
 
-            {/* Curriculum Type doesn't apply to Events — an event runs on its own fixed
-                start/end date (set when deployed to a hub), not a school's curriculum-stack
-                classification. It's the primary field here, so it comes first; the Event
-                toggle is a secondary, simple opt-in below it. */}
-            {!isEvent && (
-              <div>
-                <label style={fieldLabel}>
-                  Curriculum Type
-                </label>
-                <select
-                  value={curriculumType}
-                  onChange={(e) => setCurriculumType(e.target.value)}
-                  className="csp-select"
-                >
-                  <option value="">Select type…</option>
-                  {CURRICULUM_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <p style={hintMsg}>How this curriculum is categorised in the learning framework.</p>
-              </div>
-            )}
-
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: isEvent ? 0 : "18px", paddingTop: isEvent ? 0 : "16px", borderTop: isEvent ? "none" : "1px solid #F3F4F6", cursor: "pointer" }}>
-              <input type="checkbox" checked={isEvent} onChange={(e) => setIsEvent(e.target.checked)} style={{ cursor: "pointer", flexShrink: 0 }} />
-              <span style={{ fontSize: "13px", color: "#374151" }}>
-                This is an <strong>Event</strong> <span style={{ color: "#9CA3AF" }}>— a short-run cohort (e.g. a bootcamp), listed under Events instead</span>
-              </span>
-            </label>
+            <div>
+              <label style={fieldLabel}>
+                Curriculum Type
+              </label>
+              <select
+                value={curriculumType}
+                onChange={(e) => setCurriculumType(e.target.value)}
+                className="csp-select"
+              >
+                <option value="">Select type…</option>
+                {CURRICULUM_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <p style={hintMsg}>How this curriculum is categorised in the learning framework.</p>
+            </div>
           </div>
 
           {/* Cycle */}

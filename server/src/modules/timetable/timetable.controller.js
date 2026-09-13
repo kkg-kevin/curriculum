@@ -7,6 +7,8 @@ const SessionOccurrenceService = require("./session-occurrence.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const BootcampHubService = require("../bootcamps/bootcamp-hub.service");
+const CompetitionHubService = require("../competitions/competition-hub.service");
 const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
@@ -133,6 +135,19 @@ const setCourseSchedule = asyncHandler(async (req, res) => {
   await assertClassAccess(req, cls);
   const schedule = await TimetableService.setCourseSchedule(classId, courseId, startDate);
   res.json({ success: true, data: schedule });
+});
+
+// A class's bootcamp/competition run-window, when it belongs to one — same class-ownership
+// posture as every other class-scoped read here. Lets the school-portal timetable explain a
+// non-schedulable date the same way the server's own scheduling engine (getPeriodsForClass in
+// timetable.service.js) already bounds it, without exposing the admin-only /api/bootcamps or
+// /api/competitions routes to non-admin roles.
+const getClassDateWindow = asyncHandler(async (req, res) => {
+  const cls = await ClassModel.findById(req.params.classId);
+  await assertClassAccess(req, cls);
+  const window = (await BootcampHubService.getDateWindowForClass(req.params.classId))
+    || (await CompetitionHubService.getDateWindowForClass(req.params.classId));
+  res.json({ success: true, data: window });
 });
 
 const getClassCalendar = asyncHandler(async (req, res) => {
@@ -319,6 +334,7 @@ module.exports = {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
+  getClassDateWindow,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,

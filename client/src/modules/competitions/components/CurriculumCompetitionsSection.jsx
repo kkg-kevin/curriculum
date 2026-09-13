@@ -9,6 +9,12 @@ const STATUS_STYLE = {
 };
 const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
 
+function formatDateRange(c) {
+  if (!c.startDate) return "";
+  const fmt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return c.endDate ? `${fmt(c.startDate)} – ${fmt(c.endDate)}` : fmt(c.startDate);
+}
+
 function StatusPill({ status }) {
   const s = STATUS_STYLE[status] || STATUS_STYLE.draft;
   return (
@@ -19,22 +25,20 @@ function StatusPill({ status }) {
 }
 
 /**
- * The "Competitions" section shown inside an Event (on its curriculum view, and on a
- * deployment's view). Competitions are their own module server-side and on the public
- * website; on the admin side they're only reachable from inside an Event.
+ * The "Competitions" section shown on a curriculum's view page — every competition linked to
+ * this curriculum. Competitions are their own module server-side and on the public website; on
+ * the admin side they're only reachable from inside a Curriculum, or from the Programs list.
  *
- * `curriculumId` is the Event's `curricula.id` — it's both what a competition's `eventId`
- * links to AND the `:eventId` route segment for the nested competition pages.
- * `variant` tweaks the outer card to match the surrounding page ("plain" card on
- * EventViewPage, bordered like the other sections on CurriculumViewPage).
+ * `variant` tweaks the outer card to match the surrounding page ("plain" card standalone,
+ * "bordered" like the other sections on CurriculumViewPage).
  */
-export default function EventCompetitionsSection({ curriculumId, variant = "card" }) {
+export default function CurriculumCompetitionsSection({ curriculumId, variant = "card" }) {
   const navigate = useNavigate();
   const { data: competitions = [], isLoading, isError, error } = useCompetitionsQuery(
-    curriculumId ? { eventId: curriculumId } : undefined,
+    curriculumId ? { curriculumId } : undefined,
   );
 
-  const createPath = `/events/competitions/create?eventId=${curriculumId}`;
+  const createPath = `/events/competitions/create?curriculumId=${curriculumId}`;
   const viewPath = (id) => `/events/competitions/${id}/view`;
 
   const outerStyle =
@@ -86,7 +90,7 @@ export default function EventCompetitionsSection({ curriculumId, variant = "card
               <FiFlag size={17} strokeWidth={1.8} />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#374151" }}>No competitions in this event yet</p>
+              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#374151" }}>No competitions linked to this curriculum yet</p>
               <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#6B7280" }}>
                 Add one with{" "}
                 <button type="button" onClick={() => navigate(createPath)} disabled={!curriculumId} style={{ background: "none", border: "none", color: "#25476a", fontWeight: 600, cursor: curriculumId ? "pointer" : "not-allowed", fontSize: 12.5, fontFamily: "Inter, sans-serif", padding: 0 }}>+ New Competition</button>.
@@ -113,7 +117,7 @@ export default function EventCompetitionsSection({ curriculumId, variant = "card
                     <div style={{ minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</p>
                       <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>
-                        {[c.edition, c.format && FORMAT_LABEL[c.format], `${trackCount} ${trackCount === 1 ? "track" : "tracks"}`].filter(Boolean).join(" · ")}
+                        {[c.edition, c.format && FORMAT_LABEL[c.format], `${trackCount} ${trackCount === 1 ? "track" : "tracks"}`, formatDateRange(c)].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                   </div>

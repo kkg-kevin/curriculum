@@ -18,12 +18,11 @@ const CurriculumModel = {
   // ownerAdminId optional here for the same reason as learning-hub.model.js's findAll — some
   // callers (e.g. assertUniqueName's curriculum-wide name check) legitimately need every
   // curriculum regardless of tenant. Admin-facing list/detail controllers always pass it.
-  findAll({ framework, academicYear, ownerAdminId, isEvent } = {}) {
+  findAll({ framework, academicYear, ownerAdminId } = {}) {
     let query = db(TABLE);
     if (framework) query = query.where({ framework });
     if (academicYear) query = query.where({ academicYear });
     if (ownerAdminId) query = query.where({ ownerAdminId });
-    if (isEvent !== undefined) query = query.where({ isEvent });
     return query.orderBy("createdAt", "desc");
   },
 

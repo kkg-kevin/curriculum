@@ -62,9 +62,7 @@ import EditClassPage from "../modules/classes/pages/EditClassPage";
 import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
 import GradeStreamsPage from "../modules/classes/pages/GradeStreamsPage";
-import EventsListPage from "../modules/events/pages/EventsListPage";
-import CreateEventPage from "../modules/events/pages/CreateEventPage";
-import EventViewPage from "../modules/events/pages/EventViewPage";
+import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateCompetitionPage from "../modules/competitions/pages/CreateCompetitionPage";
 import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPage";
 import CreateBootcampPage from "../modules/bootcamps/pages/CreateBootcampPage";
@@ -114,13 +112,12 @@ export default function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="events">
-          <Route index element={<EventsListPage />} />
-          <Route path="create" element={<CreateEventPage />} />
-          <Route path=":id/view" element={<EventViewPage />} />
-          {/* Competitions and Bootcamps are their own standalone features but live under the
-              Events module on the admin side (no separate sidebar item). The /api/competitions
-              and /api/bootcamps routes and the public website are unchanged. Either can
-              optionally link to an Event via eventId. */}
+          <Route index element={<ProgramsListPage />} />
+          {/* Competitions and Bootcamps are their own standalone features that live under this
+              URL prefix on the admin side (no separate sidebar item — the "Programs" nav entry
+              points here). The /api/competitions and /api/bootcamps routes and the public
+              website are unchanged. Either can optionally link to a curriculum via
+              curriculumId, and can be run at one or more hubs via its own hub-offerings. */}
           <Route path="competitions/create" element={<CreateCompetitionPage />} />
           <Route path="competitions/:id/view" element={<CompetitionViewPage />} />
           <Route path="competitions/:id/edit" element={<CreateCompetitionPage />} />

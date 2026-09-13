@@ -4,7 +4,8 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LearningHubCurriculumLinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
 const ClassModel = require("../classes/class.model");
 const ClassService = require("../classes/class.service");
-const EventModel = require("../events/event.model");
+const BootcampModel = require("../bootcamps/bootcamp.model");
+const CompetitionModel = require("../competitions/competition.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
@@ -88,12 +89,7 @@ async function buildCurriculumMeta(curricula) {
       }
 
       let effectiveStatus;
-      if (curriculum.isEvent) {
-        // Events run on their own fixed startDate/endDate (set on the Event record when
-        // deployed to a hub), not an academic year cycle — so publishing only ever depends on
-        // the curriculum version, never on an academic year being set up at all.
-        effectiveStatus = cvPublishedIds.has(curriculum.id) ? "published" : (curriculum.status || "draft");
-      } else if (cvPublishedIds.has(curriculum.id) && ayPublishedIds.has(curriculum.id)) {
+      if (cvPublishedIds.has(curriculum.id) && ayPublishedIds.has(curriculum.id)) {
         effectiveStatus = "published";
       } else if (cvActiveIds.has(curriculum.id)) {
         effectiveStatus = "active";
@@ -129,10 +125,8 @@ async function enrichCurriculum(curriculum, meta) {
 // assertUniqueName, mirrored here). Case- and whitespace-insensitive so "STEM Curriculum" and
 // "stem curriculum " are still caught as the same name. `excludeId` skips the record being
 // renamed, so re-saving a curriculum without changing its name doesn't flag it against itself.
-// Covers event-curricula too — an Event is a `curricula` row with isEvent: true, authored
-// through this same createCurriculum flow, and a name shared between the two lists is just as
-// ambiguous. Scoped to ownerAdminId — two different admins' tenants are independent, so both may
-// freely name a curriculum "STEM Event"; only a clash within the SAME tenant is blocked.
+// Scoped to ownerAdminId — two different admins' tenants are independent, so both may freely
+// name a curriculum the same thing; only a clash within the SAME tenant is blocked.
 async function assertUniqueName(name, ownerAdminId, excludeId = null) {
   const curricula = await CurriculumModel.findAll({ ownerAdminId });
   const normalized = name.trim().toLowerCase();
@@ -241,28 +235,39 @@ const CurriculumService = {
     await IndicatorAchievementModel.deleteByCurriculumId(id);
     await LearningHubCurriculumLinkModel.deleteByCurriculumId(id);
     await LearningHubModel.clearCurriculumId(id);
-    // An Event deployed from this curriculum (see event.service.js's createEvent) has no
-    // life outside it either — unlike EventModel.delete's own deliberate choice to leave an
-    // event's Classes standing when just the Event record is removed (that's a real cohort's
-    // history surviving an admin un-deploying it), everything the deployed Classes depended on to
-    // function — this curriculum's course list, competency framework, versions — is being wiped
-    // right here, so leaving them behind would just orphan them with nothing left to resolve.
-    const events = await EventModel.findAll({ curriculumId: id });
-    for (const event of events) {
-      // A classId can already be gone (e.g. deleted individually from the Classes page earlier) —
-      // skip those rather than let ClassService.deleteClass's 404 abort the curriculum delete.
-      for (const classId of event.classIds || []) {
-        if (await ClassModel.findById(classId)) await ClassService.deleteClass(classId);
-      }
-      await EventModel.delete(event.id);
-    }
-    // An Event IS this `curricula` row (isEvent) — competitions and bootcamps link to it by
-    // this id. Detach them rather than orphan them with a dangling eventId; each has a life
-    // of its own (same posture as an event's classes surviving an un-deploy).
+    // Bootcamps/competitions linked to this curriculum have a life of their own (they're
+    // sellable listings) and survive — but everything their hub-offerings depended on to
+    // function (this curriculum's course list, competency framework, versions) is being wiped
+    // right here, so their hub-offerings and the Classes those created do not survive; leaving
+    // them behind would just orphan them with nothing left to resolve. Detach the listings
+    // themselves rather than orphan them with a dangling curriculumId.
     // Lazy require: competition/bootcamp.service → their own models, no cycle back to curriculum.
-    await require("../competitions/competition.service").unlinkEvent(id);
-    await require("../bootcamps/bootcamp.service").unlinkEvent(id);
+    const BootcampService = require("../bootcamps/bootcamp.service");
+    const BootcampHubService = require("../bootcamps/bootcamp-hub.service");
+    const CompetitionService = require("../competitions/competition.service");
+    const CompetitionHubService = require("../competitions/competition-hub.service");
+    for (const b of await BootcampModel.findAll({ curriculumId: id })) await BootcampHubService.deleteByBootcampId(b.id);
+    for (const c of await CompetitionModel.findAll({ curriculumId: id })) await CompetitionHubService.deleteByCompetitionId(c.id);
+    await CompetitionService.unlinkCurriculum(id);
+    await BootcampService.unlinkCurriculum(id);
     return { message: "Curriculum deleted successfully" };
+  },
+
+  // Which hubs currently run this curriculum via a bootcamp/competition hub-offering. Replaces
+  // the old EventModel.findAll({curriculumId}) lookup used by the school/teacher read-permission
+  // escape hatch in curriculum.controller.js / curriculum-versions.controller.js — same
+  // question (which hub(s) is this curriculum actually running at right now), answered through
+  // the offering join tables instead of the old `events` table.
+  async getHubIdsRunningCurriculum(curriculumId) {
+    const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
+    const CompetitionHubModel = require("../competitions/competition-hub.model");
+    const bootcamps = await BootcampModel.findAll({ curriculumId });
+    const competitions = await CompetitionModel.findAll({ curriculumId });
+    const offeringLists = await Promise.all([
+      ...bootcamps.map((b) => BootcampHubModel.findByBootcampId(b.id)),
+      ...competitions.map((c) => CompetitionHubModel.findByCompetitionId(c.id)),
+    ]);
+    return [...new Set(offeringLists.flat().map((o) => o.hubId))];
   },
 
   /* ── Courses (added to this curriculum from here — a course stays independent

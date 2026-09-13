@@ -3,14 +3,14 @@ import toast from "react-hot-toast";
 import { competitionApi } from "../services/competitionApi";
 
 export const COMPETITION_KEYS = {
-  all:     ["competitions"],
-  detail:  (id) => ["competitions", "detail", id],
-  byEvent: (eventId) => ["competitions", "byEvent", eventId],
+  all:          ["competitions"],
+  detail:       (id) => ["competitions", "detail", id],
+  byCurriculum: (curriculumId) => ["competitions", "byCurriculum", curriculumId],
 };
 
 export function useCompetitionsQuery(params) {
   return useQuery({
-    queryKey: params?.eventId ? COMPETITION_KEYS.byEvent(params.eventId) : COMPETITION_KEYS.all,
+    queryKey: params?.curriculumId ? COMPETITION_KEYS.byCurriculum(params.curriculumId) : COMPETITION_KEYS.all,
     queryFn: () => competitionApi.getAll(params),
   });
 }

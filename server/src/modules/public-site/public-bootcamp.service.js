@@ -1,20 +1,20 @@
 const BootcampModel = require("../bootcamps/bootcamp.model");
-const EventModel = require("../events/event.model");
+const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
-const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");
+const { requirePublicContentAdminId, htmlToText, resolveCoursePricing } = require("../../shared/utils/public-content");
 
 // The public marketing site's Bootcamps section (digifunzi-landing's /bootcamps) sells short,
 // intensive holiday/weekend programmes. A bootcamp is its own standalone `bootcamps` row
-// (authored via the Bootcamps module, optionally linked to an Event via eventId) flipped to
-// `saleStatus: "for_sale"`. Only the designated PUBLIC_CONTENT_ADMIN_ID's for-sale bootcamps
-// are ever served — same tenant-scoping posture as public pathways / projects / store (503 if
-// that env var is unset).
+// (authored via the Bootcamps module, optionally linked to a curriculum via curriculumId)
+// flipped to `saleStatus: "for_sale"`. Only the designated PUBLIC_CONTENT_ADMIN_ID's for-sale
+// bootcamps are ever served — same tenant-scoping posture as public pathways / projects / store
+// (503 if that env var is unset).
 //
 // The projection is hand-built from a small, safe field set. Internal fields (ownerAdminId,
-// eventId) are never exposed — a parent sees the marketing copy, the age range, the format,
-// the price and (on detail) the upcoming runs.
+// curriculumId) are never exposed — a parent sees the marketing copy, the age range, the
+// format, the price, the dates, and (on detail) the upcoming runs.
 
 // A bootcamp row has no slug column — computed at read time from `name`, same as
 // pathways / projects / store items / competitions.
@@ -62,11 +62,15 @@ function listItem(bootcamp) {
     coverImage: toAbsoluteMediaUrl(bootcamp.coverImage),
     price: priceOf(bootcamp),
     highlightCount: highlights.length,
+    startDate: bootcamp.startDate || null,
+    endDate: bootcamp.endDate || null,
+    registrationOpenDate: bootcamp.registrationOpenDate || null,
+    registrationCloseDate: bootcamp.registrationCloseDate || null,
   };
 }
 
-// Dates are plain "YYYY-MM-DD" strings throughout event.service.js and sort
-// lexicographically the same as chronologically, so a direct string comparison is safe.
+// Dates are plain "YYYY-MM-DD" strings throughout and sort lexicographically the same as
+// chronologically, so a direct string comparison is safe.
 function deploymentStatus(startDate, endDate) {
   const today = new Date().toISOString().slice(0, 10);
   if (today < String(startDate || "")) return "upcoming";
@@ -79,24 +83,27 @@ async function forSaleBootcamps() {
   return BootcampModel.findPublic(ownerAdminId);
 }
 
-// The still-relevant runs of a bootcamp — its linked Event's hub deployments that haven't
-// finished yet, soonest first, with the hub name resolved. Purely informational on the detail
-// page ("next run: Nairobi, 14–25 Apr"); a bootcamp with no linked Event (or no upcoming
-// deployment) still lists and sells — the "Enquire to book" lead is how a parent registers
-// interest in the next run.
-async function upcomingRuns(eventId) {
-  if (!eventId) return [];
-  const events = await EventModel.findAll({ curriculumId: eventId });
-  const live = events.filter((e) => deploymentStatus(e.startDate, e.endDate) !== "completed");
-  const hubs = await Promise.all(live.map((e) => LearningHubModel.findById(e.hubId)));
-  return live
-    .map((e, i) => ({
+// The still-relevant runs of a bootcamp — every hub it currently runs at, with the hub name
+// resolved. Purely informational on the detail page ("next run: Nairobi, 14–25 Apr"); a
+// bootcamp with no hub-offerings yet (or dates already past) still lists and sells — the
+// "Enquire to book" lead is how a parent registers interest in the next run. Dates are now
+// uniform across every hub (they live on the bootcamp itself, not per hub), so this only needs
+// the bootcamp record, not its curriculumId.
+async function upcomingRuns(bootcamp) {
+  if (!bootcamp?.startDate) return [];
+  const status = deploymentStatus(bootcamp.startDate, bootcamp.endDate);
+  if (status === "completed") return [];
+  const offerings = await BootcampHubModel.findByBootcampId(bootcamp.id);
+  const hubs = await Promise.all(offerings.map((o) => LearningHubModel.findById(o.hubId)));
+  return offerings
+    .map((o, i) => ({
       hubName: hubs[i]?.name || null,
-      startDate: e.startDate,
-      endDate: e.endDate,
-      status: deploymentStatus(e.startDate, e.endDate),
+      startDate: bootcamp.startDate,
+      endDate: bootcamp.endDate,
+      status,
     }))
-    .sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+    .filter((r) => r.hubName)
+    .sort((a, b) => String(a.hubName).localeCompare(String(b.hubName)));
 }
 
 const PublicBootcampService = {
@@ -120,7 +127,7 @@ const PublicBootcampService = {
 
   // GET /api/public/bootcamps/:idOrSlug — list item + the marketing detail: description
   // (rich-text HTML flattened to plain text), the "what you'll build" highlights, and the
-  // upcoming runs (only when a linked Event exists). Returns null (→ 404) for an unknown
+  // upcoming runs (only when the bootcamp has dates set). Returns null (→ 404) for an unknown
   // id/slug, a bootcamp owned by a different admin, or one that isn't for sale.
   async getBootcamp(idOrSlug) {
     const bootcamps = await forSaleBootcamps();
@@ -133,16 +140,19 @@ const PublicBootcampService = {
 
     let runs = [];
     try {
-      runs = await upcomingRuns(bootcamp.eventId);
+      runs = await upcomingRuns(bootcamp);
     } catch {
-      /* deployment lookup hiccup — the detail page still renders without the runs list */
+      /* offering lookup hiccup — the detail page still renders without the runs list */
     }
+
+    const coursePricing = await resolveCoursePricing(arr(bootcamp.coursePricing), bootcamp.curriculumId);
 
     return {
       ...listItem(bootcamp),
       description: htmlToText(bootcamp.description),
       highlights: arr(bootcamp.highlights),
       upcomingRuns: runs,
+      coursePricing,
     };
   },
 };

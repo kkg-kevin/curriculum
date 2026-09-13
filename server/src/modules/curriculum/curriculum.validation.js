@@ -67,10 +67,6 @@ const createCurriculumSchema = z.object({
   gradeTo: z.string().optional().default(""),
   framework: z.string().optional().default(""),
   curriculumType: z.string().optional().default(""),
-  // Separate from curriculumType (Core/Complementary/Substitutional — a school's curriculum-
-  // stack classification). This instead marks a short-run cohort curriculum (a bootcamp) that
-  // gets listed under Events instead of the main Curriculum list — see event.service.js.
-  isEvent: z.boolean().optional().default(false),
   academicCycleModel: z.string().optional().default("terms"),
   periods: z.array(periodSchema).optional().default([]),
   classes: z.array(classSchema).optional().default([]),
@@ -98,7 +94,6 @@ const updateCurriculumSchema = z.object({
   gradeTo: z.string().optional(),
   framework: z.string().optional(),
   curriculumType: z.string().optional(),
-  isEvent: z.boolean().optional(),
   academicCycleModel: z.string().optional(),
   periods: z.array(periodSchema).optional(),
   classes: z.array(classSchema).optional(),

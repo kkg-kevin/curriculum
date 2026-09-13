@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ImageUploadField from "../../../components/ImageUploadField";
+import CoursePricingField from "../../../components/CoursePricingField";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import {
@@ -33,7 +34,11 @@ const toFormValues = (b) => ({
   description: b?.description || "",
   tagline: b?.tagline || "",
   coverImage: b?.coverImage || null,
-  eventId: b?.eventId || null,
+  curriculumId: b?.curriculumId || null,
+  startDate: b?.startDate || "",
+  endDate: b?.endDate || "",
+  registrationOpenDate: b?.registrationOpenDate || "",
+  registrationCloseDate: b?.registrationCloseDate || "",
   saleStatus: b?.saleStatus || "internal",
   format: b?.format || null,
   durationLabel: b?.durationLabel || "",
@@ -43,14 +48,17 @@ const toFormValues = (b) => ({
   priceCurrency: b?.priceCurrency || "KES",
   priceNote: b?.priceNote || "",
   highlights: b?.highlights || [],
+  coursePricing: b?.coursePricing || [],
 });
 
 // The API rejects unknown/empty enum strings — send null, not "".
 const clean = (v) => {
   const out = { ...v };
   out.format = out.format || null;
-  out.eventId = out.eventId || null;
+  out.curriculumId = out.curriculumId || null;
   out.highlights = (out.highlights || []).map((h) => h.trim()).filter(Boolean);
+  // Without a curriculum there's nothing coursePricing's courseIds could validly belong to.
+  out.coursePricing = out.curriculumId ? out.coursePricing || [] : [];
   return out;
 };
 
@@ -98,15 +106,15 @@ export default function CreateBootcampPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const [searchParams] = useSearchParams();
-  // Optional: /events/bootcamps/create?eventId=<curriculumId> pre-selects the event
-  // (used by an Event view's "+ New Bootcamp").
-  const presetEventId = searchParams.get("eventId") || null;
+  // Optional: /events/bootcamps/create?curriculumId=<id> pre-selects the curriculum (used by a
+  // curriculum view's "+ New Bootcamp").
+  const presetCurriculumId = searchParams.get("curriculumId") || null;
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  // Event-curricula for the "Linked Event" dropdown — a bootcamp can belong to one or stand
-  // alone.
+  // Every curriculum, for the "Curriculum" dropdown — a bootcamp can link to any curriculum or
+  // stand alone.
   const { data: curriculaData } = useCurriculaQuery();
-  const events = (curriculaData?.data || []).filter((c) => c.isEvent);
+  const curricula = curriculaData?.data || [];
 
   const { data: existing, isLoading: loadingExisting } = useBootcampQuery(id);
   const { mutate: createBootcamp, isPending: creating } = useCreateBootcamp();
@@ -117,12 +125,13 @@ export default function CreateBootcampPage() {
     formState: { isDirty, errors },
   } = useForm({
     resolver: zodResolver(bootcampSchema),
-    defaultValues: { ...toFormValues(null), eventId: presetEventId },
+    defaultValues: { ...toFormValues(null), curriculumId: presetCurriculumId },
     mode: "onTouched",
     values: isEdit && existing ? toFormValues(existing) : undefined,
   });
 
   const isPending = creating || updating;
+  const selectedCurriculumId = useWatch({ control, name: "curriculumId" });
 
   const onSubmit = (raw) => {
     const data = clean(raw);
@@ -148,14 +157,14 @@ export default function CreateBootcampPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Events &amp; Competitions
+              ← Programs
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{isEdit ? "Edit bootcamp" : "New bootcamp"}</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>{isEdit ? "Edit Bootcamp" : "New Bootcamp"}</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>
-            A sellable listing for the public website. Optionally link it to an Event to show its real run dates.
+            Link it to a curriculum, set its dates, then run it at one or more hubs.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
@@ -210,12 +219,12 @@ export default function CreateBootcampPage() {
           <div style={S.card}>
             <h3 style={S.cardTitle}>Placement &amp; visibility</h3>
             <div style={S.field}>
-              <label style={S.label}>Linked Event</label>
-              <select {...register("eventId")} style={S.select}>
-                <option value="">Standalone — not linked to an event</option>
-                {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              <label style={S.label}>Curriculum</label>
+              <select {...register("curriculumId")} style={S.select}>
+                <option value="">Standalone — not linked to a curriculum</option>
+                {curricula.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <span style={S.hint}>Optional. Linking to an Event shows its real hub run dates on the public page.</span>
+              <span style={S.hint}>The curriculum whose cohorts and course structure this bootcamp runs. Required to run it at a hub.</span>
             </div>
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer" }}>
@@ -238,6 +247,35 @@ export default function CreateBootcampPage() {
                 </span>
               </span>
             </label>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Dates</h3>
+            <div style={S.row}>
+              <div style={S.field}>
+                <label style={S.label}>Start date</label>
+                <input type="date" {...register("startDate")} style={S.input} />
+                {errors.startDate && <span style={S.error}>{errors.startDate.message}</span>}
+              </div>
+              <div style={S.field}>
+                <label style={S.label}>End date</label>
+                <input type="date" {...register("endDate")} style={S.input} />
+                {errors.endDate && <span style={S.error}>{errors.endDate.message}</span>}
+              </div>
+            </div>
+            <div style={S.row}>
+              <div style={S.field}>
+                <label style={S.label}>Registration opens</label>
+                <input type="date" {...register("registrationOpenDate")} style={S.input} />
+                {errors.registrationOpenDate && <span style={S.error}>{errors.registrationOpenDate.message}</span>}
+              </div>
+              <div style={S.field}>
+                <label style={S.label}>Registration closes</label>
+                <input type="date" {...register("registrationCloseDate")} style={S.input} />
+                {errors.registrationCloseDate && <span style={S.error}>{errors.registrationCloseDate.message}</span>}
+              </div>
+            </div>
+            <span style={S.hint}>Start and end dates are required before this bootcamp can be run at a hub.</span>
           </div>
 
           <div style={S.card}>
@@ -279,6 +317,25 @@ export default function CreateBootcampPage() {
                 <input {...register("priceNote")} style={S.input} placeholder="e.g. Includes all materials" />
               </div>
             </div>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Course pricing</h3>
+            <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
+              Optionally price individual courses from this bootcamp&rsquo;s curriculum, grouped by pathway.
+            </p>
+            <Controller
+              control={control}
+              name="coursePricing"
+              render={({ field }) => (
+                <CoursePricingField
+                  curriculumId={selectedCurriculumId}
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  color={ACCENT}
+                />
+              )}
+            />
           </div>
 
           <div style={S.card}>

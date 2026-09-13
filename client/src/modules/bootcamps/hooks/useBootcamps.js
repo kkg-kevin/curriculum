@@ -3,14 +3,14 @@ import toast from "react-hot-toast";
 import { bootcampApi } from "../services/bootcampApi";
 
 export const BOOTCAMP_KEYS = {
-  all:     ["bootcamps"],
-  detail:  (id) => ["bootcamps", "detail", id],
-  byEvent: (eventId) => ["bootcamps", "byEvent", eventId],
+  all:          ["bootcamps"],
+  detail:       (id) => ["bootcamps", "detail", id],
+  byCurriculum: (curriculumId) => ["bootcamps", "byCurriculum", curriculumId],
 };
 
 export function useBootcampsQuery(params) {
   return useQuery({
-    queryKey: params?.eventId ? BOOTCAMP_KEYS.byEvent(params.eventId) : BOOTCAMP_KEYS.all,
+    queryKey: params?.curriculumId ? BOOTCAMP_KEYS.byCurriculum(params.curriculumId) : BOOTCAMP_KEYS.all,
     queryFn: () => bootcampApi.getAll(params),
   });
 }

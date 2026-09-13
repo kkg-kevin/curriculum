@@ -1,7 +1,7 @@
 const CompetitionModel = require("../competitions/competition.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
-const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");
+const { requirePublicContentAdminId, htmlToText, resolveCoursePricing } = require("../../shared/utils/public-content");
 
 // The public marketing site's Competitions section (digifunzi-landing's /competitions). A
 // competition is a row in the `competitions` table (an independent module — a sibling of
@@ -92,10 +92,13 @@ const PublicCompetitionService = {
     if (!c) c = pickForSlug(rows.filter((x) => computedSlug(x) === idOrSlug));
     if (!c) return null;
 
+    const coursePricing = await resolveCoursePricing(arr(c.coursePricing), c.curriculumId);
+
     return {
       ...listItem(c),
       description: htmlToText(c.description),
       tracks: arr(c.tracks).map(projectTrack),
+      coursePricing,
     };
   },
 };
