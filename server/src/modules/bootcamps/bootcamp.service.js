@@ -1,23 +1,24 @@
 const BootcampModel = require("./bootcamp.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
+const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 
-// A bootcamp can optionally belong to an Event. An Event IS a `curricula` row with
-// isEvent: true (see event.service.js) — so "resolve the event name" means resolve the
-// curriculum. Kept as a display-only enrichment, never stored, so it can't drift.
-async function resolveEventName(eventId) {
-  if (!eventId) return null;
-  const curriculum = await CurriculumModel.findById(eventId);
-  return curriculum?.isEvent ? curriculum.name : null;
+// A bootcamp links directly to a curriculum (any curriculum from the Curriculum module — no
+// special flag required) to inherit its pathway/course hierarchy. Kept as a display-only
+// enrichment, never stored, so it can't drift.
+async function resolveCurriculumName(curriculumId) {
+  if (!curriculumId) return null;
+  const curriculum = await CurriculumModel.findById(curriculumId);
+  return curriculum?.name || null;
 }
 
-// createRecord/updateRecord return the record with `highlights` as whatever was written — a
+// createRecord/updateRecord return the record with a JSON field as whatever was written — a
 // JSON string on create (it returns the stringified insert payload), a real array on a
 // re-read. Normalise to an array so the response shape is consistent either way.
-function highlightsArray(highlights) {
-  if (Array.isArray(highlights)) return highlights;
-  if (typeof highlights === "string") {
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
     try {
-      const parsed = JSON.parse(highlights);
+      const parsed = JSON.parse(value);
       return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
@@ -30,27 +31,51 @@ async function enrich(bootcamp) {
   if (!bootcamp) return bootcamp;
   return {
     ...bootcamp,
-    highlights: highlightsArray(bootcamp.highlights),
-    eventName: await resolveEventName(bootcamp.eventId),
+    highlights: asArray(bootcamp.highlights),
+    coursePricing: asArray(bootcamp.coursePricing),
+    curriculumName: await resolveCurriculumName(bootcamp.curriculumId),
   };
 }
 
-// A bootcamp's eventId, when set, must point at an Event (isEvent curriculum) the SAME admin
-// owns — a bootcamp can't be attached to another tenant's event. Mirrors
-// competition.service.js's assertEventOwnedBy.
-async function assertEventOwnedBy(eventId, ownerAdminId) {
-  if (!eventId) return;
-  const curriculum = await CurriculumModel.findById(eventId);
-  if (!curriculum || !curriculum.isEvent || curriculum.ownerAdminId !== ownerAdminId) {
-    const err = new Error("That event doesn't exist or belongs to a different admin");
+// A bootcamp's curriculumId, when set, must point at a curriculum the SAME admin owns — a
+// bootcamp can't be attached to another tenant's curriculum. Mirrors
+// competition.service.js's assertCurriculumOwnedBy.
+async function assertCurriculumOwnedBy(curriculumId, ownerAdminId) {
+  if (!curriculumId) return;
+  const curriculum = await CurriculumModel.findById(curriculumId);
+  if (!curriculum || curriculum.ownerAdminId !== ownerAdminId) {
+    const err = new Error("That curriculum doesn't exist or belongs to a different admin");
     err.statusCode = 400;
     throw err;
   }
 }
 
+// Every priced course must actually belong to the (effective) curriculum — a Zod string alone
+// can't confirm that, and without this check a bootcamp could carry a stale/foreign courseId
+// once its curriculum is unset or swapped. Mirrors competition.service.js's version.
+async function assertCoursePricingValid(coursePricing, curriculumId) {
+  if (!coursePricing || coursePricing.length === 0) return;
+  if (!curriculumId) {
+    const err = new Error("Course pricing requires a curriculum to be selected");
+    err.statusCode = 400;
+    throw err;
+  }
+  const links = await CourseCurriculumLinkModel.findByCurriculumId(curriculumId);
+  const validCourseIds = new Set(links.map((l) => l.courseId));
+  const unknown = coursePricing.find((cp) => !validCourseIds.has(cp.courseId));
+  if (unknown) {
+    const err = new Error("One or more priced courses don't belong to the selected curriculum");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
+const BootcampHubService = require("./bootcamp-hub.service");
+
 const BootcampService = {
   async createBootcamp(data) {
-    await assertEventOwnedBy(data.eventId, data.ownerAdminId);
+    await assertCurriculumOwnedBy(data.curriculumId, data.ownerAdminId);
+    await assertCoursePricingValid(data.coursePricing, data.curriculumId);
     const record = await BootcampModel.create(data);
     return enrich(record);
   },
@@ -77,13 +102,21 @@ const BootcampService = {
       err.statusCode = 404;
       throw err;
     }
-    // eventId may be absent from a partial patch — only re-check when it's actually changing.
-    if ("eventId" in data) await assertEventOwnedBy(data.eventId, ownerAdminId);
+    // curriculumId may be absent from a partial patch — only re-check when it's actually changing.
+    if ("curriculumId" in data) await assertCurriculumOwnedBy(data.curriculumId, ownerAdminId);
+    if ("coursePricing" in data) {
+      const effectiveCurriculumId = "curriculumId" in data ? data.curriculumId : existing.curriculumId;
+      await assertCoursePricingValid(data.coursePricing, effectiveCurriculumId);
+    }
     const record = await BootcampModel.update(id, data);
     return enrich(record);
   },
 
+  // Deleting a bootcamp must not orphan its hub-offerings (and the Classes those created) —
+  // same "clean up everything this record's own life depended on" posture as
+  // CurriculumService.deleteCurriculum's cascade.
   async deleteBootcamp(id) {
+    await BootcampHubService.deleteByBootcampId(id);
     const deleted = await BootcampModel.delete(id);
     if (!deleted) {
       const err = new Error("Bootcamp not found");
@@ -93,21 +126,21 @@ const BootcampService = {
     return { message: "Bootcamp deleted successfully" };
   },
 
-  // Every bootcamp linked to a given Event — feeds the Event view's "Bootcamps" section. An
-  // Event's id is its curriculum id.
-  async getByEvent(eventId) {
-    const records = await BootcampModel.findAll({ eventId });
+  // Every bootcamp linked to a given curriculum — feeds the curriculum view's "Bootcamps"
+  // section and CurriculumService.deleteCurriculum's cascade.
+  async getByCurriculum(curriculumId) {
+    const records = await BootcampModel.findAll({ curriculumId });
     return Promise.all(records.map(enrich));
   },
 
-  // Called from CurriculumService.deleteCurriculum when an Event is deleted — detach its
-  // bootcamps rather than orphan them with a dangling eventId. A bootcamp survives its event
-  // (unlike the event's classes), same "the record has a life of its own" posture as
-  // EventModel.delete leaving classes standing.
-  async unlinkEvent(eventId) {
-    if (!eventId) return;
-    const records = await BootcampModel.findAll({ eventId });
-    await Promise.all(records.map((b) => BootcampModel.update(b.id, { eventId: null })));
+  // Called from CurriculumService.deleteCurriculum when a curriculum is deleted — detach its
+  // bootcamps rather than orphan them with a dangling curriculumId. A bootcamp survives its
+  // curriculum (it's a sellable listing with a life of its own); only its hub-offerings and the
+  // Classes those created are cascade-deleted (see deleteBootcamp/BootcampHubService above).
+  async unlinkCurriculum(curriculumId) {
+    if (!curriculumId) return;
+    const records = await BootcampModel.findAll({ curriculumId });
+    await Promise.all(records.map((b) => BootcampModel.update(b.id, { curriculumId: null })));
   },
 };
 

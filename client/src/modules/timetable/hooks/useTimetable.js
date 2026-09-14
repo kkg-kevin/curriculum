@@ -24,6 +24,17 @@ export function useClassTimetable(classId) {
   });
 }
 
+// A class's bootcamp/competition run-window, when it belongs to one — mirrors
+// getPeriodsForClass in timetable.service.js: when present, it wins over the curriculum's
+// published Academic Year for scheduling purposes.
+export function useClassDateWindow(classId) {
+  return useQuery({
+    queryKey: ["timetable", "class-date-window", classId],
+    queryFn:  () => timetableApi.getClassDateWindow(classId),
+    enabled:  !!classId,
+  });
+}
+
 export function useMyTeacherTimetable() {
   return useQuery({
     queryKey: TIMETABLE_KEYS.mineTeacher(),

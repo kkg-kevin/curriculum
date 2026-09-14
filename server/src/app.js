@@ -27,7 +27,6 @@ const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const reportRoutes = require("./modules/reports/report.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
-const eventRoutes = require("./modules/events/event.routes");
 const competitionRoutes = require("./modules/competitions/competition.routes");
 const bootcampRoutes = require("./modules/bootcamps/bootcamp.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
@@ -37,8 +36,9 @@ const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
+const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
-const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
+const { protect: protectBase, authorize, blockIfSuspended, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 
 // Every authenticated route already mounts `protect`; pairing it here with `blockIfSuspended`
@@ -172,12 +172,11 @@ app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
 // teacher/school need this too, for their own profile-photo uploads (teacher-portal/
 // school-portal profile pages, and the admin-side Teacher/LearningHub forms).
 app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner"), uploadRoutes);
-app.use("/api/events", protect, attachOwnRecords, authorize("admin"), eventRoutes);
-// Competitions — an independent module (a sibling of curriculum/events), admin-only. A
-// competition can optionally link to an Event via eventId.
+// Competitions — an independent module (a sibling of curriculum), admin-only. A competition can
+// optionally link to a curriculum via curriculumId.
 app.use("/api/competitions", protect, attachOwnRecords, authorize("admin"), competitionRoutes);
-// Bootcamps — an independent module (a sibling of curriculum/events/competitions), admin-only.
-// A bootcamp can optionally link to an Event via eventId.
+// Bootcamps — an independent module (a sibling of curriculum/competitions), admin-only. A
+// bootcamp can optionally link to a curriculum via curriculumId.
 app.use("/api/bootcamps", protect, attachOwnRecords, authorize("admin"), bootcampRoutes);
 // Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
 // router, no attachOwnRecords/authorize needed.
@@ -189,7 +188,14 @@ app.use("/api/leads", protect, authorize("admin"), leadRoutes);
 // a different admin, by email. See reassign-owner.service.js's header comment for why this
 // exists — the 2026-09-07 tenant-isolation backfill had no per-row creator to recover ownership
 // from, so pre-existing Live data landed on one admin and needs manual redistribution.
-app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), reassignOwnerRoutes);
+//
+// blockIfCollaboratorRestricted is mounted here specifically (rather than tenant-wide) because
+// this is the one place authorize("admin") alone isn't enough: attachOwnRecords aliases a
+// collaborator's role to "admin" for non-DELETE requests (see its own comment), which would
+// otherwise let a collaborator reach reassign-owner and, worse, invite/revoke OTHER
+// collaborators on their inviting admin's behalf — both are real-admin-only tenant management,
+// not "content creation".
+app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, reassignOwnerRoutes, collaboratorRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -62,9 +62,7 @@ import EditClassPage from "../modules/classes/pages/EditClassPage";
 import CreateClassPage from "../modules/classes/pages/CreateClassPage";
 import ClassViewPage from "../modules/classes/pages/ClassViewPage";
 import GradeStreamsPage from "../modules/classes/pages/GradeStreamsPage";
-import EventsListPage from "../modules/events/pages/EventsListPage";
-import CreateEventPage from "../modules/events/pages/CreateEventPage";
-import EventViewPage from "../modules/events/pages/EventViewPage";
+import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateCompetitionPage from "../modules/competitions/pages/CreateCompetitionPage";
 import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPage";
 import CreateBootcampPage from "../modules/bootcamps/pages/CreateBootcampPage";
@@ -110,17 +108,21 @@ export default function AppRoutes() {
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
 
       <Route element={<ProtectedRoute />}>
-      <Route element={<RoleRoute allow={["admin"]} />}>
+      {/* A collaborator (see RoleRoute.jsx) shares this whole admin tree — creation/editing
+          across curricula, courses, assessments, hubs, bootcamps, competitions, settings — same
+          as the admin who invited them, scoped server-side to that admin's own tenant. Deletion
+          and collaborator management stay admin-only, enforced server-side and hidden in the UI
+          per-page (see e.g. SettingsPage's Collaborators panel). */}
+      <Route element={<RoleRoute allow={["admin", "collaborator"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="events">
-          <Route index element={<EventsListPage />} />
-          <Route path="create" element={<CreateEventPage />} />
-          <Route path=":id/view" element={<EventViewPage />} />
-          {/* Competitions and Bootcamps are their own standalone features but live under the
-              Events module on the admin side (no separate sidebar item). The /api/competitions
-              and /api/bootcamps routes and the public website are unchanged. Either can
-              optionally link to an Event via eventId. */}
+          <Route index element={<ProgramsListPage />} />
+          {/* Competitions and Bootcamps are their own standalone features that live under this
+              URL prefix on the admin side (no separate sidebar item — the "Programs" nav entry
+              points here). The /api/competitions and /api/bootcamps routes and the public
+              website are unchanged. Either can optionally link to a curriculum via
+              curriculumId, and can be run at one or more hubs via its own hub-offerings. */}
           <Route path="competitions/create" element={<CreateCompetitionPage />} />
           <Route path="competitions/:id/view" element={<CompetitionViewPage />} />
           <Route path="competitions/:id/edit" element={<CreateCompetitionPage />} />
@@ -165,7 +167,7 @@ export default function AppRoutes() {
           admin app (Schools, Educators, Learners, Settings, etc). Same MainLayout shell and
           the exact same "/curriculum/*" paths admin already uses — Sidebar.jsx filters the nav
           for this role, and the pages themselves don't need to know which role is viewing them. */}
-      <Route element={<RoleRoute allow={["admin", "curriculumAdmin"]} />}>
+      <Route element={<RoleRoute allow={["admin", "collaborator", "curriculumAdmin"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route path="curriculum">
           <Route index element={<CurriculumPage />} />
@@ -180,11 +182,11 @@ export default function AppRoutes() {
       </Route>
       </Route>
 
-      {/* Hub network management — admin only (a hub itself can be the parent of other "branch"
-          hubs now — see scope.middleware.js's req.ownSchools/req.ownSchool — but that admin
-          reaches it through the school-portal with a hub-switcher, not through this admin-only
+      {/* Hub network management — admin/collaborator (a hub itself can be the parent of other
+          "branch" hubs now — see scope.middleware.js's req.ownSchools/req.ownSchool — but that
+          admin reaches it through the school-portal with a hub-switcher, not through this
           tree). */}
-      <Route element={<RoleRoute allow={["admin"]} />}>
+      <Route element={<RoleRoute allow={["admin", "collaborator"]} />}>
       <Route path="/" element={<MainLayout />}>
         <Route path="learning-hubs">
           <Route index element={<LearningHubsPage />} />

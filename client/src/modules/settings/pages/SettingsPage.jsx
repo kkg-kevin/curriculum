@@ -7,6 +7,8 @@ import InventoryPanel from "../inventory/components/InventoryPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import AdminsPanel from "../admins/components/AdminsPanel";
+import CollaboratorsPanel from "../collaborators/components/CollaboratorsPanel";
+import { useAuth } from "../../../context/AuthContext";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 
@@ -247,7 +249,7 @@ const CSS = `
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
-const TABS = [
+const ALL_TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "pathways", label: "Pathways" },
   { key: "system-levels", label: "System Levels" },
@@ -255,9 +257,16 @@ const TABS = [
   { key: "items", label: "Items" },
   { key: "learning-hubs", label: "Learning Hubs" },
   { key: "admins", label: "Admins" },
+  { key: "collaborators", label: "Collaborators" },
 ];
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  // A collaborator (see scope.middleware.js's attachOwnRecords) gets full parity with admin on
+  // every other settings tab — those are content the invited admin lets them edit — but Admins
+  // and Collaborators are tenant management, refused server-side (blockIfCollaboratorRestricted)
+  // regardless of the role alias, so they're hidden here rather than shown and broken.
+  const TABS = user?.role === "collaborator" ? ALL_TABS.filter((t) => t.key !== "admins" && t.key !== "collaborators") : ALL_TABS;
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
@@ -302,6 +311,7 @@ export default function SettingsPage() {
         {activeTab === "items" && <ItemsPanel />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
         {activeTab === "admins" && <AdminsPanel />}
+        {activeTab === "collaborators" && <CollaboratorsPanel />}
       </div>
     </div>
   );

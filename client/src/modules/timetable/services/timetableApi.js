@@ -13,6 +13,11 @@ export const timetableApi = {
   getCourseSchedules: (classId) => api.get(`${BASE}/course-schedule`, { params: { classId } }).then((r) => r.data.data),
   setCourseSchedule:  (data)    => api.put(`${BASE}/course-schedule`, data).then((r) => r.data.data),
 
+  // A class's bootcamp/competition run-window ({startDate, endDate} | null) — lets the
+  // school-portal timetable explain non-schedulable dates without needing access to the
+  // admin-only /api/bootcamps or /api/competitions routes.
+  getClassDateWindow: (classId) => api.get(`${BASE}/classes/${classId}/date-window`).then((r) => r.data.data),
+
   // Full response body ({data: events, breaks, count}), not just r.data.data — callers need the
   // sibling `breaks` array (curriculum break windows overlapping the range) alongside events.
   getClassCalendar:      (classId, from, to) => api.get(`${BASE}/calendar`, { params: { classId, from, to } }).then((r) => r.data),

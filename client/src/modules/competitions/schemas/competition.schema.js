@@ -19,6 +19,12 @@ export const COMPETITION_CADENCES = [
 const url = z.string().url("Enter a valid URL").or(z.literal("")).default("");
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.literal("")).default("");
 
+const coursePriceSchema = z.object({
+  courseId:      z.string().min(1),
+  priceAmount:   z.coerce.number().int().min(0).max(10000000).nullable().default(null),
+  priceCurrency: z.string().trim().max(8).default("KES"),
+});
+
 const trackSchema = z.object({
   id:          z.string().optional(),
   name:        z.string().trim().min(1, "Track name is required").max(120),
@@ -37,17 +43,23 @@ export const competitionSchema = z
     format:      z.enum(["individual", "pairs", "team"]).nullable().default(null),
     level:       z.string().trim().max(120).default(""),
     cadence:     z.enum(["one_off", "annual", "termly"]).nullable().default(null),
-    startDate:   dateStr,
-    endDate:     dateStr,
+    startDate:             dateStr,
+    endDate:               dateStr,
+    registrationOpenDate:  dateStr,
+    registrationCloseDate: dateStr,
     coverImage:  z.string().nullable().default(null),
-    eventId:     z.string().nullable().default(null),
+    curriculumId: z.string().nullable().default(null),
     status:      z.enum(["draft", "open", "closed"]).default("draft"),
     isPublic:    z.boolean().default(false),
     tracks:      z.array(trackSchema).max(12).default([]),
+    coursePricing: z.array(coursePriceSchema).max(200).default([]),
   })
   .superRefine((d, ctx) => {
     if (d.startDate && d.endDate && d.endDate < d.startDate) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endDate"], message: "End date must be on or after the start date" });
+    }
+    if (d.registrationOpenDate && d.registrationCloseDate && d.registrationCloseDate < d.registrationOpenDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationCloseDate"], message: "Registration close date must be on or after the open date" });
     }
   });
 

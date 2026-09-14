@@ -15,7 +15,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Learners", path: "/learners", icon: FiUsers },
   { name: "Educators", path: "/teachers", icon: FiUserCheck },
   { name: "Classes", path: "/classes", icon: FiLayers },
-  { name: "Events", path: "/events", icon: FiAward },
+  { name: "Programs", path: "/events", icon: FiAward },
   { name: "Courses", path: "/courses", icon: FiBook },
   { name: "Enquiries", path: "/enquiries", icon: FiMail },
   { name: "Assessments", path: "/assessments", icon: FiClipboard },
@@ -31,8 +31,27 @@ const CURRICULUM_ADMIN_MENU_ITEMS = [
   { name: "Curriculum", path: "/curriculum", icon: FiBookOpen },
 ];
 
+// A collaborator (see scope.middleware.js's attachOwnRecords) gets edit access across everything
+// an admin can CREATE — curricula, courses, assessments, hubs, bootcamps/competitions, classes,
+// educators, learners, settings — scoped server-side to the admin who invited them. Billing and
+// Enquiries are deliberately left off: financial records and lead triage aren't "creation," and
+// the server doesn't alias a collaborator's role on those routes either (they'd 403 if reached).
+const COLLABORATOR_MENU_ITEMS = [
+  { name: "Dashboard", path: "/", icon: FiGrid },
+  { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome },
+  { name: "Curriculum", path: "/curriculum", icon: FiBookOpen },
+  { name: "Learners", path: "/learners", icon: FiUsers },
+  { name: "Educators", path: "/teachers", icon: FiUserCheck },
+  { name: "Classes", path: "/classes", icon: FiLayers },
+  { name: "Programs", path: "/events", icon: FiAward },
+  { name: "Courses", path: "/courses", icon: FiBook },
+  { name: "Assessments", path: "/assessments", icon: FiClipboard },
+  { name: "Settings", path: "/settings", icon: FiSettings },
+];
+
 const ROLE_MENU_ITEMS = {
   curriculumAdmin: CURRICULUM_ADMIN_MENU_ITEMS,
+  collaborator: COLLABORATOR_MENU_ITEMS,
 };
 
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {

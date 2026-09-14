@@ -448,10 +448,7 @@ export default function DashboardPage() {
   const { data: teachersData,  isLoading: teachersLoading }  = useAllTeachersQuery();
   const { data: classesData,   isLoading: classesLoading }   = useAllClassesQuery();
 
-  // Events are curricula under the hood (isEvent: true) but are a distinct admin section from
-  // regular Curriculum — the Dashboard's "Curriculum Overview" should only ever show real
-  // curricula, not events like "Robot Builders Holiday Bootcamp" or "sample program".
-  const curricula = (curriculaData?.data || []).filter((c) => !c.isEvent);
+  const curricula = curriculaData?.data || [];
   const schools   = schoolsData?.data   || [];
   const learners  = learnersData?.data  || [];
   const teachers  = teachersData?.data  || [];

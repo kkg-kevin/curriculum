@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { curriculumApi } from "../services/curriculumApi";
-import { EVENT_KEYS } from "../../events/hooks/useEvents";
+import { BOOTCAMP_KEYS } from "../../bootcamps/hooks/useBootcamps";
+import { COMPETITION_KEYS } from "../../competitions/hooks/useCompetitions";
 
 export const CURRICULUM_KEYS = {
   all: ["curricula"],
@@ -72,11 +73,12 @@ export function useUpdateCurriculum() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
       if (data?.id) queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.detail(data.id) });
-      // An Event is this same curriculum record under an isEvent flag — EventViewPage
-      // reads the curriculum's name/description through its own cached event query, which
-      // this edit doesn't otherwise touch. Without this, an Event view can keep showing
-      // pre-edit curriculum fields until its own cache happens to go stale.
-      queryClient.invalidateQueries({ queryKey: EVENT_KEYS.all });
+      // A bootcamp/competition linked to this curriculum shows its name (curriculumName) via
+      // its own cached query, which this edit doesn't otherwise touch. Without this, a linked
+      // bootcamp/competition view can keep showing the pre-edit curriculum name until its own
+      // cache happens to go stale.
+      queryClient.invalidateQueries({ queryKey: BOOTCAMP_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: COMPETITION_KEYS.all });
       toast.success("Curriculum updated successfully!");
     },
     onError: (err) => {

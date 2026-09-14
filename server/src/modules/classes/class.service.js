@@ -29,13 +29,21 @@ async function assertTagAvailable(tag, excludeId) {
 }
 
 // A grade's first class at a hub for a given year needs no stream label — it's the only one.
-// Any additional class in that same (schoolId, gradeId, academicYear) group must be told apart
-// with a streamName, and that name can't repeat another stream already in the group, so the
-// Classes grid never shows two identically-labeled cards for the same grade.
-async function assertStreamAvailable(schoolId, gradeId, academicYear, streamName, excludeId) {
+// Any additional class in that same (schoolId, curriculumId, gradeId, academicYear) group must be
+// told apart with a streamName, and that name can't repeat another stream already in the group, so
+// the Classes grid never shows two identically-labeled cards for the same grade. curriculumId is
+// part of the group key because a grade's `id` is free text authored per curriculum (see
+// curriculum.validation.js's classSchema) — two unrelated curricula (e.g. a hub's regular
+// curriculum and a Competition/Bootcamp's own curriculum) can easily mint the same gradeId, and
+// without curriculumId in the key that cross-curriculum coincidence would look like a duplicate.
+async function assertStreamAvailable(schoolId, curriculumId, gradeId, academicYear, streamName, excludeId) {
   const forSchool = await ClassModel.findAll({ schoolId });
   const group = forSchool.filter(
-    (c) => c.id !== excludeId && c.gradeId === gradeId && c.academicYear === academicYear
+    (c) =>
+      c.id !== excludeId &&
+      c.curriculumId === curriculumId &&
+      c.gradeId === gradeId &&
+      c.academicYear === academicYear
   );
   if (group.length === 0) return;
   const norm = (s) => (s || "").trim().toLowerCase();
@@ -74,7 +82,7 @@ async function resolveNextClass(cls) {
 const ClassService = {
   async createClass(data) {
     await assertTagAvailable(data.tag, null);
-    await assertStreamAvailable(data.schoolId, data.gradeId, data.academicYear, data.streamName, null);
+    await assertStreamAvailable(data.schoolId, data.curriculumId, data.gradeId, data.academicYear, data.streamName, null);
     return ClassModel.create(data);
   },
 
@@ -104,7 +112,7 @@ const ClassService = {
     if (data.tag !== undefined) await assertTagAvailable(data.tag, id);
     if (data.streamName !== undefined) {
       const existing = await ClassModel.findById(id);
-      if (existing) await assertStreamAvailable(existing.schoolId, existing.gradeId, existing.academicYear, data.streamName, id);
+      if (existing) await assertStreamAvailable(existing.schoolId, existing.curriculumId, existing.gradeId, existing.academicYear, data.streamName, id);
     }
     const record = await ClassModel.update(id, data);
     if (!record) {
@@ -135,7 +143,7 @@ const ClassService = {
     // there's never a same-grade collision within the batch itself — only against classes that
     // already exist from an earlier run.
     for (const item of items) {
-      await assertStreamAvailable(item.schoolId, item.gradeId, item.academicYear, item.streamName, null);
+      await assertStreamAvailable(item.schoolId, item.curriculumId, item.gradeId, item.academicYear, item.streamName, null);
     }
     return Promise.all(items.map((item) => ClassModel.create(item)));
   },

@@ -3,6 +3,7 @@ const {
   createSlot, listByClass, updateSlot, deleteSlot,
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
+  getClassDateWindow,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
@@ -25,6 +26,11 @@ router.put("/course-schedule", authorize("admin", "school"), setCourseSchedule);
 // declared availability) if picked for a given day/time — admin/school only, same posture as
 // slot authoring below, since only they ever pick a teacher in the slot form.
 router.get("/teachers/availability-conflicts", authorize("admin", "school"), getTeacherAvailabilityConflicts);
+
+// A class's bootcamp/competition run-window, when it belongs to one — lets the school-portal
+// timetable explain non-schedulable dates without needing access to the admin-only
+// /api/bootcamps or /api/competitions routes. Read-only, same role split as course-schedule above.
+router.get("/classes/:classId/date-window", authorize("admin", "school", "teacher"), getClassDateWindow);
 
 // Resolved calendar (real dates, Sessions placed onto them) — read-only, same role split as
 // their slot-list equivalents below.

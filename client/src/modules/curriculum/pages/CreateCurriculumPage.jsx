@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { Check as CheckIcon } from "@mui/icons-material";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateCurriculum } from "../hooks/useCurriculum";
@@ -87,11 +87,6 @@ const DEFAULT_VALUES = { name: "", code: "", description: "" };
 
 export default function CreateCurriculumPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  // "+ New Event" on the Events list links here with ?isEvent=1 so the wizard reads as
-  // Event authoring from step 1 — the isEvent flag itself is only actually set on the
-  // Structure step (step 3), this just steers the breadcrumb/exit until then.
-  const isEvent = searchParams.get("isEvent") === "1";
   const { mutate: createCurriculum, isPending } = useCreateCurriculum();
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -105,7 +100,7 @@ export default function CreateCurriculumPage() {
 
   const onSubmit = (data) => {
     createCurriculum(data, {
-      onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/competencies${isEvent ? "?isEvent=1" : ""}`),
+      onSuccess: (curriculum) => navigate(`/curriculum/${curriculum.id}/competencies`),
       // A duplicate name comes back as 409 — pin it to the name field so it shows inline
       // (red) right where the admin needs to fix it, on top of the hook's own toast.
       onError: (err) => {
@@ -116,7 +111,7 @@ export default function CreateCurriculumPage() {
     });
   };
 
-  const exitPath = isEvent ? "/events" : "/curriculum";
+  const exitPath = "/curriculum";
 
   const handleCancel = () => {
     if (isDirty) setConfirmLeave(true);
@@ -181,12 +176,12 @@ export default function CreateCurriculumPage() {
                 color: "#6B7280", fontSize: "13px", fontFamily: "Inter, sans-serif", cursor: "pointer",
               }}
             >
-              ← {isEvent ? "Events" : "Curriculum"}
+              ← Curriculum
             </button>
             <span style={{ color: "#D1D5DB", fontSize: "13px" }}>/</span>
             <span style={{ fontSize: "13px", color: "#111827", fontWeight: "500" }}>New</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>{isEvent ? "Create Event" : "Create Curriculum"}</h1>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#111827" }}>Create Curriculum</h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6B7280" }}>
             Enter basic details — you'll configure competencies and structure in the next steps.
           </p>

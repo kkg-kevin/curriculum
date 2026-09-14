@@ -31,7 +31,7 @@ async function protect(req, res, next) {
       return next(err);
     }
     const user = await AuthService.getById(payload.sub);
-    req.user = { id: user.id, role: user.role, email: user.email, username: user.username };
+    req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId };
     next();
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404) return next(err);
@@ -82,4 +82,22 @@ async function blockIfSuspended(req, res, next) {
   }
 }
 
-module.exports = { protect, authorize, blockIfSuspended };
+// A collaborator (see the 20260914090000 migration) gets the same tenant-wide edit access as the
+// admin who invited them — attachOwnRecords aliases req.user.role to "admin" (keeping the real
+// role at req.user.actualRole) for every request except DELETE, so every EXISTING admin-only
+// route/check downstream (authorize("admin"), every controller's `role === "admin"` ownership
+// branch, isOwnedByAdmin, ...) already treats a collaborator as that admin, with no per-route
+// editing needed. DELETE requests are deliberately left un-aliased (role stays "collaborator"),
+// so every one of those same admin-only checks already refuses them for free — a collaborator can
+// never delete anything. The one thing that alias would otherwise ALSO open up is admin-tools
+// (reassigning content ownership between admins, inviting/revoking collaborators) — genuine
+// tenant-management, not "content creation", and something only the real owning admin should
+// ever do. Mounted specifically on /api/admin-tools rather than tenant-wide.
+function blockIfCollaboratorRestricted(req, res, next) {
+  if (req.user.actualRole !== "collaborator") return next();
+  const err = new Error("Collaborators don't have access to admin tools.");
+  err.statusCode = 403;
+  return next(err);
+}
+
+module.exports = { protect, authorize, blockIfSuspended, blockIfCollaboratorRestricted };

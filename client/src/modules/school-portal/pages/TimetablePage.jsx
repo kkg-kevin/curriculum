@@ -6,10 +6,10 @@ import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAcademicYears } from "../../curriculum/hooks/useAcademicYear";
-import { useEventsByCurriculumQuery } from "../../events/hooks/useEvents";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
   useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar, useHubCalendar,
+  useClassDateWindow,
 } from "../../timetable/hooks/useTimetable";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
@@ -226,21 +226,21 @@ function DaySlotRow({ slot, teacherLabel, courseName, roomName, onEdit, onDelete
 // wrong to anchor on — the calendar engine already skips forward to the next valid schedulable
 // day on its own (see isDateSchedulable/resolveCoursePlacements in timetable.service.js) — this
 // is purely a clarity signal so the school isn't left wondering why Session 1 didn't land where
-// they expected, and points at exactly where to go to change it. isEvent picks the wording
-// (and where to fix it) since an Event's one window comes from its deployment dates, while every
-// other curriculum's terms/breaks come from its published Academic Year.
-function describeNonSchedulable(dateStr, periods, isEvent) {
+// they expected, and points at exactly where to go to change it. isOfferingWindow picks the
+// wording (and where to fix it) since a bootcamp/competition's one window comes from its own
+// dates, while every other curriculum's terms/breaks come from its published Academic Year.
+function describeNonSchedulable(dateStr, periods, isOfferingWindow) {
   if (!dateStr || !periods.length) return null;
   const covering = periods.find((p) => p.startDate && p.endDate && dateStr >= p.startDate && dateStr <= p.endDate);
   if (covering) {
     if (covering.breakStartDate && covering.breakEndDate && dateStr >= covering.breakStartDate && dateStr <= covering.breakEndDate) {
-      return `Falls inside ${covering.name || "a"} break (${fmtShort(covering.breakStartDate)} – ${fmtShort(covering.breakEndDate)}) — Session 1 will automatically land on the next open day after it. No action needed, unless the break dates themselves are wrong — fix those in ${isEvent ? "Events" : "Academic Year"}.`;
+      return `Falls inside ${covering.name || "a"} break (${fmtShort(covering.breakStartDate)} – ${fmtShort(covering.breakEndDate)}) — Session 1 will automatically land on the next open day after it. No action needed, unless the break dates themselves are wrong — fix those on the bootcamp/competition.`;
     }
     return null;
   }
-  if (isEvent) {
+  if (isOfferingWindow) {
     const { startDate, endDate } = periods[0];
-    return `Falls outside this event's run (${fmtShort(startDate)} – ${fmtShort(endDate)}) — pick a date in that range, or change the run's dates from Events.`;
+    return `Falls outside this programme's run (${fmtShort(startDate)} – ${fmtShort(endDate)}) — pick a date in that range, or change the dates on its bootcamp/competition.`;
   }
   return "Falls outside any configured term — pick a date covered by a published Academic Year term, or go to Academic Year to add/extend one.";
 }
@@ -248,12 +248,12 @@ function describeNonSchedulable(dateStr, periods, isEvent) {
 // A course's Sessions only start landing on the calendar once its start date is set — this row
 // is how a school anchors "Session 1 lines up with this date" for a course that already has
 // weekday slots configured above.
-function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isEvent = false }) {
+function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isOfferingWindow = false }) {
   const [value, setValue] = useState(startDate || "");
   const [applyToClassIds, setApplyToClassIds] = useState([]);
   useEffect(() => setValue(startDate || ""), [startDate]);
   const dirty = value !== (startDate || "");
-  const hint = describeNonSchedulable(value, periods, isEvent);
+  const hint = describeNonSchedulable(value, periods, isOfferingWindow);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -327,21 +327,17 @@ export default function TimetablePage() {
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
   const { data: selectedCurriculum } = useCurriculumQuery(selectedClass?.curriculumId);
 
-  // An Event curriculum has no dated periods of its own (Academic Year setup is hidden for
-  // it — see CurriculumViewPage) — it runs on the fixed startDate/endDate of its Event
-  // deployment instead. Every other curriculum's real term/break dates live on whichever Academic
-  // Year version is currently published for it — curriculum.periods itself only ever holds period
-  // *names*, never dates (see getPeriodsForClass in timetable.service.js for the server-side
-  // mirror of both these sources — this must agree with it or the hint below would lie about what
-  // the server is actually going to schedule).
-  const isEvent = !!selectedCurriculum?.isEvent;
-  const { data: curriculumEvents = [] } = useEventsByCurriculumQuery(isEvent ? selectedClass?.curriculumId : undefined);
-  const { data: ayData } = useAcademicYears(!isEvent && selectedCurriculum ? selectedClass?.curriculumId : undefined);
-  const deployedEvent = isEvent
-    ? curriculumEvents.find((e) => (e.classes || []).some((c) => c.id === selectedClassId))
-    : null;
-  const periods = deployedEvent
-    ? [{ name: selectedCurriculum.name, startDate: deployedEvent.startDate, endDate: deployedEvent.endDate, breakStartDate: "", breakEndDate: "" }]
+  // A class created by a bootcamp/competition hub-offering runs on that offering's parent
+  // dates, not an academic-year cycle — checked first, since those dates are the more specific
+  // signal (mirrors getPeriodsForClass in timetable.service.js: this must agree with it or the
+  // hint below would lie about what the server is actually going to schedule). Every other
+  // class's real term/break dates live on whichever Academic Year version is currently
+  // published for its curriculum — curriculum.periods itself only ever holds period *names*,
+  // never dates.
+  const { data: offeringWindow } = useClassDateWindow(selectedClassId);
+  const { data: ayData } = useAcademicYears(!offeringWindow && selectedCurriculum ? selectedClass?.curriculumId : undefined);
+  const periods = offeringWindow?.startDate && offeringWindow?.endDate
+    ? [{ name: selectedCurriculum?.name, startDate: offeringWindow.startDate, endDate: offeringWindow.endDate, breakStartDate: "", breakEndDate: "" }]
     : ayData?.publishedVersion?.periods || [];
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
@@ -600,7 +596,7 @@ export default function TimetablePage() {
                     isSaving={savingSchedule || savingScheduleBulk}
                     siblingClasses={siblingClasses}
                     periods={periods}
-                    isEvent={isEvent}
+                    isOfferingWindow={!!offeringWindow?.startDate}
                     onSave={(startDate, applyToClassIds) => handleSaveCourseSchedule(courseId, startDate, applyToClassIds)}
                   />
                 ))}

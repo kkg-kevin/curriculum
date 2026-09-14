@@ -102,6 +102,115 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (13 Sep 2026) — Event entity retired · Bootcamps/Competitions run at hubs directly · per-course pricing
+
+**This release is Dev-only so far** — these zips have not been built or verified for Live. Deploy
+to Dev first as usual; rebuild the Live-flavoured portal zip (`npm run build:live`) separately
+before touching Live.
+
+Six new migrations (auto-apply on Restart, **run in order — do not skip ahead**), one of them
+destructive. Backend + portal frontend + website all change.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260913100000_add_dates_to_bootcamps_and_competitions` | Adds `startDate`/`endDate`/`registrationOpenDate`/`registrationCloseDate` (nullable strings) to `bootcamps`; adds the two registration columns to `competitions` (it already had start/end) | unchanged — every existing row gets nulls |
+| `20260913101000_rename_event_link_to_curriculum` | Renames `bootcamps.eventId` / `competitions.eventId` → `curriculumId` (pure rename, no data change — the column always stored a `curricula.id`) | preserved |
+| `20260913102000_create_offering_hub_tables` | New `bootcamp_hubs` / `competition_hubs` tables — replace the old shared `events` table as the record of "which hubs run this, which Classes did that create" | n/a (new tables) |
+| `20260913103000_backfill_offering_hubs_from_events` | Copies every existing Event-hub deployment linked to a bootcamp/competition into the new tables | preserved; a deployment with no linked bootcamp/competition is logged as an "orphan" and not copied (its Classes are untouched, just no longer tracked by an offering row) |
+| `20260913104000_drop_events_and_is_event` | **Destructive.** Drops `curricula.isEvent` and the entire `events` table | ⚠️ see below |
+| `20260913110000_add_course_pricing_to_bootcamps_and_competitions` | Adds nullable `coursePricing` JSON column to both `bootcamps` and `competitions` | unchanged — every existing row gets null |
+
+⚠️ **`20260913104000` is destructive and not reversible in data, only in shape.** By the time it
+runs, every hub-deployment that had a linked bootcamp/competition has already been copied to
+`bootcamp_hubs`/`competition_hubs` by the migration before it — this one just removes the
+now-redundant `events` table and the `isEvent` flag. Its `down` recreates empty tables/columns,
+it does **not** restore data. Take a `mysqldump` backup before restarting Dev on this release,
+same posture as any schema-dropping migration. **Do not run this against Live** until the whole
+chain has been verified working on Dev first.
+
+### What changed
+
+1. **The Event entity is gone.** A Bootcamp or Competition no longer needs an Event curriculum to
+   run — each now has its own `curriculumId` (any curriculum, no `isEvent` flag required) and its
+   own dates, and "Run at a Hub" creates a `bootcamp_hubs`/`competition_hubs` row directly instead
+   of going through a shared Event deployment. `server/src/modules/events/` is deleted; the old
+   admin nav "Events" list is now folded into curriculum-scoped sections on the Bootcamp/
+   Competition view pages (`CurriculumBootcampsSection.jsx` / `CurriculumCompetitionsSection.jsx`,
+   replacing `EventBootcampsSection.jsx` / `EventCompetitionsSection.jsx`).
+2. **Per-course pricing.** Creating or editing a Bootcamp/Competition now shows a "Course pricing"
+   section once a curriculum is selected — pick courses from that curriculum's pathways and set a
+   price per course (`coursePricing: [{ courseId, priceAmount, priceCurrency }]`, validated
+   server-side against the curriculum's actually-linked courses). Shown grouped by pathway on the
+   admin view page, and on the public site as a numbered course roadmap per pathway (same visual
+   style as the existing Pathway roadmap), on both the Bootcamp and Competition detail pages.
+3. **Public API additions** — `GET /api/public/bootcamps/:idOrSlug` and
+   `GET /api/public/competitions/:idOrSlug` now also return a `coursePricing` array (grouped by
+   pathway, each course carrying its resolved name/description/cover image/age range/price). List
+   endpoints are unchanged.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — includes all six migrations above, the new `bootcamp-hub.*` /
+`competition-hub.*` modules, `shared/utils/hub-offering.utils.js`, the `coursePricing` validation/
+service changes in `bootcamp.*` and `competition.*`, and the `resolveCoursePricing` helper in
+`shared/utils/public-content.js`. `knexfile.js` at the app root as always. **No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-B3rGt8QX.js`** / CSS `index-CPRP9smp.css`.
+- Live build (`npm run build:live`): not yet built for this release — build it before deploying
+  to Live.
+- New: "Course pricing" section on the Bootcamp/Competition create and edit forms
+  (`CoursePricingField.jsx`) and view pages (`CoursePricingDisplay.jsx`); curriculum-scoped
+  Bootcamps/Competitions sections replacing the old Event-scoped ones; the Events admin pages are
+  gone.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+New `CoursePricingRoadmap.jsx` on `BootcampDetailPage.jsx` / `CompetitionDetailPage.jsx`.
+
+⚠️ **This build shipped SPA-only, not prerendered.** The build-time prerender step (headless
+Chrome, for search-engine snapshots) timed out repeatedly on `/competitions` in the environment
+this was built in — the API itself was reachable and healthy (`curl` against every
+`/api/public/*` endpoint returned `200`), but a page navigation consistently exceeded the
+prerender's 30s budget, most likely slow cover-image loads over that environment's network —
+not a code defect. Built with `npm run build:spa`
+instead (skips Puppeteer prerendering entirely) + a separately-run `generate-sitemap.js` (sitemap
+lists static routes only this pass — no per-slug pathway/project/store/bootcamp/competition detail
+URLs, since those are only discovered by scanning the prerendered output). **Every page is still
+fully functional for visitors** — client-side rendering, real data, nothing broken — this only
+affects the pre-baked HTML snapshot search engines see and the sitemap's detail-page coverage.
+**Recommended:** re-run `npm run deploy:build` (the full prerendered build) from a machine with a
+faster/more direct connection to `nodeapp.digifunzi.com`, then re-upload, to restore full
+prerendering + a complete sitemap.
+
+### Deploy order
+
+1. **Take a `mysqldump` backup** — this release includes a destructive migration (see above).
+2. **Backend** → the app root → **Run NPM Install** → **Restart**. Check the app log: all six
+   migrations should apply cleanly (or fewer, if some already ran). Confirm no `MigrationLocked`
+   or crash-loop before proceeding.
+3. **Portal** `assets.zip` + `index.html` from `Guide/dev/`.
+4. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root.
+5. **Verify:**
+   - `curl <api>/api/public/bootcamps/<some-slug>` → response includes a `coursePricing` field
+     (`[]` if that bootcamp has none priced).
+   - `curl <api>/api/public/competitions/<some-slug>` → same.
+   - Log in, open a Bootcamp or Competition's create/edit form, pick a curriculum with pathways
+     and courses → confirm the "Course pricing" section appears and lets you check a course + set
+     a price.
+   - Save it, open the view page → confirm the priced course shows under its pathway.
+   - Visit that bootcamp/competition's page on the public site → confirm the "Course pricing"
+     roadmap section renders with the same course/price/pathway grouping.
+   - Confirm **Deploy to Hub** (now "Run at a Hub") still succeeds for both a Bootcamp and a
+     Competition, independent of any Event.
+   - Confirm the admin nav has no leftover "Events" entry and nothing 404s where it used to point.
+
+---
+
 ## This release (11 Sep 2026, follow-on) — Program renamed to Event · Bootcamp becomes standalone
 
 Backend + portal frontend + website all change. **Two new migrations, auto-applied
@@ -1049,10 +1158,10 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files (this folder, `Guide/dev/`)
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 10 Sep 2026** — includes every migration through `20260910143000_create_competitions.js` (the five 10 Sep migrations apply automatically on Restart — see "This release (10 Sep 2026)" at the top). No new dependency. **Identical to `Guide/live/backend-deploy.zip`** — same code, only each cPanel Node app's `.env` differs. |
-| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder** (66 entries). **Rebuilt 10 Sep 2026** — `index-DpPz0DUj.js` / CSS `index-CPRP9smp.css`. Portal UI changed this release ("Programs & Competitions" page + Track editor, Program bootcamp-sale card, hub Delivery control). |
-| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-DpPz0DUj.js`**. |
-| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo — `github.com/kkg-kevin/curriculum-web`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com`. **Rebuilt 10 Sep 2026** — API-driven `/bootcamps` and `/competitions` (Track cards), the post-diagnostic Enroll hub-type wizard, virtual-hub "Online" chip. List pages pre-rendered; **`/bootcamps/:slug` and `/competitions/:slug` ship SPA-only** — those endpoints 404'd on the deployed backend at build time (they're in *this* release's `backend-deploy.zip`). **Deploy the backend first, then re-run `npm run deploy:build` in `digifunzi-landing` and re-upload** to pre-render them for SEO. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 13 Sep 2026** — includes every migration through `20260913110000_add_course_pricing_to_bootcamps_and_competitions.js` (six new migrations apply automatically on Restart — see "This release (13 Sep 2026)" at the top, one of them destructive). No new dependency. **Not yet copied to `Guide/live/backend-deploy.zip`** — this release is Dev-only so far; `Guide/live/*` still reflects the 11 Sep release until this one is confirmed on Dev and rolled to Live. |
+| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder** (66 entries). **Rebuilt 13 Sep 2026** — `index-B3rGt8QX.js` / CSS `index-CPRP9smp.css`. Portal UI changed this release (Course pricing on Bootcamp/Competition forms + view pages, curriculum-scoped Bootcamps/Competitions sections replacing the old Event-scoped ones). |
+| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-B3rGt8QX.js`**. |
+| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo, checked out at `./digifunzi-landing`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com`. **Rebuilt 13 Sep 2026** — the "Course pricing" roadmap section on Bootcamp/Competition detail pages. **Shipped SPA-only this pass** (`npm run build:spa`, not the full prerendered `deploy:build`) — the prerender step's headless-Chrome pass timed out repeatedly on `/competitions` in the build environment (API was reachable and healthy; likely slow cover-image loads over that network) — see "This release (13 Sep 2026)" above for detail. Every page still works fully client-side; only the pre-baked SEO snapshot and per-slug sitemap entries are missing this pass. **Recommended:** re-run `npm run deploy:build` from a machine with better connectivity to `nodeapp.digifunzi.com` and re-upload once convenient. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 

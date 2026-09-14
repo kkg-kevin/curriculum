@@ -1,7 +1,7 @@
-// One-off operational script: creates a sample Event curriculum owned by PUBLIC_CONTENT_ADMIN_ID
-// plus a Bootcamp linked to it, flipped `saleStatus: "for_sale"`, so it appears immediately on
-// the public marketing site's Bootcamps section (africa.digifunzi.com/bootcamps) with a price
-// and an "Enquire to book" button. See Guide/BOOTCAMP_SALE_SETUP.md and
+// One-off operational script: creates a sample curriculum owned by PUBLIC_CONTENT_ADMIN_ID plus
+// a Bootcamp linked to it, flipped `saleStatus: "for_sale"`, so it appears immediately on the
+// public marketing site's Bootcamps section (africa.digifunzi.com/bootcamps) with a price and an
+// "Enquire to book" button. See Guide/BOOTCAMP_SALE_SETUP.md and
 // Guide/WEBSITE_INTEGRATION_CONTRACT.md §3.1/§3.2.
 //
 // Safe to re-run — it skips creation if a curriculum with the same name already exists.
@@ -44,7 +44,7 @@ async function run() {
     .first();
   if (existingCurriculum || existingBootcamp) {
     console.log(`"${BOOTCAMP_NAME}" already exists — nothing to do.`);
-    if (existingCurriculum) console.log(`curriculum: ${existingCurriculum.id} (isEvent: ${existingCurriculum.isEvent})`);
+    if (existingCurriculum) console.log(`curriculum: ${existingCurriculum.id}`);
     if (existingBootcamp) console.log(`bootcamp: ${existingBootcamp.id} (saleStatus: ${existingBootcamp.saleStatus})`);
     process.exit(0);
   }
@@ -58,13 +58,12 @@ async function run() {
       "finish with a robot they built, coded and can drive around an obstacle course — with a " +
       "showcase for families on the last afternoon. No prior coding needed.",
     status: "active",
-    isEvent: true,
     academicCycleModel: "terms",
   });
 
   const bootcamp = await BootcampModel.create({
     ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID,
-    eventId: curriculum.id,
+    curriculumId: curriculum.id,
     name: BOOTCAMP_NAME,
     description: curriculum.description,
     tagline: "A full robot build, coded and driven, in one week",
@@ -85,20 +84,20 @@ async function run() {
     saleStatus: "for_sale",
   });
 
-  console.log("Created Event curriculum:", { id: curriculum.id, name: curriculum.name, isEvent: curriculum.isEvent });
+  console.log("Created curriculum:", { id: curriculum.id, name: curriculum.name });
   console.log("Created for-sale bootcamp:", {
     id: bootcamp.id,
     name: bootcamp.name,
-    eventId: bootcamp.eventId,
+    curriculumId: bootcamp.curriculumId,
     saleStatus: bootcamp.saleStatus,
     price: `${bootcamp.priceCurrency} ${bootcamp.priceAmount}`,
   });
 
   console.log(
     "\nIt's live now. Check GET /api/public/bootcamps, or open /bootcamps on the landing site.\n" +
-      "To edit it: Events > Bootcamps > \"" +
+      "To edit it: Programs > Bootcamps > \"" +
       BOOTCAMP_NAME +
-      "\". Deploy the linked Event to a hub to give it real run dates.",
+      "\". Set its dates and run it at a hub to give it real run dates.",
   );
   process.exit(0);
 }

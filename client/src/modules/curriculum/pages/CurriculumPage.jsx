@@ -118,9 +118,7 @@ export default function CurriculumPage() {
     return <Navigate to={`/curriculum/${myCurriculum.id}/view`} replace />;
   }
 
-  // Event-flagged curricula live under /events instead — see CurriculumStructurePage's
-  // "This is an Event" toggle.
-  const curricula  = (data?.data || []).filter((c) => !c.isEvent);
+  const curricula  = data?.data || [];
   const hasFilters = !!filters.framework || !!filters.academicYear;
 
   /* Aggregate stats */
