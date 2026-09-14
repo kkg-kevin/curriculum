@@ -8,6 +8,7 @@ import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import HubRevenueSection from "../../mentor-sessions/components/HubRevenueSection";
 
 const ACCENT = "#25476a";
 const TEAL = "#38aae1";
@@ -146,6 +147,18 @@ export default function LearningHubViewPage() {
   });
   const classes  = classesData?.data  || [];
   const learners = learnersData?.data || [];
+
+  // Mentor Sessions (non-school hubs only) needs the hub's own learners too, to populate the
+  // "log a session" picker — same GET /api/learners?schoolId= lookup as above (schoolId is just
+  // "which hub" regardless of hub type), just enabled for the opposite hub-type branch. Its own
+  // distinct query key (not shared with the school-only query above) even though the two are
+  // never both enabled for the same hub — keeps the two independent if that ever changes.
+  const { data: hubLearnersData } = useQuery({
+    queryKey: ["learners", "byHub", id],
+    queryFn:  () => learnerApi.getAll({ schoolId: id }),
+    enabled:  !!id && !isSchool,
+  });
+  const hubLearners = isSchool ? learners : (hubLearnersData?.data || []);
 
   // "Branches": other hubs whose parentHubId points at this one — its own admin login can
   // switch into and operate them (see useSchoolPortalScope.js). If this hub is itself a branch,
@@ -611,6 +624,15 @@ export default function LearningHubViewPage() {
         </>
         )}
       </div>
+
+      {/* Mentor session revenue — non-school hubs only (a school hub already bills its own
+          learners' guardians directly, see billing.service.js). See mentor-session.service.js's
+          header comment for why this is deliberately separate from Billing. */}
+      {!isSchool && (
+        <div style={{ marginTop: "16px" }}>
+          <HubRevenueSection hubId={id} teachers={teachers} learners={hubLearners} />
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={confirmDelete}
