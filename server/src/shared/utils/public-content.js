@@ -1,6 +1,10 @@
 const env = require("../../config/env");
 const CourseModel = require("../../modules/courses/course.model");
+const ModuleModel = require("../../modules/courses/module.model");
 const PathwayModel = require("../../modules/curriculum/competency-framework/pathway.model");
+const CurriculumModel = require("../../modules/curriculum/curriculum.model");
+const CurriculumCompetencyLinkModel = require("../../modules/curriculum/competency-framework/curriculum-competency-link.model");
+const CompetencyModel = require("../../modules/settings/competencies/competency.model");
 const { toAbsoluteMediaUrl } = require("./media-url");
 
 // The public marketing site (digifunzi-landing) reads ONE designated admin's content — the
@@ -37,13 +41,23 @@ function htmlToText(html) {
     .trim();
 }
 
-// Resolves a bootcamp/competition's `coursePricing` ([{ courseId, priceAmount, priceCurrency }])
-// into pathway-grouped, name-resolved sections for the public detail page — mirrors the admin
-// side's CoursePricingDisplay.jsx grouping so a visitor sees the same "priced courses under
-// their pathway" structure the admin set up. Each course carries the same fields
-// PathwayRoadmap.jsx already renders for a pathway's course sequence (coverImage, age range,
-// description) so the landing site can show priced courses as the identical numbered roadmap.
-// A course whose id no longer resolves (deleted since pricing was set) is silently dropped
+// Resolves a bootcamp/competition's `coursePricing`
+// ([{ courseId, priceAmount, priceCurrency, modulePricing }]) into pathway-grouped, name-resolved
+// sections for the public detail page — mirrors the admin side's CoursePricingDisplay.jsx
+// grouping so a visitor sees the same "priced courses under their pathway" structure the admin
+// set up. Each course carries the same fields PathwayRoadmap.jsx already renders for a pathway's
+// course sequence (coverImage, age range, description) so the landing site can show priced
+// courses as the identical numbered roadmap.
+//
+// `modulePricing` (the per-course "priced by module instead" addition — see
+// bootcamp.validation.js's coursePriceSchema) resolves to a `modules` array on that course's
+// entry: [{ id, name, priceAmount, priceCurrency }]. Modules have no description/coverImage/age
+// range of their own (course_modules only has name + order), so that's all there is to show.
+// When a course is priced by module, its own top-level priceAmount is null (see
+// assertCourseEntryPricingValid — the two are mutually exclusive), so the landing site knows to
+// render the module breakdown instead of one course-wide price.
+//
+// A course/module whose id no longer resolves (deleted since pricing was set) is silently dropped
 // rather than showing a broken row. Returns [] when there's nothing priced or no curriculum to
 // group against.
 async function resolveCoursePricing(coursePricing, curriculumId) {
@@ -55,10 +69,30 @@ async function resolveCoursePricing(coursePricing, curriculumId) {
   );
   const courseById = new Map(courses.filter(Boolean).map((c) => [c.id, c]));
 
+  // Only fetched for courses actually priced by module — most courses are priced as a whole and
+  // never need a module lookup at all.
+  const modulePricedCourseIds = [...priceByCourseId.values()]
+    .filter((p) => (p.modulePricing || []).length > 0)
+    .map((p) => p.courseId);
+  const moduleListsByCourse = await Promise.all(modulePricedCourseIds.map((id) => ModuleModel.findByCourseId(id)));
+  const modulesByCourseId = new Map(modulePricedCourseIds.map((id, i) => [id, moduleListsByCourse[i]]));
+
+  function pricedModules(courseId, modulePricing) {
+    const priceByModuleId = new Map(modulePricing.map((p) => [p.moduleId, p]));
+    const modules = modulesByCourseId.get(courseId) || [];
+    return modules
+      .filter((m) => priceByModuleId.has(m.id))
+      .map((m) => {
+        const price = priceByModuleId.get(m.id);
+        return { id: m.id, name: m.name, priceAmount: price.priceAmount ?? null, priceCurrency: price.priceCurrency || "KES" };
+      });
+  }
+
   function priced(courseId) {
     const course = courseById.get(courseId);
     const price = priceByCourseId.get(courseId);
     if (!course || !price) return null;
+    const modulePricing = price.modulePricing || [];
     return {
       courseId,
       name: course.name,
@@ -68,6 +102,7 @@ async function resolveCoursePricing(coursePricing, curriculumId) {
       ageMax: course.ageMax ?? null,
       priceAmount: price.priceAmount ?? null,
       priceCurrency: price.priceCurrency || "KES",
+      modules: modulePricing.length > 0 ? pricedModules(courseId, modulePricing) : [],
     };
   }
 
@@ -102,4 +137,36 @@ async function resolveCoursePricing(coursePricing, curriculumId) {
   return sections;
 }
 
-module.exports = { requirePublicContentAdminId, htmlToText, resolveCoursePricing };
+// Resolves a bootcamp/competition's curriculumId into a small public-safe summary: the
+// curriculum's own name/description plus the competencies it has adopted (see
+// curriculum-competency-link.model.js — a curriculum no longer authors competencies, it just
+// links to entries in the shared, tenant-wide catalog). Shown once per bootcamp/competition
+// page (every hub run shares the same curriculum), not per run.
+//
+// Deliberately calls the link/competency MODELS directly rather than going through
+// competency.service.js's getCurriculumCompetencies — that service file pulls in a long chain of
+// scoring-engine/versioning/learner-pathway dependencies meant for the admin-authoring surface,
+// none of which this read-only public projection needs.
+//
+// Field selection mirrors public-diagnostic.service.js's existing posture on exposing
+// competencies publicly (buildIndicatorMeta's comment: "plain display strings, not sensitive/
+// scoped data"): name/description are shown, `minimumThreshold` (curriculum-specific scoring
+// config, not marketing content) and indicator-level detail are left out.
+async function resolveCurriculumSummary(curriculumId) {
+  if (!curriculumId) return null;
+  const curriculum = await CurriculumModel.findById(curriculumId);
+  if (!curriculum) return null;
+
+  const links = await CurriculumCompetencyLinkModel.findByCurriculumId(curriculumId);
+  const competencies = await CompetencyModel.findByIds(links.map((l) => l.competencyId));
+
+  return {
+    name: curriculum.name,
+    description: htmlToText(curriculum.description),
+    competencies: competencies
+      .map((c) => ({ id: c.id, name: c.name, description: htmlToText(c.description) }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+module.exports = { requirePublicContentAdminId, htmlToText, resolveCoursePricing, resolveCurriculumSummary };

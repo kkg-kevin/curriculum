@@ -1,9 +1,15 @@
 import { useCurriculumCourses } from "../modules/curriculum/hooks/useCurriculum";
 import { usePathways } from "../modules/curriculum/hooks/useCompetencies";
+import { useModules } from "../modules/courses/hooks/useCourse";
 
 function formatCoursePrice(p) {
   if (p.priceAmount == null) return "Enquire for pricing";
   return `${p.priceCurrency || "KES"} ${Number(p.priceAmount).toLocaleString()}`;
+}
+
+function formatModulePrice(m) {
+  if (m.priceAmount == null) return "Enquire for pricing";
+  return `${m.priceCurrency || "KES"} ${Number(m.priceAmount).toLocaleString()}`;
 }
 
 // Read-only counterpart to CoursePricingField — renders the curriculum's pathways (and any
@@ -56,17 +62,44 @@ function PricedGroup({ title, accent, courseIds, courseById, priceById }) {
         </h4>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {courseIds.map((courseId) => {
-          const course = courseById[courseId];
-          const price = priceById[courseId];
-          return (
-            <div key={courseId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{course?.name || "Unknown course"}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>{formatCoursePrice(price)}</span>
-            </div>
-          );
-        })}
+        {courseIds.map((courseId) => (
+          <PricedCourseRow key={courseId} course={courseById[courseId]} price={priceById[courseId]} />
+        ))}
       </div>
+    </div>
+  );
+}
+
+// Priced by module instead of as a whole (see CoursePricingField.jsx's "price by module" toggle)
+// — the module breakdown only fetches once this course's own row is actually rendered.
+function PricedCourseRow({ course, price }) {
+  const byModule = (price?.modulePricing || []).length > 0;
+  const { data: modules } = useModules(byModule ? course?.id : null);
+  const moduleById = Object.fromEntries((modules || []).map((m) => [m.id, m]));
+
+  return (
+    <div style={{ border: "1px solid #E5E7EB", borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "8px 12px" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{course?.name || "Unknown course"}</span>
+        {!byModule && (
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>{formatCoursePrice(price)}</span>
+        )}
+        {byModule && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+            Priced by module
+          </span>
+        )}
+      </div>
+      {byModule && (
+        <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid #F3F4F6" }}>
+          {price.modulePricing.map((mp) => (
+            <div key={mp.moduleId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "6px 12px 6px 22px", backgroundColor: "#FAFBFC" }}>
+              <span style={{ fontSize: 12.5, color: "#374151" }}>{moduleById[mp.moduleId]?.name || "Unknown module"}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>{formatModulePrice(mp)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

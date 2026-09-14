@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,12 +6,13 @@ import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePricingField from "../../../components/CoursePricingField";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
+import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import {
   useBootcampQuery,
   useCreateBootcamp,
   useUpdateBootcamp,
 } from "../hooks/useBootcamps";
-import { bootcampSchema, BOOTCAMP_FORMATS } from "../schemas/bootcamp.schema";
+import { bootcampSchema, BOOTCAMP_FORMATS, BOOTCAMP_DESCRIPTION_MAX_WORDS, wordCount } from "../schemas/bootcamp.schema";
 
 const ACCENT = "#25476a";
 
@@ -46,9 +47,11 @@ const toFormValues = (b) => ({
   ageMax: b?.ageMax ?? null,
   priceAmount: b?.priceAmount ?? null,
   priceCurrency: b?.priceCurrency || "KES",
-  priceNote: b?.priceNote || "",
+  priceNotes: b?.priceNotes || [],
   highlights: b?.highlights || [],
   coursePricing: b?.coursePricing || [],
+  diagnosticAssessmentId: b?.diagnosticAssessmentId || null,
+  publicDiagnosticEnabled: !!b?.publicDiagnosticEnabled,
 });
 
 // The API rejects unknown/empty enum strings — send null, not "".
@@ -57,8 +60,13 @@ const clean = (v) => {
   out.format = out.format || null;
   out.curriculumId = out.curriculumId || null;
   out.highlights = (out.highlights || []).map((h) => h.trim()).filter(Boolean);
+  out.priceNotes = (out.priceNotes || []).map((n) => n.trim()).filter(Boolean);
   // Without a curriculum there's nothing coursePricing's courseIds could validly belong to.
   out.coursePricing = out.curriculumId ? out.coursePricing || [] : [];
+  out.diagnosticAssessmentId = out.diagnosticAssessmentId || null;
+  // Can only ever be true alongside an assessment — the checkbox is disabled without one (see
+  // the form below), but guard here too in case state gets out of sync.
+  out.publicDiagnosticEnabled = out.diagnosticAssessmentId ? out.publicDiagnosticEnabled : false;
   return out;
 };
 
@@ -98,6 +106,47 @@ function HighlightsInput({ value, onChange }) {
   );
 }
 
+// "Included in the package" list — same add/remove shape as HighlightsInput, but a stacked list
+// rather than wrapping pills, since these read as short sentences ("Certificate on completion"),
+// not single-word tags. Applies regardless of pricing mode (see the Pricing card below) since it
+// isn't part of either mode's own fields — still called priceNotes in the data model/API
+// (bootcamp.validation.js), just relabelled here and on the public site.
+function NotesInput({ value, onChange }) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v || (value || []).length >= 20) return;
+    onChange([...(value || []), v]);
+    setDraft("");
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {value.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {value.map((n, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB" }}>
+              <span style={{ flex: 1, fontSize: 13, color: "#374151" }}>{n}</span>
+              <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", display: "flex", padding: 0, fontSize: 15, lineHeight: 1, flexShrink: 0 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          style={{ ...S.input, flex: 1 }}
+          placeholder="e.g. Includes all materials"
+        />
+        <button type="button" onClick={add} style={{ padding: "9px 14px", borderRadius: 8, border: "1.5px solid #E5E7EB", backgroundColor: "#fff", color: "#25476a", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const backToBootcamp = (id) => `/events/bootcamps/${id}/view`;
 const backToList = "/events";
 
@@ -116,12 +165,18 @@ export default function CreateBootcampPage() {
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
 
+  // Teacher Observation assessments have no learner-facing "take" step (a teacher records them
+  // directly), so they can't be offered as a public diagnostic — mirrors CompetenciesPage.jsx's
+  // own filter exactly (the real enforcement is server-side, this is just the picker's hint).
+  const { data: assessmentsData } = useAssessmentsQuery();
+  const diagnosticAssessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
+
   const { data: existing, isLoading: loadingExisting } = useBootcampQuery(id);
   const { mutate: createBootcamp, isPending: creating } = useCreateBootcamp();
   const { mutate: updateBootcamp, isPending: updating } = useUpdateBootcamp();
 
   const {
-    register, handleSubmit, control,
+    register, handleSubmit, control, setValue,
     formState: { isDirty, errors },
   } = useForm({
     resolver: zodResolver(bootcampSchema),
@@ -132,6 +187,34 @@ export default function CreateBootcampPage() {
 
   const isPending = creating || updating;
   const selectedCurriculumId = useWatch({ control, name: "curriculumId" });
+  const descriptionWordCount = wordCount(useWatch({ control, name: "description" }));
+  const watchedDiagnosticAssessmentId = useWatch({ control, name: "diagnosticAssessmentId" });
+
+  // Price the whole bootcamp OR individual courses, never both (see
+  // bootcamp.service.js's assertPricingModeExclusive) — but which one is ACTIVE is a real choice
+  // the admin needs to be able to switch, both when creating and when editing an already-priced
+  // bootcamp. This can't be derived purely from "which field currently has a value" (that's what
+  // the earlier version did, and it meant an already-priced field was the one that got disabled —
+  // unreachable to clear it and switch modes). So it's its own piece of state: seeded from
+  // whichever mode the loaded bootcamp is actually using, then fully admin-controlled from then
+  // on. Switching modes clears the OTHER field's form value immediately, so the two can never
+  // both be submitted populated regardless of what the toggle shows.
+  const [pricingMode, setPricingMode] = useState("bootcamp");
+  useEffect(() => {
+    if (isEdit && existing) {
+      setPricingMode((existing.coursePricing || []).length > 0 ? "course" : "bootcamp");
+    }
+  }, [isEdit, existing]);
+
+  const switchPricingMode = (mode) => {
+    if (mode === pricingMode) return;
+    setPricingMode(mode);
+    if (mode === "bootcamp") {
+      setValue("coursePricing", [], { shouldDirty: true });
+    } else {
+      setValue("priceAmount", null, { shouldDirty: true });
+    }
+  };
 
   const onSubmit = (raw) => {
     const data = clean(raw);
@@ -201,6 +284,9 @@ export default function CreateBootcampPage() {
             <div style={S.field}>
               <label style={S.label}>Description</label>
               <textarea {...register("description")} style={S.textarea} placeholder="What learners build, who it's for…" />
+              <span style={{ ...S.hint, alignSelf: "flex-end", color: descriptionWordCount > BOOTCAMP_DESCRIPTION_MAX_WORDS ? "#DC2626" : "#9CA3AF" }}>
+                {descriptionWordCount} / {BOOTCAMP_DESCRIPTION_MAX_WORDS} words
+              </span>
               {errors.description && <span style={S.error}>{errors.description.message}</span>}
             </div>
 
@@ -279,7 +365,7 @@ export default function CreateBootcampPage() {
           </div>
 
           <div style={S.card}>
-            <h3 style={S.cardTitle}>Format, timing &amp; pricing</h3>
+            <h3 style={S.cardTitle}>Format &amp; timing</h3>
             <div style={S.row3}>
               <div style={S.field}>
                 <label style={S.label}>Format</label>
@@ -302,8 +388,46 @@ export default function CreateBootcampPage() {
                 {errors.ageMax && <span style={S.error}>{errors.ageMax.message}</span>}
               </div>
             </div>
+          </div>
 
-            <div style={S.row}>
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Pricing</h3>
+
+            {/* Mode toggle — which one is ACTIVE is deliberately its own explicit choice (see
+                pricingMode state above), not derived from which field happens to hold a value.
+                That's what makes switching modes on an already-priced bootcamp actually possible:
+                the inactive mode's field is fully cleared on switch, and the active one is always
+                editable, never the one left disabled-and-unreachable. */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => switchPricingMode("bootcamp")}
+                style={{
+                  flex: 1, padding: "9px 14px", borderRadius: 8, cursor: "pointer",
+                  fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif",
+                  border: `1.5px solid ${pricingMode === "bootcamp" ? ACCENT : "#E5E7EB"}`,
+                  backgroundColor: pricingMode === "bootcamp" ? "#EEF6FC" : "#fff",
+                  color: pricingMode === "bootcamp" ? ACCENT : "#6B7280",
+                }}
+              >
+                Price the whole bootcamp
+              </button>
+              <button
+                type="button"
+                onClick={() => switchPricingMode("course")}
+                style={{
+                  flex: 1, padding: "9px 14px", borderRadius: 8, cursor: "pointer",
+                  fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif",
+                  border: `1.5px solid ${pricingMode === "course" ? ACCENT : "#E5E7EB"}`,
+                  backgroundColor: pricingMode === "course" ? "#EEF6FC" : "#fff",
+                  color: pricingMode === "course" ? ACCENT : "#6B7280",
+                }}
+              >
+                Price by course
+              </button>
+            </div>
+
+            {pricingMode === "bootcamp" ? (
               <div style={S.field}>
                 <label style={S.label}>Price</label>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -311,31 +435,40 @@ export default function CreateBootcampPage() {
                   <input type="number" min="0" {...register("priceAmount")} style={{ ...S.input, flex: 1, minWidth: 0 }} placeholder="12000" aria-label="Amount" />
                 </div>
                 <span style={S.hint}>Leave blank to show &ldquo;Enquire for pricing&rdquo;</span>
+                {errors.priceAmount && <span style={S.error}>{errors.priceAmount.message}</span>}
               </div>
-              <div style={S.field}>
-                <label style={S.label}>Price note</label>
-                <input {...register("priceNote")} style={S.input} placeholder="e.g. Includes all materials" />
-              </div>
-            </div>
-          </div>
-
-          <div style={S.card}>
-            <h3 style={S.cardTitle}>Course pricing</h3>
-            <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
-              Optionally price individual courses from this bootcamp&rsquo;s curriculum, grouped by pathway.
-            </p>
-            <Controller
-              control={control}
-              name="coursePricing"
-              render={({ field }) => (
-                <CoursePricingField
-                  curriculumId={selectedCurriculumId}
-                  value={field.value || []}
-                  onChange={field.onChange}
-                  color={ACCENT}
+            ) : (
+              <div>
+                <p style={{ margin: "0 0 10px", fontSize: 12, color: "#6B7280" }}>
+                  Price individual courses from this bootcamp&rsquo;s curriculum, grouped by pathway.
+                </p>
+                {errors.coursePricing && <span style={S.error}>{errors.coursePricing.message}</span>}
+                <Controller
+                  control={control}
+                  name="coursePricing"
+                  render={({ field }) => (
+                    <CoursePricingField
+                      curriculumId={selectedCurriculumId}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      color={ACCENT}
+                    />
+                  )}
                 />
-              )}
-            />
+              </div>
+            )}
+
+            {/* Applies to whichever pricing mode is active above — e.g. "Certificate on
+                completion" reads the same whether the bootcamp has one price or is priced by
+                course, so it lives here once rather than being duplicated per mode. */}
+            <div style={S.field}>
+              <label style={S.label}>Included in the package <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
+              <Controller
+                control={control}
+                name="priceNotes"
+                render={({ field }) => <NotesInput value={field.value || []} onChange={field.onChange} />}
+              />
+            </div>
           </div>
 
           <div style={S.card}>
@@ -345,6 +478,59 @@ export default function CreateBootcampPage() {
               name="highlights"
               render={({ field }) => <HighlightsInput value={field.value || []} onChange={field.onChange} />}
             />
+          </div>
+
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Diagnostic test</h3>
+            <div style={S.field}>
+              <label style={S.label}>Diagnostic assessment <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
+              <p style={{ margin: "2px 0 8px", fontSize: 11, color: "#9CA3AF" }}>
+                Let anonymous website visitors take a short auto-graded quiz before enrolling in this bootcamp, and see an instant report. Requires the bootcamp&rsquo;s age range above to be fully set.
+              </p>
+              <Controller
+                control={control}
+                name="diagnosticAssessmentId"
+                render={({ field }) => (
+                  <select
+                    style={S.select}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const next = e.target.value || null;
+                      field.onChange(next);
+                      if (!next) setValue("publicDiagnosticEnabled", false, { shouldDirty: true });
+                    }}
+                  >
+                    <option value="">— None —</option>
+                    {diagnosticAssessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                )}
+              />
+            </div>
+
+            <label
+              style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: watchedDiagnosticAssessmentId ? "pointer" : "not-allowed", opacity: watchedDiagnosticAssessmentId ? 1 : 0.5 }}
+              title={watchedDiagnosticAssessmentId ? undefined : "Choose a diagnostic assessment first"}
+            >
+              <Controller
+                control={control}
+                name="publicDiagnosticEnabled"
+                render={({ field }) => (
+                  <input
+                    type="checkbox"
+                    checked={!!field.value}
+                    disabled={!watchedDiagnosticAssessmentId}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    style={{ marginTop: 2, width: 15, height: 15, flexShrink: 0 }}
+                  />
+                )}
+              />
+              <span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>Offer this diagnostic to anonymous visitors</span>
+                <span style={{ display: "block", fontSize: 11.5, color: "#9CA3AF", marginTop: 1 }}>
+                  Shows a &ldquo;Take the diagnostic&rdquo; option on this bootcamp&rsquo;s public page.
+                </span>
+              </span>
+            </label>
           </div>
         </form>
       </div>

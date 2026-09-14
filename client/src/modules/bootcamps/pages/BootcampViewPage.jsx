@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiAward, FiEdit2, FiExternalLink, FiPlus, FiX } from "react-icons/fi";
+import { FiAward, FiCalendar, FiClipboard, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiTag, FiUsers, FiX } from "react-icons/fi";
 import { useBootcampQuery, useDeleteBootcamp, useUpdateBootcamp } from "../hooks/useBootcamps";
 import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 
@@ -19,6 +20,21 @@ function DetailRow({ label, value, empty = "—" }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
       <span style={{ fontSize: 14, color: "#111827", fontWeight: 500, whiteSpace: "pre-wrap" }}>{value || empty}</span>
+    </div>
+  );
+}
+
+// Quick-scan facts in the hero — the things an admin glances at first (price, dates, age,
+// where it runs) surfaced above the fold instead of requiring a scroll into the Bootcamp Info
+// card to find them.
+function StatChip({ icon, label, value, dim = false }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, backgroundColor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.14)" }}>
+      <span style={{ color: dim ? "rgba(255,255,255,0.45)" : "#8fd4f8", display: "flex", flexShrink: 0 }}>{icon}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: dim ? "rgba(255,255,255,0.55)" : "#ffffff", whiteSpace: "nowrap" }}>{value}</span>
+      </div>
     </div>
   );
 }
@@ -145,6 +161,50 @@ function RunsAtHubsSection({ bootcamp }) {
   );
 }
 
+// At-a-glance diagnostic status — mirrors the Website card's "is this actually live" posture.
+// Three states: not configured, configured but not offered publicly, or live — plus a call-out
+// when the age range isn't complete (the one gate an admin might not realise is blocking it,
+// since bootcamp.service.js's assertPublicDiagnosticAllowed only checks the assessment itself,
+// not the age range — that check lives in the diagnostic resolution path instead).
+function DiagnosticStatusCard({ bootcamp, onEdit }) {
+  const { data: assessmentsData } = useAssessmentsQuery();
+  const assessments = assessmentsData?.data || [];
+  const assessment = assessments.find((a) => a.id === bootcamp.diagnosticAssessmentId);
+  const hasAgeRange = bootcamp.ageMin != null && bootcamp.ageMax != null;
+  const configured = !!bootcamp.diagnosticAssessmentId;
+  const live = configured && !!bootcamp.publicDiagnosticEnabled && hasAgeRange;
+
+  let statusText;
+  if (!configured) {
+    statusText = "No diagnostic assessment set for this bootcamp.";
+  } else if (!hasAgeRange) {
+    statusText = `${assessment?.name || "A diagnostic"} is picked, but the age range above must be set before visitors can take it.`;
+  } else if (!bootcamp.publicDiagnosticEnabled) {
+    statusText = `${assessment?.name || "A diagnostic"} is picked but not offered publicly yet.`;
+  } else {
+    statusText = `${assessment?.name || "The diagnostic"} is live for ages ${bootcamp.ageMin}–${bootcamp.ageMax}.`;
+  }
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FiClipboard size={14} color="#38aae1" />
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Diagnostic test</h3>
+      </div>
+      <div style={{ padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${live ? "#a8d5ee" : "#E5E7EB"}`, backgroundColor: live ? "#F0F7FF" : "#F9FAFB" }}>
+        <p style={{ margin: "0 0 10px", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{statusText}</p>
+        <button
+          type="button"
+          onClick={onEdit}
+          style={{ padding: "8px 18px", backgroundColor: configured ? "transparent" : "#25476a", color: configured ? "#25476a" : "#fff", border: configured ? "1.5px solid #25476a" : "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          {configured ? "Manage in Edit" : "Set up a diagnostic"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function BootcampViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -152,6 +212,9 @@ export default function BootcampViewPage() {
   const { mutate: deleteBootcamp } = useDeleteBootcamp();
   const { mutate: updateBootcamp, isPending: saving } = useUpdateBootcamp();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Shares its cache with RunsAtHubsSection's own call further down — just for the hero's "Runs
+  // at" stat chip, so it doesn't need the full section's picker/remove state.
+  const { data: offerings = [] } = useBootcampHubsQuery(id);
 
   const backToList = "/events";
   const editPath = `/events/bootcamps/${id}/edit`;
@@ -166,6 +229,11 @@ export default function BootcampViewPage() {
   const onSale = bootcamp.saleStatus === "for_sale";
   const highlights = bootcamp.highlights || [];
   const coursePricing = bootcamp.coursePricing || [];
+  // Whole-bootcamp price and per-course pricing are mutually exclusive (see
+  // bootcamp.service.js's assertPricingModeExclusive) — which one is active tells the reader
+  // whether "Enquire for pricing" on a course row means "not priced yet" or "this bootcamp isn't
+  // priced by course at all".
+  const pricedByCourse = coursePricing.length > 0;
 
   const toggleSale = () => {
     updateBootcamp({ id, data: { saleStatus: onSale ? "internal" : "for_sale" } });
@@ -183,7 +251,7 @@ export default function BootcampViewPage() {
 
       <div style={{ background: bootcamp.coverImage ? `linear-gradient(rgba(20,40,64,0.78), rgba(20,40,64,0.78)), center / cover no-repeat url(${bootcamp.coverImage})` : "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, position: "relative", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
               <FiAward size={28} strokeWidth={1.8} />
@@ -191,7 +259,7 @@ export default function BootcampViewPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{bootcamp.name}</h1>
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>
-                {[FORMAT_LABEL[bootcamp.format], formatPrice(bootcamp), bootcamp.curriculumName].filter(Boolean).join(" · ")}
+                {[FORMAT_LABEL[bootcamp.format], pricedByCourse ? "Priced by course" : formatPrice(bootcamp), bootcamp.curriculumName].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
@@ -212,11 +280,27 @@ export default function BootcampViewPage() {
             </button>
           </div>
         </div>
+
+        {/* Quick-scan facts — the things an admin looks for first, surfaced here instead of
+            requiring a scroll into the Bootcamp Info card below to find them. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20, position: "relative" }}>
+          <StatChip icon={<FiTag size={13} />} label="Price" value={pricedByCourse ? "By course" : formatPrice(bootcamp)} />
+          <StatChip icon={<FiUsers size={13} />} label="Age range" value={formatAgeRange(bootcamp) || "Not set"} dim={!formatAgeRange(bootcamp)} />
+          <StatChip icon={<FiCalendar size={13} />} label="Dates" value={bootcamp.startDate ? `${formatDate(bootcamp.startDate)} – ${formatDate(bootcamp.endDate)}` : "Not set"} dim={!bootcamp.startDate} />
+          <StatChip
+            icon={<FiMapPin size={13} />}
+            label="Runs at"
+            value={offerings.length > 0 ? `${offerings.length} hub${offerings.length !== 1 ? "s" : ""}` : "No hubs yet"}
+            dim={offerings.length === 0}
+          />
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Bootcamp Info</h3>
+          {/* Price, age range and dates already show as stat chips in the header above — kept
+              out of here so the same facts aren't listed twice. */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DetailRow label="Description" value={bootcamp.description} />
             <DetailRow label="Tagline" value={bootcamp.tagline} />
@@ -224,47 +308,44 @@ export default function BootcampViewPage() {
               <DetailRow label="Format" value={FORMAT_LABEL[bootcamp.format]} />
               <DetailRow label="Duration" value={bootcamp.durationLabel} />
             </div>
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              <DetailRow label="Price" value={formatPrice(bootcamp)} />
-              <DetailRow label="Age range" value={formatAgeRange(bootcamp)} />
-            </div>
             <DetailRow label="Curriculum" value={bootcamp.curriculumName} empty="Standalone" />
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              <DetailRow label="Dates" value={bootcamp.startDate ? `${formatDate(bootcamp.startDate)} – ${formatDate(bootcamp.endDate)}` : ""} empty="Not set" />
-              <DetailRow label="Registration" value={bootcamp.registrationOpenDate ? `${formatDate(bootcamp.registrationOpenDate)} – ${formatDate(bootcamp.registrationCloseDate)}` : ""} empty="Not set" />
-            </div>
+            <DetailRow label="Registration" value={bootcamp.registrationOpenDate ? `${formatDate(bootcamp.registrationOpenDate)} – ${formatDate(bootcamp.registrationCloseDate)}` : ""} empty="Not set" />
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Website</h3>
-            {onSale && (
-              <a
-                href={`${PUBLIC_SITE_URL}/bootcamps/${bootcamp.id}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "none", backgroundColor: "#feb139", color: "#25476a", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Website</h3>
+              {onSale && (
+                <a
+                  href={`${PUBLIC_SITE_URL}/bootcamps/${bootcamp.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "none", backgroundColor: "#feb139", color: "#25476a", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap" }}
+                >
+                  <FiExternalLink size={12} /> View on Website
+                </a>
+              )}
+            </div>
+            <div style={{ padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${onSale ? "#a8d5ee" : "#E5E7EB"}`, backgroundColor: onSale ? "#F0F7FF" : "#F9FAFB" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
+                {onSale
+                  ? "This bootcamp is live on the website."
+                  : "Not published. Flip this on to feature it on the website."}
+              </p>
+              <button
+                type="button"
+                onClick={toggleSale}
+                disabled={saving}
+                style={{ padding: "8px 18px", backgroundColor: onSale ? "transparent" : "#25476a", color: onSale ? "#25476a" : "#fff", border: onSale ? "1.5px solid #25476a" : "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
               >
-                <FiExternalLink size={12} /> View on Website
-              </a>
-            )}
+                {onSale ? "Unpublish" : "Publish to website"}
+              </button>
+            </div>
           </div>
-          <div style={{ padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${onSale ? "#a8d5ee" : "#E5E7EB"}`, backgroundColor: onSale ? "#F0F7FF" : "#F9FAFB" }}>
-            <p style={{ margin: "0 0 10px", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
-              {onSale
-                ? "This bootcamp is live on the website."
-                : "Not published. Flip this on to feature it on the website."}
-            </p>
-            <button
-              type="button"
-              onClick={toggleSale}
-              disabled={saving}
-              style={{ padding: "8px 18px", backgroundColor: onSale ? "transparent" : "#25476a", color: onSale ? "#25476a" : "#fff", border: onSale ? "1.5px solid #25476a" : "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
-            >
-              {onSale ? "Unpublish" : "Publish to website"}
-            </button>
-          </div>
+
+          <DiagnosticStatusCard bootcamp={bootcamp} onEdit={() => navigate(editPath)} />
         </div>
       </div>
 
@@ -283,11 +364,16 @@ export default function BootcampViewPage() {
         )}
       </div>
 
-      {coursePricing.length > 0 && (
+      {pricedByCourse && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>
-          <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Course pricing</h3>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4, flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Course pricing</h3>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              This bootcamp is priced per course, not as a whole
+            </span>
+          </div>
           <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6B7280" }}>
-            Priced courses from this bootcamp&rsquo;s curriculum, grouped by pathway.
+            Courses picked from this bootcamp&rsquo;s curriculum, grouped by pathway. &ldquo;Enquire for pricing&rdquo; means the course is included but no amount has been set yet.
           </p>
           <CoursePricingDisplay curriculumId={bootcamp.curriculumId} coursePricing={coursePricing} />
         </div>
