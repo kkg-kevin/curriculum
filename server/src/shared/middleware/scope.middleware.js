@@ -87,6 +87,34 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     req.ownCurriculum = curricula.find((c) => c.curriculumAdminId === id) || null;
   }
 
+  // A collaborator is invited into one admin's whole tenant (see the 20260914090000 migration's
+  // header comment) — req.ownerAdminId resolves to the INVITING admin's id, not the
+  // collaborator's own id, so every existing ownerAdminId-scoped read/write (isOwnedByAdmin, each
+  // module's local isOwn, service-level `.where({ownerAdminId})` filters) keeps working unchanged
+  // for a collaborator exactly as it does for the admin themself.
+  //
+  // req.user.role is then ALIASED to "admin" (the real role is kept at req.user.actualRole, which
+  // blockIfCollaboratorRestricted in auth.middleware.js and the client both read) for every
+  // method except DELETE, and outside the financial/admin-tooling surfaces a collaborator (scoped
+  // to "content a tenant admin can create" — curricula, courses, assessments, hubs, bootcamps,
+  // competitions, settings, ...) was never meant to reach: billing (invoices, customer records,
+  // payments) and platform-analytics. This is deliberately a single choke point rather than 80+
+  // individual edits across every controller's own `req.user.role === "admin"` ownership checks
+  // (isOwnHubForAdmin, isLinkedToOwnHub, adminOwnedHubIds, etc, none of which know about
+  // "collaborator" and would otherwise silently SKIP their ownership check for one, not deny it)
+  // — aliasing here means every one of those checks runs exactly as it does for a real admin,
+  // scoped to req.ownerAdminId same as above, with no risk of a missed call site leaking
+  // cross-tenant data. DELETE is deliberately left un-aliased too: role stays "collaborator", so
+  // every admin-only check downstream (authorize("admin") included) already refuses it for free —
+  // a collaborator can never delete anything, without needing a separate block per delete route.
+  if (role === "collaborator") {
+    req.ownerAdminId = req.user.invitedByAdminId || null;
+    req.user.actualRole = "collaborator";
+    const path = req.originalUrl.split("?")[0];
+    const isRestrictedSurface = path.startsWith("/api/billing") || path === "/api/admin-tools" || path.startsWith("/api/admin-tools/") || path === "/api/reports/platform-analytics";
+    if (req.method !== "DELETE" && !isRestrictedSurface) req.user.role = "admin";
+  }
+
   // Each admin is its own tenant — no DB lookup needed (unlike school/teacher/learner above),
   // the tenant id is just the admin's own user id. See learning_hubs/curricula/courses/
   // assessments' ownerAdminId column and withOwnerScope in model.utils.js for how this is
@@ -120,14 +148,17 @@ function isOwnHub(req, hubId) {
 }
 
 // True whenever `record` belongs to the caller's own admin tenant — a no-op (true) for every
-// role other than "admin", same posture as isOwnHub being a no-op (false) for roles it doesn't
-// apply to; the difference in default is deliberate: isOwnHub only ever gates the "school" role,
-// while this gates admin-role access to the four ownerAdminId-bearing tables (learning_hubs,
-// curricula, courses, assessments), and every other role's access to those tables is already
-// decided by other checks (isOwnHub, curriculum ownership, assertCourseAccess, etc) before this
-// would ever run — so this must not accidentally block them.
+// role other than "admin"/"collaborator", same posture as isOwnHub being a no-op (false) for
+// roles it doesn't apply to; the difference in default is deliberate: isOwnHub only ever gates
+// the "school" role, while this gates tenant access to the ownerAdminId-bearing tables (learning_
+// hubs, curricula, courses, assessments, competitions, bootcamps, settings, ...), and every other
+// role's access to those tables is already decided by other checks (isOwnHub, curriculum
+// ownership, assertCourseAccess, etc) before this would ever run — so this must not accidentally
+// block them. A collaborator's req.ownerAdminId is the INVITING admin's id (see attachOwnRecords),
+// so the same `record.ownerAdminId === req.ownerAdminId` comparison scopes them identically to
+// that admin, without a separate branch.
 function isOwnedByAdmin(req, record) {
-  if (req.user.role !== "admin") return true;
+  if (req.user.role !== "admin" && req.user.role !== "collaborator") return true;
   return record?.ownerAdminId === req.ownerAdminId;
 }
 

@@ -8,8 +8,10 @@ const UserModel = {
     return createRecord(db, TABLE, data);
   },
 
-  findAll() {
-    return db(TABLE).orderBy("createdAt", "desc");
+  findAll({ invitedByAdminId } = {}) {
+    let query = db(TABLE);
+    if (invitedByAdminId) query = query.where({ invitedByAdminId });
+    return query.orderBy("createdAt", "desc");
   },
 
   findById(id) {

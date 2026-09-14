@@ -36,8 +36,9 @@ const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
+const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
-const { protect: protectBase, authorize, blockIfSuspended } = require("./shared/middleware/auth.middleware");
+const { protect: protectBase, authorize, blockIfSuspended, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 
 // Every authenticated route already mounts `protect`; pairing it here with `blockIfSuspended`
@@ -187,7 +188,14 @@ app.use("/api/leads", protect, authorize("admin"), leadRoutes);
 // a different admin, by email. See reassign-owner.service.js's header comment for why this
 // exists — the 2026-09-07 tenant-isolation backfill had no per-row creator to recover ownership
 // from, so pre-existing Live data landed on one admin and needs manual redistribution.
-app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), reassignOwnerRoutes);
+//
+// blockIfCollaboratorRestricted is mounted here specifically (rather than tenant-wide) because
+// this is the one place authorize("admin") alone isn't enough: attachOwnRecords aliases a
+// collaborator's role to "admin" for non-DELETE requests (see its own comment), which would
+// otherwise let a collaborator reach reassign-owner and, worse, invite/revoke OTHER
+// collaborators on their inviting admin's behalf — both are real-admin-only tenant management,
+// not "content creation".
+app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, reassignOwnerRoutes, collaboratorRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
