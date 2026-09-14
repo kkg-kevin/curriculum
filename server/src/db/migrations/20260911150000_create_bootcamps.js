@@ -70,10 +70,16 @@ exports.up = async function up(knex) {
 
   // Carry over every existing for-sale event-curriculum as a real Bootcamp row, linked back to
   // its source curriculum so "upcoming runs" keeps working exactly as it does today. Only runs
-  // while curricula still carries the sale columns being read below (saleTagline etc.) — once
-  // the column-drop step further down has run, those columns are gone and the copy must have
+  // while curricula still carries EVERY sale column this block reads (saleStatus is checked
+  // explicitly because it's the column the query below filters on — checking a different
+  // column here previously let this block run against a DB where saleStatus had already been
+  // dropped but another sale column hadn't, producing "Unknown column 'saleStatus'"). Once the
+  // column-drop step further down has run, these columns are gone and the copy must have
   // already completed (it always runs first), so this becomes a no-op on any retry.
-  if (await knex.schema.hasColumn("curricula", "saleTagline")) {
+  const hasAllSaleColumns = await Promise.all(
+    ["saleStatus", "saleTagline", "saleFormat"].map((col) => knex.schema.hasColumn("curricula", col))
+  );
+  if (hasAllSaleColumns.every(Boolean)) {
     const rows = await knex("curricula").where({ isEvent: true, saleStatus: "for_sale" });
     for (const r of rows) {
       // eslint-disable-next-line no-await-in-loop
@@ -105,19 +111,23 @@ exports.up = async function up(knex) {
     }
   }
 
-  if (await knex.schema.hasColumn("curricula", "saleStatus")) {
+  // Checked independently per-column (not "does saleStatus exist") because a database can end
+  // up with only SOME of these 11 columns already dropped — e.g. a prior crash mid-ALTER, or a
+  // manual partial fix — and Knex's alterTable(t.dropColumn(...)) throws on the very first
+  // column in the list that's already gone, aborting the whole statement before it reaches the
+  // others. Dropping only the columns that still exist avoids that, and MySQL is fine collapsing
+  // an ALTER TABLE with zero DROP clauses into a no-op DDL statement.
+  const SALE_COLUMNS = [
+    "saleStatus", "coverImage", "priceAmount", "priceCurrency", "priceNote",
+    "saleTagline", "saleFormat", "durationLabel", "ageMin", "ageMax", "highlights",
+  ];
+  const saleColumnPresence = await Promise.all(
+    SALE_COLUMNS.map((col) => knex.schema.hasColumn("curricula", col))
+  );
+  const remainingSaleColumns = SALE_COLUMNS.filter((_, i) => saleColumnPresence[i]);
+  if (remainingSaleColumns.length) {
     await knex.schema.alterTable("curricula", (t) => {
-      t.dropColumn("saleStatus");
-      t.dropColumn("coverImage");
-      t.dropColumn("priceAmount");
-      t.dropColumn("priceCurrency");
-      t.dropColumn("priceNote");
-      t.dropColumn("saleTagline");
-      t.dropColumn("saleFormat");
-      t.dropColumn("durationLabel");
-      t.dropColumn("ageMin");
-      t.dropColumn("ageMax");
-      t.dropColumn("highlights");
+      for (const col of remainingSaleColumns) t.dropColumn(col);
     });
   }
 };
