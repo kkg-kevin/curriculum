@@ -13,10 +13,32 @@ export const BOOTCAMP_FORMATS = [
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.literal(""));
 
+// Mirrors server/src/modules/bootcamps/bootcamp.validation.js's BOOTCAMP_DESCRIPTION_MAX_WORDS —
+// word count (not the 3000-char cap below), so the public bootcamp page's "About this bootcamp"
+// copy stays skimmable. Exported so CreateBootcampPage.jsx's live word counter uses the same
+// number instead of a second hardcoded 150.
+export const BOOTCAMP_DESCRIPTION_MAX_WORDS = 150;
+
+export function wordCount(text) {
+  const trimmed = (text || "").trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+const modulePriceSchema = z.object({
+  moduleId:      z.string().min(1),
+  priceAmount:   z.coerce.number().int().min(0).max(10000000).nullable().default(null),
+  priceCurrency: z.string().trim().max(8).default("KES"),
+});
+
+// `modulePricing` is the per-course "price by module instead" addition — a course with more than
+// one module can be broken into individually-priced modules rather than one course-wide price.
+// Mutually exclusive with this same entry's own `priceAmount` (see the schema-level superRefine
+// below), mirroring the whole-bootcamp-vs-by-course either/or one level up.
 const coursePriceSchema = z.object({
   courseId:      z.string().min(1),
   priceAmount:   z.coerce.number().int().min(0).max(10000000).nullable().default(null),
   priceCurrency: z.string().trim().max(8).default("KES"),
+  modulePricing: z.array(modulePriceSchema).max(100).default([]),
 });
 
 export const bootcampSchema = z
@@ -37,9 +59,16 @@ export const bootcampSchema = z
     ageMax:        z.coerce.number().int().min(0).max(25).nullable().default(null),
     priceAmount:   z.coerce.number().int().min(0).max(10000000).nullable().default(null),
     priceCurrency: z.string().trim().max(8).default("KES"),
-    priceNote:     z.string().trim().max(300).default(""),
+    // Applies regardless of which pricing mode is active — see CreateBootcampPage.jsx.
+    priceNotes:    z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     highlights:    z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     coursePricing: z.array(coursePriceSchema).max(200).default([]),
+    // The public anonymous diagnostic (see public-bootcamp-diagnostic.service.js) — mirrors a
+    // pathway's own diagnosticAssessmentId/publicDiagnosticEnabled. Reuses ageMin/ageMax above
+    // rather than a second age range; whether publicDiagnosticEnabled can actually be true is
+    // enforced server-side (bootcamp.service.js's assertPublicDiagnosticAllowed), not here.
+    diagnosticAssessmentId:  z.string().nullable().default(null),
+    publicDiagnosticEnabled: z.coerce.boolean().default(false),
   })
   .superRefine((d, ctx) => {
     if (d.ageMin != null && d.ageMax != null && d.ageMax < d.ageMin) {
@@ -51,4 +80,30 @@ export const bootcampSchema = z
     if (d.registrationOpenDate && d.registrationCloseDate && d.registrationCloseDate < d.registrationOpenDate) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationCloseDate"], message: "Registration close date must be on or after the open date" });
     }
+    // Price the whole bootcamp OR individual courses, never both — mirrors
+    // bootcamp.service.js's assertPricingModeExclusive. Flagged on both fields so the error
+    // shows up next to whichever one the admin touches last.
+    if (d.priceAmount != null && (d.coursePricing || []).length > 0) {
+      const message = "Price the whole bootcamp or individual courses, not both — clear one before setting the other";
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["priceAmount"], message });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["coursePricing"], message });
+    }
+    if (wordCount(d.description) > BOOTCAMP_DESCRIPTION_MAX_WORDS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["description"],
+        message: `Keep the description to ${BOOTCAMP_DESCRIPTION_MAX_WORDS} words or fewer`,
+      });
+    }
+    // Each priced course is priced as a whole OR by its modules, never both — mirrors
+    // bootcamp.service.js's assertCourseEntryPricingValid.
+    (d.coursePricing || []).forEach((entry, i) => {
+      if (entry.priceAmount != null && (entry.modulePricing || []).length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["coursePricing", i, "priceAmount"],
+          message: "Price the whole course or its modules, not both — clear one before setting the other",
+        });
+      }
+    });
   });

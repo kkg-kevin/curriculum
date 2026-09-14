@@ -8,10 +8,10 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "bootcamps";
-// `highlights`/`coursePricing` are stored as JSON columns — mysql2 auto-parses them back on
-// read, but doesn't auto-serialize a raw JS array on write (see CLAUDE.md), so they go through
-// stringifyJsonFields.
-const JSON_FIELDS = ["highlights", "coursePricing"];
+// `highlights`/`coursePricing`/`priceNotes` are stored as JSON columns — mysql2 auto-parses them
+// back on read, but doesn't auto-serialize a raw JS array on write (see CLAUDE.md), so they go
+// through stringifyJsonFields.
+const JSON_FIELDS = ["highlights", "coursePricing", "priceNotes"];
 
 const BootcampModel = {
   create(data) {

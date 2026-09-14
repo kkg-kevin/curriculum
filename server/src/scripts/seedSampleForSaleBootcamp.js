@@ -72,7 +72,7 @@ async function run() {
     durationLabel: "1 week",
     priceAmount: 12000,
     priceCurrency: "KES",
-    priceNote: "Includes all materials and the end-of-week showcase. Sibling discount available.",
+    priceNotes: ["Includes all materials and the end-of-week showcase", "Sibling discount available"],
     ageMin: 9,
     ageMax: 14,
     highlights: [
