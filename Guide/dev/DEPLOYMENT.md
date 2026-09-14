@@ -102,6 +102,127 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (14 Sep 2026) — Bootcamp diagnostic tests · per-module pricing · Mentor Sessions · collaborator role
+
+**Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
+Live-flavoured portal zip (`npm run build:live`) and re-verify separately before touching Live.
+
+Five new migrations (auto-apply on Restart, none destructive). Backend + portal frontend + website
+all change.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260914090000_add_collaborator_role.js` | Adds the `collaborator` role (tenant-wide content-editing access, no delete/manage-collaborators) | unchanged |
+| `20260914110000_create_mentor_sessions.js` | New `mentor_sessions` table — logs a mentor-learner session at a non-school hub (mentor, learner, date, amount) | n/a (new table) |
+| `20260914120000_bootcamp_price_note_to_notes_array.js` | Converts `bootcamps.priceNote` (single string) to `priceNotes` (JSON array) | existing single note becomes a one-item array |
+| `20260914130000_add_public_diagnostic_to_bootcamps.js` | Adds `diagnosticAssessmentId` (fk, nullable) + `publicDiagnosticEnabled` (boolean, default false) to `bootcamps` | unchanged — every bootcamp starts with no diagnostic configured |
+| `20260914130100_create_public_bootcamp_diagnostic_attempts.js` | New `public_bootcamp_diagnostic_attempts` table — mirrors `public_diagnostic_attempts`, scoped to a bootcamp instead of a pathway | n/a (new table) |
+
+### What changed
+
+1. **Bootcamp public diagnostic test.** Same feature Pathways already had: an admin picks an
+   auto-gradable assessment + the bootcamp's own age range, toggles "Offer this diagnostic to
+   anonymous visitors," and a website visitor can take a short quiz and get an instant graded
+   report (with a permanent shareable link) before enquiring to book. New admin-side "Diagnostic
+   test" section on the Bootcamp create/edit form and a status card on the view page. New public
+   endpoints: `GET /api/public/bootcamp-diagnostics/:bootcampIdOrSlug[/availability]`,
+   `POST /api/public/bootcamp-diagnostics/:bootcampIdOrSlug/submit`,
+   `GET /api/public/bootcamp-diagnostics/attempts/:attemptId`. `GET /api/public/bootcamps/:idOrSlug`
+   now also returns a `diagnostic: { available, minAge, maxAge }` field.
+2. **Per-module pricing.** A priced course with more than one module can now be priced by module
+   instead of as a whole (`coursePricing[].modulePricing: [{ moduleId, priceAmount, priceCurrency }]`),
+   for courses where a parent might only want one module. Mutually exclusive with that same
+   course's own `priceAmount`, same either/or posture as the whole-bootcamp-vs-by-course choice one
+   level up. Shown on the admin view page's Course pricing section and the public site's
+   `CoursePricingRoadmap`.
+3. **Pricing mutual exclusivity, properly editable.** A bootcamp is priced either as a whole or by
+   course, never both — this already existed, but editing a bootcamp couldn't switch modes once one
+   was set (the priced field was disabled, not clearable). Fixed: pricing mode is now explicit,
+   admin-controlled state; switching clears the other field.
+4. **Mentor Sessions module** (non-school hubs only) — log a mentor-learner session (mentor,
+   learner, date, amount) and see it roll up into a hub's revenue total on its view page. Deliberately
+   separate from Billing, which already covers school hubs billing guardians directly.
+5. **Collaborator role.** An admin can invite an existing user (or a new one) as a collaborator with
+   edit access across everything the admin can create — curricula, courses, assessments, hubs,
+   bootcamps, competitions, settings — but not delete or manage other collaborators.
+6. **Bootcamp admin view page UI pass** — quick-scan stat chips (price/age/dates/hub count) in the
+   header, clearer "priced per course vs. priced as a whole" labeling, a module-pricing breakdown
+   that the course-pricing display was previously missing entirely.
+7. **Public bootcamp page polish** (accumulated small fixes) — "Enquire to book" no longer
+   duplicated, description word-capped (150 words) with a "Read more" toggle, richer "Running at"
+   hub cards (photo/address/contact) replacing the old flat "Upcoming runs" list, a `curriculum`
+   summary (name/description/competencies) on the detail response, polished start/end/registration
+   date badges on bootcamp listing cards, and the course-pricing roadmap's left accent-border stripe
+   removed from each card.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — includes all migrations above, the new `modules/mentor-sessions/*` and
+`modules/public-site/public-bootcamp-diagnostic.*`, the `assertPublicDiagnosticAllowed` /
+`assertCourseEntryPricingValid` guards in `bootcamp.service.js`, `resolveCoursePricing`'s
+module-pricing resolution and `resolveCurriculumSummary` in `shared/utils/public-content.js`, and
+the collaborator-role auth/scope middleware changes. `/api/mentor-sessions` and the new
+`/api/public/bootcamp-diagnostics/*` routes mounted in `app.js`. `knexfile.js` at the app root as
+always. **No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-D6E63sGg.js`** / CSS `index-CPRP9smp.css` (unchanged CSS
+  hash — no stylesheet changes this release).
+- Live build (`npm run build:live`): not yet built for this release — build it before deploying to
+  Live.
+- New: Bootcamp create/edit form's "Diagnostic test" section and module-pricing rows
+  (`CoursePricingField.jsx`); Bootcamp view page's stat-chip header, Diagnostic status card, and
+  module-pricing breakdown (`CoursePricingDisplay.jsx`); Learning Hub view page's Mentor Sessions /
+  Hub Revenue section; Settings → Collaborators management page.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- New `/bootcamps/:slug/diagnostic` + `/bootcamps/:slug/diagnostic/report/:attemptId` routes
+  (`BootcampDiagnosticPage.jsx` / `BootcampDiagnosticReportPage.jsx`), mirroring the existing
+  Pathway diagnostic flow. `DiagnosticReport.jsx` generalized to render either a pathway or
+  bootcamp attempt. New `BootcampNextStepsPanel.jsx` (enquire-to-book instead of a course
+  roadmap CTA, since a bootcamp has no course sequence to place a learner into).
+- "Take the diagnostic" CTA added to `BootcampDetailPage.jsx`'s sidebar, gated on the detail
+  response's `diagnostic.available`.
+- `CoursePricingRoadmap.jsx` shows a per-module price breakdown when a course carries one; its
+  cards' left accent-border stripe removed.
+- **Built with a full prerender pass this time** (`npm run deploy:build`) — `nodeapp.digifunzi.com`
+  was reachable from the build environment on a retry (an earlier attempt in the same session hit
+  intermittent `fetch failed`/timeout errors against the same endpoint — transient, not a code
+  defect; a second run succeeded cleanly). 28/28 routes prerendered, sitemap includes all
+  pathway/project/store/bootcamp/competition detail URLs. One route
+  (`/bootcamps/digifunzi-junior-techies-bootcamp`) logged "`__APP_READY__` not reached in 15000ms —
+  snapshotting anyway" (likely a slow cover-image load) but still produced a working snapshot.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: five
+   migrations should apply cleanly (or fewer, if some already ran).
+2. **Portal** `assets.zip` + `index.html` from `Guide/dev/`.
+3. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root.
+4. **Verify:**
+   - `curl <api>/api/public/bootcamps/<some-slug>` → response includes a `diagnostic` field
+     (`{ available: false, minAge: null, maxAge: null }` if not configured).
+   - In the portal, open a Bootcamp's create/edit form → confirm the "Diagnostic test" section
+     appears, lets you pick an assessment and toggle public visibility (disabled until an
+     assessment is chosen).
+   - Save it with a diagnostic configured + a complete age range → open the view page → confirm the
+     "Diagnostic test" card shows it as live.
+   - Visit that bootcamp's page on the public site (with `saleStatus: for_sale`) → confirm "Take the
+     diagnostic" appears in the sidebar, the flow completes, and the report renders.
+   - Price a course by module on a Bootcamp's Course pricing section → save → confirm the view page
+     and public site both show the per-module breakdown.
+   - Open a non-school Learning Hub's view page → confirm the Mentor Sessions section appears and a
+     logged session updates the revenue total.
+   - Settings → Collaborators → invite a collaborator → confirm they can log in and edit content but
+     not delete or manage other collaborators.
+
+---
+
 ## This release (13 Sep 2026) — Event entity retired · Bootcamps/Competitions run at hubs directly · per-course pricing
 
 **This release is Dev-only so far** — these zips have not been built or verified for Live. Deploy
