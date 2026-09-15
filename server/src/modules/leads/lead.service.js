@@ -9,6 +9,7 @@ const AssessmentModel = require("../assessments/assessment.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -193,11 +194,19 @@ const LeadService = {
   async _resolveExpectedPayment(lead) {
     if (lead.source !== "enroll" || !lead.bootcampId || lead.paidAt) return null;
     const bootcamp = await BootcampModel.findById(lead.bootcampId);
-    if (!bootcamp || bootcamp.priceAmount == null) return null;
+    if (!bootcamp) return null;
+    // A bootcamp priced by course or by module (rather than one whole-bootcamp priceAmount) has
+    // no single number until this sums whichever mode is actually in use — enrollment always
+    // signs the learner up for the whole bootcamp, so a total is what's actually owed regardless
+    // of pricing mode. `mode`/`breakdown` let the admin see it's a summed price, not a flat one.
+    const price = resolveEffectiveBootcampPrice(bootcamp);
+    if (price.amount == null) return null;
     const hub = lead.hubId ? await LearningHubModel.findById(lead.hubId) : null;
     return {
-      amount: Number(bootcamp.priceAmount),
-      currency: bootcamp.priceCurrency || "KES",
+      amount: price.amount,
+      currency: price.currency,
+      mode: price.mode,
+      breakdown: price.breakdown,
       hubName: hub?.name || null,
     };
   },

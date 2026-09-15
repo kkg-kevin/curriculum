@@ -10,6 +10,7 @@ const BillingModel = require("../billing/billing.model");
 const NotificationService = require("../notifications/notification.service");
 const { resolveForSaleBootcamp } = require("../public-site/public-bootcamp.service");
 const { generateDigifunziEmail, generateTemporaryPassword } = require("../../shared/utils/credential-generator");
+const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { slugify } = require("../../shared/utils/slugify");
 
 // A visitor who takes a bootcamp diagnostic and wants to enroll no longer just sends a lead for
@@ -129,14 +130,20 @@ const BootcampEnrollmentService = {
     // needs to actually complete the (currently cash-only) payment, per the original "option to
     // pay depending on the set price" requirement. No payment happens here — this is purely
     // informational; the money changes hands in person and an admin records it via markLeadPaid.
+    // A bootcamp priced by course/module (not a single whole-bootcamp priceAmount) has no one
+    // number until resolveEffectiveBootcampPrice sums whichever mode is actually in use —
+    // enrollment always signs the learner up for the whole bootcamp, never one course, so a
+    // single total is what's actually owed regardless of pricing mode.
     const hub = await LearningHubModel.findById(offering.hubId);
+    const price = resolveEffectiveBootcampPrice(bootcamp);
     return {
       lead: { ...lead, learnerId: learner.id },
       learnerLoginEmail: loginEmail,
       learnerTempPassword: tempPassword,
       payment: {
-        amount: bootcamp.priceAmount != null ? Number(bootcamp.priceAmount) : null,
-        currency: bootcamp.priceCurrency || "KES",
+        amount: price.amount,
+        currency: price.currency,
+        mode: price.mode,
         hubName: hub?.name || null,
       },
     };

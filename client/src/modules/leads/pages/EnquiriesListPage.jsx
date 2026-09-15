@@ -211,6 +211,11 @@ function MarkPaidPanel({ lead, onDone }) {
       {expected && (
         <div style={{ fontSize: 11.5, color: "#166534", fontWeight: 700 }}>
           Expected: {formatMoney(expected.amount, expected.currency)}{expected.hubName ? ` at ${expected.hubName}` : ""} — pre-filled below, edit if a different amount was actually received.
+          {expected.mode === "by_course" && (
+            <span style={{ display: "block", fontWeight: 400, color: "#4B5563", marginTop: 2 }}>
+              This bootcamp is priced by course/module — the total above is the sum of {expected.breakdown?.length || 0} priced {expected.breakdown?.length === 1 ? "item" : "items"}, not one flat price.
+            </span>
+          )}
         </div>
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -294,6 +299,9 @@ function LeadRow({ lead, highlighted, rowRef }) {
                 {lead.expectedPayment
                   ? `${formatMoney(lead.expectedPayment.amount, lead.expectedPayment.currency)}${lead.expectedPayment.hubName ? ` at ${lead.expectedPayment.hubName}` : ""}`
                   : "payment"}
+                {lead.expectedPayment?.mode === "by_course" && (
+                  <span style={{ fontWeight: 400 }}> (summed from per-course/module pricing)</span>
+                )}
               </div>
             )
           )}
