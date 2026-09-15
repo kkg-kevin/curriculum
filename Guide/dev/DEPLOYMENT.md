@@ -102,6 +102,205 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Sep 2026, third follow-on) — "Pathway pricing" renamed to "Pathway courses"
+
+Website-only. **No backend or portal change — `backend-deploy.zip` and `assets.zip`/`index.html`
+are unchanged from the previous release.**
+
+### What changed
+
+The bootcamp detail page's course-pricing section heading reads "Pathway courses" instead of
+"Pathway pricing" (the previous follow-on's rename). Matching cross-references updated in the
+enrollment confirmation's "see the ... section" note and `CoursePricingRoadmap.jsx`'s doc comment.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- **Built with a full prerender pass** (`npm run deploy:build`) — the first `deploy:build` attempt
+  and one retry both failed partway through with a Puppeteer navigation timeout on `/competitions`
+  (the API itself was healthy throughout — `curl` against every `/api/public/*` endpoint returned
+  200 the whole time), same transient pattern earlier releases hit. A third prerender pass
+  succeeded cleanly: 29/29 routes, full sitemap.
+
+### Deploy order
+
+1. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root. (Backend/portal unchanged — no redeploy needed for those.)
+2. **Verify:** open any bootcamp with priced courses on the public site → confirm the section
+   heading reads "Pathway courses".
+
+---
+
+## This release (15 Sep 2026, second follow-on) — Pathway-scoped bootcamps · hub detail page · self-chosen enrollment login
+
+**Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
+Live-flavoured portal zip (`npm run build:live`) and re-verify separately before touching Live.
+
+One new migration (auto-applies on Restart, not destructive). Backend + portal frontend +
+website all change.
+
+### New migration
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260915090000_add_pathway_ids_to_bootcamps.js` | Adds nullable `pathwayIds` JSON column to `bootcamps` | unchanged — every existing bootcamp keeps showing every pathway under its curriculum, same as before this column existed |
+
+### What changed
+
+1. **Bootcamps can scope which pathways they run.** A curriculum can carry several pathways and
+   not every one is relevant to a given bootcamp (e.g. a robotics camp built on a curriculum that
+   also has an unrelated digital-literacy pathway). The bootcamp create/edit form gets a pathway
+   checklist under the curriculum picker; leaving all unchecked means "every pathway," the
+   pre-existing behaviour. When scoped, the course-pricing picker and the public site's
+   "Pathway pricing" section (renamed from "Course pricing") only show the selected pathways'
+   courses.
+2. **Each "Running at" hub gets its own detail page** instead of a popup —
+   `/bootcamps/:slug/hubs/:hubId` (new `GET /api/public/hubs/:id`) shows a photo gallery,
+   description, amenities grouped into categories (Connectivity, Workspace, Food, Facilities) as
+   icon cards, operating hours, contact info, and bookable spaces with capacity/pricing. The
+   "Running at" list is now a responsive 2-column grid.
+3. **Bootcamp enrollment: the learner picks their own username + password**, replacing the
+   auto-generated `firstname.lastname@digifunzi.com` login and 8-digit temporary password. Uses
+   the same learner-own-login mechanism (`setOrCreatePasswordByUsername`) the admin's own
+   learner-portal-login field already uses. The enrollment response now returns `learnerUsername`
+   instead of a one-time-reveal password — nothing new to show the visitor since they set it
+   themselves.
+4. **Fixed overlapping sections in the downloaded diagnostic PDF.** Two compounding bugs: native
+   `<details>`/`<summary>` collapse isn't reliably respected by html2canvas (it painted every
+   closed competency's indicator rows into the capture regardless), and the PDF's page-break
+   slicing cut purely by pixel height with no regard for row boundaries. Competency rows are now
+   controlled `<div>` + React state instead of `<details>`; every atomic section is marked
+   `data-pdf-block` so page breaks land only in the gaps between blocks, never through one.
+5. **Admin nav "Programs" renamed to "Events"** — the route (`/events`) and module code were
+   already named that; only the displayed label lagged.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — adds the migration above, `pathwayIds` handling in `bootcamp.model.js` /
+`bootcamp.service.js` / `bootcamp.validation.js`, `resolveCoursePricing`'s new `pathwayIds`
+filter in `shared/utils/public-content.js`, the new `GET /api/public/hubs/:id` route
+(`public-bootcamp.controller.js` / `public-bootcamp.service.js`'s `getHub` / `public-site.routes.js`),
+and the username/password rewrite of `bootcamp-enrollment.service.js` /
+`bootcamp-enrollment.validation.js` (deletes the now-unused `shared/utils/credential-generator.js`).
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-DSxT2Y_L.js`** / CSS `index-CPRP9smp.css` (unchanged CSS
+  hash).
+- Live build (`npm run build:live`): not yet built for this release — build it before deploying
+  to Live.
+- Changed: Bootcamp create/edit form's new pathway checklist under the curriculum picker
+  (`CreateBootcampPage.jsx`), `CoursePricingField.jsx`'s new `pathwayIds` scoping; sidebar nav
+  "Programs" → "Events", plus the matching page title and breadcrumb back-links.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- New `/bootcamps/:slug/hubs/:hubId` hub detail page (`HubDetailPage.jsx`), replacing the old
+  hub-detail popup; "Running at" list now a 2-column grid.
+- `BootcampDetailPage.jsx`: "Course pricing" → "Pathway pricing", small "Curriculum" label added
+  above the curriculum name.
+- `BootcampEnrollForm.jsx`: username/password/confirm-password fields replace the old
+  auto-generated-credential reveal on success.
+- `DiagnosticReport.jsx` / `reportPdf.js`: the PDF overlap fix above.
+- **Built with a full prerender pass** (`npm run deploy:build`) — `nodeapp.digifunzi.com` was
+  reachable from the build environment this time. 29/29 routes prerendered cleanly, sitemap
+  includes all pathway/project/store/bootcamp/competition detail URLs.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: one
+   migration should apply cleanly (or none, if it already ran).
+2. **Portal** `assets.zip` + `index.html` from `Guide/dev/`.
+3. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root.
+4. **Verify:**
+   - `curl <api>/api/public/hubs/<some-hub-id>` → returns a hub profile (description, amenities,
+     operatingHours, spaces) or 404 for an unknown/inactive/foreign-tenant id.
+   - Open a bootcamp with hub offerings on the public site → click a hub in "Running at" → confirm
+     it navigates to its own page (not a popup) with amenities grouped into labeled sections.
+   - In the portal, edit a bootcamp linked to a curriculum with 2+ pathways → check one pathway →
+     save → confirm the public bootcamp page's "Pathway pricing" section only shows that
+     pathway's priced courses.
+   - On a bootcamp's public diagnostic report, click "Enroll now" → confirm the form asks for a
+     username + password (not just parent/learner details) → submit → confirm login with that
+     username/password succeeds.
+   - Take a diagnostic with several competencies → download the PDF → confirm no overlapping/
+     garbled rows, including when the report spans more than one page.
+   - In the portal, confirm the sidebar nav item reads "Events" (not "Programs") and the Events
+     list page's title and breadcrumbs match.
+
+---
+
+## This release (15 Sep 2026, follow-on) — Bootcamp price resolves across all three pricing modes
+
+**Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
+Live-flavoured portal zip (`npm run build:live`) and re-verify separately before touching Live.
+
+No new migrations. Backend + portal frontend + website all change (small).
+
+### What changed
+
+A bootcamp is priced exactly one of three ways: as a whole (`priceAmount`), by course
+(`coursePricing[].priceAmount`), or — one level deeper — by individual module within a course
+(`coursePricing[].modulePricing[]`). The bootcamp-enrollment feature shipped earlier today only
+ever read `priceAmount`, so a bootcamp priced by course or module showed "Price to be confirmed"
+everywhere, even though it was clearly priced.
+
+New `shared/utils/bootcamp-pricing.js`'s `resolveEffectiveBootcampPrice(bootcamp)` picks whichever
+mode is actually set and, for by-course/by-module, **sums every priced course or module into one
+total** — enrollment always signs a learner into the whole bootcamp's hub+class, never a single
+course, so a single total is what's actually owed regardless of pricing mode. Wired into all three
+places a price is shown: the enrollment confirmation (website), the learner's "Account Suspended"
+payment screen (portal), and the admin Enquiries list + "Mark paid" pre-fill (portal). Each now
+also carries a `mode` flag, and the UI shows a small note when the total is a summed price rather
+than one flat number.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — adds `shared/utils/bootcamp-pricing.js` and its use in
+`bootcamp-enrollment.service.js`, `auth.service.js`'s `getPendingPayment`, and
+`lead.service.js`'s `_resolveExpectedPayment`. **No env change, no new migration.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-BBGfr6oe.js`** / CSS `index-CPRP9smp.css` (unchanged CSS
+  hash).
+- Live build (`npm run build:live`): not yet built for this release — build it before deploying to
+  Live.
+- Changed: "Account Suspended" payment screen and Enquiries "Mark paid"/expected-amount lines both
+  show a "summed from per-course/module pricing" note when applicable.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- `BootcampEnrollForm.jsx`'s confirmation screen shows the same note when the shown total is a
+  summed price.
+- **Built with `npm run deploy:build`, but `nodeapp.digifunzi.com` was unreachable from this build
+  environment again** (same transient-network situation as the last two releases) — Pathways/
+  Projects/Store/Bootcamps/Competitions shipped as SPA-only HTML; the 9 static routes plus the
+  previously-known pathway/project/store detail pages still prerendered. Every page is still fully
+  functional for visitors. **Recommended:** re-run `npm run deploy:build` from a machine with a
+  working connection to `nodeapp.digifunzi.com` and re-upload once convenient.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. No migrations to check
+   this time.
+2. **Portal** `assets.zip` + `index.html` from `Guide/dev/`.
+3. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root.
+4. **Verify:**
+   - Find (or create) a bootcamp priced by course or by module (not a whole-bootcamp price) →
+     enroll on the website → confirm the confirmation screen shows a real total (the sum of its
+     priced courses/modules), not "Price to be confirmed", with the "combines individually priced
+     courses/modules" note.
+   - Log in as that learner → confirm the "Account Suspended" screen shows the same total and note.
+   - In the portal's Enquiries page, find that lead → confirm the expected-amount line and "Mark
+     paid" pre-fill both show the same total, with the same note.
+   - Spot-check a whole-priced bootcamp still shows its flat price with no note, and a bootcamp
+     with no price configured in any mode still shows "Price to be confirmed" / no expected amount.
+
+---
+
 ## This release (15 Sep 2026) — Bootcamp auto-enrollment with cash-payment gating · Hub Visits replaces Mentor Sessions
 
 **Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
@@ -1395,10 +1594,10 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 ## Deployment Files (this folder, `Guide/dev/`)
 | File | Purpose |
 |---|---|
-| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 15 Sep 2026** — includes every migration through `20260917091000_add_bootcamp_enrollment_fields_to_leads.js` (seven new migrations apply automatically on Restart — see "This release (15 Sep 2026)" at the top, one of them destructive). No new dependency. **Not yet copied to `Guide/live/backend-deploy.zip`** — this release is Dev-only so far; `Guide/live/*` still reflects the 11 Sep release until this one is confirmed on Dev and rolled to Live. |
-| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder**. **Rebuilt 15 Sep 2026** — `index-Cxdy4lje.js` / CSS `index-CPRP9smp.css` (unchanged CSS hash). Portal UI changed this release (Enquiries "Mark paid" panel, payment-pending price on the Account Suspended screen, Learning Hubs "Revenue" entry + Hub Visits finance tab replacing Mentor Sessions, Programs list filter/sort toolbar). |
-| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-Cxdy4lje.js`**. |
-| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo, checked out at `./digifunzi-landing`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com` and (new this release) `VITE_APP_URL=https://curriculum.digifunzi.com`. **Rebuilt 15 Sep 2026** — the new `BootcampEnrollForm.jsx` enroll-now flow. **Shipped SPA-only for the dynamic sections this pass** (`npm run deploy:build`, but `nodeapp.digifunzi.com` was unreachable from the build environment — same transient-network situation as 13 Sep) — Pathways/Projects/Store/Bootcamps/Competitions (list + detail) are client-rendered only this pass; the 9 static routes plus the previously-known pathway/project/store detail pages still prerendered. Every page is still fully functional for visitors. **Recommended:** re-run `npm run deploy:build` from a machine with a working connection to `nodeapp.digifunzi.com` and re-upload once convenient. |
+| `backend-deploy.zip` | Ready-to-upload backend zip — `src/`, `knexfile.js`, `package.json`, `package-lock.json` (code only; no node_modules, no .env, no uploads). **Rebuilt 15 Sep 2026 (follow-on)** — adds `shared/utils/bootcamp-pricing.js` (see "This release (15 Sep 2026, follow-on)" at the top). No new migration since the earlier same-day rebuild — still includes every migration through `20260917091000_add_bootcamp_enrollment_fields_to_leads.js`. No new dependency. **Not yet copied to `Guide/live/backend-deploy.zip`** — this release is Dev-only so far; `Guide/live/*` still reflects the 11 Sep release until this one is confirmed on Dev and rolled to Live. |
+| `assets.zip` | Ready-to-upload curriculum-portal assets zip, built with `npm run build` (Dev build — bakes in `https://nodeapp.digifunzi.com`). Zipped as the `assets` **folder**. **Rebuilt 15 Sep 2026 (follow-on)** — `index-BBGfr6oe.js` / CSS `index-CPRP9smp.css` (unchanged CSS hash). Portal UI changed this release (the "summed from per-course/module pricing" note on the Account Suspended payment screen and Enquiries page, on top of the earlier same-day Mark paid panel / Hub Visits / Programs toolbar changes). |
+| `index.html` | The built portal entry file (`client/dist/index.html`, Dev build) — upload alongside `assets.zip`, don't extract. `<script src>` hash must match the `index-*.js` inside `assets.zip` — both **`index-BBGfr6oe.js`**. |
+| `africa-digifunzi-com-dist.zip` | Ready-to-upload **digifunzi-landing** website build (its own repo, checked out at `./digifunzi-landing`). Extract into the `africa.digifunzi.com` document root, overwriting. Built with `VITE_API_URL=https://nodeapp.digifunzi.com` and `VITE_APP_URL=https://curriculum.digifunzi.com`. **Rebuilt 15 Sep 2026 (follow-on)** — `BootcampEnrollForm.jsx`'s summed-price note. **Shipped SPA-only for the dynamic sections again this pass** (`npm run deploy:build`, but `nodeapp.digifunzi.com` was unreachable from the build environment — same transient-network situation as the last two releases) — Pathways/Projects/Store/Bootcamps/Competitions (list + detail) are client-rendered only this pass; the 9 static routes plus the previously-known pathway/project/store detail pages still prerendered. Every page is still fully functional for visitors. **Recommended:** re-run `npm run deploy:build` from a machine with a working connection to `nodeapp.digifunzi.com` and re-upload once convenient. |
 
 ### Rebuilding these zips by hand (Git Bash, from the project root)
 

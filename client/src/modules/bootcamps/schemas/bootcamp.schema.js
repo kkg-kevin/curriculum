@@ -48,6 +48,10 @@ export const bootcampSchema = z
     tagline:       z.string().trim().max(200).default(""),
     coverImage:    z.string().nullable().default(null),
     curriculumId:  z.string().nullable().default(null),
+    // Which of curriculumId's pathways this bootcamp actually runs — not every pathway under a
+    // curriculum is relevant to a given bootcamp. Empty means "every pathway", same as before
+    // this field existed — see server bootcamp.validation.js's matching comment.
+    pathwayIds:    z.array(z.string()).default([]),
     startDate:             dateStr.default(""),
     endDate:               dateStr.default(""),
     registrationOpenDate:  dateStr.default(""),

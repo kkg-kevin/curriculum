@@ -8,6 +8,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LeadModel = require("../leads/lead.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const RevokedTokenModel = require("./revoked-token.model");
+const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
 const SALT_ROUNDS = 10;
@@ -302,10 +303,12 @@ const AuthService = {
       hubName = hub?.name || null;
     }
 
+    const price = resolveEffectiveBootcampPrice(bootcamp);
     return {
       bootcampName: bootcamp.name,
-      amount: bootcamp.priceAmount != null ? Number(bootcamp.priceAmount) : null,
-      currency: bootcamp.priceCurrency || "KES",
+      amount: price.amount,
+      currency: price.currency,
+      mode: price.mode,
       hubName,
     };
   },

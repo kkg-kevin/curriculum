@@ -60,8 +60,16 @@ function htmlToText(html) {
 // A course/module whose id no longer resolves (deleted since pricing was set) is silently dropped
 // rather than showing a broken row. Returns [] when there's nothing priced or no curriculum to
 // group against.
-async function resolveCoursePricing(coursePricing, curriculumId) {
+//
+// `pathwayIds`, when non-empty, scopes this to just those pathways (a bootcamp's own choice of
+// which of its curriculum's pathways it actually runs — see bootcamp.validation.js). A priced
+// course whose only pathway isn't in that list is dropped entirely, including from the ungrouped
+// "ownerless course" fallback — there's no pathway left to attribute it to. Empty/undefined
+// pathwayIds keeps the original "every pathway under the curriculum" behaviour.
+async function resolveCoursePricing(coursePricing, curriculumId, pathwayIds) {
   if (!Array.isArray(coursePricing) || coursePricing.length === 0 || !curriculumId) return [];
+  const scoped = Array.isArray(pathwayIds) && pathwayIds.length > 0;
+  const scopedIds = scoped ? new Set(pathwayIds) : null;
 
   const priceByCourseId = new Map(coursePricing.map((p) => [p.courseId, p]));
   const courses = await Promise.all(
@@ -106,7 +114,8 @@ async function resolveCoursePricing(coursePricing, curriculumId) {
     };
   }
 
-  const pathways = await PathwayModel.findByCurriculumId(curriculumId);
+  const allPathways = await PathwayModel.findByCurriculumId(curriculumId);
+  const pathways = scoped ? allPathways.filter((p) => scopedIds.has(p.id)) : allPathways;
   const groupedCourseIds = new Set();
   const sections = [];
 
@@ -126,12 +135,14 @@ async function resolveCoursePricing(coursePricing, curriculumId) {
     sections.push({ pathwayId: pathway.id, pathwayName: pathway.name, pathwayColor: pathway.color || null, courses: items });
   }
 
-  const ungrouped = [...priceByCourseId.keys()]
-    .filter((id) => !groupedCourseIds.has(id))
-    .map(priced)
-    .filter(Boolean);
-  if (ungrouped.length > 0) {
-    sections.push({ pathwayId: null, pathwayName: null, pathwayColor: null, courses: ungrouped });
+  if (!scoped) {
+    const ungrouped = [...priceByCourseId.keys()]
+      .filter((id) => !groupedCourseIds.has(id))
+      .map(priced)
+      .filter(Boolean);
+    if (ungrouped.length > 0) {
+      sections.push({ pathwayId: null, pathwayName: null, pathwayColor: null, courses: ungrouped });
+    }
   }
 
   return sections;

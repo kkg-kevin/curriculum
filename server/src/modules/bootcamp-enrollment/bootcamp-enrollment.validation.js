@@ -13,6 +13,13 @@ const phone = z
 // optional), phone is REQUIRED here — this parent becomes the account's real contact, not an
 // optional follow-up channel. bootcampIdOrSlug/attemptId are never shown to the visitor; they
 // come from whichever bootcamp page/diagnostic report the form is rendered on.
+//
+// username/password are the learner's OWN chosen login (see auth.service.js's
+// setOrCreatePasswordByUsername) — the visitor picks both on the form instead of the system
+// minting a firstname.lastname@digifunzi.com address and an 8-digit temporary password. Same
+// username shape as learner.validation.js's own field so the two stay consistent; password only
+// needs to be memorable (this is a bootcamp learner's own account, not staff), so just a length
+// floor rather than a complexity policy.
 const submitBootcampEnrollmentSchema = z.object({
   bootcampIdOrSlug: z.string().trim().min(1, "Bootcamp is required"),
   parentName: z.string().trim().min(2, "Please enter your name").max(120),
@@ -20,6 +27,9 @@ const submitBootcampEnrollmentSchema = z.object({
   parentPhone: phone,
   learnerName: z.string().trim().min(2, "Please enter the learner's name").max(120),
   learnerAge: z.coerce.number().int().min(3).max(19),
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
   // Ties back to the diagnostic attempt that led here, for audit/analytics — never validated
   // against a real attempt row, never required (a visitor could reach the enroll form without
   // having taken the diagnostic first).

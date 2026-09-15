@@ -245,7 +245,7 @@ export default function CreateCompetitionPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Programs
+              ← Events
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{isEdit ? "Edit competition" : "New competition"}</span>

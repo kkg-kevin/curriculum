@@ -120,6 +120,14 @@ function PendingPaymentPanel({ pendingPayment }) {
             {pendingPayment.bootcampName ? `Amount owed for ${pendingPayment.bootcampName}. ` : ""}
             Pay by cash at {pendingPayment.hubName || "your hub"} to activate full access.
           </p>
+          {/* This bootcamp is priced by course/module rather than as a whole — see
+              bootcamp-pricing.js's resolveEffectiveBootcampPrice — so the amount above is a
+              summed total, not one flat price. */}
+          {pendingPayment.mode === "by_course" && (
+            <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#6B7280", lineHeight: 1.5 }}>
+              This combines the bootcamp's individually priced courses/modules.
+            </p>
+          )}
         </div>
       </div>
     </div>

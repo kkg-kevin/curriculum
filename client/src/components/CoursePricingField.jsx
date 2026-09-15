@@ -19,9 +19,19 @@ import { useModules } from "../modules/courses/hooks/useCourse";
 // `disabled` (default false, backward-compatible for existing callers) greys out every checkbox/
 // input without touching `value` — used by CreateBootcampPage.jsx when a whole-bootcamp price is
 // already set, since a bootcamp is priced one way or the other, never both.
-export default function CoursePricingField({ curriculumId, value = [], onChange, color = "#25476a", disabled = false }) {
+//
+// `pathwayIds` (optional, default [] — backward-compatible for CreateCompetitionPage.jsx, which
+// doesn't have this concept) scopes which of the curriculum's pathways are offered for pricing
+// here — a bootcamp's own choice of which pathways it actually runs (see
+// CreateBootcampPage.jsx's PathwaysField). Empty means "every pathway", same as before this prop
+// existed. A course that only belongs to an unselected pathway is left out entirely, including
+// from the "Other courses" fallback — there's no pathway left to attribute it to, mirroring the
+// server's resolveCoursePricing.
+export default function CoursePricingField({ curriculumId, pathwayIds = [], value = [], onChange, color = "#25476a", disabled = false }) {
   const { data: courses, isLoading: loadingCourses } = useCurriculumCourses(curriculumId);
-  const { data: pathways, isLoading: loadingPathways } = usePathways(curriculumId);
+  const { data: allPathways, isLoading: loadingPathways } = usePathways(curriculumId);
+  const scoped = (pathwayIds || []).length > 0;
+  const pathways = scoped ? (allPathways || []).filter((p) => pathwayIds.includes(p.id)) : allPathways;
 
   if (!curriculumId) {
     return (
@@ -58,12 +68,22 @@ export default function CoursePricingField({ curriculumId, value = [], onChange,
     .filter((g) => g.courseIds.length > 0);
 
   const groupedCourseIds = new Set(groups.flatMap((g) => g.courseIds));
-  const ungrouped = allCourses.filter((c) => !groupedCourseIds.has(c.id));
+  // When scoped to specific pathways, a course outside every selected pathway has no pathway
+  // left to attribute it to here — leave it out entirely rather than surfacing it as "Other".
+  const ungrouped = scoped ? [] : allCourses.filter((c) => !groupedCourseIds.has(c.id));
 
   if (allCourses.length === 0) {
     return (
       <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
         This curriculum has no courses linked yet — add courses to it before pricing them here.
+      </p>
+    );
+  }
+
+  if (scoped && groups.length === 0) {
+    return (
+      <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
+        The selected pathway(s) have no courses to price yet.
       </p>
     );
   }

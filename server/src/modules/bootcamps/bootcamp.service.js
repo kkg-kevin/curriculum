@@ -2,6 +2,7 @@ const BootcampModel = require("./bootcamp.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");
 const ModuleModel = require("../courses/module.model");
+const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 
@@ -37,6 +38,7 @@ async function enrich(bootcamp) {
     highlights: asArray(bootcamp.highlights),
     coursePricing: asArray(bootcamp.coursePricing),
     priceNotes: asArray(bootcamp.priceNotes),
+    pathwayIds: asArray(bootcamp.pathwayIds),
     curriculumName: await resolveCurriculumName(bootcamp.curriculumId),
   };
 }
@@ -90,6 +92,26 @@ async function assertCoursePricingValid(coursePricing, curriculumId) {
       throw err;
     }
   });
+}
+
+// Every selected pathway must actually belong to the (effective) curriculum — same posture as
+// assertCoursePricingValid above. An empty pathwayIds is always valid (it means "every pathway
+// under the curriculum", the pre-existing behaviour — see public-content.js).
+async function assertPathwayIdsValid(pathwayIds, curriculumId) {
+  if (!pathwayIds || pathwayIds.length === 0) return;
+  if (!curriculumId) {
+    const err = new Error("Selecting pathways requires a curriculum to be selected");
+    err.statusCode = 400;
+    throw err;
+  }
+  const pathways = await PathwayModel.findByCurriculumId(curriculumId);
+  const validIds = new Set(pathways.map((p) => p.id));
+  const unknown = pathwayIds.find((id) => !validIds.has(id));
+  if (unknown) {
+    const err = new Error("One or more selected pathways don't belong to the selected curriculum");
+    err.statusCode = 400;
+    throw err;
+  }
 }
 
 // A bootcamp is priced ONE way, not both: either a single whole-bootcamp price, or individual
@@ -155,6 +177,7 @@ const BootcampService = {
   async createBootcamp(data) {
     await assertCurriculumOwnedBy(data.curriculumId, data.ownerAdminId);
     await assertCoursePricingValid(data.coursePricing, data.curriculumId);
+    await assertPathwayIdsValid(data.pathwayIds, data.curriculumId);
     assertPricingModeExclusive(data.priceAmount, data.coursePricing);
     assertCourseEntryPricingValid(data.coursePricing);
     await assertPublicDiagnosticAllowed(data, null);
@@ -190,6 +213,11 @@ const BootcampService = {
       const effectiveCurriculumId = "curriculumId" in data ? data.curriculumId : existing.curriculumId;
       await assertCoursePricingValid(data.coursePricing, effectiveCurriculumId);
       assertCourseEntryPricingValid(data.coursePricing);
+    }
+    if ("pathwayIds" in data || "curriculumId" in data) {
+      const effectiveCurriculumId = "curriculumId" in data ? data.curriculumId : existing.curriculumId;
+      const effectivePathwayIds = "pathwayIds" in data ? data.pathwayIds : existing.pathwayIds;
+      await assertPathwayIdsValid(effectivePathwayIds, effectiveCurriculumId);
     }
     // Same "effective value" pattern as curriculumId above — a patch touching only ONE of the two
     // pricing modes still needs to be checked against whichever value the other one already has.
@@ -231,7 +259,9 @@ const BootcampService = {
   async unlinkCurriculum(curriculumId) {
     if (!curriculumId) return;
     const records = await BootcampModel.findAll({ curriculumId });
-    await Promise.all(records.map((b) => BootcampModel.update(b.id, { curriculumId: null })));
+    // pathwayIds only makes sense scoped to a curriculum — cleared alongside it so a later
+    // re-link to a DIFFERENT curriculum doesn't inherit stale, no-longer-valid pathway ids.
+    await Promise.all(records.map((b) => BootcampModel.update(b.id, { curriculumId: null, pathwayIds: [] })));
   },
 };
 

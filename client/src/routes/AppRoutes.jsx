@@ -120,7 +120,7 @@ export default function AppRoutes() {
         <Route path="events">
           <Route index element={<ProgramsListPage />} />
           {/* Competitions and Bootcamps are their own standalone features that live under this
-              URL prefix on the admin side (no separate sidebar item — the "Programs" nav entry
+              URL prefix on the admin side (no separate sidebar item — the "Events" nav entry
               points here). The /api/competitions and /api/bootcamps routes and the public
               website are unchanged. Either can optionally link to a curriculum via
               curriculumId, and can be run at one or more hubs via its own hub-offerings. */}

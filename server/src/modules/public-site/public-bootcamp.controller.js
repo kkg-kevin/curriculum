@@ -18,4 +18,11 @@ const getPublicBootcamp = asyncHandler(async (req, res) => {
   res.json(record);
 });
 
-module.exports = { getPublicBootcamps, getPublicBootcamp };
+// GET /api/public/hubs/:id — full hub profile for the "Running at" hub detail page.
+const getPublicRunHub = asyncHandler(async (req, res) => {
+  const record = await PublicBootcampService.getHub(req.params.id);
+  if (!record) return res.status(404).json({ message: "Hub not found" });
+  res.json(record);
+});
+
+module.exports = { getPublicBootcamps, getPublicBootcamp, getPublicRunHub };
