@@ -102,6 +102,107 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Sep 2026, second follow-on) — Pathway-scoped bootcamps · hub detail page · self-chosen enrollment login
+
+**Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
+Live-flavoured portal zip (`npm run build:live`) and re-verify separately before touching Live.
+
+One new migration (auto-applies on Restart, not destructive). Backend + portal frontend +
+website all change.
+
+### New migration
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260915090000_add_pathway_ids_to_bootcamps.js` | Adds nullable `pathwayIds` JSON column to `bootcamps` | unchanged — every existing bootcamp keeps showing every pathway under its curriculum, same as before this column existed |
+
+### What changed
+
+1. **Bootcamps can scope which pathways they run.** A curriculum can carry several pathways and
+   not every one is relevant to a given bootcamp (e.g. a robotics camp built on a curriculum that
+   also has an unrelated digital-literacy pathway). The bootcamp create/edit form gets a pathway
+   checklist under the curriculum picker; leaving all unchecked means "every pathway," the
+   pre-existing behaviour. When scoped, the course-pricing picker and the public site's
+   "Pathway pricing" section (renamed from "Course pricing") only show the selected pathways'
+   courses.
+2. **Each "Running at" hub gets its own detail page** instead of a popup —
+   `/bootcamps/:slug/hubs/:hubId` (new `GET /api/public/hubs/:id`) shows a photo gallery,
+   description, amenities grouped into categories (Connectivity, Workspace, Food, Facilities) as
+   icon cards, operating hours, contact info, and bookable spaces with capacity/pricing. The
+   "Running at" list is now a responsive 2-column grid.
+3. **Bootcamp enrollment: the learner picks their own username + password**, replacing the
+   auto-generated `firstname.lastname@digifunzi.com` login and 8-digit temporary password. Uses
+   the same learner-own-login mechanism (`setOrCreatePasswordByUsername`) the admin's own
+   learner-portal-login field already uses. The enrollment response now returns `learnerUsername`
+   instead of a one-time-reveal password — nothing new to show the visitor since they set it
+   themselves.
+4. **Fixed overlapping sections in the downloaded diagnostic PDF.** Two compounding bugs: native
+   `<details>`/`<summary>` collapse isn't reliably respected by html2canvas (it painted every
+   closed competency's indicator rows into the capture regardless), and the PDF's page-break
+   slicing cut purely by pixel height with no regard for row boundaries. Competency rows are now
+   controlled `<div>` + React state instead of `<details>`; every atomic section is marked
+   `data-pdf-block` so page breaks land only in the gaps between blocks, never through one.
+5. **Admin nav "Programs" renamed to "Events"** — the route (`/events`) and module code were
+   already named that; only the displayed label lagged.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — adds the migration above, `pathwayIds` handling in `bootcamp.model.js` /
+`bootcamp.service.js` / `bootcamp.validation.js`, `resolveCoursePricing`'s new `pathwayIds`
+filter in `shared/utils/public-content.js`, the new `GET /api/public/hubs/:id` route
+(`public-bootcamp.controller.js` / `public-bootcamp.service.js`'s `getHub` / `public-site.routes.js`),
+and the username/password rewrite of `bootcamp-enrollment.service.js` /
+`bootcamp-enrollment.validation.js` (deletes the now-unused `shared/utils/credential-generator.js`).
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+- Dev build (`npm run build`): **`index-DSxT2Y_L.js`** / CSS `index-CPRP9smp.css` (unchanged CSS
+  hash).
+- Live build (`npm run build:live`): not yet built for this release — build it before deploying
+  to Live.
+- Changed: Bootcamp create/edit form's new pathway checklist under the curriculum picker
+  (`CreateBootcampPage.jsx`), `CoursePricingField.jsx`'s new `pathwayIds` scoping; sidebar nav
+  "Programs" → "Events", plus the matching page title and breadcrumb back-links.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- New `/bootcamps/:slug/hubs/:hubId` hub detail page (`HubDetailPage.jsx`), replacing the old
+  hub-detail popup; "Running at" list now a 2-column grid.
+- `BootcampDetailPage.jsx`: "Course pricing" → "Pathway pricing", small "Curriculum" label added
+  above the curriculum name.
+- `BootcampEnrollForm.jsx`: username/password/confirm-password fields replace the old
+  auto-generated-credential reveal on success.
+- `DiagnosticReport.jsx` / `reportPdf.js`: the PDF overlap fix above.
+- **Built with a full prerender pass** (`npm run deploy:build`) — `nodeapp.digifunzi.com` was
+  reachable from the build environment this time. 29/29 routes prerendered cleanly, sitemap
+  includes all pathway/project/store/bootcamp/competition detail URLs.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: one
+   migration should apply cleanly (or none, if it already ran).
+2. **Portal** `assets.zip` + `index.html` from `Guide/dev/`.
+3. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root.
+4. **Verify:**
+   - `curl <api>/api/public/hubs/<some-hub-id>` → returns a hub profile (description, amenities,
+     operatingHours, spaces) or 404 for an unknown/inactive/foreign-tenant id.
+   - Open a bootcamp with hub offerings on the public site → click a hub in "Running at" → confirm
+     it navigates to its own page (not a popup) with amenities grouped into labeled sections.
+   - In the portal, edit a bootcamp linked to a curriculum with 2+ pathways → check one pathway →
+     save → confirm the public bootcamp page's "Pathway pricing" section only shows that
+     pathway's priced courses.
+   - On a bootcamp's public diagnostic report, click "Enroll now" → confirm the form asks for a
+     username + password (not just parent/learner details) → submit → confirm login with that
+     username/password succeeds.
+   - Take a diagnostic with several competencies → download the PDF → confirm no overlapping/
+     garbled rows, including when the report spans more than one page.
+   - In the portal, confirm the sidebar nav item reads "Events" (not "Programs") and the Events
+     list page's title and breadcrumbs match.
+
+---
+
 ## This release (15 Sep 2026, follow-on) — Bootcamp price resolves across all three pricing modes
 
 **Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
