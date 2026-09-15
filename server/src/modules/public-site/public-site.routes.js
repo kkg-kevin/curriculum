@@ -2,7 +2,7 @@ const express = require("express");
 const { getPublicPathways, getPublicPathway } = require("./public-site.controller");
 const { getPublicProjects, getPublicProject } = require("./public-project.controller");
 const { getPublicStoreItems, getPublicStoreItem } = require("./public-store.controller");
-const { getPublicBootcamps, getPublicBootcamp } = require("./public-bootcamp.controller");
+const { getPublicBootcamps, getPublicBootcamp, getPublicRunHub } = require("./public-bootcamp.controller");
 const { getPublicHubTypes, getPublicHubs } = require("./public-hub.controller");
 const { getPublicCompetitions, getPublicCompetition } = require("./public-competition.controller");
 
@@ -36,6 +36,10 @@ router.get("/store/:idOrSlug", getPublicStoreItem);
 // picker (see public-hub.service.js). `/types` lists the choosable types + a hub count each.
 router.get("/hubs/types", getPublicHubTypes);
 router.get("/hubs", getPublicHubs);
+
+// A single hub's full profile — reachable only from a bootcamp's "Running at" list (see
+// public-bootcamp.service.js's getHub()), not part of the enrolment-picker hub set above.
+router.get("/hubs/:id", getPublicRunHub);
 
 // Competitions = the designated admin's `competitions` rows marked isPublic (see
 // public-competition.service.js) — the Track cards on africa.digifunzi.com/competitions.

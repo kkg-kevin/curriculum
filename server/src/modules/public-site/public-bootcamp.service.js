@@ -95,23 +95,52 @@ function hubAddressOf(hub) {
   return [a.street, a.city, a.county].filter(Boolean).join(", ");
 }
 
+// A space's rate/notes are data-capture-only fields from the admin's "Spaces, Capacity &
+// Pricing" builder (no booking flow exists yet), but a family deciding whether to enquire
+// about a specific space benefits from seeing them same as the admin does — so unlike the
+// hub-level fields below, spaces are passed through close to as-is (minus its internal `id`).
+function projectSpace(s) {
+  return {
+    name: s.name,
+    spaceType: s.spaceType || "",
+    building: s.building || "",
+    floor: s.floor || "",
+    room: s.room || "",
+    minCapacity: s.minCapacity ?? null,
+    maxCapacity: s.maxCapacity ?? null,
+    pricingModel: s.pricingModel || "",
+    rate: s.rate ?? null,
+    priceUnit: s.priceUnit || "",
+  };
+}
+
 // One running hub, projected for the public bootcamp page — deliberately richer than
 // public-hub.service.js's own enrollment-picker projection (that one is explicit about staying
 // narrow: "No email, no code..."), because the context here is different: a family already
 // knows which specific hub their child's bootcamp runs at (it's named on a page they navigated
 // to on purpose), not browsing an open directory — so surfacing how to actually reach that one
-// hub (address, phone, contact person, photo) is the useful thing to show, not a privacy risk.
-// Still excludes anything truly internal (hubType, code, ownerAdminId, draft/inactive status).
+// hub (address, phone, contact person, photo, amenities, operating hours, its bookable spaces)
+// is the useful thing to show, not a privacy risk. Still excludes anything truly internal
+// (hubType, code, ownerAdminId, draft/inactive status, parentHubId, spaces[].id/reservable/notes).
 function projectHub(hub) {
   return {
     id: hub.id,
     name: hub.name,
+    description: hub.description || "",
     address: hubAddressOf(hub),
     phone: hub.phone || "",
     email: hub.email || "",
     contactPerson: hub.contactPerson || "",
     mapLink: hub.mapLink || "",
     photo: toAbsoluteMediaUrl(hub.photo),
+    photos: (hub.photos || []).map(toAbsoluteMediaUrl),
+    amenities: hub.amenities || [],
+    operatingHours: {
+      opensAt: hub.operatingHours?.opensAt || "",
+      closesAt: hub.operatingHours?.closesAt || "",
+      days: hub.operatingHours?.days || [],
+    },
+    spaces: (hub.spaces || []).map(projectSpace),
   };
 }
 
@@ -198,7 +227,7 @@ const PublicBootcampService = {
       /* offering lookup hiccup — the detail page still renders without the runs list */
     }
 
-    const coursePricing = await resolveCoursePricing(arr(bootcamp.coursePricing), bootcamp.curriculumId);
+    const coursePricing = await resolveCoursePricing(arr(bootcamp.coursePricing), bootcamp.curriculumId, arr(bootcamp.pathwayIds));
     const curriculum = await resolveCurriculumSummary(bootcamp.curriculumId);
 
     let diagnostic = { available: false, minAge: null, maxAge: null };
@@ -222,6 +251,22 @@ const PublicBootcampService = {
       // bootcamp-detail page's "Take the diagnostic" CTA gates on `diagnostic.available`.
       diagnostic,
     };
+  },
+
+  // GET /api/public/hubs/:id — the full profile for one hub, for the "Running at" list's own
+  // detail page (BootcampDetailPage links out to it rather than only showing a dialog). Scoped
+  // to the designated admin's active hubs only — same posture as everything else on this site;
+  // a hub belonging to another admin, in draft/inactive status, or an unknown id all 404
+  // undifferentiated so a probing client can't tell which. Deliberately NOT restricted to hubs
+  // actually linked to a for-sale bootcamp's run — the id only ever reaches a visitor by way of
+  // a bootcamp detail page that already listed it, so re-deriving that link here would just be
+  // extra queries for no added safety.
+  async getHub(id) {
+    if (!id) return null;
+    const ownerAdminId = requirePublicContentAdminId();
+    const hub = await LearningHubModel.findById(id);
+    if (!hub || hub.ownerAdminId !== ownerAdminId || hub.status !== "active") return null;
+    return projectHub(hub);
   },
 };
 
