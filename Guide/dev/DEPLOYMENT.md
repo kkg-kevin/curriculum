@@ -102,6 +102,34 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Sep 2026, third follow-on) — "Pathway pricing" renamed to "Pathway courses"
+
+Website-only. **No backend or portal change — `backend-deploy.zip` and `assets.zip`/`index.html`
+are unchanged from the previous release.**
+
+### What changed
+
+The bootcamp detail page's course-pricing section heading reads "Pathway courses" instead of
+"Pathway pricing" (the previous follow-on's rename). Matching cross-references updated in the
+enrollment confirmation's "see the ... section" note and `CoursePricingRoadmap.jsx`'s doc comment.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- **Built with a full prerender pass** (`npm run deploy:build`) — the first `deploy:build` attempt
+  and one retry both failed partway through with a Puppeteer navigation timeout on `/competitions`
+  (the API itself was healthy throughout — `curl` against every `/api/public/*` endpoint returned
+  200 the whole time), same transient pattern earlier releases hit. A third prerender pass
+  succeeded cleanly: 29/29 routes, full sitemap.
+
+### Deploy order
+
+1. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root. (Backend/portal unchanged — no redeploy needed for those.)
+2. **Verify:** open any bootcamp with priced courses on the public site → confirm the section
+   heading reads "Pathway courses".
+
+---
+
 ## This release (15 Sep 2026, second follow-on) — Pathway-scoped bootcamps · hub detail page · self-chosen enrollment login
 
 **Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
