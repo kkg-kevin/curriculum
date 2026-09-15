@@ -16,6 +16,7 @@ import SideRail from "../components/SideRail";
 import EditProfileModal from "../components/profile/EditProfileModal";
 import EditGuardianProfileModal from "../components/profile/EditGuardianProfileModal";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
+import ChangePasswordCard from "../../auth/components/ChangePasswordCard";
 import ProfileTabs from "../components/profile/ProfileTabs";
 import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
 import MyCoursesCard from "../components/profile/MyCoursesCard";
@@ -160,6 +161,8 @@ export default function ProfilePage() {
       {cls ? <SummaryRow classId={cls.id} /> : <NoClassNotice />}
 
       <FrameworkLegend />
+
+      <ChangePasswordCard />
 
       {editing === "learner" && (
         <EditProfileModal learner={learner} isSaving={isSaving} onSave={handleSaveLearner} onClose={() => setEditing(null)} />

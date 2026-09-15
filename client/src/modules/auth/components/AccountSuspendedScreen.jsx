@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut, FiShield, FiClock, FiLifeBuoy, FiRefreshCw } from "react-icons/fi";
+import { FiLogOut, FiShield, FiClock, FiLifeBuoy, FiRefreshCw, FiKey, FiChevronDown, FiChevronUp, FiCreditCard } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import logo from "../../../assets/Logo-image.png";
+import ChangePasswordCard from "./ChangePasswordCard";
 
 // Shown IN-APP (behind a real, logged-in session) when the account is suspended. Rendered by
 // ProtectedRoute in place of the whole authenticated app, so it's the only route a suspended
@@ -14,6 +15,15 @@ const COPY_BY_REASON = {
     dataBody: "Your courses, assessments, progress, and reports are all untouched.",
     contactTitle: "Contact your school administrator",
     contactBody: "Your school administrator manages account access. Reach out to them to have your account reactivated.",
+  },
+  payment: {
+    who: "your account",
+    heading: "your account is almost ready",
+    badge: "Payment pending",
+    intro: "just needs a payment confirmed before you can get started.",
+    dataBody: "Everything is ready and waiting — nothing has been lost.",
+    contactTitle: "Complete your payment",
+    contactBody: "Your account unlocks automatically as soon as your payment is confirmed. Contact the school if you've already paid and this hasn't updated yet.",
   },
   teacher: {
     who: "your educator account",
@@ -75,6 +85,47 @@ function SuspendedArt() {
   );
 }
 
+function formatMoney(amount, currency) {
+  return `${currency} ${Number(amount || 0).toLocaleString()}`;
+}
+
+// The bootcamp price + hub owed by an auto-provisioned, not-yet-paid learner (see
+// auth.service.js's getPendingPayment) — shown right above the generic "complete your
+// payment" panel so it's visible on every login/reload, not just the one-time website
+// confirmation screen the visitor may have already closed.
+function PendingPaymentPanel({ pendingPayment }) {
+  if (!pendingPayment || pendingPayment.amount == null) return null;
+  return (
+    <div
+      style={{
+        marginTop: 22, padding: "18px 20px", borderRadius: 16,
+        background: "#EFF6FB", border: "1.5px solid #d7ecf7",
+      }}
+    >
+      <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+        <span
+          style={{
+            width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: "#DCEEFA",
+            border: "1px solid #c3e2f5", display: "flex", alignItems: "center",
+            justifyContent: "center", color: "#25476a",
+          }}
+        >
+          <FiCreditCard size={17} />
+        </span>
+        <div>
+          <p style={{ margin: "1px 0 3px", fontSize: 15.5, fontWeight: 800, color: "#111827" }}>
+            {formatMoney(pendingPayment.amount, pendingPayment.currency)}
+          </p>
+          <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
+            {pendingPayment.bootcampName ? `Amount owed for ${pendingPayment.bootcampName}. ` : ""}
+            Pay by cash at {pendingPayment.hubName || "your hub"} to activate full access.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AssuranceItem({ icon, title, body }) {
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -95,10 +146,11 @@ function AssuranceItem({ icon, title, body }) {
   );
 }
 
-export default function AccountSuspendedScreen({ reason }) {
+export default function AccountSuspendedScreen({ reason, pendingPayment }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const copy = COPY_BY_REASON[reason] || COPY_BY_REASON.learner;
   // Greet a person by first name — but a "hub" suspension is an organisation, not a person,
   // so don't address it by a chopped-up hub name.
@@ -182,7 +234,7 @@ export default function AccountSuspendedScreen({ reason }) {
                 fontWeight: 700, letterSpacing: "0.3px", width: "fit-content",
               }}
             >
-              <FiClock size={13} /> Access paused
+              <FiClock size={13} /> {copy.badge || "Access paused"}
             </span>
 
             <div className="as-art-wrap">
@@ -198,11 +250,12 @@ export default function AccountSuspendedScreen({ reason }) {
           {/* Message + actions */}
           <div className="as-body">
             <h1 style={{ margin: "0 0 10px", fontSize: 26, fontWeight: 800, color: "#111827", letterSpacing: "-0.4px" }}>
-              {firstName ? `${firstName}, your account is suspended` : "Account suspended"}
+              {firstName ? `${firstName}, ${copy.heading || "your account is suspended"}` : (copy.heading ? copy.heading[0].toUpperCase() + copy.heading.slice(1) : "Account suspended")}
             </h1>
             <p style={{ margin: 0, fontSize: 14.5, color: "#6B7280", lineHeight: 1.65 }}>
-              Access to {copy.who} on Digifunzi has been temporarily suspended. You can sign back in
-              as soon as it's reactivated.
+              {copy.intro
+                ? `${copy.who[0].toUpperCase() + copy.who.slice(1)} on Digifunzi ${copy.intro}`
+                : <>Access to {copy.who} on Digifunzi has been temporarily suspended. You can sign back in as soon as it's reactivated.</>}
             </p>
 
             <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -244,6 +297,34 @@ export default function AccountSuspendedScreen({ reason }) {
                 </div>
               </div>
             </div>
+
+            {reason === "payment" && <PendingPaymentPanel pendingPayment={pendingPayment} />}
+
+            {/* Only for the "payment" reason — this is where a temp password (see
+                bootcamp-enrollment.service.js) matters most: the learner may still be signed in
+                with the one shown once at enrollment, and this is the only screen they can
+                reach before payment unlocks the rest of the app. */}
+            {reason === "payment" && (
+              <div style={{ marginTop: 22 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword((v) => !v)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 7, padding: 0, border: "none",
+                    background: "none", color: "#25476a", fontSize: 13, fontWeight: 700,
+                    fontFamily: "Inter, sans-serif", cursor: "pointer",
+                  }}
+                >
+                  <FiKey size={14} /> Change your password
+                  {showChangePassword ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                </button>
+                {showChangePassword && (
+                  <div style={{ marginTop: 12 }}>
+                    <ChangePasswordCard />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ marginTop: "auto", paddingTop: 26 }}>
               <button

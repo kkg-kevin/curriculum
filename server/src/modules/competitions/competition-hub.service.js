@@ -60,7 +60,10 @@ const CompetitionHubService = {
       throw err;
     }
 
-    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, competition.startDate));
+    // The competition's own name is passed as the stream label so a second, different
+    // competition (or bootcamp) built on this SAME curriculum can still run at this same hub
+    // without colliding with this one's cohort classes — see cohortClassPayload's own comment.
+    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, competition.startDate, competition.name));
 
     const offering = await CompetitionHubModel.create({
       ownerAdminId,

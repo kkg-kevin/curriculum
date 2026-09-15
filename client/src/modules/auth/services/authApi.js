@@ -14,4 +14,7 @@ export const authApi = {
   // used to re-gate the learner-portal's sibling switcher (see LearnerPortalLayout) before it
   // flips to a different linked learner under the same guardian login.
   verifyPassword: (password) => api.post(`${ENDPOINT}/verify-password`, { password }).then((r) => r.data),
+  // Self-service password change — most immediately useful for a learner auto-provisioned with
+  // a temporary password (see bootcamp-enrollment.service.js) who wants to set their own.
+  changePassword: (currentPassword, newPassword) => api.patch(`${ENDPOINT}/change-password`, { currentPassword, newPassword }).then((r) => r.data),
 };

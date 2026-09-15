@@ -60,3 +60,15 @@ export function useAddLeadNote() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to add note"),
   });
 }
+
+export function useMarkLeadPaid() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }) => leadApi.markPaid(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LEAD_KEYS.all });
+      toast.success("Payment recorded — the learner's account is now fully active");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to record payment"),
+  });
+}

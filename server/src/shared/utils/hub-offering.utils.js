@@ -34,7 +34,19 @@ function classIdsArray(classIds) {
 // The per-cohort Class payload for ClassService.bulkCreateClasses — one per curriculum cohort,
 // direct port of event.service.js's createEvent mapping. academicYear is derived from the
 // offering's own startDate (not the hub's or the curriculum's), same as an Event deployment did.
-function cohortClassPayload(hub, curriculum, startDate) {
+//
+// `streamLabel` (typically the bootcamp/competition's own name) disambiguates two DIFFERENT
+// offerings that happen to share the same curriculum + academic year at the same hub — e.g. two
+// bootcamps both built on the same curriculum, both starting in 2026. Without it,
+// class.service.js's assertStreamAvailable (keyed on schoolId+curriculumId+gradeId+academicYear,
+// with no notion of "which bootcamp/competition" a class belongs to — `classes` carries no
+// offering back-reference) would see the second offering's classes as duplicates of the first's
+// and refuse them with "A class for this grade already exists at this hub", even though they're
+// two unrelated cohorts that should both be allowed to run there side by side. Omitted (undefined)
+// for the one caller that must NOT set it — the generic /bulk route's own "Set Up Year" flow,
+// where colliding really does mean "this exact grade already has a class here" and streamName is
+// the user's own explicit disambiguation, not an automatic one.
+function cohortClassPayload(hub, curriculum, startDate, streamLabel) {
   return (curriculum.classes || []).map((cls) => ({
     schoolId: hub.id,
     curriculumId: curriculum.id,
@@ -43,6 +55,7 @@ function cohortClassPayload(hub, curriculum, startDate) {
     academicYear: String(new Date(startDate).getFullYear()),
     capacity: null,
     status: "active",
+    ...(streamLabel ? { streamName: streamLabel } : {}),
   }));
 }
 

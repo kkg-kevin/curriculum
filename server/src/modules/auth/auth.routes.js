@@ -1,6 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { signup, login, logout, me, updateMe, verifyPassword, createAdmin } = require("./auth.controller");
+const { signup, login, logout, me, updateMe, verifyPassword, changePassword, createAdmin } = require("./auth.controller");
 const { protect, authorize } = require("../../shared/middleware/auth.middleware");
 
 const router = express.Router();
@@ -23,6 +23,7 @@ router.post("/logout", logout);
 router.get("/me", protect, me);
 router.put("/me", protect, updateMe);
 router.post("/verify-password", protect, loginLimiter, verifyPassword);
+router.patch("/change-password", protect, loginLimiter, changePassword);
 // Creates another tenant admin — only an existing admin can do this (there is otherwise no way
 // to create a second admin at all; ADMIN_EMAIL/ADMIN_PASSWORD only ever bootstraps the first).
 router.post("/admins", protect, authorize("admin"), createAdmin);
