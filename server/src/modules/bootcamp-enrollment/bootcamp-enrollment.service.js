@@ -9,7 +9,6 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const BillingModel = require("../billing/billing.model");
 const NotificationService = require("../notifications/notification.service");
 const { resolveForSaleBootcamp } = require("../public-site/public-bootcamp.service");
-const { generateDigifunziEmail, generateTemporaryPassword } = require("../../shared/utils/credential-generator");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { slugify } = require("../../shared/utils/slugify");
 
@@ -18,9 +17,11 @@ const { slugify } = require("../../shared/utils/slugify");
 // (see submitBootcampEnrollment), enrolled straight into the bootcamp's own hub/class, gated by
 // payment: `accountStatus: "pending_payment"` at creation (blockIfSuspended refuses every write
 // until an admin records a cash payment via markLeadPaid, which flips it to "active"). The
-// account's login is a fresh firstname.lastname@digifunzi.com address with a one-time-shown
-// temporary password — deliberately distinct from the parent's own personal email, which is
-// only ever used as the lead's contact/follow-up channel, same as every other lead.
+// account's login is the LEARNER'S OWN username/password, chosen on the enrollment form (same
+// "learner's own dedicated login" mechanism as learner.controller.js's learnerPassword — see
+// auth.service.js's setOrCreatePasswordByUsername) — deliberately distinct from the parent's own
+// personal email, which is only ever used as the lead's contact/follow-up channel, same as every
+// other lead.
 //
 // Deliberately its own module (not folded into leads or learners) since it orchestrates all
 // three of those plus billing — same reasoning hub-visits was kept separate from billing.
@@ -98,15 +99,11 @@ const BootcampEnrollmentService = {
     await LeadService._notifyAdmins(lead);
 
     const { firstName, lastName } = splitName(data.learnerName);
-    const loginEmail = await generateDigifunziEmail(firstName, lastName);
-    const tempPassword = generateTemporaryPassword();
 
-    // Mints the login first (same order createLearner's own controller already uses for a
-    // guardian password) — if the email is somehow already taken by a different-role account
-    // (a freak collision right after generateDigifunziEmail's own check), nothing else is
-    // written.
-    await AuthService.setOrCreatePassword({ name: data.parentName, email: loginEmail, password: tempPassword, role: "learner" });
-
+    // The learner record's own username-uniqueness check (assertUsernameAvailable, inside
+    // createLearner) has to throw first — same ordering as learner.controller.js's createLearner:
+    // a colliding username must fail before any login is minted for it, so a typo'd/taken
+    // username can never silently reset a different learner's own login.
     let learner;
     try {
       learner = await LearnerService.createLearner({
@@ -115,8 +112,15 @@ const BootcampEnrollmentService = {
         gender: "other",
         guardianName: data.parentName,
         guardianPhone: data.parentPhone,
-        guardianEmail: loginEmail,
+        guardianEmail: data.parentEmail,
+        username: data.username,
         accountStatus: "pending_payment",
+      });
+      await AuthService.setOrCreatePasswordByUsername({
+        name: data.learnerName,
+        username: data.username,
+        password: data.password,
+        role: "learner",
       });
       await LearnerService.enrollInHub(learner.id, { hubId: offering.hubId, classId, status: "active" });
     } catch (err) {
@@ -138,8 +142,9 @@ const BootcampEnrollmentService = {
     const price = resolveEffectiveBootcampPrice(bootcamp);
     return {
       lead: { ...lead, learnerId: learner.id },
-      learnerLoginEmail: loginEmail,
-      learnerTempPassword: tempPassword,
+      // The visitor already knows their own username/password (they just typed them) — nothing
+      // new to show them here, unlike the old auto-generated-credential flow.
+      learnerUsername: data.username,
       payment: {
         amount: price.amount,
         currency: price.currency,
