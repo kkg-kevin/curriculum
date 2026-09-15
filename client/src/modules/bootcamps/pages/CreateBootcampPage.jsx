@@ -6,6 +6,7 @@ import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePricingField from "../../../components/CoursePricingField";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
+import { usePathways } from "../../curriculum/hooks/useCompetencies";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import {
   useBootcampQuery,
@@ -36,6 +37,7 @@ const toFormValues = (b) => ({
   tagline: b?.tagline || "",
   coverImage: b?.coverImage || null,
   curriculumId: b?.curriculumId || null,
+  pathwayIds: b?.pathwayIds || [],
   startDate: b?.startDate || "",
   endDate: b?.endDate || "",
   registrationOpenDate: b?.registrationOpenDate || "",
@@ -61,8 +63,10 @@ const clean = (v) => {
   out.curriculumId = out.curriculumId || null;
   out.highlights = (out.highlights || []).map((h) => h.trim()).filter(Boolean);
   out.priceNotes = (out.priceNotes || []).map((n) => n.trim()).filter(Boolean);
-  // Without a curriculum there's nothing coursePricing's courseIds could validly belong to.
+  // Without a curriculum there's nothing coursePricing's courseIds (or pathwayIds) could validly
+  // belong to.
   out.coursePricing = out.curriculumId ? out.coursePricing || [] : [];
+  out.pathwayIds = out.curriculumId ? out.pathwayIds || [] : [];
   out.diagnosticAssessmentId = out.diagnosticAssessmentId || null;
   // Can only ever be true alongside an assessment — the checkbox is disabled without one (see
   // the form below), but guard here too in case state gets out of sync.
@@ -147,6 +151,47 @@ function NotesInput({ value, onChange }) {
   );
 }
 
+// Which of the linked curriculum's pathways this bootcamp actually runs — a curriculum can carry
+// several pathways and not all of them are relevant to a given bootcamp (e.g. a robotics holiday
+// camp built on a curriculum that also has an unrelated digital-literacy pathway). Checking none
+// means "every pathway" (the pre-existing behaviour before this field existed) — made explicit
+// here rather than defaulting to "none selected" reading as "nothing included".
+function PathwaysField({ curriculumId, value, onChange }) {
+  const { data: pathways, isLoading } = usePathways(curriculumId);
+
+  if (!curriculumId) {
+    return <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>Select a curriculum above to choose its pathways.</p>;
+  }
+  if (isLoading) {
+    return <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>Loading pathways…</p>;
+  }
+  if (!pathways || pathways.length === 0) {
+    return <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>This curriculum has no pathways yet.</p>;
+  }
+
+  const selected = value || [];
+  const toggle = (pathwayId, checked) => {
+    onChange(checked ? [...selected, pathwayId] : selected.filter((id) => id !== pathwayId));
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {pathways.map((p) => (
+        <label key={p.id} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={selected.includes(p.id)}
+            onChange={(e) => toggle(p.id, e.target.checked)}
+            style={{ width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+          />
+          {p.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: p.color, flexShrink: 0 }} />}
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{p.name}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 const backToBootcamp = (id) => `/events/bootcamps/${id}/view`;
 const backToList = "/events";
 
@@ -187,6 +232,7 @@ export default function CreateBootcampPage() {
 
   const isPending = creating || updating;
   const selectedCurriculumId = useWatch({ control, name: "curriculumId" });
+  const selectedPathwayIds = useWatch({ control, name: "pathwayIds" });
   const descriptionWordCount = wordCount(useWatch({ control, name: "description" }));
   const watchedDiagnosticAssessmentId = useWatch({ control, name: "diagnosticAssessmentId" });
 
@@ -240,7 +286,7 @@ export default function CreateBootcampPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-              ← Programs
+              ← Events
             </button>
             <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{isEdit ? "Edit bootcamp" : "New bootcamp"}</span>
@@ -312,6 +358,20 @@ export default function CreateBootcampPage() {
               </select>
               <span style={S.hint}>The curriculum whose cohorts and course structure this bootcamp runs. Required to run it at a hub.</span>
             </div>
+
+            {selectedCurriculumId && (
+              <div style={S.field}>
+                <label style={S.label}>Pathways</label>
+                <Controller
+                  control={control}
+                  name="pathwayIds"
+                  render={({ field }) => (
+                    <PathwaysField curriculumId={selectedCurriculumId} value={field.value} onChange={field.onChange} />
+                  )}
+                />
+                <span style={S.hint}>Which of this curriculum&rsquo;s pathways this bootcamp actually runs. Leave all unchecked to include every pathway.</span>
+              </div>
+            )}
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer" }}>
               <Controller
@@ -449,6 +509,7 @@ export default function CreateBootcampPage() {
                   render={({ field }) => (
                     <CoursePricingField
                       curriculumId={selectedCurriculumId}
+                      pathwayIds={selectedPathwayIds}
                       value={field.value || []}
                       onChange={field.onChange}
                       color={ACCENT}

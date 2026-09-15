@@ -47,6 +47,11 @@ const bootcampFields = z.object({
   // curriculumId is never client-forced into the general payload beyond an id string — the
   // controller checks it belongs to the same admin (same posture as competition.curriculumId).
   curriculumId:  z.string().max(36).optional().nullable(),
+  // Which of curriculumId's pathways this bootcamp actually runs — filters the course-pricing
+  // picker and the public page's curriculum/competency summary down to just these (see
+  // public-content.js's resolveCoursePricing/resolveCurriculumSummary). Empty/not set means
+  // "every pathway under the curriculum", same as before this field existed.
+  pathwayIds:    z.array(z.string().max(36)).max(50).optional().default([]),
   // This run's own window — required before it can be run at a hub (see
   // bootcamp-hub.service.js's createOffering), but left optional/blank here so a
   // not-yet-scheduled bootcamp can still exist as a plain marketing listing.
