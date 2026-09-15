@@ -188,7 +188,7 @@ export default function ProgramsListPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, position: "relative", flexWrap: "wrap" }}>
           <div>
             <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
-              Programs
+              Events
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
               Competitions and bootcamps — their dates, their registration windows, and the hubs that run them.

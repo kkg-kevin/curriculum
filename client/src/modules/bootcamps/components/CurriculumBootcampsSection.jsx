@@ -18,7 +18,7 @@ function formatDateRange(b) {
 /**
  * The "Bootcamps" section shown on a curriculum's view page — every bootcamp linked to this
  * curriculum. Bootcamps are their own module server-side and on the public website; on the
- * admin side they're only reachable from inside a Curriculum, or from the Programs list.
+ * admin side they're only reachable from inside a Curriculum, or from the Events list.
  *
  * `variant` tweaks the outer card to match the surrounding page ("plain" card standalone,
  * "bordered" like the other sections on CurriculumViewPage).
