@@ -9,6 +9,17 @@ const ClassModel = require("../classes/class.model");
 const ClassService = require("../classes/class.service");
 const RoomModel = require("../rooms/room.model");
 const RoomService = require("../rooms/room.service");
+const { generateId } = require("../../shared/utils/model.utils");
+
+// Every spaces[] entry needs a stable id so a learner's enrollment (learner_hub_links.spaceId)
+// and a logged hub-visits row can reference "which space" — spaces[] is a JSON array on the hub
+// itself, not its own table, so there's no DB-assigned id for a new entry to pick up. Assigned
+// here (not in the Zod schema) so spaceSchema stays a pure shape validator; any entry that
+// already carries an id (an existing space being edited) is left untouched.
+function withSpaceIds(spaces) {
+  if (!Array.isArray(spaces)) return spaces;
+  return spaces.map((space) => (space.id ? space : { ...space, id: generateId() }));
+}
 
 async function assertCurriculumExists(curriculumId) {
   const curriculum = await CurriculumModel.findById(curriculumId);
@@ -29,7 +40,8 @@ function sortAttachments(links) {
 
 const LearningHubService = {
   async createLearningHub(data) {
-    const record = await LearningHubModel.create(data);
+    const payload = data.spaces ? { ...data, spaces: withSpaceIds(data.spaces) } : data;
+    const record = await LearningHubModel.create(payload);
     if (data.curriculumId) {
       await this.syncCoreCurriculum(record.id, data.curriculumId);
     }
@@ -61,7 +73,8 @@ const LearningHubService = {
 
   async updateLearningHub(id, data) {
     const before = await LearningHubModel.findById(id);
-    const record = await LearningHubModel.update(id, data);
+    const payload = data.spaces ? { ...data, spaces: withSpaceIds(data.spaces) } : data;
+    const record = await LearningHubModel.update(id, payload);
     if (!record) {
       const err = new Error("Learning hub not found");
       err.statusCode = 404;

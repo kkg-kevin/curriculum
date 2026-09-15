@@ -225,7 +225,10 @@ const LearnerService = {
     const learners = await LearnerModel.findAll({ guardianEmail, ids: [...linkByLearnerId.keys()] });
     return learners.map((l) => {
       const link = linkByLearnerId.get(l.id);
-      return { ...l, schoolId: link.hubId, classId: link.classId, admissionNumber: link.admissionNumber, status: link.status };
+      // spaceId/pricingOverride* only matter for a non-school hub (see hub-visits module) — a
+      // school-hub roster carries them along too since they're just null there, cheaper than
+      // branching this merge on hub type.
+      return { ...l, schoolId: link.hubId, classId: link.classId, admissionNumber: link.admissionNumber, status: link.status, spaceId: link.spaceId || null, pricingOverrideRate: link.pricingOverrideRate || null, pricingOverrideUnit: link.pricingOverrideUnit || null };
     });
   },
 
@@ -302,7 +305,7 @@ const LearnerService = {
     return resolved.filter(Boolean);
   },
 
-  async enrollInHub(learnerId, { hubId, classId, status }) {
+  async enrollInHub(learnerId, { hubId, classId, status, spaceId, pricingOverrideRate, pricingOverrideUnit }) {
     if (!(await LearnerModel.findById(learnerId))) {
       const err = new Error("Learner not found");
       err.statusCode = 404;
@@ -343,11 +346,23 @@ const LearnerService = {
     }
 
     const existing = await LearnerHubLinkModel.findOne(learnerId, resolvedHubId);
-    if (existing) return LearnerService.getLearnerHubs(learnerId);
+    if (existing) {
+      // Re-"enrolling" an already-linked learner is a no-op for class/status (unenroll + re-
+      // enroll is the supported way to change those), but a non-school hub's space assignment
+      // is exactly the kind of thing an admin picks after the fact via "Add Existing Learner" —
+      // apply it here instead of silently discarding it, or a learner already linked with no
+      // space could never get one assigned through this call.
+      if (spaceId !== undefined && spaceId !== existing.spaceId) {
+        await LearnerHubLinkModel.update(existing.id, { spaceId, pricingOverrideRate: pricingOverrideRate || null, pricingOverrideUnit: pricingOverrideUnit || null });
+      }
+      return LearnerService.getLearnerHubs(learnerId);
+    }
 
     const year = cls?.academicYear || String(new Date().getFullYear());
     const admissionNumber = await generateAdmissionNumber(hub.code, year);
-    await LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId: resolvedClassId || null, admissionNumber, status });
+    // spaceId/pricingOverride* only ever apply to a non-school hub (see hub-visits module) — a
+    // school-hub enroll call simply never sends them, so they stay null there.
+    await LearnerHubLinkModel.create({ learnerId, hubId: resolvedHubId, classId: resolvedClassId || null, admissionNumber, status, spaceId: spaceId || null, pricingOverrideRate: pricingOverrideRate || null, pricingOverrideUnit: pricingOverrideUnit || null });
     if (cls) await maybeAutoIssueDiagnostic(learnerId, cls, resolvedHubId);
     return LearnerService.getLearnerHubs(learnerId);
   },

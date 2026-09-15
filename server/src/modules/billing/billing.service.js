@@ -188,6 +188,10 @@ const BillingService = {
   },
 
   async createInvoice(data, req) {
+    // hub_usage invoices exist only to record a batch of hub-visits charges (see the hub-visits
+    // module's generateCharges) — allowing one to be hand-crafted here would let someone bypass
+    // the visit-log audit trail (no hub_visits rows behind it, nothing to mark "invoiced").
+    if (data.invoiceType === "hub_usage") throw badRequest("hub_usage invoices are generated from visit logs, not created manually");
     const hub = await LearningHubService.getLearningHubById(data.hubId);
     let issuerType = "platform";
     let issuerHubId = null;
@@ -284,8 +288,21 @@ const BillingService = {
     if (!invoice) throw notFound("Invoice not found");
     if (req.user.role !== "admin" && !(req.user.role === "school" && invoice.issuerHubId === req.ownSchool?.id)) throw Object.assign(new Error("You do not have permission to edit this invoice"), { statusCode: 403 });
     if (invoice.status !== "draft") throw badRequest("Only draft invoices can be edited");
-    const updated = await BillingModel.updateInvoice(id, data);
-    return decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
+    const items = await BillingModel.findItems(id);
+    const patch = { ...data };
+    // discount is validated against the subtotal and total is recomputed here — same rule
+    // createInvoice enforces at creation time (discount cannot exceed subtotal). Without this,
+    // patching discount on a draft invoice would leave `total` stale at its pre-patch value,
+    // showing a discount the total never actually reflects.
+    if ("discount" in patch) {
+      const subtotal = money(items.reduce((sum, item) => sum + Number(item.totalAmount), 0));
+      const discount = money(patch.discount);
+      if (discount > subtotal) throw badRequest("Discount cannot exceed the invoice subtotal");
+      patch.discount = discount;
+      patch.total = money(subtotal - discount);
+    }
+    const updated = await BillingModel.updateInvoice(id, patch);
+    return decorate(updated, items, await BillingModel.findPayments(id));
   },
 
   async issueInvoice(id, req) {

@@ -29,10 +29,11 @@ const reportRoutes = require("./modules/reports/report.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const competitionRoutes = require("./modules/competitions/competition.routes");
 const bootcampRoutes = require("./modules/bootcamps/bootcamp.routes");
-const mentorSessionRoutes = require("./modules/mentor-sessions/mentor-session.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
+const hubVisitRoutes = require("./modules/hub-visits/hub-visit.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
+const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bootcamp-enrollment.routes");
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
@@ -137,6 +138,11 @@ app.use("/api/public", publicDiagnosticRoutes);
 // Unauthenticated by design — the same public diagnostic feature, scoped to a Bootcamp instead
 // of a Pathway (see public-bootcamp-diagnostic.routes.js and that module's own comments).
 app.use("/api/public", publicBootcampDiagnosticRoutes);
+// Unauthenticated by design — a bootcamp diagnostic report's "Enroll now" step. Auto-provisions
+// a real learner account (see bootcamp-enrollment.service.js) instead of just sending a lead for
+// a human to follow up on. The admin-only "mark paid" counterpart lives on the existing
+// protected /api/leads router instead (see lead.routes.js).
+app.use("/api/public", publicBootcampEnrollmentRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -183,15 +189,15 @@ app.use("/api/competitions", protect, attachOwnRecords, authorize("admin"), comp
 // Bootcamps — an independent module (a sibling of curriculum/competitions), admin-only. A
 // bootcamp can optionally link to a curriculum via curriculumId.
 app.use("/api/bootcamps", protect, attachOwnRecords, authorize("admin"), bootcampRoutes);
-// Mentor Sessions — logs a mentor-learner session at a non-school hub and what it earned (the
-// hub collects/keeps the money itself; this just records it). Admin-only, independent module,
-// deliberately separate from /api/billing — see the 20260914110000 migration's header comment
-// for why reusing billing_invoices would conflate two opposite money-flow directions.
-app.use("/api/mentor-sessions", protect, attachOwnRecords, authorize("admin"), mentorSessionRoutes);
 // Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
 // router, no attachOwnRecords/authorize needed.
 app.use("/api/notifications", protect, notificationRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
+// Hub Visits — a non-school hub logging learner space-usage visits and turning them into
+// hub_usage invoices through the Billing module above (see hub-visit.service.js's header
+// comment). Admin/school only, same posture as billing — a learner's own charges surface
+// exclusively through /api/billing, never this route.
+app.use("/api/hub-visits", protect, attachOwnRecords, hubVisitRoutes);
 // Enquiries page — the staff-facing read/triage side of the public leads above.
 app.use("/api/leads", protect, authorize("admin"), leadRoutes);
 // One-time operational tool: move a hub/curriculum/course/assessment the calling admin owns to

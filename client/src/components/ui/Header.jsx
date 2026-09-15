@@ -121,6 +121,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   const pageTitles = {
     "/": "Dashboard",
     "/learning-hubs": "Learning Hubs",
+    "/learning-hubs/revenue": "Hub Revenue",
     "/settings/learning-hubs/create": "Add Learning Hub",
     "/curriculum": "Curriculum",
     "/learners": "Learners",

@@ -5,6 +5,7 @@ export const TYPE_LABELS = {
   learner_term: "Learner per term",
   course_module: "Course / module",
   bootcamp: "One-time bootcamp",
+  hub_usage: "Hub usage",
 };
 
 export const TYPE_HELP = {
@@ -12,6 +13,10 @@ export const TYPE_HELP = {
   learner_term: "Recurring learner fees for an academic term. The guardian account is notified.",
   course_module: "Charge a learner for a specific course or module.",
   bootcamp: "A single payment for a special programme or bootcamp.",
+  // Never created manually — generated from a non-school hub's logged visits, see the
+  // hub-visits module. Listed here only so an existing invoice of this type renders a readable
+  // label instead of the raw enum string in any UI that reads TYPE_LABELS/TYPE_HELP generically.
+  hub_usage: "Per-visit charges for using a non-school hub's space.",
 };
 
 export const STATUS_LABELS = { draft: "Draft", issued: "Issued", partially_paid: "Partially paid", paid: "Paid", overdue: "Overdue", cancelled: "Cancelled", void: "Void" };

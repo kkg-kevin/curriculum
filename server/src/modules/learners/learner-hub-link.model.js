@@ -50,7 +50,10 @@ const LearnerHubLinkModel = {
   // Idempotent like teacher-hub-link's `link` — if this learner already has an enrollment at
   // this hub, returns the existing row untouched rather than creating a duplicate (use
   // `update` to change its class/status/admissionNumber instead).
-  async create({ learnerId, hubId, classId, admissionNumber, status }) {
+  //
+  // spaceId/pricingOverrideRate/pricingOverrideUnit only ever apply to a non-school hub
+  // enrollment (see hub-visits module) — a school-hub enrollment simply never sets them.
+  async create({ learnerId, hubId, classId, admissionNumber, status, spaceId, pricingOverrideRate, pricingOverrideUnit }) {
     const existing = await firstOrNull(db(TABLE).where({ learnerId, hubId }));
     if (existing) return existing;
     const now = new Date();
@@ -61,6 +64,9 @@ const LearnerHubLinkModel = {
       classId: classId || null,
       admissionNumber: admissionNumber || null,
       status: status || "active",
+      spaceId: spaceId || null,
+      pricingOverrideRate: pricingOverrideRate || null,
+      pricingOverrideUnit: pricingOverrideUnit || null,
       createdAt: now,
       updatedAt: now,
     };

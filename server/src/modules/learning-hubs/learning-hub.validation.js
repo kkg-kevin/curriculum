@@ -46,7 +46,13 @@ const operatingHoursSchema = z.object({
 // Bookable seating/space configuration — data capture only. There is no reservation/booking
 // flow anywhere in the app yet; this just records what a hub offers and at what price so
 // that feature can be built against real data later.
+//
+// id is assigned server-side (learning-hub.service.js's space-id backfill) the first time a
+// space is saved — a learner's enrollment (learner_hub_links.spaceId) and a logged hub visit
+// (hub_visits.spaceId) reference it to say "which space." Optional here since a newly-added
+// space from the client has none yet; an existing space keeps the id it was given.
 const spaceSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, "Space name is required").max(100),
   spaceType: z.string().max(50).default("desk"),
   building: z.string().min(1, "Building is required").max(100),
