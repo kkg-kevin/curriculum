@@ -5,6 +5,8 @@ const UserModel = require("./user.model");
 const LearnerModel = require("../learners/learner.model");
 const TeacherModel = require("../teachers/teacher.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const LeadModel = require("../leads/lead.model");
+const BootcampModel = require("../bootcamps/bootcamp.model");
 const RevokedTokenModel = require("./revoked-token.model");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
@@ -23,8 +25,21 @@ function sanitize(user) {
 //   "hub"     — the school-role account's own learning hub is inactive
 //   "teacher" — the teacher record is inactive ("on_leave" is NOT a suspension, just a hint)
 //   "learner" — the learner account (or every sibling under a guardian login) is inactive
+//   "payment" — the learner account (or every sibling) is "pending_payment" — auto-provisioned
+//               from a public bootcamp enrollment (see bootcamp-enrollment.service.js) and not
+//               yet marked paid. Kept distinct from "learner" so the client can show "please
+//               complete payment" instead of "contact your school administrator", which would
+//               be actively wrong for this case.
 // A user with no matching record at all (e.g. a teacher login with no teacher row yet) is not
 // suspended — that's handled by the portals' own "no profile linked" states.
+function learnerSuspensionReason(learners) {
+  if (learners.some((l) => (l.accountStatus || "active") === "active")) return null;
+  // None are active — "payment" takes priority over the generic "learner" reason whenever at
+  // least one sibling is pending_payment rather than a hard "inactive", since that's the more
+  // actionable, specific thing to tell them.
+  return learners.some((l) => l.accountStatus === "pending_payment") ? "payment" : "learner";
+}
+
 async function resolveSuspension(user) {
   if (!user) return null;
 
@@ -42,12 +57,12 @@ async function resolveSuspension(user) {
   if (user.role === "learner") {
     if (user.username) {
       const learner = await LearnerModel.findByUsername(user.username);
-      if (!learner || (learner.accountStatus || "active") !== "active") return "learner";
-    } else {
-      const learners = await LearnerModel.findAll({ guardianEmail: user.email });
-      const hasActiveLearner = learners.some((l) => (l.accountStatus || "active") === "active");
-      if (learners.length === 0 || !hasActiveLearner) return "learner";
+      if (!learner) return "learner";
+      return learnerSuspensionReason([learner]);
     }
+    const learners = await LearnerModel.findAll({ guardianEmail: user.email });
+    if (learners.length === 0) return "learner";
+    return learnerSuspensionReason(learners);
   }
 
   return null;
@@ -171,8 +186,9 @@ const AuthService = {
     // Suspended" page and every write is refused server-side. `suspended` rides along on the
     // returned user so the client knows immediately, without a second round trip.
     const suspended = await resolveSuspension(user);
+    const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
     const token = signToken(user);
-    return { user: { ...sanitize(user), suspended }, token };
+    return { user: { ...sanitize(user), suspended, pendingPayment }, token };
   },
 
   // Confirms the CURRENTLY logged-in user really knows their own password, without touching
@@ -193,6 +209,30 @@ const AuthService = {
       throw err;
     }
     return true;
+  },
+
+  // Self-service password change — any authenticated role. Routed through auth.routes.js, which
+  // (like every route in that file) uses the bare `protect` exported by auth.middleware.js, not
+  // app.js's own protect = [protectBase, blockIfSuspended] — so this is reachable even for a
+  // suspended/pending-payment account, same as /me and /verify-password already are. That's the
+  // right behavior here: being able to set a real password for yourself shouldn't require your
+  // account to be unsuspended first.
+  async changePassword(id, { currentPassword, newPassword }) {
+    const user = await UserModel.findById(id);
+    if (!user) {
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      const err = new Error("Current password is incorrect");
+      err.statusCode = 401;
+      throw err;
+    }
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await UserModel.update(id, { passwordHash });
+    return { message: "Password changed successfully" };
   },
 
   // The JWT design has no server-side session to invalidate on its own — jwt.verify() alone
@@ -221,7 +261,53 @@ const AuthService = {
     // A suspended user still gets a valid /me response — the client uses `suspended` to lock
     // them to the in-app "Account Suspended" page.
     const suspended = await resolveSuspension(user);
-    return { ...sanitize(user), suspended };
+    const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
+    return { ...sanitize(user), suspended, pendingPayment };
+  },
+
+  // "What do I owe" for the "payment pending" screen — a learner auto-provisioned from a public
+  // bootcamp enrollment (see bootcamp-enrollment.service.js) has a `leads` row linking them to
+  // the bootcamp + hub they signed up for; this resolves that lead's bootcamp price and hub name
+  // so the price shown at signup is still visible on every later login, not just the one-time
+  // confirmation screen. Returns null (not an error) whenever there's nothing to show — a
+  // non-learner account, a learner with no such lead (e.g. enrolled the normal admin way), or
+  // one that's already fully paid — the client only renders this on the "payment" suspension
+  // screen, where a null just means "no price on file, ask the hub."
+  async getPendingPayment(user) {
+    if (!user || user.role !== "learner") return null;
+    // Same learner-resolution as resolveSuspension: a dedicated login resolves directly, a
+    // guardian-mediated login resolves to whichever child that account's own email currently
+    // scopes to (checked by resolveSuspension before this is ever reached, so a mixed-sibling
+    // guardian account only gets here for the specific reason: "payment").
+    let learnerId = null;
+    if (user.username) {
+      const learner = await LearnerModel.findByUsername(user.username);
+      learnerId = learner?.id || null;
+    } else {
+      const learners = await LearnerModel.findAll({ guardianEmail: user.email });
+      const pending = learners.find((l) => l.accountStatus === "pending_payment");
+      learnerId = (pending || learners[0])?.id || null;
+    }
+    if (!learnerId) return null;
+
+    const lead = await LeadModel.findByLearnerId(learnerId);
+    if (!lead || lead.paidAt || !lead.bootcampId) return null;
+
+    const bootcamp = await BootcampModel.findById(lead.bootcampId);
+    if (!bootcamp) return null;
+
+    let hubName = null;
+    if (lead.hubId) {
+      const hub = await LearningHubModel.findById(lead.hubId);
+      hubName = hub?.name || null;
+    }
+
+    return {
+      bootcampName: bootcamp.name,
+      amount: bootcamp.priceAmount != null ? Number(bootcamp.priceAmount) : null,
+      currency: bootcamp.priceCurrency || "KES",
+      hubName,
+    };
   },
 
   async updateMe(id, data) {

@@ -8,7 +8,7 @@ import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import HubRevenueSection from "../../mentor-sessions/components/HubRevenueSection";
+import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 
 const ACCENT = "#25476a";
 const TEAL = "#38aae1";
@@ -132,8 +132,10 @@ export default function LearningHubViewPage() {
 
   const isSchool = hub?.hubType === "school";
 
-  // Teachers can be assigned to any hub type now — only Classes/Learners remain keyed by a
-  // single schoolId and so stay school-type-only below.
+  // Teachers can be assigned to any hub type now — Classes stay school-type-only (a non-school
+  // hub has no class concept), but Learners is fetched for every hub type: a non-school hub
+  // needs its own roster too, both to show a Learners stat/section here and to feed the Finance
+  // tab's "log a visit" learner picker (see hub-visits module).
   const { data: teachers = [] } = useHubTeachersQuery(id);
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", id],
@@ -143,22 +145,10 @@ export default function LearningHubViewPage() {
   const { data: learnersData } = useQuery({
     queryKey: ["learners", "bySchool", id],
     queryFn:  () => learnerApi.getAll({ schoolId: id }),
-    enabled:  !!id && isSchool,
+    enabled:  !!id,
   });
   const classes  = classesData?.data  || [];
   const learners = learnersData?.data || [];
-
-  // Mentor Sessions (non-school hubs only) needs the hub's own learners too, to populate the
-  // "log a session" picker — same GET /api/learners?schoolId= lookup as above (schoolId is just
-  // "which hub" regardless of hub type), just enabled for the opposite hub-type branch. Its own
-  // distinct query key (not shared with the school-only query above) even though the two are
-  // never both enabled for the same hub — keeps the two independent if that ever changes.
-  const { data: hubLearnersData } = useQuery({
-    queryKey: ["learners", "byHub", id],
-    queryFn:  () => learnerApi.getAll({ schoolId: id }),
-    enabled:  !!id && !isSchool,
-  });
-  const hubLearners = isSchool ? learners : (hubLearnersData?.data || []);
 
   // "Branches": other hubs whose parentHubId points at this one — its own admin login can
   // switch into and operate them (see useSchoolPortalScope.js). If this hub is itself a branch,
@@ -272,15 +262,13 @@ export default function LearningHubViewPage() {
         </div>
       )}
 
-      {/* Stats row — Teachers now attach to any hub type; Classes/Learners stay
-          school-type-only since they're still keyed by a single schoolId */}
+      {/* Stats row — Teachers now attach to any hub type; Classes stays school-type-only (no
+          class concept at a non-school hub), Learners now shows for every hub type */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
         {[
           { label: "Educators", value: teachers.length, icon: <PeopleAltIcon fontSize="small" />, bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
-          ...(isSchool ? [
-            { label: "Classes",  value: classes.length,  icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" },
-            { label: "Learners", value: learners.length, icon: <PersonIcon fontSize="small" />, bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
-          ] : []),
+          ...(isSchool ? [{ label: "Classes", value: classes.length, icon: <SchoolIcon fontSize="small" />, bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee" }] : []),
+          { label: "Learners", value: learners.length, icon: <PersonIcon fontSize="small" />, bg: "#d6edf8", color: "#25476a", border: "#b8d9ee" },
         ].map((s) => (
           <div key={s.label} style={{ backgroundColor: "#ffffff", borderRadius: 14, border: `1.5px solid ${s.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: s.bg, display: "flex", alignItems: "center", justifyContent: "center", color: s.color, flexShrink: 0 }}>{s.icon}</div>
@@ -518,6 +506,15 @@ export default function LearningHubViewPage() {
         </div>
       )}
 
+      {/* Finance — non-school hubs only (a school hub already bills its own learners' guardians
+          directly via Billing, see billing.service.js). See hub-visit.service.js's header
+          comment for why this is deliberately separate from Billing's own invoice-lifecycle UI. */}
+      {!isSchool && (
+        <div style={{ marginBottom: "16px" }}>
+          <HubFinanceTab hubId={id} learners={learners} spaces={hub.spaces || []} />
+        </div>
+      )}
+
       {/* Branches — other hubs parented to this one, or (if this hub is itself a branch) the
           parent it belongs to. Only "school"-type hubs get their own login, so branch switching
           only ever matters for those; still shown for any hub type since parentHubId itself
@@ -562,9 +559,9 @@ export default function LearningHubViewPage() {
         </div>
       )}
 
-      {/* Teachers now attach to any hub type; Classes/Learners are still keyed by a single
-          schoolId, so they only render for school-type hubs */}
-      <div style={{ display: "grid", gridTemplateColumns: isSchool ? "1fr 1fr 1fr" : "1fr", gap: "16px" }}>
+      {/* Teachers attach to any hub type; Classes stays school-only (no class concept at a
+          non-school hub); Learners now renders for every hub type. */}
+      <div style={{ display: "grid", gridTemplateColumns: isSchool ? "1fr 1fr 1fr" : "1fr 1fr", gap: "16px" }}>
         <Section title="Educators" count={teachers.length}>
           {teachers.length === 0 ? (
             <EmptyList icon={<PeopleAltIcon fontSize="medium" />} text="No educators yet." />
@@ -623,16 +620,34 @@ export default function LearningHubViewPage() {
           </Section>
         </>
         )}
-      </div>
 
-      {/* Mentor session revenue — non-school hubs only (a school hub already bills its own
-          learners' guardians directly, see billing.service.js). See mentor-session.service.js's
-          header comment for why this is deliberately separate from Billing. */}
-      {!isSchool && (
-        <div style={{ marginTop: "16px" }}>
-          <HubRevenueSection hubId={id} teachers={teachers} learners={hubLearners} />
-        </div>
-      )}
+        {!isSchool && (
+          <Section title="Learners" count={learners.length}>
+            {learners.length === 0 ? (
+              <EmptyList icon={<PersonIcon fontSize="medium" />} text="No learners yet." />
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {learners.slice(0, 5).map((l) => (
+                  <div key={l.id} onClick={() => navigate(`/learners/${l.id}/view`)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
+                    <span>{l.firstName} {l.lastName}</span>
+                    {l.spaceId && (
+                      <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>
+                        {hub.spaces?.find((s) => s.id === l.spaceId)?.name || "Space assigned"}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {learners.length > 5 && (
+                  <button type="button" onClick={() => navigate(`/learners?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    View all {learners.length} →
+                  </button>
+                )}
+              </div>
+            )}
+          </Section>
+        )}
+      </div>
 
       <ConfirmDialog
         isOpen={confirmDelete}

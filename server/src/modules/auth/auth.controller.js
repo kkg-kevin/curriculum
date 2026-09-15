@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
-const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema } = require("./auth.validation");
+const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema, changePasswordSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
@@ -54,6 +54,12 @@ const verifyPassword = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const data = changePasswordSchema.parse(req.body);
+  const result = await AuthService.changePassword(req.user.id, data);
+  res.json({ success: true, data: result });
+});
+
 // Admin-only, and deliberately admin-only in effect too: createUserSchema's role field still
 // accepts the other USER_ROLES values, but every other role is already created through its own
 // dedicated flow (a school/teacher/learner portal login, via AuthService.setOrCreatePassword*)
@@ -68,4 +74,4 @@ const createAdmin = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: user });
 });
 
-module.exports = { signup, login, logout, me, updateMe, verifyPassword, createAdmin };
+module.exports = { signup, login, logout, me, updateMe, verifyPassword, changePassword, createAdmin };

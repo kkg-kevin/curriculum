@@ -14,6 +14,7 @@ import {
   useLeadTimeline,
   useReplyToLead,
   useAddLeadNote,
+  useMarkLeadPaid,
 } from "../hooks/useLeads";
 
 const cardStyle = { background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14 };
@@ -23,6 +24,10 @@ function formatDateTime(value) {
   return value
     ? new Date(value).toLocaleString("en-KE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
     : "—";
+}
+
+function formatMoney(amount, currency = "KES") {
+  return `${currency} ${Number(amount || 0).toLocaleString()}`;
 }
 
 const STATUS_TABS = [
@@ -180,9 +185,69 @@ function LeadThread({ leadId, canEmail = true }) {
   );
 }
 
+// A bootcamp-enrollment lead (source: "enroll", already has a provisioned learnerId — see
+// bootcamp-enrollment.service.js) — records a manually-received cash payment, which in the same
+// server-side transaction creates the real invoice/payment and unlocks that learner's account
+// (accountStatus "pending_payment" -> "active"). amount has no automated price lookup at payment
+// time (nothing on the lead ties back to the bootcamp's exact priceAmount reliably enough to
+// trust blindly) — the admin confirms/enters what was actually received.
+function MarkPaidPanel({ lead, onDone }) {
+  const expected = lead.expectedPayment;
+  const [amount, setAmount] = useState(expected?.amount != null ? String(expected.amount) : "");
+  const [currency, setCurrency] = useState(expected?.currency || "KES");
+  const markPaid = useMarkLeadPaid();
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!amount || Number(amount) <= 0) return;
+    markPaid.mutate(
+      { id: lead.id, amount: Number(amount), currency },
+      { onSuccess: () => onDone?.() }
+    );
+  };
+
+  return (
+    <form onSubmit={submit} style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #E5E7EB", display: "flex", flexDirection: "column", gap: 8 }}>
+      {expected && (
+        <div style={{ fontSize: 11.5, color: "#166534", fontWeight: 700 }}>
+          Expected: {formatMoney(expected.amount, expected.currency)}{expected.hubName ? ` at ${expected.hubName}` : ""} — pre-filled below, edit if a different amount was actually received.
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <div>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#6B7280", marginBottom: 4 }}>Amount received</label>
+        <input
+          type="number" min="0.01" step="0.01" placeholder="0.00"
+          value={amount} onChange={(e) => setAmount(e.target.value)}
+          style={{ ...inputStyle, width: 130 }}
+        />
+      </div>
+      <div>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#6B7280", marginBottom: 4 }}>Currency</label>
+        <input
+          type="text" maxLength={8} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+          style={{ ...inputStyle, width: 70 }}
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={markPaid.isPending || !amount}
+        style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: markPaid.isPending || !amount ? "#B8C8D5" : "#15803D", color: "#fff", fontSize: 12, fontWeight: 700, cursor: markPaid.isPending || !amount ? "default" : "pointer", fontFamily: "inherit" }}
+      >
+        {markPaid.isPending ? "Recording…" : "Confirm cash received"}
+      </button>
+      </div>
+    </form>
+  );
+}
+
 function LeadRow({ lead, highlighted, rowRef }) {
   const updateStatus = useUpdateLeadStatus();
   const [expanded, setExpanded] = useState(false);
+  const [showMarkPaid, setShowMarkPaid] = useState(false);
+  // Only a bootcamp-enrollment lead has a provisioned learner to unlock — see
+  // bootcamp-enrollment.service.js. Once paid, show a badge instead of the action.
+  const isPayable = lead.source === "enroll" && !!lead.learnerId;
   return (
     <div
       ref={rowRef}
@@ -218,6 +283,20 @@ function LeadRow({ lead, highlighted, rowRef }) {
           {lead.message && (
             <p style={{ margin: "8px 0 0", fontSize: 12, color: "#4B5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{lead.message}</p>
           )}
+          {isPayable && (
+            lead.paidAt ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: "#DCFCE7", color: "#166534" }}>
+                Paid {formatMoney(lead.paidAmount, lead.paidCurrency)} on {formatDateTime(lead.paidAt)}
+              </div>
+            ) : (
+              <div style={{ marginTop: 8, fontSize: 11.5, color: "#B45309", fontWeight: 700 }}>
+                Account created — awaiting{" "}
+                {lead.expectedPayment
+                  ? `${formatMoney(lead.expectedPayment.amount, lead.expectedPayment.currency)}${lead.expectedPayment.hubName ? ` at ${lead.expectedPayment.hubName}` : ""}`
+                  : "payment"}
+              </div>
+            )
+          )}
         </div>
         <div style={{ fontSize: 12, color: "#6B7280" }}>{formatDateTime(lead.createdAt)}</div>
         <StatusBadge status={lead.status} />
@@ -231,19 +310,35 @@ function LeadRow({ lead, highlighted, rowRef }) {
           <option value="contacted">Contacted</option>
           <option value="closed">Closed</option>
         </select>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "6px 10px",
-            borderRadius: 8, border: "1px solid #D7DEE8", background: "#fff",
-            color: "#25476a", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          {expanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
-          {expanded ? "Hide" : "Reply / Notes"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          {isPayable && !lead.paidAt && (
+            <button
+              type="button"
+              onClick={() => setShowMarkPaid((v) => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: 4, padding: "6px 10px",
+                borderRadius: 8, border: "1px solid #15803D", background: showMarkPaid ? "#15803D" : "#fff",
+                color: showMarkPaid ? "#fff" : "#15803D", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              {showMarkPaid ? "Cancel" : "Mark paid"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            style={{
+              display: "flex", alignItems: "center", gap: 4, padding: "6px 10px",
+              borderRadius: 8, border: "1px solid #D7DEE8", background: "#fff",
+              color: "#25476a", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            {expanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+            {expanded ? "Hide" : "Reply / Notes"}
+          </button>
+        </div>
       </div>
+      {showMarkPaid && <MarkPaidPanel lead={lead} onDone={() => setShowMarkPaid(false)} />}
       {expanded && <LeadThread leadId={lead.id} canEmail={!!lead.email} />}
     </div>
   );

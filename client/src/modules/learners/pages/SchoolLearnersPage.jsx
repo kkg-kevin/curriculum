@@ -21,27 +21,29 @@ const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1p
 // number) and enrolls them here too — the only path a school has for this, since
 // they can't otherwise view or search a learner outside their own hub at all. Partial match, so
 // a name search can surface several candidates — pick one from the list before enrolling.
-function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {
+function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, onClose, onEnrolled }) {
   const [term, setTerm] = useState("");
   const [results, setResults] = useState(undefined); // undefined = not searched, [] = no matches, array = matches
   const [selectedId, setSelectedId] = useState(null);
   const [classId, setClassId] = useState("");
+  const [spaceId, setSpaceId] = useState("");
   const { mutate: runSearch, isPending: searching } = useSearchLearners();
   const { mutate: enroll, isPending: enrolling } = useEnrollLearnerHub();
 
   const search = () => {
     const trimmed = term.trim();
     if (!trimmed) return;
-    runSearch(trimmed, { onSuccess: (learners) => { setResults(learners); setSelectedId(null); setClassId(""); } });
+    runSearch(trimmed, { onSuccess: (learners) => { setResults(learners); setSelectedId(null); setClassId(""); setSpaceId(""); } });
   };
 
   const selected = results?.find((l) => l.id === selectedId) || null;
 
   const handleEnroll = () => {
     if (!selected) return;
+    const data = isNonSchoolHub ? { hubId: schoolId, status: "active", spaceId: spaceId || null } : { hubId: schoolId, classId, status: "active" };
     enroll(
-      { learnerId: selected.id, data: { hubId: schoolId, classId, status: "active" } },
-      { onSuccess: () => { setTerm(""); setResults(undefined); setSelectedId(null); onEnrolled?.(); } },
+      { learnerId: selected.id, data },
+      { onSuccess: () => { setTerm(""); setResults(undefined); setSelectedId(null); setSpaceId(""); onEnrolled?.(); } },
     );
   };
 
@@ -112,10 +114,17 @@ function AddExistingLearnerPanel({ schoolId, classes, onClose, onEnrolled }) {
               ← Back to results
             </button>
           )}
-          <select value={classId} onChange={(e) => setClassId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
-            <option value="">— No class yet —</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}
-          </select>
+          {isNonSchoolHub ? (
+            <select value={spaceId} onChange={(e) => setSpaceId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
+              <option value="">— No space yet —</option>
+              {spaces.map((s) => <option key={s.id} value={s.id}>{s.name}{s.pricingModel !== "free" ? ` — KES ${s.rate} ${s.priceUnit}` : " — Free"}</option>)}
+            </select>
+          ) : (
+            <select value={classId} onChange={(e) => setClassId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
+              <option value="">— No class yet —</option>
+              {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}
+            </select>
+          )}
           <button
             type="button"
             onClick={handleEnroll}
@@ -159,6 +168,8 @@ export default function SchoolLearnersPage() {
   const classes  = classesData?.data  || [];
   const classMap = useMemo(() => Object.fromEntries(classes.map((c) => [c.id, c])), [classes]);
   const activeCount = learners.filter((l) => l.status === "active").length;
+  const isNonSchoolHub = school?.hubType && school.hubType !== "school";
+  const spaces = school?.spaces || [];
 
   if (schoolLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
@@ -234,6 +245,8 @@ export default function SchoolLearnersPage() {
         <AddExistingLearnerPanel
           schoolId={schoolId}
           classes={classes}
+          spaces={spaces}
+          isNonSchoolHub={isNonSchoolHub}
           onClose={() => setShowAddExisting(false)}
           onEnrolled={() => {
             setShowAddExisting(false);

@@ -78,15 +78,25 @@ export default function LearningHubsPage() {
               Manage every place a curriculum is used — schools, campuses, branches, and other learning spaces.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/settings/learning-hubs/create")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
-            title="Learning hubs are created and staged as drafts in Settings"
-          >
-            <AddIcon fontSize="small" />
-            Add in Settings
-          </button>
+          <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => navigate("/learning-hubs/revenue")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+              title="What every non-school hub is earning from logged space visits"
+            >
+              Revenue
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/settings/learning-hubs/create")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+              title="Learning hubs are created and staged as drafts in Settings"
+            >
+              <AddIcon fontSize="small" />
+              Add in Settings
+            </button>
+          </div>
         </div>
       </div>
 

@@ -27,6 +27,14 @@ const LeadModel = {
     return db(TABLE).select("status").count({ count: "*" }).groupBy("status");
   },
 
+  // The bootcamp-enrollment lead that provisioned a given learner (see
+  // bootcamp-enrollment.service.js) — used by the learner's own "what do I owe" lookup
+  // (auth.controller.js's getPendingPayment). A learner has at most one such lead in practice
+  // (one enrollment per signup), so the most recent is the right one if more than one exists.
+  findByLearnerId(learnerId) {
+    return firstOrNull(db(TABLE).where({ learnerId }).orderBy("createdAt", "desc"));
+  },
+
   update(id, data) {
     return updateRecord(db, TABLE, id, data);
   },

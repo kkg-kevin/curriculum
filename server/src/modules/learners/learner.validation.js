@@ -103,10 +103,18 @@ const bulkImportLearnersSchema = z.object({
 // is required to create a new enrollment (matches the POST /:id/hubs/links body); omit it
 // when only updating an existing link (PUT /:id/hubs/links/:hubId), since the hub itself
 // can't change on an existing enrollment - unlink + re-enroll instead.
+//
+// spaceId/pricingOverrideRate/pricingOverrideUnit only ever apply to a non-school hub (see the
+// hub-visits module) - which learning_hubs.spaces[] entry this learner is placed at, and an
+// optional negotiated rate/unit distinct from that space's own list price. A school-hub enroll
+// call simply never sends these.
 const enrollLearnerSchema = z.object({
   hubId:   z.string().min(1, "Learning hub is required"),
   classId: z.string().default(""),
   status:  z.enum(["active", "inactive", "transferred", "graduated"]).default("active"),
+  spaceId: z.string().optional().nullable(),
+  pricingOverrideRate: z.coerce.number().positive().optional().nullable(),
+  pricingOverrideUnit: z.string().max(30).optional().nullable(),
 });
 
 const updateEnrollmentSchema = z.object({
@@ -121,6 +129,9 @@ const updateEnrollmentSchema = z.object({
   // CompetencyService.placeLearnerFromDiagnostic), or manually by a teacher/admin here.
   currentStageId: z.string().optional().nullable(),
   currentBandId:  z.string().optional().nullable(),
+  spaceId: z.string().optional().nullable(),
+  pricingOverrideRate: z.coerce.number().positive().optional().nullable(),
+  pricingOverrideUnit: z.string().max(30).optional().nullable(),
 });
 
 // Moves a learner from the hub in the URL (:hubId) to toHubId in one action - see

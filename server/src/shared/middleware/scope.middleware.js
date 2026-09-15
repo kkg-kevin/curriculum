@@ -98,7 +98,8 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
   // method except DELETE, and outside the financial/admin-tooling surfaces a collaborator (scoped
   // to "content a tenant admin can create" — curricula, courses, assessments, hubs, bootcamps,
   // competitions, settings, ...) was never meant to reach: billing (invoices, customer records,
-  // payments) and platform-analytics. This is deliberately a single choke point rather than 80+
+  // payments), hub-visits (non-school hub revenue logging — a hub's equivalent of billing), and
+  // platform-analytics. This is deliberately a single choke point rather than 80+
   // individual edits across every controller's own `req.user.role === "admin"` ownership checks
   // (isOwnHubForAdmin, isLinkedToOwnHub, adminOwnedHubIds, etc, none of which know about
   // "collaborator" and would otherwise silently SKIP their ownership check for one, not deny it)
@@ -111,7 +112,7 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     req.ownerAdminId = req.user.invitedByAdminId || null;
     req.user.actualRole = "collaborator";
     const path = req.originalUrl.split("?")[0];
-    const isRestrictedSurface = path.startsWith("/api/billing") || path === "/api/admin-tools" || path.startsWith("/api/admin-tools/") || path === "/api/reports/platform-analytics";
+    const isRestrictedSurface = path.startsWith("/api/billing") || path.startsWith("/api/hub-visits") || path === "/api/admin-tools" || path.startsWith("/api/admin-tools/") || path === "/api/reports/platform-analytics";
     if (req.method !== "DELETE" && !isRestrictedSurface) req.user.role = "admin";
   }
 

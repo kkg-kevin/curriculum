@@ -1,6 +1,10 @@
 const { z } = require("zod");
 
-const invoiceTypes = ["hub_subscription", "learner_term", "course_module", "bootcamp"];
+// hub_usage (a non-school hub billing a learner for logged space visits, see the hub-visits
+// module) is included here so createInvoiceSchema's zod enum accepts it on the wire, but
+// billing.service.js's createInvoice explicitly rejects it — it's the one type never created
+// through this generic route, only via hub-visit.service.js's generateCharges.
+const invoiceTypes = ["hub_subscription", "learner_term", "course_module", "bootcamp", "hub_usage"];
 const invoiceStatus = ["draft", "issued", "partially_paid", "paid", "overdue", "cancelled", "void"];
 
 const invoiceItemSchema = z.object({

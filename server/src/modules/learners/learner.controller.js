@@ -57,7 +57,7 @@ async function anyEnrollmentTaughtByTeacher(learnerId, teacherId) {
 }
 
 const createLearner = asyncHandler(async (req, res) => {
-  const { hubId, classId } = req.body;
+  const { hubId, classId, spaceId } = req.body;
   const { password, learnerPassword, ...data } = createLearnerSchema.parse(req.body);
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a learner record with no login.
@@ -87,7 +87,7 @@ const createLearner = asyncHandler(async (req, res) => {
     // admin could plant a brand-new learner directly into another admin's tenant.
     assertOwn((await adminOwnedHubIds(req)).includes(linkHubId));
   }
-  if (linkHubId) await LearnerService.enrollInHub(record.id, { hubId: linkHubId, classId: classId || "", status: "active" });
+  if (linkHubId) await LearnerService.enrollInHub(record.id, { hubId: linkHubId, classId: classId || "", status: "active", spaceId: spaceId || null });
   res.status(201).json({ success: true, data: record });
 });
 

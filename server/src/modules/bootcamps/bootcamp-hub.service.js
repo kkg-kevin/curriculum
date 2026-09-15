@@ -70,8 +70,11 @@ const BootcampHubService = {
     }
 
     // Routed through ClassService (same path as "Set Up Year" / the old Event deployment) so
-    // the tag/stream uniqueness checks run here too.
-    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, bootcamp.startDate));
+    // the tag/stream uniqueness checks run here too. The bootcamp's own name is passed as the
+    // stream label so a second, different bootcamp built on this SAME curriculum can still run
+    // at this same hub without colliding with this one's cohort classes — see
+    // cohortClassPayload's own comment for why that's otherwise a false "already exists" error.
+    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, bootcamp.startDate, bootcamp.name));
 
     const offering = await BootcampHubModel.create({
       ownerAdminId,

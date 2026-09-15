@@ -10,4 +10,8 @@ export const leadApi = {
   getTimeline: (id) => api.get(`${BASE}/${id}/timeline`).then((r) => r.data.data),
   reply: (id, { subject, body }) => api.post(`${BASE}/${id}/reply`, { subject, body }).then((r) => r.data),
   addNote: (id, body) => api.post(`${BASE}/${id}/notes`, { body }).then((r) => r.data.data),
+  // A bootcamp-enrollment lead (source: "enroll", already has a provisioned learnerId) — records
+  // a manually-received cash payment and unlocks that learner's account (see
+  // bootcamp-enrollment.service.js's markLeadPaid).
+  markPaid: (id, data) => api.post(`${BASE}/${id}/mark-paid`, data).then((r) => r.data.data),
 };

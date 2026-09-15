@@ -15,6 +15,11 @@ export function AuthProvider({ children }) {
   // server refuses every write. Exposed as its own `suspended` value for convenience.
   const suspended = user?.suspended || null;
 
+  // Set only when `suspended === "payment"` (see auth.service.js's getPendingPayment) — the
+  // bootcamp price/hub the auto-provisioned learner still owes, so the "Account Suspended"
+  // screen can show it on every login/reload, not just the one-time website confirmation.
+  const pendingPayment = user?.pendingPayment || null;
+
   // Rehydrate from the existing httpOnly session cookie (if any) on a fresh app load, instead
   // of always forcing a re-login — a page refresh should keep you signed in. A missing/expired/
   // invalid cookie 401s here, which just means "not logged in" (same as never having a
@@ -62,7 +67,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, suspended, login, signup, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, suspended, pendingPayment, login, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

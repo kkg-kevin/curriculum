@@ -49,6 +49,7 @@ import AcademicYearPage from "../modules/curriculum/pages/AcademicYearPage";
 import CompetenciesPage from "../modules/curriculum/pages/CompetenciesPage";
 import LearningHubsPage from "../modules/learning-hubs/pages/LearningHubsPage";
 import LearningHubViewPage from "../modules/learning-hubs/pages/LearningHubViewPage";
+import HubRevenueOverviewPage from "../modules/hub-visits/pages/HubRevenueOverviewPage";
 import CreateLearningHubPage from "../modules/settings/learning-hubs/pages/CreateLearningHubPage";
 import EditLearningHubPage from "../modules/settings/learning-hubs/pages/EditLearningHubPage";
 import TeachersPage from "../modules/teachers/pages/TeachersPage";
@@ -190,6 +191,11 @@ export default function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route path="learning-hubs">
           <Route index element={<LearningHubsPage />} />
+          {/* Admin-only cross-hub finance rollup (server-side authorize("admin") on
+              /api/hub-visits/revenue-summary — a collaborator reaching this route gets a 403
+              from the API, same posture as billing/customers below). Registered before ":id/view"
+              so "revenue" isn't swallowed as a hub id. */}
+          <Route path="revenue" element={<HubRevenueOverviewPage />} />
           <Route path=":id/view" element={<LearningHubViewPage />} />
         </Route>
         <Route path="settings/learning-hubs/create" element={<CreateLearningHubPage />} />

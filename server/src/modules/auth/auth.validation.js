@@ -40,6 +40,15 @@ const verifyPasswordSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// Self-service password change — any authenticated role, most immediately useful for a learner
+// who was auto-provisioned with a temporary password (see bootcamp-enrollment.service.js) and
+// wants to set their own. currentPassword confirms they actually know the account's existing
+// password (same posture as verifyPassword above), not just that they hold a valid session.
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 module.exports = {
   USER_ROLES,
   PUBLIC_SIGNUP_ROLES,
@@ -48,4 +57,5 @@ module.exports = {
   createUserSchema,
   updateMeSchema,
   verifyPasswordSchema,
+  changePasswordSchema,
 };

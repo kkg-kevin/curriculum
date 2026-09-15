@@ -8,6 +8,7 @@ const PathwayModel = require("../curriculum/competency-framework/pathway.model")
 const AssessmentModel = require("../assessments/assessment.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
@@ -180,7 +181,25 @@ const LeadService = {
   async listAll(filters) {
     const records = await LeadModel.findAll(filters);
     const resolved = await Promise.all(records.map((r) => LeadService._resolveReference(r.referenceId)));
-    return records.map((r, i) => ({ ...r, reference: resolved[i] }));
+    const payments = await Promise.all(records.map((r) => LeadService._resolveExpectedPayment(r)));
+    return records.map((r, i) => ({ ...r, reference: resolved[i], expectedPayment: payments[i] }));
+  },
+
+  // A bootcamp-enrollment lead (source: "enroll", provisioned via bootcamp-enrollment.service.js)
+  // carries bootcampId/hubId — this resolves the price the admin should expect to receive in cash
+  // and the hub name, so "Mark paid" isn't a blind guess and the list itself shows what's owed.
+  // Returns null once already paid (the "Paid X" badge takes over) or if the lead never had a
+  // bootcamp tied to it (a plain contact/diagnostic lead, or the bootcamp was since deleted).
+  async _resolveExpectedPayment(lead) {
+    if (lead.source !== "enroll" || !lead.bootcampId || lead.paidAt) return null;
+    const bootcamp = await BootcampModel.findById(lead.bootcampId);
+    if (!bootcamp || bootcamp.priceAmount == null) return null;
+    const hub = lead.hubId ? await LearningHubModel.findById(lead.hubId) : null;
+    return {
+      amount: Number(bootcamp.priceAmount),
+      currency: bootcamp.priceCurrency || "KES",
+      hubName: hub?.name || null,
+    };
   },
 
   async updateStatus(id, status) {

@@ -4,7 +4,7 @@ import { AUTH_ENABLED } from "../config/authConfig";
 import AccountSuspendedScreen from "../modules/auth/components/AccountSuspendedScreen";
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, loading, suspended } = useAuth();
+  const { isAuthenticated, loading, suspended, pendingPayment } = useAuth();
   const location = useLocation();
 
   if (!AUTH_ENABLED) {
@@ -28,7 +28,7 @@ export default function ProtectedRoute() {
   // ProtectedRoute — admin, every portal — is short-circuited here, so there's nothing to reach
   // and nothing per-layout to wire up.
   if (suspended) {
-    return <AccountSuspendedScreen reason={suspended} />;
+    return <AccountSuspendedScreen reason={suspended} pendingPayment={pendingPayment} />;
   }
 
   return <Outlet />;
