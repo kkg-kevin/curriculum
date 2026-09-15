@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff } from "react-icons/fi";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
@@ -40,6 +41,48 @@ function SectionHeader({ title, hint, actionLabel, onAction }) {
   );
 }
 
+const sortStyle = { padding: "7px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 12.5, fontFamily: "Inter, sans-serif", color: "#374151", backgroundColor: "#fff", cursor: "pointer" };
+
+// One toolbar shared by both sections — "published only" toggle + a date sort. Kept simple
+// (no search box, no hub filter) since these lists are still small; the sort/filter state lives
+// in the parent so it survives whichever section re-renders.
+function ListToolbar({ publishedOnly, onPublishedOnlyChange, sort, onSortChange, count, totalCount }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: "#374151", cursor: "pointer", userSelect: "none" }}>
+        <input type="checkbox" checked={publishedOnly} onChange={(e) => onPublishedOnlyChange(e.target.checked)} style={{ width: 14, height: 14, cursor: "pointer" }} />
+        Published only
+      </label>
+      <select value={sort} onChange={(e) => onSortChange(e.target.value)} style={sortStyle}>
+        <option value="newest">Newest first</option>
+        <option value="startDate">Start date</option>
+        <option value="name">Name (A–Z)</option>
+      </select>
+      {publishedOnly && (
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>Showing {count} of {totalCount}</span>
+      )}
+    </div>
+  );
+}
+
+// A text pill instead of an icon-only badge — "is this live on the website" is the single most
+// decision-relevant fact on a card, and an icon alone needs a hover to read (the tooltip) and is
+// easy to miss at a glance across a grid of near-identical thumbnails.
+function LiveBadge({ live }) {
+  return (
+    <span
+      title={live ? "On the website" : "Not published"}
+      style={{
+        position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "4px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em",
+        backgroundColor: live ? "rgba(21,128,61,0.92)" : "rgba(255,255,255,0.92)", color: live ? "#ffffff" : "#6B7280",
+      }}
+    >
+      {live ? <FiEye size={11} /> : <FiEyeOff size={11} />} {live ? "Live" : "Draft"}
+    </span>
+  );
+}
+
 function ErrorRow({ label, message }) {
   return (
     <div style={{ padding: "16px 20px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: 12, color: "#EF4444", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
@@ -58,10 +101,8 @@ function CompetitionCard({ competition, onOpen }) {
       onClick={onOpen}
       style={{ textAlign: "left", backgroundColor: "#ffffff", borderRadius: 16, padding: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid #E5E7EB", cursor: "pointer", fontFamily: "Inter, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}
     >
-      <div style={{ height: 96, background: competition.coverImage ? `center / cover no-repeat url(${competition.coverImage})` : "linear-gradient(135deg, #1a3550, #2e7db5)", position: "relative" }}>
-        <span title={live ? "On the website" : "Not published"} style={{ position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.92)", color: live ? "#15803D" : "#9CA3AF" }}>
-          {live ? <FiEye size={13} /> : <FiEyeOff size={13} />}
-        </span>
+      <div style={{ height: 96, background: competition.coverImage ? `center / cover no-repeat url(${competition.coverImage})` : "linear-gradient(135deg, #1a3550, #2e7db5)", position: "relative", filter: live ? "none" : "grayscale(0.65) brightness(0.9)" }}>
+        <LiveBadge live={live} />
       </div>
       <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -84,10 +125,8 @@ function BootcampCard({ bootcamp, onOpen }) {
       onClick={onOpen}
       style={{ textAlign: "left", backgroundColor: "#ffffff", borderRadius: 16, padding: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid #E5E7EB", cursor: "pointer", fontFamily: "Inter, sans-serif", overflow: "hidden", display: "flex", flexDirection: "column" }}
     >
-      <div style={{ height: 96, background: bootcamp.coverImage ? `center / cover no-repeat url(${bootcamp.coverImage})` : "linear-gradient(135deg, #1a3550, #2e7db5)", position: "relative" }}>
-        <span title={live ? "On the website" : "Not published"} style={{ position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.92)", color: live ? "#15803D" : "#9CA3AF" }}>
-          {live ? <FiEye size={13} /> : <FiEyeOff size={13} />}
-        </span>
+      <div style={{ height: 96, background: bootcamp.coverImage ? `center / cover no-repeat url(${bootcamp.coverImage})` : "linear-gradient(135deg, #1a3550, #2e7db5)", position: "relative", filter: live ? "none" : "grayscale(0.65) brightness(0.9)" }}>
+        <LiveBadge live={live} />
       </div>
       <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -99,6 +138,17 @@ function BootcampCard({ bootcamp, onOpen }) {
       </div>
     </button>
   );
+}
+
+// Shared by both sections — filters to published-only when asked, then sorts. "Newest first"
+// relies on the API's own default order (both list endpoints already sort by createdAt desc —
+// see bootcamp.model.js/competition.model.js), so it's a no-op re-sort rather than trusting a
+// createdAt string comparison the client doesn't otherwise need.
+function filterAndSort(items, { publishedOnly, sort, isLive }) {
+  const filtered = publishedOnly ? items.filter(isLive) : items;
+  if (sort === "name") return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+  if (sort === "startDate") return [...filtered].sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
+  return filtered;
 }
 
 export default function ProgramsListPage() {
@@ -115,6 +165,20 @@ export default function ProgramsListPage() {
     isError: bootcampsError,
     error: bootcampsErr,
   } = useBootcampsQuery();
+
+  const [compPublishedOnly, setCompPublishedOnly] = useState(false);
+  const [compSort, setCompSort] = useState("newest");
+  const [bootcampPublishedOnly, setBootcampPublishedOnly] = useState(false);
+  const [bootcampSort, setBootcampSort] = useState("newest");
+
+  const visibleCompetitions = useMemo(
+    () => filterAndSort(competitions, { publishedOnly: compPublishedOnly, sort: compSort, isLive: (c) => c.isPublic && c.status !== "draft" }),
+    [competitions, compPublishedOnly, compSort]
+  );
+  const visibleBootcamps = useMemo(
+    () => filterAndSort(bootcamps, { publishedOnly: bootcampPublishedOnly, sort: bootcampSort, isLive: (b) => b.saleStatus === "for_sale" }),
+    [bootcamps, bootcampPublishedOnly, bootcampSort]
+  );
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -185,11 +249,25 @@ export default function ProgramsListPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-            {competitions.map((c) => (
-              <CompetitionCard key={c.id} competition={c} onOpen={() => navigate(`/events/competitions/${c.id}/view`)} />
-            ))}
-          </div>
+          <>
+            <ListToolbar
+              publishedOnly={compPublishedOnly}
+              onPublishedOnlyChange={setCompPublishedOnly}
+              sort={compSort}
+              onSortChange={setCompSort}
+              count={visibleCompetitions.length}
+              totalCount={competitions.length}
+            />
+            {visibleCompetitions.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", padding: "8px 2px" }}>No published competitions — turn off "Published only" to see drafts.</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+                {visibleCompetitions.map((c) => (
+                  <CompetitionCard key={c.id} competition={c} onOpen={() => navigate(`/events/competitions/${c.id}/view`)} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -229,11 +307,25 @@ export default function ProgramsListPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-            {bootcamps.map((b) => (
-              <BootcampCard key={b.id} bootcamp={b} onOpen={() => navigate(`/events/bootcamps/${b.id}/view`)} />
-            ))}
-          </div>
+          <>
+            <ListToolbar
+              publishedOnly={bootcampPublishedOnly}
+              onPublishedOnlyChange={setBootcampPublishedOnly}
+              sort={bootcampSort}
+              onSortChange={setBootcampSort}
+              count={visibleBootcamps.length}
+              totalCount={bootcamps.length}
+            />
+            {visibleBootcamps.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", padding: "8px 2px" }}>No published bootcamps — turn off "Published only" to see drafts.</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+                {visibleBootcamps.map((b) => (
+                  <BootcampCard key={b.id} bootcamp={b} onOpen={() => navigate(`/events/bootcamps/${b.id}/view`)} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
