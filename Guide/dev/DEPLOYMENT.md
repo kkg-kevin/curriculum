@@ -102,6 +102,82 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Sep 2026, fourth follow-on) — bootcamp enrollment hub picker · pathway courses as cards
+
+**Dev-only so far** — not yet built or verified for Live. Deploy to Dev first; rebuild the
+Live-flavoured builds separately before touching Live.
+
+No new migrations. Backend + website change; portal frontend unchanged (no `assets.zip` rebuild
+needed this pass).
+
+### What changed
+
+1. **Bootcamp enrollment: hub picker restored.** A bootcamp that runs at more than one hub
+   (`bootcamp_hubs`) previously auto-enrolled every visitor into whichever offering was created
+   earliest, with no way to choose. `BootcampEnrollForm.jsx` now shows a "Choose a hub" step
+   (same visual pattern as the existing Pathway-enrollment hub wizard) before the login-setup
+   step, whenever the bootcamp has more than one hub run; a single-hub or no-hub bootcamp skips
+   straight to the existing single-screen form, unchanged. The chosen `hubId` is validated
+   server-side against the bootcamp's own offerings before enrolling.
+2. **Bootcamp "Pathway courses" section redesigned as clickable cards.** Previously every
+   pathway's full course roadmap rendered stacked and always-expanded on the bootcamp detail
+   page — including, inconsistently, an "ungrouped" (pathway-less) courses section that showed
+   its roadmap by default while grouped pathways got no equivalent treatment. Now every course
+   group (named pathway, or "Other courses" for the ungrouped case) shows as a card in a grid,
+   matching the public Pathways page's card style; clicking a card reveals just that group's
+   roadmap in place with a "Back to pathways" control.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — `bootcamp-enrollment.validation.js` accepts an optional `hubId`;
+`bootcamp-enrollment.service.js`'s `resolveBootcampOffering` enrolls into the visitor's chosen
+hub when given (400 if it isn't one of the bootcamp's actual offerings), falling back to the
+previous earliest-offering auto-pick when omitted. **No env change, no new migration.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+**Unchanged this release** — `client/` was not touched. Skip re-uploading if the currently
+deployed portal build is already current.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+- New `BootcampPathwayCard.jsx` (`src/components/cards/`); `BootcampDetailPage.jsx`'s "Pathway
+  courses" section now renders a card grid with in-place reveal instead of an always-expanded
+  stack.
+- `BootcampEnrollForm.jsx` gets the new hub-choice step (fetches the bootcamp's `upcomingRuns`
+  via the existing `usePublicBootcamp` hook — no new endpoint needed).
+- **Built with `npm run deploy:build`, but the prerender step failed on `/competitions`
+  (Puppeteer navigation timeout) three consecutive attempts** — same transient pattern as
+  several earlier releases, confirmed not an API issue (`curl` against every `/api/public/*`
+  endpoint returned 200 throughout, in ~20ms). Shipped via the documented fallback: `vite build`
+  (already succeeded) + a standalone `node scripts/generate-sitemap.js` run against the partial
+  `dist/` (prerendering had already written `/`, `/pathways`, `/projects` before the
+  `/competitions` timeout aborted the rest) + `npm run package`. Sitemap has 9 static URLs only
+  — no per-slug pathway/project/store/bootcamp/competition detail URLs this pass. Every page is
+  still fully functional for visitors (client-side rendering, real data) — this only affects the
+  pre-baked SEO snapshot. **Recommended:** re-run `npm run deploy:build` once convenient to
+  restore full prerendering + a complete sitemap.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. No migrations to check
+   this time.
+2. **Website** `africa-digifunzi-com-dist.zip` from `Guide/dev/` → the `africa.digifunzi.com`
+   document root. (Portal unchanged — no redeploy needed.)
+3. **Verify:**
+   - Find (or create) a bootcamp with 2+ hub offerings → take its diagnostic → click "Enroll
+     now" → confirm a "Choose a hub" step appears before the login fields, listing each hub with
+     its dates → pick one → submit → confirm the learner lands in that hub's class (not always
+     the earliest-created one).
+   - Confirm a single-hub bootcamp's enroll form is unchanged (no hub step, straight to details).
+   - Open a bootcamp with priced courses on the public site → confirm "Pathway courses" shows a
+     card grid (no roadmap expanded by default) → click a card → confirm only that pathway's
+     roadmap appears, with a "Back to pathways" button that returns to the grid.
+   - If that bootcamp has any courses not tied to a pathway, confirm they show under an "Other
+     courses" card rather than always-visible below the grid.
+
+---
+
 ## This release (15 Sep 2026, third follow-on) — "Pathway pricing" renamed to "Pathway courses"
 
 Website-only. **No backend or portal change — `backend-deploy.zip` and `assets.zip`/`index.html`

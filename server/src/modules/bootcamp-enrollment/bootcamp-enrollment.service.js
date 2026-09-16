@@ -46,17 +46,25 @@ async function nextInvoiceNumber(trx) {
   return `INV-${year}-${String(await BillingModel.nextNumber("invoice", year, trx)).padStart(6, "0")}`;
 }
 
-// A bootcamp already knows where it runs (bootcamp_hubs) - no hub-picker step for the visitor.
-// Picks the earliest-created offering that actually resolved to real classes; a bootcamp with
-// zero offerings yet (an admin hasn't run "createOffering" for it) can't enroll anyone until
-// that's done.
-async function resolveBootcampOffering(bootcampIdOrSlug) {
+// A bootcamp may run at more than one hub (bootcamp_hubs) — when the visitor picked one
+// (hubId, from the enroll form's hub step, shown whenever a bootcamp has more than one
+// offering), enroll them into that exact offering. Otherwise fall back to the earliest-created
+// offering that actually resolved to real classes, same as the original single-hub behaviour —
+// a bootcamp with zero offerings yet (an admin hasn't run "createOffering" for it) can't enroll
+// anyone until that's done.
+async function resolveBootcampOffering(bootcampIdOrSlug, hubId) {
   const bootcamp = await resolveForSaleBootcamp(bootcampIdOrSlug);
   if (!bootcamp) throw notFound("Bootcamp not found");
-  const offerings = await BootcampHubModel.findByBootcampId(bootcamp.id);
-  const offering = offerings
-    .filter((o) => Array.isArray(o.classIds) && o.classIds.length > 0)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+  const offerings = (await BootcampHubModel.findByBootcampId(bootcamp.id))
+    .filter((o) => Array.isArray(o.classIds) && o.classIds.length > 0);
+
+  let offering;
+  if (hubId) {
+    offering = offerings.find((o) => o.hubId === hubId);
+    if (!offering) throw badRequest("That hub isn't available for this bootcamp — pick another.");
+  } else {
+    offering = offerings.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+  }
   if (!offering) {
     throw badRequest("This bootcamp isn't set up to enroll learners yet — contact the school.");
   }
@@ -79,7 +87,7 @@ const BootcampEnrollmentService = {
   // lead-notification/acknowledgement-email side effects elsewhere in this app which already
   // tolerate failure.
   async submitBootcampEnrollment(data) {
-    const { bootcamp, offering } = await resolveBootcampOffering(data.bootcampIdOrSlug);
+    const { bootcamp, offering } = await resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId);
     const classId = offering.classIds[0];
 
     const bootcampSlug = slugify(bootcamp.name) || "bootcamp";

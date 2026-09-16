@@ -1,6 +1,7 @@
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 const { slugify } = require("../../shared/utils/slugify");
@@ -163,27 +164,10 @@ async function upcomingRuns(bootcamp) {
     .sort((a, b) => a.hub.name.localeCompare(b.hub.name));
 }
 
-// Whether this bootcamp's diagnostic is actually offerable to an anonymous visitor right now —
-// same "flag on, assessment still resolves and is fully auto-gradable, both age bounds set" check
-// as public-site.service.js's diagnosticInfoFor (pathways), duplicated rather than imported: the
-// dedicated public-bootcamp-diagnostic.service.js already imports resolveForSaleBootcamp from
-// THIS file, so importing that service back here would create a require cycle. Kept here (not
-// there) since this is only for the lightweight `diagnostic` field embedded in getBootcamp()'s
-// response — the actual gating check on submit still lives in the diagnostic service itself.
-async function diagnosticInfoFor(bootcamp) {
-  const off = { available: false, minAge: null, maxAge: null };
-  if (!bootcamp?.publicDiagnosticEnabled || !bootcamp.diagnosticAssessmentId) return off;
-  if (bootcamp.ageMin == null || bootcamp.ageMax == null || Number(bootcamp.ageMin) > Number(bootcamp.ageMax)) {
-    return off;
-  }
-  const assessment = await AssessmentModel.findById(bootcamp.diagnosticAssessmentId);
-  if (!assessment || requiresManualGrading(assessment)) return off;
-  return { available: true, minAge: Number(bootcamp.ageMin), maxAge: Number(bootcamp.ageMax) };
-}
-
 // Resolves a for-sale bootcamp by id or computed slug — the exact same lookup getBootcamp()
-// uses, exported so public-bootcamp-diagnostic.service.js can resolve "which bootcamp" identically
-// rather than re-implementing the id/slug/tenant-scoping rules a second time and risking drift.
+// uses, exported so other public-site services (e.g. bootcamp-enrollment.service.js) can resolve
+// "which bootcamp" identically rather than re-implementing the id/slug/tenant-scoping rules a
+// second time and risking drift.
 async function resolveForSaleBootcamp(idOrSlug) {
   const bootcamps = await forSaleBootcamps();
   let bootcamp = bootcamps.find((b) => b.id === idOrSlug) || null;
@@ -191,6 +175,47 @@ async function resolveForSaleBootcamp(idOrSlug) {
     bootcamp = pickForSlug(bootcamps.filter((b) => computedSlug(b) === idOrSlug));
   }
   return bootcamp;
+}
+
+// Whether a PATHWAY's own public diagnostic is actually offerable to an anonymous visitor right
+// now — same check as public-site.service.js's diagnosticInfoFor, duplicated rather than
+// imported (that function isn't exported, and this is a small pure check not worth adding
+// cross-module coupling for — same posture the old bootcamp-wide diagnosticInfoFor took here).
+//
+// The bootcamp builder's pathwayDiagnostics[].assessmentId is NOT used here — a bootcamp can only
+// offer a pathway's diagnostic when that pathway's OWN diagnosticAssessmentId/
+// publicDiagnosticEnabled/age-range are independently set up as a public diagnostic (Curriculum →
+// Competency Framework). This keeps the bootcamp flow a thin picker in front of the one, already
+//-working /pathways/:slug/diagnostic flow rather than a second grading/attempt path.
+async function pathwayDiagnosticOfferable(pathway) {
+  if (!pathway?.publicDiagnosticEnabled || !pathway.diagnosticAssessmentId) return false;
+  if (pathway.minAge == null || pathway.maxAge == null || Number(pathway.minAge) > Number(pathway.maxAge)) {
+    return false;
+  }
+  const assessment = await AssessmentModel.findById(pathway.diagnosticAssessmentId);
+  return !!assessment && !requiresManualGrading(assessment);
+}
+
+// The bootcamp's pathwayDiagnostics, resolved to what the public "Take the diagnostic" picker
+// needs: which of this bootcamp's pathways actually have an offerable public diagnostic right
+// now, with the pathway's own slug (so the picker can link straight to
+// /pathways/:slug/diagnostic) and display fields. A pathway assigned in the builder but whose OWN
+// public diagnostic isn't set up (or no longer is) is silently dropped — see
+// pathwayDiagnosticOfferable's comment for why the bootcamp's own assessmentId choice doesn't
+// override this.
+async function resolvePathwayDiagnostics(pathwayDiagnostics) {
+  if (!pathwayDiagnostics || pathwayDiagnostics.length === 0) return [];
+  const pathways = await Promise.all(pathwayDiagnostics.map((pd) => PathwayModel.findById(pd.pathwayId)));
+  const offerable = await Promise.all(pathways.map((p) => (p ? pathwayDiagnosticOfferable(p) : false)));
+  return pathways
+    .map((pathway, i) => (pathway && offerable[i] ? pathway : null))
+    .filter(Boolean)
+    .map((pathway) => ({
+      pathwayId: pathway.id,
+      pathwaySlug: slugify(pathway.name) || "pathway",
+      pathwayName: pathway.name,
+      pathwayColor: pathway.color || null,
+    }));
 }
 
 const PublicBootcampService = {
@@ -230,11 +255,11 @@ const PublicBootcampService = {
     const coursePricing = await resolveCoursePricing(arr(bootcamp.coursePricing), bootcamp.curriculumId, arr(bootcamp.pathwayIds));
     const curriculum = await resolveCurriculumSummary(bootcamp.curriculumId);
 
-    let diagnostic = { available: false, minAge: null, maxAge: null };
+    let pathwayDiagnostics = [];
     try {
-      diagnostic = await diagnosticInfoFor(bootcamp);
+      pathwayDiagnostics = await resolvePathwayDiagnostics(arr(bootcamp.pathwayDiagnostics));
     } catch {
-      /* assessment lookup hiccup — leave diagnostic unavailable, the page still renders */
+      /* pathway/assessment lookup hiccup — leave the list empty, the page still renders */
     }
 
     return {
@@ -247,9 +272,10 @@ const PublicBootcampService = {
       // run shares it) — see resolveCurriculumSummary's own comment for what's included/excluded.
       // null when the bootcamp has no linked curriculum at all.
       curriculum,
-      // Same shape as a pathway detail's own `diagnostic` field (public-site.service.js) — the
-      // bootcamp-detail page's "Take the diagnostic" CTA gates on `diagnostic.available`.
-      diagnostic,
+      // Which of this bootcamp's pathways currently offer a "Take the diagnostic" step — see
+      // resolvePathwayDiagnostics. Empty when the bootcamp assigned none, or none of the assigned
+      // pathways have their own public diagnostic switched on right now.
+      pathwayDiagnostics,
     };
   },
 
@@ -272,6 +298,6 @@ const PublicBootcampService = {
 
 module.exports = PublicBootcampService;
 // Exported alongside the default service object (not attached to it) so
-// public-bootcamp-diagnostic.service.js can resolve "which bootcamp" identically without
+// bootcamp-enrollment.service.js can resolve "which bootcamp" identically without
 // re-implementing the id/slug/tenant-scoping rules — an internal helper, not a new public route.
 module.exports.resolveForSaleBootcamp = resolveForSaleBootcamp;

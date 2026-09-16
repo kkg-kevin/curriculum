@@ -39,6 +39,7 @@ async function enrich(bootcamp) {
     coursePricing: asArray(bootcamp.coursePricing),
     priceNotes: asArray(bootcamp.priceNotes),
     pathwayIds: asArray(bootcamp.pathwayIds),
+    pathwayDiagnostics: asArray(bootcamp.pathwayDiagnostics),
     curriculumName: await resolveCurriculumName(bootcamp.curriculumId),
   };
 }
@@ -114,6 +115,52 @@ async function assertPathwayIdsValid(pathwayIds, curriculumId) {
   }
 }
 
+// Each entry in pathwayDiagnostics attaches a diagnostic assessment to ONE pathway included in
+// this bootcamp. `pathwayId` must be one of the bootcamp's effective pathways (its own pathwayIds
+// if set, else every pathway under the curriculum — same "empty means all" rule as
+// assertPathwayIdsValid), and `assessmentId` must resolve to a real, fully auto-gradable
+// assessment — a public website visitor has no teacher relationship to route a manually-graded
+// attempt to.
+async function assertPathwayDiagnosticsValid(pathwayDiagnostics, pathwayIds, curriculumId) {
+  if (!pathwayDiagnostics || pathwayDiagnostics.length === 0) return;
+  if (!curriculumId) {
+    const err = new Error("Pathway diagnostics require a curriculum to be selected");
+    err.statusCode = 400;
+    throw err;
+  }
+  const effectivePathwayIds = (pathwayIds || []).length > 0
+    ? pathwayIds
+    : (await PathwayModel.findByCurriculumId(curriculumId)).map((p) => p.id);
+  const validPathwayIds = new Set(effectivePathwayIds);
+  const unknownPathway = pathwayDiagnostics.find((pd) => !validPathwayIds.has(pd.pathwayId));
+  if (unknownPathway) {
+    const err = new Error("One or more pathway diagnostics don't match this bootcamp's pathways");
+    err.statusCode = 400;
+    throw err;
+  }
+  const duplicate = pathwayDiagnostics.some(
+    (pd, i) => pathwayDiagnostics.findIndex((other) => other.pathwayId === pd.pathwayId) !== i
+  );
+  if (duplicate) {
+    const err = new Error("Each pathway can only have one diagnostic assigned");
+    err.statusCode = 400;
+    throw err;
+  }
+  const assessments = await Promise.all(pathwayDiagnostics.map((pd) => AssessmentModel.findById(pd.assessmentId)));
+  assessments.forEach((assessment, i) => {
+    if (!assessment) {
+      const err = new Error("Diagnostic assessment not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (requiresManualGrading(assessment)) {
+      const err = new Error(`"${assessment.name}" includes manually-graded items and can't be used as a pathway diagnostic`);
+      err.statusCode = 400;
+      throw err;
+    }
+  });
+}
+
 // A bootcamp is priced ONE way, not both: either a single whole-bootcamp price, or individual
 // course prices — never both at once, so a buyer never sees two conflicting numbers for the same
 // bootcamp. `coursePricing` "in use" means at least one course has been checked on in the
@@ -141,36 +188,6 @@ function assertCourseEntryPricingValid(coursePricing) {
   }
 }
 
-// publicDiagnosticEnabled can only be true if the EFFECTIVE diagnosticAssessmentId (the incoming
-// value if this request sets one, else whatever the bootcamp already has) resolves to an
-// assessment that's fully auto-gradable — a public website visitor has no teacher relationship to
-// route a manually-graded attempt to. Mirrors competency.service.js's
-// assertPublicDiagnosticAllowed for pathways exactly, including why this lives here rather than
-// in bootcamp.validation.js's Zod schema (an update patch can flip publicDiagnosticEnabled on
-// without touching diagnosticAssessmentId — only the service layer has both the existing row and
-// the incoming patch to resolve the effective value from).
-async function assertPublicDiagnosticAllowed(data, existingBootcamp) {
-  if (!data.publicDiagnosticEnabled) return;
-  const effectiveAssessmentId =
-    "diagnosticAssessmentId" in data ? data.diagnosticAssessmentId : existingBootcamp?.diagnosticAssessmentId;
-  if (!effectiveAssessmentId) {
-    const err = new Error("Set a diagnostic assessment before offering it publicly");
-    err.statusCode = 400;
-    throw err;
-  }
-  const assessment = await AssessmentModel.findById(effectiveAssessmentId);
-  if (!assessment) {
-    const err = new Error("Diagnostic assessment not found");
-    err.statusCode = 404;
-    throw err;
-  }
-  if (requiresManualGrading(assessment)) {
-    const err = new Error("This assessment includes manually-graded items and can't be used for the public diagnostic");
-    err.statusCode = 400;
-    throw err;
-  }
-}
-
 const BootcampHubService = require("./bootcamp-hub.service");
 
 const BootcampService = {
@@ -178,9 +195,9 @@ const BootcampService = {
     await assertCurriculumOwnedBy(data.curriculumId, data.ownerAdminId);
     await assertCoursePricingValid(data.coursePricing, data.curriculumId);
     await assertPathwayIdsValid(data.pathwayIds, data.curriculumId);
+    await assertPathwayDiagnosticsValid(data.pathwayDiagnostics, data.pathwayIds, data.curriculumId);
     assertPricingModeExclusive(data.priceAmount, data.coursePricing);
     assertCourseEntryPricingValid(data.coursePricing);
-    await assertPublicDiagnosticAllowed(data, null);
     const record = await BootcampModel.create(data);
     return enrich(record);
   },
@@ -219,6 +236,12 @@ const BootcampService = {
       const effectivePathwayIds = "pathwayIds" in data ? data.pathwayIds : existing.pathwayIds;
       await assertPathwayIdsValid(effectivePathwayIds, effectiveCurriculumId);
     }
+    if ("pathwayDiagnostics" in data || "pathwayIds" in data || "curriculumId" in data) {
+      const effectiveCurriculumId = "curriculumId" in data ? data.curriculumId : existing.curriculumId;
+      const effectivePathwayIds = "pathwayIds" in data ? data.pathwayIds : existing.pathwayIds;
+      const effectivePathwayDiagnostics = "pathwayDiagnostics" in data ? data.pathwayDiagnostics : existing.pathwayDiagnostics;
+      await assertPathwayDiagnosticsValid(effectivePathwayDiagnostics, effectivePathwayIds, effectiveCurriculumId);
+    }
     // Same "effective value" pattern as curriculumId above — a patch touching only ONE of the two
     // pricing modes still needs to be checked against whichever value the other one already has.
     if ("priceAmount" in data || "coursePricing" in data) {
@@ -226,7 +249,6 @@ const BootcampService = {
       const effectiveCoursePricing = "coursePricing" in data ? data.coursePricing : existing.coursePricing;
       assertPricingModeExclusive(effectivePriceAmount, effectiveCoursePricing);
     }
-    await assertPublicDiagnosticAllowed(data, existing);
     const record = await BootcampModel.update(id, data);
     return enrich(record);
   },
@@ -259,9 +281,12 @@ const BootcampService = {
   async unlinkCurriculum(curriculumId) {
     if (!curriculumId) return;
     const records = await BootcampModel.findAll({ curriculumId });
-    // pathwayIds only makes sense scoped to a curriculum — cleared alongside it so a later
-    // re-link to a DIFFERENT curriculum doesn't inherit stale, no-longer-valid pathway ids.
-    await Promise.all(records.map((b) => BootcampModel.update(b.id, { curriculumId: null, pathwayIds: [] })));
+    // pathwayIds/pathwayDiagnostics only make sense scoped to a curriculum — cleared alongside it
+    // so a later re-link to a DIFFERENT curriculum doesn't inherit stale, no-longer-valid pathway
+    // ids or diagnostics pointing at pathways that no longer apply.
+    await Promise.all(
+      records.map((b) => BootcampModel.update(b.id, { curriculumId: null, pathwayIds: [], pathwayDiagnostics: [] }))
+    );
   },
 };
 

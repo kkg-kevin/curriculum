@@ -30,6 +30,10 @@ const submitBootcampEnrollmentSchema = z.object({
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
   password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  // Which of the bootcamp's hubs (bootcamp_hubs) the visitor wants to attend — required only
+  // when the bootcamp actually runs at more than one; the service falls back to auto-picking
+  // when this is omitted (single-hub bootcamps never show the picker at all).
+  hubId: z.string().trim().max(64).optional().nullable(),
   // Ties back to the diagnostic attempt that led here, for audit/analytics — never validated
   // against a real attempt row, never required (a visitor could reach the enroll form without
   // having taken the diagnostic first).

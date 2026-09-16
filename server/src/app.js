@@ -37,7 +37,6 @@ const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bo
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
-const publicBootcampDiagnosticRoutes = require("./modules/public-site/public-bootcamp-diagnostic.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -135,13 +134,10 @@ app.use("/api/public", publicSiteRoutes);
 // PUBLIC_CONTENT_ADMIN_ID designates (see env.js) — never the caller's own tenant, since there
 // is no caller identity here at all. Own rate limiters, see public-diagnostic.routes.js.
 app.use("/api/public", publicDiagnosticRoutes);
-// Unauthenticated by design — the same public diagnostic feature, scoped to a Bootcamp instead
-// of a Pathway (see public-bootcamp-diagnostic.routes.js and that module's own comments).
-app.use("/api/public", publicBootcampDiagnosticRoutes);
-// Unauthenticated by design — a bootcamp diagnostic report's "Enroll now" step. Auto-provisions
-// a real learner account (see bootcamp-enrollment.service.js) instead of just sending a lead for
-// a human to follow up on. The admin-only "mark paid" counterpart lives on the existing
-// protected /api/leads router instead (see lead.routes.js).
+// Unauthenticated by design — a bootcamp's public enrollment flow. Auto-provisions a real learner
+// account (see bootcamp-enrollment.service.js) instead of just sending a lead for a human to
+// follow up on. The admin-only "mark paid" counterpart lives on the existing protected
+// /api/leads router instead (see lead.routes.js).
 app.use("/api/public", publicBootcampEnrollmentRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
