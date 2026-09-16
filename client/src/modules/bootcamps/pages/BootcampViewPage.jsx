@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiAward, FiCalendar, FiClipboard, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiTag, FiUsers, FiX } from "react-icons/fi";
+import { FiAward, FiCalendar, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiTag, FiUsers, FiX } from "react-icons/fi";
 import { useBootcampQuery, useDeleteBootcamp, useUpdateBootcamp } from "../hooks/useBootcamps";
 import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
-import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 
@@ -161,50 +160,6 @@ function RunsAtHubsSection({ bootcamp }) {
   );
 }
 
-// At-a-glance diagnostic status — mirrors the Website card's "is this actually live" posture.
-// Three states: not configured, configured but not offered publicly, or live — plus a call-out
-// when the age range isn't complete (the one gate an admin might not realise is blocking it,
-// since bootcamp.service.js's assertPublicDiagnosticAllowed only checks the assessment itself,
-// not the age range — that check lives in the diagnostic resolution path instead).
-function DiagnosticStatusCard({ bootcamp, onEdit }) {
-  const { data: assessmentsData } = useAssessmentsQuery();
-  const assessments = assessmentsData?.data || [];
-  const assessment = assessments.find((a) => a.id === bootcamp.diagnosticAssessmentId);
-  const hasAgeRange = bootcamp.ageMin != null && bootcamp.ageMax != null;
-  const configured = !!bootcamp.diagnosticAssessmentId;
-  const live = configured && !!bootcamp.publicDiagnosticEnabled && hasAgeRange;
-
-  let statusText;
-  if (!configured) {
-    statusText = "No diagnostic assessment set for this bootcamp.";
-  } else if (!hasAgeRange) {
-    statusText = `${assessment?.name || "A diagnostic"} is picked, but the age range above must be set before visitors can take it.`;
-  } else if (!bootcamp.publicDiagnosticEnabled) {
-    statusText = `${assessment?.name || "A diagnostic"} is picked but not offered publicly yet.`;
-  } else {
-    statusText = `${assessment?.name || "The diagnostic"} is live for ages ${bootcamp.ageMin}–${bootcamp.ageMax}.`;
-  }
-
-  return (
-    <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <FiClipboard size={14} color="#38aae1" />
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Diagnostic test</h3>
-      </div>
-      <div style={{ padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${live ? "#a8d5ee" : "#E5E7EB"}`, backgroundColor: live ? "#F0F7FF" : "#F9FAFB" }}>
-        <p style={{ margin: "0 0 10px", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{statusText}</p>
-        <button
-          type="button"
-          onClick={onEdit}
-          style={{ padding: "8px 18px", backgroundColor: configured ? "transparent" : "#25476a", color: configured ? "#25476a" : "#fff", border: configured ? "1.5px solid #25476a" : "none", borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-        >
-          {configured ? "Manage in Edit" : "Set up a diagnostic"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function BootcampViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -344,8 +299,6 @@ export default function BootcampViewPage() {
               </button>
             </div>
           </div>
-
-          <DiagnosticStatusCard bootcamp={bootcamp} onEdit={() => navigate(editPath)} />
         </div>
       </div>
 

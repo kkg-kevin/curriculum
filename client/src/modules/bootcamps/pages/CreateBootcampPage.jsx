@@ -52,8 +52,7 @@ const toFormValues = (b) => ({
   priceNotes: b?.priceNotes || [],
   highlights: b?.highlights || [],
   coursePricing: b?.coursePricing || [],
-  diagnosticAssessmentId: b?.diagnosticAssessmentId || null,
-  publicDiagnosticEnabled: !!b?.publicDiagnosticEnabled,
+  pathwayDiagnostics: b?.pathwayDiagnostics || [],
 });
 
 // The API rejects unknown/empty enum strings — send null, not "".
@@ -67,10 +66,9 @@ const clean = (v) => {
   // belong to.
   out.coursePricing = out.curriculumId ? out.coursePricing || [] : [];
   out.pathwayIds = out.curriculumId ? out.pathwayIds || [] : [];
-  out.diagnosticAssessmentId = out.diagnosticAssessmentId || null;
-  // Can only ever be true alongside an assessment — the checkbox is disabled without one (see
-  // the form below), but guard here too in case state gets out of sync.
-  out.publicDiagnosticEnabled = out.diagnosticAssessmentId ? out.publicDiagnosticEnabled : false;
+  // Same guard as pathwayIds — without a curriculum there's no pathway a diagnostic entry could
+  // validly attach to.
+  out.pathwayDiagnostics = out.curriculumId ? out.pathwayDiagnostics || [] : [];
   return out;
 };
 
@@ -192,6 +190,45 @@ function PathwaysField({ curriculumId, value, onChange }) {
   );
 }
 
+// One diagnostic assessment per pathway this bootcamp actually runs (see PathwaysField above) —
+// additive to the single bootcamp-wide diagnostic in the "Diagnostic test" card below, e.g. a
+// bootcamp bundling a Robotics pathway and a Coding pathway can offer each its own placement
+// quiz. `pathwayIds` here is the bootcamp's EFFECTIVE pathway list (selected ones, or every
+// pathway under the curriculum when none are checked — same "empty means all" rule as
+// PathwaysField), so a row shows up for every pathway the bootcamp will actually run even before
+// any are explicitly checked.
+function PathwayDiagnosticsField({ pathways, assessments, value, onChange }) {
+  const entries = value || [];
+  const setForPathway = (pathwayId, assessmentId) => {
+    const rest = entries.filter((e) => e.pathwayId !== pathwayId);
+    onChange(assessmentId ? [...rest, { pathwayId, assessmentId }] : rest);
+  };
+
+  if (!pathways || pathways.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {pathways.map((p) => {
+        const current = entries.find((e) => e.pathwayId === p.id)?.assessmentId || "";
+        return (
+          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {p.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: p.color, flexShrink: 0 }} />}
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827", flex: "0 0 160px" }}>{p.name}</span>
+            <select
+              style={{ ...S.select, flex: 1 }}
+              value={current}
+              onChange={(e) => setForPathway(p.id, e.target.value || null)}
+            >
+              <option value="">— None —</option>
+              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const backToBootcamp = (id) => `/events/bootcamps/${id}/view`;
 const backToList = "/events";
 
@@ -234,7 +271,15 @@ export default function CreateBootcampPage() {
   const selectedCurriculumId = useWatch({ control, name: "curriculumId" });
   const selectedPathwayIds = useWatch({ control, name: "pathwayIds" });
   const descriptionWordCount = wordCount(useWatch({ control, name: "description" }));
-  const watchedDiagnosticAssessmentId = useWatch({ control, name: "diagnosticAssessmentId" });
+
+  // Same pathways list PathwaysField already fetches for the checkbox list above — reused here so
+  // the per-pathway diagnostic picker lines up with whichever pathways this bootcamp actually
+  // runs. "Effective" pathways = the selected ones, or every pathway under the curriculum when
+  // none are checked (same "empty means all" rule as pathwayIds itself).
+  const { data: curriculumPathways } = usePathways(selectedCurriculumId);
+  const effectivePathways = selectedPathwayIds?.length > 0
+    ? (curriculumPathways || []).filter((p) => selectedPathwayIds.includes(p.id))
+    : (curriculumPathways || []);
 
   // Price the whole bootcamp OR individual courses, never both (see
   // bootcamp.service.js's assertPricingModeExclusive) — but which one is ACTIVE is a real choice
@@ -541,58 +586,30 @@ export default function CreateBootcampPage() {
             />
           </div>
 
-          <div style={S.card}>
-            <h3 style={S.cardTitle}>Diagnostic test</h3>
-            <div style={S.field}>
-              <label style={S.label}>Diagnostic assessment <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: 11, color: "#9CA3AF" }}>
-                Let anonymous website visitors take a short auto-graded quiz before enrolling in this bootcamp, and see an instant report. Requires the bootcamp&rsquo;s age range above to be fully set.
-              </p>
-              <Controller
-                control={control}
-                name="diagnosticAssessmentId"
-                render={({ field }) => (
-                  <select
-                    style={S.select}
-                    value={field.value || ""}
-                    onChange={(e) => {
-                      const next = e.target.value || null;
-                      field.onChange(next);
-                      if (!next) setValue("publicDiagnosticEnabled", false, { shouldDirty: true });
-                    }}
-                  >
-                    <option value="">— None —</option>
-                    {diagnosticAssessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                )}
-              />
+          {selectedCurriculumId && effectivePathways.length > 0 && (
+            <div style={S.card}>
+              <h3 style={S.cardTitle}>Diagnostic tests</h3>
+              <div style={S.field}>
+                <label style={S.label}>Per-pathway diagnostics <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
+                <p style={{ margin: "2px 0 8px", fontSize: 11, color: "#9CA3AF" }}>
+                  Assign a diagnostic assessment to each pathway this bootcamp runs.
+                </p>
+                {errors.pathwayDiagnostics && <span style={S.error}>{errors.pathwayDiagnostics.message}</span>}
+                <Controller
+                  control={control}
+                  name="pathwayDiagnostics"
+                  render={({ field }) => (
+                    <PathwayDiagnosticsField
+                      pathways={effectivePathways}
+                      assessments={diagnosticAssessments}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              </div>
             </div>
-
-            <label
-              style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: watchedDiagnosticAssessmentId ? "pointer" : "not-allowed", opacity: watchedDiagnosticAssessmentId ? 1 : 0.5 }}
-              title={watchedDiagnosticAssessmentId ? undefined : "Choose a diagnostic assessment first"}
-            >
-              <Controller
-                control={control}
-                name="publicDiagnosticEnabled"
-                render={({ field }) => (
-                  <input
-                    type="checkbox"
-                    checked={!!field.value}
-                    disabled={!watchedDiagnosticAssessmentId}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                    style={{ marginTop: 2, width: 15, height: 15, flexShrink: 0 }}
-                  />
-                )}
-              />
-              <span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>Offer this diagnostic to anonymous visitors</span>
-                <span style={{ display: "block", fontSize: 11.5, color: "#9CA3AF", marginTop: 1 }}>
-                  Shows a &ldquo;Take the diagnostic&rdquo; option on this bootcamp&rsquo;s public page.
-                </span>
-              </span>
-            </label>
-          </div>
+          )}
         </form>
       </div>
 

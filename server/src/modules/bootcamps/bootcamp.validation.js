@@ -35,6 +35,15 @@ const coursePriceSchema = z.object({
   modulePricing: z.array(modulePriceSchema).max(100).optional().default([]),
 });
 
+// One pathway's own diagnostic. `pathwayId` is checked against this bootcamp's effective
+// pathways (pathwayIds, or every pathway under the curriculum if that's empty) in
+// bootcamp.service.js's assertPathwayDiagnosticsValid, same posture as coursePriceSchema's
+// courseId.
+const pathwayDiagnosticSchema = z.object({
+  pathwayId:    z.string().min(1),
+  assessmentId: z.string().min(1),
+});
+
 // Dates are plain "YYYY-MM-DD" strings, same convention as competitions.
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.literal(""));
 
@@ -76,14 +85,12 @@ const bootcampFields = z.object({
   // Per-course prices for this bootcamp's curriculum — set from the curriculum's pathways.
   // Empty/no curriculum means no course pricing, same optional posture as highlights.
   coursePricing: z.array(coursePriceSchema).max(200).optional().default([]),
-  // The public anonymous diagnostic (see public-bootcamp-diagnostic.service.js) — same fields as
-  // a pathway's own diagnosticAssessmentId/publicDiagnosticEnabled (competency.validation.js),
-  // reusing this bootcamp's OWN ageMin/ageMax above rather than a second age range. Whether
-  // publicDiagnosticEnabled can actually be true (assessment must exist and be fully
-  // auto-gradable) is checked in bootcamp.service.js's assertPublicDiagnosticAllowed, not here —
-  // same split as the pathway version.
-  diagnosticAssessmentId: z.string().max(36).optional().nullable(),
-  publicDiagnosticEnabled: z.coerce.boolean().optional().default(false),
+  // A diagnostic per pathway included in this bootcamp (see §pathwayIds above). Each pathwayId
+  // must match one of this bootcamp's effective pathways, and each assessmentId must resolve to a
+  // fully auto-gradable assessment; both enforced in bootcamp.service.js's
+  // assertPathwayDiagnosticsValid, not here — a public website visitor has no teacher relationship
+  // to route a manually-graded attempt to.
+  pathwayDiagnostics: z.array(pathwayDiagnosticSchema).max(50).optional().default([]),
 });
 
 // Every check below only fires when both sides of the comparison are actually present — a
@@ -127,6 +134,17 @@ function applyBootcampRefinements(data, ctx) {
         code: z.ZodIssueCode.custom,
         path: ["coursePricing", i, "priceAmount"],
         message: "Price the whole course or its modules, not both — clear one before setting the other",
+      });
+    }
+  });
+  // At most one diagnostic per pathway — mirrors assertPathwayDiagnosticsValid's duplicate check.
+  (data.pathwayDiagnostics || []).forEach((entry, i) => {
+    const firstIndex = (data.pathwayDiagnostics || []).findIndex((other) => other.pathwayId === entry.pathwayId);
+    if (firstIndex !== i) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["pathwayDiagnostics", i, "pathwayId"],
+        message: "Each pathway can only have one diagnostic assigned",
       });
     }
   });
