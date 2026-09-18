@@ -30,16 +30,6 @@ const pathwayCourseSequenceEntrySchema = z.object({
   defaultForStages: z.array(z.string().min(1)).optional().default([]),
 });
 
-const ageRangeRefinement = (data) =>
-  data.minAge == null || data.maxAge == null || data.maxAge >= data.minAge;
-const ageRangeRefinementOptions = {
-  message: "Maximum age must be greater than or equal to minimum age",
-  path:    ["maxAge"],
-};
-
-// Kept as a plain (unrefined) object, same reason as ageCategoryFields below — Zod can't
-// .partial() a schema that already has .refine() attached, so create/update each apply their
-// own refine on top of these raw fields instead of one refining the other.
 const pathwayFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -54,19 +44,27 @@ const pathwayFields = z.object({
   // Placement Thresholds (Performance Bands with pathwayId+courseId set) — see
   // CompetencyService.placeLearnerFromPathwayDiagnostic.
   diagnosticAssessmentId: z.string().optional().nullable().default(null),
-  // Which learners this area's diagnostic even applies to, by age — same open-ended-range
-  // shape as AgeCategory's minAge/maxAge. Both null (the default) means every age, which is
-  // also today's behavior for every pre-existing area — see maybeAutoIssuePathwayDiagnostics
-  // in learner.service.js for where this actually gates issuance.
-  minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
-  maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
-  // Offers this pathway's diagnosticAssessmentId to anonymous website visitors (see
-  // public-diagnostic.service.js), not just enrolled learners — piggybacks on the one existing
-  // assessment FK rather than a second publicDiagnosticAssessmentId, since there's no product
-  // need for a different assessment publicly vs. internally. Guarded below: can only be set true
-  // if that assessment is fully auto-gradable — a public visitor has no teacher relationship to
-  // route a manually-graded attempt to.
+  // Which Developmental Stage this pathway belongs to — a pathway is now scoped to exactly one
+  // stage (same "belongs to one stage" shape Performance Bands already use, see
+  // bandStageRefinement below), instead of carrying its own independent minAge/maxAge age gate.
+  // The stage's own age range is what now gates diagnostic auto-issuance (see
+  // maybeAutoIssuePathwayDiagnostics in learner.service.js, which resolves a learner's stage
+  // rather than walking a flat age range).
+  ageCategoryId: z.string().min(1, "ageCategoryId is required"),
+  // Offers a diagnostic to anonymous website visitors (see public-diagnostic.service.js), not
+  // just enrolled learners. Only meaningful alongside publicDiagnosticAssessmentId (below) or
+  // diagnosticAssessmentId (above) — the "effective" one is resolved as
+  // publicDiagnosticAssessmentId || diagnosticAssessmentId (see CompetencyService.
+  // assertPublicDiagnosticAllowed and every public-site resolver that mirrors that same
+  // fallback). Guarded below: the effective assessment must be fully auto-gradable — a public
+  // visitor has no teacher relationship to route a manually-graded attempt to.
   publicDiagnosticEnabled: z.boolean().optional().default(false),
+  // Optional override: when set, the PUBLIC website serves THIS assessment instead of
+  // diagnosticAssessmentId — an admin can offer a different diagnostic publicly than the one
+  // auto-issued internally to enrolled learners. Left null (the default), the public flow falls
+  // back to reusing diagnosticAssessmentId exactly as it always has — this field is purely
+  // additive, changing nothing for a pathway that never sets it.
+  publicDiagnosticAssessmentId: z.string().optional().nullable().default(null),
 });
 
 // publicDiagnosticEnabled's own guard (must the referenced assessment be auto-gradable) is NOT
@@ -76,8 +74,8 @@ const pathwayFields = z.object({
 // way to see the pathway's EXISTING diagnosticAssessmentId — only what's in this one request. See
 // CompetencyService.assertPublicDiagnosticAllowed, which runs in the service layer instead, where
 // the full (existing + incoming) picture and the pathway's real id are both available.
-const createPathwaySchema = pathwayFields.refine(ageRangeRefinement, ageRangeRefinementOptions);
-const updatePathwaySchema = pathwayFields.partial().refine(ageRangeRefinement, ageRangeRefinementOptions);
+const createPathwaySchema = pathwayFields;
+const updatePathwaySchema = pathwayFields.partial();
 
 const importPathwaySchema = z.object({
   pathwayId: z.string().min(1, "pathwayId is required"),
@@ -100,6 +98,16 @@ const updateLadderSchema = z.object({
   rungs: z.array(rungSchema),
 });
 
+const ageRangeRefinement = (data) =>
+  data.minAge == null || data.maxAge == null || data.maxAge >= data.minAge;
+const ageRangeRefinementOptions = {
+  message: "Maximum age must be greater than or equal to minimum age",
+  path:    ["maxAge"],
+};
+
+// Kept as a plain (unrefined) object — Zod can't .partial() a schema that already has .refine()
+// attached, so create/update each apply their own refine on top of these raw fields instead of
+// one refining the other.
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).optional().default(""),
@@ -260,6 +268,10 @@ const reorderBandsSchema = z.object({
   orderedIds:    z.array(z.string().min(1)),
 });
 
+const reorderPathwayCoursesSchema = z.object({
+  orderedIds: z.array(z.string().min(1)),
+});
+
 const evidenceScoreSchema = z.object({
   evidenceTypeId: z.string().min(1),
   score:          z.number().min(0).max(100),
@@ -319,6 +331,7 @@ module.exports = {
   createPerformanceBandSchema,
   updatePerformanceBandSchema,
   reorderBandsSchema,
+  reorderPathwayCoursesSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
   setIndicatorAchievementSchema,

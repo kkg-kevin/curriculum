@@ -52,14 +52,19 @@ async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
   const learner = await LearnerModel.findById(learnerId);
   const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
   const age = computeAge(learner?.dateOfBirth);
+  let stageId = link?.currentStageId || null;
   if (age !== null) {
     const categories = await AgeCategoryModel.findByCurriculumId(cls.curriculumId);
     const category = categories.find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
     if (category && link && !link.currentStageId) {
       await LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
     }
+    // An existing manual/diagnostic placement always wins (never overwritten above), so the
+    // stage a Pathway diagnostic is matched against is whichever one actually ended up set —
+    // the pre-existing placement if there was one, or the freshly age-matched one otherwise.
+    stageId = link?.currentStageId || category?.id || null;
   }
-  await maybeAutoIssuePathwayDiagnostics(learnerId, cls, age);
+  await maybeAutoIssuePathwayDiagnostics(learnerId, cls, stageId);
   await maybeAutoPlaceRung(learner, cls, age);
 }
 
@@ -94,39 +99,42 @@ async function maybeAutoPlaceRung(learner, cls, age) {
   if (matched) await LearnerModel.update(learner.id, { currentRungId: matched.id });
 }
 
-// A learner takes ONE diagnostic, decided by their age bracket: the single Pathway in this
-// curriculum whose minAge/maxAge range contains the learner's age. Pathways are authored so
-// their age ranges partition the age line (5-7, 8-10, 11-13, …), so exactly one matches — and
-// that area's diagnosticAssessmentId is the one diagnostic the learner is issued.
+// A learner takes ONE diagnostic per Developmental Stage: the single Pathway in this
+// curriculum whose ageCategoryId matches the learner's own current stage (see
+// maybeAutoIssueDiagnostic, which resolves stageId first — an existing manual/diagnostic
+// placement always wins over a fresh age guess). A Pathway now belongs to exactly one stage
+// (same "belongs to one stage" shape Performance Bands already use), so at most one Pathway in
+// a curriculum is ever authored against a given stage — that pathway's diagnosticAssessmentId is
+// the one diagnostic the learner is issued.
 //
 // Deliberately NOT filtered by "which courses this class currently exposes" — the diagnostic's
-// job is placement, which happens before any course is assigned, so an age-matched area with no
-// visible courses (or none yet) must still issue its diagnostic. The area's own course ladder is
-// only consulted later, once the diagnostic is graded (see placeLearnerFromPathwayDiagnostic).
+// job is placement, which happens before any course is assigned, so a stage-matched pathway with
+// no visible courses (or none yet) must still issue its diagnostic. The pathway's own course
+// ladder is only consulted later, once the diagnostic is graded (see
+// placeLearnerFromPathwayDiagnostic).
 //
-// No dateOfBirth on file (age == null) → no bracket can be resolved → no diagnostic is auto-
-// issued here. That's surfaced to admins (the learner shows as "needs date of birth" for
-// placement) rather than guessing; an admin can add the DOB and re-running this (it's idempotent)
-// then issues the right one.
+// No stage resolved yet (stageId == null — e.g. no dateOfBirth on file to guess one from) → no
+// diagnostic is auto-issued here. That's surfaced to admins (the learner shows as "needs date of
+// birth" for placement) rather than guessing; an admin can add the DOB and re-running this (it's
+// idempotent) then issues the right one.
 //
-// If more than one area's range somehow contains the age (overlapping/misconfigured ranges), the
-// FIRST by authoring order wins — a single deterministic pick, never several diagnostics. If the
-// matched area has no diagnosticAssessmentId, nothing is issued (nothing to take).
+// If more than one pathway is somehow authored against the same stage (a misconfiguration —
+// pathways are meant to partition one-per-stage), the FIRST by authoring order wins — a single
+// deterministic pick, never several diagnostics. If the matched pathway has no
+// diagnosticAssessmentId, nothing is issued (nothing to take).
 //
 // Idempotent: issueDiagnostic dedupes per (assessmentId, learnerId), so this is safe to re-run on
 // every enrollment/class/DOB change. It also PRUNES: any Pathway diagnostic previously
-// issued for a different bracket of this same curriculum that the learner never started is
-// revoked, so a learner who was over-issued (before this became age-bracket-scoped, or after an
-// age-range edit) is left holding only the one that matches their age. A diagnostic the learner
-// has already opened (in_progress / submitted / graded) is never touched — that's real work / a
-// real placement.
-async function maybeAutoIssuePathwayDiagnostics(learnerId, cls, age) {
-  if (!cls?.curriculumId || age == null) return;
+// issued for a different stage of this same curriculum that the learner never started is
+// revoked, so a learner who was over-issued (before this became stage-scoped, or after a stage
+// reassignment) is left holding only the one that matches their current stage. A diagnostic the
+// learner has already opened (in_progress / submitted / graded) is never touched — that's real
+// work / a real placement.
+async function maybeAutoIssuePathwayDiagnostics(learnerId, cls, stageId) {
+  if (!cls?.curriculumId || !stageId) return;
   const allPathways = await PathwayModel.findByCurriculumId(cls.curriculumId);
   const pathwayById = new Map(allPathways.map((p) => [p.id, p]));
-  const match = allPathways.find(
-    (p) => (p.minAge == null || age >= p.minAge) && (p.maxAge == null || age <= p.maxAge)
-  );
+  const match = allPathways.find((p) => p.ageCategoryId === stageId);
 
   // Revoke stale un-started Pathway diagnostics for THIS curriculum's pathways — anything
   // that isn't the age-matched one.

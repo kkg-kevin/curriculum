@@ -1,5 +1,7 @@
 const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
+const PerformanceBandModel = require("../curriculum/competency-framework/performance-band.model");
 const CourseModel = require("../courses/course.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const { slugify } = require("../../shared/utils/slugify");
@@ -17,16 +19,17 @@ async function designatedAdminPathways() {
   return lists.flat();
 }
 
-// Resolve a pathway's course id list to the still-active `courses` rows, IN LEARNING ORDER:
-// courseSequence's saved order first (same rule the portal's own sequenceFor() / the
-// authenticated learner-journey code uses — competency.service.js), then any courses[] entries
-// that were never explicitly sequenced. Non-active / no-longer-resolving ids are dropped — the
-// same "still exists" hygiene the reports code applies.
+// Resolve a pathway's course id list to the still-active `courses` rows, IN LEARNING ORDER: the
+// pathway's own authored course sequence — Performance Bands with pathwayId+courseId set,
+// ordered by their `order` (see PerformanceBandModel.findByPathway; course-to-course advancement
+// is now decided by indicator-contribution/threshold, not courseSequence/minScore) — then any
+// courses[] entries that were never explicitly sequenced with a band. Non-active /
+// no-longer-resolving ids are dropped — the same "still exists" hygiene the reports code applies.
 async function activeOrderedCourses(pathway) {
   const ids = Array.isArray(pathway.courses) ? pathway.courses : [];
   if (ids.length === 0) return [];
-  const sequence = [...(pathway.courseSequence || [])].sort((a, b) => a.order - b.order);
-  const sequencedIds = sequence.map((s) => s.courseId).filter((cid) => ids.includes(cid));
+  const bands = await PerformanceBandModel.findByPathway(pathway.curriculumId, pathway.id);
+  const sequencedIds = bands.map((b) => b.courseId).filter((cid) => ids.includes(cid));
   const orderedIds = [...sequencedIds, ...ids.filter((cid) => !sequencedIds.includes(cid))];
 
   const rows = await Promise.all(orderedIds.map((id) => CourseModel.findById(id)));
@@ -34,18 +37,25 @@ async function activeOrderedCourses(pathway) {
 }
 
 // Whether this pathway's diagnostic is actually offerable to an anonymous visitor right now:
-// the flag is on, the assessment still resolves and is fully auto-gradable (live re-check —
-// the flag and the assessment are independently editable), AND both age bounds are set (a
-// missing bound means "not configured", not "any age" — the anonymous path fails safe).
+// the flag is on, an EFFECTIVE assessment (publicDiagnosticAssessmentId when set, falling back
+// to diagnosticAssessmentId — same resolution public-diagnostic.service.js's
+// loadOfferableAssessment uses) still resolves and is fully auto-gradable (live re-check — the
+// flag and the assessment are independently editable), AND both age bounds are set on the
+// pathway's own Developmental Stage (a missing bound means "not configured", not "any age" — the
+// anonymous path fails safe). A pathway belongs to exactly one stage instead of carrying its own
+// independent minAge/maxAge — see public-diagnostic.service.js's resolveEffectiveAgeRange for the
+// same resolution.
 async function diagnosticInfoFor(pathway) {
   const off = { available: false, minAge: null, maxAge: null };
-  if (!pathway?.publicDiagnosticEnabled || !pathway.diagnosticAssessmentId) return off;
-  if (pathway.minAge == null || pathway.maxAge == null || Number(pathway.minAge) > Number(pathway.maxAge)) {
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return off;
+  const stage = pathway.ageCategoryId ? await AgeCategoryModel.findById(pathway.ageCategoryId) : null;
+  if (stage?.minAge == null || stage?.maxAge == null || Number(stage.minAge) > Number(stage.maxAge)) {
     return off;
   }
-  const assessment = await AssessmentModel.findById(pathway.diagnosticAssessmentId);
+  const assessment = await AssessmentModel.findById(effectiveAssessmentId);
   if (!assessment || requiresManualGrading(assessment)) return off;
-  return { available: true, minAge: Number(pathway.minAge), maxAge: Number(pathway.maxAge) };
+  return { available: true, minAge: Number(stage.minAge), maxAge: Number(stage.maxAge) };
 }
 
 // `pathways` has no slug column — the public contract needs one, computed at read time.

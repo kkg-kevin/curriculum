@@ -24,6 +24,8 @@ const LearnerPathwayModel            = require("./learner-pathway.model");
 const LearnerModel                   = require("../../learners/learner.model");
 const LearnerHubLinkModel            = require("../../learners/learner-hub-link.model");
 const ClassModel                     = require("../../classes/class.model");
+const CoursePathwayLinkModel         = require("../../courses/course-pathway-link.model");
+const AssessmentPathwayLinkModel     = require("../../assessments/assessment-pathway-link.model");
 // Required lazily (inside the functions that use it, not here) — assessment-submission.service.js
 // already requires this file back (for diagnostic placement), and capturing a top-level reference
 // to it here would risk resolving to a stale/incomplete export depending on which module happens
@@ -37,6 +39,19 @@ async function assertCoursesExist(courseIds) {
   const missing = courseIds.filter((id, i) => !found[i]);
   if (missing.length > 0) {
     const err = new Error(`Course(s) not found: ${missing.join(", ")}`);
+    err.statusCode = 404;
+    throw err;
+  }
+}
+
+// A Pathway's ageCategoryId must resolve to a real Developmental Stage belonging to THIS
+// curriculum — same cross-tenant/cross-curriculum guard every other FK on this record already
+// gets (assertCoursesExist above, assertPublicDiagnosticAllowed below).
+async function assertStageExists(curriculumId, ageCategoryId) {
+  if (ageCategoryId === undefined) return;
+  const stage = await AgeCategoryModel.findById(ageCategoryId);
+  if (!stage || stage.curriculumId !== curriculumId) {
+    const err = new Error("Developmental Stage not found");
     err.statusCode = 404;
     throw err;
   }
@@ -184,8 +199,14 @@ const CompetencyService = {
   // and the incoming patch to resolve the effective value from.
   async assertPublicDiagnosticAllowed(data, existingPathway) {
     if (!data.publicDiagnosticEnabled) return;
-    const effectiveAssessmentId =
+    // The public assessment wins when set (existing-or-incoming), falling back to the internal
+    // one — same "effective id" resolution every public-site resolver mirrors (see
+    // public-diagnostic.service.js's loadOfferableAssessment and its two sibling copies).
+    const effectivePublicAssessmentId =
+      "publicDiagnosticAssessmentId" in data ? data.publicDiagnosticAssessmentId : existingPathway?.publicDiagnosticAssessmentId;
+    const effectiveInternalAssessmentId =
       "diagnosticAssessmentId" in data ? data.diagnosticAssessmentId : existingPathway?.diagnosticAssessmentId;
+    const effectiveAssessmentId = effectivePublicAssessmentId || effectiveInternalAssessmentId;
     if (!effectiveAssessmentId) {
       const err = new Error("Set a diagnostic assessment before offering it publicly");
       err.statusCode = 400;
@@ -212,6 +233,7 @@ const CompetencyService = {
       throw err;
     }
     await assertCoursesExist(data.courses);
+    await assertStageExists(curriculumId, data.ageCategoryId);
     await this.assertPublicDiagnosticAllowed(data, null);
     return PathwayModel.create({ curriculumId, ...data });
   },
@@ -233,6 +255,7 @@ const CompetencyService = {
       }
     }
     await assertCoursesExist(data.courses);
+    await assertStageExists(curriculumId, data.ageCategoryId);
     await this.assertPublicDiagnosticAllowed(data, pathway);
     return PathwayModel.update(id, data);
   },
@@ -244,6 +267,16 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
+    // Cascade the pathway's own dependents — its course-threshold bands, every learner's
+    // placement history in it, and its course/assessment tag links — rather than leaving them
+    // orphaned pointing at a pathway that no longer exists. The delete-confirmation UI already
+    // tells the admin this happens (see PathwaysPanel's requestDelete message).
+    await Promise.all([
+      PerformanceBandModel.deleteByPathwayId(id),
+      LearnerPathwayModel.deleteByPathwayId(id),
+      CoursePathwayLinkModel.deleteByPathwayId(id),
+      AssessmentPathwayLinkModel.deleteByPathwayId(id),
+    ]);
     await PathwayModel.delete(id);
   },
 
@@ -577,6 +610,17 @@ const CompetencyService = {
     return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
   },
 
+  // Pathway sibling of calculateIndicatorProgress above — same engine
+  // (runIndicatorProgressEngine is fully generic over whatever performanceBands array it's
+  // given), just fed this Pathway's own course ladder (bands with pathwayId+courseId
+  // set, ordered by their authored course sequence) instead of a Developmental Stage's ladder.
+  // A course's completion% here is how much of ITS OWN indicator-contribution budget a learner
+  // has earned — advancing past it (see maybeAdvancePathwayCourse below) means thresholdMet.
+  async calculatePathwayCourseProgress(curriculumId, pathwayId, indicatorAchievements) {
+    const performanceBands = await PerformanceBandModel.findByPathway(curriculumId, pathwayId);
+    return runIndicatorProgressEngine(indicatorAchievements, performanceBands);
+  },
+
 
   /* ── Evidence Types ─────────────────────────────────────────────────── */
 
@@ -649,11 +693,16 @@ const CompetencyService = {
 
   async reorderPerformanceBands(curriculumId, ageCategoryId, orderedIds) {
     const reordered = await PerformanceBandModel.reorder(curriculumId, ageCategoryId, orderedIds);
-    const isPathway = reordered.some((b) => b.pathwayId);
-    if (!isPathway) {
-      await this._syncReorderAcrossStages(curriculumId, ageCategoryId, reordered.map((b) => b.name));
-    }
+    await this._syncReorderAcrossStages(curriculumId, ageCategoryId, reordered.map((b) => b.name));
     return reordered;
+  },
+
+  // Pathway sibling of reorderPerformanceBands above — a Pathway's own course sequence,
+  // scoped by pathwayId instead of ageCategoryId (see PerformanceBandModel.reorderByPathway).
+  // No cross-stage sync: a Pathway's course ladder is unique to itself, unlike Progress-Arc bands
+  // which mirror the same named rungs across every stage.
+  async reorderPathwayCourses(curriculumId, pathwayId, orderedIds) {
+    return PerformanceBandModel.reorderByPathway(curriculumId, pathwayId, orderedIds);
   },
 
   // Copies a fully-configured band's setup onto the NEXT band in the same stage's ladder
@@ -686,6 +735,40 @@ const CompetencyService = {
     const updated = await PerformanceBandModel.update(curriculumId, target.id, {
       minScore:               source.minScore,
       maxScore:               source.maxScore,
+      competencyIds:          source.competencyIds || [],
+      indicatorContributions: source.indicatorContributions || [],
+      advancementMin:         source.advancementMin ?? 0,
+      advancementThreshold:   source.advancementThreshold ?? 0,
+    });
+    return { source, target: updated };
+  },
+
+  // Pathway sibling of duplicatePerformanceBandToNext above — copies a course's
+  // competencies/indicator weights/advancement threshold onto the NEXT course in the SAME
+  // pathway's ladder (ordered by findByPathway's `order`, not minScore/maxScore — those fields
+  // aren't read for pathway bands, so they're deliberately not copied here, unlike the stage
+  // version above).
+  async duplicatePathwayBandToNext(curriculumId, bandId) {
+    const source = await PerformanceBandModel.findById(bandId);
+    if (!source || source.curriculumId !== curriculumId) {
+      const err = new Error("Performance band not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (!source.pathwayId) {
+      const err = new Error("Only Pathway course bands can be duplicated to the next course");
+      err.statusCode = 400;
+      throw err;
+    }
+    const ladder = await PerformanceBandModel.findByPathway(curriculumId, source.pathwayId);
+    const idx = ladder.findIndex((b) => b.id === bandId);
+    const target = ladder[idx + 1];
+    if (!target) {
+      const err = new Error("This is the last course in the pathway — there is no next course to copy to");
+      err.statusCode = 400;
+      throw err;
+    }
+    const updated = await PerformanceBandModel.update(curriculumId, target.id, {
       competencyIds:          source.competencyIds || [],
       indicatorContributions: source.indicatorContributions || [],
       advancementMin:         source.advancementMin ?? 0,
@@ -988,6 +1071,22 @@ const CompetencyService = {
     return this.calculateIndicatorProgress(curriculumId, ageCategoryId, indicatorAchievements);
   },
 
+  // Pathway sibling of getLearnerBandProgress above — same "real per-learner indicator
+  // achievement, fed through the engine" shape, scoped to one Pathway's own course ladder
+  // instead of a Developmental Stage's. Drives a learner-facing "how close am I to the next
+  // course" display (mirrors ProgressArcCard's own useLearnerBandProgress) and is what
+  // maybeAdvancePathwayCourse below checks to decide whether to advance a learner.
+  async getLearnerPathwayCourseProgress(curriculumId, learnerId, pathwayId) {
+    const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
+    const progress = await AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, curriculumId);
+    const indicatorAchievements = progress.map((p) => ({
+      competencyId: p.competencyId,
+      indicatorId:  p.indicatorId,
+      percent:      p.percent,
+    }));
+    return this.calculatePathwayCourseProgress(curriculumId, pathwayId, indicatorAchievements);
+  },
+
   // Real cross-learner replacement for the old manual-entry preview above (IndicatorAchievementModel
   // has no UI anywhere to populate it — see getCompetencyScores). Averages every participating
   // learner's own getLearnerCompetencyScores by competencyId, then re-derives level/band from the
@@ -1092,25 +1191,13 @@ const CompetencyService = {
   /* ── Pathway ─────────────────────────────────────────────────
    * A learner's placement timeline, per Pathway: where they started, every time
    * they've advanced, and wherever they currently stand. Nothing is persisted until a
-   * placement is actually made — until then, a default is computed on the fly (Developmental
-   * Stage's assignment for that area, falling back to the first course in its sequence). */
+   * placement is actually made — until then, a default is computed on the fly (the first course
+   * in the pathway's own authored sequence). */
 
   // One entry per Pathway in this curriculum — either the learner's real journey
   // record, or (if they've never been placed) a computed default that isn't saved until
   // placeLearner is called.
   async getPathway(curriculumId, learnerId) {
-    // Stage placement lives on the hub-enrollment link, not the learner record (a learner
-    // enrolled at several hubs can be running a different curriculum at each) — find the one
-    // link whose class resolves to THIS curriculum. See maybeAutoIssueDiagnostic's comment in
-    // learner.service.js for why.
-    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
-    let link = null;
-    for (const l of links) {
-      if (!l.classId) continue;
-      const cls = await ClassModel.findById(l.classId);
-      if (cls?.curriculumId === curriculumId) { link = l; break; }
-    }
-    const stage = link?.currentStageId ? await AgeCategoryModel.findById(link.currentStageId) : null;
     const pathways = await PathwayModel.findByCurriculumId(curriculumId);
 
     return Promise.all(pathways.map(async (pathway) => {
@@ -1125,17 +1212,16 @@ const CompetencyService = {
         };
       }
 
-      // Mirrors the client's own sequenceFor() (CompetenciesPage.jsx) exactly: courseSequence's
-      // saved order first, then whatever's left in courses[] that was never explicitly
-      // sequenced. Course Sequence's editor shows a pathway's lone/first course as "1" the moment
-      // it's added — before anyone has ever reordered it or set a stage default, at which point
-      // courseSequence is still `[]` — so reading courseSequence alone here left that course
-      // reading as "not sequenced" for every learner despite the editor showing it placed.
-      const sequence = [...(pathway.courseSequence || [])].sort((a, b) => a.order - b.order);
-      const sequencedIds = sequence.map((s) => s.courseId).filter((cid) => (pathway.courses || []).includes(cid));
+      // The pathway's own authored course order — Performance Bands with pathwayId+courseId
+      // set, ordered by `order` (see PerformanceBandModel.findByPathway; course-to-course
+      // advancement is now decided by indicator-contribution/threshold, not a score walk) — then
+      // whatever's left in courses[] that has no band configured yet. A pathway now belongs to
+      // exactly one Developmental Stage, so there's no cross-stage "defaultForStages" override to
+      // resolve any more — the first course in ITS OWN sequence is always the default start.
+      const bands = await PerformanceBandModel.findByPathway(curriculumId, pathway.id);
+      const sequencedIds = bands.map((b) => b.courseId).filter((cid) => (pathway.courses || []).includes(cid));
       const orderedIds = [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
-      const stageDefault = stage ? sequence.find((s) => (s.defaultForStages || []).includes(stage.id)) : null;
-      const defaultCourseId = stageDefault?.courseId || orderedIds[0] || null;
+      const defaultCourseId = orderedIds[0] || null;
 
       return {
         pathwayId: pathway.id,
@@ -1211,6 +1297,49 @@ const CompetencyService = {
     const courseId = await this.resolvePlacementFromScore(pathway.curriculumId, pathwayId, scorePercent);
     if (!courseId) return null;
     return this.placeLearner(pathway.curriculumId, learnerId, pathwayId, { courseId, reason: "diagnostic", assessmentId });
+  },
+
+  // Called after a graded submission's marks are persisted (see assessment-submission.service.js's
+  // maybePlaceFromDiagnostic sibling call sites) for every Pathway the just-graded course
+  // belongs to — checks whether the learner has now cleared their CURRENT course's
+  // indicator-contribution threshold in that Pathway and, if so, advances them to the next
+  // course in the ladder's authored order. A no-op (returns null) whenever there's no next course
+  // to advance to, the learner hasn't been placed in this Pathway yet (nothing to advance FROM —
+  // their first placement is always a diagnostic or a manual action, never this), or the
+  // threshold isn't met yet. Never moves a learner backward and never re-places them at their
+  // already-current course.
+  async maybeAdvancePathwayCourse(curriculumId, learnerId, pathwayId) {
+    const journey = await LearnerPathwayModel.findOne(learnerId, pathwayId);
+    if (!journey?.currentCourseId) return null;
+
+    const bands = await PerformanceBandModel.findByPathway(curriculumId, pathwayId);
+    const currentIndex = bands.findIndex((b) => b.courseId === journey.currentCourseId);
+    // The learner's current course has no band configured (no contribution/threshold set up
+    // yet), or it's already the last course in the ladder — nothing to advance to.
+    if (currentIndex === -1 || currentIndex === bands.length - 1) return null;
+
+    const progress = await this.getLearnerPathwayCourseProgress(curriculumId, learnerId, pathwayId);
+    const currentProgress = progress.find((p) => p.bandId === bands[currentIndex].id);
+    if (!currentProgress?.thresholdMet) return null;
+
+    const nextCourseId = bands[currentIndex + 1].courseId;
+    const placement = await this.placeLearner(curriculumId, learnerId, pathwayId, { courseId: nextCourseId, reason: "advanced", assessmentId: null });
+
+    // Lazy-required (not a top-level require) — NotificationService itself requires this file
+    // (see its own maybeNotifyLevelUp), so a top-level require here would be circular. Same
+    // pattern getLearnerBandProgress above already uses for AssessmentSubmissionService.
+    const NotificationService = require("../../notifications/notification.service");
+    const pathway = await PathwayModel.findById(pathwayId);
+    const course = await CourseModel.findById(nextCourseId);
+    await NotificationService.notifyLearner(learnerId, {
+      type: "pathway_course_unlocked",
+      title: "New course unlocked!",
+      message: `You've unlocked "${course?.name || "the next course"}"${pathway ? ` in ${pathway.name}` : ""} — keep going!`,
+      payload: { pathwayId, courseId: nextCourseId, curriculumId, learnerId },
+      dedupeKey: `pathway_course_unlocked:${learnerId}:${pathwayId}:${nextCourseId}`,
+    });
+
+    return placement;
   },
 
 };

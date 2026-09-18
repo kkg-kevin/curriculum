@@ -54,6 +54,13 @@ const LearnerPathwayModel = {
   deleteByCurriculumId(curriculumId) {
     return db(TABLE).where({ curriculumId }).del();
   },
+
+  // Every learner's placement in one Pathway — called when the Pathway itself is deleted
+  // (see CompetencyService.deletePathway), so no learner's placement history sits orphaned
+  // pointing at a pathway that no longer exists.
+  deleteByPathwayId(pathwayId) {
+    return db(TABLE).where({ pathwayId }).del();
+  },
 };
 
 module.exports = LearnerPathwayModel;

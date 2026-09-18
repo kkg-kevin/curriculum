@@ -21,6 +21,7 @@ const KEYS = {
   bandProgress:          (cid, ageCategoryId) => ["band-progress", cid, ageCategoryId],
   learnerCompetencyScores: (cid, learnerId) => ["competency-scores", "learner", cid, learnerId],
   learnerBandProgress:     (cid, learnerId) => ["band-progress", "learner", cid, learnerId],
+  learnerPathwayCourseProgress: (cid, pathwayId, learnerId) => ["pathway-course-progress", cid, pathwayId, learnerId],
 };
 
 /* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
@@ -185,6 +186,20 @@ export function useImportPathway(curriculumId) {
   });
 }
 
+// Reorders a Pathway's own course ladder — Performance Bands with pathwayId+courseId set (same
+// underlying data useReorderPerformanceBands reorders for a Developmental Stage's ladder, just
+// scoped by pathwayId instead), so invalidates performanceBands, not the pathway record itself.
+export function useReorderPathwayCourses(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pathwayId, orderedIds }) => competenciesApi.reorderPathwayCourses(curriculumId, pathwayId, orderedIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to reorder courses"),
+  });
+}
+
 /* ── Progression Ladder ─────────────────────────────────────────────────── */
 
 export function useLadder(curriculumId) {
@@ -280,6 +295,17 @@ export function useLearnerBandProgress(curriculumId, learnerId) {
     queryKey: KEYS.learnerBandProgress(curriculumId, learnerId),
     queryFn:  () => competenciesApi.getLearnerBandProgress(curriculumId, learnerId),
     enabled:  !!curriculumId && !!learnerId,
+  });
+}
+
+// Pathway sibling of useLearnerBandProgress above — how much of THIS Pathway's current-course
+// indicator-contribution budget the learner has earned, same engine, scoped to one Pathway's
+// course ladder instead of a Developmental Stage's.
+export function useLearnerPathwayCourseProgress(curriculumId, pathwayId, learnerId) {
+  return useQuery({
+    queryKey: KEYS.learnerPathwayCourseProgress(curriculumId, pathwayId, learnerId),
+    queryFn:  () => competenciesApi.getLearnerPathwayCourseProgress(curriculumId, pathwayId, learnerId),
+    enabled:  !!curriculumId && !!pathwayId && !!learnerId,
   });
 }
 
@@ -522,6 +548,19 @@ export function useDuplicatePerformanceBandToNext(curriculumId) {
       toast.success(`${data?.source?.name || "Band"}'s setup copied to ${data?.target?.name || "the next level"}`);
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to duplicate band"),
+  });
+}
+
+// Pathway sibling — same copy, onto the next COURSE in the pathway's own ladder.
+export function useDuplicatePathwayBandToNext(curriculumId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (bandId) => competenciesApi.duplicatePathwayBandToNext(curriculumId, bandId),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
+      toast.success(`${data?.source?.name || "Course"}'s setup copied to ${data?.target?.name || "the next course"}`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to duplicate course setup"),
   });
 }
 

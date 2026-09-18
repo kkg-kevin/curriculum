@@ -492,6 +492,14 @@ async function cloneTenant(trx, sourceAdmin, targetAdmin) {
       id: newId,
       curriculumId: remapId("curricula", row.curriculumId),
       diagnosticAssessmentId: row.diagnosticAssessmentId ? remapId("assessments", row.diagnosticAssessmentId) : row.diagnosticAssessmentId,
+      // The public-website override (falls back to diagnosticAssessmentId when unset) is its own
+      // FK into the same assessments table — remap it too, or a cloned pathway would silently
+      // carry the SOURCE tenant's raw assessment id.
+      publicDiagnosticAssessmentId: row.publicDiagnosticAssessmentId ? remapId("assessments", row.publicDiagnosticAssessmentId) : row.publicDiagnosticAssessmentId,
+      // A pathway now belongs to exactly one Developmental Stage — remap it the same way every
+      // other cross-table FK on this row is remapped (age_categories are cloned before pathways,
+      // same ordering assessments/courses already rely on above).
+      ageCategoryId: row.ageCategoryId ? remapId("age_categories", row.ageCategoryId) : row.ageCategoryId,
       courses: toJson(remapArray("courses", row.courses)),
       courseSequence: toJson(remapArray("courses", row.courseSequence)),
     });

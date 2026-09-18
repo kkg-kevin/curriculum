@@ -163,6 +163,10 @@ export const competenciesApi = {
   duplicatePerformanceBandToNext: (curriculumId, bandId) =>
     api.post(`/api/curricula/${curriculumId}/competencies/bands/${bandId}/duplicate-to-next`).then((r) => r.data.data),
 
+  // Pathway sibling — same copy, but onto the next COURSE in the same pathway's ladder.
+  duplicatePathwayBandToNext: (curriculumId, bandId) =>
+    api.post(`/api/curricula/${curriculumId}/competencies/pathway-bands/${bandId}/duplicate-to-next`).then((r) => r.data.data),
+
   // Indicator-driven band completion, computed from persisted indicator-achievements.
   // ageCategoryId is required now that Performance Bands are scoped per Developmental Stage.
   getBandProgress: (curriculumId, ageCategoryId) =>
@@ -172,6 +176,14 @@ export const competenciesApi = {
   // the shared curriculum-wide manual store.
   getLearnerBandProgress: (curriculumId, learnerId) =>
     api.get(`${base(curriculumId)}/bands/progress/learner/${learnerId}`).then((r) => r.data.data),
+
+  /* Pathway — course sequence + indicator-contribution/threshold progress (same Engine 4 shape
+   * as Performance Bands above, scoped to one Pathway's course ladder instead of a stage's). */
+  reorderPathwayCourses: (curriculumId, pathwayId, orderedIds) =>
+    api.put(`${base(curriculumId)}/pathways/${pathwayId}/courses/reorder`, { orderedIds }).then((r) => r.data.data),
+
+  getLearnerPathwayCourseProgress: (curriculumId, pathwayId, learnerId) =>
+    api.get(`${base(curriculumId)}/pathways/${pathwayId}/course-progress/learner/${learnerId}`).then((r) => r.data.data),
 
   /* Pathway — per-learner, per-Pathway placement/history */
   getPathway: (curriculumId, learnerId) =>

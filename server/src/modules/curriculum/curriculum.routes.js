@@ -67,6 +67,7 @@ const {
   deletePerformanceBand,
   reorderPerformanceBands,
   duplicatePerformanceBandToNext,
+  duplicatePathwayBandToNext,
   calculateIndicatorProgress,
   getPopulatedIndicators,
   getIndicatorAchievements,
@@ -75,6 +76,8 @@ const {
   getBandProgress,
   getLearnerCompetencyScores,
   getLearnerBandProgress,
+  getLearnerPathwayCourseProgress,
+  reorderPathwayCourses,
   getPathway,
   placeLearner,
 } = require("./competency-framework/competency.controller");
@@ -135,6 +138,7 @@ router.route("/:id/competencies/levels").get(authorize("admin", "school", "learn
 // the blanket admin/curriculumAdmin gate below, same as the other learner-reachable reads above.
 router.route("/:id/competencies/scores/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerCompetencyScores);
 router.route("/:id/competencies/bands/progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerBandProgress);
+router.route("/:id/competencies/pathways/:pathwayId/course-progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerPathwayCourseProgress);
 router.route("/:id/competencies/pathway-placement/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getPathway);
 router.route("/:id/competencies/pathway-placement/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
 // Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
@@ -231,6 +235,9 @@ router.route("/:id/assessments/evidence/:etId").put(updateEvidenceType).delete(d
 // Performance Bands
 router.route("/:id/competencies/bands").get(getPerformanceBands).post(createPerformanceBand);
 router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
+// A Pathway's own course ladder — scoped by pathwayId instead of ageCategoryId, see
+// PerformanceBandModel.reorderByPathway.
+router.route("/:id/competencies/pathways/:pathwayId/courses/reorder").put(reorderPathwayCourses);
 // Progress Arc — indicator-driven band completion (must come before the /:bandId wildcard below)
 router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicatorProgress);
 // Progress Arc — same engine, but driven by persisted indicator-achievements instead of a
@@ -239,6 +246,7 @@ router.route("/:id/competencies/bands/progress").get(getBandProgress);
 // Copy a configured band's setup onto the next band in the same stage's ladder — the two-segment
 // path keeps it clear of the bare /:bandId PUT/DELETE below.
 router.route("/:id/competencies/bands/:bandId/duplicate-to-next").post(duplicatePerformanceBandToNext);
+router.route("/:id/competencies/pathway-bands/:bandId/duplicate-to-next").post(duplicatePathwayBandToNext);
 router.route("/:id/competencies/bands/:bandId").put(updatePerformanceBand).delete(deletePerformanceBand);
 
 // Pathway — per-learner, per-Pathway placement/history (both registered above —
