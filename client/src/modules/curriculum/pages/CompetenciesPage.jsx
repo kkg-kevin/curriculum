@@ -37,6 +37,8 @@ import {
   useDeletePerformanceBand,
   useReorderPerformanceBands,
   useDuplicatePerformanceBandToNext,
+  useReorderPathwayCourses,
+  useDuplicatePathwayBandToNext,
   usePopulatedIndicators,
   useBandProgress,
 } from "../hooks/useCompetencies";
@@ -519,16 +521,6 @@ function StepIndicator({ current }) {
 
 /* ── PathwaysPanel ─────────────────────────────────────────────────── */
 
-// Shared by PathwaysPanel (course rows on each pathway card) and LearningJourneyPanel
-// (Course Sequence editor) — a pathway's course order comes from courseSequence when set,
-// falling back to courses for anything not yet sequenced there.
-function sequenceFor(area) {
-  const seq = [...(area.courseSequence || [])].sort((a, b) => a.order - b.order);
-  const seqIds = seq.map((s) => s.courseId).filter((cid) => (area.courses || []).includes(cid));
-  const extras = (area.courses || []).filter((id) => !seqIds.includes(id));
-  return [...seqIds, ...extras];
-}
-
 function ImportPathwayDropdown({ available, onImport, isPending }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -578,6 +570,7 @@ function PathwaysPanel({ curriculumId }) {
   const { requestDelete, confirmDialog } = useConfirmDelete();
   const { data: catalogAreas = [] } = useCatalogPathways();
   const { mutate: importArea, isPending: importing } = useImportPathway(curriculumId);
+  const { mutate: reorderCourses } = useReorderPathwayCourses(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
   const courseById = new Map(allCourses.map((c) => [c.id, c]));
@@ -592,16 +585,29 @@ function PathwaysPanel({ curriculumId }) {
     (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
   );
 
+  // A Pathway now belongs to exactly one Developmental Stage (same "belongs to one stage" shape
+  // Performance Bands already use) instead of its own independent age range — needs at least one
+  // stage defined before a pathway can be created.
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const stageById = new Map(stages.map((s) => [s.id, s]));
+  // All pathway-course bands across every pathway in this curriculum — fetched once here and
+  // filtered per-pathway below, same "one query, many consumers" shape usePerformanceBands
+  // already has for Progress Arc's own stage ladders.
+  const { data: allBands = [] } = usePerformanceBands(curriculumId);
+
   const [showForm, setShowForm]   = useState(false);
   const [editId,   setEditId]     = useState(null);
   const [name,     setName]       = useState("");
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
   const [courses,  setCourses]    = useState([]);
-  const [minAge,   setMinAge]     = useState("");
-  const [maxAge,   setMaxAge]     = useState("");
+  const [ageCategoryId, setAgeCategoryId] = useState("");
   const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
   const [publicDiagnosticEnabled, setPublicDiagnosticEnabled] = useState(false);
+  // Optional override: when set, the public website serves THIS assessment instead of
+  // diagnosticAssessmentId. Left blank, the public flow falls back to reusing the internal one —
+  // exactly today's single-assessment behavior, unchanged unless an admin explicitly picks one.
+  const [publicDiagnosticAssessmentId, setPublicDiagnosticAssessmentId] = useState("");
   const nameRef = useRef(null);
 
   // Quick diagnostic assign/change — separate from the create/edit form so it can be set
@@ -611,49 +617,58 @@ function PathwaysPanel({ curriculumId }) {
   // publicDiagnosticEnabled toggled alongside the assessment picker on the card — same
   // "quick assign" flow, not the full edit form (see the form's own toggle below for create).
   const [diagPickerPublic, setDiagPickerPublic] = useState(false);
+  const [diagPickerPublicValue, setDiagPickerPublicValue] = useState("");
 
   function openDiagPicker(area) {
     setDiagPickerAreaId(area.id);
     setDiagPickerValue(area.diagnosticAssessmentId || "");
     setDiagPickerPublic(!!area.publicDiagnosticEnabled);
+    setDiagPickerPublicValue(area.publicDiagnosticAssessmentId || "");
   }
   function closeDiagPicker() { setDiagPickerAreaId(null); }
   function saveDiagPicker(area) {
     update(
-      { id: area.id, data: { diagnosticAssessmentId: diagPickerValue || null, publicDiagnosticEnabled: diagPickerValue ? diagPickerPublic : false } },
+      {
+        id: area.id,
+        data: {
+          diagnosticAssessmentId: diagPickerValue || null,
+          publicDiagnosticEnabled: diagPickerValue ? diagPickerPublic : false,
+          publicDiagnosticAssessmentId: diagPickerValue ? (diagPickerPublicValue || null) : null,
+        },
+      },
       { onSuccess: closeDiagPicker }
     );
   }
   function clearDiagnostic(area) {
-    update({ id: area.id, data: { diagnosticAssessmentId: null, publicDiagnosticEnabled: false } });
+    update({ id: area.id, data: { diagnosticAssessmentId: null, publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null } });
   }
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
     setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]);
-    setMinAge(""); setMaxAge(""); setDiagnosticAssessmentId(""); setPublicDiagnosticEnabled(false); setShowForm(true);
+    setAgeCategoryId(stages[0]?.id || ""); setDiagnosticAssessmentId(""); setPublicDiagnosticEnabled(false);
+    setPublicDiagnosticAssessmentId(""); setShowForm(true);
   }
   function openEdit(area) {
     setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
     setCourses(area.courses || []);
-    setMinAge(area.minAge ?? ""); setMaxAge(area.maxAge ?? ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || "");
-    setPublicDiagnosticEnabled(!!area.publicDiagnosticEnabled); setShowForm(true);
+    setAgeCategoryId(area.ageCategoryId || ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || "");
+    setPublicDiagnosticEnabled(!!area.publicDiagnosticEnabled);
+    setPublicDiagnosticAssessmentId(area.publicDiagnosticAssessmentId || ""); setShowForm(true);
   }
   function cancel() { setShowForm(false); setEditId(null); }
 
-  const ageRangeInvalid = minAge !== "" && maxAge !== "" && Number(maxAge) < Number(minAge);
-
   function submit() {
-    if (!name.trim() || ageRangeInvalid) return;
+    if (!name.trim() || !ageCategoryId) return;
     const data = {
       name: name.trim(), description: desc.trim(), color, courses,
-      minAge: minAge === "" ? null : Number(minAge),
-      maxAge: maxAge === "" ? null : Number(maxAge),
+      ageCategoryId,
       diagnosticAssessmentId: diagnosticAssessmentId || null,
       // Can only ever be true alongside an assessment — the checkbox is disabled without one
       // (see the form below), but guard here too in case state gets out of sync.
       publicDiagnosticEnabled: diagnosticAssessmentId ? publicDiagnosticEnabled : false,
+      publicDiagnosticAssessmentId: diagnosticAssessmentId ? (publicDiagnosticAssessmentId || null) : null,
     };
     if (editId) {
       update({ id: editId, data }, { onSuccess: cancel });
@@ -741,30 +756,27 @@ function PathwaysPanel({ curriculumId }) {
           </div>
 
           <div style={{ marginTop: "12px" }}>
-            <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
+            <label className="cp-field-label">Developmental Stage</label>
             <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-              Only learners in this age range are auto-issued this pathway's diagnostic. Leave blank to apply to every age.
+              A pathway belongs to exactly one Developmental Stage — only learners placed at that stage are auto-issued this pathway's diagnostic.
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
-                <input
-                  type="number" min="0" max="120" className="cp-comp-config-input"
-                  placeholder="Min" value={minAge}
-                  onChange={(e) => setMinAge(e.target.value)}
-                />
-              </div>
-              <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
-              <div className="cp-comp-eval-input-wrap" style={{ width: "90px" }}>
-                <input
-                  type="number" min="0" max="120" className="cp-comp-config-input"
-                  placeholder="Max" value={maxAge}
-                  onChange={(e) => setMaxAge(e.target.value)}
-                />
-              </div>
-              <span style={{ color: "#9CA3AF", fontSize: "12px" }}>years</span>
-            </div>
-            {ageRangeInvalid && (
-              <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#DC2626" }}>Max age must be greater than or equal to min age.</p>
+            {stages.length === 0 ? (
+              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
+                No Developmental Stages defined yet — add one on the Developmental Stages tab first.
+              </p>
+            ) : (
+              <select
+                className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+                value={ageCategoryId}
+                onChange={(e) => setAgeCategoryId(e.target.value)}
+              >
+                <option value="">Select a stage…</option>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}{s.minAge != null || s.maxAge != null ? ` · Ages ${s.minAge ?? "0"}-${s.maxAge ?? "∞"}` : ""}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -775,7 +787,7 @@ function PathwaysPanel({ curriculumId }) {
             <div style={{ marginTop: "12px" }}>
               <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
               <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Auto-issued once to a learner whose class exposes one of this pathway's courses. Its graded score places them at a starting course via the Placement Thresholds set up in Learning Journey.
+                Auto-issued once to a learner placed at this pathway's Developmental Stage. Its graded score places them at a starting course via the course thresholds set up below.
               </p>
               <select
                 className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
@@ -801,11 +813,28 @@ function PathwaysPanel({ curriculumId }) {
                   Offer this diagnostic to anonymous visitors on the public website
                 </span>
               </label>
+
+              {publicDiagnosticEnabled && (
+                <div style={{ marginTop: "10px", paddingLeft: "2px" }}>
+                  <label className="cp-field-label">Public website diagnostic <span className="cp-optional">(optional override)</span></label>
+                  <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
+                    Leave blank to reuse the diagnostic above for public visitors too. Pick a different one only if the public website should offer a different diagnostic than enrolled learners get.
+                  </p>
+                  <select
+                    className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
+                    value={publicDiagnosticAssessmentId}
+                    onChange={(e) => setPublicDiagnosticAssessmentId(e.target.value)}
+                  >
+                    <option value="">— Same as above —</option>
+                    {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || ageRangeInvalid}>
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || !ageCategoryId}>
               {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
@@ -831,13 +860,9 @@ function PathwaysPanel({ curriculumId }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cp-item-name">{area.name}</div>
                     {area.description && <div className="cp-item-sub">{area.description}</div>}
-                    {(area.minAge != null || area.maxAge != null) && (
+                    {area.ageCategoryId && stageById.get(area.ageCategoryId) && (
                       <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
-                        {area.minAge != null && area.maxAge != null
-                          ? `${area.minAge}–${area.maxAge} yrs`
-                          : area.minAge != null
-                          ? `${area.minAge}+ yrs`
-                          : `up to ${area.maxAge} yrs`}
+                        {stageById.get(area.ageCategoryId).name}
                       </p>
                     )}
                   </div>
@@ -859,35 +884,77 @@ function PathwaysPanel({ curriculumId }) {
                   </button>
                 </div>
 
-                {area.courses?.length > 0 && (
-                  <div className="cp-course-section">
-                    <div className="cp-course-header">
-                      <div className="cp-course-header-left">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color: areaColor, flexShrink: 0 }}>
-                          <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor"/>
-                          <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <span className="cp-course-title">Courses</span>
+                {area.courses?.length > 0 && (() => {
+                  // The pathway's own authored course order — Performance Bands with
+                  // pathwayId+courseId set, ordered by `order` (see
+                  // PerformanceBandModel.findByPathway server-side) — then any courses[] entries
+                  // with no band configured yet, appended at the end.
+                  const pathwayBands = allBands
+                    .filter((b) => b.pathwayId === area.id)
+                    .sort((a, b) => a.order - b.order);
+                  const sequencedIds = pathwayBands.map((b) => b.courseId).filter((cid) => area.courses.includes(cid));
+                  const orderedIds = [...sequencedIds, ...area.courses.filter((cid) => !sequencedIds.includes(cid))];
+                  const bandByCourseId = new Map(pathwayBands.map((b) => [b.courseId, b]));
+
+                  function moveCourseUp(idx) {
+                    if (idx === 0) return;
+                    const ids = [...orderedIds];
+                    [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+                    reorderCourses({ pathwayId: area.id, orderedIds: ids });
+                  }
+                  function moveCourseDown(idx) {
+                    if (idx === orderedIds.length - 1) return;
+                    const ids = [...orderedIds];
+                    [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+                    reorderCourses({ pathwayId: area.id, orderedIds: ids });
+                  }
+
+                  return (
+                    <div className="cp-course-section">
+                      <div className="cp-course-header">
+                        <div className="cp-course-header-left">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color: areaColor, flexShrink: 0 }}>
+                            <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor"/>
+                            <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          <span className="cp-course-title">Courses</span>
+                        </div>
+                        <span className="cp-course-count-badge" style={{ backgroundColor: `${areaColor}12`, borderColor: `${areaColor}35`, color: areaColor }}>
+                          {area.courses.length}
+                        </span>
                       </div>
-                      <span className="cp-course-count-badge" style={{ backgroundColor: `${areaColor}12`, borderColor: `${areaColor}35`, color: areaColor }}>
-                        {area.courses.length}
-                      </span>
+                      <div className="cp-course-list">
+                        {orderedIds.map((id, i) => {
+                          const c = courseById.get(id);
+                          const sessionCount = c?.sessionCount ?? 0;
+                          return (
+                            <div key={id} className="cp-course-row">
+                              <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                                <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => moveCourseUp(i)} disabled={i === 0} title="Move up">
+                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </button>
+                                <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => moveCourseDown(i)} disabled={i === orderedIds.length - 1} title="Move down">
+                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </button>
+                              </div>
+                              <span className="cp-course-index" style={{ backgroundColor: `${areaColor}15`, color: areaColor }}>{i + 1}</span>
+                              <span className="cp-course-name">{c?.name || "Unknown course"}</span>
+                              <span className="cp-course-meta">{sessionCount} lesson{sessionCount !== 1 ? "s" : ""}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <PathwayCourseLadderSection
+                        curriculumId={curriculumId}
+                        pathway={area}
+                        color={areaColor}
+                        orderedCourseIds={orderedIds}
+                        courseById={courseById}
+                        bandByCourseId={bandByCourseId}
+                      />
                     </div>
-                    <div className="cp-course-list">
-                      {sequenceFor(area).map((id, i) => {
-                        const c = courseById.get(id);
-                        const sessionCount = c?.sessionCount ?? 0;
-                        return (
-                          <div key={id} className="cp-course-row">
-                            <span className="cp-course-index" style={{ backgroundColor: `${areaColor}15`, color: areaColor }}>{i + 1}</span>
-                            <span className="cp-course-name">{c?.name || "Unknown course"}</span>
-                            <span className="cp-course-meta">{sessionCount} lesson{sessionCount !== 1 ? "s" : ""}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="cp-diag-section">
                   <div className="cp-diag-header">
@@ -924,23 +991,51 @@ function PathwaysPanel({ curriculumId }) {
                           Offer this diagnostic to anonymous visitors on the public website
                         </span>
                       </label>
+
+                      {diagPickerPublic && (
+                        <div style={{ width: "100%", marginTop: "6px" }}>
+                          <label style={{ fontSize: "11px", color: "#9CA3AF", display: "block", marginBottom: "4px" }}>
+                            Public website diagnostic — leave blank to reuse the one above
+                          </label>
+                          <select
+                            className="cp-select" style={{ width: "100%", boxSizing: "border-box" }}
+                            value={diagPickerPublicValue}
+                            onChange={(e) => setDiagPickerPublicValue(e.target.value)}
+                          >
+                            <option value="">— Same as above —</option>
+                            {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   ) : area.diagnosticAssessmentId ? (
                     <div className="cp-diag-row">
-                      <span className="cp-diag-name">
-                        {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
-                        {area.publicDiagnosticEnabled && (
-                          <span
-                            style={{
-                              marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
-                              backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
-                              padding: "2px 8px", verticalAlign: "middle",
-                            }}
-                          >
-                            Public
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                        <span className="cp-diag-name">
+                          {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
+                          {area.publicDiagnosticEnabled && (
+                            <span
+                              style={{
+                                marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
+                                backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
+                                padding: "2px 8px", verticalAlign: "middle",
+                              }}
+                              title={
+                                area.publicDiagnosticAssessmentId
+                                  ? `Public visitors get a different diagnostic: ${assessmentNameById[area.publicDiagnosticAssessmentId] || "Diagnostic assigned"}`
+                                  : "Public visitors get the same diagnostic as enrolled learners"
+                              }
+                            >
+                              Public{area.publicDiagnosticAssessmentId ? " · different" : ""}
+                            </span>
+                          )}
+                        </span>
+                        {area.publicDiagnosticEnabled && area.publicDiagnosticAssessmentId && (
+                          <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                            Public website uses: <strong>{assessmentNameById[area.publicDiagnosticAssessmentId] || "Diagnostic assigned"}</strong>
                           </span>
                         )}
-                      </span>
+                      </div>
                       <div className="cp-diag-actions">
                         <button type="button" className="cp-diag-btn cp-diag-btn-change" onClick={() => openDiagPicker(area)}>Change</button>
                         <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => clearDiagnostic(area)} disabled={updating}>Clear</button>
@@ -962,195 +1057,298 @@ function PathwaysPanel({ curriculumId }) {
   );
 }
 
-/* ── Learning Journey ──────────────────────────────────────────────────────
- * Course Sequence is read-only display, not configuration — a pathway's
- * starting course is just whichever course was added to it first, over on the
- * Pathways tab (see sequenceFor()); there's no reordering or per-
- * Developmental-Stage override step to do here anymore. Mirrors the same
- * read-only treatment LearnerViewPage.jsx's PathwayCard already uses
- * for a learner's own placement — same underlying getPathway default,
- * just shown here at the curriculum level instead of per-learner. What IS
- * still configured here is Placement Thresholds: the diagnostic score needed
- * to place a learner at each course. Per-learner placement (including
- * diagnostic-driven placement) lives on the learner's own profile page, not
- * here. The old Progression Ladder API/model is left untouched (superseded,
- * but still referenced by the Learner page's legacy placement dropdown). */
+/* ── PathwayCourseLadderSection ───────────────────────────────────────────
+ * Per-pathway counterpart to PerformanceBandsPanel's own band cards — same "full parity" richness
+ * (competency/indicator picker, live contribution sliders, the "sum to 100%" warning, "duplicate
+ * to next"), just scoped to ONE pathway's own course ladder (Performance Bands with
+ * pathwayId+courseId set) instead of a Developmental Stage's. Course-to-course advancement is
+ * decided by the same Engine 4 (runIndicatorProgressEngine) the stage ladder uses — a course's
+ * indicatorContributions/advancementThreshold say how much of a learner's graded work in this
+ * pathway's competencies it takes to unlock the next course (see
+ * CompetencyService.maybeAdvancePathwayCourse, fired automatically at grading time). Replaces
+ * the old Learning Journey tab's read-only "Course Sequence" + "Placement Thresholds" (minScore
+ * walk) — this is authored directly on the Pathways tab instead, right where the courses
+ * themselves are set up. */
 
-function LearningJourneyPanel({ curriculumId }) {
-  const { data: areas = [], isLoading: areasLoading, isError: areasError } = usePathways(curriculumId);
-  const { data: coursesResponse } = useCoursesQuery();
-  const { data: allBands = [], isLoading: bandsLoading, isError: bandsError } = usePerformanceBands(curriculumId);
-  const { mutate: createBand, isPending: creatingBand } = useCreatePerformanceBand(curriculumId);
-  const { mutate: removeBand, isPending: deletingBand } = useDeletePerformanceBand(curriculumId);
-  const allCourses = coursesResponse?.data || [];
-  const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
-
-  const areasWithCourses = areas.filter((a) => (a.courses || []).length > 0);
-
-  if (areasLoading || bandsLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
-  if (areasError || bandsError) return <ErrorNotice message="Couldn't load Learning Journey — try refreshing the page." />;
-
-  return (
-    <div>
-      <div className="cp-card" style={{ marginBottom: "20px" }}>
-        <div style={{ marginBottom: "18px" }}>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Course Sequence</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            The course a learner starts at in each pathway — the first course added to it, over on the Pathways tab.
-          </p>
-        </div>
-        {areasWithCourses.length === 0 ? (
-          <div className="cp-empty">
-            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
-            <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No sequenced pathways yet</p>
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-              Add courses to a Pathway first, over on the Pathways tab.
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {areasWithCourses.map((area) => {
-              const ids = sequenceFor(area);
-              const areaColor = area.color || "#25476a";
-              return (
-                <div key={area.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", borderRadius: "10px", border: "1px solid #EEF1F5" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
-                  <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#374151" }}>{courseNameById.get(ids[0]) || "Unknown course"}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="cp-card" style={{ marginTop: "20px" }}>
-        <div style={{ marginBottom: "18px" }}>
-          <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Placement Thresholds</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            The diagnostic score needed to be placed at each course — a learner scoring below every threshold is placed at the first course in the sequence instead of left unplaced.
-          </p>
-        </div>
-        {areasWithCourses.length === 0 ? (
-          <div className="cp-empty">
-            <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><TrackChangesIcon fontSize="inherit" /></div>
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", maxWidth: "320px", marginInline: "auto" }}>
-              Sequence a Pathway's courses above first.
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {areasWithCourses.map((area) => (
-              <PlacementThresholdsForArea
-                key={area.id}
-                area={area}
-                ids={sequenceFor(area)}
-                courseNameById={courseNameById}
-                bands={allBands.filter((b) => b.pathwayId === area.id)}
-                onCreate={createBand}
-                onDelete={removeBand}
-                saving={creatingBand}
-                deleting={deletingBand}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <p style={{ margin: "16px 4px 0", fontSize: "12px", color: "#9CA3AF" }}>
-        Individual learner placement — including diagnostic-driven placement and manual overrides — happens on each learner's profile page.
-      </p>
-    </div>
-  );
-}
-
-function PlacementThresholdsForArea({ area, ids, courseNameById, bands, onCreate, onDelete, saving, deleting }) {
-  const [adding, setAdding]     = useState(false);
-  const [courseId, setCourseId] = useState(ids[0] || "");
-  const [minScore, setMinScore] = useState("");
+function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCourseIds, courseById, bandByCourseId }) {
+  const { mutate: createBand, isPending: creating } = useCreatePerformanceBand(curriculumId);
+  const { mutate: updateBand, isPending: updating } = useUpdatePerformanceBand(curriculumId);
+  const { mutate: removeBand, isPending: deleting } = useDeletePerformanceBand(curriculumId);
+  const { mutate: duplicateToNext, isPending: duplicating } = useDuplicatePathwayBandToNext(curriculumId);
+  const { data: adoptedCompetencies = [] } = useCompetencies(curriculumId);
+  const { data: populatedIndicatorGroups = [] } = usePopulatedIndicators(curriculumId);
+  const populatedByCompetencyId = new Map(populatedIndicatorGroups.map((g) => [g.competencyId, g.indicators]));
+  const usedCompetencyIds = new Set(populatedIndicatorGroups.map((g) => g.competencyId));
+  const linkableCompetencies = adoptedCompetencies.filter((c) => usedCompetencyIds.has(c.id));
+  const { data: allGlobalCompetencies = [] } = useGlobalCompetencies();
+  const [showAllCompetencies, setShowAllCompetencies] = useState(false);
+  const pickableCompetencies = showAllCompetencies ? allGlobalCompetencies : linkableCompetencies;
+  const competencyById = new Map([
+    ...allGlobalCompetencies.map((c) => [c.id, c]),
+    ...adoptedCompetencies.map((c) => [c.id, c]),
+  ]);
   const { requestDelete, confirmDialog } = useConfirmDelete();
-  const areaColor = area.color || "#25476a";
-  const sorted = [...bands].sort((a, b) => a.minScore - b.minScore);
 
-  function openAdd() { setCourseId(ids[0] || ""); setMinScore(""); setAdding(true); }
-  function submit() {
-    if (!courseId || minScore === "") return;
-    const course = courseNameById.get(courseId) || "Course";
-    onCreate(
-      { name: `${area.name} — ${course}`, minScore: Number(minScore), pathwayId: area.id, courseId },
-      { onSuccess: () => setAdding(false) }
+  const [openCourseId, setOpenCourseId] = useState(null);
+  const [competencyIds, setCompetencyIds] = useState([]);
+  const [thresholdMin, setThresholdMin] = useState(0);
+  const [threshold, setThreshold] = useState(0);
+
+  function openCourse(courseId) {
+    const band = bandByCourseId.get(courseId);
+    setCompetencyIds(band ? [...(band.competencyIds || [])] : []);
+    setThresholdMin(band?.advancementMin ?? 0);
+    setThreshold(band?.advancementThreshold ?? 0);
+    setOpenCourseId(courseId);
+  }
+  function closeCourse() { setOpenCourseId(null); }
+
+  function toggleCompetency(id) {
+    setCompetencyIds((prev) => prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]);
+  }
+
+  function saveThresholds(courseId) {
+    const band = bandByCourseId.get(courseId);
+    const clampedMax = Math.min(100, Math.max(0, Number(threshold) || 0));
+    const clampedMin = Math.min(clampedMax || 100, Math.min(100, Math.max(0, Number(thresholdMin) || 0)));
+    const course = courseById.get(courseId);
+    const data = {
+      name: `${pathway.name} — ${course?.name || "Course"}`,
+      competencyIds,
+      advancementMin: clampedMin,
+      advancementThreshold: clampedMax,
+      pathwayId: pathway.id,
+      courseId,
+    };
+    if (band) {
+      // Dropping a competency also drops any % already assigned to its indicators — nothing to
+      // score against a competency the course no longer draws on.
+      data.indicatorContributions = (band.indicatorContributions || []).filter((p) => competencyIds.includes(p.competencyId));
+      updateBand({ id: band.id, data }, { onSuccess: closeCourse });
+    } else {
+      createBand(data, { onSuccess: closeCourse });
+    }
+  }
+
+  function persistIndicatorContributions(band, next) {
+    updateBand({
+      id: band.id,
+      data: {
+        name: band.name,
+        competencyIds: band.competencyIds,
+        advancementMin: band.advancementMin,
+        advancementThreshold: band.advancementThreshold,
+        pathwayId: band.pathwayId,
+        courseId: band.courseId,
+        indicatorContributions: next,
+      },
+    });
+  }
+
+  function saveIndicatorContribution(band, competencyId, indicatorId, percentage) {
+    const filtered = (band.indicatorContributions || []).filter(
+      (p) => !(p.competencyId === competencyId && p.indicatorId === indicatorId)
     );
+    const next = percentage > 0 ? [...filtered, { competencyId, indicatorId, percentage }] : filtered;
+    persistIndicatorContributions(band, next);
+  }
+
+  function removeDeadCompetency(band, competencyId) {
+    updateBand({
+      id: band.id,
+      data: {
+        name: band.name,
+        advancementMin: band.advancementMin,
+        advancementThreshold: band.advancementThreshold,
+        pathwayId: band.pathwayId,
+        courseId: band.courseId,
+        competencyIds: (band.competencyIds || []).filter((id) => id !== competencyId),
+        indicatorContributions: (band.indicatorContributions || []).filter((p) => p.competencyId !== competencyId),
+      },
+    });
   }
 
   return (
-    <div style={{ border: "1px solid #EEF1F5", borderRadius: "12px", padding: "14px 16px" }}>
+    <div style={{ marginTop: "14px", borderTop: "1px dashed #E5E7EB", paddingTop: "14px" }}>
       {confirmDialog}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: areaColor }} />
-          <span style={{ fontSize: "13px", fontWeight: "800", color: "#0F2645" }}>{area.name}</span>
-        </div>
-        {!adding && (
-          <button type="button" className="cp-btn-secondary" style={{ padding: "5px 10px", fontSize: "11.5px" }} onClick={openAdd}>
-            + Add Threshold
-          </button>
-        )}
+        <span className="cp-course-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <TrackChangesIcon fontSize="inherit" /> Course Thresholds
+        </span>
       </div>
+      <p style={{ margin: "0 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>
+        What it takes for a learner to advance from one course to the next — contribution weights per
+        competency indicator, and the % of those indicators a learner must clear.
+      </p>
 
-      {sorted.length === 0 && !adding && (
-        <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-          No thresholds set — a diagnostic for this pathway always places at the first course in the sequence.
-        </p>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {orderedCourseIds.map((courseId, idx) => {
+          const course = courseById.get(courseId);
+          const band = bandByCourseId.get(courseId);
+          const isOpen = openCourseId === courseId;
+          const isLast = idx === orderedCourseIds.length - 1;
+          const nextCourseId = orderedCourseIds[idx + 1];
+          const hasConfig = band && ((band.competencyIds || []).length > 0 || (band.advancementThreshold ?? 0) > 0 || (band.advancementMin ?? 0) > 0);
+          const canDuplicate = !!band && !isLast && hasConfig && !duplicating;
 
-      {sorted.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: adding ? "10px" : 0 }}>
-          {sorted.map((b) => (
-            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", background: "#FAFCFF" }}>
-              <span style={{ fontSize: "11px", fontWeight: "800", color: areaColor, minWidth: "56px" }}>{b.minScore}%+</span>
-              <span style={{ flex: 1, fontSize: "12.5px", fontWeight: "600", color: "#1F2937" }}>{courseNameById.get(b.courseId) || "Unknown course"}</span>
-              <button
-                type="button"
-                className="cp-icon-btn danger"
-                disabled={deleting}
-                onClick={() => requestDelete({
-                  title: "Remove this placement threshold?",
-                  message: `Learners will no longer be placed into "${courseNameById.get(b.courseId) || "this course"}" at ${b.minScore}%+ on this pathway's diagnostic. This cannot be undone.`,
-                  onConfirm: () => onDelete(b.id),
-                })}
-                title="Remove threshold"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
+          return (
+            <div key={courseId} style={{
+              border: `1.5px solid ${isOpen ? color : "#E5E7EB"}`, borderRadius: "12px", padding: "12px 14px",
+              boxShadow: isOpen ? `0 0 0 3px ${color}14` : "none", transition: "border-color 0.15s, box-shadow 0.15s",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button type="button" className="cp-indicators-toggle" style={{ flex: 1, marginTop: 0 }} onClick={() => (isOpen ? closeCourse() : openCourse(courseId))}>
+                  <span>{course?.name || "Unknown course"}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                    {band?.advancementThreshold > 0 && (
+                      <span
+                        style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 11px 3px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", color: "#25476a", background: "#e8f5fb", border: "1.5px solid #a8d5ee" }}
+                        title={band.advancementMin > 0 ? `On track from ${band.advancementMin}%; reaching ${band.advancementThreshold}% advances to the next course` : `A learner reaching ${band.advancementThreshold}% of this course's indicators advances to the next course`}
+                      >
+                        {band.advancementMin > 0 ? `${band.advancementMin}–${band.advancementThreshold}% to advance` : `${band.advancementThreshold}% to advance`}
+                      </span>
+                    )}
+                    {isLast && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 11px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", color: "#B45309", background: "#FFFBEB", border: "1.5px solid #FDE68A" }}>
+                        <EmojiEventsIcon fontSize="inherit" /> Final Course
+                      </span>
+                    )}
+                    <svg className={`cp-indicators-chevron${isOpen ? " open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </button>
+                {band && (
+                  <CardKebab
+                    onEdit={() => openCourse(courseId)}
+                    onDelete={() => removeBand(band.id)}
+                    disabled={deleting}
+                    itemLabel={course?.name || "this course"}
+                    itemType="course threshold"
+                    onDuplicate={canDuplicate ? () => duplicateToNext(band.id) : undefined}
+                    duplicateLabel={nextCourseId ? `Duplicate to ${courseById.get(nextCourseId)?.name || "next course"}` : undefined}
+                    duplicateTitle={nextCourseId ? `Copy this course's setup to ${courseById.get(nextCourseId)?.name || "the next course"}?` : undefined}
+                    duplicateMessage={nextCourseId
+                      ? `${courseById.get(nextCourseId)?.name || "The next course"}'s competencies, indicator weights and advancement threshold will be replaced with this course's. Only that course is affected.`
+                      : undefined}
+                  />
+                )}
+              </div>
+
+              {isOpen && (
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #F3F4F6" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <label className="cp-field-label" style={{ margin: 0 }}>Competencies</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCompetencies((v) => !v)}
+                      style={{
+                        fontSize: "11px", fontWeight: "700", padding: "3px 10px", borderRadius: "20px",
+                        border: `1px solid ${showAllCompetencies ? "#a8d5ee" : "#E5E7EB"}`,
+                        background: showAllCompetencies ? "#e8f5fb" : "#fff",
+                        color: showAllCompetencies ? "#25476a" : "#6B7280",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {showAllCompetencies ? "Showing all competencies" : "Browse all competencies"}
+                    </button>
+                  </div>
+
+                  {competencyIds.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                      {competencyIds.map((id) => {
+                        const comp = competencyById.get(id);
+                        if (!comp) return null;
+                        return (
+                          <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#25476a", background: "#e8f5fb", border: "1px solid #a8d5ee", borderRadius: "20px", padding: "4px 6px 4px 12px" }}>
+                            {comp.name}
+                            <button type="button" onClick={() => toggleCompetency(id)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", border: "none", borderRadius: "50%", background: "rgba(37,71,106,0.12)", color: "#25476a", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}>×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {pickableCompetencies.length === 0 ? (
+                    <div style={{ padding: "12px 14px", background: "#F8FAFC", border: "1px dashed #E5E7EB", borderRadius: "10px", fontSize: "12px", color: "#9CA3AF", lineHeight: 1.6, marginBottom: "12px" }}>
+                      {showAllCompetencies
+                        ? "No competencies exist in the global catalog yet — add some in Settings → Competencies."
+                        : "None of this curriculum's competencies are in use yet — tag one on a question, rubric criterion, or observation item in an attached assessment, or browse all competencies above."}
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: "12px" }}>
+                      <CompetencyLinkDropdown
+                        available={pickableCompetencies.filter((c) => !competencyIds.includes(c.id))}
+                        onAdd={toggleCompetency}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "12px" }}>
+                    <div>
+                      <label className="cp-field-label" style={{ margin: "0 0 4px" }}>On track from</label>
+                      <div className="cp-comp-eval-input-wrap" style={{ width: "70px" }}>
+                        <input type="number" min="0" max="100" className="cp-comp-config-input" value={thresholdMin} onChange={(e) => setThresholdMin(e.target.value)} />
+                        <span className="cp-comp-eval-suffix">%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="cp-field-label" style={{ margin: "0 0 4px" }}>Advances at</label>
+                      <div className="cp-comp-eval-input-wrap" style={{ width: "70px" }}>
+                        <input type="number" min="0" max="100" className="cp-comp-config-input" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
+                        <span className="cp-comp-eval-suffix">%</span>
+                      </div>
+                    </div>
+                    <button type="button" className="cp-btn-primary" style={{ alignSelf: "flex-end", padding: "8px 16px", fontSize: "12.5px" }} onClick={() => saveThresholds(courseId)} disabled={creating || updating}>
+                      {creating || updating ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+
+                  {band && (band.competencyIds || []).length > 0 && (() => {
+                    const total = (band.indicatorContributions || []).reduce((s, c) => s + (Number(c.percentage) || 0), 0);
+                    const ok = total === 100;
+                    const badgeColor = ok ? "#059669" : "#DC2626";
+                    const label = total === 0 ? "Not weighted — always 0%" : total > 100 ? `Indicators: ${total}% (exceeds 100%)` : `Indicators: ${total}% — can't reach 100%`;
+                    return (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 11px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", color: badgeColor, background: `${badgeColor}12`, border: `1.5px solid ${badgeColor}40`, marginBottom: "10px" }}>
+                        {ok ? `Indicators: ${total}%` : label}
+                      </span>
+                    );
+                  })()}
+
+                  {band && (band.competencyIds || []).length > 0 && band.competencyIds.map((cId) => {
+                    const comp = competencyById.get(cId);
+                    if (!comp) {
+                      return (
+                        <div key={cId} style={{ marginTop: "10px", padding: "9px 12px", borderRadius: "8px", background: "#FFF7ED", border: "1px solid #FED7AA", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                          <span style={{ fontSize: "11.5px", color: "#C2410C" }}>A competency attached here was deleted from Settings — it can no longer be configured.</span>
+                          <button type="button" className="cp-icon-btn danger" style={{ width: "22px", height: "22px", flexShrink: 0 }} onClick={() => removeDeadCompetency(band, cId)} title="Remove">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                          </button>
+                        </div>
+                      );
+                    }
+                    const percentageByIndicator = {};
+                    (band.indicatorContributions || []).forEach((p) => { if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage; });
+                    const populated = populatedByCompetencyId.get(cId);
+                    const blockIndicators = populated && populated.length > 0 ? populated : (comp.indicators || []);
+                    return (
+                      <BandCompetencyBlock
+                        key={cId}
+                        comp={comp}
+                        color={color}
+                        populatedIndicators={blockIndicators}
+                        percentageByIndicator={percentageByIndicator}
+                        onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-
-      {adding && (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          <select
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-            style={{ padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
-          >
-            {ids.map((cid) => (
-              <option key={cid} value={cid}>{courseNameById.get(cid) || "Unknown course"}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: "12px", color: "#9CA3AF" }}>at score ≥</span>
-          <input
-            type="number" min="0" max="100" value={minScore}
-            onChange={(e) => setMinScore(e.target.value)}
-            style={{ width: "70px", padding: "7px 9px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "12.5px", fontFamily: "Inter, sans-serif", color: "#111827" }}
-          />
-          <span style={{ fontSize: "12px", color: "#9CA3AF" }}>%</span>
-          <button type="button" className="cp-btn-primary" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={submit} disabled={saving || !courseId || minScore === ""}>
-            {saving ? "Saving…" : "Add"}
-          </button>
-          <button type="button" className="cp-btn-secondary" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={() => setAdding(false)}>Cancel</button>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -3840,14 +4038,6 @@ export default function CompetenciesPage() {
 
         <button
           type="button"
-          className={`cp-nav-btn${activeNav === "journey" ? " active" : ""}`}
-          onClick={() => setActiveNav("journey")}
-        >
-          Learning Journey
-        </button>
-
-        <button
-          type="button"
           className={`cp-nav-btn${activeNav === "assessments" ? " active" : ""}`}
           onClick={() => setActiveNav("assessments")}
         >
@@ -3859,7 +4049,6 @@ export default function CompetenciesPage() {
       {activeNav === "competencies" && <CompetencyPickerPanel curriculumId={id} />}
       {activeNav === "arc"          && <ProgressArcPanel      curriculumId={id} arcSub={arcSub} onArcSubChange={setArcSub} />}
       {activeNav === "areas"        && <PathwaysPanel    curriculumId={id} />}
-      {activeNav === "journey"      && <LearningJourneyPanel curriculumId={id} />}
       {activeNav === "assessments"  && <AssessmentsPanel curriculumId={id} />}
     </div>
   );

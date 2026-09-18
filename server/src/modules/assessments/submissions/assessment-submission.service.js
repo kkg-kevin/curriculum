@@ -186,6 +186,30 @@ async function maybePlaceFromDiagnostic(submission) {
   }
 }
 
+// Course-to-course Pathway advancement — the counterpart to maybePlaceFromDiagnostic above, but
+// for an ORDINARY course-attached submission (issue.courseId/classId/sessionId set) rather than
+// a standalone diagnostic issue (issue.learnerId/ageCategoryId/pathwayId set — those shapes are
+// mutually exclusive, see the assessments migration's own comment). Runs after every grading that
+// releases a report, alongside NotificationService.maybeNotifyLevelUp — checks every Pathway this
+// graded course's class curriculum has authored against that course (a course can be the
+// current-course rung of more than one Pathway, e.g. shared across curricula/pathways), and
+// advances the learner past any whose indicator-contribution threshold they've now cleared. A
+// no-op whenever the issue isn't course-attached, the class has no curriculum, or no Pathway in
+// that curriculum lists this course.
+async function maybeAdvancePathwayForCourse(submission) {
+  if (submission.status !== "graded") return;
+  const issue = await AssessmentIssueModel.findById(submission.issueId);
+  if (!issue?.courseId || !issue.classId) return;
+  const cls = await ClassModel.findById(issue.classId);
+  if (!cls?.curriculumId) return;
+
+  const pathways = await PathwayModel.findByCurriculumId(cls.curriculumId);
+  const relevant = pathways.filter((p) => (p.courses || []).includes(issue.courseId));
+  for (const pathway of relevant) {
+    await CompetencyService.maybeAdvancePathwayCourse(cls.curriculumId, submission.learnerId, pathway.id);
+  }
+}
+
 const AssessmentSubmissionService = {
   // gradedBy (see grade() below) is set to req.ownTeacher?.id when the grader has a linked
   // Teacher record — the common case — or falls back to the raw Users.id when an admin grades
@@ -739,6 +763,7 @@ const AssessmentSubmissionService = {
     }
     await maybePlaceFromDiagnostic(updated);
     if (updated.status === "graded") {
+      await maybeAdvancePathwayForCourse(updated);
       await NotificationService.assessmentGraded(updated);
       await NotificationService.maybeNotifyLevelUp(updated.learnerId, updated.classId);
     } else {
@@ -785,6 +810,7 @@ const AssessmentSubmissionService = {
     // grades through the same PATCH endpoint either way; no separate group-grading endpoint.
     await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(graded);
+    await maybeAdvancePathwayForCourse(graded);
     await NotificationService.assessmentGraded(graded);
     await NotificationService.maybeNotifyLevelUp(graded.learnerId, graded.classId);
     return graded;

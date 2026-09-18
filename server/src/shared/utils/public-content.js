@@ -2,6 +2,7 @@ const env = require("../../config/env");
 const CourseModel = require("../../modules/courses/course.model");
 const ModuleModel = require("../../modules/courses/module.model");
 const PathwayModel = require("../../modules/curriculum/competency-framework/pathway.model");
+const PerformanceBandModel = require("../../modules/curriculum/competency-framework/performance-band.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
 const CurriculumCompetencyLinkModel = require("../../modules/curriculum/competency-framework/curriculum-competency-link.model");
 const CompetencyModel = require("../../modules/settings/competencies/competency.model");
@@ -120,12 +121,13 @@ async function resolveCoursePricing(coursePricing, curriculumId, pathwayIds) {
   const sections = [];
 
   for (const pathway of pathways) {
-    // courseSequence (when set) is the pathway's authored learning order — same ordering
+    // The pathway's own authored learning order — Performance Bands with pathwayId+courseId
+    // set, ordered by `order` (see PerformanceBandModel.findByPathway) — same ordering
     // PathwayRoadmap.jsx numbers on the public pathway page. Fall back to `courses`' own order
-    // for a pathway that hasn't set a sequence.
-    const orderedIds = Array.isArray(pathway.courseSequence) && pathway.courseSequence.length > 0
-      ? pathway.courseSequence
-      : (pathway.courses || []);
+    // for any course that has no band configured yet.
+    const bands = await PerformanceBandModel.findByPathway(curriculumId, pathway.id);
+    const sequencedIds = bands.map((b) => b.courseId).filter((cid) => (pathway.courses || []).includes(cid));
+    const orderedIds = [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
     const items = orderedIds
       .filter((id) => priceByCourseId.has(id))
       .map(priced)

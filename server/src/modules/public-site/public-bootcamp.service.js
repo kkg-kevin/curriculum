@@ -2,6 +2,7 @@ const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 const { slugify } = require("../../shared/utils/slugify");
@@ -188,11 +189,19 @@ async function resolveForSaleBootcamp(idOrSlug) {
 // Competency Framework). This keeps the bootcamp flow a thin picker in front of the one, already
 //-working /pathways/:slug/diagnostic flow rather than a second grading/attempt path.
 async function pathwayDiagnosticOfferable(pathway) {
-  if (!pathway?.publicDiagnosticEnabled || !pathway.diagnosticAssessmentId) return false;
-  if (pathway.minAge == null || pathway.maxAge == null || Number(pathway.minAge) > Number(pathway.maxAge)) {
+  // publicDiagnosticAssessmentId wins when set, falling back to diagnosticAssessmentId — same
+  // "effective id" resolution public-diagnostic.service.js's loadOfferableAssessment uses, so a
+  // pathway offering a different diagnostic publicly than its internal one is reflected here too.
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return false;
+  // A pathway now belongs to exactly one Developmental Stage instead of carrying its own
+  // independent minAge/maxAge — its stage's own age range is what gates public offerability
+  // (same resolution public-diagnostic.service.js's resolveEffectiveAgeRange does).
+  const stage = pathway.ageCategoryId ? await AgeCategoryModel.findById(pathway.ageCategoryId) : null;
+  if (stage?.minAge == null || stage?.maxAge == null || Number(stage.minAge) > Number(stage.maxAge)) {
     return false;
   }
-  const assessment = await AssessmentModel.findById(pathway.diagnosticAssessmentId);
+  const assessment = await AssessmentModel.findById(effectiveAssessmentId);
   return !!assessment && !requiresManualGrading(assessment);
 }
 

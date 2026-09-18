@@ -24,18 +24,25 @@ const PerformanceBandModel = {
     return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
   },
 
-  // Bands that form one Pathway's course ladder for Pathway (pathwayId
-  // + courseId both set), ordered by score range — lowest first.
+  // Bands that form one Pathway's course ladder (pathwayId + courseId both set),
+  // ordered by this pathway's own explicit `order` — the same authored sequence a course
+  // reorder (see reorderByPathway below) writes, not a score-range walk (course-to-course
+  // advancement is decided by indicator-contribution/threshold, see runIndicatorProgressEngine —
+  // minScore/maxScore are no longer read for pathway bands).
   findByPathway(curriculumId, pathwayId) {
-    return db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("minScore", "asc");
+    return db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("order", "asc");
   },
 
   async create(curriculumId, fields) {
     const ageCategoryId = fields.ageCategoryId ?? null;
-    // Scoped to (curriculumId, ageCategoryId) so each stage's ladder independently numbers 1..N.
-    // Pathway bands (ageCategoryId always null) keep sharing one counter per curriculum
-    // exactly as before — they don't read `order` anyway, they sort by minScore.
-    const [{ count }] = await db(TABLE).where({ curriculumId, ageCategoryId }).count({ count: "*" });
+    const pathwayId = fields.pathwayId ?? null;
+    // A Progress-Arc-purpose band is scoped to (curriculumId, ageCategoryId) so each stage's
+    // ladder independently numbers 1..N. A Pathway band is scoped to (curriculumId, pathwayId)
+    // instead — two different pathways must each number their own course sequence 1..N, not
+    // share one counter (they'd otherwise collide once `order` actually decides course sequence,
+    // rather than a plain score-range walk as before this changed).
+    const counterScope = pathwayId ? { curriculumId, pathwayId } : { curriculumId, ageCategoryId };
+    const [{ count }] = await db(TABLE).where(counterScope).count({ count: "*" });
 
     let order;
     if (fields.order != null) {
@@ -44,7 +51,7 @@ const PerformanceBandModel = {
       // already at or after it up by one, so inserting "Explorer" at position 1 into a ladder
       // that already starts at 1 doesn't collide, it displaces.
       order = Math.max(1, Math.min(Number(fields.order), Number(count) + 1));
-      await db(TABLE).where({ curriculumId, ageCategoryId }).andWhere("order", ">=", order).increment("order", 1);
+      await db(TABLE).where(counterScope).andWhere("order", ">=", order).increment("order", 1);
     } else {
       order = Number(count) + 1;
     }
@@ -90,11 +97,27 @@ const PerformanceBandModel = {
     return db(TABLE).where({ curriculumId }).del();
   },
 
+  // A Pathway's own course ladder — called when the Pathway itself is deleted (see
+  // CompetencyService.deletePathway), so its course-threshold bands don't sit orphaned.
+  deleteByPathwayId(pathwayId) {
+    return db(TABLE).where({ pathwayId }).del();
+  },
+
   // Scoped to one stage's ladder — the { id, curriculumId, ageCategoryId } guard on each update
   // also prevents a caller from accidentally reordering a band belonging to a different stage.
   async reorder(curriculumId, ageCategoryId, orderedIds) {
     await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId, ageCategoryId }).update({ order: i + 1 })));
     return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
+  },
+
+  // Same shape as reorder() above, scoped to one Pathway's course ladder instead of one
+  // stage's — pathway bands all share ageCategoryId: null, so reusing reorder() as-is would let
+  // two different pathways' orderedIds collide against each other. The { id, curriculumId,
+  // pathwayId } guard on each update keeps this reorder from touching a band belonging to a
+  // different pathway.
+  async reorderByPathway(curriculumId, pathwayId, orderedIds) {
+    await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId, pathwayId }).update({ order: i + 1 })));
+    return db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("order", "asc");
   },
 
   // A competency was deleted from the global catalog — strip it out of every band's

@@ -1,5 +1,6 @@
 const CurriculumModel = require("../curriculum/curriculum.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const PublicDiagnosticAttemptModel = require("./public-diagnostic-attempt.model");
@@ -69,37 +70,52 @@ async function resolveDesignatedPathway(idOrSlug) {
   return pathway;
 }
 
+// A pathway now belongs to exactly one Developmental Stage (ageCategoryId) instead of carrying
+// its own independent minAge/maxAge — this resolves that stage's age range as the pathway's
+// effective one. Returns { minAge: null, maxAge: null } when the pathway has no stage assigned
+// yet (an existing pathway mid-migration to the new required field) or the stage can't be found.
+async function resolveEffectiveAgeRange(pathway) {
+  if (!pathway?.ageCategoryId) return { minAge: null, maxAge: null };
+  const stage = await AgeCategoryModel.findById(pathway.ageCategoryId);
+  return { minAge: stage?.minAge ?? null, maxAge: stage?.maxAge ?? null };
+}
+
 // Whether this pathway's diagnostic is actually offerable to an anonymous visitor right now.
 // Requires, in order:
 //   - publicDiagnosticEnabled flag on
-//   - a diagnosticAssessmentId that still resolves and is fully auto-gradable (live re-check —
-//     the flag and the assessment are independently editable; competency.service.js's
-//     assertPublicDiagnosticAllowed only runs at SAVE time)
-//   - BOTH minAge and maxAge set (see hasCompleteAgeRange). A public diagnostic with no age
-//     bounds is treated as not-yet-configured rather than "open to any age" — the anonymous
-//     path must fail safe. (The authenticated learner flow, which has a real learner + teacher,
-//     is unaffected: it never calls this.)
+//   - an EFFECTIVE assessment id (publicDiagnosticAssessmentId when set, falling back to
+//     diagnosticAssessmentId — an admin can offer a different diagnostic publicly than the one
+//     auto-issued internally, or just reuse the same one) that still resolves and is fully
+//     auto-gradable (live re-check — the flag and the assessment are independently editable;
+//     competency.service.js's assertPublicDiagnosticAllowed only runs at SAVE time)
+//   - BOTH minAge and maxAge set on the pathway's own stage (see hasCompleteAgeRange). A public
+//     diagnostic with no age bounds is treated as not-yet-configured rather than "open to any
+//     age" — the anonymous path must fail safe. (The authenticated learner flow, which has a
+//     real learner + teacher, is unaffected: it never calls this.)
 async function loadOfferableAssessment(pathway) {
-  if (!pathway?.publicDiagnosticEnabled || !pathway.diagnosticAssessmentId) return null;
-  if (!hasCompleteAgeRange(pathway)) return null;
-  const assessment = await AssessmentModel.findById(pathway.diagnosticAssessmentId);
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return null;
+  const ageRange = await resolveEffectiveAgeRange(pathway);
+  if (!hasCompleteAgeRange(ageRange)) return null;
+  const assessment = await AssessmentModel.findById(effectiveAssessmentId);
   if (!assessment || requiresManualGrading(assessment)) return null;
   return assessment;
 }
 
-// A public diagnostic needs an explicit min AND max age — a missing bound is "not configured",
-// not "unbounded" (which would let the anonymous flow serve a diagnostic to any age).
-function hasCompleteAgeRange(pathway) {
+// A public diagnostic needs an explicit min AND max age on its stage — a missing bound is "not
+// configured", not "unbounded" (which would let the anonymous flow serve a diagnostic to any age).
+function hasCompleteAgeRange(ageRange) {
   return (
-    pathway?.minAge != null &&
-    pathway?.maxAge != null &&
-    Number(pathway.minAge) <= Number(pathway.maxAge)
+    ageRange?.minAge != null &&
+    ageRange?.maxAge != null &&
+    Number(ageRange.minAge) <= Number(ageRange.maxAge)
   );
 }
 
-function ageInRange(pathway, age) {
-  if (age == null || !hasCompleteAgeRange(pathway)) return false;
-  return age >= Number(pathway.minAge) && age <= Number(pathway.maxAge);
+async function ageInRange(pathway, age) {
+  const ageRange = await resolveEffectiveAgeRange(pathway);
+  if (age == null || !hasCompleteAgeRange(ageRange)) return false;
+  return age >= Number(ageRange.minAge) && age <= Number(ageRange.maxAge);
 }
 
 // Item projection sent to an anonymous visitor — every field AssessmentTaker.jsx needs to
@@ -184,9 +200,10 @@ const PublicDiagnosticService = {
   async getDiagnostic(pathwayIdOrSlug, age) {
     const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
     if (!pathway) return null;
-    if (!ageInRange(pathway, age)) return null;
+    if (!(await ageInRange(pathway, age))) return null;
     const assessment = await loadOfferableAssessment(pathway);
     if (!assessment) return null;
+    const ageRange = await resolveEffectiveAgeRange(pathway);
 
     const indicatorMeta = await buildIndicatorMeta();
     return {
@@ -197,8 +214,8 @@ const PublicDiagnosticService = {
       instructions: assessment.instructions || "",
       // Echoed so the website can bound its age input to the offered range (both are guaranteed
       // set — loadOfferableAssessment requires a complete range).
-      minAge: Number(pathway.minAge),
-      maxAge: Number(pathway.maxAge),
+      minAge: Number(ageRange.minAge),
+      maxAge: Number(ageRange.maxAge),
       items: (assessment.items || []).map((item) => ({
         ...sanitizeItem(item),
         indicatorNames: (item.indicatorMarks || [])
@@ -216,7 +233,8 @@ const PublicDiagnosticService = {
     if (!pathway) return { available: false, minAge: null, maxAge: null };
     const assessment = await loadOfferableAssessment(pathway);
     if (!assessment) return { available: false, minAge: null, maxAge: null };
-    return { available: true, minAge: Number(pathway.minAge), maxAge: Number(pathway.maxAge) };
+    const ageRange = await resolveEffectiveAgeRange(pathway);
+    return { available: true, minAge: Number(ageRange.minAge), maxAge: Number(ageRange.maxAge) };
   },
 
   // Existence-only check — kept for the current /availability route's { diagnosticAvailable }
@@ -234,7 +252,7 @@ const PublicDiagnosticService = {
     const { answers, parentName, parentPhone, childName, childAge } = body;
     const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
     if (!pathway) throw notFound("Pathway not found");
-    if (!ageInRange(pathway, childAge)) throw notFound("No diagnostic available for this age");
+    if (!(await ageInRange(pathway, childAge))) throw notFound("No diagnostic available for this age");
     const assessment = await loadOfferableAssessment(pathway);
     if (!assessment) throw notFound("No public diagnostic configured for this pathway");
 

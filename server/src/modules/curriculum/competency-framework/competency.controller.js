@@ -25,6 +25,7 @@ const {
   createPerformanceBandSchema,
   updatePerformanceBandSchema,
   reorderBandsSchema,
+  reorderPathwayCoursesSchema,
   calculateScoreSchema,
   calculateIndicatorProgressSchema,
   setIndicatorAchievementSchema,
@@ -290,8 +291,19 @@ exports.reorderPerformanceBands = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+exports.reorderPathwayCourses = asyncHandler(async (req, res) => {
+  const { orderedIds } = reorderPathwayCoursesSchema.parse(req.body);
+  const data = await CompetencyService.reorderPathwayCourses(req.params.id, req.params.pathwayId, orderedIds);
+  res.json({ success: true, data });
+});
+
 exports.duplicatePerformanceBandToNext = asyncHandler(async (req, res) => {
   const data = await CompetencyService.duplicatePerformanceBandToNext(req.params.id, req.params.bandId);
+  res.json({ success: true, data });
+});
+
+exports.duplicatePathwayBandToNext = asyncHandler(async (req, res) => {
+  const data = await CompetencyService.duplicatePathwayBandToNext(req.params.id, req.params.bandId);
   res.json({ success: true, data });
 });
 
@@ -375,6 +387,17 @@ exports.getLearnerBandProgress = asyncHandler(async (req, res) => {
     await assertLearnerHubAccess(req, learnerId);
   }
   const data = await CompetencyService.getLearnerBandProgress(req.params.id, learnerId);
+  res.json({ success: true, data });
+});
+
+exports.getLearnerPathwayCourseProgress = asyncHandler(async (req, res) => {
+  const learnerId = req.params.learnerId;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    await assertLearnerHubAccess(req, learnerId);
+  }
+  const data = await CompetencyService.getLearnerPathwayCourseProgress(req.params.id, learnerId, req.params.pathwayId);
   res.json({ success: true, data });
 });
 
