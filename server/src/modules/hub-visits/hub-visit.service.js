@@ -5,6 +5,9 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const UserModel = require("../auth/user.model");
 const BillingModel = require("../billing/billing.model");
 const NotificationService = require("../notifications/notification.service");
+const ClassModel = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
+const CourseModel = require("../courses/course.model");
 
 // KNOWN LIMITATION: payer resolution below reuses billing.service.js's guardian-email path
 // unchanged (a learner has no independent contact channel of its own - see learner.model.js).
@@ -44,6 +47,24 @@ function resolveSpace(hub, spaceId) {
   return space;
 }
 
+// A learner's class/course enrollment (learner_hub_links.classId -> classes ->
+// class_course_teacher_links -> courses) is informational context on a hub_usage invoice line,
+// not part of what's charged - the space's rate still decides the amount (see computeAmount).
+// Returns "" when the learner has no class at this hub (most non-school hub visits - a class
+// only exists here when a bootcamp cohort is running at the hub, see bootcamp-hub.service.js's
+// cohortClassPayload) so the line item description falls back to just the space name and date.
+async function resolveLearnerClassContext(learnerId, hubId) {
+  const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
+  if (!link?.classId) return "";
+  const cls = await ClassModel.findById(link.classId);
+  if (!cls) return "";
+  const courseLinks = await ClassCourseTeacherLinkModel.findByClassId(link.classId);
+  const courseIds = [...new Set(courseLinks.map((l) => l.courseId))];
+  const courses = (await Promise.all(courseIds.map((id) => CourseModel.findById(id)))).filter(Boolean);
+  const courseNames = courses.map((c) => c.name).join(", ");
+  return courseNames ? `${cls.name} (${courseNames})` : cls.name;
+}
+
 // A learner's own negotiated rate (learner_hub_links.pricingOverride*) wins over the space's
 // list price when set; everything else (pricingModel, priceUnit) always comes from the space.
 function resolveEffectiveRate(link, space) {
@@ -80,6 +101,50 @@ async function assertHubAccess(req, hubId) {
   throw forbidden("You do not have access to this learning hub");
 }
 
+// Internal helpers backing logVisit's immediate-invoice attempt - not part of the exported
+// service surface, just factored out of logVisit for readability.
+const HubVisitInternal = {
+  // Same guardian-email payer resolution resolveEligibleLearners uses for the batch path, but for
+  // one just-logged visit. Returns null (never throws) when no payer can be resolved yet - the
+  // visit itself must still be logged and simply stays unbilled, ready to be picked up later by
+  // "Generate charges" once the learner's guardian info is fixed.
+  async resolvePayerForLearner(learnerId) {
+    const learner = await LearnerModel.findById(learnerId);
+    if (!learner?.guardianEmail) return null;
+    const payer = await UserModel.findByEmail(learner.guardianEmail);
+    return payer ? { learner, payerUserId: payer.id } : null;
+  },
+
+  // Bills a single freshly-logged visit immediately: one hub_usage invoice, one line item, issued
+  // on the spot - the "every visit gets invoiced as it happens" counterpart to generateCharges'
+  // batch version (which still exists as a catch-up path for visits logged before their learner
+  // had a resolvable guardian). Runs inside the same transaction that created the visit row, so a
+  // failure here rolls the visit creation back too rather than leaving an orphaned unbilled visit.
+  async invoiceVisitImmediately(hub, visit, payerUserId, req, trx) {
+    const now = new Date();
+    const invoice = await BillingModel.createInvoice({
+      invoiceNumber: await nextInvoiceNumber(trx),
+      issuerType: "learning_hub", issuerHubId: hub.id, payerUserId, payerHubId: null,
+      learnerId: visit.learnerId, hubId: hub.id, invoiceType: "hub_usage", status: "issued",
+      currency: "KES", subtotal: visit.amount, discount: 0, total: visit.amount, amountPaid: 0,
+      periodStart: visit.visitDate, periodEnd: visit.visitDate, periodLabel: null,
+      issuedAt: now, dueAt: null, notes: null,
+    }, trx);
+    const classContext = await resolveLearnerClassContext(visit.learnerId, hub.id);
+    const spaceLabel = `${resolveSpace(hub, visit.spaceId)?.name || "Space"} - ${visit.visitDate}`;
+    const description = classContext ? `${spaceLabel} - ${classContext}` : spaceLabel;
+    const item = await BillingModel.createItem({
+      invoiceId: invoice.id, learnerId: visit.learnerId, courseId: null,
+      description, quantity: visit.pricingModelAtLogging === "hourly" ? Number(visit.hours) : 1,
+      unitAmount: Number(visit.rateAtLogging), totalAmount: Number(visit.amount),
+      metadata: { hubVisitId: visit.id, spaceId: visit.spaceId },
+    }, trx);
+    await BillingModel.createAuditEvent({ invoiceId: invoice.id, actorUserId: req.user.id, eventType: "invoice_issued", newStatus: "issued", amount: visit.amount, metadata: { source: "hub_usage" } }, trx);
+    await HubVisitModel.markInvoiced({ [visit.id]: item.id }, trx);
+    return { invoice, itemId: item.id };
+  },
+};
+
 const HubVisitService = {
   async logVisit(data, req) {
     const hub = await assertNonSchoolHub(data.hubId);
@@ -94,20 +159,34 @@ const HubVisitService = {
     if (pricingModel === "hourly" && !data.hours) throw badRequest("Hours are required for an hourly-priced space");
     const amount = computeAmount({ pricingModel, rate, hours: data.hours });
 
-    return HubVisitModel.create({
-      ownerAdminId: hub.ownerAdminId,
-      hubId: data.hubId,
-      learnerId: data.learnerId,
-      spaceId: data.spaceId,
-      visitDate: data.visitDate,
-      hours: pricingModel === "hourly" ? data.hours : null,
-      pricingModelAtLogging: pricingModel,
-      rateAtLogging: rate,
-      priceUnitAtLogging: priceUnit,
-      amount,
-      billingStatus: "unbilled",
-      loggedByUserId: req.user.id,
-      notes: data.notes || null,
+    // Free spaces have nothing to bill - skip payer resolution and invoicing entirely, same as
+    // computeAmount already special-cases "free" to a flat 0.
+    const payer = amount > 0 ? await HubVisitInternal.resolvePayerForLearner(data.learnerId) : null;
+
+    return BillingModel.transaction(async (trx) => {
+      const visit = await HubVisitModel.create({
+        ownerAdminId: hub.ownerAdminId,
+        hubId: data.hubId,
+        learnerId: data.learnerId,
+        spaceId: data.spaceId,
+        visitDate: data.visitDate,
+        hours: pricingModel === "hourly" ? data.hours : null,
+        pricingModelAtLogging: pricingModel,
+        rateAtLogging: rate,
+        priceUnitAtLogging: priceUnit,
+        amount,
+        billingStatus: "unbilled",
+        loggedByUserId: req.user.id,
+        notes: data.notes || null,
+      }, trx);
+
+      if (!payer) return { visit, invoice: null };
+
+      const { invoice, itemId } = await HubVisitInternal.invoiceVisitImmediately(hub, visit, payer.payerUserId, req, trx);
+      return { visit: { ...visit, billingStatus: "invoiced", invoiceItemId: itemId }, invoice };
+    }).then(async ({ visit, invoice }) => {
+      if (invoice) await NotificationService.invoiceIssued({ ...invoice, amountDue: invoice.total });
+      return visit;
     });
   },
 
@@ -145,12 +224,27 @@ const HubVisitService = {
     let hubId = filters.hubId;
     if (req.user.role === "school") hubId = req.ownSchool?.id || "__none__";
     if (req.user.role === "admin" && hubId) await assertHubAccess(req, hubId);
+    let visits;
     if (req.user.role === "admin" && !hubId) {
       const ids = [...(await ownHubIds(req))];
       const perHub = await Promise.all(ids.map((id) => HubVisitModel.findAll({ ...filters, hubId: id })));
-      return perHub.flat();
+      visits = perHub.flat();
+    } else {
+      visits = await HubVisitModel.findAll({ ...filters, hubId });
     }
-    return HubVisitModel.findAll({ ...filters, hubId });
+    return HubVisitService.attachInvoiceIds(visits);
+  },
+
+  // A visit only ever stores invoiceItemId (billing_invoice_items.id), not the invoice's own id -
+  // the item already carries invoiceId, so this resolves it in one batched lookup rather than
+  // storing it redundantly on hub_visits. Lets the client link an invoiced visit straight to its
+  // invoice's detail page (GET /api/billing/:id) instead of only showing "Invoiced" as a label.
+  async attachInvoiceIds(visits) {
+    const itemIds = [...new Set(visits.map((v) => v.invoiceItemId).filter(Boolean))];
+    if (itemIds.length === 0) return visits;
+    const items = await BillingModel.findItemsByIds(itemIds);
+    const invoiceIdByItemId = new Map(items.map((item) => [item.id, item.invoiceId]));
+    return visits.map((v) => (v.invoiceItemId ? { ...v, invoiceId: invoiceIdByItemId.get(v.invoiceItemId) || null } : v));
   },
 
   // Groups a hub's unbilled visits in [from, to] by learner, checking the same guardian-email
@@ -207,6 +301,7 @@ const HubVisitService = {
       for (const row of eligible) {
         const learnerVisits = row.visits;
         const subtotal = money(learnerVisits.reduce((sum, v) => sum + Number(v.amount), 0));
+        const classContext = await resolveLearnerClassContext(row.learnerId, hub.id);
         const invoice = await BillingModel.createInvoice({
           invoiceNumber: await nextInvoiceNumber(trx),
           issuerType: "learning_hub", issuerHubId: data.hubId, payerUserId: row.payerUserId, payerHubId: null,
@@ -216,7 +311,8 @@ const HubVisitService = {
           issuedAt: now, dueAt: data.dueAt || null, notes: null,
         }, trx);
         for (const visit of learnerVisits) {
-          const description = `${resolveSpace(hub, visit.spaceId)?.name || "Space"} - ${visit.visitDate}`;
+          const spaceLabel = `${resolveSpace(hub, visit.spaceId)?.name || "Space"} - ${visit.visitDate}`;
+          const description = classContext ? `${spaceLabel} - ${classContext}` : spaceLabel;
           const item = await BillingModel.createItem({
             invoiceId: invoice.id, learnerId: row.learnerId, courseId: null,
             description, quantity: visit.pricingModelAtLogging === "hourly" ? Number(visit.hours) : 1,

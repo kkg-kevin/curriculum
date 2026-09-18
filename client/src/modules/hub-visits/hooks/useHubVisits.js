@@ -12,16 +12,45 @@ export function useHubVisitsQuery(filters = {}) {
   });
 }
 
-export function useLogVisit() {
+// Logs the SAME visit (space/date/hours) for several learners at once — the server has no bulk
+// endpoint (each learner can carry their own rate override, resolved per-call), so this fires one
+// logVisit per learner and settles them all rather than failing the whole batch on one bad entry
+// (e.g. a duplicate for just one of several selected learners, per the server's
+// (learnerId, spaceId, visitDate) uniqueness rule). Returns { succeeded[], failed[] } so the
+// caller can show exactly which learners still need attention instead of one opaque error.
+//
+// Each succeeded visit now comes back already invoiced (billingStatus: "invoiced") whenever the
+// learner has a resolvable guardian payer — logVisit bills it immediately server-side rather than
+// waiting for a separate "generate charges" step. A visit can still come back "unbilled" (no
+// guardian email on file, or the space is free) — invalidating ["billing"] alongside the usual
+// hub-visits keys keeps both surfaces in sync either way.
+export function useLogVisits() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: hubVisitApi.logVisit,
-    onSuccess: (visit) => {
-      qc.invalidateQueries({ queryKey: HUB_VISIT_KEYS.all });
-      qc.invalidateQueries({ queryKey: HUB_VISIT_KEYS.revenue(visit.hubId) });
-      toast.success("Visit logged");
+    mutationFn: async ({ learnerIds, ...rest }) => {
+      const results = await Promise.allSettled(learnerIds.map((learnerId) => hubVisitApi.logVisit({ ...rest, learnerId })));
+      const succeeded = [];
+      const failed = [];
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") succeeded.push(result.value);
+        else failed.push({ learnerId: learnerIds[i], message: result.reason?.response?.data?.message || result.reason?.message || "Could not log visit" });
+      });
+      return { succeeded, failed };
     },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not log visit"),
+    onSuccess: ({ succeeded, failed }, { hubId }) => {
+      if (succeeded.length > 0) {
+        qc.invalidateQueries({ queryKey: HUB_VISIT_KEYS.all });
+        qc.invalidateQueries({ queryKey: HUB_VISIT_KEYS.revenue(hubId) });
+        qc.invalidateQueries({ queryKey: ["billing"] });
+      }
+      if (succeeded.length > 0 && failed.length === 0) {
+        toast.success(`Logged ${succeeded.length} visit${succeeded.length === 1 ? "" : "s"}`);
+      } else if (succeeded.length > 0 && failed.length > 0) {
+        toast.error(`Logged ${succeeded.length}, ${failed.length} failed — see below`);
+      } else {
+        toast.error("Could not log any visits");
+      }
+    },
   });
 }
 

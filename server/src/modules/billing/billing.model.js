@@ -59,6 +59,10 @@ const BillingModel = {
     return query;
   },
   findItems(invoiceId) { return db(ITEMS).where({ invoiceId }).orderBy("createdAt", "asc"); },
+  // The reverse lookup of findItems - given item ids (e.g. hub_visits.invoiceItemId), resolve
+  // which invoice each belongs to. Used to link a visit back to its invoice's detail page without
+  // storing invoiceId redundantly on hub_visits itself (the item already carries it).
+  findItemsByIds(ids) { return ids.length ? db(ITEMS).whereIn("id", ids) : []; },
   findPayments(invoiceId) { return db(PAYMENTS).where({ invoiceId }).orderBy("createdAt", "asc"); },
   findPaymentById(id) { return firstOrNull(db(PAYMENTS).where({ id })); },
   findPaymentsByInvoiceIds(invoiceIds) { return invoiceIds.length ? db(PAYMENTS).whereIn("invoiceId", invoiceIds).orderBy("paidAt", "desc") : []; },

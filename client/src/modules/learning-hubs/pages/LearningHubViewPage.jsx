@@ -508,10 +508,21 @@ export default function LearningHubViewPage() {
 
       {/* Finance — non-school hubs only (a school hub already bills its own learners' guardians
           directly via Billing, see billing.service.js). See hub-visit.service.js's header
-          comment for why this is deliberately separate from Billing's own invoice-lifecycle UI. */}
+          comment for why this is deliberately separate from Billing's own invoice-lifecycle UI.
+          HubFinanceTab has no outer card of its own (it's also BillingPage.jsx's full-page view
+          for this hub's own login) — wrapped in the same card shell every other section on this
+          page uses, so it reads consistently here too.
+          `readOnly` — logging visits, generating charges, and deleting a visit are the hub
+          operator's own actions on their own space; the admin gets visibility into the revenue
+          and visit log here, not control over them. */}
       {!isSchool && (
-        <div style={{ marginBottom: "16px" }}>
-          <HubFinanceTab hubId={id} learners={learners} spaces={hub.spaces || []} />
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "16px" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+            <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Finance</h2>
+          </div>
+          <div style={{ padding: "20px" }}>
+            <HubFinanceTab hubId={id} learners={learners} spaces={hub.spaces || []} readOnly />
+          </div>
         </div>
       )}
 

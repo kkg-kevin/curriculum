@@ -4,6 +4,7 @@ const LearnerHubLinkModel = require("./learner-hub-link.model");
 const LearnerTransferModel = require("./learner-transfer.model");
 const SchoolModel  = require("../learning-hubs/learning-hub.model");
 const ClassModel   = require("../classes/class.model");
+const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
@@ -223,12 +224,40 @@ const LearnerService = {
     const linkByLearnerId = new Map(links.map((l) => [l.learnerId, l]));
     if (linkByLearnerId.size === 0) return [];
     const learners = await LearnerModel.findAll({ guardianEmail, ids: [...linkByLearnerId.keys()] });
+
+    // className/courses are resolved once per distinct classId across the whole roster, not per
+    // learner — a hub_usage invoice line item (hub-visit.service.js) and LogVisitModal both want
+    // to show what a learner is actually enrolled in alongside the space they're being charged
+    // for, and this is the one merge point every learner-list consumer already goes through.
+    const classIds = [...new Set([...linkByLearnerId.values()].map((l) => l.classId).filter(Boolean))];
+    const classById = new Map();
+    const coursesByClassId = new Map();
+    if (classIds.length > 0) {
+      const [classes, courseLinks] = await Promise.all([
+        Promise.all(classIds.map((id) => ClassModel.findById(id))),
+        Promise.all(classIds.map((id) => ClassCourseTeacherLinkModel.findByClassId(id))),
+      ]);
+      classes.forEach((c) => { if (c) classById.set(c.id, c); });
+      const courseIds = new Set(courseLinks.flat().map((l) => l.courseId));
+      const courses = await Promise.all([...courseIds].map((id) => CourseModel.findById(id)));
+      const courseById = new Map(courses.filter(Boolean).map((c) => [c.id, c]));
+      classIds.forEach((id, i) => {
+        const ids = new Set(courseLinks[i].map((l) => l.courseId));
+        coursesByClassId.set(id, [...ids].map((cid) => courseById.get(cid)).filter(Boolean).map((c) => ({ id: c.id, name: c.name })));
+      });
+    }
+
     return learners.map((l) => {
       const link = linkByLearnerId.get(l.id);
+      const cls = link.classId ? classById.get(link.classId) : null;
       // spaceId/pricingOverride* only matter for a non-school hub (see hub-visits module) — a
       // school-hub roster carries them along too since they're just null there, cheaper than
       // branching this merge on hub type.
-      return { ...l, schoolId: link.hubId, classId: link.classId, admissionNumber: link.admissionNumber, status: link.status, spaceId: link.spaceId || null, pricingOverrideRate: link.pricingOverrideRate || null, pricingOverrideUnit: link.pricingOverrideUnit || null };
+      return {
+        ...l, schoolId: link.hubId, classId: link.classId, admissionNumber: link.admissionNumber, status: link.status,
+        spaceId: link.spaceId || null, pricingOverrideRate: link.pricingOverrideRate || null, pricingOverrideUnit: link.pricingOverrideUnit || null,
+        className: cls?.name || null, courses: link.classId ? (coursesByClassId.get(link.classId) || []) : [],
+      };
     });
   },
 
