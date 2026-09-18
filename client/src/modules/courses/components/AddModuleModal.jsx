@@ -7,6 +7,7 @@ export default function AddModuleModal({ courseId, defaultName, onClose }) {
   const { mutate: createModule, isPending: creatingModule } = useCreateModule(courseId);
   const { mutateAsync: createSessionsBulkAsync, isPending: creatingSessions } = useCreateSessionsBulk();
   const [name, setName] = useState(defaultName);
+  const [description, setDescription] = useState("");
   const [sessionCount, setSessionCount] = useState("0");
   const [error, setError] = useState("");
   const isPending = creatingModule || creatingSessions;
@@ -15,7 +16,7 @@ export default function AddModuleModal({ courseId, defaultName, onClose }) {
     const trimmed = name.trim();
     if (!trimmed) { setError("Name is required"); return; }
     const count = Math.max(0, Math.min(30, Number(sessionCount) || 0));
-    createModule({ name: trimmed }, {
+    createModule({ name: trimmed, description: description.trim() }, {
       onSuccess: async (newModule) => {
         if (count > 0) {
           await createSessionsBulkAsync({ courseId, count, moduleId: newModule.id });
@@ -49,6 +50,16 @@ export default function AddModuleModal({ courseId, defaultName, onClose }) {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Module 1"
               style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What does this module cover?"
+              rows={3}
+              style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
             />
           </div>
           <div>

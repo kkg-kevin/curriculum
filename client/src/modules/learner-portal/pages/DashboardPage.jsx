@@ -114,7 +114,10 @@ export default function DashboardPage() {
   );
   const recentlyGraded = useMemo(
     () => issuedRows
-      .filter((r) => r.submission.status === "graded")
+      // A survey submission's status is always "graded" too (see grading.utils.js's
+      // requiresManualGrading — it releases instantly, never sits for a teacher's review), but
+      // it never actually carries a score, so it doesn't belong in a "Recently Graded" list.
+      .filter((r) => r.submission.status === "graded" && r.assessment.type !== "survey")
       .sort((a, b) => (b.submission.updatedAt || "").localeCompare(a.submission.updatedAt || ""))
       .slice(0, 3),
     [issuedRows]

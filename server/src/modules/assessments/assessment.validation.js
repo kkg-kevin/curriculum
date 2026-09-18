@@ -3,7 +3,11 @@ const {
   STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, SUBMISSION_ITEM_KINDS,
 } = require("./builder.constants");
 
-const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation"];
+// "survey" is an ungraded, self-reflection assessment type — the learner rates their own
+// understanding of a concept on a scale (see itemSchema's "survey" item kind / ratingScale
+// below); it's never scored (see grading.utils.js's requiresManualGrading/computeMaxScore) but
+// its items can still be tagged to competency indicators like any other assessment.
+const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation", "survey"];
 const DEFAULT_RATING_SCALE = ["Not Yet", "Developing", "Proficient"];
 const DEFAULT_SURVEY_SCALE = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
 

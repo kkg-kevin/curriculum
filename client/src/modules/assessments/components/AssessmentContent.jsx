@@ -252,7 +252,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
         )}
 
         {registry?.supportsItems !== false && (
-          <Section title={`${isObservation ? "Observation Items" : "Items"}${entries.length ? ` · ${entries.length} · ${totalItemPoints} pts` : ""}`}>
+          <Section title={`${isObservation ? "Observation Items" : type === "survey" ? "Questions" : "Items"}${entries.length ? ` · ${entries.length}${type === "survey" ? "" : ` · ${totalItemPoints} pts`}` : ""}`}>
             <StructureSection sections={sections} entries={entries} />
           </Section>
         )}

@@ -1,20 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
 import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
-const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };
-const TYPE_ICONS = { quiz: FiFileText, exam: FiBookOpen, project: FiClipboard, assignment: FiFileText, observation: FiEye };
-const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation", survey: "Survey" };
+const TYPE_ICONS = { quiz: FiFileText, exam: FiBookOpen, project: FiClipboard, assignment: FiFileText, observation: FiEye, survey: FiBarChart2 };
+const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706", survey: "#0891B2" };
 
 /* ── content summary (shared shape with the Builder) ─────────────────────── */
 
 function assessmentContentSummary(assessment) {
-  if (assessment.type === "quiz" || assessment.type === "exam") {
+  if (assessment.type === "quiz" || assessment.type === "exam" || assessment.type === "survey") {
     const n = assessment.items?.length || 0;
     return `${n} question${n !== 1 ? "s" : ""}`;
   }
@@ -36,6 +36,9 @@ function assessmentContentSummary(assessment) {
 }
 
 function assessmentTotalPoints(assessment) {
+  // A survey is never scored (see server's grading.utils.js) — no points total to show at all,
+  // same "null" contract as any other type this function doesn't recognize.
+  if (assessment.type === "survey") return null;
   if (assessment.type === "quiz" || assessment.type === "exam") {
     return assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) ?? 0;
   }

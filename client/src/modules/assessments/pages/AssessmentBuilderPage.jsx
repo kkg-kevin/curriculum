@@ -9,7 +9,7 @@ import { useCompetencies } from "../../settings/competencies/hooks/useCompetenci
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { useInventory } from "../../settings/inventory/hooks/useInventory";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
-import { FiPlus, FiX, FiPackage, FiCheck, FiEdit3, FiAward, FiTool, FiFileText, FiEye } from "react-icons/fi";
+import { FiPlus, FiX, FiPackage, FiCheck, FiEdit3, FiAward, FiTool, FiFileText, FiEye, FiBarChart2 } from "react-icons/fi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreatePathwayModal from "../../courses/components/CreatePathwayModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
@@ -22,9 +22,9 @@ import {
   BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, DEFAULT_SURVEY_SCALE,
 } from "../schemas/assessment.schema";
 
-const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
-const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706" };
-const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye /> };
+const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation", survey: "Survey" };
+const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706", survey: "#0891B2" };
+const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye />, survey: <FiBarChart2 /> };
 const TAG_PALETTE = ["#25476a", "#38aae1", "#059669", "#7C3AED", "#DC2626", "#D97706", "#0891B2", "#BE185D"];
 
 function genId() {
@@ -570,14 +570,19 @@ function ScoringCriteriaEditor({ entry, onChange }) {
 
 /* ── entry factory ──────────────────────────────────────────────────────── */
 
-function defaultEntry(kind, sectionId) {
+function defaultEntry(kind, sectionId, assessmentType) {
   const base = { id: genId(), kind, sectionId };
   if (OBSERVATION_ITEM_KINDS.includes(kind)) {
     return { ...base, text: "", points: 1, indicatorMarks: [], scoringCriteria: [], ratingScale: ["Not Yet", "Developing", "Proficient"], competencyIndicatorIds: [] };
   }
+  // A survey-type assessment is never scored (see grading.utils.js) — its questions default to
+  // 0 points so the (unused, but still-computed) maxScore/points display never implies a survey
+  // question is "worth" anything, unlike the same "survey" item kind used inside a graded
+  // quiz/exam, which keeps the normal points: 1 default.
+  const points = assessmentType === "survey" ? 0 : 1;
   return {
     ...base,
-    question: "", points: 1, indicatorMarks: [], scoringCriteria: [],
+    question: "", points, indicatorMarks: [], scoringCriteria: [],
     options: kind === "mcqSingle" || kind === "mcqMultiple" ? ["", ""] : [],
     correctAnswer: "",
     pairs: kind === "matching" ? [{ left: "", right: "" }, { left: "", right: "" }] : [],
@@ -727,7 +732,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
           <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
             {ITEM_KIND_LABELS[entry.kind]}
           </span>
-          {entry.kind !== "note" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
+          {entry.kind !== "note" && type !== "survey" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
           <div className="tb-entry-actions">
             <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
             <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
@@ -839,7 +844,10 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         />
       )}
 
-      {!isNote && (
+      {/* A survey question is never scored (see grading.utils.js) — it can still be tagged to a
+          competency indicator above, just with no marks value attached to that tag, so the
+          Marks/rubric UI (which only makes sense for a graded entry) is skipped entirely. */}
+      {!isNote && type !== "survey" && (
         indicatorMarks.length === 0 ? (
           <div>
             <Label>Marks</Label>
@@ -1680,7 +1688,7 @@ export default function AssessmentBuilderPage() {
       }
       setFocusedSectionId(sectionId);
     }
-    const entry = defaultEntry(kind, sectionId);
+    const entry = defaultEntry(kind, sectionId, form.type);
     setEntries((prev) => [...prev, entry]);
     setSelectedId(entry.id);
     setActiveTab("structure");

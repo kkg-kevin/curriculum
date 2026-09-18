@@ -15,6 +15,11 @@ function isAutoGradableItem(item) {
 // its own `indicators` (checklist/rating/etc, always filled in by the teacher during grading,
 // never auto-gradable) — any indicators present force manual grading the same way a rubric does.
 function requiresManualGrading(assessment) {
+  // A survey is a self-reflection, never a graded artifact — a learner's own rating of their
+  // understanding has no "correct" answer for a teacher to review, so it always releases
+  // immediately on submit (see assessment-submission.service.js's submit()) rather than sitting
+  // in a "needs grading" queue like every other type's non-auto-gradable items would.
+  if (assessment.type === "survey") return false;
   if (assessment.type === "project") return true;
   if ((assessment.rubric || []).length > 0) return true;
   if ((assessment.indicators || []).length > 0) return true;
@@ -97,6 +102,9 @@ function computeAutoScore(assessment, answers) {
 // from the sum the same way a plain comment would be, regardless of whatever `points` it
 // happens to carry.
 function computeMaxScore(assessment) {
+  // No possible score for a survey — a self-rating isn't "worth" marks (see
+  // requiresManualGrading above for the matching "never needs grading" side of this).
+  if (assessment.type === "survey") return 0;
   const entries = [
     ...(assessment.items || []),
     ...(assessment.type === "observation" ? (assessment.indicators || []) : []),
