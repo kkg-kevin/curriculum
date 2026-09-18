@@ -336,12 +336,23 @@ export default function AssessmentDetailPage() {
           <div style={{ ...cardStyle, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669", fontSize: 22, flexShrink: 0 }}><FiCheckCircle /></div>
-              <div>
-                <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{submission.totalScore} / {submission.maxScore}</p>
-                <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
-                  {submission.maxScore ? `${Math.round((submission.totalScore / submission.maxScore) * 100)}%` : ""} · Graded {new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
-                </p>
-              </div>
+              {/* A survey is never scored — "0 / 0" would read as a failing grade rather than
+                  what it actually is (nothing to score). Shown as a plain completion instead. */}
+              {row?.assessment?.type === "survey" ? (
+                <div>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#059669" }}>Responses recorded</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
+                    Submitted {new Date(submission.gradedAt || submission.submittedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })} · Not graded
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{submission.totalScore} / {submission.maxScore}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
+                    {submission.maxScore ? `${Math.round((submission.totalScore / submission.maxScore) * 100)}%` : ""} · Graded {new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+              )}
             </div>
             <button
               type="button"

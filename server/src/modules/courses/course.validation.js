@@ -80,8 +80,9 @@ const bulkCreateSessionsSchema = z.object({
 // Sessions 1-10 of 30) — sessions keep their own global order/numbering regardless of
 // which module they're in, or none at all (moduleId nullable — ungrouped is valid).
 const createModuleSchema = z.object({
-  name:  z.string().min(1, "Module name is required").max(150),
-  order: z.number().int().min(1).optional(),
+  name:        z.string().min(1, "Module name is required").max(150),
+  order:       z.number().int().min(1).optional(),
+  description: z.string().optional().default(""),
 });
 
 const updateModuleSchema = createModuleSchema.partial();

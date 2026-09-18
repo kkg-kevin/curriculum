@@ -358,12 +358,21 @@ function ModuleGroup({
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState(courseModule.name);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Independent of the sessions-list `expanded` toggle — a description can be reviewed/edited
+  // without also expanding the (possibly long) session list underneath.
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState(courseModule.description || "");
 
   const saveRename = () => {
     setRenaming(false);
     const trimmed = nameDraft.trim();
     if (trimmed && trimmed !== courseModule.name) updateModule({ id: courseModule.id, data: { name: trimmed } });
     else setNameDraft(courseModule.name);
+  };
+
+  const saveDescription = () => {
+    const trimmed = descriptionDraft.trim();
+    if (trimmed !== (courseModule.description || "")) updateModule({ id: courseModule.id, data: { description: trimmed } });
   };
 
   return (
@@ -390,6 +399,14 @@ function ModuleGroup({
             {courseModule.name}
           </span>
         )}
+        <button
+          type="button"
+          onClick={() => setDescriptionOpen((v) => !v)}
+          title={courseModule.description ? "Edit description" : "Add description"}
+          style={{ background: "none", border: "none", cursor: "pointer", color: courseModule.description ? "#25476a" : "#9CA3AF", fontSize: "11.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", padding: "3px 6px" }}
+        >
+          {courseModule.description ? "Description" : "+ Description"}
+        </button>
         <span style={{ fontSize: "12px", color: "#25476a", fontWeight: "600" }}>{sessions.length} Session{sessions.length !== 1 ? "s" : ""}</span>
         <AddSessionControl onAdd={(count) => onAddSession(courseModule.id, count)} adding={addingSession} />
         <button
@@ -402,6 +419,19 @@ function ModuleGroup({
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
+
+      {descriptionOpen && (
+        <div style={{ paddingLeft: "24px" }}>
+          <textarea
+            value={descriptionDraft}
+            onChange={(e) => setDescriptionDraft(e.target.value)}
+            onBlur={saveDescription}
+            placeholder="What does this module cover?"
+            rows={3}
+            style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", color: "#374151", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
+          />
+        </div>
+      )}
 
       {expanded && (
         sessions.length === 0 ? (
