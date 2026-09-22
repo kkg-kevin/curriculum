@@ -4,6 +4,7 @@ const LearningHubService = require("../../modules/learning-hubs/learning-hub.ser
 const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
+const { resolveModuleForPath } = require("../../modules/admin-tools/module-registry");
 
 // A suspended account is NOT blocked here — it's allowed a read-only session so the client can
 // load enough to show its in-app "Account Suspended" page. Writes are refused by the separate
@@ -113,6 +114,25 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     req.user.actualRole = "collaborator";
     const path = req.originalUrl.split("?")[0];
     const isRestrictedSurface = path.startsWith("/api/billing") || path.startsWith("/api/hub-visits") || path === "/api/admin-tools" || path.startsWith("/api/admin-tools/") || path === "/api/reports/platform-analytics";
+
+    // NULL/undefined allowedModules is the pre-migration "legacy collaborator" sentinel, treated
+    // as "every module" so nobody invited before this feature existed is silently locked out (see
+    // the 20260922110000 migration's header comment). An explicit [] means "no modules granted."
+    const module = resolveModuleForPath(path);
+    const allowedModules = req.user.allowedModules;
+    const hasModuleAccess = allowedModules == null || (module !== null && allowedModules.includes(module));
+
+    // Checked BEFORE the DELETE/alias decision below, and on every method including DELETE: a
+    // collaborator with no grant for this module must be refused regardless of verb, not just
+    // have DELETE separately refused by the existing role-stays-"collaborator" mechanism. Only
+    // applies to paths actually in the module registry (module !== null) — anything outside it
+    // (e.g. /api/notifications, which is scoped by req.user.id, not by module) is untouched.
+    if (!isRestrictedSurface && module !== null && !hasModuleAccess) {
+      const err = new Error("You don't have access to this part of the workspace.");
+      err.statusCode = 403;
+      throw err;
+    }
+
     if (req.method !== "DELETE" && !isRestrictedSurface) req.user.role = "admin";
   }
 

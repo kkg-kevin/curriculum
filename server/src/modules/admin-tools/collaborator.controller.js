@@ -1,11 +1,22 @@
 const asyncHandler = require("express-async-handler");
 const { z } = require("zod");
 const CollaboratorService = require("./collaborator.service");
+const { MODULE_KEYS } = require("./module-registry");
+
+// See module-registry.js for what each key gates and scope.middleware.js's attachOwnRecords for
+// enforcement. Omitted entirely on invite (allowedModules left undefined) means "every module" —
+// see collaborator.service.js's invite() — but once set, editing always sends an explicit list.
+const moduleListSchema = z.array(z.enum(MODULE_KEYS)).max(MODULE_KEYS.length);
 
 const inviteSchema = z.object({
   name: z.string().min(1, "Name is required").max(150),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  allowedModules: moduleListSchema.optional(),
+});
+
+const updateSchema = z.object({
+  allowedModules: moduleListSchema,
 });
 
 // This whole route is mounted under admin-tools (authorize("admin") + attachOwnRecords at the
@@ -23,9 +34,15 @@ const listCollaborators = asyncHandler(async (req, res) => {
   res.json({ success: true, data: collaborators, count: collaborators.length });
 });
 
+const updateCollaborator = asyncHandler(async (req, res) => {
+  const data = updateSchema.parse(req.body);
+  const collaborator = await CollaboratorService.updateModules(req.params.id, req.ownerAdminId, data.allowedModules);
+  res.json({ success: true, data: collaborator });
+});
+
 const revokeCollaborator = asyncHandler(async (req, res) => {
   const result = await CollaboratorService.revoke(req.params.id, req.ownerAdminId);
   res.json({ success: true, ...result });
 });
 
-module.exports = { inviteCollaborator, listCollaborators, revokeCollaborator };
+module.exports = { inviteCollaborator, listCollaborators, updateCollaborator, revokeCollaborator };

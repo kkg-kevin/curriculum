@@ -1,19 +1,45 @@
 import { useState } from "react";
-import { FiUserPlus, FiUsers, FiX } from "react-icons/fi";
+import { FiUserPlus, FiUsers, FiSettings, FiX } from "react-icons/fi";
 import { Modal, Label } from "../../components/Modal";
-import { useCollaborators, useInviteCollaborator, useRevokeCollaborator } from "../hooks/useCollaborators";
+import { useCollaborators, useInviteCollaborator, useUpdateCollaboratorModules, useRevokeCollaborator } from "../hooks/useCollaborators";
 import PersonPickerField from "./PersonPickerField";
+import { MODULE_OPTIONS } from "../moduleRegistry";
 
-const emptyForm = { name: "", email: "", password: "" };
+const ALL_MODULE_KEYS = MODULE_OPTIONS.map((m) => m.key);
+const emptyForm = { name: "", email: "", password: "", allowedModules: ALL_MODULE_KEYS };
+
+// Shared by the invite modal and the edit-modules modal — a plain controlled checkbox grid, no
+// new dependency. `null` (a legacy collaborator invited before this feature existed) is treated
+// as "every module" here too, matching scope.middleware.js's and Sidebar.jsx's interpretation.
+function ModuleChecklist({ value, onChange }) {
+  const checked = value == null ? ALL_MODULE_KEYS : value;
+  const toggle = (key) => {
+    const next = checked.includes(key) ? checked.filter((k) => k !== key) : [...checked, key];
+    onChange(next);
+  };
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+      {MODULE_OPTIONS.map((m) => (
+        <label key={m.key} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#374151" }}>
+          <input type="checkbox" checked={checked.includes(m.key)} onChange={() => toggle(m.key)} />
+          {m.label}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 export default function CollaboratorsPanel() {
   const { data: collaborators, isLoading } = useCollaborators();
   const { mutate: invite, isPending: isInviting } = useInviteCollaborator();
+  const { mutate: updateModules, isPending: isUpdatingModules } = useUpdateCollaboratorModules();
   const { mutate: revoke } = useRevokeCollaborator();
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
+  const [editingCollaborator, setEditingCollaborator] = useState(null);
+  const [editModules, setEditModules] = useState([]);
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -37,6 +63,18 @@ export default function CollaboratorsPanel() {
     });
   };
 
+  const openEdit = (c) => {
+    setEditingCollaborator(c);
+    setEditModules(c.allowedModules == null ? ALL_MODULE_KEYS : c.allowedModules);
+  };
+  const closeEdit = () => setEditingCollaborator(null);
+  const saveEdit = () => {
+    updateModules(
+      { id: editingCollaborator.id, allowedModules: editModules },
+      { onSuccess: closeEdit }
+    );
+  };
+
   const list = collaborators || [];
 
   return (
@@ -45,7 +83,7 @@ export default function CollaboratorsPanel() {
         <div>
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Collaborators</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF", maxWidth: "480px", lineHeight: "1.6" }}>
-            A collaborator can create and edit anything in your workspace — hubs, curricula, courses, assessments, classes, educators, learners, bootcamps, competitions and settings — but can't delete records or manage other collaborators.
+            A collaborator can create and edit records in whichever modules you grant them below — but can't delete records or manage other collaborators, regardless of what's granted.
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => setOpen(true)}>
@@ -77,6 +115,9 @@ export default function CollaboratorsPanel() {
               <div className="stg-item-top">
                 <span className="stg-item-dot" style={{ background: "#38aae1" }} />
                 <div className="stg-item-name">{c.name}</div>
+                <button type="button" className="stg-icon-btn" title="Edit access" onClick={() => openEdit(c)}>
+                  <FiSettings size={15} strokeWidth={2.2} />
+                </button>
                 <button
                   type="button"
                   className="stg-icon-btn danger"
@@ -87,6 +128,13 @@ export default function CollaboratorsPanel() {
                 </button>
               </div>
               <div className="stg-item-sub">{c.email}</div>
+              <div className="stg-item-sub" style={{ marginTop: "2px" }}>
+                {c.allowedModules == null
+                  ? "All modules"
+                  : c.allowedModules.length === 0
+                    ? "No modules granted"
+                    : MODULE_OPTIONS.filter((m) => c.allowedModules.includes(m.key)).map((m) => m.label).join(", ")}
+              </div>
             </div>
           ))}
         </div>
@@ -131,7 +179,31 @@ export default function CollaboratorsPanel() {
               <input className="stg-input" type="password" value={form.password} onChange={set("password")} placeholder="At least 8 characters" />
               {errors.password && <p style={{ margin: "5px 0 0", fontSize: "12px", color: "#DC2626" }}>{errors.password}</p>}
             </div>
+            <div>
+              <Label>Modules this collaborator can access</Label>
+              <div style={{ marginTop: "6px" }}>
+                <ModuleChecklist value={form.allowedModules} onChange={(allowedModules) => setForm((f) => ({ ...f, allowedModules }))} />
+              </div>
+            </div>
           </div>
+        </Modal>
+      )}
+
+      {editingCollaborator && (
+        <Modal
+          title={`Edit access — ${editingCollaborator.name}`}
+          subtitle="Changes take effect on their very next request."
+          onClose={closeEdit}
+          footer={(
+            <>
+              <button type="button" className="stg-btn-secondary" onClick={closeEdit}>Cancel</button>
+              <button type="button" className="stg-btn-primary" disabled={isUpdatingModules} onClick={saveEdit}>
+                {isUpdatingModules ? "Saving…" : "Save"}
+              </button>
+            </>
+          )}
+        >
+          <ModuleChecklist value={editModules} onChange={setEditModules} />
         </Modal>
       )}
     </div>

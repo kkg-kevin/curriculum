@@ -20,6 +20,18 @@ export function useInviteCollaborator() {
   });
 }
 
+export function useUpdateCollaboratorModules() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, allowedModules }) => collaboratorsApi.update(id, { allowedModules }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success("Collaborator access updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update collaborator"),
+  });
+}
+
 export function useRevokeCollaborator() {
   const queryClient = useQueryClient();
   return useMutation({

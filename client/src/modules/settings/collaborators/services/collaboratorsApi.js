@@ -10,5 +10,6 @@ const BASE = "/api/admin-tools/collaborators";
 export const collaboratorsApi = {
   list: () => api.get(BASE).then((r) => r.data.data),
   invite: (data) => api.post(BASE, data).then((r) => r.data.data),
+  update: (id, data) => api.patch(`${BASE}/${id}`, data).then((r) => r.data.data),
   revoke: (id) => api.delete(`${BASE}/${id}`).then((r) => r.data),
 };
