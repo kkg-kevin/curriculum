@@ -1,11 +1,12 @@
 const db = require("../../config/db");
-const { createRecord, updateRecord, deleteRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { createRecord, updateRecord, deleteRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const TABLE = "users";
+const JSON_FIELDS = ["allowedModules"];
 
 const UserModel = {
   create(data) {
-    return createRecord(db, TABLE, data);
+    return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   findAll({ invitedByAdminId } = {}) {
@@ -31,7 +32,7 @@ const UserModel = {
   },
 
   update(id, data) {
-    return updateRecord(db, TABLE, id, data);
+    return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
   delete(id) {

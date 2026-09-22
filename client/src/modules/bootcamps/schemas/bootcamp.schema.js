@@ -19,8 +19,9 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.l
 // number instead of a second hardcoded 150.
 export const BOOTCAMP_DESCRIPTION_MAX_WORDS = 150;
 
+// `text` is rich text (TipTap HTML) — strip tags first so markup itself never counts as words.
 export function wordCount(text) {
-  const trimmed = (text || "").trim();
+  const trimmed = (text || "").replace(/<[^>]*>/g, " ").trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
@@ -50,7 +51,9 @@ const coursePriceSchema = z.object({
 export const bootcampSchema = z
   .object({
     name:          z.string().trim().min(1, "Bootcamp name is required").max(150, "Max 150 characters"),
-    description:   z.string().trim().max(3000).default(""),
+    // Rich text (TipTap HTML) — capped generously above the old 3000-char plain-text limit
+    // (the 150-word limit above is the real content-length guard; see wordCount above).
+    description:   z.string().trim().max(15000).default(""),
     tagline:       z.string().trim().max(200).default(""),
     coverImage:    z.string().nullable().default(null),
     curriculumId:  z.string().nullable().default(null),

@@ -9,6 +9,7 @@ import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery, useReceiptsQuery, useCustomersQuery } from "../hooks/useBilling";
 import { classApi } from "../../classes/services/classApi";
 import { useItems } from "../../settings/items/hooks/useItems";
+import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { inputStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import StatusPill, { TYPE_LABELS, TYPE_HELP, STATUS_LABELS } from "../components/StatusPill";
 import { LoadingState, EmptyState } from "../components/PageStates";
@@ -30,6 +31,7 @@ export default function BillingPage() {
   const { user } = useAuth();
   const isLearner = user?.role === "learner";
   const isAdmin = user?.role === "admin";
+  const isSchoolLogin = user?.role === "school";
   const receiptsBasePath = isLearner ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
   const statementBasePath = isLearner ? "/learner-portal/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,6 +47,14 @@ export default function BillingPage() {
   const hubs = hubsData?.data || [];
   const [hubId, setHubId] = useState(hubParam || "");
   const selectedHubId = isAdmin ? hubId : hubs[0]?.id || "";
+  // A "school"-role login's own hub isn't always a school — the same login mechanism sets up a
+  // portal account for any hub type (see LearningHubForm.jsx's PasswordField). A non-school hub
+  // has no learners to invoice tuition/materials for; it bills for SPACE USAGE instead, via the
+  // existing hub-visits "Generate charges" flow (see HubFinanceTab, reused as-is from the admin's
+  // own hub view page). Tuition invoicing (this page's "Create learner invoices" form + generic
+  // invoice list) stays exactly as it is for an actual school hub and for admin.
+  const selectedHub = isSchoolLogin ? hubs[0] || null : null;
+  const isNonSchoolHub = isSchoolLogin && selectedHub && selectedHub.hubType !== "school";
   const { data: learnersData } = useQuery({
     queryKey: ["billing", "learners", selectedHubId],
     queryFn: () => learnerApi.getAll({ schoolId: selectedHubId }),
@@ -102,7 +112,7 @@ export default function BillingPage() {
     const query = search.trim().toLowerCase();
     return invoices.filter((invoice) => {
       const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-      const matchesSearch = !query || `${invoice.invoiceNumber} ${TYPE_LABELS[invoice.invoiceType]}`.toLowerCase().includes(query);
+      const matchesSearch = !query || `${invoice.invoiceNumber} ${TYPE_LABELS[invoice.invoiceType]} ${invoice.billTo?.name || ""}`.toLowerCase().includes(query);
       return matchesStatus && matchesSearch;
     });
   }, [invoices, search, statusFilter]);
@@ -171,8 +181,8 @@ export default function BillingPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", color: "#111827" }}>
       <div style={{ background: "linear-gradient(135deg, #142F4A 0%, #25476a 48%, #2e7db5 100%)", borderRadius: 18, padding: "26px 28px", marginBottom: 16, color: "#fff", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
-        <div><div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}><ReceiptLongIcon sx={{ fontSize: 16 }} /> Finance workspace</div><h1 style={{ margin: 0, fontSize: 25, fontWeight: 900 }}>{isLearner ? "My invoices" : "Billing"}</h1><p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{isLearner ? "Review invoices assigned to your parent account." : "Create, issue, and track hub and learner invoices."}</p></div>
-        {!isLearner && (!isAdmin || activeTab === "invoices") && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
+        <div><div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}><ReceiptLongIcon sx={{ fontSize: 16 }} /> Finance workspace</div><h1 style={{ margin: 0, fontSize: 25, fontWeight: 900 }}>{isLearner ? "My invoices" : "Billing"}</h1><p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{isLearner ? "Review invoices assigned to your parent account." : isNonSchoolHub ? "Log space visits and bill learners for usage." : "Create, issue, and track hub and learner invoices."}</p></div>
+        {!isLearner && !isNonSchoolHub && (!isAdmin || activeTab === "invoices") && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
       </div>
 
       {isAdmin && (
@@ -243,7 +253,13 @@ export default function BillingPage() {
         </div>
       )}
 
-      {isAdmin && activeTab !== "invoices" ? null : (
+      {isNonSchoolHub ? (
+        // A non-school hub (co-working space, innovation lab, makerspace, tech club) bills for
+        // SPACE USAGE, not tuition — reuses the same finance surface the admin's own hub view
+        // page already offers for this hub type, so "log a visit" / "generate charges" work the
+        // same way whether the admin or the hub's own login is the one doing it.
+        <HubFinanceTab hubId={selectedHubId} learners={learners} spaces={selectedHub?.spaces || []} />
+      ) : isAdmin && activeTab !== "invoices" ? null : (
       <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
         {[{ label: "All invoices", value: invoiceStats.total, icon: <ViewListIcon fontSize="small" />, color: "#25476a" }, { label: "Outstanding", value: formatMoney(invoiceStats.outstanding), icon: <AccountBalanceIcon fontSize="small" />, color: "#C2410C" }, { label: "Paid", value: formatMoney(invoiceStats.paid), icon: <PaidIcon fontSize="small" />, color: "#047857" }, { label: "Overdue", value: invoiceStats.overdue, icon: <EventNoteIcon fontSize="small" />, color: "#B91C1C" }].map((stat) => <div key={stat.label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}><div style={{ width: 36, height: 36, borderRadius: 9, background: "#F1F7FB", color: stat.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{stat.icon}</div><div><div style={{ fontSize: 18, fontWeight: 850, color: stat.color, fontVariantNumeric: "tabular-nums" }}>{stat.value}</div><div style={{ fontSize: 11, color: "#6B7280" }}>{stat.label}</div></div></div>)}
@@ -293,7 +309,7 @@ export default function BillingPage() {
       )}
 
       <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><div><h2 style={{ margin: 0, fontSize: 16 }}>Invoices</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredInvoices.length} of {invoices.length} invoice{invoices.length === 1 ? "" : "s"}</p></div><div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><label style={{ position: "relative" }}><SearchIcon sx={{ position: "absolute", left: 9, top: 8, fontSize: 16, color: "#9CA3AF" }} /><input aria-label="Search invoices" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice number" style={{ ...inputStyle, width: 190, paddingLeft: 30 }} /></label><select aria-label="Filter invoice status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ ...inputStyle, width: 145 }}><option value="all">All statuses</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div></div>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><div><h2 style={{ margin: 0, fontSize: 16 }}>Invoices</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredInvoices.length} of {invoices.length} invoice{invoices.length === 1 ? "" : "s"}</p></div><div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><label style={{ position: "relative" }}><SearchIcon sx={{ position: "absolute", left: 9, top: 8, fontSize: 16, color: "#9CA3AF" }} /><input aria-label="Search invoices" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search invoice number or name" style={{ ...inputStyle, width: 210, paddingLeft: 30 }} /></label><select aria-label="Filter invoice status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ ...inputStyle, width: 145 }}><option value="all">All statuses</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div></div>
         {invoicesLoading ? <LoadingState label="Loading invoices…" /> : filteredInvoices.length === 0 ? (
           <EmptyState
             icon={ReceiptLongIcon}
@@ -302,7 +318,7 @@ export default function BillingPage() {
           />
         ) : pagedInvoices.map((invoice) => (
           <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
-            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} /></div><div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
+            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} /></div>{invoice.billTo?.name && <div style={{ fontSize: 12.5, color: "#374151", fontWeight: 600, marginTop: 3 }}>{invoice.billTo.name}</div>}<div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}><div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 850, color: "#25476a" }}>{formatMoney(invoice.total, invoice.currency)}</div><div style={{ fontSize: 11, color: invoice.amountDue > 0 ? "#C2410C" : "#047857", marginTop: 3 }}>{invoice.amountDue > 0 ? `${formatMoney(invoice.amountDue, invoice.currency)} due` : "Fully paid"}</div></div>{!isLearner && <div style={{ display: "flex", gap: 7 }} onClick={(event) => event.stopPropagation()}>{invoice.status === "draft" && <button type="button" title="Issue invoice" aria-label={`Issue ${invoice.invoiceNumber}`} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, display: "inline-flex", alignItems: "center", gap: 5 }}><SendIcon sx={{ fontSize: 15 }} />Issue</button>}{["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" title="Cancel invoice" aria-label={`Cancel ${invoice.invoiceNumber}`} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, padding: "8px 10px", background: "#fff", color: "#B91C1C", border: "1px solid #FECACA" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} /></button>}</div>}</div>
           </div>
         ))}

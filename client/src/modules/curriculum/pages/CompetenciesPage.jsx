@@ -47,6 +47,8 @@ import { usePathwayTemplates as useCatalogPathways, PATHWAY_TEMPLATE_KEYS } from
 import { pathwayTemplatesApi as pathwayTemplateApi } from "../../settings/pathways/services/pathwayTemplatesApi";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CoursePickerField from "../../courses/components/CoursePickerField";
+import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
+import RichContent, { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -148,20 +150,11 @@ const CSS = `
   .cp-course-count-badge {
     padding:1px 8px; border-radius:20px; font-size:10.5px; font-weight:700; border:1px solid;
   }
-  .cp-course-list { display:flex; flex-direction:column; gap:5px; }
-  .cp-course-row {
-    display:flex; align-items:center; gap:9px;
-    padding:6px 10px; border-radius:8px; background:#fff;
-    border:1px solid #EEF0F2; transition:border-color 0.12s, background 0.12s;
-  }
-  .cp-course-row:hover { background:#FAFCFF; }
-  .cp-course-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .cp-course-index {
     width:19px; height:19px; border-radius:6px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     font-size:10px; font-weight:800;
   }
-  .cp-course-name { flex:1; min-width:0; font-size:12.5px; font-weight:600; color:#1F2937; word-break:break-word; }
   .cp-course-meta { font-size:10.5px; font-weight:600; color:#9CA3AF; flex-shrink:0; white-space:nowrap; }
 
   /* Diagnostic Assessment section (Pathways) — violet accent, matches LearnerViewPage */
@@ -726,13 +719,7 @@ function PathwaysPanel({ curriculumId }) {
               onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
             />
           </div>
-          <textarea
-            className="cp-textarea"
-            placeholder="Description (optional)"
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            rows={2}
-          />
+          <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
           <div className="cp-swatches">
             {AREA_COLORS.map((c) => (
               <button
@@ -859,7 +846,7 @@ function PathwaysPanel({ curriculumId }) {
                   <div className="cp-item-dot" style={{ backgroundColor: areaColor }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cp-item-name">{area.name}</div>
-                    {area.description && <div className="cp-item-sub">{area.description}</div>}
+                    {!isEmptyHtml(area.description) && <div className="cp-item-sub"><RichContent html={area.description} /></div>}
                     {area.ageCategoryId && stageById.get(area.ageCategoryId) && (
                       <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
                         {stageById.get(area.ageCategoryId).name}
@@ -923,27 +910,9 @@ function PathwaysPanel({ curriculumId }) {
                           {area.courses.length}
                         </span>
                       </div>
-                      <div className="cp-course-list">
-                        {orderedIds.map((id, i) => {
-                          const c = courseById.get(id);
-                          const sessionCount = c?.sessionCount ?? 0;
-                          return (
-                            <div key={id} className="cp-course-row">
-                              <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                                <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => moveCourseUp(i)} disabled={i === 0} title="Move up">
-                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                </button>
-                                <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => moveCourseDown(i)} disabled={i === orderedIds.length - 1} title="Move down">
-                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                </button>
-                              </div>
-                              <span className="cp-course-index" style={{ backgroundColor: `${areaColor}15`, color: areaColor }}>{i + 1}</span>
-                              <span className="cp-course-name">{c?.name || "Unknown course"}</span>
-                              <span className="cp-course-meta">{sessionCount} lesson{sessionCount !== 1 ? "s" : ""}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <p style={{ margin: "0 0 10px", fontSize: "11.5px", color: "#9CA3AF" }}>
+                        Reorder with the arrows, or click a course to set what it takes to advance to the next one.
+                      </p>
                       <PathwayCourseLadderSection
                         curriculumId={curriculumId}
                         pathway={area}
@@ -951,6 +920,8 @@ function PathwaysPanel({ curriculumId }) {
                         orderedCourseIds={orderedIds}
                         courseById={courseById}
                         bandByCourseId={bandByCourseId}
+                        onMoveCourseUp={moveCourseUp}
+                        onMoveCourseDown={moveCourseDown}
                       />
                     </div>
                   );
@@ -1070,7 +1041,7 @@ function PathwaysPanel({ curriculumId }) {
  * walk) — this is authored directly on the Pathways tab instead, right where the courses
  * themselves are set up. */
 
-function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCourseIds, courseById, bandByCourseId }) {
+function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCourseIds, courseById, bandByCourseId, onMoveCourseUp, onMoveCourseDown }) {
   const { mutate: createBand, isPending: creating } = useCreatePerformanceBand(curriculumId);
   const { mutate: updateBand, isPending: updating } = useUpdatePerformanceBand(curriculumId);
   const { mutate: removeBand, isPending: deleting } = useDeletePerformanceBand(curriculumId);
@@ -1171,15 +1142,6 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
   return (
     <div style={{ marginTop: "14px", borderTop: "1px dashed #E5E7EB", paddingTop: "14px" }}>
       {confirmDialog}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-        <span className="cp-course-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TrackChangesIcon fontSize="inherit" /> Course Thresholds
-        </span>
-      </div>
-      <p style={{ margin: "0 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>
-        What it takes for a learner to advance from one course to the next — contribution weights per
-        competency indicator, and the % of those indicators a learner must clear.
-      </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {orderedCourseIds.map((courseId, idx) => {
@@ -1190,6 +1152,7 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
           const nextCourseId = orderedCourseIds[idx + 1];
           const hasConfig = band && ((band.competencyIds || []).length > 0 || (band.advancementThreshold ?? 0) > 0 || (band.advancementMin ?? 0) > 0);
           const canDuplicate = !!band && !isLast && hasConfig && !duplicating;
+          const sessionCount = course?.sessionCount ?? 0;
 
           return (
             <div key={courseId} style={{
@@ -1197,8 +1160,20 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
               boxShadow: isOpen ? `0 0 0 3px ${color}14` : "none", transition: "border-color 0.15s, box-shadow 0.15s",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px", flexShrink: 0 }}>
+                  <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => onMoveCourseUp(idx)} disabled={idx === 0} title="Move up">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button type="button" className="cp-icon-btn" style={{ width: "18px", height: "14px" }} onClick={() => onMoveCourseDown(idx)} disabled={isLast} title="Move down">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+                <span className="cp-course-index" style={{ backgroundColor: `${color}15`, color, flexShrink: 0 }}>{idx + 1}</span>
                 <button type="button" className="cp-indicators-toggle" style={{ flex: 1, marginTop: 0 }} onClick={() => (isOpen ? closeCourse() : openCourse(courseId))}>
-                  <span>{course?.name || "Unknown course"}</span>
+                  <span style={{ display: "flex", alignItems: "baseline", gap: "8px", minWidth: 0 }}>
+                    <span>{course?.name || "Unknown course"}</span>
+                    <span className="cp-course-meta" style={{ flexShrink: 0 }}>{sessionCount} lesson{sessionCount !== 1 ? "s" : ""}</span>
+                  </span>
                   <span style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                     {band?.advancementThreshold > 0 && (
                       <span
@@ -1852,8 +1827,7 @@ function AssessmentTypesSubPanel({ curriculumId }) {
         </div>
         <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
-          <textarea className="cp-textarea" rows={3} placeholder="What is this assessment type used for?" value={desc} maxLength={1000} onChange={(e) => setDesc(e.target.value)} />
-          <div className="cp-char-count">{desc.length} / 1000</div>
+          <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
         </div>
       </div>
       <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
@@ -1896,8 +1870,8 @@ function AssessmentTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(t)} onDelete={() => remove(t.id)} disabled={deleting} itemLabel={t.name} itemType="assessment type" />
             </div>
             <div style={{ flex: 1 }}>
-              {t.description && (
-                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</p>
+              {!isEmptyHtml(t.description) && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{stripHtml(t.description)}</p>
               )}
 
               {/* ── Evidence breakdown (from Score Evidence config) ── */}
@@ -2058,8 +2032,7 @@ function EvidenceTypesSubPanel({ curriculumId }) {
         </div>
         <div>
           <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
-          <textarea className="cp-textarea" rows={2} placeholder="Briefly describe what this evidence type involves…" value={desc} maxLength={500} onChange={(e) => setDesc(e.target.value)} />
-          <div className="cp-char-count">{desc.length} / 500</div>
+          <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
         </div>
       </div>
       <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
@@ -2107,8 +2080,8 @@ function EvidenceTypesSubPanel({ curriculumId }) {
               <CardKebab onEdit={() => openEdit(e)} onDelete={() => remove(e.id)} disabled={deleting} itemLabel={e.name} itemType="evidence type" />
             </div>
             <div style={{ flex: 1 }}>
-              {e.description && (
-                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.description}</p>
+              {!isEmptyHtml(e.description) && (
+                <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{stripHtml(e.description)}</p>
               )}
 
               {/* ── Used in (from Score Evidence config) ── */}
@@ -2772,12 +2745,7 @@ function AgeCategoriesPanel({ curriculumId }) {
             </div>
             <div>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
-              <textarea className="cp-textarea" rows={2}
-                placeholder="Describe the characteristics or focus of this stage…"
-                value={desc} maxLength={500}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-              <div className="cp-char-count">{desc.length} / 500</div>
+              <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
             </div>
             <div>
               <label className="cp-field-label">Age Range <span className="cp-optional">(optional)</span></label>
@@ -2892,9 +2860,9 @@ function AgeCategoriesPanel({ curriculumId }) {
                 )}
 
                 <div style={{ flex: 1 }}>
-                  {cat.description ? (
+                  {!isEmptyHtml(cat.description) ? (
                     <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.65", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {cat.description}
+                      {stripHtml(cat.description)}
                     </p>
                   ) : (
                     <p style={{ margin: 0, fontSize: "12px", color: "#D1D5DB", fontStyle: "italic" }}>No description</p>
@@ -3550,12 +3518,7 @@ function PerformanceBandsPanel({ curriculumId }) {
             {/* Description */}
             <div>
               <label className="cp-field-label">Description <span className="cp-optional">(optional)</span></label>
-              <textarea className="cp-textarea" rows={2}
-                placeholder="Briefly describe what this performance band represents…"
-                value={desc} maxLength={1000}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-              <div className="cp-char-count">{desc.length} / 1000</div>
+              <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
             </div>
 
             {/* Advancement threshold range */}
@@ -3853,8 +3816,8 @@ function PerformanceBandsPanel({ curriculumId }) {
                       })()}
                     </div>
 
-                    {band.description && (
-                      <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}>{band.description}</p>
+                    {!isEmptyHtml(band.description) && (
+                      <div style={{ margin: "8px 0 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.6" }}><RichContent html={band.description} /></div>
                     )}
 
                     {(band.competencyIds || []).length === 0 ? (

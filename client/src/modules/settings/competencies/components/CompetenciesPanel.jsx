@@ -6,6 +6,8 @@ import {
 import { Modal, Label } from "../../components/Modal";
 import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
+import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
 
 const STOP_WORDS = new Set(["the", "and", "of", "for", "a", "an", "in", "on", "at", "to", "by", "with", "from", "or"]);
 
@@ -257,7 +259,7 @@ function CompetencyModal({ editTarget, onClose }) {
         </div>
         <div>
           <Label>Description</Label>
-          <textarea rows={4} className="stg-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} />
+          <RichTextEditorControlled value={form.description} onChange={(html) => setField("description", html)} size="md" />
         </div>
         <IndicatorsEditor competencyName={form.name} indicators={indicators} onChange={setIndicators} />
       </div>
@@ -288,7 +290,7 @@ function CompetencyCard({ comp, color, onEdit, onDelete }) {
       </div>
 
       <p className="stg-comp-desc">
-        {comp.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
+        {!isEmptyHtml(comp.description) ? stripHtml(comp.description) : <em style={{ color: "#D1D5DB" }}>No description added</em>}
       </p>
 
       {indicators.length > 0 && (

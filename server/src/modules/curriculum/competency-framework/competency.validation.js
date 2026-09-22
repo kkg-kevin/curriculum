@@ -32,7 +32,9 @@ const pathwayCourseSequenceEntrySchema = z.object({
 
 const pathwayFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
-  description: z.string().max(500).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit since
+  // markup itself takes up space.
+  description: z.string().max(5000).optional().default(""),
   color:       z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#25476a"),
   // Course ids, not free-typed names — the service layer checks each id resolves
   // to a real course before saving.
@@ -110,7 +112,8 @@ const ageRangeRefinementOptions = {
 // one refining the other.
 const ageCategoryFields = z.object({
   name:        z.string().min(1, "Name is required").max(100),
-  description: z.string().max(500).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+  description: z.string().max(5000).optional().default(""),
   minAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   maxAge:      z.number().int().min(0).max(120).nullable().optional().default(null),
   // The one assessment auto-issued to a new learner once their age resolves to this stage —
@@ -135,7 +138,8 @@ const BEHAVIOR_TYPES = ["diagnostic", "formative", "summative"];
 
 const createAssessmentTypeSchema = z.object({
   name:              z.string().min(1, "Name is required").max(150),
-  description:       z.string().max(1000).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 1000-char plain-text limit.
+  description:       z.string().max(10000).optional().default(""),
   behaviorType:      z.enum(BEHAVIOR_TYPES, { errorMap: () => ({ message: "Behavior type must be diagnostic, formative, or summative" }) }),
   progressionWeight: z.number().min(0).max(1).optional().default(1.0),
 });
@@ -182,7 +186,8 @@ const EVIDENCE_CATEGORIES = ["quiz", "exam", "project", "assignment", "observati
 
 const createEvidenceTypeSchema = z.object({
   name:                z.string().min(1, "Name is required").max(150),
-  description:         z.string().max(500).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+  description:         z.string().max(5000).optional().default(""),
   category:            z.enum(EVIDENCE_CATEGORIES, { errorMap: () => ({ message: "Category must be one of: quiz, exam, project, assignment, observation" }) }).nullable().optional().default(null),
   defaultContribution: z.number().min(0).max(100).optional().default(0),
   // Count-based reference: "at least N items of this evidence type are expected" (e.g. minimum
@@ -216,7 +221,8 @@ const bandStageRefinementOptions = {
 // Zod can't .partial() a schema that already has .refine() attached.
 const performanceBandFields = z.object({
   name:          z.string().min(1, "Name is required").max(100),
-  description:   z.string().max(1000).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 1000-char plain-text limit.
+  description:   z.string().max(10000).optional().default(""),
   minScore:      z.number().min(0).max(100).optional().default(0),
   maxScore:      z.number().min(0).max(100).optional().default(100),
   // Explicit position in the stage's ladder (Explorer=1, Builder=2, …) — the client sends this

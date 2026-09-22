@@ -60,7 +60,8 @@ const createCurriculumSchema = z.object({
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
   academicYear: z.string().optional().default(""),
-  description: z.string().max(500).default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+  description: z.string().max(5000).default(""),
   status: z.enum(["draft", "active"]).default("draft"),
   educationLevel: z.string().optional().default(""),
   gradeFrom: z.string().optional().default(""),
@@ -87,7 +88,7 @@ const updateCurriculumSchema = z.object({
     .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens")
     .optional(),
   academicYear: z.string().optional(),
-  description: z.string().max(500).optional(),
+  description: z.string().max(5000).optional(),
   status: z.enum(["draft", "active"]).optional(),
   educationLevel: z.string().optional(),
   gradeFrom: z.string().optional(),

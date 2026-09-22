@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FiArrowRight, FiFlag, FiPlus, FiEye, FiEyeOff, FiAlertTriangle } from "react-icons/fi";
+import { FiArrowRight, FiFlag, FiEye, FiEyeOff, FiAlertTriangle } from "react-icons/fi";
 import { useCompetitionsQuery } from "../hooks/useCompetitions";
 
 const STATUS_STYLE = {
@@ -26,8 +26,11 @@ function StatusPill({ status }) {
 
 /**
  * The "Competitions" section shown on a curriculum's view page — every competition linked to
- * this curriculum. Competitions are their own module server-side and on the public website; on
- * the admin side they're only reachable from inside a Curriculum, or from the Events list.
+ * this curriculum, read-only. Competitions are their own module server-side and on the public
+ * website; creating one only ever happens from the Events module
+ * (/events/competitions/create), which has its own curriculum picker — this section used to
+ * duplicate that as a shortcut button, removed so "create a competition" has exactly one entry
+ * point instead of two.
  *
  * `variant` tweaks the outer card to match the surrounding page ("plain" card standalone,
  * "bordered" like the other sections on CurriculumViewPage).
@@ -38,7 +41,6 @@ export default function CurriculumCompetitionsSection({ curriculumId, variant = 
     curriculumId ? { curriculumId } : undefined,
   );
 
-  const createPath = `/events/competitions/create?curriculumId=${curriculumId}`;
   const viewPath = (id) => `/events/competitions/${id}/view`;
 
   const outerStyle =
@@ -56,21 +58,11 @@ export default function CurriculumCompetitionsSection({ curriculumId, variant = 
 
   return (
     <div style={outerStyle}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-        <div>
-          <h2 style={titleStyle}>Competitions</h2>
-          <p style={subStyle}>
-            Editions with tracks and a registration window. Publish one to feature it on the website.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate(createPath)}
-          disabled={!curriculumId}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: variant === "bordered" ? 8 : 10, border: "none", backgroundColor: !curriculumId ? "#e5e7eb" : variant === "bordered" ? "#25476a" : "#feb139", color: variant === "bordered" ? "#ffffff" : "#25476a", fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: curriculumId ? "pointer" : "not-allowed", flexShrink: 0, whiteSpace: "nowrap" }}
-        >
-          <FiPlus size={13} /> New Competition
-        </button>
+      <div>
+        <h2 style={titleStyle}>Competitions</h2>
+        <p style={subStyle}>
+          Editions with tracks and a registration window. Publish one to feature it on the website.
+        </p>
       </div>
 
       <div style={{ marginTop: 14 }}>
@@ -92,8 +84,7 @@ export default function CurriculumCompetitionsSection({ curriculumId, variant = 
             <div>
               <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#374151" }}>No competitions linked to this curriculum yet</p>
               <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#6B7280" }}>
-                Add one with{" "}
-                <button type="button" onClick={() => navigate(createPath)} disabled={!curriculumId} style={{ background: "none", border: "none", color: "#25476a", fontWeight: 600, cursor: curriculumId ? "pointer" : "not-allowed", fontSize: 12.5, fontFamily: "Inter, sans-serif", padding: 0 }}>+ New Competition</button>.
+                Create one from the <button type="button" onClick={() => navigate("/events")} style={{ background: "none", border: "none", color: "#25476a", fontWeight: 600, cursor: "pointer", fontSize: 12.5, fontFamily: "Inter, sans-serif", padding: 0 }}>Events</button> section and pick this curriculum there.
               </p>
             </div>
           </div>

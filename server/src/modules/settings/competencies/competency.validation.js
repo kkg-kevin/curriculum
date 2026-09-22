@@ -12,7 +12,8 @@ const indicatorSchema = z.object({
 
 const createCompetencySchema = z.object({
   name:        z.string().min(1, "Name is required").max(150),
-  description: z.string().max(500).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+  description: z.string().max(5000).optional().default(""),
   indicators:  z.array(indicatorSchema).optional().default([]),
 });
 

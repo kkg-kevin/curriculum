@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCreatePathwayTemplate } from "../../settings/pathways/hooks/usePathwayTemplates";
 import CoursePickerField from "./CoursePickerField";
+import { Editor as RichTextEditorControlled } from "./RichTextEditor";
 
 const AREA_COLORS = [
   "#25476a", "#38aae1", "#059669", "#7C3AED",
@@ -22,7 +23,7 @@ export default function CreatePathwayModal({ initialName = "", onClose, onCreate
 
   const submit = () => {
     if (!name.trim()) { setError("Name is required"); return; }
-    create({ name: name.trim(), description: description.trim(), color, courses }, {
+    create({ name: name.trim(), description, color, courses }, {
       onSuccess: (newArea) => { onCreated(newArea.id); onClose(); },
     });
   };
@@ -55,12 +56,7 @@ export default function CreatePathwayModal({ initialName = "", onClose, onCreate
           </div>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Description</label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
-            />
+            <RichTextEditorControlled value={description} onChange={setDescription} size="md" />
           </div>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Color</label>

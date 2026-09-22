@@ -33,6 +33,7 @@ import { learningHubApi as schoolApi } from "../../learning-hubs/services/learni
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CurriculumCompetitionsSection from "../../competitions/components/CurriculumCompetitionsSection";
 import CurriculumBootcampsSection from "../../bootcamps/components/CurriculumBootcampsSection";
+import { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -831,9 +832,9 @@ export default function CurriculumViewPage() {
           <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "rgba(255,255,255,0.72)", fontWeight: "500", position: "relative" }}>
             {[curriculum.code, curriculum.academicYear, cycleLabel(model)].filter(Boolean).join("  ·  ")}
           </p>
-          {curriculum.description && (
+          {!isEmptyHtml(curriculum.description) && (
             <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.6", maxWidth: "560px", position: "relative", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-              {curriculum.description}
+              {stripHtml(curriculum.description)}
             </p>
           )}
         </div>
@@ -872,10 +873,10 @@ export default function CurriculumViewPage() {
         navigate={navigate}
       />
 
-      {/* ── Competitions — its own module, admin UI nested here ── */}
+      {/* ── Competitions — read-only list of what's linked here; created only from Events ── */}
       <CurriculumCompetitionsSection curriculumId={id} variant="bordered" />
 
-      {/* ── Bootcamps — its own module, admin UI nested here ── */}
+      {/* ── Bootcamps — read-only list of what's linked here; created only from Events ── */}
       <CurriculumBootcampsSection curriculumId={id} variant="bordered" />
 
       {/* ── Course Assignments Section ───────────────────────────────────── */}

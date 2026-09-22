@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreateModule, useCreateSessionsBulk } from "../hooks/useCourse";
+import { Editor as RichTextEditorControlled } from "./RichTextEditor";
 
 // Creating a module can seed it with N sessions right away (bulk-created into that module),
 // instead of starting empty and adding sessions one at a time afterward.
@@ -16,7 +17,7 @@ export default function AddModuleModal({ courseId, defaultName, onClose }) {
     const trimmed = name.trim();
     if (!trimmed) { setError("Name is required"); return; }
     const count = Math.max(0, Math.min(30, Number(sessionCount) || 0));
-    createModule({ name: trimmed, description: description.trim() }, {
+    createModule({ name: trimmed, description }, {
       onSuccess: async (newModule) => {
         if (count > 0) {
           await createSessionsBulkAsync({ courseId, count, moduleId: newModule.id });
@@ -54,13 +55,7 @@ export default function AddModuleModal({ courseId, defaultName, onClose }) {
           </div>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does this module cover?"
-              rows={3}
-              style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
-            />
+            <RichTextEditorControlled value={description} onChange={setDescription} size="md" />
           </div>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Number of Sessions</label>

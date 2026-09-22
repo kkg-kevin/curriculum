@@ -8,6 +8,8 @@ import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
 import CoursePickerField from "../../../courses/components/CoursePickerField";
+import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
+import RichContent, { isEmptyHtml } from "../../../courses/components/RichContent";
 
 const COLORS = PALETTE;
 
@@ -58,7 +60,7 @@ function PathwayModal({ editTarget, onClose }) {
         </div>
         <div>
           <Label>Description</Label>
-          <textarea rows={3} className="stg-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} />
+          <RichTextEditorControlled value={form.description} onChange={(html) => setField("description", html)} size="md" />
         </div>
         <div>
           <Label>Color</Label>
@@ -82,7 +84,7 @@ function PathwayModal({ editTarget, onClose }) {
 
 function PathwayCard({ pathway, onEdit, onDelete, courseNameById }) {
   const color = pathway.color || "#25476a";
-  const hasDetails = !!pathway.description || pathway.courses?.length > 0;
+  const hasDetails = !isEmptyHtml(pathway.description) || pathway.courses?.length > 0;
   const [expanded, setExpanded] = useState(false);
   const isOpen = hasDetails && expanded;
 
@@ -114,7 +116,7 @@ function PathwayCard({ pathway, onEdit, onDelete, courseNameById }) {
 
       {isOpen && (
         <>
-          {pathway.description && <div className="stg-item-sub" style={{ marginTop: "8px" }}>{pathway.description}</div>}
+          {!isEmptyHtml(pathway.description) && <div className="stg-item-sub" style={{ marginTop: "8px" }}><RichContent html={pathway.description} /></div>}
 
           {pathway.courses?.length > 0 && (
             <div className="stg-course-section">

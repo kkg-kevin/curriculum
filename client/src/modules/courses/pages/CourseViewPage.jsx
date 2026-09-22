@@ -23,7 +23,8 @@ import { sessionSchema } from "../schemas/session.schema";
 import SessionForm from "../components/SessionForm";
 import AddModuleModal from "../components/AddModuleModal";
 import CourseInventoryPanel from "../components/CourseInventoryPanel";
-import RichContent from "../components/RichContent";
+import RichContent, { isEmptyHtml } from "../components/RichContent";
+import { Editor as RichTextEditorControlled } from "../components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
@@ -371,8 +372,8 @@ function ModuleGroup({
   };
 
   const saveDescription = () => {
-    const trimmed = descriptionDraft.trim();
-    if (trimmed !== (courseModule.description || "")) updateModule({ id: courseModule.id, data: { description: trimmed } });
+    setDescriptionOpen(false);
+    if (descriptionDraft !== (courseModule.description || "")) updateModule({ id: courseModule.id, data: { description: descriptionDraft } });
   };
 
   return (
@@ -402,10 +403,10 @@ function ModuleGroup({
         <button
           type="button"
           onClick={() => setDescriptionOpen((v) => !v)}
-          title={courseModule.description ? "Edit description" : "Add description"}
-          style={{ background: "none", border: "none", cursor: "pointer", color: courseModule.description ? "#25476a" : "#9CA3AF", fontSize: "11.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", padding: "3px 6px" }}
+          title={isEmptyHtml(courseModule.description) ? "Add description" : "Edit description"}
+          style={{ background: "none", border: "none", cursor: "pointer", color: isEmptyHtml(courseModule.description) ? "#9CA3AF" : "#25476a", fontSize: "11.5px", fontWeight: "700", fontFamily: "Inter, sans-serif", padding: "3px 6px" }}
         >
-          {courseModule.description ? "Description" : "+ Description"}
+          {isEmptyHtml(courseModule.description) ? "+ Description" : "Description"}
         </button>
         <span style={{ fontSize: "12px", color: "#25476a", fontWeight: "600" }}>{sessions.length} Session{sessions.length !== 1 ? "s" : ""}</span>
         <AddSessionControl onAdd={(count) => onAddSession(courseModule.id, count)} adding={addingSession} />
@@ -420,16 +421,31 @@ function ModuleGroup({
         </button>
       </div>
 
-      {descriptionOpen && (
+      {!descriptionOpen && !isEmptyHtml(courseModule.description) && (
         <div style={{ paddingLeft: "24px" }}>
-          <textarea
-            value={descriptionDraft}
-            onChange={(e) => setDescriptionDraft(e.target.value)}
-            onBlur={saveDescription}
-            placeholder="What does this module cover?"
-            rows={3}
-            style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", color: "#374151", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
-          />
+          <RichContent html={courseModule.description} />
+        </div>
+      )}
+
+      {descriptionOpen && (
+        <div style={{ paddingLeft: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <RichTextEditorControlled value={descriptionDraft} onChange={setDescriptionDraft} size="md" />
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={saveDescription}
+              style={{ padding: "6px 14px", background: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDescriptionDraft(courseModule.description || ""); setDescriptionOpen(false); }}
+              style={{ padding: "6px 14px", background: "#fff", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: "8px", fontSize: "12px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

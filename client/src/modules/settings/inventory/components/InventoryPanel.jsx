@@ -7,6 +7,8 @@ import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICO
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import ImageUploadField from "../../../../components/ImageUploadField";
+import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
+import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
 
 const STORE_CATEGORY_LABELS = { kit: "Robots & kits", bundle: "Bundle", accessory: "Accessory" };
 const STOCK_STATUS_LABELS = { available: "Available now", preorder: "Pre-order", coming_soon: "Coming soon" };
@@ -343,7 +345,8 @@ function InventoryItemModal({ editTarget, onClose }) {
         </div>
         <div>
           <Label>Description</Label>
-          <textarea rows={4} className="stg-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} placeholder="Shown on the Store detail page if this item is for sale." />
+          <RichTextEditorControlled value={form.description} onChange={(html) => setField("description", html)} size="md" />
+          <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Shown on the Store detail page if this item is for sale.</p>
         </div>
 
         <SellingSection form={form} setField={setField} />
@@ -408,7 +411,7 @@ function InventoryCard({ item, onEdit, onDelete }) {
           </span>
         )}
         <p className="stg-comp-desc" style={{ WebkitLineClamp: 2 }}>
-          {item.description || <em style={{ color: "#D1D5DB" }}>No description added</em>}
+          {!isEmptyHtml(item.description) ? stripHtml(item.description) : <em style={{ color: "#D1D5DB" }}>No description added</em>}
         </p>
       </div>
     </div>

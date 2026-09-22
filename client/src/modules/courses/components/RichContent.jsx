@@ -6,6 +6,13 @@ export function isEmptyHtml(html) {
   return html.replace(/<[^>]*>/g, "").trim().length === 0;
 }
 
+// For compact, single-line previews (list rows, card previews) where markup
+// would just show up as literal tag text.
+export function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 // Content here was authored by the same user through RichTextEditor (internal tool,
 // no untrusted third-party input), so rendering raw HTML without a sanitizer is fine.
 export default function RichContent({ html, emptyText }) {
@@ -30,6 +37,9 @@ export default function RichContent({ html, emptyText }) {
         .course-rich-content pre code { background: none; padding: 0; color: inherit; }
         .course-rich-content a { color: #25476a; text-decoration: underline; }
         .course-rich-content hr { border: none; border-top: 1.5px solid #E5E7EB; margin: 14px 0; }
+        .course-rich-content table { border-collapse: collapse; width: 100%; margin: 0 0 10px; table-layout: fixed; }
+        .course-rich-content th, .course-rich-content td { border: 1.5px solid #E5E7EB; padding: 6px 9px; text-align: left; vertical-align: top; }
+        .course-rich-content th { background: #F9FAFB; font-weight: 700; }
       `}</style>
       <div className="course-rich-content" dangerouslySetInnerHTML={{ __html: html }} />
     </>

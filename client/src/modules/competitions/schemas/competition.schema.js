@@ -29,7 +29,8 @@ const trackSchema = z.object({
   id:          z.string().optional(),
   name:        z.string().trim().min(1, "Track name is required").max(120),
   subtitle:    z.string().trim().max(150).default(""),
-  description: z.string().trim().max(2000).default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 2000-char plain-text limit.
+  description: z.string().trim().max(10000).default(""),
   highlights:  z.array(z.string().trim().min(1).max(400)).max(12).default([]),
   registerUrl: url,
   knowMoreUrl: url,
@@ -38,7 +39,8 @@ const trackSchema = z.object({
 export const competitionSchema = z
   .object({
     name:        z.string().trim().min(1, "Competition name is required").max(150, "Max 150 characters"),
-    description: z.string().trim().max(3000).default(""),
+    // Rich text (TipTap HTML) — capped generously above the old 3000-char plain-text limit.
+    description: z.string().trim().max(15000).default(""),
     edition:     z.string().trim().max(120).default(""),
     format:      z.enum(["individual", "pairs", "team"]).nullable().default(null),
     level:       z.string().trim().max(120).default(""),

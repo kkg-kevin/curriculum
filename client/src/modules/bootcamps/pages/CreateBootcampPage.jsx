@@ -4,6 +4,7 @@ import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePricingField from "../../../components/CoursePricingField";
+import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { usePathways } from "../../curriculum/hooks/useCompetencies";
@@ -374,7 +375,13 @@ export default function CreateBootcampPage() {
 
             <div style={S.field}>
               <label style={S.label}>Description</label>
-              <textarea {...register("description")} style={S.textarea} placeholder="What learners build, who it's for…" />
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <RichTextEditorControlled value={field.value} onChange={field.onChange} size="md" />
+                )}
+              />
               <span style={{ ...S.hint, alignSelf: "flex-end", color: descriptionWordCount > BOOTCAMP_DESCRIPTION_MAX_WORDS ? "#DC2626" : "#9CA3AF" }}>
                 {descriptionWordCount} / {BOOTCAMP_DESCRIPTION_MAX_WORDS} words
               </span>

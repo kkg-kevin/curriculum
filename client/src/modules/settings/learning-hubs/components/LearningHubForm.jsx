@@ -14,6 +14,7 @@ import {
 } from "../../../learning-hubs/hooks/useLearningHub";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import ImageUploadField from "../../../../components/ImageUploadField";
+import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 
 const ACCENT = "#25476a";
 
@@ -650,11 +651,12 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
           <PasswordField />
 
           <Field label="Description">
-            <textarea
-              {...register("description")}
-              placeholder="Describe the learning hub, its atmosphere, and what makes it suitable for learning sessions…"
-              rows={4}
-              style={{ ...inputBaseStyle(false), resize: "vertical", fontFamily: "Inter, sans-serif" }}
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <RichTextEditorControlled value={field.value} onChange={field.onChange} size="md" />
+              )}
             />
           </Field>
 

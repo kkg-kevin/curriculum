@@ -37,6 +37,9 @@ export default function RichContent({ html, emptyText }) {
         .asm-rich-content pre code { background: none; padding: 0; color: inherit; }
         .asm-rich-content a { color: #25476a; text-decoration: underline; }
         .asm-rich-content hr { border: none; border-top: 1.5px solid #E5E7EB; margin: 14px 0; }
+        .asm-rich-content table { border-collapse: collapse; width: 100%; margin: 0 0 10px; table-layout: fixed; }
+        .asm-rich-content th, .asm-rich-content td { border: 1.5px solid #E5E7EB; padding: 6px 9px; text-align: left; vertical-align: top; }
+        .asm-rich-content th { background: #F9FAFB; font-weight: 700; }
       `}</style>
       <div className="asm-rich-content" dangerouslySetInnerHTML={{ __html: html }} />
     </>
