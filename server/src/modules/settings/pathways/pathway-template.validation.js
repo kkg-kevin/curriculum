@@ -2,7 +2,8 @@ const { z } = require("zod");
 
 // Field schemas WITHOUT .default() — see the note on updatePathwaySchema below.
 const nameField = z.string().min(1, "Name is required").max(100);
-const descriptionField = z.string().max(500);
+// Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+const descriptionField = z.string().max(5000);
 const colorField = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color");
 // Course ids, not free-typed names — the service layer checks each id resolves to a real course.
 const coursesField = z.array(z.string().min(1));

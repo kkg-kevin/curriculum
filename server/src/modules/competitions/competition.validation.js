@@ -12,7 +12,8 @@ const trackSchema = z.object({
   name:        z.string().trim().min(1, "Track name is required").max(120),
   // e.g. "Innovation and Entrepreneurship" — the green subheading under "Track 1".
   subtitle:    z.string().trim().max(150).optional().default(""),
-  description: z.string().trim().max(2000).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 2000-char plain-text limit.
+  description: z.string().trim().max(10000).optional().default(""),
   // The bullet points on the card.
   highlights:  z.array(z.string().trim().min(1).max(400)).max(12).optional().default([]),
   // "Register Now" — an external registration form / partner site, or an internal /enroll link.
@@ -35,7 +36,8 @@ const coursePriceSchema = z.object({
 
 const competitionFields = z.object({
   name:        z.string().trim().min(1, "Competition name is required").max(150),
-  description: z.string().trim().max(3000).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 3000-char plain-text limit.
+  description: z.string().trim().max(15000).optional().default(""),
   edition:     z.string().trim().max(120).optional().default(""),
   format:      z.enum(FORMATS).optional().nullable(),
   level:       z.string().trim().max(120).optional().default(""),

@@ -4,8 +4,10 @@ const SALE_STATUSES = ["internal", "for_sale"];
 const FORMATS = ["holiday", "weekend", "after_school", "online"];
 const DESCRIPTION_MAX_WORDS = 150;
 
+// `text` is rich text (TipTap HTML) — strip tags first so markup itself (e.g. <strong>, <p>)
+// never counts as words against the limit below.
 function wordCount(text) {
-  const trimmed = (text || "").trim();
+  const trimmed = (text || "").replace(/<[^>]*>/g, " ").trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
@@ -49,7 +51,9 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD").or(z.l
 
 const bootcampFields = z.object({
   name:          z.string().trim().min(1, "Bootcamp name is required").max(150),
-  description:   z.string().trim().max(3000).optional().default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 3000-char plain-text limit
+  // (the 150-word limit below is the real content-length guard; see wordCount above).
+  description:   z.string().trim().max(15000).optional().default(""),
   tagline:       z.string().trim().max(200).optional().default(""),
   // A stored "/uploads/x.png" path or an absolute URL — same shape as course.coverImage.
   coverImage:    z.string().max(500).optional().nullable(),

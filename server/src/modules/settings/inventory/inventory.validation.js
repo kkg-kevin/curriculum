@@ -22,7 +22,8 @@ const baseFields = {
   name:        z.string().min(1, "Name is required").max(150),
   category:    z.enum(INVENTORY_CATEGORIES, { errorMap: () => ({ message: "Select a valid category" }) }),
   unit:        z.string().min(1).max(30),
-  description: z.string().max(4000),
+  // Rich text (TipTap HTML) — capped generously above the old 4000-char plain-text limit.
+  description: z.string().max(15000),
   image:       z.string().nullable(),
 
   saleStatus:      z.enum(INVENTORY_SALE_STATUSES),

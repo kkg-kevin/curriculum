@@ -1,4 +1,6 @@
 import { useFormContext } from "react-hook-form";
+import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
+import { stripHtml } from "../../courses/components/RichContent";
 
 /* ── Icons ─────────────────────────────────────────────────────────────── */
 
@@ -144,7 +146,7 @@ export default function CurriculumForm() {
   const name = watch("name") || "";
   const description = watch("description") || "";
   const nameLen = name.length;
-  const descLen = description.length;
+  const descLen = stripHtml(description).length;
   const canGenerate = name.trim().length > 0;
 
   const handleGenerateCode = () => {
@@ -217,10 +219,10 @@ export default function CurriculumForm() {
           </label>
           <span style={counterStyle(descLen > 450, descLen > 500)}>{descLen} / 500</span>
         </div>
-        <textarea
-          {...register("description")}
-          className={`cf-textarea${errors.description ? " cf-error" : ""}`}
-          placeholder="Briefly describe the purpose and scope of this curriculum…"
+        <RichTextEditorControlled
+          value={description}
+          onChange={(html) => setValue("description", html, { shouldValidate: true, shouldDirty: true })}
+          size="md"
         />
         <FieldError error={errors.description} />
       </div>

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteCurriculum } from "../hooks/useCurriculum";
 import ConfirmDialog from "./ConfirmDialog";
+import { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
 
@@ -239,9 +240,9 @@ export default function CurriculumCard({ curriculum }) {
         <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: "600" }}>{curriculum.code}</span>
 
         {/* ── Description (1 line) ── */}
-        {curriculum.description && (
+        {!isEmptyHtml(curriculum.description) && (
           <p style={{ margin: 0, fontSize: "12px", color: "#6B7280", lineHeight: "1.5", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {curriculum.description}
+            {stripHtml(curriculum.description)}
           </p>
         )}
 

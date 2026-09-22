@@ -101,7 +101,8 @@ const baseLearningHubSchema = z.object({
   // them to "active", at which point they appear in the Learning Hubs module and every other
   // consumer (Teachers/Classes/Learners pickers, curriculum view, dashboard, etc).
   status: z.enum(["draft", "active", "inactive"]).default("draft"),
-  description: z.string().max(1000, "Max 1000 characters").default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 1000-char plain-text limit.
+  description: z.string().max(10000).default(""),
   // Single profile/logo image — distinct from the `photos` gallery below.
   photo: z.string().optional().nullable().default(null),
   photos: z.array(z.string()).default([]),

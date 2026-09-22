@@ -134,7 +134,8 @@ export const learningHubSchema = z
     // New hubs start as "draft" — invisible everywhere outside Settings until promoted to
     // "active", at which point they appear in the Learning Hubs module and every other consumer.
     status: z.enum(["draft", "active", "inactive"]).default("draft"),
-    description: z.string().max(1000, "Max 1000 characters").default(""),
+    // Rich text (TipTap HTML) — capped generously above the old 1000-char plain-text limit.
+    description: z.string().max(10000, "Max 10000 characters").default(""),
     // Single profile/logo image — distinct from the `photos` gallery below.
     photo: z.string().optional().nullable(),
     photos: z.array(z.string()).default([]),

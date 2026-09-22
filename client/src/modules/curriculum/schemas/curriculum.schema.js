@@ -10,5 +10,6 @@ export const curriculumDetailsSchema = z.object({
     .min(1, "Curriculum code is required")
     .max(20, "Max 20 characters")
     .regex(/^[A-Z0-9-]+$/, "Only letters, numbers, and hyphens"),
-  description: z.string().max(500, "Max 500 characters").default(""),
+  // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
+  description: z.string().max(5000, "Max 5000 characters").default(""),
 });

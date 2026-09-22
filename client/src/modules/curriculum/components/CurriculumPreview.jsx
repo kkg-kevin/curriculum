@@ -1,4 +1,5 @@
 import { useFormContext } from "react-hook-form";
+import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
 const StructureIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -16,7 +17,7 @@ export default function CurriculumPreview() {
   const { watch } = useFormContext();
   const { name, code, description } = watch();
 
-  const isEmpty = !name && !code && !description;
+  const isEmpty = !name && !code && isEmptyHtml(description);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -75,14 +76,13 @@ export default function CurriculumPreview() {
           <div style={{ height: "1px", background: "linear-gradient(90deg, #d6edf8, #E0F2FE, transparent)", marginBottom: "16px" }} />
 
           {/* Description */}
-          {description ? (
+          {!isEmptyHtml(description) ? (
             <div style={{
               backgroundColor: "#F8FAFF", borderLeft: "3px solid #a8d5ee",
               borderRadius: "0 8px 8px 0", padding: "10px 13px", marginBottom: "20px",
+              fontSize: "13px", color: "#4B5563", lineHeight: "1.65",
             }}>
-              <p style={{ margin: 0, fontSize: "13px", color: "#4B5563", lineHeight: "1.65" }}>
-                {description}
-              </p>
+              <RichContent html={description} />
             </div>
           ) : (
             <p style={{ margin: "0 0 20px 0", fontSize: "13px", color: "#D1D5DB", fontStyle: "italic" }}>

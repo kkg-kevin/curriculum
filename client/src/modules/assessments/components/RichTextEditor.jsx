@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import { TableKit } from "@tiptap/extension-table";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/uploadApi";
 import Video from "./VideoExtension";
@@ -31,6 +32,55 @@ function ToolbarButton({ onClick, disabled, active, title, children }) {
 
 function ToolbarDivider() {
   return <div style={{ width: "1px", height: "18px", backgroundColor: "#E5E7EB", margin: "0 4px", flexShrink: 0 }} />;
+}
+
+function TableMenu({ editor, onClose }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const close = (e) => { if (!ref.current?.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [onClose]);
+
+  const inTable = editor.isActive("table");
+
+  const actions = inTable
+    ? [
+        ["Add row after", () => editor.chain().focus().addRowAfter().run()],
+        ["Delete row", () => editor.chain().focus().deleteRow().run()],
+        ["Add column after", () => editor.chain().focus().addColumnAfter().run()],
+        ["Delete column", () => editor.chain().focus().deleteColumn().run()],
+        ["Toggle header row", () => editor.chain().focus().toggleHeaderRow().run()],
+        ["Delete table", () => editor.chain().focus().deleteTable().run()],
+      ]
+    : [
+        ["Insert 3×3 table", () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()],
+      ];
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, display: "flex", flexDirection: "column", minWidth: "170px", padding: "6px",
+        backgroundColor: "#fff", border: "1px solid #E5E7EB", borderRadius: "10px",
+        boxShadow: "0 10px 28px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06)",
+      }}
+    >
+      {actions.map(([label, run]) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => { run(); onClose(); }}
+          style={{ textAlign: "left", padding: "7px 10px", borderRadius: "7px", border: "none", background: "transparent", color: "#374151", fontSize: "12.5px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F3F4F6"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function LinkPopover({ editor, onClose }) {
@@ -82,6 +132,7 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
   const [uploading, setUploading] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
   // Tracks the HTML this editor itself last emitted via onUpdate — lets the sync effect below
@@ -92,7 +143,7 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
   const lastEmitted = useRef(value || "");
 
   const editor = useEditor({
-    extensions: [StarterKit, Image, Video],
+    extensions: [StarterKit, Image, Video, TableKit.configure({ table: { resizable: true } })],
     content: value || "",
     // Every instance shares the `.asm-rte-content` class for its shape/typography rules (below),
     // but min/max-height must NOT live in that shared class — each instance injects its own
@@ -124,6 +175,7 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
       codeBlock: ctx.editor?.isActive("codeBlock") ?? false,
       heading2: ctx.editor?.isActive("heading", { level: 2 }) ?? false,
       heading3: ctx.editor?.isActive("heading", { level: 3 }) ?? false,
+      table: ctx.editor?.isActive("table") ?? false,
       canUndo: ctx.editor?.can().undo() ?? false,
       canRedo: ctx.editor?.can().redo() ?? false,
     }),
@@ -191,6 +243,11 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
         .asm-rte-content pre code { background: none; padding: 0; color: inherit; }
         .asm-rte-content a { color: #25476a; text-decoration: underline; }
         .asm-rte-content hr { border: none; border-top: 1.5px solid #E5E7EB; margin: 14px 0; }
+        .asm-rte-content table { border-collapse: collapse; width: 100%; margin: 0 0 10px; table-layout: fixed; }
+        .asm-rte-content th, .asm-rte-content td { border: 1.5px solid #E5E7EB; padding: 6px 9px; text-align: left; vertical-align: top; position: relative; }
+        .asm-rte-content th { background: #F9FAFB; font-weight: 700; }
+        .asm-rte-content .selectedCell { background: #e8f5fb; }
+        .asm-rte-content .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: #38aae1; pointer-events: none; }
         @keyframes asm-rte-spin { to { transform: rotate(360deg); } }
       `}</style>
 
@@ -222,6 +279,10 @@ export default function RichTextEditor({ value, onChange, minHeight = 120, maxHe
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </ToolbarButton>
         {linkOpen && <LinkPopover editor={editor} onClose={() => setLinkOpen(false)} />}
+        <ToolbarButton title="Table" active={state.table} onClick={() => setTableMenuOpen((v) => !v)}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="2"/><line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" strokeWidth="2"/><line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" strokeWidth="2"/></svg>
+        </ToolbarButton>
+        {tableMenuOpen && <TableMenu editor={editor} onClose={() => setTableMenuOpen(false)} />}
         <ToolbarButton title="Insert image" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
           {uploading ? (
             <span style={{ width: "12px", height: "12px", border: "2px solid rgba(37,71,106,0.3)", borderTopColor: "#25476a", borderRadius: "50%", display: "inline-block", animation: "asm-rte-spin 0.7s linear infinite" }} />

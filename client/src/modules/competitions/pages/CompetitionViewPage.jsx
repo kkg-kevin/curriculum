@@ -6,6 +6,7 @@ import { useCompetitionHubsQuery, useCreateCompetitionHub, useDeleteCompetitionH
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
+import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
 const STATUS_LABEL = { draft: "Draft", open: "Open", closed: "Closed" };
 const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
@@ -139,7 +140,7 @@ function TrackCard({ track, index }) {
       </div>
       <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>{track.name}</h4>
       {track.subtitle && <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#15803D" }}>{track.subtitle}</p>}
-      {track.description && <p style={{ margin: 0, fontSize: 13.5, color: "#4B5563", lineHeight: 1.6 }}>{track.description}</p>}
+      {!isEmptyHtml(track.description) && <div style={{ fontSize: 13.5, color: "#4B5563", lineHeight: 1.6 }}><RichContent html={track.description} /></div>}
       {(track.highlights || []).length > 0 && (
         <ul style={{ margin: "2px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
           {track.highlights.map((h, i) => (
@@ -239,7 +240,14 @@ export default function CompetitionViewPage() {
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition Info</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <DetailRow label="Description" value={competition.description} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Description</span>
+              {!isEmptyHtml(competition.description) ? (
+                <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}><RichContent html={competition.description} /></div>
+              ) : (
+                <span style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>—</span>
+              )}
+            </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <DetailRow label="Edition" value={competition.edition} />
               <DetailRow label="Level" value={competition.level} />

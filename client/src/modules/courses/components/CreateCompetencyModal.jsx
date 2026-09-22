@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreateCompetency } from "../../settings/competencies/hooks/useCompetencies";
+import { Editor as RichTextEditorControlled } from "./RichTextEditor";
 
 // Shared by CompetenciesField (Courses/Assessments) and the curriculum module's
 // competency-adopt panel — creating here always writes to the global Settings
@@ -12,7 +13,7 @@ export default function CreateCompetencyModal({ initialName = "", onClose, onCre
 
   const submit = () => {
     if (!name.trim()) { setError("Name is required"); return; }
-    createCompetency({ name: name.trim(), description: description.trim() }, {
+    createCompetency({ name: name.trim(), description }, {
       onSuccess: (newComp) => { onCreated(newComp.id); onClose(); },
     });
   };
@@ -45,12 +46,7 @@ export default function CreateCompetencyModal({ initialName = "", onClose, onCre
           </div>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#374151", display: "block", marginBottom: "5px" }}>Description</label>
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none", resize: "vertical" }}
-            />
+            <RichTextEditorControlled value={description} onChange={setDescription} size="md" />
           </div>
         </div>
         <div style={{ padding: "14px 22px", display: "flex", gap: "10px", justifyContent: "flex-end", borderTop: "1px solid #F3F4F6" }}>

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePricingField from "../../../components/CoursePricingField";
+import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import {
@@ -117,7 +118,13 @@ function TrackEditor({ index, control, register, errors, onRemove, isOnly }) {
 
           <div style={S.field}>
             <label style={S.label}>Description</label>
-            <textarea {...register(`tracks.${index}.description`)} style={S.textarea} placeholder="What this track is about, who it's for…" />
+            <Controller
+              control={control}
+              name={`tracks.${index}.description`}
+              render={({ field }) => (
+                <RichTextEditorControlled value={field.value} onChange={field.onChange} size="md" />
+              )}
+            />
             {err.description && <span style={S.error}>{err.description.message}</span>}
           </div>
 
@@ -294,7 +301,13 @@ export default function CreateCompetitionPage() {
 
             <div style={S.field}>
               <label style={S.label}>Description</label>
-              <textarea {...register("description")} style={S.textarea} placeholder="What the competition is, who it's for…" />
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <RichTextEditorControlled value={field.value} onChange={field.onChange} size="md" />
+                )}
+              />
               {errors.description && <span style={S.error}>{errors.description.message}</span>}
             </div>
 

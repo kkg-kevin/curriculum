@@ -6,6 +6,7 @@ import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
+import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 
 const FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
 
@@ -257,7 +258,14 @@ export default function BootcampViewPage() {
           {/* Price, age range and dates already show as stat chips in the header above — kept
               out of here so the same facts aren't listed twice. */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <DetailRow label="Description" value={bootcamp.description} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Description</span>
+              {!isEmptyHtml(bootcamp.description) ? (
+                <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}><RichContent html={bootcamp.description} /></div>
+              ) : (
+                <span style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>—</span>
+              )}
+            </div>
             <DetailRow label="Tagline" value={bootcamp.tagline} />
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <DetailRow label="Format" value={FORMAT_LABEL[bootcamp.format]} />
