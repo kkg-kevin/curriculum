@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:live": "vite build --mode live",
+    "build:capable": "vite build --mode capable",
     "preview": "vite preview"
   },
   "keywords": [],
