@@ -15,7 +15,12 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append("document", file);
     return api
-      .post("/api/uploads/document", formData, { headers: { "Content-Type": "multipart/form-data" } })
+      // The shared API client has a short timeout for normal requests. File uploads need a
+      // longer window, especially on slower connections (the server accepts files up to 500 MiB).
+      .post("/api/uploads/document", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 10 * 60 * 1000,
+      })
       .then((r) => ({
         ...r.data.data,
         url: new URL(r.data.data.url, api.defaults.baseURL).toString(),

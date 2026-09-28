@@ -77,7 +77,9 @@ const uploadMiddleware = multer({
 const documentUploadMiddleware = multer({
   storage,
   fileFilter: makeFileFilter(ALLOWED_DOCUMENT_MIME_TYPES, "document, image, audio, video, ZIP, or code", { allowedExtensions: CODE_FILE_EXTENSIONS }),
-  limits: { fileSize: 50 * 1024 * 1024 },
+  // Videos for assessments can run 30+ minutes; 500MB comfortably covers a compressed
+  // recording of that length.
+  limits: { fileSize: 500 * 1024 * 1024 },
 });
 
 module.exports = { uploadMiddleware, documentUploadMiddleware };

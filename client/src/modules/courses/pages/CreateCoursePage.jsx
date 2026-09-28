@@ -7,6 +7,8 @@ import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
+import { Editor as RichTextEditor } from "../components/RichTextEditor";
+import { isEmptyHtml } from "../components/RichContent";
 
 const DEFAULT_VALUES = {
   name: "",
@@ -45,7 +47,13 @@ export default function CreateCoursePage() {
   const isBusy = isPending || creatingContent;
 
   const addModuleRow = () => {
-    setModuleRows((rows) => [...rows, { id: genRowId(), name: `Module ${rows.length + 1}`, sessionCount: "0" }]);
+    setModuleRows((rows) => [...rows, {
+      id: genRowId(),
+      name: `Module ${rows.length + 1}`,
+      description: "",
+      descriptionOpen: false,
+      sessionCount: "0",
+    }]);
   };
   const updateModuleRow = (rowId, patch) => {
     setModuleRows((rows) => rows.map((r) => (r.id === rowId ? { ...r, ...patch } : r)));
@@ -71,7 +79,11 @@ export default function CreateCoursePage() {
           const row = moduleRows[i];
           const name = row.name.trim() || `Module ${i + 1}`;
           const count = Math.max(0, Math.min(30, Number(row.sessionCount) || 0));
-          const courseModule = await courseApi.createModule(course.id, { name, order: i + 1 });
+          const courseModule = await courseApi.createModule(course.id, {
+            name,
+            description: row.description || "",
+            order: i + 1,
+          });
           if (count > 0) {
             await courseApi.createSessionsBulk(course.id, { count, moduleId: courseModule.id });
           }
@@ -140,35 +152,56 @@ export default function CreateCoursePage() {
           <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px", marginTop: "16px" }}>
             <h3 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Modules & Sessions</h3>
             <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#9CA3AF" }}>
-              Optionally define modules now, each with its own name and session count — every session belongs to a module. Leave empty to add modules and sessions later.
+              Optionally define modules now, with a name, description, and session count. Leave empty to add modules and sessions later.
             </p>
 
             {moduleRows.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
                 {moduleRows.map((row, idx) => (
-                  <div key={row.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <input
-                      value={row.name}
-                      onChange={(e) => updateModuleRow(row.id, { name: e.target.value })}
-                      placeholder={`Module ${idx + 1}`}
-                      style={{ flex: 1, boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
-                    />
-                    <input
-                      type="number" min="0" max="30"
-                      value={row.sessionCount}
-                      onChange={(e) => updateModuleRow(row.id, { sessionCount: e.target.value })}
-                      title="Number of sessions in this module"
-                      style={{ width: "110px", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
-                    />
-                    <span style={{ fontSize: "12px", color: "#9CA3AF", width: "56px", flexShrink: 0 }}>session{row.sessionCount === "1" ? "" : "s"}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeModuleRow(row.id)}
-                      title="Remove module"
-                      style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", padding: "4px", flexShrink: 0 }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
+                  <div key={row.id} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
+                      <input
+                        value={row.name}
+                        onChange={(e) => updateModuleRow(row.id, { name: e.target.value })}
+                        placeholder={`Module ${idx + 1}`}
+                        style={{ flex: "1 1 220px", minWidth: "150px", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
+                      />
+                      <input
+                        type="number" min="0" max="30"
+                        value={row.sessionCount}
+                        onChange={(e) => updateModuleRow(row.id, { sessionCount: e.target.value })}
+                        title="Number of sessions in this module"
+                        style={{ width: "110px", boxSizing: "border-box", padding: "9px 11px", borderRadius: "9px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", outline: "none" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "#9CA3AF", width: "56px", flexShrink: 0 }}>session{row.sessionCount === "1" ? "" : "s"}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateModuleRow(row.id, { descriptionOpen: !row.descriptionOpen })}
+                        title={row.descriptionOpen ? "Hide module description" : isEmptyHtml(row.description) ? "Add module description" : "Edit module description"}
+                        aria-expanded={row.descriptionOpen}
+                        style={{ padding: "6px 8px", background: "none", border: "1px solid #E5E7EB", borderRadius: "7px", color: isEmptyHtml(row.description) ? "#6B7280" : "#25476a", cursor: "pointer", fontSize: "11.5px", fontWeight: "600", fontFamily: "Inter, sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}
+                      >
+                        {row.descriptionOpen ? "Hide description" : isEmptyHtml(row.description) ? "＋ Description" : "Edit description"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeModuleRow(row.id)}
+                        title="Remove module"
+                        aria-label={`Remove ${row.name || `Module ${idx + 1}`}`}
+                        style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", padding: "4px", flexShrink: 0 }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    </div>
+                    {row.descriptionOpen && (
+                      <div style={{ paddingLeft: "4px" }}>
+                        <RichTextEditor
+                          value={row.description}
+                          onChange={(description) => updateModuleRow(row.id, { description })}
+                          size="md"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
