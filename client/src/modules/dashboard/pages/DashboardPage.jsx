@@ -1,4 +1,5 @@
 ﻿import { useMemo } from "react";
+import { BRAND_NAME } from "../../../branding";
 import {
   Apartment as ApartmentIcon,
   Assessment as AssessmentIcon,
@@ -509,7 +510,7 @@ export default function DashboardPage() {
             <p style={{ margin: 0, fontSize: "14px", color: "rgba(255,255,255,0.7)", lineHeight: "1.5" }}>
               {totalCurricula > 0
                 ? `${totalCurricula} ${totalCurricula === 1 ? "curriculum" : "curricula"} · ${totalCourses} ${totalCourses === 1 ? "course" : "courses"} · ${totalLearners} ${totalLearners === 1 ? "learner" : "learners"} enrolled`
-                : "Welcome to Digifunzi. Start by creating your first curriculum."}
+                : `Welcome to ${BRAND_NAME}. Start by creating your first curriculum.`}
             </p>
           </div>
 

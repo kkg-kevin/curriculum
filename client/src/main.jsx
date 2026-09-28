@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import App from "./App.jsx";
 import { store } from "./store/index.js";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { BRAND_FAVICON } from "./branding.js";
 
 import "./styles/global.css";
 import "@fontsource/inter";
@@ -14,6 +15,17 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
+
+if (BRAND_FAVICON) {
+  let faviconLink = document.querySelector('link[rel~="icon"]');
+  if (!faviconLink) {
+    faviconLink = document.createElement("link");
+    faviconLink.rel = "icon";
+    document.head.appendChild(faviconLink);
+  }
+  faviconLink.type = "image/png";
+  faviconLink.href = BRAND_FAVICON;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
