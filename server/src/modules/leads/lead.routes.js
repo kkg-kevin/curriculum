@@ -5,6 +5,7 @@ const {
   getLeadTimeline,
   replyToLead,
   addLeadNote,
+  convertHomeLearningLead,
 } = require("./lead.controller");
 // A bootcamp-enrollment lead is the one kind of lead that DOES already have a provisioned
 // Learner (see bootcamp-enrollment.service.js) — markLeadPaid lives in that module (it owns the
@@ -22,6 +23,7 @@ router.patch("/:id/status", updateLeadStatus);
 router.get("/:id/timeline", getLeadTimeline);
 router.post("/:id/reply", replyToLead);
 router.post("/:id/notes", addLeadNote);
+router.post("/:id/home-learning-household", convertHomeLearningLead);
 router.post("/:id/mark-paid", markLeadPaid);
 
 module.exports = router;

@@ -5,6 +5,7 @@ const CurriculumService = require("../curriculum/curriculum.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const HomeLearningModel = require("../home-learning/home-learning.model");
 const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const {
   createCourseSchema,
@@ -42,14 +43,17 @@ async function assertCourseAccess(req, courseId) {
     const links = await ClassCourseTeacherLinkModel.findByTeacherId(req.ownTeacher?.id);
     const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
     const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
-    assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
+    const homeCurriculumIds = await HomeLearningModel.findCurriculaForEducator(req.ownTeacher?.id);
+    assertOwn(classCurriculumIds.concat(homeCurriculumIds).some((cid) => curriculumIds.includes(cid)));
     return;
   }
   if (req.user.role === "learner") {
     const links = await LearnerHubLinkModel.findByLearnerId(req.ownLearner?.id);
     const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
     const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
-    assertOwn(classCurriculumIds.some((cid) => curriculumIds.includes(cid)));
+    const homeLinks = await HomeLearningModel.findForLearner(req.ownLearner?.id);
+    const homeCurriculumIds = homeLinks.map((link) => link.curriculumId);
+    assertOwn(classCurriculumIds.concat(homeCurriculumIds).some((cid) => curriculumIds.includes(cid)));
     return;
   }
   assertOwn(false);

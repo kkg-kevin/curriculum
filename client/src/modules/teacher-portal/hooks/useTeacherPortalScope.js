@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useTeacherHubsQuery } from "../../teachers/hooks/useTeacher";
+import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 
 const STORAGE_KEY = "teacherPortal.selectedHubId";
 
@@ -21,6 +22,11 @@ export function useTeacherPortalScope() {
   const teacher = teachersData?.data?.[0] || null;
 
   const { data: hubs = [], isLoading: hubsLoading } = useTeacherHubsQuery(teacher?.id);
+  const { data: homeLearningAssignments = [], isLoading: homeLearningLoading, isError: homeLearningError } = useQuery({
+    queryKey: ["home-learning", "educator", teacher?.id],
+    queryFn: homeLearningApi.getMyAssignments,
+    enabled: !!teacher?.id,
+  });
 
   const urlHubId = searchParams.get("hub");
   const storedHubId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
@@ -41,10 +47,10 @@ export function useTeacherPortalScope() {
     });
   };
 
-  const hasNoHubs = !teacherLoading && !hubsLoading && !!teacher && hubs.length === 0;
+  const hasNoHubs = !teacherLoading && !hubsLoading && !homeLearningLoading && !!teacher && hubs.length === 0 && homeLearningAssignments.length === 0;
 
   // Threaded through to every page's "No teacher profile linked yet" empty state so it can name
   // the actual signed-in email — without it, that dead end gives nobody (teacher or admin) any
   // way to tell which email needs fixing on the Teacher record.
-  return { teacher, teacherLoading, hubs, hubsLoading, selectedHub, selectedHubId, setSelectedHubId, hasNoHubs, email: user?.email || null };
+  return { teacher, teacherLoading, hubs, hubsLoading, selectedHub, selectedHubId, setSelectedHubId, hasNoHubs, homeLearningAssignments, homeLearningLoading, homeLearningError, email: user?.email || null };
 }

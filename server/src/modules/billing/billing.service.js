@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const BillingModel = require("./billing.model");
 const LearningHubService = require("../learning-hubs/learning-hub.service");
 const LearnerModel = require("../learners/learner.model");
@@ -26,6 +27,14 @@ async function nextReceiptNumber(trx) { const year = new Date().getFullYear(); r
 // Learner's guardian fields over the User row when both are available: Learner has guardianPhone,
 // the payerUserId's own `users` row only has name/email.
 async function resolvePayerIdentity(invoice) {
+  // A Home Learning package invoice is billed to the household's guardian, with the home address.
+  if (invoice.householdId) {
+    const household = await db("home_learning_households").where({ id: invoice.householdId }).first();
+    if (household) {
+      const address = [household.addressLine, household.landmark, household.town, household.subCounty, household.county].filter(Boolean).join(", ") || null;
+      return { name: household.guardianName, email: household.guardianEmail || null, phone: household.guardianPhone || null, address };
+    }
+  }
   if (invoice.payerHubId) {
     const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
     if (!hub) return null;
@@ -91,6 +100,11 @@ async function assertLearnerAtHub(learnerId, hubId) {
   return learner;
 }
 
+async function guardianHouseholdIds(req) {
+  if (req.user.role !== "learner" || req.user.username || !req.user.email) return [];
+  return (await db("home_learning_households").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((h) => h.id);
+}
+
 async function assertAccess(req, invoice) {
   if (req.user.role === "admin") {
     // hubId inherits ownerAdminId transitively through the hub it belongs to — billing_invoices
@@ -108,6 +122,9 @@ async function assertAccess(req, invoice) {
   }
   if (req.user.role === "learner" && req.user.username) throw forbidden("Learner accounts cannot access invoices");
   if (req.user.role === "learner" && invoice.learnerId === req.ownLearner?.id) return;
+  // A guardian login sees its own Home Learning household's package invoices (matched on the
+  // guardian email the household was registered with).
+  if (req.user.role === "learner" && invoice.householdId && (await guardianHouseholdIds(req)).includes(invoice.householdId)) return;
   throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
 }
 
@@ -192,6 +209,9 @@ const BillingService = {
     // module's generateCharges) — allowing one to be hand-crafted here would let someone bypass
     // the visit-log audit trail (no hub_visits rows behind it, nothing to mark "invoiced").
     if (data.invoiceType === "hub_usage") throw badRequest("hub_usage invoices are generated from visit logs, not created manually");
+    // Same for Home Learning package invoices — raised from the Home Learning page, one per
+    // household per month, so the household link and duplicate-month guard can't be bypassed.
+    if (data.invoiceType === "home_learning") throw badRequest("Home Learning invoices are raised from the Home Learning page");
     const hub = await LearningHubService.getLearningHubById(data.hubId);
     let issuerType = "platform";
     let issuerHubId = null;
@@ -265,6 +285,14 @@ const BillingService = {
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
     let invoices = await BillingModel.findInvoices(filters);
+    if (req.user.role === "learner") {
+      const householdIds = await guardianHouseholdIds(req);
+      if (householdIds.length) {
+        const householdInvoices = await db("billing_invoices").whereIn("householdId", householdIds).orderBy("createdAt", "desc");
+        const seen = new Set(invoices.map((inv) => inv.id));
+        invoices = invoices.concat(householdInvoices.filter((inv) => !seen.has(inv.id)));
+      }
+    }
     // hubId inherits ownerAdminId transitively — findInvoices' filter object only takes a single
     // exact value per column (no whereIn), and an admin can own more than one hub, so this
     // resolves the admin's own hub ids first and filters in JS, same as learning-hub.model.js's
@@ -389,6 +417,14 @@ const BillingService = {
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
     let invoices = await BillingModel.findInvoices(filters);
+    if (req.user.role === "learner") {
+      const householdIds = await guardianHouseholdIds(req);
+      if (householdIds.length) {
+        const householdInvoices = await db("billing_invoices").whereIn("householdId", householdIds).orderBy("createdAt", "desc");
+        const seen = new Set(invoices.map((inv) => inv.id));
+        invoices = invoices.concat(householdInvoices.filter((inv) => !seen.has(inv.id)));
+      }
+    }
     // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
     // transitively, and an admin can own more than one hub, so filter in JS after the fact.
     if (req.user.role === "admin") {
@@ -510,7 +546,9 @@ const BillingService = {
   // raise its first invoice — never another admin's hubs.
   async listCustomers(req) {
     if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
-    const hubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    // The Home Learning hub is never a paying customer — its families are billed per household
+    // from the Home Learning page — so it's left out of the customer list.
+    const hubs = (await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).filter((h) => !h.isHomeLearning);
     const hubIds = new Set(hubs.map((h) => h.id));
     const invoices = (await BillingModel.findInvoices({})).filter((inv) => inv.payerHubId && hubIds.has(inv.payerHubId) && RECEIVABLE_STATUSES.includes(inv.status));
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");

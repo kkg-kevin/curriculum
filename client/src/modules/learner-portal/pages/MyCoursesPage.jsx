@@ -32,8 +32,9 @@ function StatTile({ icon, value, label }) {
 }
 
 export default function MyCoursesPage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
+  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
+  const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
+  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(curriculumId, cls?.gradeId);
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
@@ -49,7 +50,7 @@ export default function MyCoursesPage() {
             My Courses
           </h1>
           <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", maxWidth: "560px" }}>
-            Browse the courses your class is following this year.
+            {activeHomeEnrollment && !cls ? "Browse the courses assigned to your home learning plan." : "Browse the courses your class is following this year."}
           </p>
         </div>
       </div>
@@ -61,10 +62,10 @@ export default function MyCoursesPage() {
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No learner profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your school to record this same email address as your guardian email.</p>
         </div>
-      ) : !cls?.curriculumId ? (
+      ) : !curriculumId ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Your school hasn't been assigned a curriculum yet.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your learning team to assign a curriculum to this learner.</p>
         </div>
       ) : coursesLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
@@ -80,7 +81,7 @@ export default function MyCoursesPage() {
           </div>
 
           <div style={{ flex: 1, minWidth: 280 }}>
-            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
+            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} homeLearning={!!activeHomeEnrollment} homeCurriculumName={activeHomeEnrollment?.curriculum?.name} />
           </div>
         </div>
       )}

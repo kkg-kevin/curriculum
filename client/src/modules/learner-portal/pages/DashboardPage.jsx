@@ -74,10 +74,11 @@ function formatDueDate(dateStr) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, learner, learnerLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
+  const { user, learner, learnerLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
   const school = selectedHub || null;
 
-  const { data: courses = [] } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
+  const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
+  const { data: courses = [] } = useCurriculumCurrentCourses(curriculumId, cls?.gradeId);
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
   const progressKey = user?.email || user?.username;
@@ -186,7 +187,7 @@ export default function DashboardPage() {
           {/* Progress Arc — the gamified progress ladder, given the most prominent spot on the
               page (full width, right under the hero) since motivating the learner to keep moving
               up it is the whole point of showing it here rather than only buried in Profile. */}
-          <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />
+          {cls?.curriculumId && <ProgressArcCard curriculumId={cls.curriculumId} learnerId={learner.id} />}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
           {/* Main column */}
@@ -282,7 +283,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 280 }}>
             <DevelopmentalSnapshotCard stage={stage} band={currentBand} nextBand={nextBand} />
 
-            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
+            <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} homeLearning={!!activeHomeEnrollment} homeCurriculumName={activeHomeEnrollment?.curriculum?.name} />
 
             <div style={{ ...cardStyle(), padding: 18 }}>
               <h2 style={{ ...sectionHeaderStyle(), marginBottom: 14 }}>Recently Graded</h2>

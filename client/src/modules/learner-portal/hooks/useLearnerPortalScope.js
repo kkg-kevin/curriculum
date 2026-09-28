@@ -6,6 +6,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
 import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { getActiveLearnerId, setActiveLearnerId } from "../utils/activeLearner";
+import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 
 const STORAGE_KEY = "learnerPortal.selectedHubId";
 
@@ -55,6 +56,12 @@ export function useLearnerPortalScope() {
   };
 
   const { data: hubs = [], isLoading: hubsLoading } = useLearnerHubsQuery(learner?.id);
+  const { data: homeEnrollments = [], isLoading: homeLearningLoading } = useQuery({
+    queryKey: ["home-learning", "learner", learner?.id],
+    queryFn: () => homeLearningApi.getForLearner(learner.id),
+    enabled: !!learner?.id,
+  });
+  const activeHomeEnrollment = homeEnrollments.find((enrollment) => enrollment.status === "active" && enrollment.curriculumId) || null;
 
   const urlHubId = searchParams.get("hub");
   const storedHubId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
@@ -103,8 +110,12 @@ export function useLearnerPortalScope() {
         if (link?.teacher) result.push({ teacher: link.teacher, hubName: h.name });
       });
     });
+    if (activeHomeEnrollment?.educator) {
+      const key = `home:${activeHomeEnrollment.educator.id}`;
+      if (!seen.has(key)) result.push({ teacher: activeHomeEnrollment.educator, hubName: "Home Learning" });
+    }
     return result;
-  }, [hubs, mentorLinks]);
+  }, [hubs, mentorLinks, activeHomeEnrollment]);
 
   const hasNoHubs = !learnerLoading && !hubsLoading && !!learner && hubs.length === 0;
 
@@ -117,6 +128,9 @@ export function useLearnerPortalScope() {
     learnerLoading,
     hubs,
     hubsLoading,
+    homeEnrollments,
+    activeHomeEnrollment,
+    homeLearningLoading,
     selectedHub,
     selectedHubId,
     setSelectedHubId,
@@ -124,6 +138,6 @@ export function useLearnerPortalScope() {
     hasNoHubs,
     mentors,
     mentorsLoading: classIds.length > 0 && mentorLinksLoading,
-    isLoading: learnerLoading || (!!learner && hubsLoading),
+    isLoading: learnerLoading || (!!learner && (hubsLoading || homeLearningLoading)),
   };
 }

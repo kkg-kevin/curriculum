@@ -22,14 +22,14 @@ function EmptyNote({ children }) {
   return <p style={{ margin: 0, fontSize: 12.5, color: T.inkFaint, textAlign: "center", padding: "6px 0" }}>{children}</p>;
 }
 
-export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading }) {
+export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading, homeLearning = false, homeCurriculumName = "" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
-      <RailSection title="My Learning Hubs">
+      <RailSection title={homeLearning && hubs.length === 0 ? "My Learning Setup" : "My Learning Hubs"}>
         {hubsLoading ? (
           <EmptyNote>Loading…</EmptyNote>
         ) : hubs.length === 0 ? (
-          <EmptyState icon={FiHome}>Not yet enrolled at any learning hub.</EmptyState>
+          <EmptyState icon={FiHome}>{homeLearning ? `Home Learning${homeCurriculumName ? ` · ${homeCurriculumName}` : ""}` : "Not yet enrolled at any learning hub."}</EmptyState>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {hubs.map((hub, i) => {
@@ -58,7 +58,7 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading })
         {mentorsLoading ? (
           <EmptyNote>Loading…</EmptyNote>
         ) : mentors.length === 0 ? (
-          <EmptyState icon={FiUsers}>No teacher assigned to your class yet.</EmptyState>
+          <EmptyState icon={FiUsers}>{homeLearning ? "No educator assigned to your Home Learning plan yet." : "No teacher assigned to your class yet."}</EmptyState>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mentors.map((m) => {

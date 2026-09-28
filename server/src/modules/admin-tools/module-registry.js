@@ -13,7 +13,7 @@
 // hand whenever a module is added/removed/renamed.
 const MODULE_KEYS = [
   "learning-hubs", "curriculum", "learners", "teachers", "classes", "courses",
-  "competitions", "bootcamps", "assessments", "attendance", "timetable", "settings",
+  "competitions", "bootcamps", "assessments", "attendance", "timetable", "settings", "home-learning",
   "reports", "notifications",
 ];
 
@@ -44,6 +44,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/competitions": "competitions",
   "/api/bootcamps": "bootcamps",
   "/api/notifications": "notifications",
+  "/api/home-learning": "home-learning",
 };
 
 function resolveModuleForPath(path) {

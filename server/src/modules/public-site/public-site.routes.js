@@ -5,6 +5,8 @@ const { getPublicStoreItems, getPublicStoreItem } = require("./public-store.cont
 const { getPublicBootcamps, getPublicBootcamp, getPublicRunHub } = require("./public-bootcamp.controller");
 const { getPublicHubTypes, getPublicHubs } = require("./public-hub.controller");
 const { getPublicCompetitions, getPublicCompetition } = require("./public-competition.controller");
+const HomeLearningService = require("../home-learning/home-learning.service");
+const asyncHandler = require("express-async-handler");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -45,5 +47,18 @@ router.get("/hubs/:id", getPublicRunHub);
 // public-competition.service.js) — the Track cards on africa.digifunzi.com/competitions.
 router.get("/competitions", getPublicCompetitions);
 router.get("/competitions/:idOrSlug", getPublicCompetition);
+
+// Home Learning packages = the designated admin's packages marked "Show on website" in the
+// portal's Home Learning → Packages (see home-learning.service.js). The same records households
+// are sold and invoiced on, so the website's cards can't drift from billing. Bare array/object,
+// like every other public endpoint; 404 for an unknown, unpublished or archived package.
+router.get("/home-learning/packages", asyncHandler(async (req, res) => {
+  res.json(await HomeLearningService.listPublicPackages());
+}));
+router.get("/home-learning/packages/:idOrSlug", asyncHandler(async (req, res) => {
+  const pkg = await HomeLearningService.getPublicPackage(req.params.idOrSlug);
+  if (!pkg) return res.status(404).json({ message: "Package not found" });
+  res.json(pkg);
+}));
 
 module.exports = router;

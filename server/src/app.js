@@ -37,6 +37,7 @@ const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bo
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
+const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -161,6 +162,7 @@ app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/class-groups", protect, attachOwnRecords, classGroupRoutes);
 app.use("/api/rooms", protect, attachOwnRecords, roomRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
+app.use("/api/home-learning", protect, attachOwnRecords, homeLearningRoutes);
 app.use("/api/courses", protect, attachOwnRecords, courseRoutes);
 app.use("/api/attendance", protect, attachOwnRecords, attendanceRoutes);
 // Same shape as attendance — a timetable slot belongs to a Class, ownership resolved through it.

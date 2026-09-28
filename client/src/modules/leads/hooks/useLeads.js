@@ -72,3 +72,16 @@ export function useMarkLeadPaid() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to record payment"),
   });
 }
+
+export function useConvertHomeLearningLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: leadApi.convertHomeLearning,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LEAD_KEYS.all });
+      qc.invalidateQueries({ queryKey: ["home-learning"] });
+      toast.success("Home Learning household created");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not convert enquiry"),
+  });
+}
