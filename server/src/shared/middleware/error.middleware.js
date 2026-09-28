@@ -12,6 +12,13 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (err.name === "MulterError" && err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({
+      success: false,
+      message: "File is too large. Maximum upload size is 500MB.",
+    });
+  }
+
   const statusCode = err.statusCode || err.status || 500;
   // Below 500 the message is a deliberate app-thrown one (validation, 401/403/404, etc.) and
   // safe to show as-is. 500s are unexpected — in production, surface a generic message instead

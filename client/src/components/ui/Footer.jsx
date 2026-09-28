@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "../../branding";
+
 function Footer() {
   return (
     <footer
@@ -15,7 +17,7 @@ function Footer() {
         fontWeight: "500",
       }}
     >
-      © 2025 Digifunzi. All rights reserved.
+      © 2025 {BRAND_NAME}. All rights reserved.
     </footer>
   );
 }

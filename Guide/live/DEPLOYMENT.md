@@ -102,6 +102,114 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (22 Sep 2026) — Rich text descriptions everywhere; per-module collaborator access
+
+**Built and packaged for both Dev and Live this pass** (both portal builds below). **No website
+changes this release** — `digifunzi-landing` untouched, its zips in `Guide/dev/` and
+`Guide/live/` are unchanged from the 18 Sep release. Verify on Dev first as usual before treating
+Live's zips as safe to upload.
+
+Three new migrations (auto-apply on Restart), **none destructive** — two widen existing `varchar`
+description columns to `text` (nullable, additive), one adds a nullable JSON column. Backend +
+portal frontend change; no website change.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260922090000_widen_curriculum_framework_descriptions_to_rich_text.js` | Widens `description` on `age_categories`, `assessment_types`, `evidence_types`, `pathways`, `performance_bands` from `varchar` to `text` | unchanged — existing plain-text values carry over as-is |
+| `20260922100000_widen_more_descriptions_to_rich_text.js` | Same widening for `curricula.description`, `learning_hubs.description`, `pathway_templates.description` | unchanged |
+| `20260922110000_add_allowed_modules_to_users.js` | Adds nullable `allowedModules` JSON column to `users` | unchanged — every existing user (including existing collaborators) gets `NULL`, treated as "full access" everywhere it's read |
+
+### What changed
+
+1. **Rich text (TipTap) for ~16 description fields across the app**, replacing plain `<textarea>`
+   inputs end to end (server validation, DB columns, edit forms, read-only displays): curricula,
+   pathways, age categories, performance bands, assessment types, evidence types, course modules,
+   competencies, pathway templates, learning hubs, inventory items, competitions (including
+   per-track descriptions), and bootcamps.
+2. **Table and image insertion added to both rich-text editor components** (`RichTextEditor.jsx`
+   in the assessments module and the courses module — client can't share code between feature
+   folders, so both got the same toolbar additions independently).
+3. **Pathways tab decluttered.** `CompetenciesPage.jsx`'s previously-separate "Courses" and
+   "Course Thresholds" lists are merged into one list — same information, one place to look
+   instead of two redundant ones.
+4. **Collaborator access is now per-module, not all-or-nothing.** A collaborator previously got
+   full tenant edit access (every module except delete) or nothing. An admin can now grant/revoke
+   access to specific modules — curriculum, courses, assessments, learning hubs, classes,
+   learners, teachers, competitions/bootcamps, attendance, timetable, settings, reports,
+   notifications — at invite time or by editing an existing collaborator afterwards, enforced by
+   `scope.middleware.js`'s `attachOwnRecords` ahead of the existing role-aliasing check. Changes
+   take effect on that collaborator's very next request — no re-login needed. Delete stays
+   blocked for collaborators everywhere, unchanged.
+5. **Existing collaborators are not locked out.** `users.allowedModules` is `NULL` for every
+   collaborator invited before this release, and `NULL` (as opposed to an empty array) is treated
+   as "every module" throughout — both server (`collaborator.service.js`) and the middleware check.
+   Only a newly-invited or newly-edited collaborator from here on gets an explicit array.
+6. **New `PATCH /admin-tools/collaborators/:id`** to edit an existing collaborator's allowed
+   modules, plus the matching edit-access UI in `CollaboratorsPanel.jsx`; the sidebar
+   (`Sidebar.jsx`) now hides nav entries for modules a collaborator wasn't granted.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD — includes all three migrations above. `curriculum.validation.js`,
+`competency.validation.js` (both the competency-framework and settings copies),
+`learning-hub.validation.js`, `bootcamp.validation.js`, `competition.validation.js`, and
+`pathway-template.validation.js` widen their `description` Zod schemas to accept rich-text HTML.
+New `server/src/modules/admin-tools/module-registry.js` (canonical list of valid module keys,
+mirrored — not shared — on the client); `user.model.js`, `collaborator.controller.js`,
+`collaborator.service.js`, and `collaborator.routes.js` add `allowedModules` read/write and the
+new `PATCH .../collaborators/:id` route; `scope.middleware.js`'s `attachOwnRecords` gains the
+per-module enforcement check; `auth.middleware.js` touched to thread the allowlist through.
+**No env change.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-BylTYHVn.js`** / CSS `index-CPRP9smp.css` (unchanged CSS
+hash).
+Live build (`npm run build:live`): **`index-BMVbLXe4.js`** / same CSS.
+Changed: both `RichTextEditor.jsx`/`RichContent.jsx` pairs (assessments module + courses module)
+gain table/image insertion; edit forms and read-only display components across curriculum,
+courses, competitions, bootcamps, learning hubs, settings/competencies, settings/inventory, and
+settings/pathway-templates switch their description field to the rich-text editor/viewer;
+`CompetenciesPage.jsx` (merged Courses/Course Thresholds list); `Sidebar.jsx` (module-scoped nav),
+`CollaboratorsPanel.jsx` (edit-access UI), `useCollaborators.js` + `collaboratorsApi.js` (PATCH
+call), new `moduleRegistry.js` (client-side mirror of the server's module key list).
+
+### Website
+
+No website changes this release — `digifunzi-landing` untouched. `Guide/dev/africa-digifunzi-com-dist.zip`
+and `Guide/live/africa-digifunzi-com-dist.zip` are unchanged from the 18 Sep 2026 release; do not
+re-upload them as part of this pass.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: three
+   migrations should apply cleanly (or fewer, if any already ran).
+2. **Portal** `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's from `Guide/live/`
+   (different JS hash, don't cross them).
+3. **No website step this release.**
+4. **Verify:**
+   - Open any of the converted description fields (e.g. a curriculum, a course module, a
+     competency, a pathway template, an inventory item) → confirm the rich-text editor loads →
+     apply bold, insert a table, and insert an image → save → reload the page → confirm all three
+     persisted and render correctly in the read-only view.
+   - On the Pathways tab, confirm there's a single merged course list (no separate "Course
+     Thresholds" list alongside it).
+   - As an admin, invite a new collaborator and grant only 2–3 modules (e.g. curriculum,
+     classes) → log in as that collaborator → confirm the sidebar shows only the granted modules'
+     nav entries → call an API endpoint for a module **not** granted directly (e.g. `curl` a
+     settings or reports endpoint with that collaborator's token) → confirm it 403s.
+   - Edit that collaborator's allowed modules (add or remove one) → without logging out, confirm
+     the sidebar/API access reflects the change on the very next request.
+   - If a collaborator invited before this release exists in the test DB, log in as them → confirm
+     they still have full access to every module (not locked out by the new `NULL`-defaults-to-
+     full-access rule).
+   - Confirm delete actions are still blocked for a collaborator in every module, unchanged from
+     before.
+
+---
+
 ## This release (18 Sep 2026) — Hub-visit billing auto-invoices; module descriptions; survey assessments
 
 **Built and packaged for both Dev and Live this pass** (both portal builds below), plus the

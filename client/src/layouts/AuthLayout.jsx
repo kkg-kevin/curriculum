@@ -1,12 +1,12 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { FiCheck, FiLogIn, FiUserPlus } from "react-icons/fi";
-import logo from "../assets/Logo-image.png";
+import { BRAND_NAME, BRAND_LOGO } from "../branding";
 
 const HERO_CONTENT = {
   "/signup": {
     badge: "Guided Signup",
     badgeIcon: FiUserPlus,
-    title: "Choose how you want to use Digifunzii.",
+    title: `Choose how you want to use ${BRAND_NAME}.`,
     subtitle: "A short two-step registration so your account starts in the right place.",
     points: [
       "Educators deliver sessions, grade assessments, and track learners.",
@@ -295,7 +295,7 @@ function AuthLayout() {
         </div>
 
         <div className="df-auth-form-col">
-          <div className="df-auth-logo"><img src={logo} alt="Digifunzi" /></div>
+          <div className="df-auth-logo"><img src={BRAND_LOGO} alt={BRAND_NAME} /></div>
           <div className="df-auth-form-inner">
             <Outlet />
           </div>
@@ -303,7 +303,7 @@ function AuthLayout() {
       </div>
 
       <p style={{ marginTop: "20px", fontSize: "12px", color: "#9CA3AF" }}>
-        © {new Date().getFullYear()} Digifunzii Curriculum
+        © {new Date().getFullYear()} {BRAND_NAME} Curriculum
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CircularProgress } from "@mui/material";
 import {
   MarkEmailUnread as MarkEmailUnreadIcon,
@@ -15,6 +15,7 @@ import {
   useReplyToLead,
   useAddLeadNote,
   useMarkLeadPaid,
+  useConvertHomeLearningLead,
 } from "../hooks/useLeads";
 
 const cardStyle = { background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14 };
@@ -49,10 +50,11 @@ const INTEREST_LABELS = {
   bootcamp: "A bootcamp",
   project: "A project / course",
   quarky: "The Quarky robot",
+  home_schooling: "Home Learning",
   general: "Not sure yet",
 };
 
-const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item" };
+const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item", home_learning_package: "Home Learning package" };
 
 function StatusBadge({ status }) {
   const c = STATUS_COLORS[status] || STATUS_COLORS.new;
@@ -248,6 +250,7 @@ function MarkPaidPanel({ lead, onDone }) {
 
 function LeadRow({ lead, highlighted, rowRef }) {
   const updateStatus = useUpdateLeadStatus();
+  const convertHomeLearning = useConvertHomeLearningLead();
   const [expanded, setExpanded] = useState(false);
   const [showMarkPaid, setShowMarkPaid] = useState(false);
   // Only a bootcamp-enrollment lead has a provisioned learner to unlock — see
@@ -319,6 +322,13 @@ function LeadRow({ lead, highlighted, rowRef }) {
           <option value="closed">Closed</option>
         </select>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          {lead.interestedIn === "home_schooling" && (lead.homeLearningHouseholdId ? (
+            <Link to={`/home-learning?household=${lead.homeLearningHouseholdId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open household</Link>
+          ) : (
+            <button type="button" onClick={() => convertHomeLearning.mutate(lead.id)} disabled={convertHomeLearning.isPending} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #2E7DB5", background: "#fff", color: "#2E7DB5", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              {convertHomeLearning.isPending ? "Creating…" : "Create household"}
+            </button>
+          ))}
           {isPayable && !lead.paidAt && (
             <button
               type="button"

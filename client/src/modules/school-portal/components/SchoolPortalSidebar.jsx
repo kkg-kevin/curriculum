@@ -6,7 +6,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
-import logo from "../../../assets/Logo-image.png";
+import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarCollapse";
 
@@ -82,7 +82,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
           }}
         >
           {!isCollapsed && (
-            <img src={logo} alt="Digifunzi" style={{ height: "40px", width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+            <img src={BRAND_LOGO_DARK_BG} alt={BRAND_NAME} style={{ height: "40px", width: "auto", objectFit: "contain", filter: BRAND_LOGO_DARK_BG_FILTER }} />
           )}
 
           {isMobile ? (
@@ -180,7 +180,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
 
         {!isCollapsed && (
           <div style={{ padding: "18px", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
-            © 2025 Digifunzi
+            © 2025 {BRAND_NAME}
           </div>
         )}
       </aside>

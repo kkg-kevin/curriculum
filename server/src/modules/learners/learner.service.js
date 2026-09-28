@@ -311,6 +311,9 @@ const LearnerService = {
     await Promise.all(issues.map((i) => AssessmentIssueModel.delete(i.id)));
     await AttendanceModel.deleteByLearnerId(id);
     await ClassGroupService.removeLearnerEverywhere(id);
+    // Their Home Learning enrollment row and personal Home Learning class go with them. Required
+    // lazily — home-learning.service.js requires this module.
+    await require("../home-learning/home-learning.service").onLearnerDeleted(id);
     return { message: "Learner deleted successfully" };
   },
 

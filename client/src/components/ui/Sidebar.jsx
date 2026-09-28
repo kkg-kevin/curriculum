@@ -1,10 +1,10 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail, FiHeart,
 } from "react-icons/fi";
-import logo from "../../assets/Logo-image.png";
 import LogoutButton from "./LogoutButton";
+import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
 import { useAuth } from "../../context/AuthContext";
 import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../hooks/useSidebarCollapse";
 
@@ -18,6 +18,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome, module: "learning-hubs" },
   { name: "Curriculum", path: "/curriculum", icon: FiBookOpen, module: "curriculum" },
   { name: "Learners", path: "/learners", icon: FiUsers, module: "learners" },
+  { name: "Home Learning", path: "/home-learning", icon: FiHeart, module: "home-learning" },
   { name: "Educators", path: "/teachers", icon: FiUserCheck, module: "teachers" },
   { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
   { name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"] },
@@ -48,6 +49,7 @@ const COLLABORATOR_MENU_ITEMS = [
   { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome, module: "learning-hubs" },
   { name: "Curriculum", path: "/curriculum", icon: FiBookOpen, module: "curriculum" },
   { name: "Learners", path: "/learners", icon: FiUsers, module: "learners" },
+  { name: "Home Learning", path: "/home-learning", icon: FiHeart, module: "home-learning" },
   { name: "Educators", path: "/teachers", icon: FiUserCheck, module: "teachers" },
   { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
   { name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"] },
@@ -130,13 +132,13 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
         >
           {!isCollapsed && (
             <img
-              src={logo}
-              alt="Digifunzi"
+              src={BRAND_LOGO_DARK_BG}
+              alt={BRAND_NAME}
               style={{
                 height: "40px",
                 width: "auto",
                 objectFit: "contain",
-                filter: "brightness(0) invert(1)",
+                filter: BRAND_LOGO_DARK_BG_FILTER,
               }}
             />
           )}
@@ -243,7 +245,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
               color: "rgba(255,255,255,0.8)",
             }}
           >
-            © 2025 Digifunzi
+            © 2025 {BRAND_NAME}
           </div>
         )}
       </aside>

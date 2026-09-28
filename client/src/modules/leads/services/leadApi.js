@@ -14,4 +14,5 @@ export const leadApi = {
   // a manually-received cash payment and unlocks that learner's account (see
   // bootcamp-enrollment.service.js's markLeadPaid).
   markPaid: (id, data) => api.post(`${BASE}/${id}/mark-paid`, data).then((r) => r.data.data),
+  convertHomeLearning: (id) => api.post(`${BASE}/${id}/home-learning-household`).then((r) => r.data.data),
 };

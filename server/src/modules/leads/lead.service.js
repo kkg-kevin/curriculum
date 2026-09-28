@@ -9,6 +9,9 @@ const AssessmentModel = require("../assessments/assessment.model");
 const InventoryModel = require("../settings/inventory/inventory.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const HomeLearningService = require("../home-learning/home-learning.service");
+const HomeLearningPackageModel = require("../home-learning/home-learning-package.model");
+const { priceForPackage } = require("../home-learning/home-learning.pricing");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
@@ -67,6 +70,7 @@ const LeadService = {
     const INTEREST_PHRASE = {
       general: "our programmes",
       bootcamp: "a bootcamp",
+      home_schooling: "home schooling",
       project: "a project",
       quarky: "the Quarky robot",
     };
@@ -163,9 +167,19 @@ const LeadService = {
       } catch {
         /* fall through */
       }
+
+      // 5. Home Learning packages owned by the designated admin (the website's Home Schooling
+      // page sends the package slug as referenceId). Archived/unpublished ones still resolve, so
+      // an older enquiry keeps its label.
+      try {
+        const pkg = await HomeLearningPackageModel.findByIdOrSlug(referenceId, env.PUBLIC_CONTENT_ADMIN_ID);
+        if (pkg) return { referenceType: "home_learning_package", referenceName: pkg.name, referenceSlug: pkg.slug };
+      } catch {
+        /* fall through */
+      }
     }
 
-    // 5. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
+    // 6. legacy fallback — a pathway_templates entry (older leads / the portal's template feature).
     let template = await PathwayTemplateModel.findById(referenceId);
     if (!template) {
       const all = await PathwayTemplateModel.findAll();
@@ -219,6 +233,65 @@ const LeadService = {
       throw err;
     }
     return record;
+  },
+
+  async convertHomeLearningLead(id, ownerAdminId) {
+    const lead = await LeadModel.findById(id);
+    if (!lead) {
+      const err = new Error("Enquiry not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    if (lead.interestedIn !== "home_schooling") {
+      const err = new Error("Only Home Learning enquiries can be converted");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (lead.homeLearningHouseholdId) {
+      const existing = await HomeLearningService.getHousehold(ownerAdminId, lead.homeLearningHouseholdId);
+      if (existing) return existing;
+      const err = new Error("This enquiry is already linked to a household in another workspace");
+      err.statusCode = 409;
+      throw err;
+    }
+    if (!lead.phone) {
+      const err = new Error("Add a phone number to the enquiry before converting it");
+      err.statusCode = 400;
+      throw err;
+    }
+    // Which package: the website sends the chosen package's slug as referenceId. The note's
+    // "<n> child(ren)" wording (e.g. "…package: Three children (3 children) at …") gives the
+    // number of children, and is the fallback for older enquiries sent before the website read
+    // packages from this system (matched against this admin's active packages).
+    const packages = (await HomeLearningPackageModel.findAll(ownerAdminId)).filter((p) => p.status === "active");
+    const noted = (lead.message || "").match(/(\d+)\+?\s+child(?:ren)?\b/i);
+    const notedCount = noted ? Number(noted[1]) : null;
+    let pkg = lead.referenceId ? packages.find((p) => p.id === lead.referenceId || p.slug === lead.referenceId) : null;
+    if (!pkg && notedCount) {
+      pkg = packages.find((p) => p.childrenIncluded === notedCount)
+        || packages.find((p) => notedCount > p.childrenIncluded && priceForPackage(p, notedCount));
+    }
+    if (!pkg) {
+      const err = new Error("This enquiry has no package that's still on offer. Contact the family and create the household from Home Learning.");
+      err.statusCode = 400;
+      throw err;
+    }
+    const childCount = notedCount && priceForPackage(pkg, notedCount) ? notedCount : pkg.childrenIncluded;
+    const child = lead.learnerName
+      ? `Child from enquiry: ${lead.learnerName}${lead.learnerAge != null ? ` (age ${lead.learnerAge})` : ""}.`
+      : "";
+    const household = await HomeLearningService.create(ownerAdminId, {
+      guardianName: lead.name,
+      guardianEmail: lead.email || "",
+      guardianPhone: lead.phone,
+      packageId: pkg.id,
+      childCount,
+      status: "pending",
+      notes: [`Created from website enquiry ${lead.id}.`, child, lead.message || ""].filter(Boolean).join("\n"),
+    });
+    // A converted enquiry is being handled — move it off "new" (never reopen a closed one).
+    await LeadModel.update(id, { homeLearningHouseholdId: household.id, ...(lead.status === "new" ? { status: "contacted" } : {}) });
+    return household;
   },
 
   // The Enquiries card's thread: every reply and note, oldest first.

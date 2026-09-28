@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiLogOut, FiShield, FiClock, FiLifeBuoy, FiRefreshCw, FiKey, FiChevronDown, FiChevronUp, FiCreditCard } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
-import logo from "../../../assets/Logo-image.png";
+import { BRAND_NAME, BRAND_LOGO } from "../../../branding";
 import ChangePasswordCard from "./ChangePasswordCard";
 
 // Shown IN-APP (behind a real, logged-in session) when the account is suspended. Rendered by
@@ -34,8 +34,8 @@ const COPY_BY_REASON = {
   hub: {
     who: "this learning hub",
     dataBody: "Every class, learner, assessment, and report at this hub is untouched.",
-    contactTitle: "Contact Digifunzi support",
-    contactBody: "This learning hub's access is managed by Digifunzi. Get in touch with the Digifunzi team to have it reactivated.",
+    contactTitle: `Contact ${BRAND_NAME} support`,
+    contactBody: `This learning hub's access is managed by ${BRAND_NAME}. Get in touch with the ${BRAND_NAME} team to have it reactivated.`,
   },
 };
 
@@ -215,7 +215,7 @@ export default function AccountSuspendedScreen({ reason, pendingPayment }) {
           padding: "16px 28px", background: "#fff", borderBottom: "1px solid #E5E7EB",
         }}
       >
-        <img src={logo} alt="Digifunzi" style={{ height: 26, width: "auto", objectFit: "contain" }} />
+        <img src={BRAND_LOGO} alt={BRAND_NAME} style={{ height: 26, width: "auto", objectFit: "contain" }} />
         <button
           type="button"
           onClick={handleSignOut}
@@ -262,8 +262,8 @@ export default function AccountSuspendedScreen({ reason, pendingPayment }) {
             </h1>
             <p style={{ margin: 0, fontSize: 14.5, color: "#6B7280", lineHeight: 1.65 }}>
               {copy.intro
-                ? `${copy.who[0].toUpperCase() + copy.who.slice(1)} on Digifunzi ${copy.intro}`
-                : <>Access to {copy.who} on Digifunzi has been temporarily suspended. You can sign back in as soon as it's reactivated.</>}
+                ? `${copy.who[0].toUpperCase() + copy.who.slice(1)} on ${BRAND_NAME} ${copy.intro}`
+                : <>Access to {copy.who} on {BRAND_NAME} has been temporarily suspended. You can sign back in as soon as it's reactivated.</>}
             </p>
 
             <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 16 }}>

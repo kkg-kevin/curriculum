@@ -4,6 +4,7 @@ import { FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, Fi
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { formatAgeRange } from "../utils/ageRange";
+import { BRAND_NAME } from "../../../branding";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO = "#38aae1";
@@ -488,7 +489,7 @@ export default function PublicLearnerProfilePage() {
           </div>
         )}
 
-        <p style={{ margin: 0, padding: "16px 24px", fontSize: 11, color: "#D1D5DB", textAlign: "center", borderTop: "1px solid #F3F4F6" }}>Digifunzi · Shared profile</p>
+        <p style={{ margin: 0, padding: "16px 24px", fontSize: 11, color: "#D1D5DB", textAlign: "center", borderTop: "1px solid #F3F4F6" }}>{BRAND_NAME} · Shared profile</p>
       </div>
     </div>
   );

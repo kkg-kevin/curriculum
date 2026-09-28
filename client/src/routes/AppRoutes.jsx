@@ -92,6 +92,8 @@ import StatementOfAccountPage from "../modules/billing/pages/StatementOfAccountP
 import CustomersListPage from "../modules/billing/pages/CustomersListPage";
 import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
+import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
+import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
 
 export default function AppRoutes() {
   return (
@@ -207,6 +209,7 @@ export default function AppRoutes() {
           <Route path=":id/edit" element={<EditLearnerPage />} />
           <Route path=":id/view" element={<LearnerViewPage />} />
         </Route>
+        <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -229,6 +232,7 @@ export default function AppRoutes() {
           <Route index element={<TeacherPortalDashboardPage />} />
           <Route path="classes/:classId" element={<MyClassPage />} />
           <Route path="course-content" element={<TeacherCourseContentPage />} />
+          <Route path="home-learning" element={<EducatorHomeLearningPage />} />
           <Route path="course-content/:courseId" element={<CourseContentLandingPage />} />
           <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
           <Route path="course-content/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />

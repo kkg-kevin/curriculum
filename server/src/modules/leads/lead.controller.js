@@ -74,6 +74,11 @@ const addLeadNote = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: message });
 });
 
+const convertHomeLearningLead = asyncHandler(async (req, res) => {
+  const household = await LeadService.convertHomeLearningLead(req.params.id, req.ownerAdminId);
+  res.status(201).json({ success: true, data: household });
+});
+
 module.exports = {
   submitLead,
   submitContact,
@@ -82,4 +87,5 @@ module.exports = {
   getLeadTimeline,
   replyToLead,
   addLeadNote,
+  convertHomeLearningLead,
 };

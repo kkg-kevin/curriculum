@@ -680,7 +680,7 @@ across all `/api/*`).
   "parentPhone": "string 7–20 chars, /^[+0-9()\\-\\s]+$/ — optional server-side; the Enroll form requires it client-side",
   "learnerName": "string ≤120 chars — optional (\"\" allowed, e.g. from the Contact form)",
   "learnerAge":  "integer 3–19 — optional / null",
-  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"general\"  — optional, default \"general\". A Store enquiry uses \"quarky\" (a kit) or \"general\" (bundle/accessory); the exact item is in referenceId. \"bootcamp\" is used by the Bootcamps section's \"Enquire to book\" (§3.2).",
+  "interestedIn": "\"bootcamp\" | \"project\" | \"quarky\" | \"home_schooling\" | \"general\"  — optional, default \"general\". A Store enquiry uses \"quarky\" (a kit) or \"general\" (bundle/accessory); the exact item is in referenceId. \"bootcamp\" is used by the Bootcamps section's \"Enquire to book\" (§3.2). Home Schooling package inquiries use \"home_schooling\" and include the selected package and monthly amount in note.",
   "referenceId": "string ≤100 chars — optional / null. Stored as-is (no validation). Resolves to a display name server-side (GET /api/leads) when it's the slug/id of: an operational pathway, a for-sale project assessment (§3.3), a for-sale inventory item (§3.10), or a for-sale bootcamp / Program curriculum (§3.1). Otherwise stored and shown as a bare string.",
   "note":        "string ≤1000 chars — optional (\"\" allowed)"
 }
@@ -1204,4 +1204,67 @@ POST  /api/public/diagnostics/:pathwayIdOrSlug/submit   { answers, parentName, p
 # Admin (JWT, role: admin) — the boundary, for reference
 GET    /api/leads?status=&source=
 PATCH  /api/leads/:id/status          { status: "new" | "contacted" | "closed" }
+POST   /api/leads/:id/home-learning-household  # admin converts a Home Learning enquiry (uses its referenceId package)
 ```
+
+### Home Learning handoff
+
+Home Schooling packages are created, priced and published in the curriculum system (Home Learning →
+Packages). A package ticked **Show on the website** is served by the two endpoints below and
+rendered on the website's `/home-schooling` page. Unpublishing or archiving a package removes it
+from the website on the next fetch; nothing is hard-coded on the website side.
+
+A family enquires through the existing `POST /api/public/leads` contract with
+`interestedIn: "home_schooling"` and **`referenceId` set to the package's `slug`**. The Enquiries
+page shows it as "Home Learning package: <name>", and **Create household** creates a pending
+household on exactly that package. Staff add the home address, register or link the children,
+choose a curriculum and grade, and assign an educator on the Home Learning page. The website never
+receives learner records, home addresses or login credentials. A household only gives a child
+curriculum access once staff activate it.
+
+The enquiry note reads `Home Schooling package: <name> (<n> children) at KSh <amount> per month.`
+Keep the `<n> child` / `<n> children` wording. It gives the number of children, and it's the
+fallback for older enquiries that have no `referenceId`: they're matched to the admin's active
+package with that many children. An enquiry with no matching package is handled by staff directly.
+
+#### `GET /api/public/home-learning/packages`
+
+Unauthenticated. The designated public-content admin's (`PUBLIC_CONTENT_ADMIN_ID`) packages that
+are active and published, in the order staff set. Returns a bare array, like every other public
+endpoint; 503 if `PUBLIC_CONTENT_ADMIN_ID` is unset.
+
+```json
+[
+  {
+    "id": "0001feaf-5a55-429c-962d-75732d3b1377",
+    "slug": "three-children",
+    "name": "Three children",
+    "summary": "Monthly Home Learning for 3 children.",
+    "description": "",
+    "childrenIncluded": 3,
+    "monthlyAmount": 15000,
+    "currency": "KES",
+    "allowExtraChildren": false,
+    "extraChildAmount": null,
+    "maxChildren": 3,
+    "features": ["Home visits by a Digifunzi educator", "Progress reports"],
+    "badge": "Most popular"
+  }
+]
+```
+
+Pricing: `monthlyAmount` covers `childrenIncluded` children. When `allowExtraChildren` is true, each
+child beyond that adds `extraChildAmount` per month, up to `maxChildren`. These are the same
+records families are signed up and invoiced on.
+
+#### `GET /api/public/home-learning/packages/:idOrSlug`
+
+One published package, same shape. `404 { "message": "Package not found" }` for an unknown,
+unpublished or archived package. The website's enquiry form uses it to resolve `?package=<slug>`.
+
+The three packages the website used to hard-code were seeded with their old ids as slugs
+(`one-child`, `three-children`, `five-children`), so existing links keep working.
+
+**Deploy order:** deploy the backend (migrations `20260928140000` and `20260928150000`) **before**
+the website. A website build that reads these endpoints from an older backend shows "We couldn't
+load this" on `/home-schooling`.

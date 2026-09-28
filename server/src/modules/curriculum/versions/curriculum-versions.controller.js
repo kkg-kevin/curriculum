@@ -7,6 +7,7 @@ const TeacherHubLinkModel = require("../../teachers/teacher-hub-link.model");
 const SchoolModel = require("../../learning-hubs/learning-hub.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
+const HomeLearningModel = require("../../home-learning/home-learning.model");
 const { assertOwn, isOwnedByAdmin } = require("../../../shared/middleware/scope.middleware");
 
 async function getTeacherAccessibleCurriculumIds(req) {
@@ -43,13 +44,15 @@ async function assertCurriculumAccess(req, curriculumId) {
     if (hubs.some((hub) => hub?.curriculumId === curriculumId)) return;
     const runningHubIds = await CurriculumService.getHubIdsRunningCurriculum(curriculumId);
     if (runningHubIds.some((hubId) => hubIds.includes(hubId))) return;
+    if ((await HomeLearningModel.findCurriculaForEducator(req.ownTeacher?.id)).includes(curriculumId)) return;
     throw Object.assign(new Error("You do not have permission to access this record"), { statusCode: 403 });
   }
 
   if (req.user.role === "learner") {
     const links = await LearnerHubLinkModel.findByLearnerId(req.ownLearner?.id);
     const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
-    if (classes.some((cls) => cls?.curriculumId === curriculumId)) return;
+    const homeLinks = await HomeLearningModel.findForLearner(req.ownLearner?.id);
+    if (classes.some((cls) => cls?.curriculumId === curriculumId) || homeLinks.some((link) => link.curriculumId === curriculumId)) return;
     throw Object.assign(new Error("You do not have permission to access this record"), { statusCode: 403 });
   }
 

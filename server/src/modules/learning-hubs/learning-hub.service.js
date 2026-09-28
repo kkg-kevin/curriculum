@@ -73,6 +73,12 @@ const LearningHubService = {
 
   async updateLearningHub(id, data) {
     const before = await LearningHubModel.findById(id);
+    // The Home Learning hub must stay a top-level, class-based ("school") hub — its per-child
+    // classes and the Home Learning page depend on it. Name, description etc. stay editable.
+    if (before?.isHomeLearning) {
+      const { hubType, parentHubId, ...rest } = data;
+      data = rest;
+    }
     const payload = data.spaces ? { ...data, spaces: withSpaceIds(data.spaces) } : data;
     const record = await LearningHubModel.update(id, payload);
     if (!record) {
@@ -338,6 +344,13 @@ const LearningHubService = {
   },
 
   async deleteLearningHub(id) {
+    // The Home Learning hub holds every home-learning child's hub link and class — deleting it
+    // would silently strip all of them. It's managed from the Home Learning page instead.
+    if ((await LearningHubModel.findById(id))?.isHomeLearning) {
+      const err = new Error("The Home Learning hub can't be deleted — manage home learners from the Home Learning page");
+      err.statusCode = 409;
+      throw err;
+    }
     const deleted = await LearningHubModel.delete(id);
     if (!deleted) {
       const err = new Error("Learning hub not found");
