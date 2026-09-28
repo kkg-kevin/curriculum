@@ -41,7 +41,11 @@ Rebuilding the frontend zip now that the real domain is in
 
 ```bash
 cd client && npm run build:capable && cd ..
-# zip dist/assets/ -> Guide/capable/assets.zip, copy dist/index.html -> Guide/capable/index.html
+# zip must contain the assets/ folder itself (not just its contents), so
+# extracting it in cPanel File Manager produces assets/ directly in the
+# document root, alongside index.html:
+cd client/dist && zip -r ../../Guide/capable/assets.zip assets && cd ../..
+cp client/dist/index.html Guide/capable/index.html
 ```
 
 ---
