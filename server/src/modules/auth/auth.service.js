@@ -300,7 +300,11 @@ const AuthService = {
     if (!learnerId) return null;
 
     const lead = await LeadModel.findByLearnerId(learnerId);
-    if (!lead || lead.paidAt || !lead.bootcampId) return null;
+    if (!lead || lead.paidAt || !lead.bootcampId) {
+      // Not an unpaid bootcamp — maybe a Home Learning website sign-up awaiting payment. Required
+      // lazily: that module (via home-learning.service.js) requires this one.
+      return require("../home-learning/home-learning-signup.service").pendingPaymentForLearner(learnerId);
+    }
 
     const bootcamp = await BootcampModel.findById(lead.bootcampId);
     if (!bootcamp) return null;

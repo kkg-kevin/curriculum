@@ -72,6 +72,9 @@ const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/reports/pl
 const ACTION_OVERRIDES = [
   // Raising a Home Learning invoice creates a billing invoice — gated by Billing, not Home Learning.
   { method: "POST", pattern: /^\/api\/home-learning(\/[^/]+)?\/invoices$/, module: "billing", action: "create" },
+  // Approving a website sign-up records its payment; declining one removes its accounts.
+  { method: "POST", pattern: /^\/api\/home-learning\/[^/]+\/approve-payment$/, module: "billing", action: "edit" },
+  { method: "POST", pattern: /^\/api\/home-learning\/[^/]+\/decline-signup$/, module: "home-learning", action: "delete" },
   // Issuing, cancelling and recording a payment change an existing invoice.
   { method: "POST", pattern: /^\/api\/billing\/[^/]+\/(issue|cancel|payments)$/, module: "billing", action: "edit" },
 ];

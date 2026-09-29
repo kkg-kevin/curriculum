@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
-  FiAlertTriangle, FiBookOpen, FiCalendar, FiEdit2, FiFileText, FiFlag, FiKey, FiMail, FiMapPin, FiPackage, FiPhone,
+  FiAlertTriangle, FiBookOpen, FiGlobe, FiCalendar, FiEdit2, FiFileText, FiFlag, FiKey, FiMail, FiMapPin, FiPackage, FiPhone,
   FiUser, FiUserPlus, FiUsers, FiX,
 } from "react-icons/fi";
 import HomeLocation from "./HomeLocation";
@@ -126,6 +126,8 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
   const removed = item.status === "removed";
+  // A child who signed up on the website has no curriculum until the admin places them.
+  const unplaced = !item.curriculumId && !removed;
   const name = item.learner ? `${item.learner.firstName} ${item.learner.lastName}` : "Learner";
   const startEdit = (status) => {
     setDraft({ curriculumId: item.curriculumId, gradeId: item.gradeId || "", educatorId: item.educatorId || "", status });
@@ -142,10 +144,15 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <strong style={{ fontSize: 14 }}>{name}</strong>
-          <Pill tone={ENROLLMENT_STATUS[item.status] || ENROLLMENT_STATUS.paused}>{ENROLLMENT_STATUS[item.status]?.label || item.status}</Pill>
+          {unplaced
+            ? <Pill tone={{ color: "#B45309", background: "#FFFBEB" }}>Awaiting placement</Pill>
+            : <Pill tone={ENROLLMENT_STATUS[item.status] || ENROLLMENT_STATUS.paused}>{ENROLLMENT_STATUS[item.status]?.label || item.status}</Pill>}
         </div>
         <div style={{ display: "grid", gap: 3, marginTop: 6, fontSize: 12, color: "#4B5563" }}>
-          <IconLine icon={FiBookOpen}>{item.curriculum?.name || "Curriculum"} · {item.gradeName || <span style={{ color: "#B45309", fontWeight: 700 }}>Grade not set — edit to create this child's class</span>}</IconLine>
+          {unplaced
+            ? <IconLine icon={FiBookOpen}><span style={{ color: "#B45309", fontWeight: 700 }}>Not placed yet — choose their curriculum, grade and educator</span></IconLine>
+            : <IconLine icon={FiBookOpen}>{item.curriculum?.name || "Curriculum"} · {item.gradeName || <span style={{ color: "#B45309", fontWeight: 700 }}>Grade not set — edit to create this child's class</span>}</IconLine>}
+          {item.placementNotes && <IconLine icon={FiFileText}><span style={{ color: "#6B7280" }}>{item.placementNotes}</span></IconLine>}
           <IconLine icon={FiUser}>{item.educator ? `${item.educator.firstName} ${item.educator.lastName}` : <span style={{ color: "#B45309" }}>Educator not assigned</span>}</IconLine>
         </div>
       </div>
@@ -155,7 +162,9 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
       {removed
         ? <button type="button" disabled={!canAddActive} title={canAddActive ? "" : "No free places in this package"} onClick={() => startEdit("active")} style={secondaryButton}>Re-add</button>
         : <>
-          <button type="button" onClick={() => startEdit(item.status)} style={secondaryButton}><FiEdit2 /> Edit</button>
+          {unplaced
+            ? <button type="button" onClick={() => startEdit("active")} style={{ ...secondaryButton, borderColor: "#B45309", color: "#B45309" }}><FiBookOpen /> Place child</button>
+            : <button type="button" onClick={() => startEdit(item.status)} style={secondaryButton}><FiEdit2 /> Edit</button>}
           <button type="button" onClick={() => onRemove({ householdId: household.id, learnerId: item.learnerId, name })} style={{ ...secondaryButton, color: "#B91C1C" }}>Remove</button>
         </>}
     </div>}
@@ -233,7 +242,49 @@ function AddChildPanel({ household, availableLearners, curricula, educators, act
   </div>;
 }
 
-export default function HouseholdCard({ household, focused, cardRef, packages, curricula, educators, availableLearners, canBill, actions, pending, prefillLearnerId }) {
+const PAYMENT_METHODS = [["cash", "Cash"], ["mpesa_manual", "M-Pesa"], ["bank_transfer", "Bank transfer"], ["cheque", "Cheque"], ["card_manual", "Card"], ["other", "Other"]];
+
+// A family who signed up on the website: their logins stay locked until you approve their payment
+// (recorded against the sign-up invoice), or you decline the sign-up.
+function SignupBanner({ household, children, canApprove, canDecline, actions, pending }) {
+  const invoice = (household.billing?.invoices || []).find((inv) => inv.id === household.signupInvoiceId);
+  const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(household.monthlyAmount);
+  const [approving, setApproving] = useState(false);
+  const [form, setForm] = useState({ amount: String(due), paymentMethod: "cash", providerReference: "" });
+  const unplacedCount = children.filter((item) => !item.curriculumId && item.status !== "removed").length;
+  const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  return <div style={{ margin: "16px 22px 0", padding: "14px 16px", borderRadius: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1E3A8A", fontSize: 13 }}>
+    <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <FiGlobe style={{ flexShrink: 0 }} />
+      <div style={{ flex: "1 1 320px" }}>
+        <strong>Signed up on the website — awaiting payment.</strong>{" "}
+        {formatMoney(due)} due{invoice ? ` (${invoice.invoiceNumber})` : ""}. The parent's and children's logins unlock when you approve the payment.
+        {unplacedCount > 0 && <> {unplacedCount === 1 ? "1 child needs" : `${unplacedCount} children need`} placing — you can do that before or after approving.</>}
+      </div>
+      {!approving && <div style={{ display: "flex", gap: 8 }}>
+        {canApprove && <button type="button" onClick={() => setApproving(true)} style={{ ...primaryButton, padding: "8px 14px", fontSize: 13 }}>Approve payment</button>}
+        {canDecline && <button type="button" disabled={pending.declining} onClick={() => {
+          if (window.confirm("Decline this sign-up? Its invoice is cancelled and the family's accounts are removed (they can sign up again later).")) actions.declineSignup(household.id);
+        }} style={{ ...secondaryButton, color: "#B91C1C" }}>{pending.declining ? "Declining…" : "Decline"}</button>}
+      </div>}
+    </div>
+    {approving && <form onSubmit={(event) => {
+      event.preventDefault();
+      actions.approveSignup(household.id, { amount: Number(form.amount), paymentMethod: form.paymentMethod, providerReference: form.providerReference }, () => setApproving(false));
+    }} style={{ ...formGrid(160), marginTop: 12, paddingTop: 12, borderTop: "1px solid #BFDBFE" }}>
+      <label style={labelStyle}>Amount received (KSh)<input style={inputStyle} type="number" min={1} max={due || undefined} step={1} required value={form.amount} onChange={set("amount")} /></label>
+      <label style={labelStyle}>Paid by<select style={inputStyle} value={form.paymentMethod} onChange={set("paymentMethod")}>{PAYMENT_METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label style={labelStyle}>Receipt / reference (optional)<input style={inputStyle} maxLength={120} value={form.providerReference} onChange={set("providerReference")} /></label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button disabled={pending.approving} style={{ ...primaryButton, padding: "10px 14px" }}>{pending.approving ? "Approving…" : "Approve & activate"}</button>
+        <button type="button" onClick={() => setApproving(false)} style={secondaryButton}>Cancel</button>
+      </div>
+    </form>}
+  </div>;
+}
+
+export default function HouseholdCard({ household, focused, cardRef, packages, curricula, educators, availableLearners, canBill, canApprove, canDecline, actions, pending, prefillLearnerId }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(null);
   // A household just created from an existing learner opens with that learner ready to assign.
@@ -278,6 +329,7 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0, fontSize: 18 }}>{household.guardianName}</h3>
           <Pill tone={status}>{status.label}</Pill>
+          {household.source === "website" && <Pill tone={{ color: "#1D4ED8", background: "#EFF6FF" }}><FiGlobe /> Website sign-up</Pill>}
         </div>
         <div style={{ ...mutedText, marginTop: 3 }}>
           {household.package?.name || "No package"} · {children.length === 0 ? "No children yet" : `${activeCount} ${activeCount === 1 ? "child" : "children"} learning`}
@@ -293,6 +345,8 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
         <button type="button" onClick={editing ? () => setEditing(false) : startEdit} style={{ ...secondaryButton, padding: "8px 12px", fontSize: 13 }}>{editing ? <><FiX /> Close</> : <><FiEdit2 /> Edit details</>}</button>
       </div>
     </header>
+
+    {household.source === "website" && household.status === "pending" && <SignupBanner household={household} children={children} canApprove={canApprove} canDecline={canDecline} actions={actions} pending={pending} />}
 
     {profileParentMismatches(household, children).map((parent) => <ParentMismatch key={parent.email} household={household} parent={parent} saving={pending.updating}
       onUse={(p) => actions.updateHousehold(household.id, { guardianName: p.name || household.guardianName, guardianEmail: p.email, guardianPhone: p.phone || household.guardianPhone })} />)}

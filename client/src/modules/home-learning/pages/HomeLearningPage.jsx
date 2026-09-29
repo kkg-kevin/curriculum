@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { FiChevronDown, FiHome, FiPlus, FiSearch } from "react-icons/fi";
 import api from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
+import { can } from "../../../hooks/usePermissions";
 import { homeLearningApi } from "../services/homeLearningApi";
 import PackagesPanel from "../components/PackagesPanel";
 import HouseholdCard from "../components/HouseholdCard";
@@ -24,7 +25,11 @@ const searchText = (household) => [
 export default function HomeLearningPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const canBill = user?.role !== "collaborator";
+  // Raising invoices needs Billing → Add (staff roles; always true for the workspace owner).
+  const canBill = can(user, "billing", "create");
+  // Website sign-ups: approving records a payment (Billing → Edit); declining removes accounts.
+  const canApprove = can(user, "billing", "edit");
+  const canDecline = can(user, "home-learning", "delete");
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get("household");
   const focusRef = useRef(null);
@@ -101,6 +106,16 @@ export default function HomeLearningPage() {
     onSuccess: ({ created, invoice }) => { refresh(); toast.success(created ? `Invoice ${invoice.invoiceNumber} issued` : `Already invoiced (${invoice.invoiceNumber})`); },
     onError: (error) => toast.error(errorMessage(error, "Could not raise invoice")),
   });
+  const approveSignupMutation = useMutation({
+    mutationFn: ({ id, data }) => homeLearningApi.approveSignup(id, data),
+    onSuccess: () => { refresh(); toast.success("Payment approved — the family can now log in"); },
+    onError: (error) => toast.error(errorMessage(error, "Could not approve the payment")),
+  });
+  const declineSignupMutation = useMutation({
+    mutationFn: homeLearningApi.declineSignup,
+    onSuccess: () => { refresh(); toast.success("Sign-up declined"); },
+    onError: (error) => toast.error(errorMessage(error, "Could not decline the sign-up")),
+  });
   const bulkInvoiceMutation = useMutation({
     mutationFn: homeLearningApi.generateMonthlyInvoices,
     onSuccess: ({ created, skipped }) => { refresh(); toast.success(`${created} invoice${created === 1 ? "" : "s"} issued${skipped ? `, ${skipped} already invoiced` : ""}`); },
@@ -119,12 +134,16 @@ export default function HomeLearningPage() {
       if (window.confirm(`Remove ${name} from this household? Their records are kept and they can be re-added later.`)) removeMutation.mutate({ householdId, learnerId });
     },
     invoice: (data) => invoiceMutation.mutate(data),
+    approveSignup: (id, data, done) => approveSignupMutation.mutate({ id, data }, { onSuccess: done }),
+    declineSignup: (id) => declineSignupMutation.mutate(id),
   };
   const pendingFor = (id) => ({
     updating: updateHouseholdMutation.isPending && updateHouseholdMutation.variables?.id === id,
     enrolling: enrollmentMutation.isPending && enrollmentMutation.variables?.householdId === id,
     creatingLearner: createLearnerMutation.isPending && createLearnerMutation.variables?.householdId === id,
     invoicing: invoiceMutation.isPending && invoiceMutation.variables?.id === id,
+    approving: approveSignupMutation.isPending && approveSignupMutation.variables?.id === id,
+    declining: declineSignupMutation.isPending && declineSignupMutation.variables === id,
   });
 
   const submitHousehold = (event) => {
@@ -219,6 +238,8 @@ export default function HomeLearningPage() {
               educators={educators}
               availableLearners={availableLearners}
               canBill={canBill}
+              canApprove={canApprove}
+              canDecline={canDecline}
               actions={actions}
               pending={pendingFor(household.id)}
             />)}

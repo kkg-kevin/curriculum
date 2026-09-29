@@ -102,4 +102,59 @@ const invoiceSchema = z.object({
   dueDate: isoDate.optional().or(z.literal("")),
 });
 
-module.exports = { householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema };
+// A family signing up on the website (POST /api/public/home-learning/signups — see
+// home-learning-signup.service.js). The parent's email + password become their portal login; each
+// child gets their own username + password. The admin places each child (curriculum, grade,
+// educator) after sign-up, so the form only asks for what helps with that (current school/grade).
+const username = z.string().trim()
+  .min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
+  .regex(/^[a-zA-Z0-9._-]+$/, "Usernames can only use letters, numbers, dots, underscores and hyphens");
+const loginPassword = z.string().min(8, "Passwords must be at least 8 characters").max(72, "Passwords must be at most 72 characters");
+const requiredText = (max, message) => z.string().trim().min(1, message).max(max);
+
+const signupChildSchema = z.object({
+  firstName: requiredText(80, "Enter each child's first name"),
+  lastName: requiredText(80, "Enter each child's last name"),
+  gender: z.enum(["female", "male", "other"], { errorMap: () => ({ message: "Choose each child's gender" }) }),
+  dateOfBirth: isoDate.optional().or(z.literal("")),
+  currentGrade: optionalText(150),
+  username,
+  password: loginPassword,
+});
+
+const signupSchema = z.object({
+  packageSlug: requiredText(160, "Choose a package"),
+  parent: z.object({
+    name: requiredText(150, "Enter your name"),
+    email: z.string().trim().email("Enter a valid email address").max(255),
+    phone,
+    password: loginPassword,
+  }),
+  children: z.array(signupChildSchema).min(1, "Add at least one child").max(20, "Up to 20 children per sign-up"),
+  home: z.object({
+    county: requiredText(100, "Enter your county"),
+    subCounty: optionalText(100),
+    town: requiredText(100, "Enter your town or area"),
+    addressLine: requiredText(255, "Enter your home address"),
+    landmark: optionalText(255),
+    mapUrl: mapUrl.optional().or(z.literal("")),
+  }),
+  consent: z.literal(true, { errorMap: () => ({ message: "Please agree to us storing your family's details" }) }),
+}).superRefine((data, ctx) => {
+  const seen = new Set();
+  data.children.forEach((child, index) => {
+    const key = child.username.toLowerCase();
+    if (seen.has(key)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["children", index, "username"], message: `Each child needs a different username ("${child.username}" is used twice)` });
+    seen.add(key);
+  });
+});
+
+// Admin → "Approve payment" on a website sign-up: the cash (or other) payment received.
+const approveSignupSchema = z.object({
+  amount: z.coerce.number().positive("Enter the amount received"),
+  paymentMethod: z.enum(["cash", "bank_transfer", "mpesa_manual", "cheque", "card_manual", "other"]).default("cash"),
+  providerReference: z.string().trim().max(120).optional().or(z.literal("")),
+  notes: z.string().trim().max(255).optional().or(z.literal("")),
+});
+
+module.exports = { signupSchema, approveSignupSchema, householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema };

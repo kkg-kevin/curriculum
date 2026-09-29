@@ -278,6 +278,38 @@ async function billingSummaries(householdIds) {
   return summaries;
 }
 
+// Creates one household's monthly package invoice (issued) — shared by the admin's "Invoice month"
+// and a website sign-up's first-month invoice. Callers check eligibility (status, duplicates).
+async function raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate }, actorUserId) {
+  const hub = await ensureHomeHub(ownerAdminId);
+  const payer = household.guardianEmail ? await UserModel.findByEmail(household.guardianEmail) : null;
+  const amount = money(household.monthlyAmount);
+  const children = `${household.childCount} ${household.childCount === 1 ? "child" : "children"}`;
+  const now = new Date();
+  const invoice = await BillingModel.transaction(async (trx) => {
+    const created = await BillingModel.createInvoice({
+      invoiceNumber: await nextInvoiceNumber(trx),
+      issuerType: "learning_hub", issuerHubId: hub.id,
+      payerUserId: payer?.role === "learner" ? payer.id : null, payerHubId: null,
+      learnerId: null, hubId: hub.id, householdId: household.id, invoiceType: "home_learning", status: "issued",
+      currency: CURRENCY, subtotal: amount, discount: 0, total: amount, amountPaid: 0,
+      periodStart, periodEnd, periodLabel: `Home Learning · ${label}`,
+      issuedAt: now, dueAt: dueDate ? new Date(`${dueDate}T00:00:00`) : null, notes: null,
+    }, trx);
+    await BillingModel.createItem({
+      invoiceId: created.id, learnerId: null, courseId: null,
+      description: `Home Learning package (${children}) — ${label}`,
+      quantity: 1, unitAmount: amount, totalAmount: amount,
+      metadata: { householdId: household.id, planCode: household.planCode, childCount: household.childCount },
+    }, trx);
+    await BillingModel.createAuditEvent({
+      invoiceId: created.id, actorUserId, eventType: "invoice_issued", newStatus: "issued", amount, metadata: { source: "home_learning" },
+    }, trx);
+    return created;
+  });
+  return invoice;
+}
+
 async function nextInvoiceNumber(trx) {
   const year = new Date().getFullYear();
   return `INV-${year}-${String(await BillingModel.nextNumber("invoice", year, trx)).padStart(6, "0")}`;
@@ -367,6 +399,15 @@ const HomeLearningService = {
     const { portalPassword, ...updates } = parseOrFail(householdSchema.partial(), input, "Invalid household details");
     const existing = await HouseholdModel.findById(id, ownerAdminId);
     if (!existing) fail("Household not found", 404);
+    // A website sign-up is activated by "Approve payment" (home-learning-signup.service.js), which
+    // records the payment and unlocks the family's logins — not by flipping the status with nothing
+    // paid, which would leave the logins locked and the invoice unpaid.
+    if (existing.source === "website" && existing.status === "pending" && updates.status === "active" && existing.signupInvoiceId) {
+      const signupInvoice = await db("billing_invoices").where({ id: existing.signupInvoiceId }).first();
+      if (signupInvoice && Number(signupInvoice.amountPaid) === 0 && signupInvoice.status !== "cancelled") {
+        fail("This family signed up on the website — use Approve payment to record their payment and activate them");
+      }
+    }
     if (updates.packageId !== undefined || updates.childCount !== undefined) {
       const packageId = updates.packageId ?? existing.packageId;
       if (!packageId) fail("Choose a package for this household");
@@ -551,32 +592,7 @@ const HomeLearningService = {
       .first();
     if (existing) return { invoice: existing, created: false };
 
-    const hub = await ensureHomeHub(ownerAdminId);
-    const payer = household.guardianEmail ? await UserModel.findByEmail(household.guardianEmail) : null;
-    const amount = money(household.monthlyAmount);
-    const children = `${household.childCount} ${household.childCount === 1 ? "child" : "children"}`;
-    const now = new Date();
-    const invoice = await BillingModel.transaction(async (trx) => {
-      const created = await BillingModel.createInvoice({
-        invoiceNumber: await nextInvoiceNumber(trx),
-        issuerType: "learning_hub", issuerHubId: hub.id,
-        payerUserId: payer?.role === "learner" ? payer.id : null, payerHubId: null,
-        learnerId: null, hubId: hub.id, householdId, invoiceType: "home_learning", status: "issued",
-        currency: CURRENCY, subtotal: amount, discount: 0, total: amount, amountPaid: 0,
-        periodStart, periodEnd, periodLabel: `Home Learning · ${label}`,
-        issuedAt: now, dueAt: dueDate ? new Date(`${dueDate}T00:00:00`) : null, notes: null,
-      }, trx);
-      await BillingModel.createItem({
-        invoiceId: created.id, learnerId: null, courseId: null,
-        description: `Home Learning package (${children}) — ${label}`,
-        quantity: 1, unitAmount: amount, totalAmount: amount,
-        metadata: { householdId, planCode: household.planCode, childCount: household.childCount },
-      }, trx);
-      await BillingModel.createAuditEvent({
-        invoiceId: created.id, actorUserId, eventType: "invoice_issued", newStatus: "issued", amount, metadata: { source: "home_learning" },
-      }, trx);
-      return created;
-    });
+    const invoice = await raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate }, actorUserId);
     return { invoice, created: true };
   },
 
@@ -594,3 +610,6 @@ const HomeLearningService = {
 };
 
 module.exports = HomeLearningService;
+// For home-learning-signup.service.js: a website sign-up raises its first-month invoice the same way.
+module.exports.raiseHouseholdInvoice = raiseHouseholdInvoice;
+module.exports.monthRange = monthRange;

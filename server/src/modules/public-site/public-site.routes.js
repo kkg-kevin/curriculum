@@ -7,6 +7,8 @@ const { getPublicHubTypes, getPublicHubs } = require("./public-hub.controller");
 const { getPublicCompetitions, getPublicCompetition } = require("./public-competition.controller");
 const HomeLearningService = require("../home-learning/home-learning.service");
 const asyncHandler = require("express-async-handler");
+const rateLimit = require("express-rate-limit");
+const HomeLearningSignupService = require("../home-learning/home-learning-signup.service");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -59,6 +61,20 @@ router.get("/home-learning/packages/:idOrSlug", asyncHandler(async (req, res) =>
   const pkg = await HomeLearningService.getPublicPackage(req.params.idOrSlug);
   if (!pkg) return res.status(404).json({ message: "Package not found" });
   res.json(pkg);
+}));
+
+// Home Learning sign-up — a family creates their household, parent login and children's logins
+// here, locked until an admin approves their payment (see home-learning-signup.service.js). It
+// creates accounts, so it gets the same bot/abuse rate limit as the bootcamp enrollment form.
+const homeLearningSignupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many sign-ups from here. Please try again later." },
+});
+router.post("/home-learning/signups", homeLearningSignupLimiter, asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await HomeLearningSignupService.signup(req.body) });
 }));
 
 module.exports = router;
