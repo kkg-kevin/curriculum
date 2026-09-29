@@ -116,10 +116,19 @@ function PendingPaymentPanel({ pendingPayment }) {
           <p style={{ margin: "1px 0 3px", fontSize: 15.5, fontWeight: 800, color: "#111827" }}>
             {formatMoney(pendingPayment.amount, pendingPayment.currency)}
           </p>
-          <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
-            {pendingPayment.bootcampName ? `Amount owed for ${pendingPayment.bootcampName}. ` : ""}
-            Pay by cash at {pendingPayment.hubName || "your hub"} to activate full access.
-          </p>
+          {/* A Home Learning website sign-up (kind "home_learning") is paid to the team, not at a hub,
+              and the admin approves it — so its copy says so. */}
+          {pendingPayment.kind === "home_learning" ? (
+            <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
+              First month for {pendingPayment.itemName}{pendingPayment.invoiceNumber ? ` (invoice ${pendingPayment.invoiceNumber})` : ""}.
+              Pay in cash to our team — your family's logins unlock as soon as we approve the payment.
+            </p>
+          ) : (
+            <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
+              {pendingPayment.bootcampName ? `Amount owed for ${pendingPayment.bootcampName}. ` : ""}
+              Pay by cash at {pendingPayment.hubName || "your hub"} to activate full access.
+            </p>
+          )}
           {/* This bootcamp is priced by course/module rather than as a whole — see
               bootcamp-pricing.js's resolveEffectiveBootcampPrice — so the amount above is a
               summed total, not one flat price. */}

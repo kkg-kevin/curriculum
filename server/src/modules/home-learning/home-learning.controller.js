@@ -1,12 +1,15 @@
 const asyncHandler = require("express-async-handler");
 const HomeLearningService = require("./home-learning.service");
+const { can } = require("../access/access.service");
+const HomeLearningSignupService = require("./home-learning-signup.service");
 
-// Collaborators are aliased to "admin" by scope.middleware.js but are deliberately kept off every
-// billing surface (/api/billing is a restricted path for them). Home Learning invoicing lives under
-// /api/home-learning, so it has to refuse them itself or it'd be a side door into billing.
+// Staff are aliased to "admin" by scope.middleware.js. Raising a Home Learning invoice creates a
+// billing invoice, so it needs the Billing → Create permission (access.registry.js maps these
+// routes to it and the middleware already enforces that); this repeats the check here so the
+// route can never become a side door into billing.
 function assertNotCollaborator(req) {
-  if (req.user.actualRole === "collaborator") {
-    throw Object.assign(new Error("Only the workspace administrator can raise Home Learning invoices"), { statusCode: 403 });
+  if (req.user.actualRole === "collaborator" && !can(req.user.permissions, "billing", "create")) {
+    throw Object.assign(new Error("Your role doesn't allow you to raise invoices"), { statusCode: 403 });
   }
 }
 
@@ -63,6 +66,16 @@ const generateMonthlyInvoices = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.generateMonthlyInvoices(req.ownerAdminId, req.body, req.user.id) });
 });
 
+// Website sign-ups: approving records a payment (Billing → Edit for staff, enforced by
+// scope.middleware via access.registry.js); declining removes the sign-up's accounts.
+const approveSignup = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await HomeLearningSignupService.approveSignup(req, req.params.id, req.body) });
+});
+
+const declineSignup = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await HomeLearningSignupService.declineSignup(req, req.params.id) });
+});
+
 const getForLearner = asyncHandler(async (req, res) => {
   if (req.ownLearner?.id !== req.params.learnerId) {
     return res.status(403).json({ success: false, message: "You do not have permission to access this learner" });
@@ -76,5 +89,5 @@ const getForEducator = asyncHandler(async (req, res) => {
 
 module.exports = {
   list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
-  generateInvoice, generateMonthlyInvoices, getForLearner, getForEducator,
+  generateInvoice, generateMonthlyInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
 };

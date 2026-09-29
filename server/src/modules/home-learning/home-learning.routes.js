@@ -17,5 +17,7 @@ router.post("/:id/learners", authorize("admin"), controller.setEnrollment);
 router.post("/:id/learners/new", authorize("admin"), controller.createLearner);
 router.delete("/:id/learners/:learnerId", authorize("admin"), controller.removeEnrollment);
 router.post("/:id/invoices", authorize("admin"), controller.generateInvoice);
+router.post("/:id/approve-payment", authorize("admin"), controller.approveSignup);
+router.post("/:id/decline-signup", authorize("admin"), controller.declineSignup);
 
 module.exports = router;

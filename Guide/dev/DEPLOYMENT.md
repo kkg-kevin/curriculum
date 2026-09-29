@@ -102,6 +102,107 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (29 Sep 2026) — Home Learning (home schooling); website Home Schooling page; 500 MB uploads; per-environment branding
+
+**Built and packaged for Dev, Live and Capable this pass**, all from commit `88a79cf`
+(curriculum) and `b323bb0` (digifunzi-landing). Covers everything since the 22 Sep release:
+per-environment branding (`d8ce34e`), uploads up to 500 MB (`5b01ba0`), and Home Learning
+(`707421c`, `88a79cf`). Verify on Dev first as usual before treating Live's zips as safe to upload.
+
+Five new migrations (auto-apply on Restart), **none destructive** — new tables plus nullable
+columns on existing ones.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260928120000_create_home_learning.js` | Creates `home_learning_households` and `home_learning_enrollments` | none touched |
+| `20260928130000_link_home_learning_leads.js` | Adds nullable `leads.homeLearningHouseholdId` | unchanged (`NULL`) |
+| `20260928140000_home_learning_classes_and_billing.js` | Adds `learning_hubs.isHomeLearning`, `billing_invoices.householdId`, and class/grade columns on enrollments; creates each admin's "Home Learning" hub where they already have households | unchanged — new columns `NULL`/false |
+| `20260928150000_create_home_learning_packages.js` | Creates `home_learning_packages`; seeds the three packages the website used to hard-code (slugs `one-child` / `three-children` / `five-children`) for every admin with households **and for `PUBLIC_CONTENT_ADMIN_ID`** | none touched |
+| `20260929120000_add_home_location_to_households.js` | Adds nullable `mapUrl` and `locationPhotos` (JSON) to households | unchanged (`NULL`) |
+
+**`PUBLIC_CONTENT_ADMIN_ID` must already be set on the Node app before you Restart** — the
+package seed reads it at migration time. If it was unset, that admin simply gets no packages;
+create them by hand in Home Learning → Packages (they're what the website's Home Schooling page
+lists).
+
+### What changed
+
+1. **Home Learning (admin → Home Learning).** Families learning at home: households with the
+   parent's contact, home address, a **Google Maps link and up to two location photos**, a
+   monthly package, and status. Each child gets their own class in a per-admin "Home Learning"
+   hub (curriculum + grade) with their educator linked, so assessments, attendance, reports and
+   the Progress Arc work unchanged. Full-width household cards (contact / home location /
+   package / billing tiles, children as cards), search and status filters, and a collapsible
+   "Add a household" form.
+2. **Packages** are created, priced and published in Home Learning → Packages and served to the
+   website at `GET /api/public/home-learning/packages` (+ `/:slug`).
+3. **Monthly invoices per household** (invoice type `home_learning`), raised from the Home
+   Learning page (one household or "Invoice all active households"), billed to the household's
+   parent. Not emailed — **the parent sees them under Invoices when they sign in to the
+   portal**. A household can set a **parent portal password** (creates/resets their login), and
+   each card shows whether the parent can sign in.
+4. **Parent details stay in step with the children's profiles.** "Add a household" can start
+   from an existing learner (fills the parent from their profile); the household's parent is
+   copied onto children's profiles where missing; a banner flags a child whose profile names a
+   different parent, with a one-click "use this parent for the household".
+5. **Educators** get a Home Learning page (teacher portal) with each child's class, courses,
+   the family's contact details and the home's map link/photos.
+6. **Website enquiries** for a package carry its slug; Enquiries → "Create household" uses it.
+7. **Uploads up to 500 MB** (was 50 MB) with a 10-minute client timeout and a clear message for
+   an over-size file. If the host has its own request-size cap, large uploads still stop there.
+8. **Per-environment branding** — name, logos and page title come from the build mode
+   (Digifunzi for Dev/Live, Capable for Capable).
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD (`git archive`, 395 files) — **identical in Dev, Live and Capable**. New
+`server/src/modules/home-learning/` module (routes, service, models, pricing, validation) mounted
+at `/api/home-learning`; billing, leads and public-site modules extended for households;
+upload limit raised. **No new env var** (uses the existing `PUBLIC_CONTENT_ADMIN_ID`).
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-kkjHjZTn.js`** / CSS `index-CPRP9smp.css` (unchanged CSS hash).
+Live build (`npm run build:live`): **`index-DR6yDpsI.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-Bjd7hJYW.js`** / same CSS — in `Guide/capable/`.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+Built with `npm run deploy:build` (32/32 routes prerendered; one transient HTTP 500 on the
+pathways feed, retried cleanly). Same zip in `Guide/dev/` and `Guide/live/`. New **Home
+Schooling** page (`/home-schooling`): a price calculator (number of children → best package,
+monthly total, cost per child), redesigned package cards, benefits, how-it-works, FAQ; the
+enquiry carries the family's child count so "Create household" gets the right number of places.
+
+**The deployed backend didn't have the packages endpoint yet when this was built** (404), so the
+prerendered `/home-schooling` snapshot has no packages in it. The page fetches them live in the
+browser, so it works once the backend is deployed — but for search engines to see the prices,
+re-run `npm run deploy:build` after the backend deploy and re-upload.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart** (check
+   `PUBLIC_CONTENT_ADMIN_ID` is set first). Check the app log: five migrations should apply
+   cleanly (or fewer, if any already ran).
+2. **Portal** `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's from `Guide/live/`
+   (different JS hash, don't cross them).
+3. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root
+   (after the backend — the Home Schooling page needs its packages endpoint).
+4. **Verify:**
+   - `curl <api>/api/public/home-learning/packages` → a JSON array of the published packages.
+   - Admin → Home Learning → Packages lists the seeded packages; add a household (try "Is one of
+     the children already in the system?"), add a Google Maps link and a photo, add a child,
+     set a parent portal password, invoice the month.
+   - Sign in as that parent (their email + the password) → Invoices shows the household invoice.
+   - As the child's educator → teacher portal → Home Learning shows the child and the map link.
+   - Website `/home-schooling` → the calculator and package cards show; "Enquire for 3
+     children" opens the enquiry with the package and count filled in.
+   - Upload a file over 50 MB (e.g. an assessment video) → accepted.
+
+---
+
 ## This release (22 Sep 2026) — Rich text descriptions everywhere; per-module collaborator access
 
 **Built and packaged for both Dev and Live this pass** (both portal builds below). **No website

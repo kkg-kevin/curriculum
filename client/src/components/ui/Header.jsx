@@ -116,7 +116,10 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   // "teacher" is still the underlying role value (auth, permissions, users.json) — only the
   // displayed label changes here, same as everywhere else "Teacher" was renamed to "Educator"
   // for display purposes.
-  const roleLabel = user?.role === "teacher" ? "Educator" : user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
+  // A staff (collaborator) account shows its staff role, e.g. "Staff · Finance".
+  const roleLabel = user?.role === "teacher" ? "Educator"
+    : user?.role === "collaborator" ? (user.accessRole ? `Staff · ${user.accessRole.name}` : "Staff")
+    : user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
 
   const pageTitles = {
     "/": "Dashboard",

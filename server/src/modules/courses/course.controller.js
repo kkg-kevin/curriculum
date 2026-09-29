@@ -191,7 +191,7 @@ const getAssessmentScoring = asyncHandler(async (req, res) => {
 const getSessions = asyncHandler(async (req, res) => {
   await assertCourseAccess(req, req.params.id);
   const learnerId = req.user.role === "learner" ? req.ownLearner?.id : null;
-  const data = await CourseService.getSessions(req.params.id, { learnerId });
+  const data = await CourseService.getSessions(req.params.id, { learnerId, role: req.user.role });
   res.json({ success: true, data });
 });
 

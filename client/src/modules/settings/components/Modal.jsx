@@ -2,10 +2,11 @@ export function Label({ children }) {
   return <span className="stg-field-label">{children}</span>;
 }
 
-export function Modal({ title, subtitle, onClose, children, footer }) {
+// `width` widens the dialog beyond the default 480px (e.g. the role permissions grid).
+export function Modal({ title, subtitle, onClose, children, footer, width }) {
   return (
     <div className="stg-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="stg-modal">
+      <div className="stg-modal" style={width ? { maxWidth: width } : undefined}>
         <div className="stg-modal-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#fff" }}>{title}</h2>

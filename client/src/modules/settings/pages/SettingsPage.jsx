@@ -8,6 +8,7 @@ import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import AdminsPanel from "../admins/components/AdminsPanel";
 import CollaboratorsPanel from "../collaborators/components/CollaboratorsPanel";
+import RolesPanel from "../access/components/RolesPanel";
 import { useAuth } from "../../../context/AuthContext";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
@@ -257,8 +258,12 @@ const ALL_TABS = [
   { key: "items", label: "Items" },
   { key: "learning-hubs", label: "Learning Hubs" },
   { key: "admins", label: "Admins" },
-  { key: "collaborators", label: "Collaborators" },
+  { key: "collaborators", label: "Staff" },
+  { key: "roles", label: "Roles & access" },
 ];
+
+// Workspace management — only ever the owner (the server refuses these for staff too).
+const OWNER_ONLY_TABS = ["admins", "collaborators", "roles"];
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -266,7 +271,7 @@ export default function SettingsPage() {
   // every other settings tab — those are content the invited admin lets them edit — but Admins
   // and Collaborators are tenant management, refused server-side (blockIfCollaboratorRestricted)
   // regardless of the role alias, so they're hidden here rather than shown and broken.
-  const TABS = user?.role === "collaborator" ? ALL_TABS.filter((t) => t.key !== "admins" && t.key !== "collaborators") : ALL_TABS;
+  const TABS = user?.role === "collaborator" ? ALL_TABS.filter((t) => !OWNER_ONLY_TABS.includes(t.key)) : ALL_TABS;
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
@@ -312,6 +317,7 @@ export default function SettingsPage() {
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
         {activeTab === "admins" && <AdminsPanel />}
         {activeTab === "collaborators" && <CollaboratorsPanel />}
+        {activeTab === "roles" && <RolesPanel />}
       </div>
     </div>
   );

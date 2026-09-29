@@ -1,4 +1,5 @@
-import { SECTIONS } from "../../courses/sectionConfig";
+// Learner progress counts only the sections a learner can see (Notes are educator-only).
+import { LEARNER_SECTIONS as SECTIONS } from "../../courses/sectionConfig";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 
 const STORAGE_KEY = "digifunzi.learner-progress";

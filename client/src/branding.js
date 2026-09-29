@@ -16,3 +16,6 @@ export const BRAND_LOGO = isCapable ? capableLogo : digifunziLogo;
 export const BRAND_LOGO_DARK_BG = isCapable ? capableLogoOnDark : digifunziLogo;
 export const BRAND_LOGO_DARK_BG_FILTER = isCapable ? "none" : "brightness(0) invert(1)";
 export const BRAND_FAVICON = isCapable ? capableFavicon : null;
+export const IS_CAPABLE = isCapable;
+// Logo height on the sign-in / register screens — Capable's wordmark reads small at 34px.
+export const BRAND_AUTH_LOGO_HEIGHT = isCapable ? 52 : 34;

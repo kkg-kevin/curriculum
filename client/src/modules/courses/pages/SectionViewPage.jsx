@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { FiAlertTriangle, FiLock } from "react-icons/fi";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { Navigate, useNavigate, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
-import { SECTIONS, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
+import { sectionsForRole, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
@@ -87,9 +87,11 @@ function CompletionDot({ done }) {
 
 function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, lockedByModuleName, activeSessionId, activeSectionKey, activeItemId, onLeafSelect, sectionProgress }) {
   const showProgress = role === "learner";
+  // Notes are educator-only — learners and school portals get the sections without them.
+  const sections = sectionsForRole(role);
   const isSessionDone = (sessionId) => {
     const done = sectionProgress?.[sessionId];
-    return !!done && SECTIONS.every((s) => done[s.key]);
+    return !!done && sections.every((s) => done[s.key]);
   };
   const isSectionDone = (sessionId, sectionKey) => !!sectionProgress?.[sessionId]?.[sectionKey];
 
@@ -217,13 +219,13 @@ function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, l
               >
                 {sessionLabel(session, idx)}
               </span>
-              <span style={{ fontSize: "10.5px", color: "#9CA3AF", flexShrink: 0 }}>{SECTIONS.length} Sections</span>
+              <span style={{ fontSize: "10.5px", color: "#9CA3AF", flexShrink: 0 }}>{sections.length} Sections</span>
               {showProgress && <CompletionDot done={isSessionDone(session.id)} />}
             </div>
 
             {expanded && (
               <div>
-                {SECTIONS.map((section) => {
+                {sections.map((section) => {
                   const isActive = isCurrentSession && section.key === activeSectionKey;
 
                   if (isRepeatableSection(section.key)) {
@@ -461,6 +463,7 @@ export default function SectionViewPage() {
   const { user } = useAuth();
   const role = user?.role;
   const isLearner = role === "learner";
+  const sections = sectionsForRole(role);
   // Progress storage is keyed per-learner locally — a learner's own dedicated login (see
   // auth.service.js's setOrCreatePasswordByUsername) has no email at all, so fall back to
   // username to keep each such login's progress in its own bucket instead of a shared "guest" one.
@@ -547,7 +550,7 @@ export default function SectionViewPage() {
   const flat = sessions
     .filter((s) => !isLearner || !lockedSessionIds.has(s.id))
     .flatMap((s) =>
-    SECTIONS.flatMap((sec) => {
+    sections.flatMap((sec) => {
       if (isRepeatableSection(sec.key)) {
         const secItems = s[sec.key]?.length ? s[sec.key] : [{ id: null }];
         return secItems.map((it) => ({ sessionId: s.id, sectionKey: sec.key, itemId: it.id }));
@@ -584,6 +587,11 @@ export default function SectionViewPage() {
 
   // Closes the one gap the sidebar/Prev-Next filtering above doesn't cover on its own: a learner
   // navigating straight to a locked session's URL (typed, bookmarked, or via browser back/forward).
+  // An educator-only section (Notes) opened by a learner or school portal, e.g. from an old link.
+  if (sectionKey && !sections.some((sec) => sec.key === sectionKey)) {
+    return <Navigate to={sectionPath(role, id, sessionId, sections[0].key)} replace />;
+  }
+
   if (isLearner && lockedSessionIds.has(sessionId)) {
     const blockingName = lockedByModuleName.get(sessionId);
     return (

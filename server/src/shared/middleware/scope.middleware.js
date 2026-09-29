@@ -4,7 +4,9 @@ const LearningHubService = require("../../modules/learning-hubs/learning-hub.ser
 const TeacherModel = require("../../modules/teachers/teacher.model");
 const LearnerModel = require("../../modules/learners/learner.model");
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
-const { resolveModuleForPath } = require("../../modules/admin-tools/module-registry");
+const { resolveAccess, isOwnerOnlyPath, describeAccess } = require("../../modules/access/access.registry");
+const AccessService = require("../../modules/access/access.service");
+const { can } = require("../../modules/access/access.service");
 
 // A suspended account is NOT blocked here — it's allowed a read-only session so the client can
 // load enough to show its in-app "Account Suspended" page. Writes are refused by the separate
@@ -95,45 +97,42 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
   // for a collaborator exactly as it does for the admin themself.
   //
   // req.user.role is then ALIASED to "admin" (the real role is kept at req.user.actualRole, which
-  // blockIfCollaboratorRestricted in auth.middleware.js and the client both read) for every
-  // method except DELETE, and outside the financial/admin-tooling surfaces a collaborator (scoped
-  // to "content a tenant admin can create" — curricula, courses, assessments, hubs, bootcamps,
-  // competitions, settings, ...) was never meant to reach: billing (invoices, customer records,
-  // payments), hub-visits (non-school hub revenue logging — a hub's equivalent of billing), and
-  // platform-analytics. This is deliberately a single choke point rather than 80+
-  // individual edits across every controller's own `req.user.role === "admin"` ownership checks
-  // (isOwnHubForAdmin, isLinkedToOwnHub, adminOwnedHubIds, etc, none of which know about
-  // "collaborator" and would otherwise silently SKIP their ownership check for one, not deny it)
-  // — aliasing here means every one of those checks runs exactly as it does for a real admin,
-  // scoped to req.ownerAdminId same as above, with no risk of a missed call site leaking
-  // cross-tenant data. DELETE is deliberately left un-aliased too: role stays "collaborator", so
-  // every admin-only check downstream (authorize("admin") included) already refuses it for free —
-  // a collaborator can never delete anything, without needing a separate block per delete route.
+  // blockIfCollaboratorRestricted in auth.middleware.js and the client both read) — but only for a
+  // request their staff role permits (module + action, see below). This is deliberately a single
+  // choke point rather than 80+ individual edits across every controller's own
+  // `req.user.role === "admin"` ownership checks (isOwnHubForAdmin, isLinkedToOwnHub,
+  // adminOwnedHubIds, etc, none of which know about "collaborator" and would otherwise silently
+  // SKIP their ownership check for one, not deny it) — aliasing here means every one of those
+  // checks runs exactly as it does for a real admin, scoped to req.ownerAdminId same as above,
+  // with no risk of a missed call site leaking cross-tenant data. A refused request never reaches
+  // them at all.
   if (role === "collaborator") {
     req.ownerAdminId = req.user.invitedByAdminId || null;
     req.user.actualRole = "collaborator";
     const path = req.originalUrl.split("?")[0];
-    const isRestrictedSurface = path.startsWith("/api/billing") || path.startsWith("/api/hub-visits") || path === "/api/admin-tools" || path.startsWith("/api/admin-tools/") || path === "/api/reports/platform-analytics";
 
-    // NULL/undefined allowedModules is the pre-migration "legacy collaborator" sentinel, treated
-    // as "every module" so nobody invited before this feature existed is silently locked out (see
-    // the 20260922110000 migration's header comment). An explicit [] means "no modules granted."
-    const module = resolveModuleForPath(path);
-    const allowedModules = req.user.allowedModules;
-    const hasModuleAccess = allowedModules == null || (module !== null && allowedModules.includes(module));
-
-    // Checked BEFORE the DELETE/alias decision below, and on every method including DELETE: a
-    // collaborator with no grant for this module must be refused regardless of verb, not just
-    // have DELETE separately refused by the existing role-stays-"collaborator" mechanism. Only
-    // applies to paths actually in the module registry (module !== null) — anything outside it
-    // (e.g. /api/notifications, which is scoped by req.user.id, not by module) is untouched.
-    if (!isRestrictedSurface && module !== null && !hasModuleAccess) {
-      const err = new Error("You don't have access to this part of the workspace.");
-      err.statusCode = 403;
-      throw err;
+    // Staff roles (see modules/access/): each request needs its module + action (view / create /
+    // edit / delete — access.registry.js's resolveAccess) granted by the staff member's role. Only
+    // then is the role aliased to "admin", so every downstream admin check runs scoped to
+    // req.ownerAdminId exactly as described above — now including DELETE when the role grants it.
+    //
+    // A staff account without a role (pre-roles) resolves to its legacy permissions — view/create/
+    // edit in its allowedModules, never delete, never billing — which is exactly what it could do
+    // before. Owner-only surfaces (staff/role management, reassign-owner, platform analytics) are
+    // never aliased, so authorize("admin") / blockIfCollaboratorRestricted keep refusing them.
+    // A path with no module mapping is refused too, so a new module can't be left open by accident.
+    if (!isOwnerOnlyPath(path)) {
+      const access = resolveAccess(req.method, path);
+      const permissions = await AccessService.permissionsFor(req.user);
+      req.user.permissions = permissions;
+      if (!access || !can(permissions, access.module, access.action)) {
+        const err = new Error(access ? `Your role doesn't allow you to ${describeAccess(access)}.` : "You don't have access to this part of the workspace.");
+        err.statusCode = 403;
+        err.code = "ROLE_FORBIDDEN";
+        throw err;
+      }
+      req.user.role = "admin";
     }
-
-    if (req.method !== "DELETE" && !isRestrictedSurface) req.user.role = "admin";
   }
 
   // Each admin is its own tenant — no DB lookup needed (unlike school/teacher/learner above),
