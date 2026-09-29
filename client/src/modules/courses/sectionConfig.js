@@ -10,6 +10,19 @@ export const SECTIONS = [
 
 export const SECTION_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.key, s.label]));
 
+// Notes are the educator's teaching notes — educators (and admins/course authors) see them;
+// learners/parents and school (hub) portal logins don't. The server strips them from those
+// roles' sessions too (course.service.js's shapeSessionForViewer).
+export const EDUCATOR_ONLY_SECTION_KEYS = ["notes"];
+const ROLES_WITHOUT_EDUCATOR_SECTIONS = ["learner", "school"];
+
+// The sections a learner works through — also what learner progress/completion counts.
+export const LEARNER_SECTIONS = SECTIONS.filter((s) => !EDUCATOR_ONLY_SECTION_KEYS.includes(s.key));
+
+export function sectionsForRole(role) {
+  return ROLES_WITHOUT_EDUCATOR_SECTIONS.includes(role) ? LEARNER_SECTIONS : SECTIONS;
+}
+
 // Untitled sessions default their title to "" — avoid showing "Session 1: " with nothing after it,
 // and avoid the double-naming that happens if a session's title itself echoes "Session 1".
 export function sessionLabel(session, index) {

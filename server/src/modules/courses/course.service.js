@@ -127,6 +127,30 @@ function hydrateSessionAssessments(session, assessmentsById, visibleKeys = null)
   return { ...session, attachedAssessments };
 }
 
+// Session notes are the educator's teaching notes — never sent to anyone but educators and the
+// people who author courses. A learner/parent login and a school (hub) portal login get sessions
+// without them.
+const EDUCATOR_ONLY_FIELDS = ["notes"];
+const ROLES_WITHOUT_EDUCATOR_CONTENT = ["learner", "school"];
+
+// What a given viewer may receive of a hydrated session:
+//   - no educator-only fields (notes) for learners and school portals;
+//   - for a learner, only the assessments actually issued to them — attachedAssessments is
+//     already filtered by hydrateSessionAssessments, and the raw assessmentIds /
+//     assessmentAttachments lists are cut down to match, so an unissued assignment can't be seen
+//     (or even counted) from the learner's side.
+function shapeSessionForViewer(session, role) {
+  if (!ROLES_WITHOUT_EDUCATOR_CONTENT.includes(role)) return session;
+  const shaped = { ...session };
+  for (const field of EDUCATOR_ONLY_FIELDS) shaped[field] = [];
+  if (role === "learner") {
+    const visibleIds = new Set(session.attachedAssessments.map((a) => a.id));
+    shaped.assessmentIds = (session.assessmentIds || []).filter((id) => visibleIds.has(id));
+    shaped.assessmentAttachments = (session.assessmentAttachments || []).filter((a) => visibleIds.has(a?.assessmentId || a?.id));
+  }
+  return shaped;
+}
+
 const CourseService = {
   async createCourse(data) {
     assertValidAgeRange(data.ageMin, data.ageMax);
@@ -464,7 +488,9 @@ const CourseService = {
   // learnerId, when passed, scopes attachedAssessments on every returned session to only what's
   // actually been issued to that learner — see hydrateSessionAssessments. Omitted (the default)
   // for teacher/admin/school callers, who need to see everything attached in order to issue it.
-  async getSessions(courseId, { learnerId } = {}) {
+  // `role` shapes what's returned (see shapeSessionForViewer). A learner with no learner record
+  // resolved still gets the learner shape, with no assessments issued.
+  async getSessions(courseId, { learnerId, role } = {}) {
     const course = await CourseModel.findById(courseId);
     if (!course) {
       const err = new Error("Course not found");
@@ -474,10 +500,11 @@ const CourseService = {
     await ensureSessionsGrouped(courseId);
     const assessmentsById = await buildAssessmentLookup(course.ownerAdminId);
     const sessions = await SessionModel.findByCourseId(courseId);
-    const visibleKeys = learnerId
-      ? await AssessmentSubmissionService.getIssuedSessionAssessmentKeysForLearner(learnerId)
+    const isLearner = role === "learner" || Boolean(learnerId);
+    const visibleKeys = isLearner
+      ? (learnerId ? await AssessmentSubmissionService.getIssuedSessionAssessmentKeysForLearner(learnerId) : new Set())
       : null;
-    return sessions.map((session) => hydrateSessionAssessments(session, assessmentsById, visibleKeys));
+    return sessions.map((session) => shapeSessionForViewer(hydrateSessionAssessments(session, assessmentsById, visibleKeys), isLearner ? "learner" : role));
   },
 
   async createSession(courseId, data) {
