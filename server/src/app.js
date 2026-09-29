@@ -38,6 +38,7 @@ const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
 const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
+const accessRoutes = require("./modules/access/access.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -210,6 +211,10 @@ app.use("/api/leads", protect, authorize("admin"), leadRoutes);
 // collaborators on their inviting admin's behalf — both are real-admin-only tenant management,
 // not "content creation".
 app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, reassignOwnerRoutes, collaboratorRoutes);
+// Staff roles & permissions (Settings → Roles & access) — owner-only, same guards as admin-tools:
+// a staff account is never role-aliased here (see access.registry.js's OWNER_ONLY_PREFIXES), so
+// authorize("admin") refuses it, and blockIfCollaboratorRestricted backs that up.
+app.use("/api/access", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, accessRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

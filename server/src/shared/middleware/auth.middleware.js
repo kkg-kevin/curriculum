@@ -31,7 +31,7 @@ async function protect(req, res, next) {
       return next(err);
     }
     const user = await AuthService.getById(payload.sub);
-    req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules };
+    req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules, roleId: user.roleId };
     next();
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404) return next(err);

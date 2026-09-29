@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/ui/Sidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
+import StaffAccessGate from "../routes/StaffAccessGate";
 import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
 
 const MOBILE_BREAKPOINT = 900;
@@ -48,7 +49,7 @@ function MainLayout() {
         <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} />
 
         <main style={{ flex: 1, padding: isMobile ? "20px 16px 28px" : "28px 32px", minWidth: 0, overflowX: "hidden" }}>
-          <Outlet />
+          <StaffAccessGate><Outlet /></StaffAccessGate>
         </main>
 
         <Footer />

@@ -8,16 +8,20 @@ const { MODULE_KEYS } = require("./module-registry");
 // see collaborator.service.js's invite() — but once set, editing always sends an explicit list.
 const moduleListSchema = z.array(z.enum(MODULE_KEYS)).max(MODULE_KEYS.length);
 
+// A staff member's access comes from their role (roleId — see modules/access/). allowedModules is
+// the pre-roles way and is still accepted for direct API callers.
 const inviteSchema = z.object({
   name: z.string().min(1, "Name is required").max(150),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  roleId: z.string().min(1).optional(),
   allowedModules: moduleListSchema.optional(),
 });
 
 const updateSchema = z.object({
-  allowedModules: moduleListSchema,
-});
+  roleId: z.string().min(1).optional(),
+  allowedModules: moduleListSchema.optional(),
+}).refine((data) => data.roleId !== undefined || data.allowedModules !== undefined, { message: "Choose a role" });
 
 // This whole route is mounted under admin-tools (authorize("admin") + attachOwnRecords at the
 // app.js level) and additionally refused outright for role "collaborator" by
@@ -36,7 +40,9 @@ const listCollaborators = asyncHandler(async (req, res) => {
 
 const updateCollaborator = asyncHandler(async (req, res) => {
   const data = updateSchema.parse(req.body);
-  const collaborator = await CollaboratorService.updateModules(req.params.id, req.ownerAdminId, data.allowedModules);
+  const collaborator = data.roleId !== undefined
+    ? await CollaboratorService.updateRole(req.params.id, req.ownerAdminId, data.roleId)
+    : await CollaboratorService.updateModules(req.params.id, req.ownerAdminId, data.allowedModules);
   res.json({ success: true, data: collaborator });
 });
 

@@ -6,13 +6,15 @@ import {
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
 import { useAuth } from "../../context/AuthContext";
+import { canViewAny, isStaff } from "../../hooks/usePermissions";
 import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../hooks/useSidebarCollapse";
 
-// `module` matches client/src/modules/settings/collaborators/moduleRegistry.js's MODULE_OPTIONS
-// keys (and, on the server, admin-tools/module-registry.js's same keys) — used below to filter a
-// collaborator's own menu by their allowedModules. Absent on an item (e.g. Dashboard) means
-// "always shown, nothing to gate." An array (Events) means "shown if ANY of these are granted" —
-// Events has no separate Competitions/Bootcamps sidebar entry, it's one destination for both.
+// `module` is the staff-role permission key that gates an item (see
+// server/src/modules/access/access.registry.js — keep the keys identical): a staff account sees it
+// only if their role can view that module. Absent (e.g. Dashboard) means always shown. An array
+// (Events) means "shown if ANY of these can be viewed". `ownerOnly` items are never shown to
+// staff whatever their role says — Enquiries (lead triage) and Reports (the admin reports page is
+// the owner-only platform analytics).
 const ADMIN_MENU_ITEMS = [
   { name: "Dashboard", path: "/", icon: FiGrid },
   { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome, module: "learning-hubs" },
@@ -23,10 +25,10 @@ const ADMIN_MENU_ITEMS = [
   { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
   { name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"] },
   { name: "Courses", path: "/courses", icon: FiBook, module: "courses" },
-  { name: "Enquiries", path: "/enquiries", icon: FiMail },
+  { name: "Enquiries", path: "/enquiries", icon: FiMail, ownerOnly: true },
   { name: "Assessments", path: "/assessments", icon: FiClipboard, module: "assessments" },
-  { name: "Reports", path: "/reports", icon: FiBarChart2, module: "reports" },
-  { name: "Billing", path: "/billing", icon: FiDollarSign },
+  { name: "Reports", path: "/reports", icon: FiBarChart2, module: "reports", ownerOnly: true },
+  { name: "Billing", path: "/billing", icon: FiDollarSign, module: "billing" },
   { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
 ];
 
@@ -37,49 +39,16 @@ const CURRICULUM_ADMIN_MENU_ITEMS = [
   { name: "Curriculum", path: "/curriculum", icon: FiBookOpen },
 ];
 
-// A collaborator (see scope.middleware.js's attachOwnRecords) gets edit access to whichever
-// modules the inviting admin granted them (users.allowedModules) — Billing and Enquiries are
-// deliberately absent regardless of grants: financial records and lead triage aren't offerable at
-// all, and the server doesn't alias a collaborator's role on those routes either (they'd 403 if
-// reached). This list is the collaborator's MAXIMUM possible menu; Sidebar filters it further by
-// user.allowedModules below (a collaborator with only "curriculum" granted sees just that entry
-// plus Dashboard, not this whole list).
-const COLLABORATOR_MENU_ITEMS = [
-  { name: "Dashboard", path: "/", icon: FiGrid },
-  { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome, module: "learning-hubs" },
-  { name: "Curriculum", path: "/curriculum", icon: FiBookOpen, module: "curriculum" },
-  { name: "Learners", path: "/learners", icon: FiUsers, module: "learners" },
-  { name: "Home Learning", path: "/home-learning", icon: FiHeart, module: "home-learning" },
-  { name: "Educators", path: "/teachers", icon: FiUserCheck, module: "teachers" },
-  { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
-  { name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"] },
-  { name: "Courses", path: "/courses", icon: FiBook, module: "courses" },
-  { name: "Assessments", path: "/assessments", icon: FiClipboard, module: "assessments" },
-  { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
-];
-
-const ROLE_MENU_ITEMS = {
-  curriculumAdmin: CURRICULUM_ADMIN_MENU_ITEMS,
-  collaborator: COLLABORATOR_MENU_ITEMS,
-};
-
-// A grant is `null` for a legacy collaborator invited before per-module access existed (or one an
-// admin hasn't yet configured) — treated as "every module," same interpretation
-// scope.middleware.js's attachOwnRecords uses server-side, so a legacy collaborator's menu is
-// never silently narrowed by this filter.
-function hasModuleAccess(item, allowedModules) {
-  if (!item.module) return true;
-  if (allowedModules == null) return true;
-  const required = Array.isArray(item.module) ? item.module : [item.module];
-  return required.some((m) => allowedModules.includes(m));
+// A staff account's menu: the owner's, minus owner-only items and modules their role can't view.
+function staffMenu(user) {
+  return ADMIN_MENU_ITEMS.filter((item) => !item.ownerOnly && (!item.module || canViewAny(user, item.module)));
 }
 
 function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { user } = useAuth();
-  const baseItems = ROLE_MENU_ITEMS[user?.role] || ADMIN_MENU_ITEMS;
-  const menuItems = user?.role === "collaborator"
-    ? baseItems.filter((item) => hasModuleAccess(item, user?.allowedModules))
-    : baseItems;
+  const menuItems = user?.role === "curriculumAdmin"
+    ? CURRICULUM_ADMIN_MENU_ITEMS
+    : isStaff(user) ? staffMenu(user) : ADMIN_MENU_ITEMS;
   const [collapsed, setCollapsed] = useSidebarCollapse("admin");
   // Never collapsed on mobile — the drawer already fully hides/shows, collapsing it too would
   // just be a narrow drawer with no way to reach labels.

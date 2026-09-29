@@ -8,12 +8,20 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LeadModel = require("../leads/lead.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const RevokedTokenModel = require("./revoked-token.model");
+const AccessService = require("../access/access.service");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
 
 const SALT_ROUNDS = 10;
 
 // Strips the password hash before a user record ever leaves the service layer.
+// A staff (collaborator) account's permissions and role name, sent with the user so the client
+// can shape its sidebar and actions; nothing for any other role.
+async function staffAccess(user) {
+  if (user.role !== "collaborator") return {};
+  return { permissions: await AccessService.permissionsFor(user), accessRole: await AccessService.roleSummaryFor(user) };
+}
+
 function sanitize(user) {
   const { passwordHash, ...safe } = user;
   return safe;
@@ -189,7 +197,7 @@ const AuthService = {
     const suspended = await resolveSuspension(user);
     const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
     const token = signToken(user);
-    return { user: { ...sanitize(user), suspended, pendingPayment }, token };
+    return { user: { ...sanitize(user), suspended, pendingPayment, ...(await staffAccess(user)) }, token };
   },
 
   // Confirms the CURRENTLY logged-in user really knows their own password, without touching
@@ -263,7 +271,7 @@ const AuthService = {
     // them to the in-app "Account Suspended" page.
     const suspended = await resolveSuspension(user);
     const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
-    return { ...sanitize(user), suspended, pendingPayment };
+    return { ...sanitize(user), suspended, pendingPayment, ...(await staffAccess(user)) };
   },
 
   // "What do I owe" for the "payment pending" screen — a learner auto-provisioned from a public

@@ -1,6 +1,8 @@
 const UserModel = require("../auth/user.model");
 const AuthService = require("../auth/auth.service");
 const { MODULE_KEYS } = require("./module-registry");
+const AccessService = require("../access/access.service");
+const AccessRoleModel = require("../access/access-role.model");
 
 function sanitize(user) {
   const { passwordHash, ...safe } = user;
@@ -16,7 +18,7 @@ const CollaboratorService = {
   // but wrong here, where a second admin could otherwise "invite" (and silently take over) an
   // email that already collaborates with a DIFFERENT admin's tenant. So the cross-tenant check
   // runs first, before any password is touched.
-  async invite({ name, email, password, invitedByAdminId, allowedModules }) {
+  async invite({ name, email, password, invitedByAdminId, allowedModules, roleId }) {
     const existing = await UserModel.findByEmail(email);
     if (existing && existing.role !== "collaborator") {
       const err = new Error(`This email is already registered as a ${existing.role} account`);
@@ -33,16 +35,35 @@ const CollaboratorService = {
     // UI always sends an explicit array in practice; this default only matters for a caller that
     // bypasses it (e.g. direct API use).
     const modules = allowedModules === undefined ? MODULE_KEYS : allowedModules;
+    // Checked before any account is created or its password touched.
+    if (roleId) await AccessService.assertOwnRole(invitedByAdminId, roleId);
     const user = await AuthService.setOrCreatePassword({ name, email, password, role: "collaborator" });
     // Re-inviting an existing collaborator (password reset) also updates their module grant, so
     // editing access is possible through a re-invite, not only the dedicated PATCH endpoint below.
-    const updated = await UserModel.update(user.id, existing ? { allowedModules: modules } : { invitedByAdminId, allowedModules: modules });
+    const access = roleId ? { roleId } : { allowedModules: modules, roleId: null };
+    const updated = await UserModel.update(user.id, existing ? access : { invitedByAdminId, ...access });
     return sanitize(updated);
   },
 
   async listForAdmin(invitedByAdminId) {
-    const users = await UserModel.findAll({ invitedByAdminId });
-    return users.filter((u) => u.role === "collaborator").map(sanitize);
+    const users = (await UserModel.findAll({ invitedByAdminId })).filter((u) => u.role === "collaborator");
+    const roles = new Map((await AccessRoleModel.findAll(invitedByAdminId)).map((r) => [r.id, r]));
+    return users.map((u) => {
+      const role = roles.get(u.roleId);
+      return { ...sanitize(u), role: role ? { id: role.id, name: role.name } : null };
+    });
+  },
+
+  // Gives a staff member a different role — takes effect on their next request.
+  async updateRole(id, invitedByAdminId, roleId) {
+    const user = await UserModel.findById(id);
+    if (!user || user.role !== "collaborator" || user.invitedByAdminId !== invitedByAdminId) {
+      const err = new Error("Collaborator not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    await AccessService.assertOwnRole(invitedByAdminId, roleId);
+    return sanitize(await UserModel.update(id, { roleId }));
   },
 
   // Edits an existing collaborator's module grant — same ownership check shape as revoke() below.
@@ -56,7 +77,8 @@ const CollaboratorService = {
       err.statusCode = 404;
       throw err;
     }
-    const updated = await UserModel.update(id, { allowedModules });
+    // Clears any role so the module list actually applies (a role always takes precedence).
+    const updated = await UserModel.update(id, { allowedModules, roleId: null });
     return sanitize(updated);
   },
 
