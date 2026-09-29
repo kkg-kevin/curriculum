@@ -8,11 +8,13 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
 // Multi-photo uploader: uploads each picked/dropped file immediately (reusing the same
 // /api/uploads/image endpoint ImageUploadField uses) and keeps `value` as a plain array of
-// resolved URLs, so the parent form already holds real URLs by Save.
-export default function PhotoGalleryField({ value = [], onChange, label = "Photos" }) {
+// resolved URLs, so the parent form already holds real URLs by Save. `max` caps how many photos
+// the field holds; the drop zone hides once it's full.
+export default function PhotoGalleryField({ value = [], onChange, label = "Photos", max, hint = "Upload images of the learning hub (JPG, PNG)" }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+  const remaining = max == null ? Infinity : Math.max(0, max - value.length);
 
   const uploadFiles = async (fileList) => {
     const files = Array.from(fileList || []);
@@ -29,6 +31,10 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         continue;
       }
       valid.push(file);
+    }
+    if (valid.length > remaining) {
+      toast.error(`You can add at most ${max} photo${max === 1 ? "" : "s"}`);
+      valid.splice(remaining);
     }
     if (valid.length === 0) return;
 
@@ -66,12 +72,12 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         ref={fileInputRef}
         type="file"
         accept="image/png,image/jpeg,image/gif,image/webp"
-        multiple
+        multiple={remaining > 1}
         onChange={handleFilePicked}
         style={{ display: "none" }}
       />
 
-      <div
+      {remaining > 0 && <div
         onClick={() => !uploading && fileInputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -95,8 +101,8 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>
           {uploading ? "Uploading…" : "Click to upload or drag and drop"}
         </p>
-        <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Maximum file size: 5MB</p>
-      </div>
+        <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Maximum file size: 5MB{max != null ? ` · ${remaining} of ${max} left` : ""}</p>
+      </div>}
 
       {value.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: "10px" }}>
@@ -116,7 +122,7 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         </div>
       )}
 
-      <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Upload images of the learning hub (JPG, PNG)</p>
+      {hint && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{hint}</p>}
     </div>
   );
 }

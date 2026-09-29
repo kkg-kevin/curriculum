@@ -1,6 +1,7 @@
 import { Link, useOutletContext } from "react-router-dom";
 import { FiBookOpen, FiHome, FiMapPin, FiPhone, FiUser, FiUsers } from "react-icons/fi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import HomeLocation from "../components/HomeLocation";
 
 const card = { background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, padding: 20, boxShadow: "0 2px 8px rgba(15,23,42,.04)" };
 
@@ -21,6 +22,7 @@ function LearnerAssignment({ assignment }) {
         <strong style={{ color: "#111827" }}><FiUser style={{ verticalAlign: "-2px" }} /> {home.guardianName}</strong>
         {home.guardianPhone && <span><FiPhone style={{ verticalAlign: "-2px" }} /> {home.guardianPhone}</span>}
         <span><FiMapPin style={{ verticalAlign: "-2px" }} /> {[home.addressLine, home.landmark, home.town, home.subCounty, home.county].filter(Boolean).join(", ") || "Home location not recorded"}</span>
+        <HomeLocation mapUrl={home.mapUrl} photos={home.locationPhotos} />
       </div>
     </div>
     <div style={{ borderTop: "1px solid #EEF1F5", marginTop: 16, paddingTop: 14 }}>
@@ -34,7 +36,7 @@ function LearnerAssignment({ assignment }) {
 
 export default function EducatorHomeLearningPage() {
   const { homeLearningAssignments: assignments = [], homeLearningLoading: isLoading, homeLearningError: isError } = useOutletContext();
-  return <div style={{ maxWidth: 1100, margin: "0 auto", fontFamily: "Inter, sans-serif" }}>
+  return <div style={{ width: "100%", fontFamily: "Inter, sans-serif" }}>
     <header style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
       <div style={{ width: 46, height: 46, borderRadius: 13, display: "grid", placeItems: "center", background: "#E8F5FB", color: "#25476a" }}><FiHome size={22} /></div>
       <div><h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Home Learning learners</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 13 }}>The children you teach at home, their curriculum and grade, and each family's contact details.</p></div>
