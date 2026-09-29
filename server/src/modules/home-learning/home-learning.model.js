@@ -1,10 +1,16 @@
 const db = require("../../config/db");
-const { createRecord, updateRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { createRecord, updateRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const HOUSEHOLDS = "home_learning_households";
 const ENROLLMENTS = "home_learning_enrollments";
+const HOUSEHOLD_JSON_FIELDS = ["locationPhotos"];
 
-const learnerSummary = (l) => (l ? { id: l.id, firstName: l.firstName, lastName: l.lastName, gender: l.gender, photo: l.photo, registrationNumber: l.registrationNumber } : null);
+// Includes the parent on the child's profile so the admin page can spot a household whose parent
+// differs from it (that parent's portal login wouldn't reach the household's invoices).
+const learnerSummary = (l) => (l ? {
+  id: l.id, firstName: l.firstName, lastName: l.lastName, gender: l.gender, photo: l.photo, registrationNumber: l.registrationNumber,
+  guardianName: l.guardianName, guardianEmail: l.guardianEmail, guardianPhone: l.guardianPhone,
+} : null);
 const personSummary = (p) => (p ? { id: p.id, firstName: p.firstName, lastName: p.lastName, photo: p.photo } : null);
 const byId = (rows) => new Map(rows.map((row) => [row.id, row]));
 const idsOf = (rows, key) => [...new Set(rows.map((row) => row[key]).filter(Boolean))];
@@ -109,7 +115,7 @@ const HouseholdModel = {
       .where("e.educatorId", educatorId)
       .select(
         "e.*", "h.guardianName", "h.guardianPhone", "h.guardianEmail", "h.county", "h.subCounty",
-        "h.town", "h.addressLine", "h.landmark",
+        "h.town", "h.addressLine", "h.landmark", "h.mapUrl", "h.locationPhotos",
       )
       .orderBy("e.createdAt", "desc");
     const [learners, curricula] = await Promise.all([
@@ -134,6 +140,8 @@ const HouseholdModel = {
           town: link.town,
           addressLine: link.addressLine,
           landmark: link.landmark,
+          mapUrl: link.mapUrl || null,
+          locationPhotos: link.locationPhotos || [],
         },
       };
     });
@@ -146,13 +154,13 @@ const HouseholdModel = {
   },
 
   createHousehold(data) {
-    return createRecord(db, HOUSEHOLDS, data);
+    return createRecord(db, HOUSEHOLDS, stringifyJsonFields(data, HOUSEHOLD_JSON_FIELDS));
   },
 
   async updateHousehold(id, ownerAdminId, data) {
     const existing = await firstOrNull(db(HOUSEHOLDS).where({ id, ownerAdminId }));
     if (!existing) return null;
-    await updateRecord(db, HOUSEHOLDS, id, data);
+    await updateRecord(db, HOUSEHOLDS, id, stringifyJsonFields(data, HOUSEHOLD_JSON_FIELDS));
     return firstOrNull(db(HOUSEHOLDS).where({ id, ownerAdminId }));
   },
 

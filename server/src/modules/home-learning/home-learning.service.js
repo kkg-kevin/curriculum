@@ -199,6 +199,50 @@ async function syncHouseholdChildren(ownerAdminId, household) {
   }
 }
 
+const GUARDIAN_FIELDS = ["guardianName", "guardianPhone", "guardianEmail"];
+const sameText = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+
+// The household's parent is the child's parent. Copies the household's parent details onto a
+// learner's profile where the profile has none — or, after a household edit (`previous` = the
+// household before it), where the profile still shows the old value — so the parent's portal
+// login (keyed on guardianEmail, see scope.middleware.js) reaches both the child and the
+// household's invoices. A profile that names a different parent's email is left alone.
+async function syncLearnerGuardian(learner, household, previous = null) {
+  const wasPrevious = (field) => previous && sameText(learner[field], previous[field]);
+  if (learner.guardianEmail && household.guardianEmail && !sameText(learner.guardianEmail, household.guardianEmail) && !wasPrevious("guardianEmail")) return;
+  const patch = {};
+  for (const field of GUARDIAN_FIELDS) {
+    const value = household[field];
+    if (!value || sameText(learner[field], value)) continue;
+    if (!learner[field] || wasPrevious(field)) patch[field] = value;
+  }
+  if (Object.keys(patch).length) await LearnerModel.update(learner.id, patch);
+}
+
+// Creates or resets the parent's portal login. Runs before anything is written, so an email
+// that belongs to a staff account (409 from setOrCreatePassword) fails the whole save cleanly.
+async function setParentPortalPassword(name, email, password) {
+  if (!password) return;
+  if (!email) fail("Add the parent's email before setting a portal password — it's what they sign in with");
+  await AuthService.setOrCreatePassword({ name, email, password, role: "learner" });
+}
+
+// Whether each household's parent can sign in to see their invoices: "active" (a parent login
+// exists for the email), "missing" (no login yet), "no_email", or "conflict" (the email belongs
+// to a staff account, so it can't be a parent login).
+async function portalStatuses(households) {
+  const emails = [...new Set(households.map((h) => h.guardianEmail).filter(Boolean))];
+  // users.email uses a case-insensitive collation, so whereIn matches regardless of case.
+  const users = emails.length ? await db("users").whereIn("email", emails).select("email", "role", "username") : [];
+  const byEmail = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+  return new Map(households.map((h) => {
+    if (!h.guardianEmail) return [h.id, "no_email"];
+    const user = byEmail.get(h.guardianEmail.toLowerCase());
+    if (!user) return [h.id, "missing"];
+    return [h.id, user.role === "learner" && !user.username ? "active" : "conflict"];
+  }));
+}
+
 function monthRange(period) {
   const [year, month] = period.split("-").map(Number);
   const pad = (n) => String(n).padStart(2, "0");
@@ -290,10 +334,11 @@ const HomeLearningService = {
   async list(ownerAdminId) {
     const households = await HouseholdModel.findAll(ownerAdminId);
     const billing = await billingSummaries(households.map((h) => h.id));
+    const portal = await portalStatuses(households);
     const packages = new Map((await HomeLearningPackageModel.findAll(ownerAdminId)).map((pkg) => [pkg.id, pkg]));
     return households.map((household) => {
       const pkg = packages.get(household.packageId);
-      return { ...household, package: pkg ? { id: pkg.id, name: pkg.name, status: pkg.status } : null, billing: billing.get(household.id) };
+      return { ...household, package: pkg ? { id: pkg.id, name: pkg.name, status: pkg.status } : null, billing: billing.get(household.id), parentPortal: portal.get(household.id) };
     });
   },
 
@@ -302,20 +347,24 @@ const HomeLearningService = {
   },
 
   async create(ownerAdminId, input) {
-    const data = parseOrFail(householdSchema, input, "Invalid household details");
+    const { portalPassword, ...data } = parseOrFail(householdSchema, input, "Invalid household details");
+    const price = await resolvePackagePrice(ownerAdminId, data.packageId, data.childCount);
+    await setParentPortalPassword(data.guardianName, data.guardianEmail, portalPassword);
     return HouseholdModel.createHousehold({
       ...data,
       ownerAdminId,
-      ...(await resolvePackagePrice(ownerAdminId, data.packageId, data.childCount)),
+      ...price,
       status: data.status || "pending",
       guardianEmail: data.guardianEmail || null,
+      mapUrl: data.mapUrl || null,
+      locationPhotos: data.locationPhotos || [],
       startDate: data.startDate || null,
       notes: data.notes || null,
     });
   },
 
   async update(ownerAdminId, id, input) {
-    const updates = parseOrFail(householdSchema.partial(), input, "Invalid household details");
+    const { portalPassword, ...updates } = parseOrFail(householdSchema.partial(), input, "Invalid household details");
     const existing = await HouseholdModel.findById(id, ownerAdminId);
     if (!existing) fail("Household not found", 404);
     if (updates.packageId !== undefined || updates.childCount !== undefined) {
@@ -325,9 +374,18 @@ const HomeLearningService = {
       if ((await HouseholdModel.countActive(id, ownerAdminId)) > updates.childCount) fail("Remove child enrollments before reducing the package size");
     }
     if (updates.guardianEmail === "") updates.guardianEmail = null;
+    if (updates.mapUrl === "") updates.mapUrl = null;
     if (updates.startDate === "") updates.startDate = null;
+    await setParentPortalPassword(updates.guardianName ?? existing.guardianName, updates.guardianEmail === undefined ? existing.guardianEmail : updates.guardianEmail, portalPassword);
     const household = await HouseholdModel.updateHousehold(id, ownerAdminId, updates);
     if (updates.status !== undefined && updates.status !== existing.status) await syncHouseholdChildren(ownerAdminId, household);
+    // New parent details reach every child whose profile still showed the old ones.
+    if (GUARDIAN_FIELDS.some((field) => updates[field] !== undefined && !sameText(updates[field], existing[field]))) {
+      for (const enrollment of await HouseholdModel.findEnrollmentsByHousehold(id, ownerAdminId)) {
+        const learner = await LearnerModel.findById(enrollment.learnerId);
+        if (learner) await syncLearnerGuardian(learner, household, existing);
+      }
+    }
     return household;
   },
 
@@ -360,6 +418,7 @@ const HomeLearningService = {
       ? await HouseholdModel.updateEnrollment(existing.id, fields)
       : await HouseholdModel.createEnrollment({ ownerAdminId, learnerId: learner.id, ...fields });
     await applyEnrollment(ownerAdminId, household, enrollment, learner, existing?.educatorId || null);
+    await syncLearnerGuardian(learner, household);
     return HouseholdModel.findEnrollment(householdId, learner.id, ownerAdminId);
   },
 
