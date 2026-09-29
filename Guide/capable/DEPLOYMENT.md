@@ -1,6 +1,6 @@
 # Deployment Guide — Digifunzi Curriculum — Capable environment
 
-**Status: not yet deployed — the zips in this folder are still built against the old placeholder URL.**
+**Status: bundles rebuilt 29 Sep 2026 against the real `lms-api.capable.co.ke` — ready to upload.** Release notes for what they contain: `Guide/live/DEPLOYMENT.md` → "This release (29 Sep 2026)" (same backend, same features; Capable just has its own portal build).
 
 | Part | Repo | URL |
 |---|---|---|
@@ -32,6 +32,29 @@ was set up, just a third instance instead of a second.
 
 | File | Built how | Safe to upload as-is? |
 |---|---|---|
+| `backend-deploy.zip` | 29 Sep 2026, from HEAD (`88a79cf`) — byte-identical to `Guide/dev/` and `Guide/live/`; code only, nothing environment-specific baked in | **Yes** |
+| `assets.zip` + `index.html` | 29 Sep 2026, `npm run build:capable` (`client/`) — bakes in `https://lms-api.capable.co.ke` and the Capable branding. Entry **`index-Bjd7hJYW.js`** / CSS `index-CPRP9smp.css` | **Yes** — upload to the `lms.capable.co.ke` document root |
+
+No website zip here — the marketing site isn't part of this deploy (see above).
+(`digifunzi-landing` does have `build:capable` scripts, but its `.env.capable` still points at a
+placeholder API, so don't build it for Capable until that's given a real URL.)
+
+**Before the Restart that applies this release's migrations**, set `PUBLIC_CONTENT_ADMIN_ID` if
+Capable should seed the three default Home Learning packages for that admin (the seed reads it
+at migration time; otherwise create packages by hand in Home Learning → Packages).
+
+Rebuilding the frontend zip later:
+
+```bash
+cd client && npm run build:capable && cd ..
+# zip must contain the assets/ folder itself (not just its contents), so
+# extracting it in cPanel File Manager produces assets/ directly in the
+# document root, alongside index.html:
+cd client/dist && zip -r ../../Guide/capable/assets.zip assets && cd ../..
+cp client/dist/index.html Guide/capable/index.html
+```
+
+---|---|---|
 | `backend-deploy.zip` | Copied straight from `Guide/dev/backend-deploy.zip` — code is identical across every environment, nothing environment-specific baked in | **Yes** — this one's genuinely correct regardless of domain, same as Dev/Live |
 | `assets.zip` + `index.html` | Built with the old `npm run build:capable` (`client/`), before `client/.env.capable` had a real domain — bakes in the placeholder `https://capable-api.TODO-DOMAIN.com` | **No** — every API call from this bundle would hit a domain that doesn't resolve. Rebuild now that `client/.env.capable` points at `https://lms-api.capable.co.ke` (see below), then re-copy into this folder |
 | `africa-digifunzi-com-dist.zip` | Leftover from earlier scaffolding, built against the placeholder domain | **Not needed** — the marketing website isn't part of this deploy (see above). Safe to delete from this folder once the frontend/backend zips are rebuilt. |
