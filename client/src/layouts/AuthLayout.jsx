@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { FiCheck, FiLogIn, FiUserPlus } from "react-icons/fi";
-import { BRAND_NAME, BRAND_LOGO } from "../branding";
+import { BRAND_NAME, BRAND_LOGO, BRAND_AUTH_LOGO_HEIGHT } from "../branding";
 
 const HERO_CONTENT = {
   "/signup": {
@@ -295,7 +295,7 @@ function AuthLayout() {
         </div>
 
         <div className="df-auth-form-col">
-          <div className="df-auth-logo"><img src={BRAND_LOGO} alt={BRAND_NAME} /></div>
+          <div className="df-auth-logo"><img src={BRAND_LOGO} alt={BRAND_NAME} style={{ height: BRAND_AUTH_LOGO_HEIGHT }} /></div>
           <div className="df-auth-form-inner">
             <Outlet />
           </div>

@@ -7,6 +7,7 @@ import { FiMail, FiLock } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { loginSchema } from "../schemas/auth.schema";
 import { FieldWrap, IconInput, PasswordInput } from "../components/AuthFields";
+import { IS_CAPABLE } from "../../../branding";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -42,11 +43,14 @@ export default function LoginPage() {
 
   return (
     <>
-      <div style={{ textAlign: "center", marginBottom: "26px" }}>
-        <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
-          Enter your details to access your dashboard.
-        </p>
-      </div>
+      {/* Capable's sign-in shows just its (larger) logo above the form. */}
+      {!IS_CAPABLE && (
+        <div style={{ textAlign: "center", marginBottom: "26px" }}>
+          <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
+            Enter your details to access your dashboard.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
