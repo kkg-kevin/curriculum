@@ -177,16 +177,27 @@ const AuthService = {
   // `identifier` may be: an account's own email (admin/school/teacher/curriculumAdmin,
   // or a guardian logging in directly); a learner's own dedicated username (a genuinely separate
   // account/password from the guardian's — see setOrCreatePasswordByUsername); or, for a learner
-  // who has a username but no dedicated login yet, that same username resolved the original way —
-  // through the learner record it belongs to, then that learner's guardianEmail, then the
-  // guardian's own account. `Learner.username` is regex-restricted to exclude "@", so it can never
+  // who has a username but no dedicated login yet, that same username checked against their
+  // guardian's password — which then creates the learner's own login (see below) rather than
+  // signing in as the guardian. `Learner.username` is regex-restricted to exclude "@", so it can never
   // collide with an email-shaped identifier — these three branches are mutually exclusive.
   async login(identifier, password) {
     let user = await UserModel.findByEmail(identifier);
     if (!user) user = await UserModel.findByUsername(identifier);
+    // A learner's username with no dedicated login yet. It has always been accepted with the
+    // parent's password, but it used to sign in AS the parent — so the child saw the parent's
+    // view, siblings included. Now the child gets their own login instead: created here on first
+    // use with the password they just used, and signed in as that, so the session is scoped to
+    // this one child. The credentials that worked before keep working; the parent's own email
+    // login is untouched.
+    let learnerNeedingOwnLogin = null;
     if (!user) {
       const learner = await LearnerModel.findByUsername(identifier);
-      if (learner?.guardianEmail) user = await UserModel.findByEmail(learner.guardianEmail);
+      const guardian = learner?.guardianEmail ? await UserModel.findByEmail(learner.guardianEmail) : null;
+      if (guardian?.role === "learner") {
+        user = guardian;
+        learnerNeedingOwnLogin = learner;
+      }
     }
     if (!user) {
       const err = new Error("Invalid email/username or password");
@@ -198,6 +209,14 @@ const AuthService = {
       const err = new Error("Invalid email/username or password");
       err.statusCode = 401;
       throw err;
+    }
+    if (learnerNeedingOwnLogin) {
+      user = await UserModel.create({
+        name: `${learnerNeedingOwnLogin.firstName} ${learnerNeedingOwnLogin.lastName}`.trim(),
+        username: learnerNeedingOwnLogin.username,
+        passwordHash: user.passwordHash,
+        role: "learner",
+      });
     }
     // A suspended account is still allowed to log in — the client shows an in-app "Account
     // Suspended" page and every write is refused server-side. `suspended` rides along on the
