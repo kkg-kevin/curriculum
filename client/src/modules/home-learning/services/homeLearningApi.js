@@ -4,10 +4,8 @@ const BASE = "/api/home-learning";
 
 export const homeLearningApi = {
   getAll: () => api.get(BASE).then((r) => r.data.data),
+  // Read-only: the household forms pick from this. Packages are managed in Billing → Packages.
   getPackages: () => api.get(`${BASE}/packages`).then((r) => r.data.data),
-  createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),
-  updatePackage: (id, data) => api.put(`${BASE}/packages/${id}`, data).then((r) => r.data.data),
-  deletePackage: (id) => api.delete(`${BASE}/packages/${id}`).then((r) => r.data.data),
   createHousehold: (data) => api.post(BASE, data).then((r) => r.data.data),
   updateHousehold: (id, data) => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   enrollLearner: (id, data) => api.post(`${BASE}/${id}/learners`, data).then((r) => r.data.data),

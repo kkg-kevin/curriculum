@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiEdit2, FiGlobe, FiPackage, FiPlus } from "react-icons/fi";
-import { homeLearningApi } from "../services/homeLearningApi";
+import { billingApi } from "../services/billingApi";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
@@ -66,24 +66,31 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving }) {
   </form>;
 }
 
-// Home Learning → Packages: the packages households are sold on. Ticking "Show on the website"
-// publishes a package to the website's Home Schooling page (GET /api/public/home-learning/packages).
-export default function PackagesPanel({ packages, isLoading }) {
+// Billing → Packages: the Home Learning packages households are billed on (moved here from the
+// Home Learning page, which now only picks from them). Ticking "Show on the website" publishes a
+// package to the website's Home Schooling page (GET /api/public/home-learning/packages).
+export default function PackagesPanel() {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null); // package id, "new", or null
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["home-learning"] });
+  const { data: packageRows, isLoading } = useQuery({ queryKey: ["billing", "packages"], queryFn: billingApi.listPackages });
+  const packages = Array.isArray(packageRows) ? packageRows : [];
+  // Households show their package's name and price, so their list refreshes too.
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["billing", "packages"] });
+    queryClient.invalidateQueries({ queryKey: ["home-learning"] });
+  };
   const saveMutation = useMutation({
-    mutationFn: ({ id, data }) => (id ? homeLearningApi.updatePackage(id, data) : homeLearningApi.createPackage(data)),
+    mutationFn: ({ id, data }) => (id ? billingApi.updatePackage(id, data) : billingApi.createPackage(data)),
     onSuccess: (_, { id }) => { refresh(); setEditingId(null); toast.success(id ? "Package saved" : "Package created"); },
     onError: (error) => toast.error(errorMessage(error, "Could not save package")),
   });
   const quickMutation = useMutation({
-    mutationFn: ({ pkg, changes }) => homeLearningApi.updatePackage(pkg.id, { ...toPayload(toForm(pkg)), ...changes }),
+    mutationFn: ({ pkg, changes }) => billingApi.updatePackage(pkg.id, { ...toPayload(toForm(pkg)), ...changes }),
     onSuccess: refresh,
     onError: (error) => toast.error(errorMessage(error, "Could not update package")),
   });
   const deleteMutation = useMutation({
-    mutationFn: homeLearningApi.deletePackage,
+    mutationFn: billingApi.deletePackage,
     onSuccess: () => { refresh(); toast.success("Package deleted"); },
     onError: (error) => toast.error(errorMessage(error, "Could not delete package")),
   });
@@ -91,8 +98,8 @@ export default function PackagesPanel({ packages, isLoading }) {
   return <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, padding: 22, boxShadow: "0 2px 8px rgba(15,23,42,.04)", marginBottom: 22 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
       <div>
-        <h2 style={{ fontSize: 17, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}><FiPackage /> Packages</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>What families can sign up for. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</p>
+        <h2 style={{ fontSize: 17, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}><FiPackage /> Home Learning packages</h2>
+        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>What Home Learning families sign up for and are billed monthly. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</p>
       </div>
       {editingId !== "new" && <button type="button" onClick={() => setEditingId("new")} style={{ ...smallButton, borderColor: "#25476a", color: "#25476a", padding: "8px 12px" }}><FiPlus /> New package</button>}
     </div>
