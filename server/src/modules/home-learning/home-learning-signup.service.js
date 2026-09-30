@@ -3,7 +3,7 @@ const HouseholdModel = require("./home-learning.model");
 const HomeLearningPackageModel = require("./home-learning-package.model");
 const HomeLearningService = require("./home-learning.service");
 const { raiseHouseholdInvoice, monthRange } = require("./home-learning.service");
-const { signupSchema, approveSignupSchema } = require("./home-learning.validation");
+const { signupSchema, signupChildSchema, approveSignupSchema } = require("./home-learning.validation");
 const { priceForPackage, CURRENCY } = require("./home-learning.pricing");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
@@ -68,6 +68,18 @@ async function rollback({ learnerIds, usernames, parentUserId, householdId }) {
   }
 }
 
+// The parent's own login (email, no username) — a child's login can't see or add siblings.
+function assertParentLogin(user) {
+  if (user?.role !== "learner" || !user.email || user.username) {
+    fail("Only the parent's account can manage the family's children", 403);
+  }
+}
+
+// The parent's live households (never a cancelled one), matched on the parent's email.
+async function parentHouseholds(email) {
+  return (await HouseholdModel.findByGuardianEmail(email)).filter((h) => h.status !== "cancelled");
+}
+
 const HomeLearningSignupService = {
   async signup(input) {
     // Honeypot (the website's hidden hp_field) — only a bot fills it.
@@ -128,6 +140,8 @@ const HomeLearningSignupService = {
           guardianEmail: data.parent.email,
           username: child.username,
           accountStatus: "pending_payment",
+          // No hub until the admin places the child — this is how the admin can still open them.
+          createdByAdminId: ownerAdminId,
         });
         created.learnerIds.push(learner.id);
         await AuthService.setOrCreatePasswordByUsername({ name: fullName(child), username: child.username, password: child.password, role: "learner" });
@@ -175,6 +189,102 @@ const HomeLearningSignupService = {
   },
 
   // Admin: payment received for a website sign-up → record it and activate the family.
+  // Parent portal → My Family: each household the parent has, its package, how many of its paid
+  // places are filled, and the children in it (with each child's login username).
+  async getFamily(user) {
+    assertParentLogin(user);
+    const households = await parentHouseholds(user.email);
+    return Promise.all(households.map(async (household) => {
+      const [pkg, enrollments] = await Promise.all([
+        household.packageId ? HomeLearningPackageModel.findById(household.packageId, household.ownerAdminId) : null,
+        HouseholdModel.findEnrollmentsByHousehold(household.id, household.ownerAdminId),
+      ]);
+      const active = enrollments.filter((e) => e.status === "active");
+      const learners = await Promise.all(active.map((e) => LearnerModel.findById(e.learnerId)));
+      return {
+        id: household.id,
+        status: household.status,
+        packageName: pkg?.name || null,
+        places: household.childCount,
+        filled: active.length,
+        placesLeft: Math.max(0, household.childCount - active.length),
+        monthlyAmount: Number(household.monthlyAmount),
+        currency: CURRENCY,
+        children: active.map((e, i) => ({
+          learnerId: e.learnerId,
+          name: learners[i] ? fullName(learners[i]) : "",
+          username: learners[i]?.username || null,
+          awaitingPlacement: !e.curriculumId,
+        })),
+      };
+    }));
+  },
+
+  // Parent portal → My Family → Add a child: fills one of the household's already-paid places
+  // (e.g. a three-child package with one child registered so far). The child is created exactly
+  // like a website sign-up child — their own login (username + password) and an enrollment
+  // "awaiting placement" — and the admin is notified to choose their curriculum, grade and
+  // educator. Never changes the package or the price: with no free place, the parent is asked
+  // to contact the school.
+  async addChildFromParent(user, householdId, input) {
+    assertParentLogin(user);
+    const household = (await parentHouseholds(user.email)).find((h) => h.id === householdId);
+    if (!household) fail("Household not found", 404);
+    const ownerAdminId = household.ownerAdminId;
+    const filled = await HouseholdModel.countActive(household.id, ownerAdminId);
+    if (filled >= household.childCount) {
+      fail(`All ${household.childCount} ${household.childCount === 1 ? "place" : "places"} in your package are filled. Contact us to add more children.`, 409);
+    }
+    const parsed = signupChildSchema.safeParse(input);
+    if (!parsed.success) fail(parsed.error.issues[0]?.message || "Please check the child's details");
+    const child = parsed.data;
+    await assertUsernamesFree([child]);
+
+    const created = { learnerIds: [], usernames: [], parentUserId: null, householdId: null };
+    let learner;
+    try {
+      learner = await LearnerService.createLearner({
+        firstName: child.firstName,
+        lastName: child.lastName,
+        gender: child.gender,
+        dateOfBirth: child.dateOfBirth || undefined,
+        guardianName: household.guardianName,
+        guardianPhone: household.guardianPhone,
+        guardianEmail: household.guardianEmail,
+        username: child.username,
+        // A household still awaiting its first payment keeps new children on the same footing.
+        accountStatus: household.status === "pending" ? "pending_payment" : "active",
+        // No hub until the admin places the child — this is how the admin can still open them.
+        createdByAdminId: ownerAdminId,
+      });
+      created.learnerIds.push(learner.id);
+      await AuthService.setOrCreatePasswordByUsername({ name: fullName(child), username: child.username, password: child.password, role: "learner" });
+      created.usernames.push(child.username);
+      await HouseholdModel.createEnrollment({
+        ownerAdminId, householdId: household.id, learnerId: learner.id, curriculumId: null, educatorId: null, status: "active",
+        placementNotes: `Added by parent.${child.currentGrade ? ` Parent says: ${child.currentGrade}` : ""}`.slice(0, 255),
+      });
+    } catch (err) {
+      await rollback(created);
+      throw err;
+    }
+
+    await NotificationService._notify(ownerAdminId, {
+      type: "home_learning_child_added",
+      title: "Child added by a parent",
+      message: `${household.guardianName} added ${fullName(child)} to their Home Learning household. Choose their curriculum, grade and educator on the Home Learning page.`,
+      payload: { route: `/home-learning?household=${household.id}` },
+      dedupeKey: `home_learning_child_added:${learner.id}`,
+    }).catch(() => {});
+
+    return {
+      learnerId: learner.id,
+      name: fullName(child),
+      username: child.username,
+      placesLeft: household.childCount - filled - 1,
+    };
+  },
+
   async approveSignup(req, householdId, input) {
     const ownerAdminId = req.ownerAdminId;
     const parsed = approveSignupSchema.safeParse(input);

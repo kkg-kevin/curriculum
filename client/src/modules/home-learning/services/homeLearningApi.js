@@ -17,6 +17,9 @@ export const homeLearningApi = {
   approveSignup: (id, data) => api.post(`${BASE}/${id}/approve-payment`, data).then((r) => r.data.data),
   declineSignup: (id) => api.post(`${BASE}/${id}/decline-signup`, {}).then((r) => r.data.data),
   getForLearner: (learnerId) => api.get(`${BASE}/learner/${learnerId}`).then((r) => r.data.data),
+  // Parent portal → My Family (the parent's own login): households, free places, add a child.
+  getFamily: () => api.get(`${BASE}/family`).then((r) => r.data.data),
+  addFamilyChild: (householdId, data) => api.post(`${BASE}/family/${householdId}/children`, data).then((r) => r.data.data),
   getMyAssignments: () => api.get(`${BASE}/educator`).then((r) => r.data.data),
 };
 
