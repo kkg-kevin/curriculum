@@ -36,10 +36,14 @@ async function isLinkedToHub(learnerId, hubId) {
 
 // Same membership test, scoped to a "school" account's currently active hub (see
 // scope.middleware.js's req.ownSchool — a parent hub's admin switching into a branch hub gets
-// this for free, no change needed here) — or, for "admin", any of the hubs they own.
+// this for free, no change needed here) — or, for "admin", any of the hubs they own. An admin
+// also owns every learner their tenant created, even one not yet linked to any hub (created from
+// the top-level Learners page, hub assigned afterwards from the profile).
 async function isLinkedToOwnHub(req, learnerId) {
   if (req.user.role === "school") return isLinkedToHub(learnerId, req.ownSchool?.id);
   if (req.user.role === "admin") {
+    const learner = await LearnerModel.findById(learnerId);
+    if (learner?.createdByAdminId && learner.createdByAdminId === req.ownerAdminId) return true;
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
     const ownHubIds = new Set(await adminOwnedHubIds(req));
     return links.some((l) => ownHubIds.has(l.hubId));
@@ -64,6 +68,9 @@ const createLearner = asyncHandler(async (req, res) => {
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.guardianName, email: data.guardianEmail, password, role: "learner" });
   }
+  // Stamped server-side (never from the body — the schema strips it) so the creating admin keeps
+  // access before any hub link exists; see isLinkedToOwnHub.
+  if (req.user.role === "admin") data.createdByAdminId = req.ownerAdminId;
   const record = await LearnerService.createLearner(data);
   // The learner's OWN dedicated login is minted only after the record — createLearner's own
   // username-uniqueness check (assertUsernameAvailable) has to throw first, so a colliding/
@@ -121,7 +128,7 @@ const bulkImportLearners = asyncHandler(async (req, res) => {
       if (defaultPassword && row.guardianEmail) {
         await AuthService.setOrCreatePassword({ name: row.guardianName, email: row.guardianEmail, password: defaultPassword, role: "learner" });
       }
-      const record = await LearnerService.createLearner(row);
+      const record = await LearnerService.createLearner(req.user.role === "admin" ? { ...row, createdByAdminId: req.ownerAdminId } : row);
       if (defaultPassword && row.username) {
         await AuthService.setOrCreatePasswordByUsername({ name, username: record.username, password: defaultPassword, role: "learner" });
       }
@@ -158,7 +165,9 @@ const getAllLearners = asyncHandler(async (req, res) => {
         record,
         links: await LearnerHubLinkModel.findByLearnerId(record.id),
       })));
-      scoped = withLinks.filter(({ links }) => links.some((l) => ownHubIds.has(l.hubId))).map(({ record }) => record);
+      scoped = withLinks
+        .filter(({ record, links }) => record.createdByAdminId === req.ownerAdminId || links.some((l) => ownHubIds.has(l.hubId)))
+        .map(({ record }) => record);
     }
     const data = await Promise.all(scoped.map(async (record) => ({
       ...record,
@@ -195,9 +204,11 @@ const getAllLearners = asyncHandler(async (req, res) => {
       // Unbounded case — resolve every hub this admin owns, then every learner linked to any of
       // them. A learner has no owner column of its own, so this is the only way to scope the
       // otherwise-unbounded !schoolId && !classId branch (see learner.service.js's
-      // getAllLearners) to this admin's tenant.
+      // getAllLearners) to this admin's tenant — plus every learner the tenant created that has no
+      // hub link yet, or they'd be unreachable until someone enrolled them.
       const links = (await Promise.all(ownHubIds.map((hubId) => LearnerHubLinkModel.findByHubId(hubId)))).flat();
-      filters.ids = [...new Set(links.map((l) => l.learnerId))];
+      const createdIds = await LearnerModel.findIdsCreatedByAdmin(req.ownerAdminId);
+      filters.ids = [...new Set([...links.map((l) => l.learnerId), ...createdIds])];
     }
   } else if (req.user.role === "learner") {
     if (!req.ownLearner) return res.json({ success: true, data: [], count: 0 });
