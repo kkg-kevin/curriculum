@@ -69,6 +69,14 @@ const LearnerModel = {
       .limit(limit);
   },
 
+  // Ids of every learner this admin's tenant created (see the createdByAdminId migration) — how
+  // an admin still reaches a learner that isn't linked to any of their hubs yet.
+  async findIdsCreatedByAdmin(adminId) {
+    if (!adminId) return [];
+    const rows = await db(TABLE).where({ createdByAdminId: adminId }).select("id");
+    return rows.map((r) => r.id);
+  },
+
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
   },

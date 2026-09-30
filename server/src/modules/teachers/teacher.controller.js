@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const TeacherService = require("./teacher.service");
 const AuthService = require("../auth/auth.service");
+const TeacherModel = require("./teacher.model");
 const TeacherHubLinkModel = require("./teacher-hub-link.model");
 const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
@@ -30,10 +31,13 @@ async function isLinkedToHub(teacherId, hubId) {
 // Same membership test, scoped to a "school" account's currently active hub (see
 // scope.middleware.js's req.ownSchool — a parent hub's admin switching into a branch hub gets
 // this for free, no change needed here) — or, for "admin", any of the hubs they own (an admin
-// can own more than one hub, so this is an "any", not a single-hub equality check).
+// can own more than one hub, so this is an "any", not a single-hub equality check). An admin also
+// owns every teacher their tenant created, even one not yet linked to any hub.
 async function isLinkedToOwnHub(req, teacherId) {
   if (req.user.role === "school") return isLinkedToHub(teacherId, req.ownSchool?.id);
   if (req.user.role === "admin") {
+    const teacher = await TeacherModel.findById(teacherId);
+    if (teacher?.createdByAdminId && teacher.createdByAdminId === req.ownerAdminId) return true;
     const links = await TeacherHubLinkModel.findByTeacherId(teacherId);
     const ownHubIds = new Set(await adminOwnedHubIds(req));
     return links.some((l) => ownHubIds.has(l.hubId));
@@ -73,6 +77,9 @@ const createTeacher = asyncHandler(async (req, res) => {
   if (password) {
     await AuthService.setOrCreatePassword({ name: `${data.firstName} ${data.lastName}`, email: data.email, password, role: "teacher" });
   }
+  // Stamped server-side (never from the body — the schema strips it) so the creating admin keeps
+  // access before any hub link exists; see isLinkedToOwnHub.
+  if (req.user.role === "admin") data.createdByAdminId = req.ownerAdminId;
   const teacher = await TeacherService.createTeacher(data);
   if (linkHubId) await TeacherService.linkHub(teacher.id, linkHubId);
   res.status(201).json({ success: true, data: teacher });
@@ -89,10 +96,12 @@ const getAllTeachers = asyncHandler(async (req, res) => {
     filters.email = req.ownTeacher.email;
   } else if (req.user.role === "admin") {
     // A teacher has no owner column of its own — scoped here to every teacher linked to any
-    // hub this admin owns, same "any of my hubs" shape as isLinkedToOwnHub above.
+    // hub this admin owns, same "any of my hubs" shape as isLinkedToOwnHub above — plus every
+    // teacher the tenant created that has no hub link yet.
     const ownHubIds = await adminOwnedHubIds(req);
     const links = (await Promise.all(ownHubIds.map((hubId) => TeacherHubLinkModel.findByHubId(hubId)))).flat();
-    filters.ids = [...new Set(links.map((l) => l.teacherId))];
+    const createdIds = await TeacherModel.findIdsCreatedByAdmin(req.ownerAdminId);
+    filters.ids = [...new Set([...links.map((l) => l.teacherId), ...createdIds])];
   }
   const teachers = await TeacherService.getAllTeachers(filters);
   res.json({ success: true, data: teachers, count: teachers.length });

@@ -177,12 +177,16 @@ const getCourseTeacherLinksForTeacher = asyncHandler(async (req, res) => {
   if (!teacherId) return res.json({ success: true, data: [] });
   if (req.user.role === "teacher") assertOwn(teacherId === req.ownTeacher?.id);
   if (req.user.role === "admin") {
-    // A teacher has no owner column of its own — same "linked to any of my hubs" check as
-    // teacher.controller.js's isLinkedToOwnHub, since a client-supplied teacherId must never
-    // widen access to another admin's teacher's assignments.
-    const ownHubIds = new Set(await adminOwnedHubIds(req));
-    const links = await TeacherHubLinkModel.findByTeacherId(teacherId);
-    assertOwn(links.some((l) => ownHubIds.has(l.hubId)));
+    // Same ownership rule as teacher.controller.js's isLinkedToOwnHub — created by this tenant, or
+    // linked to any of my hubs — since a client-supplied teacherId must never widen access to
+    // another admin's teacher's assignments.
+    const teacher = await TeacherModel.findById(teacherId);
+    const createdHere = !!teacher?.createdByAdminId && teacher.createdByAdminId === req.ownerAdminId;
+    if (!createdHere) {
+      const ownHubIds = new Set(await adminOwnedHubIds(req));
+      const links = await TeacherHubLinkModel.findByTeacherId(teacherId);
+      assertOwn(links.some((l) => ownHubIds.has(l.hubId)));
+    }
   }
   const data = await ClassCourseTeacherLinkModel.findByTeacherId(teacherId);
   res.json({ success: true, data });
