@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useCreateInventoryItem } from "../../settings/inventory/hooks/useInventory";
-import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
+import { useCreateItem } from "../../settings/items/hooks/useItems";
+import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 
 // Creating here always writes to the global Settings catalog, never a local copy —
-// projects only ever link to inventory items by id, with a per-project quantity.
+// projects only ever link to Goods items by id, with a per-project quantity.
 export default function CreateInventoryItemModal({ initialName = "", onClose, onCreated }) {
-  const { mutate: createItem, isPending } = useCreateInventoryItem();
+  const { mutate: createItem, isPending } = useCreateItem();
   const [name, setName] = useState(initialName);
   const [category, setCategory] = useState("Robots");
   const [unit, setUnit] = useState("pcs");
@@ -13,7 +13,7 @@ export default function CreateInventoryItemModal({ initialName = "", onClose, on
 
   const submit = () => {
     if (!name.trim()) { setError("Name is required"); return; }
-    createItem({ name: name.trim(), category, unit: unit.trim() || "pcs", description: "" }, {
+    createItem({ kind: "goods", name: name.trim(), category, unit: unit.trim() || "pcs", description: "" }, {
       onSuccess: (newItem) => { onCreated(newItem.id); onClose(); },
     });
   };
@@ -32,8 +32,8 @@ export default function CreateInventoryItemModal({ initialName = "", onClose, on
             <Icon size={18} />
           </span>
           <div>
-            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#fff" }}>New Inventory Item</h2>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>Added to the shared catalog in Settings</p>
+            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#fff" }}>New Goods Item</h2>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>Added to Settings → Items → Goods</p>
           </div>
         </div>
         <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: "12px" }}>

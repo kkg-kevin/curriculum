@@ -5,7 +5,7 @@ import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
   TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks,
 } from "../schemas/assessment.schema";
-import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
+import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
 
 export const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation" };

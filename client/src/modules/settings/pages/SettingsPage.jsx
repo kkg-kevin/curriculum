@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import PathwayTemplatesPanel from "../pathways/components/PathwayTemplatesPanel";
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
-import InventoryPanel from "../inventory/components/InventoryPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import AdminsPanel from "../admins/components/AdminsPanel";
@@ -254,8 +253,7 @@ const ALL_TABS = [
   { key: "competencies", label: "Competencies" },
   { key: "pathways", label: "Pathways" },
   { key: "system-levels", label: "System Levels" },
-  { key: "inventory", label: "Inventory" },
-  { key: "items", label: "Items" },
+  { key: "items", label: "Items" }, // Goods (formerly Inventory) + Services
   { key: "learning-hubs", label: "Learning Hubs" },
   { key: "admins", label: "Admins" },
   { key: "collaborators", label: "Staff" },
@@ -273,7 +271,10 @@ export default function SettingsPage() {
   // regardless of the role alias, so they're hidden here rather than shown and broken.
   const TABS = user?.role === "collaborator" ? ALL_TABS.filter((t) => !OWNER_ONLY_TABS.includes(t.key)) : ALL_TABS;
   const [searchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
+  // The old Inventory tab is now Items → Goods, so ?tab=inventory links still land in the right place.
+  const rawTab = searchParams.get("tab");
+  const requestedTab = rawTab === "inventory" ? "items" : rawTab;
+  const itemsKind = rawTab === "inventory" ? "goods" : searchParams.get("kind") || "goods";
   const [activeTab, setActiveTab] = useState(
     TABS.some((t) => t.key === requestedTab) ? requestedTab : "competencies"
   );
@@ -312,8 +313,7 @@ export default function SettingsPage() {
         {activeTab === "competencies" && <CompetenciesPanel />}
         {activeTab === "pathways" && <PathwayTemplatesPanel />}
         {activeTab === "system-levels" && <SystemLevelsPanel />}
-        {activeTab === "inventory" && <InventoryPanel />}
-        {activeTab === "items" && <ItemsPanel />}
+        {activeTab === "items" && <ItemsPanel initialKind={itemsKind} />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
         {activeTab === "admins" && <AdminsPanel />}
         {activeTab === "collaborators" && <CollaboratorsPanel />}

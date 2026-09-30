@@ -32,6 +32,13 @@ const AssessmentInventoryLinkModel = {
   deleteByInventoryItemId(inventoryItemId) {
     return db(TABLE).where({ inventoryItemId }).del();
   },
+
+  // How many links point at this item — Settings → Items refuses to turn a linked Goods item
+  // into a Service (a service can't be a material).
+  async countByInventoryItemId(inventoryItemId) {
+    const [{ n }] = await db(TABLE).where({ inventoryItemId }).count({ n: "*" });
+    return Number(n);
+  },
 };
 
 module.exports = AssessmentInventoryLinkModel;

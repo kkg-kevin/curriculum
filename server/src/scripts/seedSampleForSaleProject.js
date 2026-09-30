@@ -137,9 +137,9 @@ async function run() {
     price: `${record.priceCurrency} ${record.priceAmount}`,
   });
 
-  // Link the Quarky kit as "what you'll need", if the admin has it in inventory.
-  const kit = await db("inventory")
-    .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID })
+  // Link the Quarky kit as "what you'll need", if the admin has it under Settings → Items → Goods.
+  const kit = await db("items")
+    .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID, kind: "goods" })
     .whereRaw("LOWER(name) LIKE ?", ["%quarky%"])
     .first();
   if (kit) {

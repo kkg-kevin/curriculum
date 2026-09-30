@@ -216,11 +216,13 @@ async function cloneTenant(trx, sourceAdmin, targetAdmin) {
     await insertClone(trx, "system_levels", { ...row, id: newId, ownerAdminId: dstId });
   }
 
-  const inventory = await trx("inventory").where({ ownerAdminId: srcId });
-  for (const row of inventory) {
+  // Settings → Items: Goods (formerly `inventory`, whose ids the course/project material links
+  // remap through maps.inventory below) and Services (formerly `billing_items`).
+  const items = await trx("items").where({ ownerAdminId: srcId });
+  for (const row of items) {
     const newId = generateId();
     maps.inventory.set(row.id, newId);
-    await insertClone(trx, "inventory", { ...row, id: newId, ownerAdminId: dstId });
+    await insertClone(trx, "items", { ...row, id: newId, ownerAdminId: dstId });
   }
 
   const competencies = await trx("competencies").where({ ownerAdminId: srcId });

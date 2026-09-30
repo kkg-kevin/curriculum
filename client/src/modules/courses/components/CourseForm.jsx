@@ -97,7 +97,7 @@ export default function CourseForm({ autoGenerateCode = false }) {
       </div>
 
       <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", padding: "20px 24px" }}>
-        <SectionHeader title="Requirements" subtitle="Freeform requirements for this course — e.g. internet access, printed worksheets. Materials from the Inventory catalog are attached separately, from the course's own page." />
+        <SectionHeader title="Requirements" subtitle="Freeform requirements for this course — e.g. internet access, printed worksheets. Materials from Settings → Items → Goods are attached separately, from the course's own page." />
         <ListField name="requirements" label="Requirements" hint="Press Enter or Add after each one." placeholder="e.g. Internet access" />
       </div>
     </div>
