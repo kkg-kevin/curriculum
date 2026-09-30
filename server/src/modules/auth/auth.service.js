@@ -8,9 +8,17 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LeadModel = require("../leads/lead.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const RevokedTokenModel = require("./revoked-token.model");
+const UserSessionModel = require("./user-session.model");
 const AccessService = require("../access/access.service");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
-const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/env");
+const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES } = require("../../config/env");
+
+// Idle timeout (see user-session.model.js). The client reports activity at most about every 30s,
+// so the server allows one extra minute on top of the limit: the client's own countdown — which
+// sees every click — is what signs a user out on time, and the server only has to guarantee an
+// abandoned session can't outlive it.
+const SESSION_IDLE_MS = SESSION_IDLE_MINUTES * 60 * 1000;
+const SESSION_IDLE_GRACE_MS = 60 * 1000;
 
 const SALT_ROUNDS = 10;
 
@@ -197,6 +205,9 @@ const AuthService = {
     const suspended = await resolveSuspension(user);
     const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
     const token = signToken(user);
+    const { jti, exp } = jwt.decode(token);
+    await UserSessionModel.create({ jti, userId: user.id, expiresAt: new Date(exp * 1000) });
+    await UserSessionModel.pruneStale(SESSION_IDLE_MINUTES + 1);
     return { user: { ...sanitize(user), suspended, pendingPayment, ...(await staffAccess(user)) }, token };
   },
 
@@ -256,12 +267,48 @@ const AuthService = {
     try {
       const payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
       if (payload?.jti && payload?.exp) {
-        await RevokedTokenModel.create({ jti: payload.jti, userId: payload.sub, expiresAt: new Date(payload.exp * 1000) });
+        await this.endSession(payload);
       }
     } catch {
       // Not a token we issued — nothing valid to revoke.
     }
     await RevokedTokenModel.pruneExpired();
+    await UserSessionModel.pruneStale(SESSION_IDLE_MINUTES + 1);
+  },
+
+  // Revokes a verified token's session: denylisted (so the cookie is dead even if the session
+  // row were somehow recreated) and its session row removed. Used by logout and by `protect`
+  // when a session has gone idle.
+  async endSession({ jti, sub, exp }) {
+    if (!(await RevokedTokenModel.isRevoked(jti))) {
+      await RevokedTokenModel.create({ jti, userId: sub, expiresAt: new Date(exp * 1000) });
+    }
+    await UserSessionModel.delete(jti);
+  },
+
+  // Whether a verified token's session is still live: it must have a session row (tokens from
+  // before sessions were tracked don't), and that session must not have gone idle. An idle
+  // session is ended on the spot. Returns false for anything that should sign the user out.
+  async isSessionActive(payload) {
+    if (!payload?.jti) return false;
+    const session = await UserSessionModel.findByJti(payload.jti);
+    if (!session) return false;
+    const idleMs = Date.now() - new Date(session.lastActivityAt).getTime();
+    if (idleMs > SESSION_IDLE_MS + SESSION_IDLE_GRACE_MS) {
+      await this.endSession(payload);
+      return false;
+    }
+    return true;
+  },
+
+  // The client's "the user is active" signal (clicks, typing, scrolling, an open assessment) —
+  // the only thing that moves lastActivityAt. `protect` has already confirmed the session is live.
+  async recordActivity(jti) {
+    await UserSessionModel.touch(jti);
+  },
+
+  sessionSettings() {
+    return { idleTimeoutMs: SESSION_IDLE_MS };
   },
 
   async getById(id) {

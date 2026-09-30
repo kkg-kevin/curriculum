@@ -11,6 +11,11 @@ const AuthService = require("../../modules/auth/auth.service");
 // is valid purely by being correctly signed and unexpired) — the jti lookup below is what makes
 // logout actually take effect immediately instead of leaving a copied/stolen cookie usable until
 // it naturally expires. See AuthService.logout, which is what populates this denylist.
+//
+// Every token must also belong to a live session (user_sessions): one that has gone idle past
+// SESSION_IDLE_MINUTES is ended here and refused with code SESSION_EXPIRED, which the client
+// turns into "you were signed out after inactivity". Ordinary requests never extend a session —
+// only POST /api/auth/activity does (see AuthService.recordActivity).
 async function protect(req, res, next) {
   if (!AUTH_ENABLED) {
     req.user = { id: "dormant-auth", role: "admin", email: "dormant@local" };
@@ -30,6 +35,13 @@ async function protect(req, res, next) {
       err.statusCode = 401;
       return next(err);
     }
+    if (!(await AuthService.isSessionActive(payload))) {
+      const err = new Error("Your session has ended. Please sign in again.");
+      err.statusCode = 401;
+      err.code = "SESSION_EXPIRED";
+      return next(err);
+    }
+    req.sessionJti = payload.jti;
     const user = await AuthService.getById(payload.sub);
     req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules, roleId: user.roleId };
     next();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,12 +8,26 @@ import { useAuth } from "../../../context/AuthContext";
 import { loginSchema } from "../schemas/auth.schema";
 import { FieldWrap, IconInput, PasswordInput } from "../components/AuthFields";
 import { IS_CAPABLE } from "../../../branding";
+import { peekSignedOutReason, clearSignedOutReason } from "../../../context/session";
+
+// Why the last session ended, if it ended on its own (see context/session.js).
+function signedOutNotice(reason) {
+  if (!reason) return null;
+  if (reason.startsWith("idle")) {
+    const minutes = Number(reason.split(":")[1]) || 30;
+    return `You were signed out after ${minutes} minutes of inactivity. Please sign in again.`;
+  }
+  if (reason === "expired") return "Your session has ended. Please sign in again.";
+  return null;
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [notice] = useState(() => signedOutNotice(peekSignedOutReason()));
+  useEffect(() => { clearSignedOutReason(); }, []);
 
   const {
     register,
@@ -49,6 +63,12 @@ export default function LoginPage() {
           <p style={{ margin: 0, fontSize: "13px", color: "#6B7280" }}>
             Enter your details to access your dashboard.
           </p>
+        </div>
+      )}
+
+      {notice && (
+        <div role="status" style={{ marginBottom: "18px", padding: "11px 14px", borderRadius: "10px", backgroundColor: "#FFF7E8", border: "1px solid #FDE3B0", color: "#92400E", fontSize: "13px", lineHeight: 1.5 }}>
+          {notice}
         </div>
       )}
 

@@ -9,6 +9,9 @@ export const authApi = {
   login: (identifier, password) => api.post(`${ENDPOINT}/login`, { identifier, password }).then((r) => r.data.data),
   logout: () => api.post(`${ENDPOINT}/logout`).then((r) => r.data),
   me: () => api.get(`${ENDPOINT}/me`).then((r) => r.data.data),
+  // "The user is still here" — the only thing that keeps a session from timing out (see
+  // client/src/context/session.js). Background polling deliberately doesn't count.
+  activity: () => api.post(`${ENDPOINT}/activity`).then((r) => r.data.data),
   updateMe: (data) => api.put(`${ENDPOINT}/me`, data).then((r) => r.data.data),
   // Re-confirms the CURRENTLY logged-in user's own password without touching their session —
   // used to re-gate the learner-portal's sibling switcher (see LearnerPortalLayout) before it

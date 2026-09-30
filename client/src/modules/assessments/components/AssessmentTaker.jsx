@@ -3,6 +3,7 @@ import { FiCheck } from "react-icons/fi";
 import { normalizeLegacyItem, ITEM_KIND_LABELS } from "../schemas/assessment.schema";
 import { uploadApi } from "../../../services/uploadApi";
 import RichContent from "./RichContent";
+import { useKeepSessionAlive } from "../../../context/session";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tintBg: "#e8f5fb", tintBorder: "#a8d5ee" };
 
@@ -267,6 +268,10 @@ function ItemField({ item, value, onChange }) {
 // supportsItems: false). Observation assessments are graded entirely from the teacher's own
 // in-class review, so they're deliberately left with no learner input here.
 export default function AssessmentTaker({ assessment, initialAnswers = [], onChange }) {
+  // A learner can spend a long time reading or thinking without touching anything — having an
+  // assessment open (and on screen) counts as activity, so the 30-minute idle sign-out doesn't
+  // cut them off mid-attempt. See context/session.js.
+  useKeepSessionAlive(true);
   const [answers, setAnswers] = useState(() => {
     const map = new Map((initialAnswers || []).map((a) => [a.itemId, a.response]));
     return map;
