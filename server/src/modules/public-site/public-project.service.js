@@ -1,6 +1,6 @@
 const AssessmentModel = require("../assessments/assessment.model");
 const AssessmentInventoryLinkModel = require("../assessments/assessment-inventory-link.model");
-const InventoryModel = require("../settings/inventory/inventory.model");
+const InventoryModel = require("../settings/items/items.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");

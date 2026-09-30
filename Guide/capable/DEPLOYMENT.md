@@ -1,6 +1,6 @@
 # Deployment Guide — Digifunzi Curriculum — Capable environment
 
-**Status: bundles rebuilt 29 Sep 2026 against the real `lms-api.capable.co.ke` — ready to upload.** Release notes for what they contain: `Guide/live/DEPLOYMENT.md` → "This release (29 Sep 2026)" (same backend, same features; Capable just has its own portal build).
+**Status: backend rebuilt again (1 Oct 2026, follow-on) — ready to upload.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (1 Oct 2026, follow-on)" (the "Learner/Teacher not found" fix: two new, non-destructive migrations; the website part doesn't apply here), then "This release (1 Oct 2026)" and the 29 Sep release below it (same backend, same features; Capable just has its own portal build). The portal build is unchanged from 1 Oct and still has the Capable sign-in tweak: larger logo, no subtitle line.
 
 | Part | Repo | URL |
 |---|---|---|
@@ -32,8 +32,8 @@ was set up, just a third instance instead of a second.
 
 | File | Built how | Safe to upload as-is? |
 |---|---|---|
-| `backend-deploy.zip` | 29 Sep 2026, from HEAD (`88a79cf`) — byte-identical to `Guide/dev/` and `Guide/live/`; code only, nothing environment-specific baked in | **Yes** |
-| `assets.zip` + `index.html` | 29 Sep 2026, `npm run build:capable` (`client/`) — bakes in `https://lms-api.capable.co.ke` and the Capable branding. Entry **`index-Bjd7hJYW.js`** / CSS `index-CPRP9smp.css` | **Yes** — upload to the `lms.capable.co.ke` document root |
+| `backend-deploy.zip` | 1 Oct 2026 follow-on, from HEAD (`03d51de`) — byte-identical to `Guide/dev/` and `Guide/live/`; code only, nothing environment-specific baked in. Carries the 1 Oct migrations (staff roles; Home Learning website sign-ups) plus two new ones (`createdByAdminId` on learners and teachers) that apply on Restart | **Yes** |
+| `assets.zip` + `index.html` | 1 Oct 2026 (unchanged in the follow-on — no `client/` changes), `npm run build:capable` (`client/`) — bakes in `https://lms-api.capable.co.ke` and the Capable branding. Entry **`index-v0JcRti0.js`** / CSS `index-CPRP9smp.css` | **Yes** — upload to the `lms.capable.co.ke` document root |
 
 No website zip here — the marketing site isn't part of this deploy (see above).
 (`digifunzi-landing` does have `build:capable` scripts, but its `.env.capable` still points at a

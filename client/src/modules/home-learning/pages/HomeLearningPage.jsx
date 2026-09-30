@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiChevronDown, FiHome, FiPlus, FiSearch } from "react-icons/fi";
@@ -7,7 +7,6 @@ import api from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
 import { can } from "../../../hooks/usePermissions";
 import { homeLearningApi } from "../services/homeLearningApi";
-import PackagesPanel from "../components/PackagesPanel";
 import HouseholdCard from "../components/HouseholdCard";
 import { HouseholdFields } from "../components/HouseholdFields";
 import { HOUSEHOLD_STATUS, errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, thisMonth } from "../components/ui";
@@ -43,6 +42,7 @@ export default function HomeLearningPage() {
   const [pendingChild, setPendingChild] = useState(null);
 
   const { data: households = [], isLoading } = useQuery({ queryKey: ["home-learning"], queryFn: homeLearningApi.getAll });
+  // Packages are created and priced in Billing → Packages; here they're only picked from.
   const { data: packageRows, isLoading: packagesLoading } = useQuery({ queryKey: ["home-learning", "packages"], queryFn: homeLearningApi.getPackages });
   const { data: learnerRows } = useQuery({ queryKey: ["home-learning", "learners"], queryFn: () => api.get("/api/learners").then((r) => r.data.data || []) });
   const { data: curriculumRows } = useQuery({ queryKey: ["home-learning", "curricula"], queryFn: () => api.get("/api/curricula").then((r) => r.data.data || []) });
@@ -163,14 +163,19 @@ export default function HomeLearningPage() {
   return <div style={{ width: "100%", fontFamily: "Inter, sans-serif", color: "#111827" }}>
     <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
       <div style={{ width: 48, height: 48, borderRadius: 14, background: "#E8F5FB", color: "#25476a", display: "grid", placeItems: "center" }}><FiHome size={23} /></div>
-      <div style={{ flex: 1, minWidth: 240 }}><h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Home Learning</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families, monthly packages, each child's curriculum, grade and educator, and monthly invoices. Every child gets their own class in the Home Learning hub, so assessments, attendance and reports work as usual.</p></div>
+      <div style={{ flex: 1, minWidth: 240 }}><h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Home Learning</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families, each child's curriculum, grade and educator, and monthly invoices. Every child gets their own class in the Home Learning hub, so assessments, attendance and reports work as usual. Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p></div>
       {canBill && <form onSubmit={(e) => { e.preventDefault(); bulkInvoiceMutation.mutate({ period: bulkPeriod }); }} style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input aria-label="Month to invoice" type="month" required value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} style={{ ...inputStyle, width: "auto", padding: "8px 10px", fontSize: 13 }} />
         <button disabled={bulkInvoiceMutation.isPending} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkInvoiceMutation.isPending ? "Invoicing…" : "Invoice all active households"}</button>
       </form>}
     </header>
 
-    <PackagesPanel packages={packages} isLoading={packagesLoading} />
+    {!packagesLoading && !packages.some((p) => p.status === "active") && (
+      <div role="status" style={{ ...panelStyle, marginBottom: 22, padding: "14px 18px", background: "#FFF7E8", borderColor: "#FDE3B0", color: "#92400E", fontSize: 13 }}>
+        There are no active packages yet, so households can't be added. Create one in{" "}
+        <Link to="/billing?tab=packages" style={{ color: "#92400E", fontWeight: 800 }}>Billing → Packages</Link>.
+      </div>
+    )}
 
     <section style={{ ...panelStyle, marginBottom: 22, padding: 0, overflow: "hidden" }}>
       <button type="button" aria-expanded={addOpen} onClick={() => setAddOpen((open) => !open)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "16px 22px", border: 0, background: addOpen ? "#F8FAFC" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>

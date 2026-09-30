@@ -4,10 +4,8 @@ const BASE = "/api/home-learning";
 
 export const homeLearningApi = {
   getAll: () => api.get(BASE).then((r) => r.data.data),
+  // Read-only: the household forms pick from this. Packages are managed in Billing → Packages.
   getPackages: () => api.get(`${BASE}/packages`).then((r) => r.data.data),
-  createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),
-  updatePackage: (id, data) => api.put(`${BASE}/packages/${id}`, data).then((r) => r.data.data),
-  deletePackage: (id) => api.delete(`${BASE}/packages/${id}`).then((r) => r.data.data),
   createHousehold: (data) => api.post(BASE, data).then((r) => r.data.data),
   updateHousehold: (id, data) => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   enrollLearner: (id, data) => api.post(`${BASE}/${id}/learners`, data).then((r) => r.data.data),
@@ -19,6 +17,9 @@ export const homeLearningApi = {
   approveSignup: (id, data) => api.post(`${BASE}/${id}/approve-payment`, data).then((r) => r.data.data),
   declineSignup: (id) => api.post(`${BASE}/${id}/decline-signup`, {}).then((r) => r.data.data),
   getForLearner: (learnerId) => api.get(`${BASE}/learner/${learnerId}`).then((r) => r.data.data),
+  // Parent portal → My Family (the parent's own login): households, free places, add a child.
+  getFamily: () => api.get(`${BASE}/family`).then((r) => r.data.data),
+  addFamilyChild: (householdId, data) => api.post(`${BASE}/family/${householdId}/children`, data).then((r) => r.data.data),
   getMyAssignments: () => api.get(`${BASE}/educator`).then((r) => r.data.data),
 };
 

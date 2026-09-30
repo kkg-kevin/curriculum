@@ -48,6 +48,12 @@ api.interceptors.response.use(
     wrapped.code = error.response?.data?.code;
     wrapped.reason = error.response?.data?.reason;
 
+    // The server ended this session (idle too long, or signed out elsewhere) — tell AuthContext,
+    // which signs this tab out and sends it to the login page, whichever request noticed first.
+    if (wrapped.statusCode === 401 && wrapped.code === "SESSION_EXPIRED" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("auth:session-expired"));
+    }
+
     return Promise.reject(wrapped);
   }
 );

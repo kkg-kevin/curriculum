@@ -5,7 +5,7 @@ const CompetencyModel = require("../settings/competencies/competency.model");
 const AssessmentPathwayLinkModel = require("./assessment-pathway-link.model");
 const PathwayModel = require("../settings/pathways/pathway-template.model");
 const AssessmentInventoryLinkModel = require("./assessment-inventory-link.model");
-const InventoryModel = require("../settings/inventory/inventory.model");
+const InventoryModel = require("../settings/items/items.model");
 
 async function requireAssessment(id) {
   const assessment = await AssessmentModel.findById(id);
@@ -137,6 +137,12 @@ const AssessmentService = {
     if (!item) {
       const err = new Error("Inventory item not found");
       err.statusCode = 404;
+      throw err;
+    }
+    // Only Goods (Settings → Items) can be a material — a Service has nothing to hand out.
+    if (item.kind !== "goods") {
+      const err = new Error("Only Goods can be added as materials");
+      err.statusCode = 400;
       throw err;
     }
     await AssessmentInventoryLinkModel.link(assessmentId, inventoryItemId, quantity);

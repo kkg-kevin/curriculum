@@ -12,10 +12,10 @@ const baseCookieOptions = {
   secure: NODE_ENV === "production",
   sameSite: NODE_ENV === "production" ? "none" : "lax",
 };
-const cookieOptions = {
-  ...baseCookieOptions,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-};
+// No maxAge/expires: a browser-session cookie, gone when the browser closes, so reopening it
+// means signing in again. (Closing just the tab is handled client-side — see
+// client/src/context/sessionTabs.js.) The token inside still carries its own JWT_EXPIRES_IN cap.
+const cookieOptions = { ...baseCookieOptions };
 
 const signup = asyncHandler(async (req, res) => {
   const data = signupSchema.parse(req.body);
@@ -27,7 +27,7 @@ const login = asyncHandler(async (req, res) => {
   const { identifier, password } = loginSchema.parse(req.body);
   const { user, token } = await AuthService.login(identifier, password);
   res.cookie(COOKIE_NAME, token, cookieOptions);
-  res.json({ success: true, data: user });
+  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
 });
 
 const logout = asyncHandler(async (req, res) => {
@@ -36,9 +36,18 @@ const logout = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// `session` tells the client how long it may sit idle before signing out (SESSION_IDLE_MINUTES).
 const me = asyncHandler(async (req, res) => {
   const user = await AuthService.getById(req.user.id);
-  res.json({ success: true, data: user });
+  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
+});
+
+// The client's "the user is still here" signal — sent at most about every 30s while someone is
+// clicking/typing/scrolling (or has an assessment open). The only thing that keeps a session
+// from timing out.
+const recordActivity = asyncHandler(async (req, res) => {
+  await AuthService.recordActivity(req.sessionJti);
+  res.json({ success: true, data: AuthService.sessionSettings() });
 });
 
 const updateMe = asyncHandler(async (req, res) => {
@@ -74,4 +83,4 @@ const createAdmin = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: user });
 });
 
-module.exports = { signup, login, logout, me, updateMe, verifyPassword, changePassword, createAdmin };
+module.exports = { signup, login, logout, me, recordActivity, updateMe, verifyPassword, changePassword, createAdmin };

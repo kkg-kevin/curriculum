@@ -1,4 +1,4 @@
-const InventoryModel = require("../settings/inventory/inventory.model");
+const InventoryModel = require("../settings/items/items.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");

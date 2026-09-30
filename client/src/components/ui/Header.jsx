@@ -117,8 +117,11 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   // displayed label changes here, same as everywhere else "Teacher" was renamed to "Educator"
   // for display purposes.
   // A staff (collaborator) account shows its staff role, e.g. "Staff · Finance".
+  // A "learner" account is either a parent (signs in with email, sees all their children) or a
+  // child's own login (username only) — labelled so each can see whose account they're in.
   const roleLabel = user?.role === "teacher" ? "Educator"
     : user?.role === "collaborator" ? (user.accessRole ? `Staff · ${user.accessRole.name}` : "Staff")
+    : user?.role === "learner" ? (user.username ? "Learner" : "Parent")
     : user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
 
   const pageTitles = {

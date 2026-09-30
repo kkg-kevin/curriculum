@@ -18,4 +18,9 @@ export const billingApi = {
   getStatement: (payerType, payerId, params = {}) => api.get(`${BASE}/statements/${payerType}/${payerId}`, { params }).then((r) => r.data.data),
   listCustomers: () => api.get(`${BASE}/customers`).then((r) => r.data),
   getCustomer: (hubId) => api.get(`${BASE}/customers/${hubId}`).then((r) => r.data.data),
+  // Home Learning packages — Billing → Packages.
+  listPackages: () => api.get(`${BASE}/packages`).then((r) => r.data.data),
+  createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),
+  updatePackage: (id, data) => api.put(`${BASE}/packages/${id}`, data).then((r) => r.data.data),
+  deletePackage: (id) => api.delete(`${BASE}/packages/${id}`).then((r) => r.data.data),
 };

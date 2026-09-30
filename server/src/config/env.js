@@ -2,7 +2,12 @@ const env = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+  // Hard cap on one sign-in, however active the user is. The idle limit below is what normally
+  // ends a session; this is the backstop.
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "12h",
+  // Minutes without user activity (clicks, typing, scrolling — reported by the client via
+  // POST /api/auth/activity; background polling doesn't count) before a session is ended.
+  SESSION_IDLE_MINUTES: Number(process.env.SESSION_IDLE_MINUTES) > 0 ? Number(process.env.SESSION_IDLE_MINUTES) : 30,
   COOKIE_NAME: "token",
   // Mirrors client/src/config/authConfig.js — flip both back to false together to
   // bypass login enforcement for local work. While false, `protect` lets every request through.

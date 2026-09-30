@@ -7,8 +7,8 @@ import {
 import { assessmentApi } from "../services/assessmentApi";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
-import { useInventory } from "../../settings/inventory/hooks/useInventory";
-import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
+import { useGoods } from "../../settings/items/hooks/useItems";
+import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import { FiPlus, FiX, FiPackage, FiCheck, FiEdit3, FiAward, FiTool, FiFileText, FiEye, FiBarChart2 } from "react-icons/fi";
 import CreateCompetencyModal from "../../courses/components/CreateCompetencyModal";
 import CreatePathwayModal from "../../courses/components/CreatePathwayModal";
@@ -1347,7 +1347,7 @@ function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
     <div className="tb-card">
       <p className="tb-card-title" style={{ marginBottom: "2px" }}>Materials{inventory.length ? ` · ${inventory.length}` : ""}</p>
       <p style={{ margin: "0 0 14px", fontSize: "11.5px", color: "#9CA3AF" }}>
-        Robots, boards, sensors, and other materials this project needs — pulled from the shared Settings catalog.
+        Robots, boards, sensors, and other materials this project needs — pulled from Settings → Items → Goods.
       </p>
 
       {inventory.length === 0 && (
@@ -1555,7 +1555,7 @@ export default function AssessmentBuilderPage() {
   const { mutate: updateAssessment, isPending: updating } = useUpdateAssessment();
   const { data: allCompetencies = [] } = useCompetencies();
   const { data: allPathways = [] } = usePathwayTemplates();
-  const { data: allInventory = [] } = useInventory();
+  const { data: allInventory = [] } = useGoods();
 
   const [form, setForm] = useState(null);
   const [originalTags, setOriginalTags] = useState({ competencyIds: [], pathwayIds: [], inventory: [] });
@@ -1798,7 +1798,7 @@ export default function AssessmentBuilderPage() {
     ...(BUILDER_REGISTRY[type]?.supportsItems !== false ? [{ key: "structure", label: "Structure & Items" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsRubric ? [{ key: "rubric", label: "Grading Rubric" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
-    ...(BUILDER_REGISTRY[type]?.supportsInventory ? [{ key: "inventory", label: "Inventory" }] : []),
+    ...(BUILDER_REGISTRY[type]?.supportsInventory ? [{ key: "inventory", label: "Materials" }] : []),
   ];
 
   return (

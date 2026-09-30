@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
-import { FiEdit2, FiMoreVertical, FiPackage, FiSearch, FiTrash2, FiPlus, FiX } from "react-icons/fi";
+import { useState } from "react";
+import { FiPackage, FiSearch, FiPlus, FiX } from "react-icons/fi";
+import { useGoods, useCreateItem, useUpdateItem, useDeleteItem } from "../hooks/useItems";
 import {
-  useInventory, useCreateInventoryItem, useUpdateInventoryItem, useDeleteInventoryItem,
-} from "../hooks/useInventory";
-import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../constants";
+  INVENTORY_CATEGORIES, INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS, INVOICE_TYPE_LABELS, formatMoney,
+} from "../constants";
+import CardKebab from "./CardKebab";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import ImageUploadField from "../../../../components/ImageUploadField";
@@ -12,38 +13,6 @@ import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent"
 
 const STORE_CATEGORY_LABELS = { kit: "Robots & kits", bundle: "Bundle", accessory: "Accessory" };
 const STOCK_STATUS_LABELS = { available: "Available now", preorder: "Pre-order", coming_soon: "Coming soon" };
-
-function CardKebab({ onEdit, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
-
-  return (
-    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-      <button type="button" className="stg-kebab-btn" onClick={() => setOpen((v) => !v)} title="Options">
-        <FiMoreVertical size={14} strokeWidth={2} />
-      </button>
-      {open && (
-        <div className="stg-menu">
-          <button type="button" className="stg-menu-item" onClick={() => { setOpen(false); onEdit(); }}>
-            <FiEdit2 size={13} strokeWidth={2} />
-            Edit
-          </button>
-          <button type="button" className="stg-menu-item stg-menu-item--danger" onClick={() => { setOpen(false); onDelete(); }}>
-            <FiTrash2 size={13} strokeWidth={2} />
-            Delete
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // A small add/remove list of plain strings — used for "highlights" and "what you get".
 function StringListEditor({ items, onChange, placeholder }) {
@@ -216,6 +185,33 @@ function SellingSection({ form, setField }) {
   );
 }
 
+// Invoicing — optional. Lets this item be picked on the invoice form (Billing → Create invoice),
+// prefilling the line's description and amount, same as a Service. With no invoice price, a KES
+// website price (above) is used instead.
+function InvoicingSection({ form, setField }) {
+  return (
+    <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "16px", marginTop: "4px" }}>
+      <p style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: 700, color: "#111827" }}>Invoicing</p>
+      <p style={{ margin: "0 0 12px", fontSize: "11.5px", color: "#9CA3AF" }}>
+        Optional — offer this item on the invoice form. A blank invoice price uses the website price, if there is one.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div>
+          <Label>Invoice price (KES)</Label>
+          <input type="number" min="0" step="0.01" className="stg-input" value={form.defaultPrice} onChange={(e) => setField("defaultPrice", e.target.value)} placeholder="0.00" />
+        </div>
+        <div>
+          <Label>Invoice type</Label>
+          <select className="stg-input" value={form.invoiceType} onChange={(e) => setField("invoiceType", e.target.value)}>
+            <option value="">Any</option>
+            {Object.entries(INVOICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const BLANK_SALE = {
   saleStatus: "internal",
   storeCategory: null,
@@ -252,9 +248,9 @@ function saleFromItem(it) {
   };
 }
 
-function InventoryItemModal({ editTarget, onClose }) {
-  const { mutate: create, isPending: creating } = useCreateInventoryItem();
-  const { mutate: update, isPending: updating } = useUpdateInventoryItem();
+function GoodsItemModal({ editTarget, onClose }) {
+  const { mutate: create, isPending: creating } = useCreateItem();
+  const { mutate: update, isPending: updating } = useUpdateItem();
   const isPending = creating || updating;
 
   const [form, setForm] = useState(() => ({
@@ -263,6 +259,8 @@ function InventoryItemModal({ editTarget, onClose }) {
     unit: editTarget?.unit || "pcs",
     description: editTarget?.description || "",
     image: editTarget?.image || null,
+    defaultPrice: editTarget?.defaultPrice ?? "",
+    invoiceType: editTarget?.invoiceType || "",
     ...(editTarget ? saleFromItem(editTarget) : BLANK_SALE),
   }));
   const [error, setError] = useState("");
@@ -274,11 +272,14 @@ function InventoryItemModal({ editTarget, onClose }) {
     const forSale = form.saleStatus === "for_sale";
 
     const data = {
+      kind: "goods",
       name: form.name.trim(),
       category: form.category,
       unit: form.unit.trim() || "pcs",
       description: form.description.trim(),
       image: form.image,
+      defaultPrice: numOrNull(form.defaultPrice),
+      invoiceType: form.invoiceType || null,
       // Selling fields — always sent so un-ticking "for sale" clears the shopfront cleanly.
       saleStatus: forSale ? "for_sale" : "internal",
       storeCategory: forSale ? (form.storeCategory || null) : null,
@@ -311,8 +312,8 @@ function InventoryItemModal({ editTarget, onClose }) {
 
   return (
     <Modal
-      title={editTarget ? "Edit Inventory Item" : "Add Inventory Item"}
-      subtitle="Shared catalog — Projects link materials from here; flip an item &ldquo;for sale&rdquo; to show it in the website Store"
+      title={editTarget ? "Edit Goods Item" : "Add Goods Item"}
+      subtitle="Physical item — Courses and Projects link materials from here; flip it &ldquo;for sale&rdquo; to show it in the website Store"
       onClose={onClose}
       footer={<>
         <button type="button" className="stg-btn-secondary" onClick={onClose}>Cancel</button>
@@ -350,6 +351,7 @@ function InventoryItemModal({ editTarget, onClose }) {
         </div>
 
         <SellingSection form={form} setField={setField} />
+        <InvoicingSection form={form} setField={setField} />
       </div>
     </Modal>
   );
@@ -363,7 +365,7 @@ function InStoreBadge() {
   );
 }
 
-function InventoryCard({ item, onEdit, onDelete }) {
+function GoodsCard({ item, onEdit, onMove, onDelete }) {
   const color = INVENTORY_CATEGORY_COLORS[item.category] || INVENTORY_CATEGORY_COLORS.Other;
   const Icon = INVENTORY_CATEGORY_ICONS[item.category] || INVENTORY_CATEGORY_ICONS.Other;
   const forSale = item.saleStatus === "for_sale";
@@ -387,7 +389,7 @@ function InventoryCard({ item, onEdit, onDelete }) {
           </div>
         )}
         <div style={{ position: "absolute", top: "8px", right: "8px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", backdropFilter: "blur(2px)" }}>
-          <CardKebab onEdit={onEdit} onDelete={onDelete} />
+          <CardKebab onEdit={onEdit} onMove={onMove} moveLabel="Move to Services" onDelete={onDelete} />
         </div>
       </div>
 
@@ -410,6 +412,12 @@ function InventoryCard({ item, onEdit, onDelete }) {
             {item.storeCategory ? ` · ${STORE_CATEGORY_LABELS[item.storeCategory] || item.storeCategory}` : ""}
           </span>
         )}
+        {item.defaultPrice != null && (
+          <span style={{ fontSize: "11.5px", color: "#25476a", fontWeight: 600 }}>
+            Invoice: {formatMoney(item.defaultPrice)}
+            {item.invoiceType ? ` · ${INVOICE_TYPE_LABELS[item.invoiceType] || item.invoiceType}` : ""}
+          </span>
+        )}
         <p className="stg-comp-desc" style={{ WebkitLineClamp: 2 }}>
           {!isEmptyHtml(item.description) ? stripHtml(item.description) : <em style={{ color: "#D1D5DB" }}>No description added</em>}
         </p>
@@ -418,9 +426,11 @@ function InventoryCard({ item, onEdit, onDelete }) {
   );
 }
 
-export default function InventoryPanel() {
-  const { data: items = [], isLoading } = useInventory();
-  const { mutate: deleteItem } = useDeleteInventoryItem();
+// Settings → Items → Goods (formerly the Inventory tab).
+export default function GoodsPanel() {
+  const { data: items = [], isLoading } = useGoods();
+  const { mutate: deleteItem } = useDeleteItem();
+  const { mutate: updateItem } = useUpdateItem();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -436,14 +446,14 @@ export default function InventoryPanel() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", gap: "12px", flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Inventory</h2>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Goods</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
             {items.length} item{items.length !== 1 ? "s" : ""} defined
             {forSaleCount > 0 && ` · ${forSaleCount} in the website Store`}
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-          + Add Item
+          + Add Goods Item
         </button>
       </div>
 
@@ -452,12 +462,12 @@ export default function InventoryPanel() {
           <div style={{ marginBottom: "12px", color: "#25476a" }}>
             <FiPackage size={40} strokeWidth={1.8} />
           </div>
-          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No inventory items yet</p>
+          <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>No goods yet</p>
           <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
-            Define robots, components, consumables, and tools here so Projects can pull materials from a shared catalog — and flip any item &ldquo;for sale&rdquo; to list it in the website Store.
+            Define robots, components, consumables, and tools here so Courses and Projects can pull materials from a shared catalog — and flip any item &ldquo;for sale&rdquo; to list it in the website Store.
           </p>
           <button type="button" className="stg-btn-primary" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-            + Add Item
+            + Add Goods Item
           </button>
         </div>
       ) : (
@@ -482,10 +492,11 @@ export default function InventoryPanel() {
           ) : (
             <div className="stg-grid">
               {filteredItems.map((item) => (
-                <InventoryCard
+                <GoodsCard
                   key={item.id}
                   item={item}
                   onEdit={() => { setEditTarget(item); setModalOpen(true); }}
+                  onMove={() => updateItem({ id: item.id, data: { kind: "service" } })}
                   onDelete={() => setDeleteTarget(item)}
                 />
               ))}
@@ -494,11 +505,11 @@ export default function InventoryPanel() {
         </>
       )}
 
-      {modalOpen && <InventoryItemModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
+      {modalOpen && <GoodsItemModal editTarget={editTarget} onClose={() => setModalOpen(false)} />}
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Inventory Item"
-        message={`"${deleteTarget?.name}" will be permanently deleted and removed from every project that currently lists it${deleteTarget?.saleStatus === "for_sale" ? ", and taken off the website Store" : ""}. This cannot be undone.`}
+        title="Delete Goods Item"
+        message={`"${deleteTarget?.name}" will be permanently deleted and removed from every course and project that currently lists it${deleteTarget?.saleStatus === "for_sale" ? ", and taken off the website Store" : ""}. This cannot be undone.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { deleteItem(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}

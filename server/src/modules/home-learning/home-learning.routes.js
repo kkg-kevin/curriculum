@@ -4,12 +4,14 @@ const controller = require("./home-learning.controller");
 
 const router = express.Router();
 router.get("/", authorize("admin"), controller.list);
+// Read-only here — the household forms pick a package from this list. Packages are created and
+// edited from Billing → Packages (/api/billing/packages, see billing.routes.js).
 router.get("/packages", authorize("admin"), controller.listPackages);
-router.post("/packages", authorize("admin"), controller.createPackage);
-router.put("/packages/:packageId", authorize("admin"), controller.updatePackage);
-router.delete("/packages/:packageId", authorize("admin"), controller.deletePackage);
 router.get("/educator", authorize("teacher"), controller.getForEducator);
 router.get("/learner/:learnerId", authorize("learner"), controller.getForLearner);
+// A parent fills the free places in their package with more children (parent login only).
+router.get("/family", authorize("learner"), controller.getFamily);
+router.post("/family/:householdId/children", authorize("learner"), controller.addFamilyChild);
 router.post("/", authorize("admin"), controller.create);
 router.post("/invoices", authorize("admin"), controller.generateMonthlyInvoices);
 router.put("/:id", authorize("admin"), controller.update);

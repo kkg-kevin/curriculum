@@ -14,7 +14,7 @@ require("dotenv").config();
 
 const env = require("../config/env");
 const db = require("../config/db");
-const InventoryModel = require("../modules/settings/inventory/inventory.model");
+const InventoryModel = require("../modules/settings/items/items.model");
 
 const ITEM_NAME = "Quarky Robot Kit";
 
@@ -36,8 +36,8 @@ async function run() {
     return;
   }
 
-  const existing = await db("inventory")
-    .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID })
+  const existing = await db("items")
+    .where({ ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID, kind: "goods" })
     .whereRaw("LOWER(name) = ?", [ITEM_NAME.toLowerCase()])
     .first();
   if (existing) {
@@ -48,6 +48,7 @@ async function run() {
 
   const record = await InventoryModel.create({
     ownerAdminId: env.PUBLIC_CONTENT_ADMIN_ID,
+    kind: "goods",
     name: ITEM_NAME,
     category: "Robots",
     unit: "kit",

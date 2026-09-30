@@ -102,6 +102,213 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (1 Oct 2026, follow-on) — "Learner/Teacher not found" after creating one; website SEO
+
+**Rebuilt for Dev, Live and Capable this pass**, from commit `03d51de` (curriculum, branch
+`modules`) and `726912b` (digifunzi-landing, branch `new`). Everything is cumulative: if the
+1 Oct release below hasn't been deployed yet, these zips carry it too, and its steps (migrations,
+verify list) still apply. Verify on Dev first as usual.
+
+Two new migrations (auto-apply on Restart), **none destructive**: one new nullable column plus an
+index on each of two tables.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261001100000_add_created_by_admin_id_to_learners.js` | Adds nullable `learners.createdByAdminId` (+ index) | Learners already linked to a hub are unchanged (they scope through the hub, as before). Learners with **no** hub link are assigned to the admin **only if the database has exactly one admin**; otherwise they stay unowned (see below) |
+| `20261001100100_add_created_by_admin_id_to_teachers.js` | Adds nullable `teachers.createdByAdminId` (+ index) | Same rule, for educators with no hub link |
+
+### What changed
+
+1. **"Learner not found" / "Teacher not found" right after creating one.** An admin's access to
+   a learner or educator came only from their hub links. So one created from the top-level
+   Learners / Educators page, with no hub picked yet, belonged to nobody: the save worked, the
+   profile it opened was refused (shown as "not found"), and the record never appeared in the
+   list. Learners and educators now record the admin who created them (the inviting admin for a
+   staff member), set by the server, and that admin keeps access before any hub is assigned.
+   Other admins still can't see them. Covers the profile, hubs, list, learner search and the
+   educator's course-assignment list.
+2. **Website SEO** (`africa-digifunzi-com-dist.zip`):
+   - Canonical URLs, `og:url`, `sitemap.xml` and structured data use the trailing-slash URLs
+     the host actually serves (`/pathways/`), so none of them point at a redirect.
+   - Link previews (WhatsApp, Facebook, LinkedIn) now have an image: the hero photo by default,
+     or the item's own cover on bootcamp, competition, project and store pages. The old default
+     `/og-default.png` never existed.
+   - Structured data no longer publishes the placeholder phone number or "TODO Street" address.
+     They appear automatically once real ones are set in `src/config/site.js`.
+   - `.htaccess`: `www.` redirects to the bare host; `/quarky` redirects to `/store/`; missing
+     files and unknown URLs return a **real 404** (new prerendered `404.html`); routes not
+     prerendered at build time (items added since, diagnostics, sign-up) get the bare app shell
+     (new `200.html`) instead of the home page's HTML.
+   - Each head tag appears once; `/enroll` (noindex) is out of the sitemap; titles carry the
+     brand once; long titles and descriptions shortened.
+   - Breadcrumb data on detail pages; each bootcamp run at a hub is published as an event with
+     the hub's address; competitions as events (dates only).
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD (`git archive` of `server/`, same exclusions as before, 406 files):
+**identical in Dev, Live and Capable**. **No new env var.**
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+**Unchanged**: no `client/` changes since the 1 Oct release, so these are the same files
+(Dev `index-B3CBC79_.js`, Live `index-BZrSnBV8.js`, Capable `index-v0JcRti0.js`, CSS
+`index-CPRP9smp.css`). No need to re-upload them if the 1 Oct portal is already live.
+
+### Website (`africa-digifunzi-com-dist.zip`, digifunzi-landing, separate repo)
+
+Built with `npm run deploy:build` (33/33 routes prerendered, 31 sitemap URLs). The Dev API's
+pathways feed answered HTTP 500 during the build's second prerender pass; the pages it wrote
+were checked and all 11 pathways are present. Same zip in `Guide/dev/` and `Guide/live/`. Still
+talks to the Dev backend (`nodeapp.digifunzi.com`).
+
+The zip now contains **`.htaccess`, `200.html` and `404.html`, and the server rules need all
+three**. Upload the whole zip. Before extracting, remove the previous upload's files and route
+folders from the `africa.digifunzi.com` document root (leave `.well-known/` and `cgi-bin/`
+alone), so pages for items since removed from the site don't linger.
+
+### Learners / educators created before this fix
+
+On a database with **more than one admin**, records stranded by the old bug stay
+unowned: no admin can open or list them. Assign them in phpMyAdmin:
+
+```sql
+-- the admin to give them to
+SELECT id, email FROM users WHERE role = 'admin';
+
+-- stranded learners (no hub link, no owner)
+SELECT l.id, l.firstName, l.lastName, l.createdAt FROM learners l
+WHERE l.createdByAdminId IS NULL
+  AND NOT EXISTS (SELECT 1 FROM learner_hub_links h WHERE h.learnerId = l.id);
+UPDATE learners SET createdByAdminId = '<admin id>' WHERE id IN ('<learner id>', '...');
+
+-- stranded educators
+SELECT t.id, t.firstName, t.lastName, t.createdAt FROM teachers t
+WHERE t.createdByAdminId IS NULL
+  AND NOT EXISTS (SELECT 1 FROM teacher_hub_links h WHERE h.teacherId = t.id);
+UPDATE teachers SET createdByAdminId = '<admin id>' WHERE id IN ('<teacher id>', '...');
+```
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: the
+   two migrations above should apply cleanly (plus the 1 Oct release's two, if that wasn't
+   deployed yet).
+2. **Portal**: nothing new. Upload only if the 1 Oct portal isn't live yet (Dev's from
+   `Guide/dev/`, Live's from `Guide/live/`; different JS hash, don't cross them).
+3. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root, per
+   the note above.
+4. **Verify:**
+   - Learners → **Enroll Learner** without choosing a hub → the new profile opens (no "not
+     found") and the learner is in the list. Same for Educators → add an educator.
+   - Website (these confirm LiteSpeed honours the new rules; `-I` shows just the status line):
+     - `curl -I https://africa.digifunzi.com/no-such-page` → **404**
+     - `curl -I https://africa.digifunzi.com/og-default.png` → **404**
+     - `curl -I https://www.africa.digifunzi.com/` → **301** to `https://africa.digifunzi.com/`
+     - `curl -I https://africa.digifunzi.com/quarky` → **301** to `/store/`
+     - `curl -I https://africa.digifunzi.com/pathways/` → **200**
+     If a 404 check shows a server error page instead, rename `.htaccess` to `.htaccess.off`
+     to restore the site and report back. The rules needing a tweak for LiteSpeed is the
+     likely cause.
+   - Share a pathway or bootcamp link in WhatsApp → the preview shows an image.
+   - Google Search Console (once set up): submit `https://africa.digifunzi.com/sitemap.xml`.
+
+---
+
+## This release (1 Oct 2026) — Staff roles & permissions; Home Learning website sign-up; course session visibility; Capable sign-in
+
+**Built and packaged for Dev, Live and Capable this pass**, from commit `b33154d` (curriculum,
+branch `modules`) and `3c921df` (digifunzi-landing, branch `new`). Covers everything since the
+29 Sep release. Verify on Dev first as usual before treating Live's zips as safe to upload.
+
+Two new migrations (auto-apply on Restart), **none destructive** — one new table, new nullable
+columns, and one column made nullable.
+
+### New migrations
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20260930090000_create_access_roles.js` | Creates `access_roles`; adds nullable `users.roleId`; gives every admin three starter roles (Editor — all modules, Viewer — read only, Finance); gives **every existing collaborator a role matching their current access exactly** (view/add/edit on their modules, no delete, no billing — "Editor — all modules" for all-module collaborators, a "Custom: …" role otherwise) | `users.allowedModules` kept untouched (a collaborator without a role still resolves the old way, so a rollback loses nothing) |
+| `20261001090000_home_learning_website_signups.js` | `home_learning_enrollments.curriculumId` becomes nullable + new `placementNotes`; `home_learning_households` gets `source` (default `admin`) and `signupInvoiceId` | unchanged — existing enrollments keep their curriculum, existing households get `source = admin` |
+
+### What changed
+
+1. **Staff roles & permissions (Settings → Staff / Roles & access).** Collaborators are now
+   "staff" whose access comes from a **role** — a named set of permissions (module × View / Add /
+   Edit / Delete) the workspace owner defines. Settings → **Staff** (was Collaborators) invites
+   and edits by role; Settings → **Roles & access** is the role list and permissions grid. Both
+   tabs are owner-only. Enforced server-side at one checkpoint (`scope.middleware.js`); Delete and
+   Billing / hub revenue can now be granted (e.g. the Finance starter role). Staff see only the
+   modules their role can view, get a "You don't have access to this page" screen elsewhere, and
+   the header shows "Staff · <role>". Enquiries and file uploads stay owner-only (as before).
+2. **Home Learning website sign-up.** Families sign up on the website (`/home-schooling/signup`)
+   instead of only enquiring: the household, the parent's login (email + password), each child's
+   login (username + password) and the first month's invoice are created at once. Both logins show
+   the existing **"payment pending"** screen until approved. On the Home Learning page a website
+   sign-up shows a banner with **Approve payment** (records the cash payment on the sign-up
+   invoice and activates the family) and **Decline** (cancels the invoice, removes the accounts).
+   Children arrive **"Awaiting placement"** — use **Place child** to choose curriculum, grade and
+   educator. Emails already known to the system are refused ("log in instead").
+3. **Course sessions.** Learners (and parent logins) receive only the session assessments
+   actually **issued** to them. Session **notes are educator-only** — not sent to learner or school
+   portal logins, and the learner portal no longer shows a Notes section. Learner progress /
+   module unlocking / assessment auto-issue count only the sections a learner can see.
+4. **Capable sign-in.** Larger logo (52px), no "Enter your details to access your dashboard." line
+   (Capable build only; Digifunzi unchanged).
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD (`git archive`, 404 files) — **identical in Dev, Live and Capable**. New
+`server/src/modules/access/` (mounted at `/api/access`, owner-only) and
+`home-learning/home-learning-signup.service.js`; new public endpoint
+`POST /api/public/home-learning/signups` (rate-limited); new admin endpoints
+`POST /api/home-learning/:id/approve-payment` and `/:id/decline-signup`. **No new env var** — the
+sign-up uses the existing `PUBLIC_CONTENT_ADMIN_ID` (households belong to that admin; unset → the
+sign-up returns 503).
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-B3CBC79_.js`** / CSS `index-CPRP9smp.css` (unchanged CSS hash).
+Live build (`npm run build:live`): **`index-BZrSnBV8.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-v0JcRti0.js`** / same CSS — in `Guide/capable/`.
+
+### Website (`africa-digifunzi-com-dist.zip` — digifunzi-landing, separate repo)
+
+Built with `npm run deploy:build` (32/32 routes prerendered; the Dev API's pathways feed
+answered HTTP 500 a few times and the automatic retries covered it). Same zip in `Guide/dev/` and
+`Guide/live/`. New **`/home-schooling/signup`** page; package cards and the price calculator now
+lead to **Sign up** ("Ask a question" enquiries stay).
+
+**The website talks to the Dev backend** (`nodeapp.digifunzi.com`, per `.env.production`), so
+website sign-ups land in **Dev's** database, under Dev's `PUBLIC_CONTENT_ADMIN_ID`. Deploy the
+Dev backend before the website — until then the sign-up and the package cards have no endpoint
+(the deployed Dev API still answered 404 for `/api/public/home-learning/packages` at build time,
+so re-run `npm run deploy:build` after the backend deploy if you want the prerendered Home
+Schooling snapshot to include the packages).
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart**. Check the app log: two
+   migrations should apply cleanly (or fewer, if any already ran).
+2. **Portal** `assets.zip` + `index.html` — Dev's from `Guide/dev/`, Live's from `Guide/live/`
+   (different JS hash, don't cross them).
+3. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root (after the
+   Dev backend).
+4. **Verify:**
+   - Settings → **Staff**: every existing collaborator shows a role (rename any "Custom: …" roles
+     as you like). Settings → **Roles & access** lists the starter roles.
+   - Log in as a staff member → the sidebar shows only their role's modules; a blocked page shows
+     "You don't have access to this page".
+   - Website `/home-schooling` → **Sign up** → complete the form → confirmation shows the amount
+     and logins. Log in as that parent → "payment pending". Admin → Home Learning → **Approve
+     payment** → the parent can now get in; **Place child** each child.
+   - A learner opening a course sees no Notes section and only assessments issued to them.
+   - Capable: the sign-in page shows the larger logo and no subtitle line.
+
+---
+
 ## This release (29 Sep 2026) — Home Learning (home schooling); website Home Schooling page; 500 MB uploads; per-environment branding
 
 **Built and packaged for Dev, Live and Capable this pass**, all from commit `88a79cf`

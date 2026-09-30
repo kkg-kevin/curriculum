@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { FiPackage, FiPlus, FiX } from "react-icons/fi";
-import { useInventory } from "../../settings/inventory/hooks/useInventory";
-import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/inventory/constants";
+import { useGoods } from "../../settings/items/hooks/useItems";
+import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import { useCourseInventory, useLinkCourseInventory, useUnlinkCourseInventory } from "../hooks/useCourse";
 import CreateInventoryItemModal from "./CreateInventoryItemModal";
 
 const T = { accent: "#25476a", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
-// Materials this course needs from the shared Inventory catalog, with a per-course quantity —
+// Materials this course needs from the shared Items catalog (Goods only), with a per-course quantity —
 // same link+quantity pattern a Project assessment already uses (see InventoryTab in
 // AssessmentBuilderPage.jsx), adapted here to fire immediately per action (add/remove/quantity
 // change) rather than batching into one big form save, since this panel lives on the course's
@@ -68,7 +68,7 @@ function AddMaterialDropdown({ catalog, linkedIds, onAdd, onCreateNew }) {
             onClick={() => { onCreateNew(query.trim()); setOpen(false); setQuery(""); }}
             style={{ display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: "6px", padding: "10px 12px", border: "none", borderTop: `1px solid ${T.border}`, background: "#F9FAFB", color: T.accent, fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
           >
-            <FiPlus size={12} /> Create new catalog item
+            <FiPlus size={12} /> Create new goods item
           </button>
         </div>
       )}
@@ -77,7 +77,7 @@ function AddMaterialDropdown({ catalog, linkedIds, onAdd, onCreateNew }) {
 }
 
 export default function CourseInventoryPanel({ courseId }) {
-  const { data: catalog = [] } = useInventory();
+  const { data: catalog = [] } = useGoods();
   const { data: inventory = [], isLoading } = useCourseInventory(courseId);
   const { mutate: linkItem } = useLinkCourseInventory(courseId);
   const { mutate: unlinkItem } = useUnlinkCourseInventory(courseId);
@@ -92,7 +92,7 @@ export default function CourseInventoryPanel({ courseId }) {
           <h3 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>
             Materials{inventory.length ? ` · ${inventory.length}` : ""}
           </h3>
-          <p style={{ margin: "4px 0 0", fontSize: "11.5px", color: T.inkFaint }}>Robots, boards, sensors, and other materials this course needs — from the shared Settings catalog.</p>
+          <p style={{ margin: "4px 0 0", fontSize: "11.5px", color: T.inkFaint }}>Robots, boards, sensors, and other materials this course needs — from Settings → Items → Goods.</p>
         </div>
         <AddMaterialDropdown
           catalog={catalog}

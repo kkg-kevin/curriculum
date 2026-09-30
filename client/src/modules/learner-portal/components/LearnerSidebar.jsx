@@ -1,7 +1,9 @@
 import { NavLink } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
-  FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiChevronLeft,
+  FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiChevronLeft,
 } from "react-icons/fi";
+import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useAuth } from "../../../context/AuthContext";
@@ -15,12 +17,28 @@ const menuItems = [
   { name: "Progress",     path: "/learner-portal/progress", icon: FiTrendingUp },
   { name: "Timetable",    path: "/learner-portal/timetable", icon: FiCalendar },
   { name: "Invoices",     path: "/learner-portal/invoices", icon: FiFileText },
+  { name: "My Family",    path: "/learner-portal/family", icon: FiUsers },
   { name: "Profile",      path: "/learner-portal/profile", icon: FiUser },
 ];
 
+// Parent-only items: a child's own login (username) never sees Invoices or My Family.
+const PARENT_ONLY = ["Invoices", "My Family"];
+
 function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { user } = useAuth();
-  const visibleMenuItems = user?.username ? menuItems.filter((item) => item.name !== "Invoices") : menuItems;
+  const isParentLogin = !!user?.email && !user?.username;
+  // My Family only matters to a parent with a Home Learning package.
+  const { data: family = [] } = useQuery({
+    queryKey: ["home-learning", "family"],
+    queryFn: homeLearningApi.getFamily,
+    enabled: isParentLogin,
+    staleTime: 5 * 60 * 1000,
+  });
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (!isParentLogin && PARENT_ONLY.includes(item.name)) return false;
+    if (item.name === "My Family" && family.length === 0) return false;
+    return true;
+  });
   const [collapsed, setCollapsed] = useSidebarCollapse("learner");
   const isCollapsed = !isMobile && collapsed;
 

@@ -37,6 +37,7 @@ import LearnerReportDetailPage from "../modules/learner-portal/pages/ReportDetai
 import LearnerProgressPage from "../modules/learner-portal/pages/ProgressPage";
 import LearnerTimetablePage from "../modules/learner-portal/pages/TimetablePage";
 import LearnerProfilePage from "../modules/learner-portal/pages/ProfilePage";
+import LearnerFamilyPage from "../modules/learner-portal/pages/FamilyPage";
 import AdminReportsPage from "../modules/reports/pages/AdminReportsPage";
 import CourseContentLandingPage from "../modules/courses/pages/CourseContentLandingPage";
 import CurriculumPage from "../modules/curriculum/pages/CurriculumPage";
@@ -294,6 +295,7 @@ export default function AppRoutes() {
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
+          <Route path="family" element={<LearnerFamilyPage />} />
           <Route path="invoices" element={<BillingPage />} />
           <Route path="invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="receipts" element={<ReceiptsListPage />} />

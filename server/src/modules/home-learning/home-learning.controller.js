@@ -83,6 +83,15 @@ const getForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.getForLearner(req.params.learnerId) });
 });
 
+// Parent portal → My Family (the parent's own login only — see home-learning-signup.service.js).
+const getFamily = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await HomeLearningSignupService.getFamily(req.user) });
+});
+
+const addFamilyChild = asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await HomeLearningSignupService.addChildFromParent(req.user, req.params.householdId, req.body) });
+});
+
 const getForEducator = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.getForEducator(req.ownTeacher?.id) });
 });
@@ -90,4 +99,5 @@ const getForEducator = asyncHandler(async (req, res) => {
 module.exports = {
   list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
   generateInvoice, generateMonthlyInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
+  getFamily, addFamilyChild,
 };

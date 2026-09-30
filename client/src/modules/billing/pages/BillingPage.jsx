@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -9,11 +9,13 @@ import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useBulkInvoicePreview, useCancelInvoice, useCreateBulkInvoices, useCreateInvoice, useIssueInvoice, useInvoicesQuery, useReceiptsQuery, useCustomersQuery } from "../hooks/useBilling";
 import { classApi } from "../../classes/services/classApi";
 import { useItems } from "../../settings/items/hooks/useItems";
+import { invoicePriceOf } from "../../settings/items/constants";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { inputStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import StatusPill, { TYPE_LABELS, TYPE_HELP, STATUS_LABELS } from "../components/StatusPill";
 import { LoadingState, EmptyState } from "../components/PageStates";
 import Pagination from "../components/Pagination";
+import PackagesPanel from "../components/PackagesPanel";
 
 const INVOICES_PER_PAGE = 8;
 const RECENT_RECEIPTS_COUNT = 5;
@@ -24,7 +26,22 @@ const ADMIN_TABS = [
   { key: "customers", label: "Customers", icon: GroupsIcon },
   { key: "invoices", label: "Invoices", icon: ReceiptLongIcon },
   { key: "payments", label: "Payments", icon: PaidIcon },
+  // Home Learning packages — created and priced here; the Home Learning page picks from them.
+  { key: "packages", label: "Packages", icon: Inventory2Icon },
 ];
+
+// The "Bill from item" options, grouped the way Settings → Items is: Services, then Goods.
+function ItemOptions({ items }) {
+  const label = (item) => {
+    const price = invoicePriceOf(item);
+    return `${item.name}${price !== null ? ` — KES ${price.toLocaleString()}` : ""}`;
+  };
+  return [["service", "Services"], ["goods", "Goods"]].map(([kind, groupLabel]) => {
+    const group = items.filter((item) => (item.kind || "service") === kind);
+    if (group.length === 0) return null;
+    return <optgroup key={kind} label={groupLabel}>{group.map((item) => <option key={item.id} value={item.id}>{label(item)}</option>)}</optgroup>;
+  });
+}
 
 export default function BillingPage() {
   const navigate = useNavigate();
@@ -133,15 +150,17 @@ export default function BillingPage() {
   // a fill-helper, not a hard link: picking one just prefills description/amount, both stay editable.
   const itemsForType = useMemo(() => catalogItems.filter((item) => !item.invoiceType || item.invoiceType === invoiceType), [catalogItems, invoiceType]);
   const itemsForBulkType = useMemo(() => catalogItems.filter((item) => !item.invoiceType || item.invoiceType === bulkType), [catalogItems, bulkType]);
+  // Settings → Items: Goods and Services both prefill here. A Goods item with no invoice price
+  // falls back to its website price (see invoicePriceOf).
   const pickItem = (id) => {
     setItemPick(id);
     const item = catalogItems.find((i) => i.id === id);
-    if (item) { setDescription(item.name); if (item.defaultPrice !== null && item.defaultPrice !== undefined) setAmount(String(item.defaultPrice)); }
+    if (item) { setDescription(item.name); const price = invoicePriceOf(item); if (price !== null) setAmount(String(price)); }
   };
   const pickBulkItem = (id) => {
     setBulkItemPick(id);
     const item = catalogItems.find((i) => i.id === id);
-    if (item) { setBulkDescription(item.name); if (item.defaultPrice !== null && item.defaultPrice !== undefined) setBulkAmount(String(item.defaultPrice)); }
+    if (item) { setBulkDescription(item.name); const price = invoicePriceOf(item); if (price !== null) setBulkAmount(String(price)); }
   };
 
   const submit = (event) => {
@@ -253,6 +272,8 @@ export default function BillingPage() {
         </div>
       )}
 
+      {isAdmin && activeTab === "packages" && <PackagesPanel />}
+
       {isNonSchoolHub ? (
         // A non-school hub (co-working space, innovation lab, makerspace, tech club) bills for
         // SPACE USAGE, not tuition — reuses the same finance surface the admin's own hub view
@@ -272,7 +293,7 @@ export default function BillingPage() {
             <Field label="Scope"><select value={bulkScope} onChange={(e) => { setBulkScope(e.target.value); setBulkPreview(null); }} style={inputStyle}><option value="class">Whole class</option><option value="hub">Whole hub</option></select></Field>
             {bulkScope === "class" && <Field label="Class"><select value={bulkClassId} onChange={(e) => { setBulkClassId(e.target.value); setBulkPreview(null); }} style={inputStyle}><option value="">Select a class</option>{classes.map((cls) => <option key={cls.id} value={cls.id}>{cls.gradeName || cls.name}{cls.streamName ? ` - ${cls.streamName}` : ""}</option>)}</select></Field>}
             <Field label="Invoice type"><select value={bulkType} onChange={(e) => setBulkType(e.target.value)} style={inputStyle}><option value="learner_term">Per learner per term</option><option value="course_module">Per course / module</option><option value="bootcamp">One-time bootcamp</option></select></Field>
-            {itemsForBulkType.length > 0 && <Field label="Bill from item (optional)"><select value={bulkItemPick} onChange={(e) => pickBulkItem(e.target.value)} style={inputStyle}><option value="">Type manually</option>{itemsForBulkType.map((item) => <option key={item.id} value={item.id}>{item.name}{item.defaultPrice != null ? ` — KES ${Number(item.defaultPrice).toLocaleString()}` : ""}</option>)}</select></Field>}
+            {itemsForBulkType.length > 0 && <Field label="Bill from item (optional)"><select value={bulkItemPick} onChange={(e) => pickBulkItem(e.target.value)} style={inputStyle}><option value="">Type manually</option><ItemOptions items={itemsForBulkType} /></select></Field>}
             <Field label="Amount per learner (KES)"><input type="number" min="0.01" step="0.01" value={bulkAmount} onChange={(e) => setBulkAmount(e.target.value)} placeholder="0.00" style={inputStyle} /></Field>
             <Field label="Description"><input value={bulkDescription} onChange={(e) => setBulkDescription(e.target.value)} placeholder="Term tuition or bootcamp fee" style={inputStyle} /></Field>
             {bulkType === "learner_term" && <Field label="Term / period"><input value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} placeholder="Term 1, 2026" style={inputStyle} /></Field>}
@@ -297,7 +318,7 @@ export default function BillingPage() {
             <Field label="Invoice type"><select value={invoiceType} onChange={(e) => { setInvoiceType(e.target.value); setLearnerId(""); }} style={inputStyle}>{(isAdmin ? ["hub_subscription"] : ["learner_term", "course_module", "bootcamp"]).map((type) => <option key={type} value={type}>{TYPE_LABELS[type]}</option>)}</select></Field>
             {invoiceType !== "hub_subscription" && <Field label="Learner"><select value={learnerId} onChange={(e) => setLearnerId(e.target.value)} style={inputStyle}><option value="">Select a learner</option>{learners.map((learner) => <option key={learner.id} value={learner.id}>{learner.firstName} {learner.lastName}</option>)}</select></Field>}
             {invoiceType === "course_module" && <Field label="Course / module"><select value={courseId} onChange={(e) => setCourseId(e.target.value)} style={inputStyle}><option value="">Optional course link</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></Field>}
-            {itemsForType.length > 0 && <Field label="Bill from item (optional)"><select value={itemPick} onChange={(e) => pickItem(e.target.value)} style={inputStyle}><option value="">Type manually</option>{itemsForType.map((item) => <option key={item.id} value={item.id}>{item.name}{item.defaultPrice != null ? ` — KES ${Number(item.defaultPrice).toLocaleString()}` : ""}</option>)}</select></Field>}
+            {itemsForType.length > 0 && <Field label="Bill from item (optional)"><select value={itemPick} onChange={(e) => pickItem(e.target.value)} style={inputStyle}><option value="">Type manually</option><ItemOptions items={itemsForType} /></select></Field>}
             <Field label="Description"><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={invoiceType === "bootcamp" ? "Robotics bootcamp" : "Tuition / course fee"} style={inputStyle} /></Field>
             <Field label={isAdmin ? "Amount per learner (KES)" : "Amount (KES)"}><input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={inputStyle} /></Field>
             {invoiceType === "learner_term" && <Field label="Term / period"><input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} placeholder="Term 1, 2026" style={inputStyle} /></Field>}

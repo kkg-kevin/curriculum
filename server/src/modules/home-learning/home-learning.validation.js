@@ -157,4 +157,5 @@ const approveSignupSchema = z.object({
   notes: z.string().trim().max(255).optional().or(z.literal("")),
 });
 
-module.exports = { signupSchema, approveSignupSchema, householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema };
+// signupChildSchema is also what a parent fills in to add a child from their own account.
+module.exports = { signupSchema, signupChildSchema, approveSignupSchema, householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema };
