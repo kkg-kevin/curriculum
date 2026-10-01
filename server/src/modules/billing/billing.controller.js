@@ -40,6 +40,10 @@ const issueInvoice = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.issueInvoice(req.params.id, req) });
 });
 
+const emailInvoice = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await BillingService.emailInvoice(req.params.id, req) });
+});
+
 const cancelInvoice = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.cancelInvoice(req.params.id, req) });
 });
@@ -72,4 +76,4 @@ const getCustomer = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.getCustomer(req.params.hubId, req) });
 });
 
-module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer };
+module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer };

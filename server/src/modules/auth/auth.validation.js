@@ -49,7 +49,19 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+// "Forgot password" takes whatever the login form takes — an email or a learner's username.
+const forgotPasswordSchema = z.object({
+  identifier: z.string().trim().min(1, "Email or username is required").max(255),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset link is missing its token").max(200),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 module.exports = {
+  forgotPasswordSchema,
+  resetPasswordSchema,
   USER_ROLES,
   PUBLIC_SIGNUP_ROLES,
   loginSchema,

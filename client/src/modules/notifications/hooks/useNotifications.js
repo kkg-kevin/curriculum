@@ -39,3 +39,18 @@ export function useMarkAllNotificationsRead() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
+
+const EMAIL_PREFS_KEY = ["notifications", "email-preferences"];
+
+// Only fetched while the bell's "Email settings" section is actually open.
+export function useEmailPreferences({ enabled = true } = {}) {
+  return useQuery({ queryKey: EMAIL_PREFS_KEY, queryFn: notificationApi.getEmailPreferences, enabled });
+}
+
+export function useUpdateEmailPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: notificationApi.updateEmailPreferences,
+    onSuccess: (data) => qc.setQueryData(EMAIL_PREFS_KEY, data),
+  });
+}

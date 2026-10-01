@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
+import EmailNotificationSettings from "./EmailNotificationSettings";
 
 const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
@@ -60,6 +61,7 @@ export default function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
+  const [showEmailSettings, setShowEmailSettings] = useState(false);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
 
@@ -184,6 +186,18 @@ export default function NotificationBell() {
                 );
               })
             )}
+          </div>
+
+          <div style={{ borderTop: "1px solid #F3F4F6" }}>
+            <button
+              type="button"
+              onClick={() => setShowEmailSettings((v) => !v)}
+              aria-expanded={showEmailSettings}
+              style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "10px 16px", border: "none", background: "none", color: "#25476a", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+            >
+              <FiMail size={13} /> Email settings
+            </button>
+            {showEmailSettings && <EmailNotificationSettings />}
           </div>
         </div>,
         document.body

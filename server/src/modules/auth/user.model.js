@@ -2,7 +2,7 @@ const db = require("../../config/db");
 const { createRecord, updateRecord, deleteRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const TABLE = "users";
-const JSON_FIELDS = ["allowedModules"];
+const JSON_FIELDS = ["allowedModules", "emailPreferences"];
 
 const UserModel = {
   create(data) {

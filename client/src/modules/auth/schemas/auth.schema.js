@@ -7,6 +7,20 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const forgotPasswordSchema = z.object({
+  identifier: z.string().trim().min(1, "Email or username is required"),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Confirm your password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
 // Mirrors server/src/modules/auth/auth.validation.js's PUBLIC_SIGNUP_ROLES — "admin" is
 // never offered here, accounts with that role are seeded/created by an existing admin only.
 export const SIGNUP_ROLES = [

@@ -6,6 +6,7 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
 const ClassModel = require("../classes/class.model");
+const { sendInvoiceEmail, sendPaymentReceiptEmail } = require("./billing.emails");
 
 const RECEIVABLE_STATUSES = ["issued", "partially_paid", "paid", "overdue"];
 
@@ -186,6 +187,7 @@ const BillingService = {
       await BillingModel.updateBatch(batch.id, { status: rows.length === eligible.length ? "completed" : "completed_with_errors", createdInvoices: created.length, totalAmount: money(created.length * data.unitAmount) }, trx);
     });
     await Promise.all(created.map((invoice) => NotificationService.invoiceIssued({ ...invoice, amountDue: invoice.total })));
+    created.forEach((invoice) => this.emailIssuedInvoice(invoice.id));
     return { batch: { ...batch, status: rows.length === eligible.length ? "completed" : "completed_with_errors", createdInvoices: created.length, skippedLearners: rows.length - eligible.length, totalAmount: money(created.length * data.unitAmount) }, created: created.length, skipped: rows.filter((row) => row.status === "skipped").map((row) => ({ learnerId: row.learnerId, name: row.learner ? `${row.learner.firstName} ${row.learner.lastName}`.trim() : "Unknown learner", reason: row.reason })) };
   },
 
@@ -345,7 +347,42 @@ const BillingService = {
     });
     const full = await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
     if (full.payerUserId) await NotificationService.invoiceIssued(full);
+    sendInvoiceEmail(full).catch(() => {});
     return full;
+  },
+
+  // The full document for an invoice, with no access check — for server-side use only (emails).
+  async getInvoiceDocument(id) {
+    const invoice = await BillingModel.findInvoiceById(id);
+    if (!invoice) return null;
+    return decorate(invoice, await BillingModel.findItems(id), await BillingModel.findPayments(id));
+  },
+
+  // Emails a just-issued invoice to whoever it bills. Fire-and-forget, and safe to call from
+  // every place that issues one (here, hub visits, Home Learning): it's sent once per invoice,
+  // and quietly does nothing if the payer has no email address.
+  emailIssuedInvoice(id) {
+    this.getInvoiceDocument(id)
+      .then((invoice) => invoice && sendInvoiceEmail(invoice))
+      .catch((err) => console.error("[billing] could not email invoice:", err.message));
+  },
+
+  // Staff pressing "Email invoice" — sends (or re-sends) it now and reports what happened.
+  async emailInvoice(id, req) {
+    const invoice = await BillingModel.findInvoiceById(id);
+    if (!invoice) throw notFound("Invoice not found");
+    if (req.user.role !== "admin" && !(req.user.role === "school" && invoice.issuerHubId === req.ownSchool?.id)) throw forbidden("You do not have permission to email this invoice");
+    await assertAccess(req, invoice);
+    if (!RECEIVABLE_STATUSES.includes(invoice.status)) throw badRequest("Only an issued invoice can be emailed");
+    const full = await this.getInvoiceDocument(id);
+    const sent = await sendInvoiceEmail(full, { manual: true });
+    if (!sent) throw badRequest("There is no email address on file for this invoice's payer");
+    // 409 rather than a 5xx: the error handler hides 5xx messages in production, and these are
+    // exactly what the person pressing the button needs to read.
+    if (sent.status === "skipped") throw Object.assign(new Error("Email isn't set up on this server yet"), { statusCode: 409 });
+    if (sent.status !== "sent") throw Object.assign(new Error("The email could not be sent right now. It will be retried automatically."), { statusCode: 409 });
+    await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: "invoice_emailed", metadata: { to: full.billTo.email } });
+    return { ...(await this.getInvoiceDocument(id)), emailedTo: full.billTo.email };
   },
 
   async cancelInvoice(id, req) {
@@ -390,7 +427,10 @@ const BillingService = {
       updated = await BillingModel.updateInvoice(id, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
       await BillingModel.createAuditEvent({ invoiceId: id, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: req.user.id, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: data.amount, metadata: { paymentMethod: data.paymentMethod, receiptNumber: payment.receiptNumber } }, trx);
     });
-    return decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
+    const full = await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
+    // Sent once per payment (see its dedupeKey), so an idempotent retry of this request is harmless.
+    sendPaymentReceiptEmail(full, payment).catch(() => {});
+    return full;
   },
 
   async getReceipt(invoiceId, paymentId, req) {

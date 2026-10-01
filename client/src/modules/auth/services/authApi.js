@@ -20,4 +20,10 @@ export const authApi = {
   // Self-service password change — most immediately useful for a learner auto-provisioned with
   // a temporary password (see bootcamp-enrollment.service.js) who wants to set their own.
   changePassword: (currentPassword, newPassword) => api.patch(`${ENDPOINT}/change-password`, { currentPassword, newPassword }).then((r) => r.data),
+  // Forgot password — emails a one-time reset link. The server answers the same way whether or
+  // not the email/username matched an account. The link opens /reset-password?token=…, which
+  // checks the token up front and then sets the new password with it.
+  forgotPassword: (identifier) => api.post(`${ENDPOINT}/forgot-password`, { identifier }).then((r) => r.data),
+  checkResetToken: (token) => api.get(`${ENDPOINT}/reset-password/${encodeURIComponent(token)}`).then((r) => r.data.data),
+  resetPassword: (token, newPassword) => api.post(`${ENDPOINT}/reset-password`, { token, newPassword }).then((r) => r.data.data),
 };

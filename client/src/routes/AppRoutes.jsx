@@ -7,6 +7,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import LoginPage from "../modules/auth/pages/LoginPage";
 import SignupPage from "../modules/auth/pages/SignupPage";
 import ForgotPasswordPage from "../modules/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "../modules/auth/pages/ResetPasswordPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
@@ -103,6 +104,7 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       {/* Unauthenticated by design — the scan destination for a learner's "Share Profile" QR

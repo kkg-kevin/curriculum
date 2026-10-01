@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer,
+  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer,
 } = require("./billing.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 // Home Learning packages (what families are billed monthly, and what the website's Home Schooling
@@ -30,6 +30,7 @@ router.get("/statements/:payerType/:payerId", authorize("admin", "school", "lear
 router.get("/:id", authorize("admin", "school", "learner"), getInvoice);
 router.patch("/:id", authorize("admin", "school"), updateInvoice);
 router.post("/:id/issue", authorize("admin", "school"), issueInvoice);
+router.post("/:id/email", authorize("admin", "school"), emailInvoice);
 router.post("/:id/cancel", authorize("admin", "school"), cancelInvoice);
 router.post("/:id/payments", authorize("admin", "school"), recordPayment);
 router.get("/:invoiceId/payments/:paymentId", authorize("admin", "school", "learner"), getReceipt);

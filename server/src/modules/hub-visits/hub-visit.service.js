@@ -186,6 +186,8 @@ const HubVisitService = {
       return { visit: { ...visit, billingStatus: "invoiced", invoiceItemId: itemId }, invoice };
     }).then(async ({ visit, invoice }) => {
       if (invoice) await NotificationService.invoiceIssued({ ...invoice, amountDue: invoice.total });
+      // Lazy require — billing.service.js is a heavier module than this one needs at load time.
+      if (invoice) require("../billing/billing.service").emailIssuedInvoice(invoice.id);
       return visit;
     });
   },
@@ -328,6 +330,7 @@ const HubVisitService = {
     });
 
     await Promise.all(created.map((invoice) => NotificationService.invoiceIssued({ ...invoice, amountDue: invoice.total })));
+    created.forEach((invoice) => require("../billing/billing.service").emailIssuedInvoice(invoice.id));
     const skipped = rows.filter((r) => r.status === "skipped").map((r) => ({ learnerId: r.learnerId, name: r.learner ? `${r.learner.firstName} ${r.learner.lastName}`.trim() : "Unknown learner", reason: r.reason }));
     return { created: created.length, invoices: created, skipped };
   },

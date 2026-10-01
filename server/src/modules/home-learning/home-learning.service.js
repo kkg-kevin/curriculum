@@ -307,6 +307,8 @@ async function raiseHouseholdInvoice(ownerAdminId, household, { periodStart, per
     }, trx);
     return created;
   });
+  // Emailed to the household's guardian — lazy require, billing.service.js isn't needed at load time.
+  require("../billing/billing.service").emailIssuedInvoice(invoice.id);
   return invoice;
 }
 

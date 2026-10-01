@@ -54,6 +54,14 @@ function invoiceAction(action, successMessage) {
 
 export const useIssueInvoice = invoiceAction(billingApi.issue, "Invoice issued");
 export const useCancelInvoice = invoiceAction(billingApi.cancel, "Invoice cancelled");
+export function useEmailInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: billingApi.email,
+    onSuccess: (data, id) => { qc.invalidateQueries({ queryKey: ["billing", "invoice", id] }); toast.success(data?.emailedTo ? `Invoice emailed to ${data.emailedTo}` : "Invoice emailed"); },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not email the invoice"),
+  });
+}
 export function usePayInvoice() {
   const qc = useQueryClient();
   return useMutation({

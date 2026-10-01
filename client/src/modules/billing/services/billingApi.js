@@ -9,6 +9,8 @@ export const billingApi = {
   update: (id, data) => api.patch(`${BASE}/${id}`, data).then((r) => r.data.data),
   issue: (id) => api.post(`${BASE}/${id}/issue`).then((r) => r.data.data),
   cancel: (id) => api.post(`${BASE}/${id}/cancel`).then((r) => r.data.data),
+  // Emails (or re-emails) an issued invoice to its payer — see billing.service.js's emailInvoice.
+  email: (id) => api.post(`${BASE}/${id}/email`).then((r) => r.data.data),
   pay: (id, data) => api.post(`${BASE}/${id}/payments`, data).then((r) => r.data.data),
   previewBulk: (data) => api.post(`${BASE}/batches/preview`, data).then((r) => r.data.data),
   createBulk: (data) => api.post(`${BASE}/batches`, data).then((r) => r.data.data),

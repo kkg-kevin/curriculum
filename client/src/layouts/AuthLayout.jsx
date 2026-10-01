@@ -29,11 +29,22 @@ const HERO_CONTENT = {
     badge: "Account Recovery",
     badgeIcon: FiLogIn,
     title: "We'll help you get back in.",
-    subtitle: "For now, account recovery goes through your school administrator.",
+    subtitle: "We'll email you a link to choose a new password.",
     points: [
-      "Your school administrator can update your account credentials directly.",
-      "Once it's reset, sign in again with your new password.",
-      "Self-service reset via email is coming soon.",
+      "Enter the email or username you sign in with.",
+      "A learner's link goes to their parent or guardian's email.",
+      "No email on file? Your school administrator can reset it for you.",
+    ],
+  },
+  "/reset-password": {
+    badge: "Account Recovery",
+    badgeIcon: FiLogIn,
+    title: "Choose a new password.",
+    subtitle: "One more step and you're back in.",
+    points: [
+      "Use at least 8 characters.",
+      "The account is signed out on every device once it's reset.",
+      "Reset links work once and expire after a short while.",
     ],
   },
 };
