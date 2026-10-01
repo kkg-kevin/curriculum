@@ -102,4 +102,18 @@ DB_USER=
 DB_PASSWORD=
 DB_NAME=digifunzi
 JWT_SECRET=
+CLIENT_URL=http://localhost:5173   # also the base of every link in an email
+# Outbound email — all optional. Unset, nothing is sent (locally the email is printed to the server log).
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=            # e.g. Digifunzi <hello@digifunzi.com>
+MAIL_REPLY_TO=
+MAIL_BRAND_NAME=      # default "Digifunzi"
+PASSWORD_RESET_MINUTES=   # default 60
 ```
+
+### Email
+
+Account emails (password reset, invoice issued, payment receipt, emailed notifications) go through `server/src/shared/mail/mail.service.js`'s `queueMail`, never straight to `shared/utils/mailer.js`: each is written to `email_outbox`, sent in-process one at a time, and retried on failure. `npm run mail:process` (from `server/`) sends anything still due — run it from a cron job. Build bodies with `shared/mail/mail.layout.js`'s `renderEmail` (HTML + plain text from one data shape). Each module keeps its own `<feature>.emails.js`. Lead emails still call `mailer.js` directly.

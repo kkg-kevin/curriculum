@@ -44,6 +44,10 @@ const env = {
   SMTP_PASS: process.env.SMTP_PASS,
   MAIL_FROM: process.env.MAIL_FROM,
   MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
+  // The product name account emails are signed with (password resets, invoices, notifications).
+  MAIL_BRAND_NAME: process.env.MAIL_BRAND_NAME || "Digifunzi",
+  // How long an emailed password-reset link stays valid.
+  PASSWORD_RESET_MINUTES: Number(process.env.PASSWORD_RESET_MINUTES) > 0 ? Number(process.env.PASSWORD_RESET_MINUTES) : 60,
   DB_HOST: process.env.DB_HOST || "127.0.0.1",
   DB_PORT: Number(process.env.DB_PORT) || 3306,
   DB_USER: process.env.DB_USER,
