@@ -7,6 +7,7 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
+const { sendNotificationEmail, describePreferences, mergePreferences } = require("./notification.emails");
 
 const NotificationService = {
   async listForMe(recipientId) {
@@ -44,7 +45,24 @@ const NotificationService = {
       const existing = await NotificationModel.findOne({ recipientId, dedupeKey });
       if (existing) return existing;
     }
-    return NotificationModel.create({ recipientId, type, title, message, payload, dedupeKey });
+    const created = await NotificationModel.create({ recipientId, type, title, message, payload, dedupeKey });
+    // Emailed too, for the types and recipients that allow it (see notification.emails.js) —
+    // only for a notification that was actually just created, never a deduped repeat.
+    // Fire-and-forget: the in-app notification is the record, the email is a courtesy.
+    sendNotificationEmail({ ...created, payload });
+    return created;
+  },
+
+  async getEmailPreferences(userId) {
+    const user = await UserModel.findById(userId);
+    return describePreferences(user || {});
+  },
+
+  async updateEmailPreferences(userId, data) {
+    const user = await UserModel.findById(userId);
+    if (!user) throw Object.assign(new Error("User not found"), { statusCode: 404 });
+    const updated = await UserModel.update(userId, { emailPreferences: mergePreferences(user, data) });
+    return describePreferences(updated);
   },
 
   // Fans out to every login this learner actually has — a guardian-mediated account (matched by

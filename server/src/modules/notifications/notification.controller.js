@@ -1,5 +1,12 @@
 const asyncHandler = require("express-async-handler");
+const { z } = require("zod");
 const NotificationService = require("./notification.service");
+
+// `enabled` is the master switch for emailed notifications; `types` flips individual ones.
+const emailPreferencesSchema = z.object({
+  enabled: z.boolean().optional(),
+  types: z.record(z.string(), z.boolean()).optional(),
+});
 
 const list = asyncHandler(async (req, res) => {
   const data = await NotificationService.listForMe(req.user.id);
@@ -21,4 +28,13 @@ const markAllRead = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, markRead, markAllRead };
+const getEmailPreferences = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await NotificationService.getEmailPreferences(req.user.id) });
+});
+
+const updateEmailPreferences = asyncHandler(async (req, res) => {
+  const data = emailPreferencesSchema.parse(req.body);
+  res.json({ success: true, data: await NotificationService.updateEmailPreferences(req.user.id, data) });
+});
+
+module.exports = { list, markRead, markAllRead, getEmailPreferences, updateEmailPreferences };
