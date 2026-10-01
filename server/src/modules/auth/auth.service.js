@@ -9,9 +9,50 @@ const LeadModel = require("../leads/lead.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const RevokedTokenModel = require("./revoked-token.model");
 const UserSessionModel = require("./user-session.model");
+const PasswordResetTokenModel = require("./password-reset-token.model");
+const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
-const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES } = require("../../config/env");
+const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
+
+// At most this many reset emails per account per hour — further requests are quietly ignored, so
+// the forgot-password form can't be used to flood someone's inbox.
+const RESET_REQUESTS_PER_HOUR = 3;
+
+const hashResetToken = (token) => crypto.createHash("sha256").update(String(token)).digest("hex");
+
+function invalidResetLink() {
+  const err = new Error("This password reset link is invalid or has expired. Please request a new one.");
+  err.statusCode = 400;
+  err.code = "RESET_LINK_INVALID";
+  return err;
+}
+
+// Where an account's own emails go. Most accounts have an email. A child's own login has only a
+// username, so its emails go to the parent/guardian on the learner record (and say whose login
+// they're about). Returns null when there's no address to reach the account at.
+async function accountEmailTarget(user) {
+  if (user.email) return { user, to: user.email, recipientName: user.name };
+  if (!user.username) return null;
+  const learner = await LearnerModel.findByUsername(user.username);
+  if (!learner?.guardianEmail) return null;
+  return { user, to: learner.guardianEmail, recipientName: learner.guardianName || "", childName: user.name };
+}
+
+// Which account a forgot-password request is about, following the same three ways `login` accepts
+// an identifier: an account's email, a child's own username login, or a child's username that
+// still signs in with the parent's password (no login of its own yet) — in which case the
+// password to reset is the parent's.
+async function resolveResetTarget(identifier) {
+  let user = await UserModel.findByEmail(identifier);
+  if (!user) user = await UserModel.findByUsername(identifier);
+  if (!user) {
+    const learner = await LearnerModel.findByUsername(identifier);
+    const guardian = learner?.guardianEmail ? await UserModel.findByEmail(learner.guardianEmail) : null;
+    if (guardian?.role === "learner") user = guardian;
+  }
+  return user ? accountEmailTarget(user) : null;
+}
 
 // Idle timeout (see user-session.model.js). The client reports activity at most about every 30s,
 // so the server allows one extra minute on top of the limit: the client's own countdown — which
@@ -271,7 +312,53 @@ const AuthService = {
     }
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await UserModel.update(id, { passwordHash });
+    // Fire-and-forget — the change itself is done; this just tells the account's owner it happened.
+    accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});
     return { message: "Password changed successfully" };
+  },
+
+  // "Forgot password" — emails a one-time link to the account's address (see resolveResetTarget
+  // for which account and which address). Resolves quietly whatever happens: the caller answers
+  // the same way whether or not the identifier matched anything, so this can't be used to find
+  // out which emails/usernames have accounts.
+  async requestPasswordReset(identifier) {
+    const target = await resolveResetTarget(String(identifier || "").trim());
+    if (!target) return;
+    const since = new Date(Date.now() - 60 * 60 * 1000);
+    if ((await PasswordResetTokenModel.countRecentForUser(target.user.id, since)) >= RESET_REQUESTS_PER_HOUR) return;
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_MINUTES * 60 * 1000);
+    await PasswordResetTokenModel.create({ userId: target.user.id, tokenHash: hashResetToken(token), expiresAt });
+    await sendPasswordResetEmail(target, token, expiresAt);
+    await PasswordResetTokenModel.pruneExpired();
+  },
+
+  // The usable token row behind an emailed link, or a 400 if the link is unknown, used or expired.
+  async findUsableResetToken(token) {
+    const record = token ? await PasswordResetTokenModel.findByHash(hashResetToken(token)) : null;
+    if (!record || record.usedAt || new Date(record.expiresAt).getTime() < Date.now()) throw invalidResetLink();
+    return record;
+  },
+
+  // Lets the reset page say "this link has expired" up front instead of after the form is filled in.
+  async checkResetToken(token) {
+    await this.findUsableResetToken(token);
+    return { valid: true };
+  },
+
+  // Sets a new password from an emailed link. The link (and any other outstanding one for the
+  // account) stops working, and the account is signed out everywhere — whoever knew the old
+  // password, or was already signed in with it, is out.
+  async resetPassword(token, newPassword) {
+    const record = await this.findUsableResetToken(token);
+    const user = await UserModel.findById(record.userId);
+    if (!user) throw invalidResetLink();
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await UserModel.update(user.id, { passwordHash });
+    await PasswordResetTokenModel.markAllUsedForUser(user.id);
+    await UserSessionModel.deleteByUserId(user.id);
+    accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});
+    return { message: "Your password has been reset. You can now sign in." };
   },
 
   // The JWT design has no server-side session to invalidate on its own — jwt.verify() alone

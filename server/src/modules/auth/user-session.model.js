@@ -24,6 +24,12 @@ const UserSessionModel = {
     return db(TABLE).where({ jti }).del();
   },
 
+  // Signs an account out everywhere — `protect` refuses any token with no session row. Used when
+  // a password is reset from an emailed link.
+  deleteByUserId(userId) {
+    return db(TABLE).where({ userId }).del();
+  },
+
   // Sessions whose token has expired, or that have been idle past the limit, are dead weight —
   // `protect` would refuse them anyway. Pruned opportunistically on login/logout, like
   // RevokedTokenModel.pruneExpired, rather than by a separate cron.
