@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowBack as ArrowBackIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, Send as SendIcon } from "@mui/icons-material";
+import { ArrowBack as ArrowBackIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EmailOutlined as EmailOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, Send as SendIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
-import { useCancelInvoice, useInvoiceQuery, useIssueInvoice, usePayInvoice } from "../hooks/useBilling";
+import { useCancelInvoice, useEmailInvoice, useInvoiceQuery, useIssueInvoice, usePayInvoice } from "../hooks/useBilling";
 import { cardStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import StatusPill, { TYPE_LABELS } from "../components/StatusPill";
 import BillToCard from "../components/BillToCard";
@@ -19,6 +19,7 @@ export default function InvoiceDetailPage() {
   const { data: invoice, isLoading, isError } = useInvoiceQuery(id);
   const { mutate: issueInvoice, isPending: issuing } = useIssueInvoice();
   const { mutate: cancelInvoice, isPending: cancelling } = useCancelInvoice();
+  const { mutate: emailInvoice, isPending: emailing } = useEmailInvoice();
   const { mutate: payInvoice, isPending: recordingPayment } = usePayInvoice();
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -53,6 +54,7 @@ export default function InvoiceDetailPage() {
           <DocumentActions kind="invoice" doc={invoice} targetId="invoice-document" filename={`${invoice.invoiceNumber}.pdf`} />
           <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             {canManage && invoice.status === "draft" && <button type="button" disabled={issuing} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B" }}><SendIcon sx={{ fontSize: 16 }} />{issuing ? "Issuing…" : "Issue invoice"}</button>}
+            {canManage && ["issued", "partially_paid", "paid", "overdue"].includes(invoice.status) && <button type="button" disabled={emailing || !invoice.billTo?.email} title={invoice.billTo?.email ? `Email this invoice to ${invoice.billTo.email}` : "No email address on file for this payer"} onClick={() => emailInvoice(invoice.id)} style={{ ...buttonStyle, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.3)", opacity: invoice.billTo?.email ? 1 : 0.55, cursor: invoice.billTo?.email ? "pointer" : "not-allowed" }}><EmailOutlinedIcon sx={{ fontSize: 17 }} />{emailing ? "Sending…" : "Email invoice"}</button>}
             {canManage && ["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" disabled={cancelling} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.3)" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} />Cancel</button>}
           </div>
         </div>
