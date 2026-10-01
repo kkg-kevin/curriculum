@@ -42,6 +42,9 @@ const env = {
   SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
+  // Brevo API key (starts "xkeysib-"). When set, email goes through Brevo's HTTP API instead of
+  // SMTP — for hosts that block or redirect outbound SMTP ports. MAIL_FROM is still required.
+  BREVO_API_KEY: process.env.BREVO_API_KEY,
   MAIL_FROM: process.env.MAIL_FROM,
   MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
   // The product name account emails are signed with (password resets, invoices, notifications).

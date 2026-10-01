@@ -108,6 +108,7 @@ SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
+BREVO_API_KEY=        # when set, email is sent through Brevo's HTTP API instead of SMTP (hosts that block SMTP ports)
 MAIL_FROM=            # e.g. Digifunzi <hello@digifunzi.com>
 MAIL_REPLY_TO=
 MAIL_BRAND_NAME=      # default "Digifunzi"
