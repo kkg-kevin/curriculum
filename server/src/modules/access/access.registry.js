@@ -64,6 +64,18 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/hub-visits": "hub-visits",
 };
 
+// Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
+// viewing any module that uses it, without the Settings permission. Changing a catalog — and the
+// Settings page itself — still needs Settings.
+const AUTHORING_MODULES = ["assessments", "courses", "curriculum"];
+const CATALOG_READERS = {
+  "/api/competencies": AUTHORING_MODULES,
+  "/api/pathway-templates": AUTHORING_MODULES,
+  "/api/system-levels": ["curriculum"],
+  "/api/inventory": ["assessments", "courses", "billing"],
+  "/api/items": ["assessments", "courses", "billing"],
+};
+
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, and the cross-workspace platform analytics.
 const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/reports/platform-analytics"];
@@ -77,6 +89,10 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/home-learning\/[^/]+\/decline-signup$/, module: "home-learning", action: "delete" },
   // Issuing, cancelling and recording a payment change an existing invoice.
   { method: "POST", pattern: /^\/api\/billing\/[^/]+\/(issue|cancel|payments)$/, module: "billing", action: "edit" },
+  // Detaching a competency, pathway or material from a course or assessment edits that course or
+  // assessment — nothing is deleted (attaching one is already an edit).
+  { method: "DELETE", pattern: /^\/api\/courses\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "courses", action: "edit" },
+  { method: "DELETE", pattern: /^\/api\/assessments\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "assessments", action: "edit" },
 ];
 
 // A POST that only works something out without saving it.
@@ -84,28 +100,43 @@ const READ_ONLY_POST = /\/(preview|search|validate|check|export)$/;
 // An id-shaped path segment (records use UUIDs).
 const ID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function resolveModuleForPath(path) {
-  const prefix = Object.keys(PATH_PREFIX_TO_MODULE).find((p) => path === p || path.startsWith(`${p}/`));
+// Express routes ignore letter case and a trailing slash, so the rules here must too — otherwise
+// "/api/x/Approve-Payment/" would reach the same handler while missing its rule.
+function normalisePath(path) {
+  return String(path || "").toLowerCase().replace(/\/+$/, "");
+}
+
+const underPrefix = (path, prefix) => path === prefix || path.startsWith(`${prefix}/`);
+
+function resolveModuleForPath(rawPath) {
+  const path = normalisePath(rawPath);
+  const prefix = Object.keys(PATH_PREFIX_TO_MODULE).find((p) => underPrefix(path, p));
   return prefix ? PATH_PREFIX_TO_MODULE[prefix] : null;
 }
 
-function isOwnerOnlyPath(path) {
-  return OWNER_ONLY_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+function isOwnerOnlyPath(rawPath) {
+  const path = normalisePath(rawPath);
+  return OWNER_ONLY_PREFIXES.some((p) => underPrefix(path, p));
 }
 
 /**
  * What a request needs: { module, action } or null when the path isn't a staff-gated module.
+ * A read of a Settings catalog also carries `orView` — modules whose View permission is enough.
  *   GET/HEAD/OPTIONS → view · DELETE → delete · PUT/PATCH → edit
  *   POST → create for a new record, but edit when it's under an existing record
  *   (e.g. POST /api/courses/:id/sessions adds to that course), and view for previews/searches.
  */
-function resolveAccess(method, path) {
+function resolveAccess(method, rawPath) {
+  const path = normalisePath(rawPath);
   const verb = method.toUpperCase();
   const override = ACTION_OVERRIDES.find((o) => o.method === verb && o.pattern.test(path));
   if (override) return { module: override.module, action: override.action };
   const module = resolveModuleForPath(path);
   if (!module) return null;
-  if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") return { module, action: "view" };
+  if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") {
+    const catalog = Object.keys(CATALOG_READERS).find((p) => underPrefix(path, p));
+    return catalog ? { module, action: "view", orView: CATALOG_READERS[catalog] } : { module, action: "view" };
+  }
   if (verb === "DELETE") return { module, action: "delete" };
   if (verb === "PUT" || verb === "PATCH") return { module, action: "edit" };
   if (READ_ONLY_POST.test(path)) return { module, action: "view" };

@@ -50,6 +50,10 @@ function RoleEditor({ initial, title, modules, actions, saving, onSave, onClose 
             <strong>Add</strong> creates new records · <strong>Edit</strong> changes existing ones and what's inside them · <strong>Delete</strong> removes records.
             Click a column heading to tick it for every module. Staff/role management always stays with you.
           </p>
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>
+            Competencies, pathways, system levels and items from Settings can always be <strong>used</strong> in the modules that need them
+            (for example, picking competencies while building an assessment). The Settings row only controls who can <strong>change</strong> them.
+          </p>
           <PermissionMatrix modules={modules} actions={actions} value={form.permissions} onChange={(permissions) => setForm((f) => ({ ...f, permissions }))} />
         </div>
       </div>

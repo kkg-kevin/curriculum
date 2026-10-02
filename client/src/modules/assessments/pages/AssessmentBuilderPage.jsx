@@ -5,6 +5,7 @@ import {
   useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory,
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { useGoods } from "../../settings/items/hooks/useItems";
@@ -1431,13 +1432,15 @@ function InventoryTab({ inventory, catalog, onChange, onCreateNew }) {
                 </button>
               );
             })}
-            <button
-              type="button" className="tb-tag-dropdown-item"
-              style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: "4px" }}
-              onClick={() => { onCreateNew(); setOpen(false); setQuery(""); }}
-            >
-              + Create new item…
-            </button>
+            {onCreateNew && (
+              <button
+                type="button" className="tb-tag-dropdown-item"
+                style={{ background: "#F0F7FF", color: "#25476a", fontWeight: 700, marginTop: "4px" }}
+                onClick={() => { onCreateNew(); setOpen(false); setQuery(""); }}
+              >
+                + Create new item…
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1556,6 +1559,10 @@ export default function AssessmentBuilderPage() {
   const { data: allCompetencies = [] } = useCompetencies();
   const { data: allPathways = [] } = usePathwayTemplates();
   const { data: allInventory = [] } = useGoods();
+  // Competencies, pathways and goods are picked from the Settings catalogs; adding a new one to
+  // a catalog from here needs Settings → Add (staff without it just pick from what exists).
+  const { can } = usePermissions();
+  const canAddToCatalog = can("settings", "create");
 
   const [form, setForm] = useState(null);
   const [originalTags, setOriginalTags] = useState({ competencyIds: [], pathwayIds: [], inventory: [] });
@@ -1859,7 +1866,7 @@ export default function AssessmentBuilderPage() {
                     <TagPicker
                       label="Competency" items={allCompetencies} selectedIds={form.competencyIds}
                       onChange={(ids) => setForm((f) => ({ ...f, competencyIds: ids }))}
-                      onCreateNew={() => setCreateCompetencyOpen(true)}
+                      onCreateNew={canAddToCatalog ? () => setCreateCompetencyOpen(true) : undefined}
                     />
                   </div>
                   {isEdit && (
@@ -1868,7 +1875,7 @@ export default function AssessmentBuilderPage() {
                       <TagPicker
                         label="Pathway" items={allPathways} selectedIds={form.pathwayIds}
                         onChange={(ids) => setForm((f) => ({ ...f, pathwayIds: ids }))}
-                        onCreateNew={() => setCreatePathwayOpen(true)}
+                        onCreateNew={canAddToCatalog ? () => setCreatePathwayOpen(true) : undefined}
                       />
                     </div>
                   )}
@@ -1917,7 +1924,7 @@ export default function AssessmentBuilderPage() {
             <InventoryTab
               inventory={form.inventory} catalog={allInventory}
               onChange={(v) => setForm((f) => ({ ...f, inventory: v }))}
-              onCreateNew={() => setCreateInventoryOpen(true)}
+              onCreateNew={canAddToCatalog ? () => setCreateInventoryOpen(true) : undefined}
             />
           )}
         </div>
