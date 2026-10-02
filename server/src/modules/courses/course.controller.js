@@ -208,7 +208,9 @@ const createSessionsBulk = asyncHandler(async (req, res) => {
 });
 
 const updateSession = asyncHandler(async (req, res) => {
-  const body = updateSessionSchema.parse(req.body);
+  // Only the fields that were sent — a partial update must not reset the others to their
+  // defaults (see parsePatch).
+  const body = pickPresent(updateSessionSchema.parse(req.body), req.body);
   const data = await CourseService.updateSession(req.params.id, req.params.sessionId, body);
   res.json({ success: true, data });
 });
@@ -233,7 +235,7 @@ const createModule = asyncHandler(async (req, res) => {
 });
 
 const updateModule = asyncHandler(async (req, res) => {
-  const body = updateModuleSchema.parse(req.body);
+  const body = pickPresent(updateModuleSchema.parse(req.body), req.body);
   const data = await CourseService.updateModule(req.params.id, req.params.moduleId, body);
   res.json({ success: true, data });
 });

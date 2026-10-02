@@ -5,6 +5,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { createBootcampSchema, updateBootcampSchema } = require("./bootcamp.validation");
 const { createOfferingSchema } = require("./bootcamp-hub.validation");
+const { parsePatch } = require("../../shared/validators/common.validator");
 
 // This whole module is authorize("admin")-only (see app.js/bootcamp.routes.js). A bootcamp
 // carries its own ownerAdminId, so ownership is a direct match, same shape as competitions.
@@ -39,7 +40,9 @@ const getBootcampById = asyncHandler(async (req, res) => {
 });
 
 const updateBootcamp = asyncHandler(async (req, res) => {
-  const data = updateBootcampSchema.parse(req.body);
+  // Only the fields that were sent — "Publish to website" patches saleStatus alone, and must not
+  // reset the description, dates, highlights and pricing to their defaults (see parsePatch).
+  const data = parsePatch(updateBootcampSchema, req.body);
   assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
   const record = await BootcampService.updateBootcamp(req.params.id, data, req.ownerAdminId);
   res.json({ success: true, data: record });

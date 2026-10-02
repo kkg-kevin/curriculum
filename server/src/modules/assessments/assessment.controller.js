@@ -8,6 +8,7 @@ const {
   linkPathwaySchema,
   linkInventoryItemSchema,
 } = require("./assessment.validation");
+const { parsePatch } = require("../../shared/validators/common.validator");
 
 const createAssessment = asyncHandler(async (req, res) => {
   const data = createAssessmentSchema.parse(req.body);
@@ -29,7 +30,9 @@ const getAssessmentById = asyncHandler(async (req, res) => {
 });
 
 const updateAssessment = asyncHandler(async (req, res) => {
-  const data = updateAssessmentSchema.parse(req.body);
+  // Only the fields that were sent — a partial update must not reset the others to their
+  // defaults (see parsePatch).
+  const data = parsePatch(updateAssessmentSchema, req.body);
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await AssessmentService.getAssessmentById(req.params.id)));
   }

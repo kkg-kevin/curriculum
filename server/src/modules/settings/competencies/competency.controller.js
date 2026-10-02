@@ -4,6 +4,7 @@ const {
   createCompetencySchema,
   updateCompetencySchema,
 } = require("./competency.validation");
+const { parsePatch } = require("../../../shared/validators/common.validator");
 
 /* ── Competencies ────────────────────────────────────────────────────────── */
 
@@ -19,7 +20,9 @@ exports.createCompetency = asyncHandler(async (req, res) => {
 });
 
 exports.updateCompetency = asyncHandler(async (req, res) => {
-  const body = updateCompetencySchema.parse(req.body);
+  // Only the fields that were sent — a partial update must not reset the others to their
+  // defaults (see parsePatch).
+  const body = parsePatch(updateCompetencySchema, req.body);
   const data = await CompetencyService.updateCompetency(req.params.cId, body, req.ownerAdminId);
   res.json({ success: true, data });
 });
