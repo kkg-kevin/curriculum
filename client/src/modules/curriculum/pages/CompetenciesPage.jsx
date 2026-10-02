@@ -51,6 +51,7 @@ import { Editor as RichTextEditorControlled } from "../../courses/components/Ric
 import RichContent, { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 /* ── Shared delete-confirmation helper ─────────────────────────────────────
    Every panel on this page fires its delete mutation straight from the trash
@@ -574,6 +575,10 @@ function PathwaysPanel({ curriculumId }) {
   const assessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
   const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
   const queryClient = useQueryClient();
+  // Adding to the Settings catalog needs Settings → Add; staff without it still save the
+  // curriculum's own pathway, just without the catalog copy.
+  const { can } = usePermissions();
+  const canAddToCatalog = can("settings", "create");
   const availableToImport = catalogAreas.filter(
     (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
   );
@@ -673,7 +678,7 @@ function PathwaysPanel({ curriculumId }) {
       const existsInCatalog = catalogAreas.some((c) => c.name.toLowerCase() === data.name.toLowerCase());
       create(data, {
         onSuccess: () => {
-          if (!existsInCatalog) {
+          if (!existsInCatalog && canAddToCatalog) {
             pathwayTemplateApi.create(data).then(() => {
               queryClient.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
             }).catch(() => {});

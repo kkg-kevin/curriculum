@@ -121,11 +121,14 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     // before. Owner-only surfaces (staff/role management, reassign-owner, platform analytics) are
     // never aliased, so authorize("admin") / blockIfCollaboratorRestricted keep refusing them.
     // A path with no module mapping is refused too, so a new module can't be left open by accident.
+    // Reading a Settings catalog (competencies, pathways, levels, items) is also open to anyone
+    // who can view a module that uses it — `access.orView`.
     if (!isOwnerOnlyPath(path)) {
       const access = resolveAccess(req.method, path);
       const permissions = await AccessService.permissionsFor(req.user);
       req.user.permissions = permissions;
-      if (!access || !can(permissions, access.module, access.action)) {
+      const allowed = access && (can(permissions, access.module, access.action) || (access.orView || []).some((m) => can(permissions, m, "view")));
+      if (!allowed) {
         const err = new Error(access ? `Your role doesn't allow you to ${describeAccess(access)}.` : "You don't have access to this part of the workspace.");
         err.statusCode = 403;
         err.code = "ROLE_FORBIDDEN";

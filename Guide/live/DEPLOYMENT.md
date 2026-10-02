@@ -102,6 +102,236 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (1 Oct 2026, third follow-on) — Email: password reset, invoices & receipts, emailed notifications
+
+**Rebuilt for Dev, Live and Capable this pass** — portal from commit `58e60a8`, **backend
+rebuilt again from `87793ce`** (curriculum, branch `modules`) to send through Brevo's HTTP API:
+the Truehost server redirects/blocks outbound SMTP (port 587 answered by the host's own mail
+server — "Hostname/IP does not match certificate's altnames"; port 2525 — `ECONNREFUSED`), so
+SMTP can't work there. If you uploaded the earlier backend zip, upload this one over it; the
+portal files are unchanged. **Website not rebuilt** — no `digifunzi-landing` changes; the
+website zip here is the one from the release below. Cumulative: if the releases below aren't
+deployed yet, these zips carry them too and their steps (database backup, everyone signs in
+again once) still apply. Verify on Dev first as usual.
+
+**Deploy the backend and the portal together** — the portal's new pages call new endpoints
+(`/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/billing/:id/email`,
+`/api/notifications/email-preferences`).
+
+**Nothing is emailed until `BREVO_API_KEY` and `MAIL_FROM` are set.** Without them the app
+behaves as before, except that "Forgot password?" says "check your email" and nothing arrives.
+
+### New migration (auto-applies on Restart)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261003090000_create_email_outbox_and_password_resets.js` | Creates `email_outbox` (every email, its status, attempts and last error) and `password_reset_tokens`; adds nullable `users.emailPreferences` | none changed — additive only |
+
+### Environment (cPanel → Node app → Environment variables)
+
+| Variable | Dev / Live | Capable |
+|---|---|---|
+| `BREVO_API_KEY` | the key from Brevo → SMTP & API → **API Keys** (starts `xkeysib-`) — not the SMTP key | same |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | **remove** — outbound SMTP is blocked on this server; ignored anyway once `BREVO_API_KEY` is set | same |
+| `MAIL_FROM` | `Digifunzi <no-reply@digifunzi.com>` | `Capable <no-reply@digifunzi.com>` |
+| `MAIL_REPLY_TO` | *(optional)* an inbox someone reads, e.g. `kevinkihara@digifunzi.com` | same |
+| `MAIL_BRAND_NAME` | *(leave unset — defaults to `Digifunzi`)* | `Capable` |
+| `PASSWORD_RESET_MINUTES` | *(optional)* how long a reset link is valid, default `60` | same |
+| `CLIENT_URL` | **already set — check it.** Dev `https://curriculum.digifunzi.com`, Live `https://dcf.digifunzi.com` | `https://lms.capable.co.ke` |
+
+Brevo → Security → Authorized IPs: blocking is **deactivated** for API keys, so nothing to add
+there; if it's ever activated, authorise the server's address `102.212.246.83`.
+
+Values with no quotes, angle-bracket placeholders or trailing spaces. `CLIENT_URL` has no
+trailing slash; every link in an email is built from it, so a Live app carrying Dev's value
+would email links to Dev.
+
+The sending domain `digifunzi.com` is already authenticated in Brevo (Brevo code + two DKIM
+CNAMEs added at the Truehost DNS Manager on 1 Oct 2026) and `no-reply@digifunzi.com` is a
+verified sender. **Capable sends from the same `digifunzi.com` address** for now — to send from
+a `capable.co.ke` address, add and authenticate that domain in Brevo first, then change
+`MAIL_FROM`. Brevo's free plan allows 300 emails a day across all environments combined.
+
+### Cron job (one per environment — cPanel → Cron Jobs)
+
+Retries emails that failed while the mail provider was unavailable. Emails send without it; it
+is only the safety net. Every 10 minutes (`*/10 * * * *`):
+
+```
+source /home/USER/nodevenv/APP_ROOT/NODE_VERSION/bin/activate && cd /home/USER/APP_ROOT && npm run mail:process >> mail-cron.log 2>&1
+```
+
+Copy the first part from the "Enter to the virtual environment" line at the top of that app's
+page in Setup Node.js App. A working run writes `Email outbox: handled 0 email(s).` to
+`mail-cron.log` in the app root. If it writes `Missing required environment variable(s)`, the
+cron shell isn't getting the panel's variables: put a `.env` file in the app root with the same
+variables (database, `JWT_SECRET`, `CLIENT_URL`, `BREVO_API_KEY`, `MAIL_*`).
+
+### What changed
+
+1. **Password reset by email.** Login → "Forgot password?" takes an email or username and emails
+   a one-time link (valid 60 minutes, 3 requests an hour per account). Setting the new password
+   signs that account out on every device. A learner with only a username: the link goes to the
+   parent/guardian's email and names the child. No email on file → nothing is sent and the admin
+   reset stays the fallback. The page always answers "if that account exists…".
+2. **"Your password was changed" notice** after a reset or a change from the profile page.
+3. **Invoices by email.** Issuing an invoice (single, bulk, hub visits, Home Learning) emails the
+   payer a summary with a "View invoice" link. A hub's invoice arrives as "Hub name via
+   Digifunzi" with replies going to the hub. No switch to turn this off: once SMTP is set, every
+   payer with an email on file is emailed.
+4. **Email invoice button** on an issued invoice (staff) — sends or re-sends, logged in the
+   invoice's Activity history.
+5. **Payment receipts by email** when a payment is recorded, with the remaining balance.
+6. **Notifications by email**: new reports, level-ups, account activation, website enquiries,
+   Home Learning sign-ups. Graded assessments are off by default. Each user can change this
+   under **Email settings** in the notifications bell.
+7. **Outbox.** Every email is stored in `email_outbox` first, sent one at a time, and retried up
+   to five times. Enquiry (lead) emails are unchanged and don't use the outbox.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `87793ce` (`git archive` of `server/`, same exclusions, **413 files**) —
+identical in Dev, Live and Capable. No new npm packages, so **Run NPM Install can be skipped** if
+the app already has its modules (nothing in `package.json` changed but one script).
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-CUjNiIU7.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-Bsk7j2xz.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-BpaauK1h.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Deploy order
+
+1. **Database backup** (required if the second follow-on below isn't deployed yet; a good habit
+   otherwise).
+2. **Backend** `backend-deploy.zip` → add `BREVO_API_KEY` (and `MAIL_FROM`), remove the
+   `SMTP_*` variables → **Restart**. The app log should show the migration applied (first
+   upload of this release only).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Cron job** as above.
+5. **Verify:**
+   - Login → "Forgot password?" → your own email → the email arrives from
+     `no-reply@digifunzi.com`; the link opens **this** environment's portal; set a password; the
+     old one no longer works; using the link a second time is refused.
+   - In Gmail: open the email → ⋮ → Show original → SPF, DKIM and DMARC all PASS.
+   - Issue a test invoice to a payer whose email is yours → the invoice email arrives; **Email
+     invoice** on that invoice sends it again and adds a line to Activity history. Record a
+     payment → the receipt email arrives.
+   - Notifications bell → **Email settings** opens and saves.
+   - If an email doesn't arrive: phpMyAdmin → `email_outbox` → `status` and `lastError` say what
+     Brevo answered (`Brevo API 401` = wrong or deleted `BREVO_API_KEY`; a certificate or
+     `ECONNREFUSED` error = the app is still on SMTP — the key isn't set, or the old backend is
+     running). An **empty** table = no login matched what was typed: a teacher/learner profile
+     only gets a login once a Portal Password is set for them. Then Brevo → Transactional → Logs.
+
+---
+
+## This release (1 Oct 2026, second follow-on) — Items (Goods & Services); 30-minute sign-out; packages in Billing; child logins; parents add children
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `e02962b`
+(curriculum, branch `modules`; code as of `ba2af73`), website from `726912b` (digifunzi-landing,
+branch `new`, unchanged code, re-rendered with current content). Cumulative: if the two releases
+below aren't deployed yet, these zips carry them too and their steps still apply. Verify on Dev
+first as usual.
+
+**Deploy the backend and the portal together** — the portal calls new endpoints
+(`/api/auth/activity`, `/api/items`, `/api/billing/packages`, `/api/home-learning/family`) and
+the old portal's package editor calls routes that no longer exist.
+
+**Everyone is signed out once** when the new backend starts: sign-ins issued before it have no
+session record, so they're refused and people sign in again.
+
+### New migrations (auto-apply on Restart)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261002090000_merge_inventory_and_billing_items_into_items.js` | Renames `inventory` → `items`, adds `kind` (goods/service), `defaultPrice`, `invoiceType`; copies every `billing_items` row in as a **service** (same id), then **drops `billing_items`** | Inventory rows become goods with the same ids, so course/project material links and the website Store are untouched. Reversible: rolling back copies the services back into a recreated `billing_items` |
+| `20261002100000_create_user_sessions.js` | Creates `user_sessions` (one row per sign-in: last activity, expiry) | none |
+
+**Take a database backup before the Restart** — the first migration restructures two tables. It
+was rolled back and re-applied cleanly on a local copy, but a backup is the safe baseline.
+
+### Environment (cPanel → Node app → Environment variables)
+
+- `SESSION_IDLE_MINUTES` — **optional**, minutes of inactivity before sign-out (default **30**).
+- `JWT_EXPIRES_IN` — if it's already set on the app (e.g. `7d`), that stays the maximum length of
+  one sign-in. **Recommended: `12h`** (the new default when unset). Idle sign-out applies either way.
+
+### What changed
+
+1. **Settings → Items (Goods & Services).** The Inventory tab and the billing Items tab are one
+   Items tab with a Goods / Services switch. Goods = the old Inventory (course & project
+   materials, website Store selling) and can now also carry an invoice price/type; Services =
+   the old billing items. Billing → Create invoice lists both, grouped. "Move to Goods /
+   Services" on each card (refused for goods used as materials or for sale). The project
+   builder's "Inventory" tab is now "Materials".
+2. **30-minute idle sign-out; closing the last tab signs out.** A "Are you still there?"
+   warning at 28 minutes (Stay signed in / Sign out), sign-out at 30 for every open tab, with a
+   notice on the login page. Background refreshes don't count as activity; an open assessment
+   does. Closing the last tab — or the browser — means signing in again; refreshing doesn't.
+3. **Packages moved to Billing.** Home Learning packages are created and edited in the new
+   **Billing → Packages** tab (Billing permission). The Home Learning page keeps Add a household
+   + the household list, links to Billing → Packages, and warns when no active package exists.
+4. **Child vs parent logins.** A child signing in with their username no longer lands in the
+   parent's account: the child's own login is created on first use (same password they used)
+   and they see only themselves. The header says **Parent** or **Learner**. Parents still see
+   only their own children and switch between them.
+5. **Parents add children.** Learner portal → **My Family** (parent login only, when they have
+   a Home Learning household): shows the package and free places, and **Add a child** fills a
+   free place with the child's details and their own username/password. The child arrives on
+   the Home Learning page as **Awaiting placement** ("Added by parent…") and the admin gets a
+   notification to place them. Never changes the package or price — full packages say "contact
+   us".
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD (`git archive` of `server/`, same exclusions, **403 files**) — identical in
+Dev, Live and Capable. The old `src/modules/settings/inventory/` folder is gone (merged into
+`settings/items/`); uploading over the old files leaves it behind harmlessly, but it's cleaner to
+delete it.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-BMCYhD7S.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-BlRa6vfG.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-RKLWzSyC.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs, no API errors this time. Same
+code as the release below (SEO), so if that website zip is already live this only refreshes
+content; if it isn't, follow that release's website note (upload the whole zip, including
+`.htaccess`, `200.html`, `404.html`). Same zip in `Guide/dev/` and `Guide/live/`; still talks to
+the Dev backend.
+
+### Deploy order
+
+1. **Database backup.**
+2. **Backend** `backend-deploy.zip` → **Run NPM Install** → set/confirm the env vars above →
+   **Restart**. The app log should show both migrations applied (plus any from the releases
+   below not yet deployed).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Website** `africa-digifunzi-com-dist.zip` → `africa.digifunzi.com` document root.
+5. **Verify:**
+   - Sign in → you're asked to sign in again (expected, once).
+   - Settings → **Items**: Goods shows the old inventory, Services the old billing items.
+     Billing → Create invoice → "Bill from item" lists Services and Goods.
+   - A course's Materials picker lists goods only; the website Store still shows its items.
+   - Leave a tab idle 28 min → warning; 30 → signed out with the notice. Close all tabs, open
+     the portal again → sign-in required.
+   - **Billing → Packages** lists the packages; Home Learning has no packages panel.
+   - Sign in with a child's username → only that child, header "Learner". Sign in as the parent
+     → "Parent", **My Family** in the menu (if they have a household), switcher lists only
+     their children.
+   - My Family → Add a child (on a household with a free place) → the child shows on the Home
+     Learning page as Awaiting placement, and the admin notification arrives.
+
+---
+
 ## This release (1 Oct 2026, follow-on) — "Learner/Teacher not found" after creating one; website SEO
 
 **Rebuilt for Dev, Live and Capable this pass**, from commit `03d51de` (curriculum, branch
@@ -2236,9 +2466,12 @@ Without it, `npm run build:live` falls back to the next env file Vite finds and 
 | PUBLIC_SITE_URL | *(optional)* the marketing site's origin(s), **comma-separated** — e.g. `https://africa.digifunzi.com,http://localhost:4199,http://localhost:5175` (deployed site + its build-time prerender origin + the landing team's local dev, per `Guide/WEBSITE_INTEGRATION_CONTRACT.md` §5). Leave unset and the `/api/public/*` routes still work for server-to-server calls; only a browser on an unlisted origin gets CORS-blocked. |
 | API_PUBLIC_URL | *(optional, carried forward)* this API's own external base, e.g. `https://dcf-api.digifunzi.com`. Used to turn stored `/uploads/...` paths into absolute URLs in `/api/public/*` responses, since the landing site reads them cross-origin. Leave unset in a pinch — public responses fall back to the raw stored path. |
 | PUBLIC_CONTENT_ADMIN_ID | **Required for the public marketing site's Pathways and Diagnostic pages** (as of the 9 Sep follow-on — see "This release" above). The `users.id` of the admin whose **Curriculum → Competency Framework** is the public-facing one — `/api/public/pathways[/:idOrSlug]` and `/api/public/diagnostics/*` (five endpoints) serve **only that admin's** operational pathways. **This id is database-specific** — Dev and Live have separate databases with separate admin accounts, so each environment needs its own value (do **not** copy Dev's into Live). To find it for an environment: log into that environment's portal as the intended public-content admin and `GET /api/auth/me` (or check the URL / a network response — it returns `{ "id": "…" }`); or run `SELECT id, email FROM users WHERE role='admin'` against that environment's DB. **Leave unset and all five of those endpoints return `503`** and the website's Pathways section shows an empty state. Nothing else in the app depends on it. |
-| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | *(optional, carried forward)* outbound email for lead auto-ack + staff reply. Leave every one unset and both features silently no-op — nothing else breaks. Any standard SMTP account works (a Google Workspace mailbox + an App Password is the cheapest way to start; a transactional provider like Resend/Postmark/SendGrid is more reliable at volume). `SMTP_PORT` defaults to `587`. |
-| MAIL_FROM | *(optional, carried forward)* the From header for outbound mail, e.g. `Digifunzi <hello@digifunzi.com>`. Falls back to `SMTP_USER` if unset. |
-| MAIL_REPLY_TO | *(optional, carried forward)* Reply-To header on outbound mail, e.g. `enquiries@digifunzi.com` — where an enquirer's reply-to-the-reply lands. |
+| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | outbound email — password reset, invoices and receipts, emailed notifications, lead auto-ack and staff reply. Brevo: `smtp-relay.brevo.com` / `587` / the SMTP login (`…@smtp-brevo.com`) / the SMTP key (`xsmtpsib-…`). Leave every one unset and nothing is emailed — nothing else breaks. See "This release (1 Oct 2026, third follow-on)" |
+| BREVO_API_KEY | Brevo API key (`xkeysib-…`). When set, email is sent through Brevo's HTTP API (port 443) instead of SMTP — **required on this host**, which blocks outbound SMTP. With it set, the `SMTP_*` variables are ignored |
+| MAIL_FROM | the From header for outbound mail: `Digifunzi <no-reply@digifunzi.com>`. Must be a sender verified in Brevo on an authenticated domain. Falls back to `SMTP_USER` if unset |
+| MAIL_REPLY_TO | *(optional)* Reply-To header on outbound mail — an inbox someone reads. A hub's invoice email replies to that hub instead |
+| MAIL_BRAND_NAME | *(optional)* the product name account emails are signed with. Default `Digifunzi`; `Capable` on Capable |
+| PASSWORD_RESET_MINUTES | *(optional)* minutes an emailed password-reset link stays valid. Default `60` |
 | NODE_ENV | development |
 | DB_HOST | 127.0.0.1 (or `localhost` — whatever cPanel's MySQL Databases tool shows) |
 | DB_PORT | 3306 |

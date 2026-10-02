@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail } from "react-icons/fi";
+import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2 } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 import EmailNotificationSettings from "./EmailNotificationSettings";
 
@@ -12,6 +12,8 @@ const ICONS = {
   level_up: { Icon: FiAward, color: "#feb139" },
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
+  share_request: { Icon: FiShare2, color: "#25476a" },
+  share_accepted: { Icon: FiShare2, color: "#059669" },
 };
 
 // Where each notification type actually lives, per its own payload (see notification.service.js
@@ -36,6 +38,10 @@ function resolveNotificationPath(n) {
     case "lead_submitted":
       // The admin Enquiries page — ?lead= scrolls to and highlights the row (see EnquiriesListPage).
       return p.leadId ? `/enquiries?lead=${p.leadId}` : (p.route || "/enquiries");
+    case "share_request":
+    case "share_accepted":
+      // Another admin asking to share content, or accepting — Settings → Sharing.
+      return p.route || "/settings?tab=sharing";
     default:
       return null;
   }

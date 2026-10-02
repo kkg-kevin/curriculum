@@ -1,6 +1,6 @@
 # Deployment Guide — Digifunzi Curriculum — Capable environment
 
-**Status: backend rebuilt again (1 Oct 2026, follow-on) — ready to upload.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (1 Oct 2026, follow-on)" (the "Learner/Teacher not found" fix: two new, non-destructive migrations; the website part doesn't apply here), then "This release (1 Oct 2026)" and the 29 Sep release below it (same backend, same features; Capable just has its own portal build). The portal build is unchanged from 1 Oct and still has the Capable sign-in tweak: larger logo, no subtitle line.
+**Status: backend and portal rebuilt (1 Oct 2026, third follow-on) — ready to upload; take a database backup first if the second follow-on isn't deployed yet.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (1 Oct 2026, third follow-on)" — email: password reset links, invoices and receipts emailed to the payer, selected notifications by email. One new, additive migration; backend and portal must be uploaded together. **Nothing is emailed until `BREVO_API_KEY` is set** (outbound SMTP is blocked on this server, so the `SMTP_*` variables are not used) — use the Capable column of that release's Environment table (`BREVO_API_KEY`, `MAIL_BRAND_NAME=Capable`, `MAIL_FROM=Capable <no-reply@digifunzi.com>`, and check `CLIENT_URL=https://lms.capable.co.ke`), then add the cron job. Below it, "This release (1 Oct 2026, second follow-on)" is included too — Items (Goods & Services), 30-minute idle sign-out and sign-out when the last tab closes, Home Learning packages moved to Billing → Packages, child vs parent logins, parents adding children from My Family. Two new migrations (the first restructures the `inventory`/`billing_items` tables into `items`), everyone signs in again once, and the backend and portal must be uploaded together. The website parts of those notes don't apply here. Optional new env var `SESSION_IDLE_MINUTES` (default 30); `JWT_EXPIRES_IN` recommended `12h`. Earlier releases below it are included.
 
 | Part | Repo | URL |
 |---|---|---|
@@ -32,8 +32,8 @@ was set up, just a third instance instead of a second.
 
 | File | Built how | Safe to upload as-is? |
 |---|---|---|
-| `backend-deploy.zip` | 1 Oct 2026 follow-on, from HEAD (`03d51de`) — byte-identical to `Guide/dev/` and `Guide/live/`; code only, nothing environment-specific baked in. Carries the 1 Oct migrations (staff roles; Home Learning website sign-ups) plus two new ones (`createdByAdminId` on learners and teachers) that apply on Restart | **Yes** |
-| `assets.zip` + `index.html` | 1 Oct 2026 (unchanged in the follow-on — no `client/` changes), `npm run build:capable` (`client/`) — bakes in `https://lms-api.capable.co.ke` and the Capable branding. Entry **`index-v0JcRti0.js`** / CSS `index-CPRP9smp.css` | **Yes** — upload to the `lms.capable.co.ke` document root |
+| `backend-deploy.zip` | 1 Oct 2026 third follow-on, from HEAD (`87793ce`, sends through Brevo's HTTP API) — byte-identical to `Guide/dev/` and `Guide/live/`; code only, nothing environment-specific baked in. Carries all migrations up to `20261003090000_create_email_outbox_and_password_resets.js` (incl. the Items merge), applied on Restart | **Yes** — after a database backup |
+| `assets.zip` + `index.html` | 1 Oct 2026 third follow-on, `npm run build:capable` (`client/`) — bakes in `https://lms-api.capable.co.ke` and the Capable branding. Entry **`index-BpaauK1h.js`** / CSS `index-CPRP9smp.css` | **Yes** — upload to the `lms.capable.co.ke` document root, together with the backend |
 
 No website zip here — the marketing site isn't part of this deploy (see above).
 (`digifunzi-landing` does have `build:capable` scripts, but its `.env.capable` still points at a

@@ -4,6 +4,7 @@ import { useGoods } from "../../settings/items/hooks/useItems";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import { useCourseInventory, useLinkCourseInventory, useUnlinkCourseInventory } from "../hooks/useCourse";
 import CreateInventoryItemModal from "./CreateInventoryItemModal";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const T = { accent: "#25476a", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
@@ -63,13 +64,13 @@ function AddMaterialDropdown({ catalog, linkedIds, onAdd, onCreateNew }) {
               ))
             )}
           </div>
-          <button
+          {onCreateNew && <button
             type="button"
             onClick={() => { onCreateNew(query.trim()); setOpen(false); setQuery(""); }}
             style={{ display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: "6px", padding: "10px 12px", border: "none", borderTop: `1px solid ${T.border}`, background: "#F9FAFB", color: T.accent, fontSize: "12px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
           >
             <FiPlus size={12} /> Create new goods item
-          </button>
+          </button>}
         </div>
       )}
     </div>
@@ -82,6 +83,9 @@ export default function CourseInventoryPanel({ courseId }) {
   const { mutate: linkItem } = useLinkCourseInventory(courseId);
   const { mutate: unlinkItem } = useUnlinkCourseInventory(courseId);
   const [creatingItem, setCreatingItem] = useState(null); // string | null — initialName, or null when closed
+  // A new goods item is added to the Settings catalog — staff need Settings → Add for that.
+  const { can } = usePermissions();
+  const canAddToCatalog = can("settings", "create");
 
   const linkedIds = inventory.map((i) => i.id);
 
@@ -98,7 +102,7 @@ export default function CourseInventoryPanel({ courseId }) {
           catalog={catalog}
           linkedIds={linkedIds}
           onAdd={(itemId) => linkItem({ inventoryItemId: itemId, quantity: 1 })}
-          onCreateNew={(initialName) => setCreatingItem(initialName || "")}
+          onCreateNew={canAddToCatalog ? (initialName) => setCreatingItem(initialName || "") : undefined}
         />
       </div>
 

@@ -3,6 +3,7 @@ import { FiCheck, FiSearch } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { useCompetencies as useGlobalCompetencies } from "../../settings/competencies/hooks/useCompetencies";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { Field } from "./formFields";
 import CreateCompetencyModal from "./CreateCompetencyModal";
 
@@ -14,6 +15,8 @@ const PALETTE = [
 function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const { can } = usePermissions();
+  const canAddToCatalog = can("settings", "create");
   const ref = useRef(null);
   const inputRef = useRef(null);
 
@@ -35,7 +38,9 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
     : available;
   // Only offer "create" when the name is genuinely new — otherwise we'd let this
   // field silently mint duplicate catalog entries for something that already exists.
-  const canCreate = trimmed !== "" && !allComps.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+  // Creating one writes to the Settings catalog, so staff need Settings → Add; without it they
+  // pick from what exists.
+  const canCreate = canAddToCatalog && trimmed !== "" && !allComps.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
 
   const handleCreate = () => {
     onRequestCreate(trimmed);
@@ -72,7 +77,7 @@ function AddCompetencyDropdown({ available, allComps, onAdd, onRequestCreate }) 
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search or create…"
+              placeholder={canAddToCatalog ? "Search or create…" : "Search…"}
               onKeyDown={(e) => { if (e.key === "Enter" && canCreate && filtered.length === 0) { e.preventDefault(); handleCreate(); } }}
               style={{
                 width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", border: "none",
