@@ -77,8 +77,9 @@ const CATALOG_READERS = {
 };
 
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
-// moving content between admins, and the cross-workspace platform analytics.
-const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/reports/platform-analytics"];
+// moving content between admins, sharing with other admins, and the cross-workspace platform
+// analytics.
+const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", "/api/reports/platform-analytics"];
 
 // Requests whose meaning isn't what their HTTP method suggests. Checked before the default rules.
 const ACTION_OVERRIDES = [

@@ -7,6 +7,7 @@ import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import AdminsPanel from "../admins/components/AdminsPanel";
 import CollaboratorsPanel from "../collaborators/components/CollaboratorsPanel";
+import SharingPanel from "../sharing/components/SharingPanel";
 import RolesPanel from "../access/components/RolesPanel";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -258,10 +259,11 @@ const ALL_TABS = [
   { key: "admins", label: "Admins" },
   { key: "collaborators", label: "Staff" },
   { key: "roles", label: "Roles & access" },
+  { key: "sharing", label: "Sharing" }, // with other admins — see SharingPanel
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
-const OWNER_ONLY_TABS = ["admins", "collaborators", "roles"];
+const OWNER_ONLY_TABS = ["admins", "collaborators", "roles", "sharing"];
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -318,6 +320,7 @@ export default function SettingsPage() {
         {activeTab === "admins" && <AdminsPanel />}
         {activeTab === "collaborators" && <CollaboratorsPanel />}
         {activeTab === "roles" && <RolesPanel />}
+        {activeTab === "sharing" && <SharingPanel />}
       </div>
     </div>
   );

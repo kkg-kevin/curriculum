@@ -39,6 +39,7 @@ const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
 const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
 const accessRoutes = require("./modules/access/access.routes");
+const sharingRoutes = require("./modules/sharing/sharing.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -215,6 +216,10 @@ app.use("/api/admin-tools", protect, attachOwnRecords, authorize("admin"), block
 // a staff account is never role-aliased here (see access.registry.js's OWNER_ONLY_PREFIXES), so
 // authorize("admin") refuses it, and blockIfCollaboratorRestricted backs that up.
 app.use("/api/access", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, accessRoutes);
+// Sharing between admins (Settings → Sharing): connecting with another admin, browsing their
+// content and copying it into this workspace. Owner-only, same guards as the two above — what a
+// workspace shares, and with whom, is never a staff decision.
+app.use("/api/sharing", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, sharingRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
