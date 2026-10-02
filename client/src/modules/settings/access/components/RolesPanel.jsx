@@ -63,7 +63,8 @@ function RoleEditor({ initial, title, modules, actions, saving, onSave, onClose 
 
 const EMPTY_ROLE = { name: "", description: "", permissions: {} };
 
-export default function RolesPanel() {
+// `onManageStaff` opens the Staff section beside this one (see TeamPanel).
+export default function RolesPanel({ onManageStaff }) {
   const { data: registry } = useAccessModules();
   const { data: roles, isLoading } = useAccessRoles();
   const createRole = useCreateRole();
@@ -92,7 +93,8 @@ export default function RolesPanel() {
         <div>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0F2645" }}>Roles & access</h2>
           <p style={{ margin: "3px 0 0", fontSize: 12, color: "#9CA3AF", maxWidth: 520, lineHeight: 1.6 }}>
-            A role is a set of permissions — which modules someone can view, add to, edit and delete in. Give each staff member a role in the Staff tab.
+            A role is a set of permissions — which modules someone can view, add to, edit and delete in. Give each staff member a role under{" "}
+            {onManageStaff ? <button type="button" onClick={onManageStaff} style={{ padding: 0, border: "none", background: "none", color: "#2e7db5", fontWeight: 700, fontSize: "inherit", fontFamily: "inherit", cursor: "pointer", textDecoration: "underline" }}>Staff</button> : "Staff"}.
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => openCreate(null)}>

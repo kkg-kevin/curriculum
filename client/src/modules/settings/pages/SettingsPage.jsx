@@ -5,10 +5,7 @@ import PathwayTemplatesPanel from "../pathways/components/PathwayTemplatesPanel"
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
-import AdminsPanel from "../admins/components/AdminsPanel";
-import CollaboratorsPanel from "../collaborators/components/CollaboratorsPanel";
-import SharingPanel from "../sharing/components/SharingPanel";
-import RolesPanel from "../access/components/RolesPanel";
+import TeamPanel, { TEAM_SECTIONS } from "../team/components/TeamPanel";
 import { useAuth } from "../../../context/AuthContext";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
@@ -256,14 +253,16 @@ const ALL_TABS = [
   { key: "system-levels", label: "System Levels" },
   { key: "items", label: "Items" }, // Goods (formerly Inventory) + Services
   { key: "learning-hubs", label: "Learning Hubs" },
-  { key: "admins", label: "Admins" },
-  { key: "collaborators", label: "Staff" },
-  { key: "roles", label: "Roles & access" },
-  { key: "sharing", label: "Sharing" }, // with other admins — see SharingPanel
+  // Staff, Roles & access, Sharing and Admins, together — see TeamPanel.
+  { key: "people", label: "People & sharing" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
-const OWNER_ONLY_TABS = ["admins", "collaborators", "roles", "sharing"];
+const OWNER_ONLY_TABS = ["people"];
+
+// Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
+// sharing notifications, bookmarks) open the matching section of People & sharing.
+const FORMER_TABS = { collaborators: "staff", staff: "staff", roles: "roles", sharing: "sharing", admins: "admins" };
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -275,11 +274,21 @@ export default function SettingsPage() {
   const [searchParams] = useSearchParams();
   // The old Inventory tab is now Items → Goods, so ?tab=inventory links still land in the right place.
   const rawTab = searchParams.get("tab");
-  const requestedTab = rawTab === "inventory" ? "items" : rawTab;
+  const requestedTab = rawTab === "inventory" ? "items" : FORMER_TABS[rawTab] ? "people" : rawTab;
+  const requestedSection = FORMER_TABS[rawTab] || searchParams.get("section");
   const itemsKind = rawTab === "inventory" ? "goods" : searchParams.get("kind") || "goods";
   const [activeTab, setActiveTab] = useState(
     TABS.some((t) => t.key === requestedTab) ? requestedTab : "competencies"
   );
+  const [teamSection, setTeamSection] = useState(TEAM_SECTIONS.includes(requestedSection) ? requestedSection : "staff");
+
+  // A link followed while already on this page (e.g. a sharing notification) still lands on the
+  // right tab and section.
+  useEffect(() => {
+    if (requestedTab && TABS.some((t) => t.key === requestedTab)) setActiveTab(requestedTab);
+    if (TEAM_SECTIONS.includes(requestedSection)) setTeamSection(requestedSection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab, requestedSection]);
 
   useEffect(() => {
     const el = document.createElement("style");
@@ -317,10 +326,7 @@ export default function SettingsPage() {
         {activeTab === "system-levels" && <SystemLevelsPanel />}
         {activeTab === "items" && <ItemsPanel initialKind={itemsKind} />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
-        {activeTab === "admins" && <AdminsPanel />}
-        {activeTab === "collaborators" && <CollaboratorsPanel />}
-        {activeTab === "roles" && <RolesPanel />}
-        {activeTab === "sharing" && <SharingPanel />}
+        {activeTab === "people" && <TeamPanel section={teamSection} onSectionChange={setTeamSection} />}
       </div>
     </div>
   );

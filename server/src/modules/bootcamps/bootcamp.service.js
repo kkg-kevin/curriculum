@@ -5,6 +5,7 @@ const ModuleModel = require("../courses/module.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
+const GameService = require("./games/game.service");
 
 // A bootcamp links directly to a curriculum (any curriculum from the Curriculum module — no
 // special flag required) to inherit its pathway/course hierarchy. Kept as a display-only
@@ -40,6 +41,7 @@ async function enrich(bootcamp) {
     priceNotes: asArray(bootcamp.priceNotes),
     pathwayIds: asArray(bootcamp.pathwayIds),
     pathwayDiagnostics: asArray(bootcamp.pathwayDiagnostics),
+    gameIds: asArray(bootcamp.gameIds),
     curriculumName: await resolveCurriculumName(bootcamp.curriculumId),
   };
 }
@@ -198,6 +200,7 @@ const BootcampService = {
     await assertPathwayDiagnosticsValid(data.pathwayDiagnostics, data.pathwayIds, data.curriculumId);
     assertPricingModeExclusive(data.priceAmount, data.coursePricing);
     assertCourseEntryPricingValid(data.coursePricing);
+    await GameService.assertOwnGames(data.gameIds, data.ownerAdminId);
     const record = await BootcampModel.create(data);
     return enrich(record);
   },
@@ -249,6 +252,7 @@ const BootcampService = {
       const effectiveCoursePricing = "coursePricing" in data ? data.coursePricing : existing.coursePricing;
       assertPricingModeExclusive(effectivePriceAmount, effectiveCoursePricing);
     }
+    if ("gameIds" in data) await GameService.assertOwnGames(data.gameIds, ownerAdminId);
     const record = await BootcampModel.update(id, data);
     return enrich(record);
   },

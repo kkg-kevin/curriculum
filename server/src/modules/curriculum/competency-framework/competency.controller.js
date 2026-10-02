@@ -89,7 +89,7 @@ exports.createCompetencyIndicator = asyncHandler(async (req, res) => {
 });
 
 exports.updateCompetencyIndicator = asyncHandler(async (req, res) => {
-  const body = updateIndicatorSchema.parse(req.body);
+  const body = onlySentKeys(updateIndicatorSchema.parse(req.body), req.body);
   const data = await CompetencyService.updateCompetencyIndicator(req.params.id, req.params.competencyId, req.params.indicatorId, body);
   res.json({ success: true, data });
 });
@@ -180,7 +180,7 @@ exports.createProgressLevel = asyncHandler(async (req, res) => {
 });
 
 exports.updateProgressLevel = asyncHandler(async (req, res) => {
-  const body = updateProgressLevelSchema.parse(req.body);
+  const body = onlySentKeys(updateProgressLevelSchema.parse(req.body), req.body);
   const data = await CompetencyService.updateProgressLevel(req.params.id, req.params.plId, body);
   res.json({ success: true, data });
 });
@@ -204,7 +204,7 @@ exports.createAssessmentType = asyncHandler(async (req, res) => {
 });
 
 exports.updateAssessmentType = asyncHandler(async (req, res) => {
-  const body = updateAssessmentTypeSchema.parse(req.body);
+  const body = onlySentKeys(updateAssessmentTypeSchema.parse(req.body), req.body);
   const data = await CompetencyService.updateAssessmentType(req.params.id, req.params.atId, body);
   res.json({ success: true, data });
 });
@@ -251,7 +251,7 @@ exports.createEvidenceType = asyncHandler(async (req, res) => {
 });
 
 exports.updateEvidenceType = asyncHandler(async (req, res) => {
-  const body = updateEvidenceTypeSchema.parse(req.body);
+  const body = onlySentKeys(updateEvidenceTypeSchema.parse(req.body), req.body);
   const data = await CompetencyService.updateEvidenceType(req.params.id, req.params.etId, body);
   res.json({ success: true, data });
 });

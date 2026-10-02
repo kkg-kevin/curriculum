@@ -80,6 +80,10 @@ export const bootcampSchema = z
     // can actually be offered (assessment must exist and be fully auto-gradable) is enforced
     // server-side (bootcamp.service.js's assertPathwayDiagnosticsValid), not here.
     pathwayDiagnostics: z.array(pathwayDiagnosticSchema).max(50).default([]),
+    // Games from the Events games library this bootcamp includes, in display order, and one
+    // optional line on how play fits into the day — see server bootcamp.validation.js.
+    gameIds:    z.array(z.string()).max(30).default([]),
+    gamesNote:  z.string().trim().max(200, "Max 200 characters").default(""),
   })
   .superRefine((d, ctx) => {
     if (d.ageMin != null && d.ageMax != null && d.ageMax < d.ageMin) {

@@ -4,6 +4,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const AssessmentModel = require("../assessments/assessment.model");
+const GameService = require("../bootcamps/games/game.service");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
@@ -76,6 +77,31 @@ function listItem(bootcamp) {
     registrationOpenDate: bootcamp.registrationOpenDate || null,
     registrationCloseDate: bootcamp.registrationCloseDate || null,
   };
+}
+
+// A game as the website sees it. `icon` (a key into the site's icon set) and `color` are the
+// built-in picture every game has;
+// `image` is the optional photo. Nothing internal (owner, timestamps) goes out.
+function projectGame(game) {
+  return {
+    id: game.id,
+    name: game.name,
+    description: game.description || "",
+    skills: arr(game.skills),
+    icon: game.icon || "",
+    color: game.color || "#25476a",
+    image: toAbsoluteMediaUrl(game.image),
+  };
+}
+
+// The games a bootcamp includes ("more than lessons"). A lookup hiccup just means no games
+// section — the rest of the bootcamp still renders.
+async function gamesOf(bootcamp) {
+  try {
+    return (await GameService.resolveForBootcamp(bootcamp.gameIds)).map(projectGame);
+  } catch {
+    return [];
+  }
 }
 
 // Dates are plain "YYYY-MM-DD" strings throughout and sort lexicographically the same as
@@ -239,11 +265,13 @@ const PublicBootcampService = {
       if (!bySlug.has(slug)) bySlug.set(slug, []);
       bySlug.get(slug).push(b);
     }
-    return [...bySlug.values()]
-      .map(pickForSlug)
-      .filter(Boolean)
-      .map(listItem)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const picked = [...bySlug.values()].map(pickForSlug).filter(Boolean);
+    // Just enough of each bootcamp's games for a card to say "plus games: Chess, Monopoly…".
+    const items = await Promise.all(picked.map(async (bootcamp) => ({
+      ...listItem(bootcamp),
+      games: (await gamesOf(bootcamp)).map(({ name, icon, color }) => ({ name, icon, color })),
+    })));
+    return items.sort((a, b) => a.name.localeCompare(b.name));
   },
 
   // GET /api/public/bootcamps/:idOrSlug — list item + the marketing detail: description
@@ -275,6 +303,10 @@ const PublicBootcampService = {
       ...listItem(bootcamp),
       description: htmlToText(bootcamp.description),
       highlights: arr(bootcamp.highlights),
+      // The games and play that come with this bootcamp, in the admin's chosen order, and the
+      // optional line on how play fits into the day. Empty/blank when the bootcamp has none.
+      games: await gamesOf(bootcamp),
+      gamesNote: bootcamp.gamesNote || "",
       upcomingRuns: runs,
       coursePricing,
       // The curriculum this bootcamp is built on, shown once for the whole bootcamp (every hub

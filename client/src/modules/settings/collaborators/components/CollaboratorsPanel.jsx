@@ -8,7 +8,7 @@ import { MODULE_OPTIONS } from "../moduleRegistry";
 
 const emptyForm = { name: "", email: "", password: "", roleId: "" };
 
-// Staff accounts (role "collaborator") get their access from a role — Settings → Roles & access.
+// Staff accounts (role "collaborator") get their access from a role — Settings → People & sharing → Roles & access.
 // A staff member invited before roles existed and not yet given one still has their old module
 // list, shown here until a role is chosen.
 function legacyAccess(c) {
@@ -26,12 +26,13 @@ function RoleSelect({ roles, value, onChange }) {
         {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
       </select>
       {selected?.description && <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#6B7280", lineHeight: "1.5" }}>{selected.description}</p>}
-      <p style={{ margin: "6px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Create or change roles in Settings → Roles & access.</p>
+      <p style={{ margin: "6px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>Roles are created and changed under Roles &amp; access, next to Staff.</p>
     </div>
   );
 }
 
-export default function CollaboratorsPanel() {
+// `onManageRoles` opens the Roles & access section beside this one (see TeamPanel).
+export default function CollaboratorsPanel({ onManageRoles }) {
   const { data: collaborators, isLoading } = useCollaborators();
   const { data: roleRows } = useAccessRoles();
   const roles = roleRows || [];
@@ -86,7 +87,8 @@ export default function CollaboratorsPanel() {
         <div>
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Staff</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF", maxWidth: "480px", lineHeight: "1.6" }}>
-            People who help run your workspace. What each person can do comes from their role — set roles up in Roles &amp; access. Managing staff and roles always stays with you.
+            People who help run your workspace. What each person can do comes from their role — set roles up in{" "}
+            {onManageRoles ? <button type="button" onClick={onManageRoles} style={{ padding: 0, border: "none", background: "none", color: "#2e7db5", fontWeight: 700, fontSize: "inherit", fontFamily: "inherit", cursor: "pointer", textDecoration: "underline" }}>Roles &amp; access</button> : <>Roles &amp; access</>}. Managing staff and roles always stays with you.
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => setOpen(true)}>

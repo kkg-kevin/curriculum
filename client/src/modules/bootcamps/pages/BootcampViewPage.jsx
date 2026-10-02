@@ -7,6 +7,7 @@ import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHu
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
+import BootcampGames from "../../programs/games/components/BootcampGames";
 
 const FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
 
@@ -324,6 +325,8 @@ export default function BootcampViewPage() {
           </ul>
         )}
       </div>
+
+      <BootcampGames gameIds={bootcamp.gameIds || []} note={bootcamp.gamesNote} onEdit={() => navigate(editPath)} />
 
       {pricedByCourse && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 16 }}>

@@ -7,7 +7,7 @@ import { Toaster } from "react-hot-toast";
 import App from "./App.jsx";
 import { store } from "./store/index.js";
 import { AuthProvider } from "./context/AuthContext.jsx";
-import { BRAND_FAVICON } from "./branding.js";
+import { BRAND_FAVICON, BRAND_FAVICON_TYPE } from "./branding.js";
 
 import "./styles/global.css";
 import "@fontsource/inter";
@@ -23,7 +23,7 @@ if (BRAND_FAVICON) {
     faviconLink.rel = "icon";
     document.head.appendChild(faviconLink);
   }
-  faviconLink.type = "image/png";
+  faviconLink.type = BRAND_FAVICON_TYPE;
   faviconLink.href = BRAND_FAVICON;
 }
 

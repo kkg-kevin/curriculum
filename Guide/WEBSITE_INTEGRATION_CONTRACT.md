@@ -146,7 +146,10 @@ existing Program concept, the direct parallel to §3.3 (for-sale assessments) an
       "currency": "KES",
       "note": "Includes all materials. Sibling discount available."
     },
-    "highlightCount": integer            // # of "what you'll build" bullets (detail has the list)
+    "highlightCount": integer,           // # of "what you'll build" bullets (detail has the list)
+    "games": [                           // games that come with the bootcamp (Events → Games), [] if none —
+      { "name": "Chess", "icon": "chess-knight", "color": "#25476a" }   // just enough for a card's "Plus games: …" line
+    ]
   }
 ]
 ```
@@ -170,6 +173,19 @@ List item **plus** the marketing detail:
   "highlightCount": 4,
   "description": "string",              // curricula.description — rich-text HTML → plain text
   "highlights": ["Build a working robot from a bare board", "…"],   // "what you'll build / learn"
+  "games": [                            // the bootcamp's games, in the admin's order — [] if none (added Oct 2026;
+    {                                   //   absent on an older API, which the site treats as none)
+      "id": "uuid",
+      "name": "Chess",
+      "description": "Plan ahead, protect your king and outthink your opponent.",   // "" if unset
+      "skills": ["Strategy", "Patience"],   // what it builds — shown on the back of the card, [] if none
+      "icon": "chess-knight",               // built-in picture: a key into the site's icon set
+                                            //   (src/components/bootcamp/gameIcons.js); "" or unknown → default
+      "color": "#25476a",                   // card colour
+      "image": "https://.../uploads/x.png" | null   // optional photo, absolutized (§6)
+    }
+  ],
+  "gamesNote": "A 30-minute game break every afternoon",   // how play fits in, "" if unset
   "upcomingRuns": [                     // this Program's deployments whose end date hasn't passed
     {
       "hubName": "Nairobi — Westlands Hub" | null,

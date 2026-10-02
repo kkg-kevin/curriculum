@@ -5,6 +5,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { createCompetitionSchema, updateCompetitionSchema } = require("./competition.validation");
 const { createOfferingSchema } = require("./competition-hub.validation");
+const { parsePatch } = require("../../shared/validators/common.validator");
 
 // This whole module is authorize("admin")-only (see app.js/competition.routes.js). A competition
 // carries its own ownerAdminId, so ownership is a direct match, same shape as bootcamps.
@@ -38,7 +39,9 @@ const getCompetitionById = asyncHandler(async (req, res) => {
 });
 
 const updateCompetition = asyncHandler(async (req, res) => {
-  const data = updateCompetitionSchema.parse(req.body);
+  // Only the fields that were sent — a partial update must not reset the others to their
+  // defaults (see parsePatch).
+  const data = parsePatch(updateCompetitionSchema, req.body);
   assertOwn(isOwn(req, await CompetitionService.getCompetitionById(req.params.id)));
   const record = await CompetitionService.updateCompetition(req.params.id, data, req.ownerAdminId);
   res.json({ success: true, data: record });
