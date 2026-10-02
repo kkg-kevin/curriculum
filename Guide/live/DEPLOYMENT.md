@@ -176,7 +176,7 @@ cross them.
 
 ### Website (`africa-digifunzi-com-dist.zip`)
 
-`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps), no API errors. Same zip in `Guide/dev/` and `Guide/live/`; still talks to the Dev backend
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps); one projects-feed request timed out and succeeded on the automatic retry. Same zip in `Guide/dev/` and `Guide/live/`; still talks to the Dev backend
 (`nodeapp.digifunzi.com`). Upload the whole zip, including `.htaccess`, `200.html` and `404.html`.
 
 The bootcamp pages were pre-rendered from the Dev API as it is today, before this backend is
