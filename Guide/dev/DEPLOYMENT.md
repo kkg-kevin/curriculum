@@ -102,6 +102,111 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Oct 2026) — Bootcamp games; sharing between admins; People & sharing tab; staff use of Settings data; partial-update fix
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `fb677c6`
+(curriculum, branch `modules`), website from `ca9a713` (digifunzi-landing, branch `new`).
+Cumulative: if the 1 Oct releases below aren't deployed yet, these zips carry them too and their
+steps (database backup, environment variables, everyone signs in again once) still apply. Verify
+on Dev first as usual.
+
+**Deploy the backend and the portal together** — the portal calls new endpoints
+(`/api/bootcamps/games`, `/api/sharing`). The website can follow separately: until it is
+uploaded the current one keeps working, and it shows no games until the backend is in place.
+
+### New migrations (auto-apply on Restart)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261004090000_create_admin_sharing.js` | Creates `admin_connections` (a sharing request between two admins and whether it was accepted) and `shared_imports` (what an admin has already copied from another) | none changed — additive only |
+| `20261005090000_add_event_games.js` | Creates `event_games` (the games library); adds nullable `bootcamps.gameIds` (JSON) and `bootcamps.gamesNote` | none changed — every existing bootcamp has no games |
+
+No new environment variable. No new npm package, so **Run NPM Install can be skipped** if the app
+already has its modules.
+
+### What changed
+
+1. **Bootcamp games.** Events has a new **Games** section: a library of games and play (chess,
+   Monopoly, a treasure hunt…), each with what the children do, what it builds, an icon and
+   colour, and an optional photo. One-click chips add well-known games. The bootcamp form has a
+   **Games & play** card to pick games, add one inline, order them and note how play fits into the
+   day. On the website the bootcamp page gets a **More than lessons** section of cards that flip
+   to show what each game builds, the listing cards a "Plus games: …" line, and the booking panel
+   "Game time included: …". A bootcamp without games looks exactly as before.
+2. **Sharing between admins** (Settings → People & sharing → Sharing). One admin sends another a
+   request by email; once accepted, each can browse the other's competencies, pathways, system
+   levels, items, courses, assessments and curricula and add any of it to their own workspace. It
+   arrives as their own copy with everything it depends on (a course with its sessions and
+   assessments; a curriculum with its framework and courses) and is independent of the original.
+   Either admin can end the connection; copies already made stay. Nothing learner-related is
+   copied, and copies never arrive for sale or public.
+3. **People & sharing tab.** Settings → Admins, Staff, Roles & access and Sharing are one tab with
+   a card for each. Old links to the separate tabs still open the right section.
+4. **Staff can use Settings data.** A staff member whose role covers Assessments, Courses,
+   Curriculum or Billing can pick from the workspace's competencies, pathways, system levels and
+   items without the Settings permission; changing them still needs Settings. Detaching a
+   competency, pathway or material from a course or assessment now counts as Edit. The "create
+   new" shortcuts in the builders show only with Settings → Add.
+5. **Partial updates no longer blank other fields.** A save that sent only some fields (for
+   example **Publish to website / Unpublish** on a bootcamp, which sends the sale status alone)
+   reset the fields it left out — description, dates, highlights, pricing. Fixed for bootcamps,
+   assessments, competitions, course sessions and modules, Settings competencies and the
+   curriculum framework's indicators, progress levels, assessment types and evidence types.
+   Records already blanked this way are not restored by the fix.
+6. **A permission gap closed.** A request path written with a trailing slash or different letter
+   case could reach Home Learning's approve-payment and decline-sign-up with a weaker permission
+   than intended. Paths are now normalised before the staff access rules run.
+7. **Tab icon and title per environment.** Live showed Capable's tab icon because Dev and Live set
+   none of their own. Live is now a navy "d" titled "Digifunzi"; Dev an amber "d" titled
+   "DEV · Digifunzi"; Capable is unchanged.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `fb677c6` (`git archive` of `server/`, same exclusions, **426 entries / 379
+files**) — identical in Dev, Live and Capable. New `src/modules/sharing/`,
+`src/modules/bootcamps/games/` and `src/shared/validators/common.validator.js`.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-BqRLWExB.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-CLSWAyO8.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-Cdok_5cD.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps), no API errors. Same zip in `Guide/dev/` and `Guide/live/`; still talks to the Dev backend
+(`nodeapp.digifunzi.com`). Upload the whole zip, including `.htaccess`, `200.html` and `404.html`.
+
+The bootcamp pages were pre-rendered from the Dev API as it is today, before this backend is
+deployed there, so the snapshots contain no games. Visitors still get them: the page fetches the
+bootcamp live in the browser. For search engines to see the games, re-run `npm run deploy:build`
+after the Dev backend is deployed and games are added to a bootcamp, then re-upload.
+
+### Deploy order
+
+1. **Database backup** (a good habit; required if the 1 Oct second follow-on isn't deployed yet).
+2. **Backend** `backend-deploy.zip` → **Restart**. The app log should show the two migrations
+   above applied (plus any from the releases below not yet deployed).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+5. **Verify:**
+   - The browser tab shows the right icon and title for the environment (hard-refresh once).
+   - Events → **Games**: add a game from the chips; edit a bootcamp → **Games & play** → add it →
+     save. The bootcamp's page on the website shows **More than lessons** with the game card.
+   - On a bootcamp with a description and highlights, click **Unpublish** then **Publish to
+     website** — the description and highlights are still there.
+   - Settings → **People & sharing** shows four cards; Staff, Roles & access, Sharing and Admins
+     each open underneath.
+   - Sharing: send a request to another admin's email; as that admin, accept; **Browse their
+     content** → add a course → it appears under Courses with its sessions and assessments, and
+     editing it leaves the original unchanged.
+   - Sign in as a staff member whose role has Assessments but not Settings → the assessment
+     builder lists the workspace's competencies; Settings is not in their sidebar.
+
+---
+
 ## This release (1 Oct 2026, third follow-on) — Email: password reset, invoices & receipts, emailed notifications
 
 **Rebuilt for Dev, Live and Capable this pass** — portal from commit `58e60a8`, **backend
