@@ -108,7 +108,7 @@ const SharingService = {
     await NotificationService._notify(other.id, {
       type: "share_request",
       title: "Sharing request",
-      message: `${me?.name || "Another admin"} wants to share content with you. Accept it in Settings → Sharing.`,
+      message: `${me?.name || "Another admin"} wants to share content with you. Accept it in Settings → People & sharing.`,
       payload: { connectionId: connection.id, route: "/settings?tab=sharing" },
     });
     return present(connection, adminId, new Map([[other.id, other]]));
@@ -122,7 +122,7 @@ const SharingService = {
     await NotificationService._notify(connection.requesterAdminId, {
       type: "share_accepted",
       title: "Sharing request accepted",
-      message: `${me?.name || "An admin"} accepted your request. You can now browse and copy each other's content in Settings → Sharing.`,
+      message: `${me?.name || "An admin"} accepted your request. You can now browse and copy each other's content in Settings → People & sharing.`,
       payload: { connectionId, route: "/settings?tab=sharing" },
     });
     return present(updated, adminId, new Map(other ? [[other.id, other]] : []));
