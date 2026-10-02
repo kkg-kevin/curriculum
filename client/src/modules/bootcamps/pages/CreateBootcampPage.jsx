@@ -9,6 +9,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { usePathways } from "../../curriculum/hooks/useCompetencies";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
+import GamesField from "../../programs/games/components/GamesField";
 import {
   useBootcampQuery,
   useCreateBootcamp,
@@ -54,6 +55,8 @@ const toFormValues = (b) => ({
   highlights: b?.highlights || [],
   coursePricing: b?.coursePricing || [],
   pathwayDiagnostics: b?.pathwayDiagnostics || [],
+  gameIds: b?.gameIds || [],
+  gamesNote: b?.gamesNote || "",
 });
 
 // The API rejects unknown/empty enum strings — send null, not "".
@@ -591,6 +594,24 @@ export default function CreateBootcampPage() {
               name="highlights"
               render={({ field }) => <HighlightsInput value={field.value || []} onChange={field.onChange} />}
             />
+          </div>
+
+          {/* What makes the bootcamp more than lessons — shown on its public page as game cards. */}
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Games &amp; play</h3>
+            <p style={{ ...S.hint, margin: "-6px 0 0" }}>
+              The fun side of the bootcamp. Families see these on the website as part of what their child gets.
+            </p>
+            <Controller
+              control={control}
+              name="gameIds"
+              render={({ field }) => <GamesField value={field.value || []} onChange={field.onChange} />}
+            />
+            <div style={S.field}>
+              <label style={S.label}>How play fits in <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
+              <input {...register("gamesNote")} style={S.input} maxLength={200} placeholder="e.g. A 30-minute game break every afternoon" />
+              {errors.gamesNote && <span style={S.error}>{errors.gamesNote.message}</span>}
+            </div>
           </div>
 
           {selectedCurriculumId && effectivePathways.length > 0 && (

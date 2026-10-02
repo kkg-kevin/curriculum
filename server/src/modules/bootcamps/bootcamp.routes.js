@@ -10,7 +10,13 @@ const {
   deleteOffering,
 } = require("./bootcamp.controller");
 
+const gameRoutes = require("./games/game.routes");
+
 const router = express.Router();
+
+// The games library (Events → Games) — before "/:id" below, which would otherwise read "games"
+// as a bootcamp id.
+router.use("/games", gameRoutes);
 
 // Admin-only — gated at the app.js mount, same as competitions / competencies / inventory.
 router.route("/").get(getAllBootcamps).post(createBootcamp);

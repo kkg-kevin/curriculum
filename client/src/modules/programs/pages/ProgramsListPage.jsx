@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff } from "react-icons/fi";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
 import { useBootcampsQuery } from "../../bootcamps/hooks/useBootcamps";
+import GamesLibrarySection from "../games/components/GamesLibrarySection";
 
 const COMP_STATUS = {
   draft:  { bg: "#F3F4F6", fg: "#6B7280", label: "Draft" },
@@ -191,7 +192,7 @@ export default function ProgramsListPage() {
               Events
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
-              Competitions and bootcamps — their dates, their registration windows, and the hubs that run them.
+              Competitions and bootcamps — their dates, their registration windows, and the hubs that run them — plus the games that come with a bootcamp.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
@@ -328,6 +329,9 @@ export default function ProgramsListPage() {
           </>
         )}
       </div>
+
+      {/* ── Games ─────────────────────────────────────────────────── */}
+      <GamesLibrarySection />
     </div>
   );
 }

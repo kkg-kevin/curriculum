@@ -95,6 +95,12 @@ const bootcampFields = z.object({
   // assertPathwayDiagnosticsValid, not here — a public website visitor has no teacher relationship
   // to route a manually-graded attempt to.
   pathwayDiagnostics: z.array(pathwayDiagnosticSchema).max(50).optional().default([]),
+  // Games and play activities this bootcamp includes, picked from the admin's games library
+  // (Events → Games) in the order they should be shown. Each id is checked against that library
+  // in bootcamp.service.js. Empty means the bootcamp has no games section at all.
+  gameIds:    z.array(z.string().max(36)).max(30).optional().default([]),
+  // How play fits into the day, e.g. "A 30-minute game break every afternoon".
+  gamesNote:  z.string().trim().max(200).optional().default(""),
 });
 
 // Every check below only fires when both sides of the comparison are actually present — a
