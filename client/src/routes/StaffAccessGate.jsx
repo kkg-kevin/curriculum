@@ -18,7 +18,14 @@ const PATH_MODULES = [
   ["/events", ["competitions", "bootcamps"]],
   ["/courses", "courses"],
   ["/assessments", "assessments"],
-  ["/billing", "billing"],
+  // /billing itself also holds Educator Claims (see BillingPage.jsx's BillingHome); its
+  // sub-pages are Billing only.
+  ["/billing/customers", "billing"],
+  ["/billing/receipts", "billing"],
+  ["/billing/statements", "billing"],
+  ["/billing", ["billing", "claims", "claims-approval"]],
+  ["/claims", ["claims", "claims-approval"]],
+  ["/activity", "activity"],
   ["/settings", "settings"],
   ["/enquiries", null],
   ["/reports", null],

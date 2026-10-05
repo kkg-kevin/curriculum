@@ -21,6 +21,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
 import { formatClassName } from "../../classes/utils/classDisplay";
+import RecordHistory from "../../activity/components/RecordHistory";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -848,6 +849,10 @@ export default function LearnerViewPage() {
         }}
         onCancel={() => setConfirmAccountToggle(false)}
       />
+
+      <div style={{ marginTop: 16 }}>
+        <RecordHistory entityType="learners" entityId={id} />
+      </div>
 
       <ConfirmDialog
         isOpen={!!unlinkTarget}

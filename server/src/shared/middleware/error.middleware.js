@@ -3,6 +3,9 @@ const { NODE_ENV } = require("../../config/env");
 
 const errorHandler = (err, req, res, next) => {
   logger.error(err.message, err.stack);
+  // Why it failed, for the activity log (audit.middleware.js) — the real message, even where the
+  // response below hides it.
+  res.locals.auditReason = err.message;
 
   if (err.name === "ZodError") {
     return res.status(400).json({

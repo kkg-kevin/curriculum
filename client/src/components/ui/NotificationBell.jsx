@@ -14,6 +14,12 @@ const ICONS = {
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
   share_request: { Icon: FiShare2, color: "#25476a" },
   share_accepted: { Icon: FiShare2, color: "#059669" },
+  claim_submitted: { Icon: FiFileText, color: "#B45309" },
+  claim_awaiting_approval: { Icon: FiFileText, color: "#1D4ED8" },
+  claim_progress: { Icon: FiCheck, color: "#2e7db5" },
+  claim_approved: { Icon: FiCheckCircle, color: "#059669" },
+  claim_paid: { Icon: FiCheckCircle, color: "#059669" },
+  claim_rejected: { Icon: FiFileText, color: "#DC2626" },
 };
 
 // Where each notification type actually lives, per its own payload (see notification.service.js
@@ -42,6 +48,16 @@ function resolveNotificationPath(n) {
     case "share_accepted":
       // Another admin asking to share content, or accepting — Settings → Sharing.
       return p.route || "/settings?tab=sharing";
+    case "claim_submitted":
+    case "claim_awaiting_approval":
+      // A claim to review — the admin app's Educator Claims page, opened on that claim.
+      return p.route || "/claims";
+    case "claim_progress":
+    case "claim_approved":
+    case "claim_paid":
+    case "claim_rejected":
+      // News about the educator's own claim — that course's page in the teacher-portal.
+      return p.route || "/teacher-portal/claims";
     default:
       return null;
   }

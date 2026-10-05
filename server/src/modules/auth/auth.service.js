@@ -358,7 +358,7 @@ const AuthService = {
     await PasswordResetTokenModel.markAllUsedForUser(user.id);
     await UserSessionModel.deleteByUserId(user.id);
     accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});
-    return { message: "Your password has been reset. You can now sign in." };
+    return { message: "Your password has been reset. You can now sign in.", userId: user.id };
   },
 
   // The JWT design has no server-side session to invalidate on its own — jwt.verify() alone
@@ -402,6 +402,8 @@ const AuthService = {
     const idleMs = Date.now() - new Date(session.lastActivityAt).getTime();
     if (idleMs > SESSION_IDLE_MS + SESSION_IDLE_GRACE_MS) {
       await this.endSession(payload);
+      // Required here, not at the top: the audit module is only needed for this one event.
+      require("../audit/audit.service").recordAuth(null, "session_expired", { user: { id: payload.sub } });
       return false;
     }
     return true;
