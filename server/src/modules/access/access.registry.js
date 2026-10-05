@@ -29,8 +29,17 @@ const MODULES = [
   { key: "reports", label: "Reports", group: "Teaching", legacy: true },
   { key: "notifications", label: "Notifications", group: "Workspace", legacy: true },
   { key: "settings", label: "Settings", group: "Workspace", legacy: true },
+  // Reading the activity log (who did what, when). Only View means anything here — the log
+  // can't be added to, edited or deleted by anyone.
+  { key: "activity", label: "Activity log", group: "Workspace" },
   { key: "billing", label: "Billing", group: "Finance" },
   { key: "hub-visits", label: "Hub visits & revenue", group: "Finance" },
+  // Educator claims are reviewed in two stages, by two different people, so each stage is its own
+  // permission. "Educator claims" → Edit is the supervisor's review (approve on to the admin, or
+  // decline with a reason). "Claim approvals" → Edit is the admin's part: final approval,
+  // recording the payment, and setting the session rate.
+  { key: "claims", label: "Educator claims (supervisor review)", group: "Finance" },
+  { key: "claims-approval", label: "Claim approvals & payment", group: "Finance" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -62,6 +71,8 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/home-learning": "home-learning",
   "/api/billing": "billing",
   "/api/hub-visits": "hub-visits",
+  "/api/audit": "activity",
+  "/api/claims": "claims",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
@@ -74,6 +85,9 @@ const CATALOG_READERS = {
   "/api/system-levels": ["curriculum"],
   "/api/inventory": ["assessments", "courses", "billing"],
   "/api/items": ["assessments", "courses", "billing"],
+  // Not a catalog, but the same rule: someone who only does final approvals still has to be able
+  // to read the claims they are approving.
+  "/api/claims": ["claims-approval"],
 };
 
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
@@ -94,6 +108,11 @@ const ACTION_OVERRIDES = [
   // assessment — nothing is deleted (attaching one is already an edit).
   { method: "DELETE", pattern: /^\/api\/courses\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "courses", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/assessments\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "assessments", action: "edit" },
+  // A claim's second stage — final approval and recording the payment — and the session rate
+  // belong to "Claim approvals", not to the supervisor's review. (The supervisor's own decision,
+  // POST /api/claims/:id/supervisor-decision, falls under the default rule: Educator claims → Edit.)
+  { method: "POST", pattern: /^\/api\/claims\/[^/]+\/(admin-decision|mark-paid)$/, module: "claims-approval", action: "edit" },
+  { method: "PUT", pattern: /^\/api\/claims\/settings$/, module: "claims-approval", action: "edit" },
 ];
 
 // A POST that only works something out without saving it.

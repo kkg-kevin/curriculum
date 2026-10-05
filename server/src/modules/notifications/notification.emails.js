@@ -12,6 +12,7 @@ const { MAIL_BRAND_NAME } = require("../../config/env");
 
 const LEARNER_ROLES = ["learner"];
 const ADMIN_ROLES = ["admin"];
+const EDUCATOR_ROLES = ["teacher"];
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
 // notification opens — so the email's button lands on the same page.
@@ -51,6 +52,38 @@ const EMAIL_TYPES = {
     roles: ADMIN_ROLES,
     default: true,
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/home-learning"),
+  },
+  // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
+  // each decision on theirs.
+  claim_submitted: {
+    label: "An educator submits a claim",
+    roles: ADMIN_ROLES,
+    default: true,
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),
+  },
+  claim_awaiting_approval: {
+    label: "A claim is ready for final approval",
+    roles: ADMIN_ROLES,
+    default: true,
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),
+  },
+  claim_rejected: {
+    label: "A claim of yours is declined",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
+  },
+  claim_approved: {
+    label: "A claim of yours is approved",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
+  },
+  claim_paid: {
+    label: "A claim of yours is paid",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
 };
 

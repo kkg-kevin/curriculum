@@ -40,11 +40,14 @@ const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.
 const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
 const accessRoutes = require("./modules/access/access.routes");
 const sharingRoutes = require("./modules/sharing/sharing.routes");
+const auditRoutes = require("./modules/audit/audit.routes");
+const claimRoutes = require("./modules/claims/claim.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
 const { protect: protectBase, authorize, blockIfSuspended, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
+const { auditTrail } = require("./shared/middleware/audit.middleware");
 
 // Every authenticated route already mounts `protect`; pairing it here with `blockIfSuspended`
 // means a suspended account keeps a read-only session everywhere but is refused every write in
@@ -117,6 +120,9 @@ const apiLimiter = rateLimit({
   message: { success: false, message: "Too many requests. Please try again later." },
 });
 app.use("/api", apiLimiter);
+// The activity log: every change-making request under /api is recorded (who, what, when, what
+// changed) — once, here, so no route can be left out. See shared/middleware/audit.middleware.js.
+app.use("/api", auditTrail);
 
 app.use("/api/auth", authRoutes);
 // Unauthenticated by design — the "share via QR" destination for a learner's public profile
@@ -220,6 +226,13 @@ app.use("/api/access", protect, attachOwnRecords, authorize("admin"), blockIfCol
 // content and copying it into this workspace. Owner-only, same guards as the two above — what a
 // workspace shares, and with whom, is never a staff decision.
 app.use("/api/sharing", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, sharingRoutes);
+// The Activity page — reading the activity log. The workspace owner, and staff whose role grants
+// Activity log → View (a staff request is only treated as admin here when it does).
+app.use("/api/audit", protect, attachOwnRecords, authorize("admin"), auditRoutes);
+// Educator claims — an educator requesting payment for a course they teach, reviewed by a
+// supervisor and then the admin. Educators and the workspace's reviewers share this router; its
+// own routes file says who reaches what (see claim.routes.js).
+app.use("/api/claims", protect, attachOwnRecords, claimRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

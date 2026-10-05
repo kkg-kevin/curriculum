@@ -63,6 +63,7 @@ async function isMyClassTeacher(teacherId, learnerId) {
 const createTeacher = asyncHandler(async (req, res) => {
   const { hubId } = req.body;
   const { password, ...data } = createTeacherSchema.parse(req.body);
+  if (req.user.role !== "admin") data.sessionRate = null; // the workspace sets pay, not a hub login
   let linkHubId = hubId || undefined;
   if (req.user.role === "school") {
     assertOwn(!!req.ownSchool);
@@ -135,6 +136,9 @@ const updateTeacher = asyncHandler(async (req, res) => {
   // learner.controller.js/learning-hub.controller.js. Only keys the caller actually sent survive.
   const present = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   const { password, ...data } = present;
+  // What an educator is paid per session is the workspace's call (see modules/claims/) — never a
+  // hub login's, and never the educator's own.
+  if (req.user.role !== "admin") delete data.sessionRate;
   if (req.user.role === "school" || req.user.role === "admin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(await isLinkedToOwnHub(req, existing.id));

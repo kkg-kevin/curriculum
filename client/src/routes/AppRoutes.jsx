@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import TeacherPortalLayout from "../layouts/TeacherPortalLayout";
 import SchoolPortalLayout from "../layouts/SchoolPortalLayout";
@@ -21,6 +21,7 @@ import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEdito
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
 import TeacherTimetablePage from "../modules/teacher-portal/pages/TimetablePage";
 import TeacherClaimsPage from "../modules/teacher-portal/pages/ClaimsPage";
+import TeacherClaimCoursePage from "../modules/teacher-portal/pages/ClaimCoursePage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
@@ -86,6 +87,7 @@ import AssessmentsPage from "../modules/assessments/pages/AssessmentsPage";
 import AssessmentBuilderPage from "../modules/assessments/pages/AssessmentBuilderPage";
 import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
+import ActivityPage from "../modules/activity/pages/ActivityPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
 import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
 import ReceiptsListPage from "../modules/billing/pages/ReceiptsListPage";
@@ -96,6 +98,14 @@ import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
 import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
 import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
+
+// Educator claims sit inside Billing. Links to the old /claims address — notifications and
+// emails carry /claims?claim=<id> — land on that tab, with the claim still opened.
+function ClaimsRedirect() {
+  const params = new URLSearchParams(useLocation().search);
+  params.set("tab", "claims");
+  return <Navigate to={`/billing?${params}`} replace />;
+}
 
 export default function AppRoutes() {
   return (
@@ -159,6 +169,12 @@ export default function AppRoutes() {
         <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
         <Route path="billing/statements" element={<StatementOfAccountPage />} />
         <Route path="billing/:id" element={<InvoiceDetailPage />} />
+        {/* The activity log — who did what, when. The owner, and staff whose role grants it. */}
+        <Route path="activity" element={<ActivityPage />} />
+        {/* Educator claims — the supervisor's review and the admin's approval and payment — are
+            Billing's "Educator Claims" tab. The educator's own side lives in the teacher-portal
+            (claims, claims/:classId/:courseId). */}
+        <Route path="claims" element={<ClaimsRedirect />} />
         <Route path="settings">
           <Route index element={<SettingsPage />} />
           <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />
@@ -246,6 +262,7 @@ export default function AppRoutes() {
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="timetable" element={<TeacherTimetablePage />} />
           <Route path="claims" element={<TeacherClaimsPage />} />
+          <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
       </Route>

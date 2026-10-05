@@ -3,6 +3,7 @@ import { FiAlertTriangle, FiEdit3, FiAward, FiTool, FiFileText, FiEye, FiClipboa
 import { useAssessmentQuery } from "../hooks/useAssessment";
 import { STRUCTURE_MODE_LABELS } from "../schemas/assessment.schema";
 import AssessmentContent, { TYPE_LABELS } from "../components/AssessmentContent";
+import RecordHistory from "../../activity/components/RecordHistory";
 
 const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye /> };
 
@@ -73,6 +74,10 @@ export default function AssessmentViewPage() {
       </div>
 
       <AssessmentContent id={id} />
+
+      <div style={{ marginTop: 16 }}>
+        <RecordHistory entityType="assessments" entityId={id} />
+      </div>
     </div>
   );
 }

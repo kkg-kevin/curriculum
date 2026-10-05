@@ -5,6 +5,9 @@ import { useCollaborators, useInviteCollaborator, useUpdateCollaboratorRole, use
 import { useAccessRoles } from "../../access/hooks/useAccessRoles";
 import PersonPickerField from "./PersonPickerField";
 import { MODULE_OPTIONS } from "../moduleRegistry";
+import { Link } from "react-router-dom";
+import { useActivityFacets } from "../../../activity/hooks/useActivity";
+import { ago } from "../../../activity/labels";
 
 const emptyForm = { name: "", email: "", password: "", roleId: "" };
 
@@ -36,6 +39,9 @@ export default function CollaboratorsPanel({ onManageRoles }) {
   const { data: collaborators, isLoading } = useCollaborators();
   const { data: roleRows } = useAccessRoles();
   const roles = roleRows || [];
+  // When each person last did something, from the activity log.
+  const { data: activity } = useActivityFacets();
+  const lastActive = new Map((activity?.actors || []).map((a) => [a.id, a.lastActiveAt]));
   const { mutate: invite, isPending: isInviting } = useInviteCollaborator();
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateCollaboratorRole();
   const { mutate: revoke } = useRevokeCollaborator();
@@ -135,6 +141,11 @@ export default function CollaboratorsPanel({ onManageRoles }) {
               <div className="stg-item-sub">{c.email}</div>
               <div className="stg-item-sub" style={{ marginTop: "2px" }}>
                 {c.role ? <>Role: <strong style={{ color: "#25476a" }}>{c.role.name}</strong></> : c.roleId ? "Role deleted — choose a new one (no access until then)" : legacyAccess(c)}
+              </div>
+              <div className="stg-item-sub" style={{ marginTop: "2px" }}>
+                {lastActive.get(c.id) ? `Last active ${ago(lastActive.get(c.id))}` : "No activity recorded yet"}
+                {" · "}
+                <Link to={`/activity?actor=${c.id}`} style={{ color: "#2e7db5", fontWeight: 700 }}>See what they&rsquo;ve done</Link>
               </div>
             </div>
           ))}

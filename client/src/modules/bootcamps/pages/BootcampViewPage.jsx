@@ -8,6 +8,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import BootcampGames from "../../programs/games/components/BootcampGames";
+import RecordHistory from "../../activity/components/RecordHistory";
 
 const FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
 
@@ -344,6 +345,8 @@ export default function BootcampViewPage() {
       )}
 
       <RunsAtHubsSection bootcamp={bootcamp} />
+
+      <RecordHistory entityType="bootcamps" entityId={bootcamp.id} />
 
       <ConfirmDialog
         isOpen={confirmDelete}

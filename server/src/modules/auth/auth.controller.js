@@ -2,6 +2,8 @@ const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
 const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
+const jwt = require("jsonwebtoken");
+const AuditService = require("../audit/audit.service");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
 // fine locally where client and server share the "localhost" site across ports, but breaks
@@ -25,13 +27,24 @@ const signup = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
   const { identifier, password } = loginSchema.parse(req.body);
-  const { user, token } = await AuthService.login(identifier, password);
+  let user;
+  let token;
+  try {
+    ({ user, token } = await AuthService.login(identifier, password));
+  } catch (err) {
+    // A wrong password or unknown account, for the activity log — never the password itself.
+    if (err.statusCode === 401) AuditService.recordAuth(req, "login_failed", { identifier, reason: err.message });
+    throw err;
+  }
+  AuditService.recordAuth(req, "login", { user });
   res.cookie(COOKIE_NAME, token, cookieOptions);
   res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
 });
 
 const logout = asyncHandler(async (req, res) => {
+  const signedInAs = jwt.decode(req.cookies?.[COOKIE_NAME] || "")?.sub;
   await AuthService.logout(req.cookies?.[COOKIE_NAME]);
+  if (signedInAs) AuditService.recordAuth(req, "logout", { user: { id: signedInAs } });
   res.clearCookie(COOKIE_NAME, baseCookieOptions);
   res.json({ success: true });
 });
@@ -84,7 +97,8 @@ const checkResetToken = asyncHandler(async (req, res) => {
 const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = resetPasswordSchema.parse(req.body);
   const result = await AuthService.resetPassword(token, newPassword);
-  res.json({ success: true, data: result });
+  if (result.userId) AuditService.recordAuth(req, "password_reset", { user: { id: result.userId } });
+  res.json({ success: true, data: { message: result.message } });
 });
 
 // Admin-only, and deliberately admin-only in effect too: createUserSchema's role field still

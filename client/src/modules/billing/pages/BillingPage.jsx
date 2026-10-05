@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, RequestQuote as RequestQuoteIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -16,6 +16,8 @@ import StatusPill, { TYPE_LABELS, TYPE_HELP, STATUS_LABELS } from "../components
 import { LoadingState, EmptyState } from "../components/PageStates";
 import Pagination from "../components/Pagination";
 import PackagesPanel from "../components/PackagesPanel";
+import ClaimsReviewPage from "../../claims/pages/ClaimsReviewPage";
+import { can, canViewAny, isStaff } from "../../../hooks/usePermissions";
 
 const INVOICES_PER_PAGE = 8;
 const RECENT_RECEIPTS_COUNT = 5;
@@ -28,7 +30,38 @@ const ADMIN_TABS = [
   { key: "payments", label: "Payments", icon: PaidIcon },
   // Home Learning packages — created and priced here; the Home Learning page picks from them.
   { key: "packages", label: "Packages", icon: Inventory2Icon },
+  // Educator claims (modules/claims/) — payment requests from educators, reviewed and paid here.
+  { key: "claims", label: "Educator Claims", icon: RequestQuoteIcon },
 ];
+
+const CLAIM_MODULES = ["claims", "claims-approval"];
+const tabButtonStyle = (active) => ({ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", border: 0, borderBottom: `2px solid ${active ? "#25476a" : "transparent"}`, background: "transparent", color: active ? "#25476a" : "#6B7280", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" });
+
+// What /billing shows. For everyone but staff that is the Billing page itself (whose admin tabs
+// include Educator Claims). A staff member's access is per module, and reviewing claims is its
+// own permission, separate from Billing:
+//   claims only        → just the claims
+//   billing and claims → Billing, with Educator Claims as a tab beside it
+//   billing only       → Billing, as before
+export default function BillingHome() {
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const seesClaims = isStaff(user) && canViewAny(user, CLAIM_MODULES);
+  if (!seesClaims) return <BillingPage />;
+  if (!can(user, "billing")) return <ClaimsReviewPage />;
+
+  const onClaims = searchParams.get("tab") === "claims";
+  const show = (key) => setSearchParams(key === "claims" ? { tab: "claims" } : {}, { replace: true });
+  return (
+    <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid #E5E7EB", flexWrap: "wrap" }}>
+        <button type="button" onClick={() => show("billing")} style={tabButtonStyle(!onClaims)}><ReceiptLongIcon sx={{ fontSize: 17 }} /> Billing</button>
+        <button type="button" onClick={() => show("claims")} style={tabButtonStyle(onClaims)}><RequestQuoteIcon sx={{ fontSize: 17 }} /> Educator Claims</button>
+      </div>
+      {onClaims ? <ClaimsReviewPage /> : <BillingPage />}
+    </div>
+  );
+}
 
 // The "Bill from item" options, grouped the way Settings → Items is: Services, then Goods.
 function ItemOptions({ items }) {
@@ -43,7 +76,7 @@ function ItemOptions({ items }) {
   });
 }
 
-export default function BillingPage() {
+function BillingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isLearner = user?.role === "learner";
@@ -273,6 +306,7 @@ export default function BillingPage() {
       )}
 
       {isAdmin && activeTab === "packages" && <PackagesPanel />}
+      {isAdmin && activeTab === "claims" && <ClaimsReviewPage embedded />}
 
       {isNonSchoolHub ? (
         // A non-school hub (co-working space, innovation lab, makerspace, tech club) bills for

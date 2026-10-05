@@ -1,7 +1,7 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail, FiHeart,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail, FiHeart, FiActivity,
 } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
@@ -28,7 +28,10 @@ const ADMIN_MENU_ITEMS = [
   { name: "Enquiries", path: "/enquiries", icon: FiMail, ownerOnly: true },
   { name: "Assessments", path: "/assessments", icon: FiClipboard, module: "assessments" },
   { name: "Reports", path: "/reports", icon: FiBarChart2, module: "reports", ownerOnly: true },
-  { name: "Billing", path: "/billing", icon: FiDollarSign, module: "billing" },
+  // Educator claims live inside Billing (its "Educator Claims" tab), so a staff member who only
+  // reviews claims still needs this item to get there.
+  { name: "Billing", path: "/billing", icon: FiDollarSign, module: ["billing", "claims", "claims-approval"] },
+  { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
   { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
 ];
 

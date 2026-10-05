@@ -23,6 +23,9 @@ const baseTeacherSchema = z.object({
   employmentType: z.enum(EMPLOYMENT_TYPES).optional().nullable().default(null),
   teacherLevel:   z.number().int().min(1).max(5).optional().nullable().default(null),
   paymentTerms:   z.enum(PAYMENT_TERMS).optional().nullable().default(null),
+  // What one session pays this educator, when it differs from the workspace's own rate (see
+  // modules/claims/). Empty = the workspace rate.
+  sessionRate:    z.coerce.number().positive("Session rate must be more than 0").max(1000000).optional().nullable().default(null),
   photo: z.string().optional().nullable().default(null),
   // Which Course records this teacher may be assigned to teach (see class.controller.js's
   // assignCourseTeacher) — Course ids are global, never scoped per curriculum/grade, so this is
