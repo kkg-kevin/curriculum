@@ -3,6 +3,7 @@ import MainLayout from "../layouts/MainLayout";
 import TeacherPortalLayout from "../layouts/TeacherPortalLayout";
 import SchoolPortalLayout from "../layouts/SchoolPortalLayout";
 import LearnerPortalLayout from "../layouts/LearnerPortalLayout";
+import SupervisorPortalLayout from "../layouts/SupervisorPortalLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import LoginPage from "../modules/auth/pages/LoginPage";
 import SignupPage from "../modules/auth/pages/SignupPage";
@@ -89,6 +90,10 @@ import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage"
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import ActivityPage from "../modules/activity/pages/ActivityPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
+import SupervisorDashboardPage from "../modules/claims/pages/SupervisorDashboardPage";
+import SupervisorClaimsPage from "../modules/claims/pages/SupervisorClaimsPage";
+import SupervisorEducatorsPage from "../modules/claims/pages/SupervisorEducatorsPage";
+import SupervisorProfilePage from "../modules/claims/pages/SupervisorProfilePage";
 import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
 import ReceiptsListPage from "../modules/billing/pages/ReceiptsListPage";
 import ReceiptDetailPage from "../modules/billing/pages/ReceiptDetailPage";
@@ -264,6 +269,17 @@ export default function AppRoutes() {
           <Route path="claims" element={<TeacherClaimsPage />} />
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="profile" element={<TeacherProfilePage />} />
+        </Route>
+      </Route>
+
+      {/* A claim supervisor — an account that only reviews the claims of the educators assigned
+          to it (see server/src/modules/claims/supervisor.service.js). */}
+      <Route element={<RoleRoute allow={["supervisor"]} />}>
+        <Route path="/supervisor-portal" element={<SupervisorPortalLayout />}>
+          <Route index element={<SupervisorDashboardPage />} />
+          <Route path="claims" element={<SupervisorClaimsPage />} />
+          <Route path="educators" element={<SupervisorEducatorsPage />} />
+          <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>
       </Route>
 

@@ -23,9 +23,10 @@ const ClaimModel = {
     return shape({ ...record, evidence: data.evidence ?? null });
   },
 
-  async findAll({ ownerAdminId, teacherId, classId, courseId, status, statuses, type } = {}) {
+  async findAll({ ownerAdminId, teacherId, supervisorId, classId, courseId, status, statuses, type } = {}) {
     let query = db(TABLE);
     if (ownerAdminId) query = query.where({ ownerAdminId });
+    if (supervisorId) query = query.where({ supervisorId });
     if (teacherId) query = query.where({ teacherId });
     if (classId) query = query.where({ classId });
     if (courseId) query = query.where({ courseId });

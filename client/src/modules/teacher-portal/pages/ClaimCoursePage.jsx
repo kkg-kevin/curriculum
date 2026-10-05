@@ -108,7 +108,7 @@ export default function ClaimCoursePage() {
 
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10, background: "#fff" }}>
           <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: T.inkMuted }}>Payment actions</p>
-          <p style={{ margin: 0, fontSize: 13, color: T.ink, lineHeight: 1.5 }}>Submit an invoice for an advance or the full payment. It goes to your supervisor, then to the admin.</p>
+          <p style={{ margin: 0, fontSize: 13, color: T.ink, lineHeight: 1.5 }}>Submit an invoice for an advance or the full payment. {course.supervisor ? <>Your supervisor, <strong>{course.supervisor.name}</strong>, approves it and the admin pays.</> : "It goes to the admin, who approves and pays it."}</p>
           <button type="button" disabled={!canRequest} onClick={() => setRequesting(true)} style={{ ...primaryButton(!canRequest), width: "100%", marginTop: "auto" }}>
             <FiDollarSign size={16} /> Request payment
           </button>
@@ -122,7 +122,7 @@ export default function ClaimCoursePage() {
       <div style={{ ...cardStyle, padding: "16px 20px", display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: T.ink }}>Records for delivered sessions</p>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>Your supervisor sees these with your claim.</p>
+          <p style={{ margin: "3px 0 0", fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>{course.supervisor ? "Your supervisor sees" : "The admin sees"} these with your claim.</p>
         </div>
         <Evidence label="Attendance marked" done={evidence.attendanceMarked} of={evidence.sessionsDelivered} empty="—" />
         <Evidence label="Assignments graded" done={evidence.assignmentsGraded} of={evidence.assignmentsExpected} empty="None set" />
@@ -152,7 +152,7 @@ export default function ClaimCoursePage() {
                 <ClaimCard
                   key={claim.id}
                   claim={claim}
-                  actions={claim.status === "pending_supervisor" ? (
+                  actions={claim.status === "pending_supervisor" || claim.status === "pending_admin" ? (
                     <button type="button" onClick={() => onWithdraw(claim)} disabled={withdraw.isPending} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #FECACA", background: "#fff", color: "#B91C1C", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Withdraw</button>
                   ) : null}
                 />

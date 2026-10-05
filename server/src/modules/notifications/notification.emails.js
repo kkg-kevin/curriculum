@@ -13,6 +13,7 @@ const { MAIL_BRAND_NAME } = require("../../config/env");
 const LEARNER_ROLES = ["learner"];
 const ADMIN_ROLES = ["admin"];
 const EDUCATOR_ROLES = ["teacher"];
+const CLAIM_REVIEWER_ROLES = ["admin", "supervisor"];
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
 // notification opens — so the email's button lands on the same page.
@@ -56,13 +57,13 @@ const EMAIL_TYPES = {
   // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
   // each decision on theirs.
   claim_submitted: {
-    label: "An educator submits a claim",
-    roles: ADMIN_ROLES,
+    label: "An educator submits a claim for you to review",
+    roles: CLAIM_REVIEWER_ROLES,
     default: true,
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),
   },
   claim_awaiting_approval: {
-    label: "A claim is ready for final approval",
+    label: "A supervisor approves a claim, ready to pay",
     roles: ADMIN_ROLES,
     default: true,
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),

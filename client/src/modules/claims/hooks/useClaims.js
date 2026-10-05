@@ -18,12 +18,23 @@ export function useMyClaimCourse(classId, courseId) {
   });
 }
 
+// The same endpoint answers a supervisor with their own claims and educators; a separate cache
+// key keeps the two shapes apart.
+export function useSupervisorClaims() {
+  return useQuery({ queryKey: ["claims", "supervisor"], queryFn: () => claimsApi.list(), ...FRESH, refetchInterval: 60 * 1000 });
+}
+
 export function useWorkspaceClaims() {
   return useQuery({ queryKey: ["claims", "workspace"], queryFn: () => claimsApi.list(), ...FRESH });
 }
 
 export function useClaim(id) {
   return useQuery({ queryKey: ["claims", "detail", id], queryFn: () => claimsApi.getById(id), enabled: !!id, ...FRESH });
+}
+
+// retry is off: someone who can't see supervisors (a 403) should just not get the picker.
+export function useSupervisors({ enabled = true } = {}) {
+  return useQuery({ queryKey: ["claims", "supervisors"], queryFn: claimsApi.listSupervisors, enabled, retry: false });
 }
 
 export function useClaimSettings({ enabled = true } = {}) {
@@ -42,3 +53,13 @@ export const useSupervisorDecision = () => useClaimMutation(({ id, ...data }) =>
 export const useAdminDecision = () => useClaimMutation(({ id, ...data }) => claimsApi.adminDecision(id, data));
 export const useMarkClaimPaid = () => useClaimMutation(({ id, ...data }) => claimsApi.markPaid(id, data));
 export const useUpdateClaimSettings = () => useClaimMutation(claimsApi.updateSettings);
+export const useCreateSupervisor = () => useClaimMutation(claimsApi.createSupervisor);
+export const useUpdateSupervisor = () => useClaimMutation(({ id, ...data }) => claimsApi.updateSupervisor(id, data));
+// Removing a supervisor also clears them from their educators.
+export function useRemoveSupervisor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: claimsApi.removeSupervisor,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["claims"] }); queryClient.invalidateQueries({ queryKey: ["teachers"] }); },
+  });
+}

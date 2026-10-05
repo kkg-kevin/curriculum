@@ -33,7 +33,7 @@ export const TYPE_LABEL = { advance: "Advance", full: "Full payment" };
 
 export const CLAIM_STATUS = {
   pending_supervisor: { label: "With supervisor", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
-  pending_admin: { label: "Awaiting final approval", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  pending_admin: { label: "With admin", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
   approved: { label: "Approved — to be paid", bg: "#F0FDFA", color: "#0F766E", border: "#99F6E4" },
   paid: { label: "Paid", bg: "#ECFDF5", color: "#047857", border: "#A7F3D0" },
   rejected: { label: "Declined", bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" },
@@ -105,30 +105,27 @@ export function ProgressBar({ percent, color = T.accentLight }) {
   );
 }
 
-// A claim's journey as a row of steps: submitted → supervisor → admin → paid. A declined claim
-// stops at the stage that declined it.
+// A claim's journey as a row of steps: submitted → reviewed → paid. The review is the
+// supervisor's when the educator has one, otherwise the admin's. A declined claim stops there.
 export function ClaimTimeline({ claim }) {
-  const declinedAt = claim.status === "rejected" ? claim.rejectedStage || "supervisor" : null;
-  const reached = { pending_supervisor: 0, pending_admin: 1, approved: 2, paid: 3 }[claim.status] ?? 0;
+  const viaSupervisor = Boolean(claim.supervisorId || claim.supervisorDecidedAt || claim.rejectedStage === "supervisor");
+  const decidedAt = viaSupervisor ? claim.supervisorDecidedAt : claim.adminDecidedAt;
+  const reviewer = (viaSupervisor ? claim.supervisorName : claim.adminName) || (viaSupervisor ? "Supervisor" : "Admin");
+  const declined = claim.status === "rejected";
+  const waitingForPay = claim.status === "approved";
   const steps = [
     { key: "submitted", label: "Submitted", detail: formatDate(claim.createdAt), state: "done" },
     {
-      key: "supervisor",
-      label: "Supervisor",
-      detail: claim.supervisorDecidedAt ? `${claim.supervisorName || "Supervisor"} · ${formatDate(claim.supervisorDecidedAt)}` : "Waiting",
-      state: declinedAt === "supervisor" ? "declined" : claim.supervisorDecidedAt ? "done" : declinedAt ? "skipped" : "current",
-    },
-    {
-      key: "admin",
-      label: "Admin",
-      detail: claim.adminDecidedAt ? `${claim.adminName || "Admin"} · ${formatDate(claim.adminDecidedAt)}` : reached >= 1 && !declinedAt ? "Waiting" : "—",
-      state: declinedAt === "admin" ? "declined" : claim.adminDecidedAt ? "done" : reached === 1 ? "current" : "todo",
+      key: "review",
+      label: viaSupervisor ? "Supervisor" : "Admin",
+      detail: decidedAt ? `${reviewer} · ${formatDate(decidedAt)}` : viaSupervisor && claim.supervisorName ? `Waiting · ${claim.supervisorName}` : "Waiting",
+      state: declined ? "declined" : decidedAt || waitingForPay || claim.status === "paid" ? "done" : "current",
     },
     {
       key: "paid",
       label: "Paid",
-      detail: claim.paidAt ? formatDate(claim.paidAt) : reached === 2 ? "Waiting" : "—",
-      state: claim.status === "paid" ? "done" : reached === 2 ? "current" : "todo",
+      detail: claim.paidAt ? formatDate(claim.paidAt) : waitingForPay ? "Waiting · admin" : "—",
+      state: claim.status === "paid" ? "done" : waitingForPay ? "current" : "todo",
     },
   ];
   const look = {

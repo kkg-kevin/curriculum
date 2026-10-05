@@ -120,6 +120,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   // A "learner" account is either a parent (signs in with email, sees all their children) or a
   // child's own login (username only) — labelled so each can see whose account they're in.
   const roleLabel = user?.role === "teacher" ? "Educator"
+    : user?.role === "supervisor" ? "Supervisor"
     : user?.role === "collaborator" ? (user.accessRole ? `Staff · ${user.accessRole.name}` : "Staff")
     : user?.role === "learner" ? (user.username ? "Learner" : "Parent")
     : user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : "";
@@ -143,6 +144,10 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/teacher-portal/attendance": "Attendance",
     "/teacher-portal/claims": "Claims",
     "/teacher-portal/profile": "My Profile",
+    "/supervisor-portal": "My Dashboard",
+    "/supervisor-portal/claims": "Claims",
+    "/supervisor-portal/educators": "My Educators",
+    "/supervisor-portal/profile": "My Profile",
     "/school-portal": "My Dashboard",
     "/school-portal/curriculum": "Curriculum",
     "/school-portal/reports": "Reports",

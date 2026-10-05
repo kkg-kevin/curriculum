@@ -31,9 +31,11 @@ const ReportService = require("../reports/report.service");
 // cancelled (session_occurrences is the durable record — see session-occurrence.service.js). A
 // cancelled session isn't paid for, so it comes off the course's value too.
 //
-// Every figure on a claim is fixed when it is submitted. A claim then goes to a supervisor, who
-// approves it on to the admin or declines it with a reason the educator sees; the admin gives
-// final approval and records the payment.
+// Every figure on a claim is fixed when it is submitted. Where it goes next depends on whether
+// the educator has a supervisor (teachers.supervisorId — see supervisor.service.js):
+//   with one     the supervisor approves or declines it; an approved claim is the admin's to pay.
+//   without one  it goes straight to the admin, who approves or declines it and then pays.
+// A declined claim always carries a reason the educator sees, and they can claim again.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PENDING = ["pending_supervisor", "pending_admin"];
@@ -60,8 +62,16 @@ function hoursBetween(startTime, endTime) {
   return Math.max(0, (eh * 60 + em - (sh * 60 + sm)) / 60);
 }
 
+// The supervisor an educator's claims go to — null when they have none, or when the account they
+// point at is gone or no longer a supervisor.
+async function supervisorOf(teacher) {
+  if (!teacher?.supervisorId) return null;
+  const user = await UserModel.findById(teacher.supervisorId);
+  return user && user.role === "supervisor" ? { id: user.id, name: user.name } : null;
+}
+
 const classLabel = (cls) => [cls?.gradeName, cls?.streamName].filter(Boolean).join(" ").trim() || null;
-const teacherName = (teacher) => [teacher?.firstName, teacher?.lastName].filter(Boolean).join(" ").trim();
+const teacherName = (teacher) => [teacher?.firstName, teacher?.lastName].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
 // The class's past sessions as the timetable records them. The sync is what creates those
 // records from the calendar; if it can't run (a class with a half-configured timetable) the
@@ -377,6 +387,8 @@ const ClaimService = {
       ...figures,
       ownerAdminId: hub?.ownerAdminId || null,
       teacher: teacher ? { id: teacher.id, name: teacherName(teacher), photo: teacher.photo || null } : null,
+      // Who a claim submitted now would go to; null = straight to the admin.
+      supervisor: await supervisorOf(teacher),
       coEducators,
       learners,
       sessions: sessionRows,
@@ -415,7 +427,9 @@ const ClaimService = {
       className: detail.className,
       hubName: detail.hub?.name || null,
       type,
-      status: "pending_supervisor",
+      status: detail.supervisor ? "pending_supervisor" : "pending_admin",
+      supervisorId: detail.supervisor?.id || null,
+      supervisorName: detail.supervisor?.name || null,
       currency: detail.currency,
       sessionRate: detail.sessionRate,
       sessionsTotal: detail.sessionsTotal,
@@ -436,8 +450,8 @@ const ClaimService = {
   async withdrawClaim(teacher, id) {
     const claim = await ClaimModel.findById(id);
     if (!claim || claim.teacherId !== teacher.id) fail("Claim not found", 404);
-    if (claim.status !== "pending_supervisor") fail("This claim has already been reviewed and can't be withdrawn", 409);
-    const removed = await ClaimModel.deleteIfStatus(id, "pending_supervisor");
+    if (!PENDING.includes(claim.status)) fail("This claim has already been reviewed and can't be withdrawn", 409);
+    const removed = await ClaimModel.deleteIfStatus(id, claim.status);
     if (!removed) fail("This claim has already been reviewed and can't be withdrawn", 409);
     return { message: "Claim withdrawn" };
   },
@@ -465,6 +479,29 @@ const ClaimService = {
     return claim;
   },
 
+  // A supervisor's own claims — the ones sent to them, whatever became of them since — and the
+  // educators they currently supervise (including any who haven't claimed yet).
+  async listForSupervisor(supervisorId) {
+    const claims = await ClaimModel.findAll({ supervisorId });
+    const teachers = (await TeacherModel.findAll()).filter((t) => t.supervisorId === supervisorId);
+    const educators = teachers
+      .map((t) => ({ id: t.id, name: teacherName(t), email: t.email || null, photo: t.photo || null, status: t.status || "active" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const counts = { pending_supervisor: 0, pending_admin: 0, approved: 0, paid: 0, rejected: 0 };
+    const amounts = { ...counts };
+    for (const claim of claims) {
+      counts[claim.status] += 1;
+      amounts[claim.status] += claim.amount;
+    }
+    return { claims, counts, amounts, educators };
+  },
+
+  async getAssigned(id, supervisorId) {
+    const claim = await ClaimModel.findById(id);
+    if (!claim || claim.supervisorId !== supervisorId) fail("Claim not found", 404);
+    return claim;
+  },
+
   // A claim together with the course's records as they stand now. The course part is null when
   // the class or course has since been deleted — the claim itself still reads on its own.
   async withCourse(claim) {
@@ -482,13 +519,16 @@ const ClaimService = {
     return { id: req.user.id, name: user?.name || user?.email || "Staff" };
   },
 
-  // The supervisor's decision: on to the admin, or back to the educator with the reason.
-  async supervisorDecision(id, ownerAdminId, { decision, reason }, actor) {
-    const claim = await ClaimService.getOwned(id, ownerAdminId);
+  // The supervisor's decision: approved for the admin to pay, or back to the educator with the
+  // reason. `claim` has already been checked as the caller's to decide (see claim.controller.js) —
+  // the assigned supervisor, or the workspace stepping in for them.
+  async supervisorDecision(claim, { decision, reason }, actor) {
+    const { id } = claim;
     if (claim.status !== "pending_supervisor") fail("This claim isn't waiting for a supervisor's review", 409);
-    const stamp = { supervisorId: actor.id, supervisorName: actor.name, supervisorDecidedAt: new Date() };
+    // supervisorId stays the supervisor the claim was sent to; the name is whoever decided.
+    const stamp = { supervisorName: actor.name, supervisorDecidedAt: new Date() };
     const updated = decision === "approve"
-      ? await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "pending_admin" })
+      ? await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "approved" })
       : await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "rejected", rejectedStage: "supervisor", rejectionReason: reason });
     if (!updated) fail("Someone else has just reviewed this claim", 409);
     if (decision === "approve") await ClaimNotifications.forwarded(updated);
@@ -496,10 +536,10 @@ const ClaimService = {
     return updated;
   },
 
-  // Final approval — or the admin declining what the supervisor passed on.
+  // The admin's own approval — only for a claim from an educator with no supervisor.
   async adminDecision(id, ownerAdminId, { decision, reason }, actor) {
     const claim = await ClaimService.getOwned(id, ownerAdminId);
-    if (claim.status !== "pending_admin") fail("This claim isn't waiting for final approval", 409);
+    if (claim.status !== "pending_admin") fail("This claim isn't waiting for the admin's approval", 409);
     const stamp = { adminId: actor.id, adminName: actor.name, adminDecidedAt: new Date() };
     const updated = decision === "approve"
       ? await ClaimModel.transition(id, "pending_admin", { ...stamp, status: "approved" })

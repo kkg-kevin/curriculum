@@ -26,6 +26,9 @@ const baseTeacherSchema = z.object({
   // What one session pays this educator, when it differs from the workspace's own rate (see
   // modules/claims/). Empty = the workspace rate.
   sessionRate:    z.coerce.number().positive("Session rate must be more than 0").max(1000000).optional().nullable().default(null),
+  // The supervisor (a users.id with role "supervisor") this educator's claims go to — optional;
+  // without one they go straight to the admin. See modules/claims/supervisor.service.js.
+  supervisorId:   z.string().optional().nullable().default(null),
   photo: z.string().optional().nullable().default(null),
   // Which Course records this teacher may be assigned to teach (see class.controller.js's
   // assignCourseTeacher) — Course ids are global, never scoped per curriculum/grade, so this is

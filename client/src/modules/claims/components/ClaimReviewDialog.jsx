@@ -8,7 +8,9 @@ import SessionEvidence from "./SessionEvidence";
 // A reviewer's view of one claim: what is being asked for and how it was worked out, the
 // invoice, the course's records, and — for whoever's turn it is — the decision.
 //
-// `canSupervise` / `canApprove` say which stage the viewer may act on (the workspace owner: both).
+// `canSupervise` says the viewer may decide a claim that is with a supervisor (the supervisor
+// themself, or the workspace in their place); `canApprove` that they may approve a claim that has
+// no supervisor and record payments (the admin's side).
 
 function Row({ label, value, strong }) {
   return (
@@ -75,7 +77,7 @@ export default function ClaimReviewDialog({ claimId, canSupervise, canApprove, o
       toast.error(err.errors?.[0]?.message || err.message || "That didn't go through");
     }
   };
-  const approve = () => run(() => decide.mutateAsync({ id: claim.id, decision: "approve" }), stage === "supervisor" ? "Approved and sent to the admin" : "Approved for payment");
+  const approve = () => run(() => decide.mutateAsync({ id: claim.id, decision: "approve" }), stage === "supervisor" ? "Approved — it's now with the admin to be paid" : "Approved for payment");
   const decline = () => run(() => decide.mutateAsync({ id: claim.id, decision: "reject", reason: reason.trim() }), "Claim declined — the educator has been told why");
   const markPaid = () => run(() => paid.mutateAsync({ id: claim.id, paymentReference: reference.trim() || null, paidAt }), "Marked as paid");
 
@@ -144,9 +146,11 @@ export default function ClaimReviewDialog({ claimId, canSupervise, canApprove, o
       {/* The decision. */}
       <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
         {myTurn && !declining && (
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+            {/* The workspace deciding a claim that was sent to a supervisor. */}
+            {stage === "supervisor" && canApprove && claim.supervisorName && <p style={{ margin: 0, flex: "1 1 240px", fontSize: 12.5, color: T.inkMuted }}>This claim is with <strong style={{ color: T.ink }}>{claim.supervisorName}</strong>. You can decide it in their place.</p>}
             <button type="button" disabled={busy} onClick={() => setDeclining(true)} style={{ ...ghostButton, color: "#B91C1C", borderColor: "#FECACA" }}><FiX size={15} /> Decline</button>
-            <button type="button" disabled={busy} onClick={approve} style={primaryButton(busy)}><FiCheck size={15} /> {stage === "supervisor" ? "Approve and send to admin" : "Approve for payment"}</button>
+            <button type="button" disabled={busy} onClick={approve} style={primaryButton(busy)}><FiCheck size={15} /> Approve for payment</button>
           </div>
         )}
 
@@ -178,9 +182,9 @@ export default function ClaimReviewDialog({ claimId, canSupervise, canApprove, o
         {!myTurn && !(claim.status === "approved" && canApprove) && (
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
             {{
-              pending_supervisor: "Waiting for a supervisor's review — your role doesn't include that.",
-              pending_admin: "Approved by the supervisor; waiting for the admin's final approval.",
-              approved: "Approved for payment; waiting for the payment to be recorded.",
+              pending_supervisor: `Waiting for ${claim.supervisorName || "the supervisor"} to review it.`,
+              pending_admin: "This educator has no supervisor, so the claim is waiting for the admin's approval.",
+              approved: "Approved; waiting for the admin to pay it.",
               paid: "This claim has been paid.",
               rejected: "This claim was declined. The educator can submit a new one.",
             }[claim.status]}

@@ -44,7 +44,7 @@ function Option({ title, amount, description, blocked, selected, onSelect }) {
 }
 
 // The educator's payment request for one course: pick an advance or the full payment, attach
-// the invoice as a PDF, send it to the supervisor.
+// the invoice as a PDF, send it for review — to their supervisor, or to the admin if they have none.
 export default function RequestPaymentModal({ course, onClose }) {
   const submit = useSubmitClaim();
   const fileInput = useRef(null);
@@ -78,7 +78,7 @@ export default function RequestPaymentModal({ course, onClose }) {
   const send = async () => {
     try {
       await submit.mutateAsync({ classId: course.classId, courseId: course.courseId, type, invoiceUrl: invoice.url, invoiceFilename: invoice.filename, note: note.trim() || null });
-      toast.success("Payment request sent to your supervisor");
+      toast.success(course.supervisor ? `Payment request sent to ${course.supervisor.name}` : "Payment request sent to the admin");
       onClose();
     } catch (err) {
       toast.error(err.errors?.[0]?.message || err.message || "Could not send the request");
@@ -143,7 +143,7 @@ export default function RequestPaymentModal({ course, onClose }) {
         </button>
       )}
 
-      <label style={{ display: "block", margin: "16px 0 6px", fontSize: 12.5, fontWeight: 700, color: T.ink }} htmlFor="claim-note">Note for your supervisor <span style={{ fontWeight: 500, color: T.inkFaint }}>(optional)</span></label>
+      <label style={{ display: "block", margin: "16px 0 6px", fontSize: 12.5, fontWeight: 700, color: T.ink }} htmlFor="claim-note">Note for {course.supervisor ? "your supervisor" : "the admin"} <span style={{ fontWeight: 500, color: T.inkFaint }}>(optional)</span></label>
       <textarea id="claim-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} placeholder="Anything they should know about this claim" style={{ ...inputStyle, resize: "vertical" }} />
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
