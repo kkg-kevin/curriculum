@@ -72,6 +72,7 @@ const COLLECTIONS = {
     submissions: { table: "assessment_submissions", noun: "submission" },
     admins: { table: "users", noun: "admin" },
     skips: { table: "timetable_session_skips", noun: "session change" },
+    supervisors: { table: "users", noun: "supervisor" },
   },
   curricula: { pathways: { table: "pathways", noun: "pathway" } },
   bootcamps: { hubs: { table: "bootcamp_hubs", noun: "hub run" } },

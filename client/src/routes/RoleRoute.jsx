@@ -6,7 +6,7 @@ import { AUTH_ENABLED } from "../config/authConfig";
 // inside the SAME admin shell as the admin who invited them — the server aliases their role to
 // "admin" for every non-delete request (scope.middleware.js's attachOwnRecords), scoped to that
 // admin's own tenant, so they land on the same home and see the same routes.
-export const ROLE_HOME = { admin: "/", collaborator: "/", school: "/school-portal", teacher: "/teacher-portal", learner: "/learner-portal", curriculumAdmin: "/curriculum" };
+export const ROLE_HOME = { admin: "/", collaborator: "/", school: "/school-portal", teacher: "/teacher-portal", learner: "/learner-portal", curriculumAdmin: "/curriculum", supervisor: "/supervisor-portal" };
 
 // Nests inside ProtectedRoute — runs only once a user is known, and bounces
 // a role that doesn't belong on this branch back to its own portal home.

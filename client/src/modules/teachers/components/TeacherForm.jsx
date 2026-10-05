@@ -4,6 +4,8 @@ import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePickerField from "../../courses/components/CoursePickerField";
 import PortalPasswordField from "../../../components/PortalPasswordField";
 import CollapsibleFormSection from "../../../components/CollapsibleFormSection";
+import { useAuth } from "../../../context/AuthContext";
+import { useSupervisors } from "../../claims/hooks/useClaims";
 
 const inputStyle = (hasError) => ({
   padding: "10px 12px",
@@ -64,6 +66,12 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
 
 export default function TeacherForm() {
   const { register, control, formState: { errors } } = useFormContext();
+  // Who reviews this educator's claims is the workspace's call — offered to the admin and staff
+  // only (a hub login filling in this same form doesn't get it), and only if they can see the
+  // supervisors.
+  const { user } = useAuth();
+  const inWorkspace = user?.role === "admin" || user?.role === "collaborator";
+  const { data: supervisors, isSuccess: supervisorsLoaded } = useSupervisors({ enabled: inWorkspace });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0", backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
@@ -117,6 +125,25 @@ export default function TeacherForm() {
           </Field>
         </div>
       </div>
+
+      {inWorkspace && supervisorsLoaded && (
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Claims supervisor</h3>
+          <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>
+            Who approves this educator's payment claims before the admin pays them. Optional — with no supervisor, claims go straight to the admin.
+          </p>
+          <div style={{ maxWidth: "360px" }}>
+            <Field label="Supervisor" hint={supervisors.length === 0 ? "No supervisor accounts yet — create them under Billing → Educator Claims → Supervisors." : undefined}>
+              <select {...register("supervisorId", { setValueAs: (value) => value || null })} style={selectStyle(false)}>
+                <option value="">No supervisor</option>
+                {supervisors.map((supervisor) => (
+                  <option key={supervisor.id} value={supervisor.id}>{supervisor.name} — {supervisor.email}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </div>
+      )}
 
       {/* Qualifications — which courses this educator may be assigned to teach (see
           class.controller.js's assignCourseTeacher). Empty means unrestricted: this educator can

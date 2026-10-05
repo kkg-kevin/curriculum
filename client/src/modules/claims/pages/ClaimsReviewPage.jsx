@@ -1,29 +1,28 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiChevronRight, FiInbox, FiSearch, FiSliders } from "react-icons/fi";
+import { FiChevronRight, FiInbox, FiSearch, FiSliders, FiUsers } from "react-icons/fi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useWorkspaceClaims } from "../hooks/useClaims";
 import { ClaimStatusPill, T, TYPE_LABEL, cardStyle, formatDate, formatMoney } from "../shared";
 import ClaimReviewDialog from "../components/ClaimReviewDialog";
 import ClaimRatesDialog from "../components/ClaimRatesDialog";
+import SupervisorsDialog from "../components/SupervisorsDialog";
 
-// Educator claims, for the people who review them. A claim arrives from an educator and moves
-// left to right through these stages: a supervisor reviews it, the admin gives final approval,
-// it is paid. What a viewer can act on depends on their role (see access.registry.js): the
-// supervisor's stage is "Educator claims" → Edit, the admin's is "Claim approvals" → Edit. The
-// workspace owner can do both.
+// Educator claims, for the workspace: the admin app's Billing → "Educator Claims" tab
+// (`embedded`: Billing supplies the heading; see BillingPage.jsx). An educator's claim is approved
+// or declined by their supervisor and then paid by the admin; an educator with no supervisor has
+// their claim approved by the admin instead. What a staff member can act on depends on their role
+// (access.registry.js); the owner can do everything, including deciding for a supervisor.
 //
-// Lives inside Billing as its "Educator Claims" tab (`embedded` — Billing supplies the page
-// heading); see BillingPage.jsx.
+// A supervisor's own view of their claims is a different page: SupervisorHomePage.jsx.
 
 const STAGES = [
-  { key: "pending_supervisor", label: "Supervisor review", empty: "No claims are waiting for a supervisor." },
-  { key: "pending_admin", label: "Final approval", empty: "No claims are waiting for final approval." },
+  { key: "pending_supervisor", label: "With supervisor", empty: "No claims are waiting on a supervisor." },
+  { key: "pending_admin", label: "Needs your approval", empty: "No claims are waiting for the admin's approval. Only claims from educators with no supervisor come here." },
   { key: "approved", label: "To pay", empty: "Nothing is approved and waiting to be paid." },
   { key: "paid", label: "Paid", empty: "No claims have been paid yet." },
   { key: "rejected", label: "Declined", empty: "No claims have been declined." },
 ];
-
 export default function ClaimsReviewPage({ embedded = false }) {
   const { can } = usePermissions();
   const canSupervise = can("claims", "edit");
@@ -33,6 +32,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const [picked, setStage] = useState(null);
   const [search, setSearch] = useState("");
   const [showRates, setShowRates] = useState(false);
+  const [showSupervisors, setShowSupervisors] = useState(false);
 
   const claims = useMemo(() => data?.claims || [], [data]);
   const counts = data?.counts || {};
@@ -43,7 +43,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const open = (id) => setSearchParams((prev) => { const next = new URLSearchParams(prev); if (id) next.set("claim", id); else next.delete("claim"); return next; }, { replace: true });
 
   // Until the viewer picks a stage, show the first one that has something for them to do.
-  const mine = [canSupervise && "pending_supervisor", canApprove && "pending_admin", canApprove && "approved"].filter(Boolean);
+  const mine = [canApprove && "pending_admin", canApprove && "approved", canSupervise && "pending_supervisor"].filter(Boolean);
   const stage = picked || mine.find((key) => counts[key] > 0) || STAGES.find((s) => counts[s.key] > 0)?.key || "pending_supervisor";
 
   const visible = useMemo(() => {
@@ -52,6 +52,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
       .filter((c) => c.status === stage)
       .filter((c) => !term || [c.teacherName, c.courseName, c.className, c.hubName, c.claimNumber].some((text) => text?.toLowerCase().includes(term)));
   }, [claims, stage, search]);
+  const headerButton = { display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: "#fff", color: T.accent, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" };
 
   const current = STAGES.find((s) => s.key === stage) || STAGES[0];
   const currency = claims[0]?.currency || "KES";
@@ -61,21 +62,24 @@ export default function ClaimsReviewPage({ embedded = false }) {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
         <div>
           {!embedded && <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: T.ink, letterSpacing: "-0.5px" }}>Educator Claims</h1>}
-          <p style={{ margin: embedded ? 0 : "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>Payment requests from educators — reviewed by a supervisor, approved by the admin, then paid.</p>
+          <p style={{ margin: embedded ? 0 : "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>
+            Payment requests from educators — approved by their supervisor, then paid by the admin. With no supervisor, the admin approves.
+          </p>
         </div>
         {canApprove && (
-          <button type="button" onClick={() => setShowRates(true)} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: "#fff", color: T.accent, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-            <FiSliders size={15} /> Session rates
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setShowSupervisors(true)} style={headerButton}><FiUsers size={15} /> Supervisors</button>
+            <button type="button" onClick={() => setShowRates(true)} style={headerButton}><FiSliders size={15} /> Session rates</button>
+          </div>
         )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        {STAGES.map((s, index) => {
+        {STAGES.map((s) => {
           const active = s.key === stage;
           return (
             <button key={s.key} type="button" onClick={() => setStage(s.key)} aria-pressed={active} style={{ ...cardStyle, padding: "14px 16px", textAlign: "left", cursor: "pointer", fontFamily: "Inter, sans-serif", border: `2px solid ${active ? T.accent : "#EEF1F5"}`, background: active ? "#F3F8FC" : "#fff" }}>
-              <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: active ? T.accent : T.inkMuted }}>{index < 3 ? `${index + 1}. ` : ""}{s.label}</p>
+              <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: active ? T.accent : T.inkMuted }}>{s.label}</p>
               <p style={{ margin: "8px 0 0", fontSize: 24, fontWeight: 900, color: T.ink, fontVariantNumeric: "tabular-nums" }}>{counts[s.key] || 0}</p>
               <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint, fontVariantNumeric: "tabular-nums" }}>{formatMoney(amounts[s.key] || 0, currency)}</p>
             </button>
@@ -124,6 +128,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
 
       {openId && <ClaimReviewDialog claimId={openId} canSupervise={canSupervise} canApprove={canApprove} onClose={() => open(null)} />}
       {showRates && <ClaimRatesDialog onClose={() => setShowRates(false)} />}
+      {showSupervisors && <SupervisorsDialog onClose={() => setShowSupervisors(false)} />}
 
       <style>{`
         .claim-row:hover { background: #F8FBFE !important; }

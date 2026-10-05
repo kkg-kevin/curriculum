@@ -33,6 +33,8 @@ export const teacherSchema = z
     employmentType: z.enum(["part_time", "full_time"]).nullable().default(null),
     teacherLevel:   z.number().int().min(1).max(5).nullable().default(null),
     paymentTerms:   z.enum(["hourly", "daily"]).nullable().default(null),
+    // The supervisor account this educator's claims go to — optional (see modules/claims/).
+    supervisorId: z.string().nullable().default(null),
     photo: z.string().optional().nullable(),
     // Which courses this educator may be assigned to teach — empty means unrestricted (see
     // teacher.validation.js on the server for the full rationale).

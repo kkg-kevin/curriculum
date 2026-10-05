@@ -35,4 +35,17 @@ const settingsSchema = z.object({
   advancePercent: z.coerce.number().int().min(0, "Between 0 and 100").max(100, "Between 0 and 100"),
 });
 
-module.exports = { submitClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES };
+const createSupervisorSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(150),
+  email: z.string().trim().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+// Renaming, or setting a new password — either or both.
+const updateSupervisorSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(150).optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+});
+
+module.exports = {
+  createSupervisorSchema, updateSupervisorSchema, submitClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES };

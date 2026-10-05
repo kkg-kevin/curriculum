@@ -34,11 +34,12 @@ const MODULES = [
   { key: "activity", label: "Activity log", group: "Workspace" },
   { key: "billing", label: "Billing", group: "Finance" },
   { key: "hub-visits", label: "Hub visits & revenue", group: "Finance" },
-  // Educator claims are reviewed in two stages, by two different people, so each stage is its own
-  // permission. "Educator claims" → Edit is the supervisor's review (approve on to the admin, or
-  // decline with a reason). "Claim approvals" → Edit is the admin's part: final approval,
-  // recording the payment, and setting the session rate.
-  { key: "claims", label: "Educator claims (supervisor review)", group: "Finance" },
+  // Educator claims. A claim is normally reviewed by the educator's supervisor — a separate
+  // supervisor login, not a staff role. Staff come in on the workspace's side of it:
+  // "Educator claims" → Edit lets them decide a claim in a supervisor's place; "Claim approvals"
+  // → Edit is the admin's part: approving a claim from an educator with no supervisor, recording
+  // payments, the session rate, and managing the supervisor accounts.
+  { key: "claims", label: "Educator claims (review for a supervisor)", group: "Finance" },
   { key: "claims-approval", label: "Claim approvals & payment", group: "Finance" },
 ];
 
@@ -89,6 +90,9 @@ const CATALOG_READERS = {
   // to read the claims they are approving.
   "/api/claims": ["claims-approval"],
 };
+// The educator form offers a supervisor to pick — so the list of supervisors can also be read by
+// anyone who can view Educators.
+const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
 
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, sharing with other admins, and the cross-workspace platform
@@ -113,6 +117,10 @@ const ACTION_OVERRIDES = [
   // POST /api/claims/:id/supervisor-decision, falls under the default rule: Educator claims → Edit.)
   { method: "POST", pattern: /^\/api\/claims\/[^/]+\/(admin-decision|mark-paid)$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/settings$/, module: "claims-approval", action: "edit" },
+  // Creating, changing and removing supervisor accounts is the admin's side too.
+  { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
+  { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
+  { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
 ];
 
 // A POST that only works something out without saving it.
@@ -155,6 +163,7 @@ function resolveAccess(method, rawPath) {
   if (!module) return null;
   if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") {
     const catalog = Object.keys(CATALOG_READERS).find((p) => underPrefix(path, p));
+    if (SUPERVISOR_LIST.test(path)) return { module, action: "view", orView: [...CATALOG_READERS[catalog], "teachers"] };
     return catalog ? { module, action: "view", orView: CATALOG_READERS[catalog] } : { module, action: "view" };
   }
   if (verb === "DELETE") return { module, action: "delete" };

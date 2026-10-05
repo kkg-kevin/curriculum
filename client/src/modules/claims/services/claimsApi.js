@@ -3,7 +3,8 @@ import api from "../../../services/api";
 const BASE = "/api/claims";
 
 // Educator claims (server/src/modules/claims/): an educator requests payment for a course they
-// teach — an advance or the full amount — and it goes to a supervisor, then the admin.
+// teach — an advance or the full amount. Their supervisor approves it and the admin pays; with
+// no supervisor it goes straight to the admin.
 export const claimsApi = {
   // Educator: { currency, summary, courses } — every course they teach and what each is worth.
   getMyCourses: () => api.get(`${BASE}/courses`).then((r) => r.data.data),
@@ -13,7 +14,8 @@ export const claimsApi = {
   submit: (data) => api.post(BASE, data).then((r) => r.data.data),
   withdraw: (id) => api.delete(`${BASE}/${id}`).then((r) => r.data),
 
-  // Reviewers: { claims, counts, amounts } for the workspace.
+  // Reviewers: { claims, counts, amounts } — the workspace's claims, or for a supervisor the
+  // ones sent to them.
   list: (params) => api.get(BASE, { params }).then((r) => r.data.data),
   // Reviewers: a claim plus the course's records as they stand now (`course`, null if it's gone).
   // Same long read as getMyCourse.
@@ -21,6 +23,12 @@ export const claimsApi = {
   supervisorDecision: (id, data) => api.post(`${BASE}/${id}/supervisor-decision`, data).then((r) => r.data.data),
   adminDecision: (id, data) => api.post(`${BASE}/${id}/admin-decision`, data).then((r) => r.data.data),
   markPaid: (id, data) => api.post(`${BASE}/${id}/mark-paid`, data).then((r) => r.data.data),
+
+  // Supervisor accounts — logins that only review claims. [{ id, name, email, educators }]
+  listSupervisors: () => api.get(`${BASE}/supervisors`).then((r) => r.data.data),
+  createSupervisor: (data) => api.post(`${BASE}/supervisors`, data).then((r) => r.data.data),
+  updateSupervisor: (id, data) => api.put(`${BASE}/supervisors/${id}`, data).then((r) => r.data.data),
+  removeSupervisor: (id) => api.delete(`${BASE}/supervisors/${id}`).then((r) => r.data),
 
   getSettings: () => api.get(`${BASE}/settings`).then((r) => r.data.data),
   updateSettings: (data) => api.put(`${BASE}/settings`, data).then((r) => r.data.data),

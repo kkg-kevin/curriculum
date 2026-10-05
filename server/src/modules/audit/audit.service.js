@@ -70,7 +70,7 @@ async function workspaceOf(req) {
   if (!user) return null;
   const role = user.actualRole || user.role;
   if (role === "admin") return user.id;
-  if (role === "collaborator") return user.invitedByAdminId || null;
+  if (role === "collaborator" || role === "supervisor") return user.invitedByAdminId || null;
   const cached = workspaceCache.get(user.id);
   if (cached && cached.at > Date.now() - 10 * 60 * 1000) return cached.ownerAdminId;
 

@@ -36,6 +36,11 @@ async function toReviewers(claim, module, event) {
   await Promise.all(ids.map((id) => NotificationService._notify(id, { ...event, payload: { claimId: claim.id, route: `/claims?claim=${claim.id}` } })));
 }
 
+// The supervisor the claim was sent to — they review in their own portal.
+async function toSupervisor(claim, event) {
+  await NotificationService._notify(claim.supervisorId, { ...event, payload: { claimId: claim.id, route: `/supervisor-portal?claim=${claim.id}` } });
+}
+
 async function toEducator(claim, event) {
   const payload = { claimId: claim.id, route: `/teacher-portal/claims/${claim.classId}/${claim.courseId}` };
   await NotificationService._notify(await educatorUserId(claim), { ...event, payload });
@@ -50,23 +55,28 @@ const guarded = (fn) => async (claim) => {
 };
 
 module.exports = {
-  submitted: guarded((claim) =>
-    toReviewers(claim, "claims", {
+  // A new claim goes to whoever reviews it: the educator's supervisor, or — when they have
+  // none — the workspace's own approvers.
+  submitted: guarded((claim) => {
+    const event = {
       type: "claim_submitted",
       title: "New claim to review",
       message: `${claim.teacherName} requested ${kind(claim) === "advance" ? "an advance" : "full payment"} of ${money(claim)} for ${claim.courseName || "a course"}.`,
-    })),
+    };
+    return claim.status === "pending_supervisor" && claim.supervisorId ? toSupervisor(claim, event) : toReviewers(claim, "claims-approval", event);
+  }),
 
+  // The supervisor approved it: over to the admin to pay, and the educator hears the good news.
   forwarded: guarded(async (claim) => {
     await toReviewers(claim, "claims-approval", {
       type: "claim_awaiting_approval",
-      title: "Claim awaiting final approval",
+      title: "Claim ready to pay",
       message: `${claim.supervisorName || "A supervisor"} approved ${claim.teacherName}'s ${kind(claim)} claim of ${money(claim)} for ${claim.courseName || "a course"}.`,
     });
     await toEducator(claim, {
-      type: "claim_progress",
+      type: "claim_approved",
       title: "Claim approved by your supervisor",
-      message: `Your ${kind(claim)} claim of ${money(claim)} for ${claim.courseName || "your course"} is now with the admin for final approval.`,
+      message: `Your ${kind(claim)} claim of ${money(claim)} for ${claim.courseName || "your course"} has been approved and is awaiting payment.`,
     });
   }),
 

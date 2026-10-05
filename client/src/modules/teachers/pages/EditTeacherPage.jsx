@@ -40,6 +40,7 @@ export default function EditTeacherPage() {
         employmentType: teacher.employmentType ?? null,
         teacherLevel:   teacher.teacherLevel   ?? null,
         paymentTerms:   teacher.paymentTerms   ?? null,
+        supervisorId:   teacher.supervisorId   ?? null,
         photo:          teacher.photo ?? null,
         qualifiedCourseIds: teacher.qualifiedCourseIds || [],
       });
