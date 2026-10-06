@@ -306,6 +306,11 @@ const AuditService = {
     return { items: rows.slice(0, limit), hasMore: rows.length > limit, page: Math.max(Number(page) || 1, 1) };
   },
 
+  // { all, signins, added, edited, deleted, problems } — the numbers on the Activity page's tabs.
+  counts(ownerAdminId, filters = {}) {
+    return AuditLogModel.countByView({ ...filters, ownerAdminId });
+  },
+
   async facets(ownerAdminId) {
     const [actors, modules] = await Promise.all([AuditLogModel.actors(ownerAdminId), AuditLogModel.modules(ownerAdminId)]);
     return {

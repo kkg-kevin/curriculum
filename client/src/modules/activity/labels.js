@@ -25,14 +25,40 @@ export const AREA_LABELS = {
 };
 export const areaLabel = (key) => AREA_LABELS[key] || (key ? key[0].toUpperCase() + key.slice(1).replace(/-/g, " ") : "Other");
 
-// The kinds of action the filter offers. Anything else (a named action like "issue") still
-// shows in the list; it just has no filter entry of its own.
-export const ACTION_OPTIONS = [
-  { value: "create", label: "Added" },
-  { value: "update", label: "Edited" },
-  { value: "delete", label: "Deleted" },
-  { value: "login", label: "Signed in" },
-  { value: "login_failed", label: "Failed sign-in" },
+// The Activity page's tabs: one per kind of thing that happened (the server's audit-log.model.js
+// decides what falls under each). `narrow` is the optional second choice inside a tab; each one
+// is sent as an `action` or `outcome` filter.
+export const VIEWS = [
+  { key: "", label: "All activity", empty: "No activity recorded yet" },
+  {
+    key: "signins", label: "Sign-ins", empty: "No sign-ins in this period",
+    narrow: [
+      { label: "Signed in", action: "login" },
+      { label: "Failed attempts", action: "login_failed" },
+      { label: "Signed out", action: "logout,session_expired" },
+      { label: "Password & profile changes", action: "password_changed,password_reset,update" },
+    ],
+  },
+  { key: "added", label: "Added", empty: "Nothing was added in this period" },
+  { key: "edited", label: "Edited", empty: "Nothing was edited in this period" },
+  { key: "deleted", label: "Deleted", empty: "Nothing was deleted in this period" },
+  {
+    key: "problems", label: "Refused & failed", empty: "Nothing was refused or failed in this period",
+    narrow: [
+      { label: "Refused (not allowed)", outcome: "refused" },
+      { label: "Failed (went wrong)", outcome: "failed" },
+    ],
+  },
+];
+
+// The "When" choice. Each gives the first day to show; the last is always today.
+const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+export const PERIODS = [
+  { key: "", label: "Any time", from: () => "" },
+  { key: "today", label: "Today", from: () => daysAgo(0) },
+  { key: "7", label: "Last 7 days", from: () => daysAgo(6) },
+  { key: "30", label: "Last 30 days", from: () => daysAgo(29) },
+  { key: "custom", label: "Choose dates…" },
 ];
 
 // The colour an entry's dot and tag take.

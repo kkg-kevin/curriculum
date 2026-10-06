@@ -13,6 +13,12 @@ export function useActivity(filters, { enabled = true } = {}) {
   });
 }
 
+// The numbers on the Activity page's tabs. The tab itself and its own sub-filter are left out by
+// the caller, so switching tabs doesn't refetch.
+export function useActivityCounts(filters) {
+  return useQuery({ queryKey: ["activity", "counts", filters], queryFn: () => activityApi.counts(filters), staleTime: 0, placeholderData: (previous) => previous });
+}
+
 export function useActivityFacets({ enabled = true } = {}) {
   return useQuery({ queryKey: ["activity", "facets"], queryFn: activityApi.facets, staleTime: 60 * 1000, enabled });
 }
