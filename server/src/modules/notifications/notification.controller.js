@@ -37,4 +37,30 @@ const updateEmailPreferences = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await NotificationService.updateEmailPreferences(req.user.id, data) });
 });
 
-module.exports = { list, markRead, markAllRead, getEmailPreferences, updateEmailPreferences };
+// The same preferences, opened from the link in an email's footer — no session, the token in the
+// link says whose they are.
+const getEmailPreferencesByToken = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await NotificationService.getEmailPreferencesByToken(req.params.token) });
+});
+
+const updateEmailPreferencesByToken = asyncHandler(async (req, res) => {
+  const data = emailPreferencesSchema.parse(req.body);
+  res.json({ success: true, data: await NotificationService.updateEmailPreferencesByToken(req.params.token, data) });
+});
+
+// Which emails the whole workspace sends — owner only (see app.js).
+const workspaceEmailsSchema = z.object({ types: z.record(z.string(), z.boolean()) });
+
+const getWorkspaceEmails = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await NotificationService.getWorkspaceEmails(req.ownerAdminId) });
+});
+
+const updateWorkspaceEmails = asyncHandler(async (req, res) => {
+  const { types } = workspaceEmailsSchema.parse(req.body);
+  res.json({ success: true, data: await NotificationService.saveWorkspaceEmails(req.ownerAdminId, types) });
+});
+
+module.exports = {
+  list, markRead, markAllRead, getEmailPreferences, updateEmailPreferences,
+  getEmailPreferencesByToken, updateEmailPreferencesByToken, getWorkspaceEmails, updateWorkspaceEmails,
+};

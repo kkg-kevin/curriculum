@@ -97,7 +97,7 @@ const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, sharing with other admins, and the cross-workspace platform
 // analytics.
-const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", "/api/reports/platform-analytics"];
+const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", "/api/email-settings", "/api/reports/platform-analytics"];
 
 // Requests whose meaning isn't what their HTTP method suggests. Checked before the default rules.
 const ACTION_OVERRIDES = [

@@ -6,6 +6,7 @@ import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
 import ItemsPanel from "../items/components/ItemsPanel";
 import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import TeamPanel, { TEAM_SECTIONS } from "../team/components/TeamPanel";
+import EmailsPanel from "../emails/components/EmailsPanel";
 import { useAuth } from "../../../context/AuthContext";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
@@ -255,10 +256,12 @@ const ALL_TABS = [
   { key: "learning-hubs", label: "Learning Hubs" },
   // Staff, Roles & access, Sharing and Admins, together — see TeamPanel.
   { key: "people", label: "People & sharing" },
+  // Which emails the workspace sends, and which the admin receives — see EmailsPanel.
+  { key: "emails", label: "Emails" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
-const OWNER_ONLY_TABS = ["people"];
+const OWNER_ONLY_TABS = ["people", "emails"];
 
 // Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
 // sharing notifications, bookmarks) open the matching section of People & sharing.
@@ -327,6 +330,7 @@ export default function SettingsPage() {
         {activeTab === "items" && <ItemsPanel initialKind={itemsKind} />}
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
         {activeTab === "people" && <TeamPanel section={teamSection} onSectionChange={setTeamSection} />}
+        {activeTab === "emails" && <EmailsPanel />}
       </div>
     </div>
   );

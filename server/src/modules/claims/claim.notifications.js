@@ -33,17 +33,17 @@ async function educatorUserId(claim) {
 
 async function toReviewers(claim, module, event) {
   const ids = await reviewerIds(claim.ownerAdminId, module);
-  await Promise.all(ids.map((id) => NotificationService._notify(id, { ...event, payload: { claimId: claim.id, route: `/claims?claim=${claim.id}` } })));
+  await Promise.all(ids.map((id) => NotificationService._notify(id, { ...event, ownerAdminId: claim.ownerAdminId, payload: { claimId: claim.id, route: `/claims?claim=${claim.id}` } })));
 }
 
 // The supervisor the claim was sent to — they review in their own portal.
 async function toSupervisor(claim, event) {
-  await NotificationService._notify(claim.supervisorId, { ...event, payload: { claimId: claim.id, route: `/supervisor-portal?claim=${claim.id}` } });
+  await NotificationService._notify(claim.supervisorId, { ...event, ownerAdminId: claim.ownerAdminId, payload: { claimId: claim.id, route: `/supervisor-portal?claim=${claim.id}` } });
 }
 
 async function toEducator(claim, event) {
   const payload = { claimId: claim.id, route: `/teacher-portal/claims/${claim.classId}/${claim.courseId}` };
-  await NotificationService._notify(await educatorUserId(claim), { ...event, payload });
+  await NotificationService._notify(await educatorUserId(claim), { ...event, ownerAdminId: claim.ownerAdminId, payload });
 }
 
 const guarded = (fn) => async (claim) => {

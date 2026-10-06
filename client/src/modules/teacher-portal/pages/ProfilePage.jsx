@@ -5,6 +5,7 @@ import { FiCalendar, FiClock, FiEye, FiEyeOff, FiHome, FiMail, FiPhone, FiUser, 
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
 import { classApi } from "../../classes/services/classApi";
 import AvatarPhotoEditor from "../../../components/ui/AvatarPhotoEditor";
+import EmailNotificationSettings from "../../../components/ui/EmailNotificationSettings";
 
 const ACCENT = "#25476a";
 
@@ -276,6 +277,10 @@ export default function ProfilePage() {
             ) : (
               <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>Set or change the password you use to sign in.</p>
             )}
+          </Section>
+
+          <Section title="Email Notifications">
+            <EmailNotificationSettings padding={0} />
           </Section>
         </div>
 

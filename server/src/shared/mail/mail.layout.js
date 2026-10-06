@@ -25,9 +25,10 @@ function appUrl(path = "/") {
 //   button?: { label, url },
 //   afterParagraphs?: [string]     shown under the button
 //   footerNote?: string            why the recipient got this email
+//   footerLink?: { label, url }    shown after the footer note ("Manage email preferences")
 //   brandName?: string             defaults to MAIL_BRAND_NAME
 // }
-function renderEmail({ heading, greeting, paragraphs = [], rows = [], button, afterParagraphs = [], footerNote, brandName }) {
+function renderEmail({ heading, greeting, paragraphs = [], rows = [], button, afterParagraphs = [], footerNote, footerLink, brandName }) {
   const brand = brandName || env.MAIL_BRAND_NAME;
   const p = (text) => `<p style="margin:0 0 14px;font-size:14.5px;line-height:1.6;color:#374151;">${escapeHtml(text)}</p>`;
 
@@ -52,7 +53,7 @@ function renderEmail({ heading, greeting, paragraphs = [], rows = [], button, af
 <h1 style="margin:0 0 16px;font-size:19px;line-height:1.35;color:#111827;">${escapeHtml(heading)}</h1>
 ${greeting ? p(greeting) : ""}${paragraphs.map(p).join("")}${rowsHtml}${buttonHtml}${afterParagraphs.map(p).join("")}
 </td></tr>
-<tr><td style="padding:16px 28px;border-top:1px solid #F3F4F6;font-size:11.5px;line-height:1.6;color:#9CA3AF;">${escapeHtml(footerNote || `You're receiving this email because you have an account on ${brand}.`)}</td></tr>
+<tr><td style="padding:16px 28px;border-top:1px solid #F3F4F6;font-size:11.5px;line-height:1.6;color:#9CA3AF;">${escapeHtml(footerNote || `You're receiving this email because you have an account on ${brand}.`)}${footerLink ? ` <a href="${escapeHtml(footerLink.url)}" style="color:#6B7280;text-decoration:underline;">${escapeHtml(footerLink.label)}</a>` : ""}</td></tr>
 </table></td></tr></table></body></html>`;
 
   const text = [
@@ -64,6 +65,7 @@ ${greeting ? p(greeting) : ""}${paragraphs.map(p).join("")}${rowsHtml}${buttonHt
     ...(button ? [`${button.label}: ${button.url}`, ""] : []),
     ...afterParagraphs.flatMap((line) => [line, ""]),
     `— ${brand}`,
+    ...(footerLink ? ["", `${footerLink.label}: ${footerLink.url}`] : []),
   ].join("\n");
 
   return { html, text };

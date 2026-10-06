@@ -17,6 +17,7 @@ import EditProfileModal from "../components/profile/EditProfileModal";
 import EditGuardianProfileModal from "../components/profile/EditGuardianProfileModal";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import ChangePasswordCard from "../../auth/components/ChangePasswordCard";
+import EmailNotificationSettings from "../../../components/ui/EmailNotificationSettings";
 import ProfileTabs from "../components/profile/ProfileTabs";
 import CompetencyProgressGrid from "../components/profile/CompetencyProgressGrid";
 import MyCoursesCard from "../components/profile/MyCoursesCard";
@@ -163,6 +164,11 @@ export default function ProfilePage() {
       <FrameworkLegend />
 
       <ChangePasswordCard />
+
+      <div style={cardStyle()}>
+        <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: T.ink }}>Email notifications</h3>
+        <EmailNotificationSettings padding={0} />
+      </div>
 
       {editing === "learner" && (
         <EditProfileModal learner={learner} isSaving={isSaving} onSave={handleSaveLearner} onClose={() => setEditing(null)} />

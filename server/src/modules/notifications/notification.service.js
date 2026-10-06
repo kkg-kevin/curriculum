@@ -7,7 +7,7 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
-const { sendNotificationEmail, describePreferences, mergePreferences } = require("./notification.emails");
+const { sendNotificationEmail, describePreferences, mergePreferences, describeWorkspaceEmails, saveWorkspaceEmails, userForPreferencesToken } = require("./notification.emails");
 
 const NotificationService = {
   async listForMe(recipientId) {
@@ -39,7 +39,10 @@ const NotificationService = {
   // Base primitive every event below fans out through. dedupeKey is optional — only events that
   // can legitimately recompute to "still true" on a later trigger need it (see maybeNotifyLevelUp);
   // everything else is a genuine one-time state transition and gets a fresh row every time.
-  async _notify(recipientId, { type, title, message, payload = null, dedupeKey = null }) {
+  // ownerAdminId, when the caller knows it, is the workspace the event happened in — it decides
+  // whether that workspace has this email switched off (otherwise it's worked out from the
+  // recipient).
+  async _notify(recipientId, { type, title, message, payload = null, dedupeKey = null, ownerAdminId = null }) {
     if (!recipientId) return null;
     if (dedupeKey) {
       const existing = await NotificationModel.findOne({ recipientId, dedupeKey });
@@ -49,7 +52,7 @@ const NotificationService = {
     // Emailed too, for the types and recipients that allow it (see notification.emails.js) —
     // only for a notification that was actually just created, never a deduped repeat.
     // Fire-and-forget: the in-app notification is the record, the email is a courtesy.
-    sendNotificationEmail({ ...created, payload });
+    sendNotificationEmail({ ...created, payload, ownerAdminId });
     return created;
   },
 
@@ -64,6 +67,23 @@ const NotificationService = {
     const updated = await UserModel.update(userId, { emailPreferences: mergePreferences(user, data) });
     return describePreferences(updated);
   },
+
+  // The same two, reached from the link in an email's footer instead of a signed-in session.
+  async getEmailPreferencesByToken(token) {
+    const user = await userForPreferencesToken(token);
+    if (!user) throw Object.assign(new Error("This link isn't valid. Sign in to change your email settings."), { statusCode: 404 });
+    return describePreferences(user);
+  },
+
+  async updateEmailPreferencesByToken(token, data) {
+    const user = await userForPreferencesToken(token);
+    if (!user) throw Object.assign(new Error("This link isn't valid. Sign in to change your email settings."), { statusCode: 404 });
+    return NotificationService.updateEmailPreferences(user.id, data);
+  },
+
+  // Which emails a whole workspace sends — the admin's switches (Settings → Emails).
+  getWorkspaceEmails: (ownerAdminId) => describeWorkspaceEmails(ownerAdminId),
+  saveWorkspaceEmails: (ownerAdminId, types) => saveWorkspaceEmails(ownerAdminId, types),
 
   // Fans out to every login this learner actually has — a guardian-mediated account (matched by
   // guardianEmail) and/or the learner's own dedicated username login (see auth.service.js's

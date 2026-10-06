@@ -144,6 +144,10 @@ function summarise({ ctx, label, parentLabel, linkedLabel, body, requestBody }) 
   if (/^\/api\/sharing\/connections\/[^/]+\/accept$/.test(path)) return `Accepted a sharing request${body?.data?.admin?.name ? ` from ${body.data.admin.name}` : ""}`;
   if (path === "/api/sharing/connections" && action === "create") return `Sent a sharing request${body?.data?.admin?.email ? ` to ${body.data.admin.email}` : ""}`;
   if (path === "/api/attendance/mark") return "Marked attendance";
+  if (path === "/api/email-settings") {
+    const named = (on) => Object.entries(requestBody?.types || {}).filter(([, value]) => value === on).map(([type]) => type.replace(/_/g, " ")).join(", ");
+    return `Changed which emails the workspace sends${named(false) ? ` — switched off: ${named(false)}` : ""}${named(true) ? ` — switched on: ${named(true)}` : ""}`;
+  }
   if (ctx.root === "public") return `Website: ${ctx.words.join(" ") || "form"} submitted${quote(label)}`;
 
   if (action === "link") return `Added ${linked.noun}${quote(linkedLabel)} to ${noun}${quote(label)}`;

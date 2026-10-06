@@ -5,6 +5,11 @@
 const { queueMail } = require("../../shared/mail/mail.service");
 const { renderEmail, appUrl } = require("../../shared/mail/mail.layout");
 const { MAIL_BRAND_NAME } = require("../../config/env");
+const { adminOfHub, workspaceAllows } = require("../notifications/email-workspace");
+
+// An admin can switch the automatic invoice and receipt emails off for their workspace
+// (Settings → Emails). The workspace is the one that owns the invoice's hub.
+const workspaceSends = async (invoice, type) => workspaceAllows(await adminOfHub(invoice.hubId), type);
 
 const firstName = (name) => String(name || "").trim().split(/\s+/)[0] || "there";
 const formatMoney = (amount, currency) => `${currency || "KES"} ${Number(amount || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -30,11 +35,13 @@ const learnerName = (invoice) => (invoice.learner ? `${invoice.learner.firstName
 
 // `invoice` is the decorated document (BillingService.getInvoiceDocument) — billTo/issuedBy/
 // learner/amountDue already resolved. `manual` is a staff member pressing "Email invoice": always
-// sends (no dedupe) and waits, so the outcome can be shown. Returns the outbox row, or null when
-// the payer has no email address on file.
+// sends (no dedupe, and whatever the workspace's email settings say) and waits, so the outcome
+// can be shown. Returns the outbox row, or null when the payer has no email address on file or
+// the workspace has automatic invoice emails switched off.
 async function sendInvoiceEmail(invoice, { manual = false } = {}) {
   const to = invoice.billTo?.email;
   if (!to) return null;
+  if (!manual && !(await workspaceSends(invoice, "invoice_issued"))) return null;
   const { issuerName, fromName, replyTo } = sender(invoice);
   const due = formatDate(invoice.dueAt);
   const settled = Number(invoice.amountDue) <= 0;
@@ -68,6 +75,7 @@ async function sendInvoiceEmail(invoice, { manual = false } = {}) {
 async function sendPaymentReceiptEmail(invoice, payment) {
   const to = invoice.billTo?.email;
   if (!to) return null;
+  if (!(await workspaceSends(invoice, "payment_receipt"))) return null;
   const { issuerName, fromName, replyTo } = sender(invoice);
   const settled = Number(invoice.amountDue) <= 0;
   const { html, text } = renderEmail({

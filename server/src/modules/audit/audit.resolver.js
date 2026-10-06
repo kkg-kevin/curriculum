@@ -44,6 +44,7 @@ const ROOTS = {
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
+  "email-settings": { table: null, noun: "workspace", module: "people" },
   auth: { table: null, noun: "account", module: "account" },
   public: { table: null, noun: "website", module: "website" },
 };
@@ -94,6 +95,7 @@ const LINKED = {
 const SKIP = [
   /^\/api\/auth\/(activity|login|logout|forgot-password|reset-password|verify-password|signup)$/, // sign-in events: audit.service's recordAuth
   /^\/api\/notifications(\/|$)/, // marking your own notifications read
+  /^\/api\/public\/email-preferences\//, // your own email choices, from an email's footer link — the address carries that person's token
   /^\/api\/uploads(\/|$)/, // the upload itself; the save that uses the file is what's logged
   /^\/api\/audit(\/|$)/,
   /\/(preview|search|validate|check|export)$/, // work things out, save nothing
