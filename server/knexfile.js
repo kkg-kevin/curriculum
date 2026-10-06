@@ -30,10 +30,14 @@ module.exports = {
     dateStrings: ["DATE"],
     typeCast,
   },
-  // max:10 was thin for concurrent load at scale — MySQL's default max_connections (151) has
-  // plenty of headroom for a single Node process to use more than that; min:2 keeps a couple
-  // of connections warm instead of paying connect latency on every request after an idle spell.
-  pool: { min: 2, max: 30 },
+  // Shared hosting caps how many connections one MySQL user may hold (max_user_connections,
+  // often 10–30), and that cap is shared by every process signing in as that user — each app
+  // instance, the mail cron, phpMyAdmin. A pool bigger than the cap doesn't buy throughput, it
+  // makes MySQL refuse the connection mid-request ("already has more than 'max_user_connections'
+  // active connections"). So the pool stays well under it: a request needing more connections
+  // than the pool has waits its turn inside knex instead of failing. min:0 lets idle connections
+  // close, so a quiet app holds none. Raise DB_POOL_MAX only on a host with a known higher cap.
+  pool: { min: 0, max: Number(process.env.DB_POOL_MAX) || 8, idleTimeoutMillis: 30000 },
   migrations: {
     directory: "./src/db/migrations",
     tableName: "knex_migrations",

@@ -101,6 +101,7 @@ DB_PORT=3306
 DB_USER=
 DB_PASSWORD=
 DB_NAME=digifunzi
+DB_POOL_MAX=          # default 8 — keep it under the host's max_user_connections for DB_USER
 JWT_SECRET=
 CLIENT_URL=http://localhost:5173   # also the base of every link in an email
 # Outbound email — all optional. Unset, nothing is sent (locally the email is printed to the server log).
