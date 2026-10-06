@@ -79,6 +79,7 @@ import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
 import PublicLearnerProfilePage from "../modules/learners/pages/PublicLearnerProfilePage";
+import EmailPreferencesPage from "../modules/notifications/pages/EmailPreferencesPage";
 import CoursesPage from "../modules/courses/pages/CoursesPage";
 import CreateCoursePage from "../modules/courses/pages/CreateCoursePage";
 import EditCoursePage from "../modules/courses/pages/EditCoursePage";
@@ -127,6 +128,8 @@ export default function AppRoutes() {
           MainLayout wrapper on purpose: someone scanning a printed badge on their own phone is
           never expected to be logged in. */}
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
+      {/* Unauthenticated too — the "choose which emails you get" link in an email's footer. */}
+      <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 
       <Route element={<ProtectedRoute />}>
       {/* A collaborator (see RoleRoute.jsx) shares this whole admin tree — creation/editing

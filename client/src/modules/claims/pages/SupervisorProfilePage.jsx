@@ -6,6 +6,7 @@ import { authApi } from "../../auth/services/authApi";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { T, cardStyle, formatDate, inputStyle, primaryButton } from "../shared";
 import { Avatar } from "../components/supervisorParts";
+import EmailNotificationSettings from "../../../components/ui/EmailNotificationSettings";
 
 const label = { display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink };
 
@@ -87,6 +88,14 @@ export default function SupervisorProfilePage() {
           {field("again", "New password again", "new-password", mismatch ? "The two new passwords don't match." : undefined)}
           <button type="submit" disabled={!valid || saving} style={{ ...primaryButton(!valid || saving), alignSelf: "flex-start" }}>{saving ? "Saving…" : "Change password"}</button>
         </form>
+
+        <div style={{ ...cardStyle, padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 34, height: 34, borderRadius: 10, background: T.tintBg, color: T.accent, display: "grid", placeItems: "center" }}><FiMail size={15} /></span>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>Email notifications</h2>
+          </div>
+          <EmailNotificationSettings padding={0} />
+        </div>
       </div>
     </div>
   );

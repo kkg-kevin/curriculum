@@ -37,6 +37,7 @@ const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bo
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
+const { workspaceRouter: emailSettingsRoutes, publicRouter: publicEmailPreferenceRoutes } = require("./modules/notifications/email-settings.routes");
 const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
 const accessRoutes = require("./modules/access/access.routes");
 const sharingRoutes = require("./modules/sharing/sharing.routes");
@@ -148,6 +149,9 @@ app.use("/api/public", publicDiagnosticRoutes);
 // follow up on. The admin-only "mark paid" counterpart lives on the existing protected
 // /api/leads router instead (see lead.routes.js).
 app.use("/api/public", publicBootcampEnrollmentRoutes);
+// Unauthenticated by design — the "choose which emails you get" link in an email's footer. The
+// token in the link opens one account's email preferences and nothing else.
+app.use("/api/public", publicEmailPreferenceRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -198,6 +202,9 @@ app.use("/api/bootcamps", protect, attachOwnRecords, authorize("admin"), bootcam
 // Scoped entirely by req.user.id (see notification.routes.js) — every role shares this one
 // router, no attachOwnRecords/authorize needed.
 app.use("/api/notifications", protect, notificationRoutes);
+// Which emails the whole workspace sends (Settings → Emails). Owner-only, same guards as
+// /api/access: what a workspace emails its parents and educators is not a staff decision.
+app.use("/api/email-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, emailSettingsRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Hub Visits — a non-school hub logging learner space-usage visits and turning them into
 // hub_usage invoices through the Billing module above (see hub-visit.service.js's header

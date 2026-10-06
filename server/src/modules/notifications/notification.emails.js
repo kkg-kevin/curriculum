@@ -3,12 +3,17 @@
 // own (a child's username login) is never emailed — the parent's account gets its own copy of
 // every learner notification anyway (see notification.service.js's notifyLearner).
 //
+// A workspace's admin can also switch a type off for everyone in it (Settings → Emails, see
+// email-workspace.js); that is checked before the person's own choice.
+//
 // invoice_issued is deliberately absent: invoices have their own, fuller email (billing.emails.js).
 // assessment_submitted too — a teacher can get dozens of those in one lesson.
 const UserModel = require("../auth/user.model");
 const { queueMail } = require("../../shared/mail/mail.service");
 const { renderEmail, appUrl } = require("../../shared/mail/mail.layout");
 const { MAIL_BRAND_NAME } = require("../../config/env");
+const EmailSettingsModel = require("./email-settings.model");
+const { BILLING_EMAIL_TYPES, workspaceOf, workspaceAllows, preferencesToken, userForPreferencesToken } = require("./email-workspace");
 
 const LEARNER_ROLES = ["learner"];
 const ADMIN_ROLES = ["admin"];
@@ -98,9 +103,11 @@ function wantsEmail(user, type) {
   return typeof prefs[type] === "boolean" ? prefs[type] : def.default;
 }
 
-// What the "Email notifications" settings show for this user.
-function describePreferences(user) {
+// What the "Email notifications" settings show for this user. A type their workspace has switched
+// off is marked `workspaceOff`: it stays listed, but their own switch can't bring it back.
+async function describePreferences(user) {
   const prefs = user.emailPreferences || {};
+  const off = await EmailSettingsModel.disabledTypes(await workspaceOf(user));
   return {
     email: user.email || null,
     enabled: prefs.all !== false,
@@ -108,6 +115,7 @@ function describePreferences(user) {
       type,
       label: def.label,
       enabled: typeof prefs[type] === "boolean" ? prefs[type] : def.default,
+      workspaceOff: off.includes(type),
     })),
   };
 }
@@ -130,12 +138,15 @@ async function sendNotificationEmail(notification) {
     const user = await UserModel.findById(notification.recipientId);
     if (!wantsEmail(user, notification.type)) return null;
     const payload = notification.payload || {};
+    const ownerAdminId = notification.ownerAdminId || (await workspaceOf(user, { learnerId: payload.learnerId }));
+    if (!(await workspaceAllows(ownerAdminId, notification.type))) return null;
     const { html, text } = renderEmail({
       heading: notification.title,
       greeting: `Hi ${String(user.name || "").trim().split(/\s+/)[0] || "there"},`,
       paragraphs: [notification.message],
       button: { label: `Open ${MAIL_BRAND_NAME}`, url: appUrl(EMAIL_TYPES[notification.type].path(payload)) },
-      footerNote: `You're receiving this because email notifications are on for your ${MAIL_BRAND_NAME} account. To change which ones you get, sign in, open the notifications bell and choose "Email settings".`,
+      footerNote: `You're receiving this because email notifications are on for your ${MAIL_BRAND_NAME} account.`,
+      footerLink: { label: "Choose which emails you get, or stop them", url: appUrl(`/email-preferences?token=${preferencesToken(user.id)}&type=${notification.type}`) },
     });
     return await queueMail({
       to: user.email, subject: notification.title, html, text,
@@ -147,4 +158,34 @@ async function sendNotificationEmail(notification) {
   }
 }
 
-module.exports = { sendNotificationEmail, describePreferences, mergePreferences };
+// What Settings → Emails shows the admin: every email the workspace can send, grouped by who
+// receives it, and whether it is switched on.
+const groupFor = (roles) => {
+  if (roles === LEARNER_ROLES) return "Parents and learners";
+  if (roles === EDUCATOR_ROLES) return "Educators";
+  if (roles === CLAIM_REVIEWER_ROLES) return "You and your supervisors";
+  return "You (the admin)";
+};
+
+const WORKSPACE_TYPES = [
+  ...Object.entries(EMAIL_TYPES).map(([type, def]) => ({ type, label: def.label, group: groupFor(def.roles) })),
+  ...Object.entries(BILLING_EMAIL_TYPES).map(([type, def]) => ({ type, label: def.label, group: def.group })),
+];
+
+async function describeWorkspaceEmails(ownerAdminId) {
+  const off = await EmailSettingsModel.disabledTypes(ownerAdminId);
+  return { types: WORKSPACE_TYPES.map((t) => ({ ...t, enabled: !off.includes(t.type) })) };
+}
+
+// `types` is { <type>: boolean } for the ones being changed; anything not a known type is ignored.
+async function saveWorkspaceEmails(ownerAdminId, types = {}) {
+  const off = new Set(await EmailSettingsModel.disabledTypes(ownerAdminId));
+  for (const { type } of WORKSPACE_TYPES) {
+    if (types[type] === false) off.add(type);
+    if (types[type] === true) off.delete(type);
+  }
+  await EmailSettingsModel.saveDisabledTypes(ownerAdminId, [...off].filter((type) => WORKSPACE_TYPES.some((t) => t.type === type)));
+  return describeWorkspaceEmails(ownerAdminId);
+}
+
+module.exports = { sendNotificationEmail, describePreferences, mergePreferences, describeWorkspaceEmails, saveWorkspaceEmails, userForPreferencesToken };

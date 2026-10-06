@@ -118,8 +118,9 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!open) return;
     const close = (e) => {
-      // Keep the panel open while its own notification list is being scrolled.
-      if (panelRef.current?.contains(e.target)) return;
+      // Keep the panel open while its own notification list is being scrolled. (A resize's
+      // target is the window, which isn't a Node — contains() throws on it.)
+      if (e.target instanceof Node && panelRef.current?.contains(e.target)) return;
       setOpen(false);
     };
     window.addEventListener("scroll", close, true);

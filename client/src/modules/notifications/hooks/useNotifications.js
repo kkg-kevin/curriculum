@@ -42,15 +42,42 @@ export function useMarkAllNotificationsRead() {
 
 const EMAIL_PREFS_KEY = ["notifications", "email-preferences"];
 
-// Only fetched while the bell's "Email settings" section is actually open.
-export function useEmailPreferences({ enabled = true } = {}) {
-  return useQuery({ queryKey: EMAIL_PREFS_KEY, queryFn: notificationApi.getEmailPreferences, enabled });
+// Only fetched while the bell's "Email settings" section is actually open. With a `token` (the
+// link in an email's footer) it reads that account's preferences without a session.
+const emailPrefsKey = (token) => (token ? [...EMAIL_PREFS_KEY, token] : EMAIL_PREFS_KEY);
+
+export function useEmailPreferences({ enabled = true, token } = {}) {
+  return useQuery({
+    queryKey: emailPrefsKey(token),
+    queryFn: () => (token ? notificationApi.getEmailPreferencesByToken(token) : notificationApi.getEmailPreferences()),
+    enabled,
+    retry: token ? false : undefined,
+  });
 }
 
-export function useUpdateEmailPreferences() {
+export function useUpdateEmailPreferences({ token } = {}) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: notificationApi.updateEmailPreferences,
-    onSuccess: (data) => qc.setQueryData(EMAIL_PREFS_KEY, data),
+    mutationFn: (data) => (token ? notificationApi.updateEmailPreferencesByToken(token, data) : notificationApi.updateEmailPreferences(data)),
+    onSuccess: (data) => qc.setQueryData(emailPrefsKey(token), data),
+  });
+}
+
+const WORKSPACE_EMAILS_KEY = ["notifications", "workspace-emails"];
+
+// Which emails the whole workspace sends — Settings → Emails, owner only.
+export function useWorkspaceEmails() {
+  return useQuery({ queryKey: WORKSPACE_EMAILS_KEY, queryFn: notificationApi.getWorkspaceEmails });
+}
+
+export function useUpdateWorkspaceEmails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: notificationApi.updateWorkspaceEmails,
+    onSuccess: (data) => {
+      qc.setQueryData(WORKSPACE_EMAILS_KEY, data);
+      // The admin's own list shows which types the workspace has switched off.
+      qc.invalidateQueries({ queryKey: EMAIL_PREFS_KEY });
+    },
   });
 }

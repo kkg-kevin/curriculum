@@ -11,4 +11,10 @@ export const notificationApi = {
   // Which notifications this account also gets by email — { email, enabled, types: [{ type, label, enabled }] }.
   getEmailPreferences: () => api.get(`${ENDPOINT}/email-preferences`).then((r) => r.data.data),
   updateEmailPreferences: (data) => api.put(`${ENDPOINT}/email-preferences`, data).then((r) => r.data.data),
+  // The same two for someone who isn't signed in — the token comes from the link in an email's footer.
+  getEmailPreferencesByToken: (token) => api.get(`/api/public/email-preferences/${encodeURIComponent(token)}`).then((r) => r.data.data),
+  updateEmailPreferencesByToken: (token, data) => api.put(`/api/public/email-preferences/${encodeURIComponent(token)}`, data).then((r) => r.data.data),
+  // Which emails the whole workspace sends (owner only) — { types: [{ type, label, group, enabled }] }.
+  getWorkspaceEmails: () => api.get("/api/email-settings").then((r) => r.data.data),
+  updateWorkspaceEmails: (types) => api.put("/api/email-settings", { types }).then((r) => r.data.data),
 };
