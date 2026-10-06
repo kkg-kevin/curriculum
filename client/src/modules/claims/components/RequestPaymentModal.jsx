@@ -1,44 +1,29 @@
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { FiCheckCircle, FiFileText, FiLock, FiTrash2, FiUploadCloud } from "react-icons/fi";
+import { FiCheckCircle, FiFileText, FiLock, FiPlus, FiTrash2, FiUploadCloud } from "react-icons/fi";
 import { uploadApi } from "../../../services/uploadApi";
 import { useSubmitClaim } from "../hooks/useClaims";
-import { Dialog, T, formatMoney, formatRate, ghostButton, inputStyle, primaryButton } from "../shared";
+import { Dialog, T, formatMoney, ghostButton, inputStyle, primaryButton } from "../shared";
 
 const MAX_INVOICE_BYTES = 10 * 1024 * 1024;
 
-function Figure({ label, value, tone }) {
-  const tones = {
-    plain: { bg: "#fff", border: T.border, label: T.inkMuted },
-    amber: { bg: "#FFFBEB", border: "#FDE68A", label: "#B45309" },
-    blue: { bg: T.tintBg, border: T.tintBorder, label: T.accentMid },
-  };
-  const t = tones[tone] || tones.plain;
-  return (
-    <div style={{ padding: "12px 14px", borderRadius: 12, background: t.bg, border: `1px solid ${t.border}`, minWidth: 0 }}>
-      <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: t.label }}>{label}</p>
-      <p style={{ margin: "5px 0 0", fontSize: 17, fontWeight: 800, color: T.ink, fontVariantNumeric: "tabular-nums" }}>{value}</p>
-    </div>
-  );
-}
-
-// One of the two things an educator can ask for. Unavailable ones stay visible, with the reason,
-// so it's clear what would unlock them.
-function Option({ title, amount, description, blocked, selected, onSelect }) {
+// One of the two things an educator can ask for: a single row — name, amount, and (only when it
+// can't be chosen) the reason, so it's clear what would unlock it.
+function Option({ title, amount, blocked, selected, onSelect }) {
   return (
     <button
       type="button"
       disabled={!!blocked}
       onClick={onSelect}
       aria-pressed={selected}
-      style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", textAlign: "left", width: "100%", padding: "14px 16px", borderRadius: 12, cursor: blocked ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif", background: blocked ? "#F9FAFB" : selected ? T.tintBg : "#fff", border: `2px solid ${selected ? T.accent : T.border}`, opacity: blocked ? 0.75 : 1 }}
+      style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", padding: "12px 14px", borderRadius: 12, cursor: blocked ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif", background: blocked ? "#F9FAFB" : selected ? T.tintBg : "#fff", border: `2px solid ${selected ? T.accent : T.border}` }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: T.ink }}>{title}</span>
-        {selected ? <FiCheckCircle size={18} color={T.accent} /> : blocked ? <FiLock size={15} color={T.inkFaint} /> : null}
-      </div>
-      <p style={{ margin: "6px 0 0", fontSize: 20, fontWeight: 800, color: blocked ? T.inkFaint : T.accent, fontVariantNumeric: "tabular-nums" }}>{amount}</p>
-      <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: blocked ? "#B45309" : T.inkMuted }}>{blocked || description}</p>
+      {blocked ? <FiLock size={16} color={T.inkFaint} style={{ flexShrink: 0 }} /> : selected ? <FiCheckCircle size={18} color={T.accent} style={{ flexShrink: 0 }} /> : <span style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0, boxSizing: "border-box" }} />}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: blocked ? T.inkMuted : T.ink }}>{title}</span>
+        {blocked && <span style={{ display: "block", marginTop: 2, fontSize: 12, color: "#B45309" }}>{blocked}</span>}
+      </span>
+      <span style={{ fontSize: 15, fontWeight: 800, color: blocked ? T.inkFaint : T.accent, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{amount}</span>
     </button>
   );
 }
@@ -53,10 +38,12 @@ export default function RequestPaymentModal({ course, onClose }) {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const money = (value) => formatMoney(value, course.currency);
   const amount = type === "advance" ? course.advanceAmount : type === "full" ? course.balance : 0;
   const busy = uploading || submit.isPending;
+  const reviewer = course.supervisor ? "your supervisor" : "the admin";
 
   const attach = async (file) => {
     if (!file) return;
@@ -86,37 +73,21 @@ export default function RequestPaymentModal({ course, onClose }) {
   };
 
   return (
-    <Dialog title="Request payment" subtitle={`${course.courseName}${course.className ? ` · ${course.className}` : ""}`} onClose={onClose} busy={busy} width={640}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-        <Figure label="Course value" value={money(course.courseAmount)} />
-        <Figure label="Advance requested" value={money(course.advanceRequested)} tone="amber" />
-        <Figure label="Balance" value={money(course.balance)} tone="blue" />
-      </div>
-      <p style={{ margin: "8px 2px 0", fontSize: 12, color: T.inkMuted }}>
-        {course.sessionsTotal} sessions × {formatRate(course.sessionRate, course.currency)} a session · {course.sessionsDelivered} delivered so far
+    <Dialog title="Request payment" subtitle={`${course.courseName}${course.className ? ` · ${course.className}` : ""}`} onClose={onClose} busy={busy} width={480}>
+      {/* The course page behind this dialog already shows the full breakdown — here, just enough
+          to pick an option. */}
+      <p style={{ margin: "0 0 12px", fontSize: 12.5, color: T.inkMuted }}>
+        Course value <strong style={{ color: T.ink }}>{money(course.courseAmount)}</strong> · {course.sessionsDelivered} of {course.sessionsTotal} sessions delivered
+        {course.advanceRequested > 0 && <> · {money(course.advanceRequested)} advance already requested</>}
       </p>
 
-      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>What are you requesting?</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-        <Option
-          title={`Advance (${course.advancePercent}%)`}
-          amount={money(course.advanceAmount)}
-          description={`${course.advancePercent}% of the course value, paid before the course is finished. It comes off your full payment later.`}
-          blocked={course.advanceBlocked}
-          selected={type === "advance"}
-          onSelect={() => setType("advance")}
-        />
-        <Option
-          title="Full payment"
-          amount={money(course.balance)}
-          description={course.advanceRequested > 0 ? `The course value less your ${money(course.advanceRequested)} advance.` : "The whole course value, once every session is delivered."}
-          blocked={course.fullBlocked}
-          selected={type === "full"}
-          onSelect={() => setType("full")}
-        />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <Option title={`Advance (${course.advancePercent}%)`} amount={money(course.advanceAmount)} blocked={course.advanceBlocked} selected={type === "advance"} onSelect={() => setType("advance")} />
+        <Option title="Full payment" amount={money(course.balance)} blocked={course.fullBlocked} selected={type === "full"} onSelect={() => setType("full")} />
       </div>
+      {type === "advance" && <p style={{ margin: "8px 2px 0", fontSize: 12, color: T.inkMuted }}>The advance comes off your full payment later.</p>}
 
-      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>Your invoice</p>
+      <div style={{ height: 16 }} />
       <input ref={fileInput} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => { attach(e.target.files?.[0]); e.target.value = ""; }} />
       {invoice ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
@@ -135,27 +106,30 @@ export default function RequestPaymentModal({ course, onClose }) {
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => { e.preventDefault(); setDragging(false); attach(e.dataTransfer.files?.[0]); }}
-          style={{ width: "100%", padding: "26px 16px", borderRadius: 12, cursor: uploading ? "progress" : "pointer", fontFamily: "Inter, sans-serif", textAlign: "center", background: dragging ? T.tintBg : "#fff", border: `2px dashed ${dragging ? T.accent : T.tintBorder}` }}
+          style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 14px", borderRadius: 12, cursor: uploading ? "progress" : "pointer", fontFamily: "Inter, sans-serif", textAlign: "left", background: dragging ? T.tintBg : "#fff", border: `2px dashed ${dragging ? T.accent : T.tintBorder}` }}
         >
-          <FiUploadCloud size={26} color={T.accentLight} />
-          <p style={{ margin: "8px 0 0", fontSize: 14, fontWeight: 700, color: T.ink }}>{uploading ? "Uploading…" : "Upload your PDF invoice"}</p>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: T.inkMuted }}>Click to choose a file, or drag it here. PDF only, up to 10 MB.</p>
+          <FiUploadCloud size={22} color={T.accentLight} style={{ flexShrink: 0 }} />
+          <span>
+            <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: T.ink }}>{uploading ? "Uploading…" : "Attach your invoice"}</span>
+            <span style={{ display: "block", marginTop: 1, fontSize: 12, color: T.inkMuted }}>PDF, up to 10 MB</span>
+          </span>
         </button>
       )}
 
-      <label style={{ display: "block", margin: "16px 0 6px", fontSize: 12.5, fontWeight: 700, color: T.ink }} htmlFor="claim-note">Note for {course.supervisor ? "your supervisor" : "the admin"} <span style={{ fontWeight: 500, color: T.inkFaint }}>(optional)</span></label>
-      <textarea id="claim-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} placeholder="Anything they should know about this claim" style={{ ...inputStyle, resize: "vertical" }} />
+      {noteOpen ? (
+        <textarea id="claim-note" autoFocus aria-label={`Note for ${reviewer}`} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} placeholder={`Note for ${reviewer} (optional)`} style={{ ...inputStyle, resize: "vertical", marginTop: 10 }} />
+      ) : (
+        <button type="button" onClick={() => setNoteOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 10, padding: 0, border: "none", background: "none", color: T.accent, fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          <FiPlus size={13} /> Add a note for {reviewer}
+        </button>
+      )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
-        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
-          {type ? <>You're requesting <strong style={{ color: T.ink }}>{money(amount)}</strong></> : "Nothing can be requested for this course right now."}
-        </p>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button type="button" onClick={onClose} disabled={busy} style={ghostButton}>Cancel</button>
-          <button type="button" onClick={send} disabled={!type || !invoice || busy} style={primaryButton(!type || !invoice || busy)}>
-            {submit.isPending ? "Sending…" : "Submit payment request"}
-          </button>
-        </div>
+      {!type && <p style={{ margin: "14px 0 0", fontSize: 12.5, color: "#B45309" }}>Nothing can be requested for this course right now.</p>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+        <button type="button" onClick={onClose} disabled={busy} style={ghostButton}>Cancel</button>
+        <button type="button" onClick={send} disabled={!type || !invoice || busy} style={primaryButton(!type || !invoice || busy)}>
+          {submit.isPending ? "Sending…" : type ? `Request ${money(amount)}` : "Request payment"}
+        </button>
       </div>
     </Dialog>
   );
