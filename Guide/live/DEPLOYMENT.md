@@ -102,6 +102,159 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (6 Oct 2026) — Fix: pages failing with "max_user_connections" (database connection pool)
+
+**Backend only, rebuilt for Dev, Live and Capable.** The portal (`assets.zip` + `index.html`) and
+the website zip are unchanged from the 5 Oct release below — no need to re-upload them.
+Cumulative: if the 5 Oct release isn't deployed yet, this backend zip carries it too and its
+steps (database backup, migrations, deploy backend and portal together) still apply.
+
+### What was wrong
+
+Pages stopped loading with *"User … already has more than 'max_user_connections' active
+connections"*. The backend kept up to 30 database connections open (2 permanently), which is
+more than the hosting allows one MySQL user.
+
+### What changed
+
+`knexfile.js`: the pool now holds at most **8** connections and closes idle ones after 30
+seconds. A page that needs more at once waits its turn instead of failing. No migration, no new
+npm package — **Run NPM Install can be skipped**.
+
+New optional environment variable **`DB_POOL_MAX`** (default 8). Leave it unset unless the
+host's limit is known: keep it under `max_user_connections` for the app's MySQL user
+(phpMyAdmin → `SHOW VARIABLES LIKE 'max_user_connections';`). If the limit is 10 or less, set
+`DB_POOL_MAX` to about half of it.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `175eec4` plus the uncommitted `knexfile.js` change (`git archive` of
+`server/`, same contents as before, **445 entries**) — identical in Dev, Live and Capable.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Restart**. The restart itself drops every connection the
+   old code was holding.
+2. **Verify:** open several pages in a row, including an educator's Claims → a course. In
+   phpMyAdmin, `SHOW PROCESSLIST;` should show no more than 8 connections for the app's user,
+   falling away when the app is idle.
+3. **Each environment needs its own MySQL user.** If Dev, Live or Capable share one, they share
+   one limit — give each its own user, or lower `DB_POOL_MAX` on each.
+
+---
+
+## This release (5 Oct 2026) — Educator claims (mentor → supervisor → admin pays); supervisor portal; activity log
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `175eec4`
+(curriculum, branch `modules`). The website was rebuilt too, from the same `ca9a713`
+(digifunzi-landing, branch `new`) as last time: its code has not changed, only the pre-rendered
+pages were refreshed. Cumulative: if the 2 Oct and 1 Oct releases below aren't deployed yet, these
+zips carry them too and their steps (database backup, environment variables, everyone signs in
+again once) still apply. Verify on Dev first as usual.
+
+**Deploy the backend and the portal together** — the portal calls new endpoints (`/api/claims`,
+`/api/audit`) and the backend must know the new "supervisor" sign-in role before anyone uses it.
+The website can be uploaded at any point; it does not depend on this release.
+
+### New migrations (auto-apply on Restart)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261006090000_create_audit_log.js` | Creates `audit_log` (the activity log: who did what, to which record, when, and what changed) | none changed — additive only |
+| `20261007090000_create_teacher_claims.js` | Creates `teacher_claims` (an educator's payment request for a course) and `claim_settings` (per workspace: session rate, advance %); adds nullable `teachers.sessionRate` | none changed — every educator starts on the workspace rate |
+| `20261008090000_add_claim_supervisors.js` | Adds `supervisor` to the allowed values of `users.role`; adds nullable `teachers.supervisorId` | none changed — every educator starts with no supervisor. (It also moves any claim a supervisor had approved under an earlier two-approval flow to "to pay"; a first deploy has no such claims.) |
+
+**Take a database backup before the Restart** — the third migration alters the `users.role`
+column. No new environment variable. No new npm package, so **Run NPM Install can be skipped** if
+the app already has its modules.
+
+### What changed
+
+1. **Educator claims — how an educator gets paid for a course.** In the educator portal,
+   **Claims** lists every course the educator teaches with what it pays (sessions × the session
+   rate), sessions delivered, and where its claim stands; filters by status, hub and home/hub,
+   search and sort. Opening a course shows each session with every student's attendance, whether
+   their assignment was graded and whether their report is done. **Request payment** asks for an
+   **advance** (30% of the course's value, once, while the course is running) or the **full
+   payment** (the course's value less any advance, once every session is delivered), with the
+   educator's invoice attached as a PDF.
+2. **Supervisor accounts.** Billing → Educator Claims → **Supervisors** creates accounts that
+   exist only to review claims (name, email, password; the email must not already be used by
+   another account). An educator is given a supervisor on the educator form's new, optional
+   **Claims supervisor** field.
+3. **The flow.** An educator's claim goes to their supervisor, who **approves** it — it then goes
+   straight to the admin's **To pay** list — or **declines** it with a message the educator sees
+   (they can claim again). The admin marks it **paid**, with an optional reference and date. An
+   educator with **no supervisor** has their claim go straight to the admin, who approves or
+   declines it and then pays. The admin can also decide a claim in a supervisor's place.
+   Removing a supervisor unassigns their educators and passes their waiting claims to the admin.
+4. **Supervisor portal.** A supervisor signs in on the normal login page and gets their own
+   portal (sidebar: Dashboard, Claims, My Educators, My Profile). They see only their own
+   educators' claims. The Claims page handles volume: cards or a sortable table, filters (status,
+   educator, hub, type, date, waiting 3+ days), paging, CSV export and month-by-month paid totals.
+5. **Where the admin finds it.** Educator Claims is a tab in **Billing**, next to Packages: With
+   supervisor · Needs your approval · To pay · Paid · Declined. **Session rates** sets the rate
+   per session (default KSh 904.666), the advance percentage (default 30) and an optional rate of
+   their own for individual educators. Course totals are rounded to the whole shilling.
+6. **Staff roles.** Two new permissions under Finance in Settings → Roles & access: **Educator
+   claims (review for a supervisor)** and **Claim approvals & payment**. No existing role has
+   them, so staff see no change until a role is given one. The Billing menu item also shows for
+   staff who have a claims permission but not Billing; it opens straight onto the claims.
+7. **Notifications.** In-app (and by email, where email is set up) at each step: the supervisor
+   or admin when a claim arrives, the admin when a supervisor approves, the educator when their
+   claim is approved, declined or paid.
+8. **Activity log.** Every change anyone makes, and every sign-in, is recorded automatically:
+   who, what, which record, when, and what changed. New **Activity** page in the sidebar (owner,
+   and staff given the new **Activity log** permission) with filters and a CSV export; a
+   **History** card on bootcamp, learner and assessment pages; and each staff member's last
+   activity under Settings → People & sharing. Entries can't be edited or removed and are kept
+   for two years. Request contents and passwords are never stored.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `175eec4` (`git archive` of `server/`: `src/`, `knexfile.js`, `package.json`,
+`package-lock.json`; **445 entries / 396 files**) — identical in Dev, Live and Capable. New
+`src/modules/claims/`, `src/modules/audit/` and `src/shared/middleware/audit.middleware.js`.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-sCMMe9kN.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-CwoGviqO.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-D-3a-a11.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps), no failed
+requests. Same zip in `Guide/dev/` and `Guide/live/`; still talks to the Dev backend
+(`nodeapp.digifunzi.com`). No website code changed in this release — this is the 2 Oct website
+with its pages re-rendered from the Dev API as it is today. Upload the whole zip, including
+`.htaccess`, `200.html` and `404.html`.
+
+### Deploy order
+
+1. **Database backup.**
+2. **Backend** `backend-deploy.zip` → **Restart**. The app log should show the three migrations
+   above applied (plus any from the releases below not yet deployed).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+5. **Verify:**
+   - Billing shows a fifth tab, **Educator Claims**. **Supervisors** → create one. **Session
+     rates** shows 904.666 and 30.
+   - Educators → edit an educator → **Claims supervisor** → pick the supervisor → save.
+   - Sign in as that educator → **Claims** → open a course → **Request payment** → attach a PDF →
+     submit. The claim shows "With supervisor".
+   - Sign in as the supervisor (normal login page) → the portal opens on their dashboard with the
+     claim under **Needs your review** → open it → **Approve for payment**.
+   - As the admin: Billing → Educator Claims → **To pay** → open the claim → **Mark as paid**. The
+     educator's course page shows it as Paid.
+   - Remove the supervisor from the educator, submit another claim as the educator: it appears
+     under **Needs your approval** for the admin.
+   - **Activity** in the sidebar lists the steps above, each with who did it.
+
+---
+
 ## This release (2 Oct 2026) — Bootcamp games; sharing between admins; People & sharing tab; staff use of Settings data; partial-update fix
 
 **Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `fb677c6`
