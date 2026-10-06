@@ -14,6 +14,7 @@ function filtersFrom(query) {
   const from = text(query.from);
   const to = text(query.to);
   return {
+    view: text(query.view), // a tab of the Activity page: signins | added | edited | deleted | problems
     actorUserId: text(query.actor),
     module: text(query.module),
     action: text(query.action),
@@ -30,6 +31,10 @@ function filtersFrom(query) {
 router.get("/", asyncHandler(async (req, res) => {
   const result = await AuditService.list(req.ownerAdminId, filtersFrom(req.query), { page: req.query.page, pageSize: req.query.pageSize });
   res.json({ success: true, data: result });
+}));
+
+router.get("/counts", asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await AuditService.counts(req.ownerAdminId, filtersFrom(req.query)) });
 }));
 
 router.get("/facets", asyncHandler(async (req, res) => {

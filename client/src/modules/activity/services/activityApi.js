@@ -9,6 +9,9 @@ const clean = (filters) => Object.fromEntries(Object.entries(filters || {}).filt
 export const activityApi = {
   // { items, hasMore, page } — newest first.
   list: (filters, page = 1) => api.get(BASE, { params: { ...clean(filters), page, pageSize: 50 } }).then((r) => r.data.data),
+  // { all, signins, added, edited, deleted, problems } — how many entries each tab holds, for the
+  // other filters in use.
+  counts: (filters) => api.get(`${BASE}/counts`, { params: clean(filters) }).then((r) => r.data.data),
   // { actors: [{ id, name, email, role, lastActiveAt, entries }], modules, retentionDays }
   facets: () => api.get(`${BASE}/facets`).then((r) => r.data.data),
   // The same entries as a spreadsheet file.
