@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock, FiHome, FiCalendar, FiLayers, FiTarget, FiMap,
+  FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock, FiHome, FiCalendar, FiLayers, FiTarget, FiMap, FiUsers,
 } from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
@@ -447,6 +447,25 @@ function AttendanceSummary({ attendance }) {
   );
 }
 
+// A small pill per teacher — they're context for the hub, not the point of the page. Photo when
+// the teacher has one, initials otherwise (and initials again if the photo fails to load, same
+// fallback the hero's Avatar uses). The course(s) they teach sit in the tooltip.
+function TeacherPill({ teacher }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const name = `${teacher.firstName || ""} ${teacher.lastName || ""}`.trim() || "Teacher";
+  const initials = `${teacher.firstName?.[0] ?? ""}${teacher.lastName?.[0] ?? ""}`.toUpperCase() || "?";
+  return (
+    <span title={teacher.courses?.length > 0 ? `Teaches ${teacher.courses.join(", ")}` : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "3px 10px 3px 3px", borderRadius: 20, backgroundColor: "#F3F6FA", border: `1px solid ${BORDER}` }}>
+      <span style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg, ${ACCENT}, ${GRAD_TO})`, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 800, flexShrink: 0, overflow: "hidden" }}>
+        {teacher.photo && !imgFailed
+          ? <img src={teacher.photo} alt="" onError={() => setImgFailed(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : initials}
+      </span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: INK }}>{name}</span>
+    </span>
+  );
+}
+
 // Everything the page knows about the learner at one hub. Levels, competencies and pathways all
 // come from that hub's class and its curriculum, so a learner at several hubs gets a separate,
 // independent picture for each (see buildPublicHubSection on the server).
@@ -460,7 +479,8 @@ function HubPanel({ hub }) {
 
   return (
     <>
-      <div className="df-pp-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+      <div className="df-pp-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <div style={{ width: 46, height: 46, borderRadius: 13, background: `linear-gradient(135deg, ${ACCENT}, ${GRAD_TO})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <FiHome size={20} />
@@ -474,6 +494,13 @@ function HubPanel({ hub }) {
           {stage?.name && <Chip label={[stage.name, formatAgeRange(stage.minAge, stage.maxAge)].filter(Boolean).join(" · ")} color={ACCENT} bg="#e8f5fb" />}
           <Chip {...status} />
         </div>
+        </div>
+        {hub.teachers?.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 14, paddingTop: 12, borderTop: "1px solid #F1F4F8" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 600, color: INK_MUTED }}><FiUsers size={12} /> {hub.teachers.length === 1 ? "Teacher" : "Teachers"}</span>
+            {hub.teachers.map((t, i) => <TeacherPill key={i} teacher={t} />)}
+          </div>
+        )}
       </div>
 
       {!classLabel ? (
@@ -542,7 +569,7 @@ function HubPanel({ hub }) {
 // The scan destination for a learner's "Share Profile" QR code (see LearnerViewPage.jsx's
 // ShareProfileCard) — deliberately reachable with no login. Renders whatever
 // learner.service.js's getPublicProfile chose to expose: identity, the guardian's name, and one
-// section per hub with that hub's levels, competencies, pathways, courses and attendance. Never
+// section per hub with that hub's teachers, levels, competencies, pathways, courses and attendance. Never
 // guardian contact details, fees, or individual assessment scores/teacher feedback.
 //
 // A 404 is the only real signal that the token was regenerated (old QR/link retired) — see
