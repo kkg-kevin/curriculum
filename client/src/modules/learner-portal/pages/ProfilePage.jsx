@@ -129,7 +129,7 @@ export default function ProfilePage() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
           <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
-          <ShareProfileCard learnerId={learner.id} />
+          <ShareProfileCard learner={learner} />
           <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
         </div>
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />

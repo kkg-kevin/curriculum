@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock } from "react-icons/fi";
+import {
+  FiAward, FiCheckCircle, FiTrendingUp, FiBookOpen, FiCompass, FiStar, FiCheck, FiLock, FiHome, FiCalendar, FiLayers, FiTarget, FiMap,
+} from "react-icons/fi";
 import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { formatAgeRange } from "../utils/ageRange";
@@ -10,110 +12,84 @@ const GRAD_FROM = "#1a3550";
 const GRAD_TO = "#38aae1";
 const ACCENT = "#25476a";
 const GOLD = "#feb139";
-const BORDER = "#E5E7EB";
+const GREEN = "#059669";
+const AMBER = "#D97706";
+const BORDER = "#E6EBF2";
 const INK = "#111827";
 const INK_MUTED = "#6B7280";
 const INK_FAINT = "#9CA3AF";
 
-const sectionStyle = { padding: "20px 24px", borderTop: `1px solid #F3F4F6` };
-
 // Scoped global styles rather than inline style objects, same pattern AuthLayout.jsx already uses
 // for its own standalone (outside MainLayout) full-page shell — inline JS style objects can't
-// express @media breakpoints. Two things this buys over the page's old fixed-480px mobile card:
-// (1) the outer page centers its card both axes, not just horizontally — short states (loading,
-// invalid-link) no longer sit pinned at the top of an otherwise-empty gradient wall; (2) the card
-// widens and the hero switches to a horizontal (photo-left, text-right) layout past 768px, since
-// this link is also copy/paste-shareable (see ShareProfileCard's Copy button), not only ever
-// opened by a QR scan on a phone — a 480px mobile card centered in a 1280px desktop viewport reads
-// as unfinished rather than deliberate.
+// express @media breakpoints. This is a full page (a hero band, then sections on the page's own
+// background), not a card floating on a gradient: the link is opened on desktops as often as it's
+// scanned on a phone, and one hub's levels/competencies/pathways need the width.
 function PageStyles() {
   return (
     <style>{`
-      .df-public-page {
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 32px 16px;
-        font-family: 'Inter', sans-serif;
+      .df-pp { min-height: 100vh; background-color: #F3F6FA; font-family: 'Inter', sans-serif; color: ${INK}; }
+      .df-pp-wrap { max-width: 1120px; margin: 0 auto; }
+      .df-pp-hero {
         background: linear-gradient(135deg, ${GRAD_FROM} 0%, ${ACCENT} 45%, ${GRAD_TO} 100%);
+        padding: 20px 16px 76px; position: relative; overflow: hidden;
       }
-      .df-public-card {
-        width: 100%;
-        max-width: 480px;
-        background-color: #ffffff;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      .df-pp-hero-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; position: relative; padding-top: 20px; }
+      .df-pp-body { max-width: 1120px; margin: -52px auto 0; padding: 0 16px 40px; display: flex; flex-direction: column; gap: 16px; position: relative; }
+      .df-pp-card { background-color: #fff; border: 1px solid ${BORDER}; border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(16,24,40,0.04); }
+      .df-pp-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .df-pp-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+      .df-pp-tab {
+        flex: 0 0 auto; min-width: 150px; text-align: left; padding: 10px 14px; border-radius: 12px; cursor: pointer;
+        font-family: inherit; background-color: #fff; border: 1.5px solid ${BORDER}; color: ${INK}; transition: border-color 0.15s ease, background-color 0.15s ease;
       }
-      @media (min-width: 640px) {
-        .df-public-card { max-width: 600px; }
+      .df-pp-tab:hover { border-color: ${GRAD_TO}; }
+      .df-pp-tab[aria-selected="true"] { background-color: ${ACCENT}; border-color: ${ACCENT}; color: #fff; }
+      .df-pp-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .df-pp-level { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: center; }
+      .df-pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+      .df-pp-two { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+      @media (min-width: 720px) {
+        .df-pp-hero { padding: 24px 32px 92px; }
+        .df-pp-hero-inner { flex-direction: row; text-align: left; gap: 24px; }
+        .df-pp-body { padding: 0 32px 56px; gap: 20px; }
+        .df-pp-card { padding: 24px 28px; }
+        .df-pp-facts { grid-template-columns: repeat(5, 1fr); }
+        .df-pp-stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
       }
-      @media (min-width: 1024px) {
-        .df-public-card { max-width: 760px; }
+      @media (min-width: 900px) {
+        .df-pp-level { grid-template-columns: 300px 1fr; gap: 36px; }
+        .df-pp-two { grid-template-columns: 1fr 1fr; }
       }
-      .df-public-hero {
-        background: linear-gradient(135deg, ${GRAD_FROM} 0%, ${ACCENT} 45%, ${GRAD_TO} 100%);
-        padding: 32px 24px 26px;
-        position: relative;
-        overflow: hidden;
-      }
-      .df-public-hero-inner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 14px;
-        position: relative;
-      }
-      .df-public-hero-text {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        text-align: center;
-      }
-      .df-public-hero-pills {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 4px;
-        position: relative;
-      }
-      @media (min-width: 768px) {
-        .df-public-hero { padding: 40px; }
-        .df-public-hero-inner { flex-direction: row; align-items: center; gap: 28px; }
-        .df-public-hero-text { align-items: flex-start; text-align: left; }
-        .df-public-hero-pills { justify-content: flex-start; }
-      }
+      .df-pp-state { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
       @keyframes df-lj-pulse-glow {
         0%, 100% { transform: scale(0.94); opacity: 0.9; }
         50% { transform: scale(1.12); opacity: 0.35; }
       }
       .df-lj-pulse { animation: df-lj-pulse-glow 2.2s ease-in-out infinite; }
-      .df-public-identity-grid {
-        display: grid;
-        /* Fixed at 2 columns rather than switching to 3 above 640px — with exactly 4 fields
-           (Registration Number, Nationality, Languages, Username), 3 columns always strands the
-           4th alone on its own row with empty space beside it; 2 columns pairs all 4 cleanly at
-           any width instead (auto-fit doesn't help here — it still fits 3 across on a wide card,
-           same stranding). */
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px 16px;
-      }
     `}</style>
   );
 }
 
-function SectionHeading({ icon: Icon, children }) {
+function SectionHeading({ icon: Icon, title, aside }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-      <div style={{ width: 22, height: 22, borderRadius: 7, backgroundColor: "#e8f5fb", color: ACCENT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={12} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: "#e8f5fb", color: ACCENT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={15} />
+        </div>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: INK }}>{title}</h2>
       </div>
-      <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: GRAD_TO, textTransform: "uppercase", letterSpacing: "0.07em" }}>{children}</h2>
+      {aside}
     </div>
   );
+}
+
+function Chip({ label, color, bg }) {
+  return <span style={{ fontSize: 11, fontWeight: 700, color, backgroundColor: bg, borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>{label}</span>;
+}
+
+function EmptyNote({ children }) {
+  return <p style={{ margin: 0, fontSize: 13, color: INK_MUTED, lineHeight: 1.5 }}>{children}</p>;
 }
 
 // White-on-gradient avatar — a translucent fill (rather than this file's own brand gradient) so a
@@ -131,7 +107,7 @@ function Avatar({ firstName, lastName, photo }) {
   const ring = { border: "3px solid rgba(255,255,255,0.55)", boxShadow: "0 6px 18px rgba(0,0,0,0.18)" };
   const showPhoto = !!photo && !imgFailed;
   return (
-    <div style={{ position: "relative", width: 96, height: 96, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 800, color: "#ffffff", ...ring }}>
+    <div style={{ position: "relative", width: 104, height: 104, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800, color: "#ffffff", flexShrink: 0, ...ring }}>
       {initials || "?"}
       {showPhoto && (
         <img
@@ -149,104 +125,87 @@ function Avatar({ firstName, lastName, photo }) {
   );
 }
 
-function Row({ label, value }) {
-  if (!value) return null;
+function Fact({ label, value }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
-      <span style={{ fontSize: 14, color: INK, fontWeight: 500 }}>{value}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+      <span style={{ fontSize: 10.5, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+      <span style={{ fontSize: 14, color: value ? INK : INK_FAINT, fontWeight: 600, overflowWrap: "anywhere" }}>{value || "—"}</span>
     </div>
   );
 }
 
-// Translucent white-on-gradient badge for the hero — same "eyebrow + value + sub" shape as the
-// learner portal's own ProfileIdentityCard StatusPill, condensed to fit this page's smaller card.
-function HeroPill({ icon: Icon, label, sub }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "7px 12px", backdropFilter: "blur(2px)" }}>
-      <Icon size={13} color="#fff" style={{ flexShrink: 0 }} />
-      <div style={{ textAlign: "left" }}>
-        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: "#fff", lineHeight: 1.3 }}>{label}</p>
-        {sub && <p style={{ margin: 0, fontSize: 10.5, color: "rgba(255,255,255,0.68)", lineHeight: 1.3 }}>{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-// Gold icon chip + big number, matching the learner portal's own PortfolioSnapshot Stat tiles —
-// these figures are always real data here (the pill only renders once its value exists), so the
-// "preview/greyed" state that component supports never applies on this page.
-function Pill({ icon: Icon, label, value }) {
-  return (
-    <div style={{ backgroundColor: "#FAFBFF", border: `1px solid ${BORDER}`, borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: "#FEF3E2", color: GOLD, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={13} />
-      </div>
-      <div>
-        <p style={{ margin: 0, fontSize: 10.5, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
-        <p style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 800, color: INK }}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-// Gold ring + pulsing glow around whichever node the learner is actively working toward —
-// mirrors the learner portal's own ProgressArcCard (client/src/modules/learner-portal/
-// components/ProgressArcCard.jsx), rebuilt standalone here since this page is deliberately
-// self-contained (no login, no shared authenticated-portal component tree to reach into).
-function ProgressRing({ percent, size, stroke }) {
+// A percent ring with whatever sits in its centre — the one shape the level, each competency and
+// each ladder node all share, so a glance at any of them reads the same way.
+function Ring({ percent, size, stroke, color, track = "#EEF2F6", children }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const clamped = Math.min(100, Math.max(0, percent));
-  const offset = circumference * (1 - clamped / 100);
+  const clamped = Math.min(100, Math.max(0, percent || 0));
   return (
-    <svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#FDE9C0" strokeWidth={stroke} />
-      <circle
-        cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={GOLD} strokeWidth={stroke}
-        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-        style={{ transition: "stroke-dashoffset 0.5s ease" }}
-      />
-    </svg>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={track} strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={stroke}
+          strokeDasharray={circumference} strokeDashoffset={circumference * (1 - clamped / 100)} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.5s ease" }}
+        />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>{children}</div>
+    </div>
   );
 }
+
+function StatTile({ icon: Icon, label, value, sub, tint = "#FEF3E2", color = GOLD }) {
+  return (
+    <div className="df-pp-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: tint, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={17} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: INK, lineHeight: 1.2, overflowWrap: "anywhere" }}>{value}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: INK_MUTED }}>{label}</p>
+        {sub && <p style={{ margin: "1px 0 0", fontSize: 10.5, color: INK_FAINT }}>{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Levels ───────────────────────────────────────────────────────────────── */
 
 // achieved = filled gradient medal, current = gold percent ring + pulsing halo ("you are here"),
 // locked = flat dashed disc with a padlock — same three-state visual language as the
-// authenticated Progress Arc card, just sized to fit this smaller shared-profile card.
+// authenticated Progress Arc card (learner-portal's ProgressArcCard.jsx), rebuilt standalone here
+// since this page is deliberately self-contained (no login, no shared portal component tree).
 function LevelNode({ band, status, ordinal }) {
   const achieved = status === "achieved";
   const current = status === "current";
-  const size = 56;
+  const size = 64;
+  const disc = (
+    <div
+      style={{
+        position: "absolute", inset: current ? 8 : 0, borderRadius: "50%",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: achieved ? "linear-gradient(135deg, #34d399, #059669)" : current ? "#FFFBEB" : "#fff",
+        border: achieved ? "none" : current ? `1px solid ${GOLD}` : `1.5px dashed #D1D5DB`,
+        boxShadow: achieved ? "0 4px 12px rgba(5,150,105,0.35)" : "none",
+        color: achieved ? "#fff" : current ? "#B45309" : INK_FAINT,
+        fontSize: 12, fontWeight: 800,
+      }}
+    >
+      {achieved ? <FiCheck size={20} /> : current ? `${Math.round(band.completion)}%` : <FiLock size={16} />}
+    </div>
+  );
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 82 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 92 }}>
       <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-        {current && (
-          <>
-            <div className="df-lj-pulse" style={{ position: "absolute", inset: -5, borderRadius: "50%", backgroundColor: "rgba(254,177,57,0.28)" }} />
-            <ProgressRing percent={band.completion} size={size} stroke={5} />
-          </>
-        )}
-        <div
-          style={{
-            position: "absolute", inset: current ? 7 : 0, borderRadius: "50%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: achieved ? "linear-gradient(135deg, #34d399, #059669)" : current ? "#FFFBEB" : "#fff",
-            border: achieved ? "none" : current ? `1px solid ${GOLD}` : `1.5px dashed ${BORDER}`,
-            boxShadow: achieved ? "0 4px 12px rgba(5,150,105,0.35)" : "none",
-            color: achieved ? "#fff" : current ? "#B45309" : INK_FAINT,
-            fontSize: 11, fontWeight: 800,
-          }}
-        >
-          {achieved ? <FiCheck size={17} /> : current ? `${Math.round(band.completion)}%` : <FiLock size={14} />}
-        </div>
+        {current && <div className="df-lj-pulse" style={{ position: "absolute", inset: -5, borderRadius: "50%", backgroundColor: "rgba(254,177,57,0.28)" }} />}
+        {current ? <Ring percent={band.completion} size={size} stroke={6} color={GOLD} track="#FDE9C0">{null}</Ring> : null}
+        {disc}
       </div>
       <div style={{ textAlign: "center" }}>
-        <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: achieved ? "#059669" : current ? "#B45309" : INK_FAINT, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Level {ordinal}
-        </p>
-        <p style={{ margin: "1px 0 0", fontSize: 11.5, fontWeight: 700, color: achieved || current ? INK : INK_FAINT }}>{band.name}</p>
-        <p style={{ margin: "1px 0 0", fontSize: 9.5, fontWeight: 700, color: achieved ? "#059669" : current ? GOLD : INK_FAINT }}>
+        <p style={{ margin: 0, fontSize: 9.5, fontWeight: 800, color: achieved ? GREEN : current ? "#B45309" : INK_FAINT, textTransform: "uppercase", letterSpacing: "0.06em" }}>Level {ordinal}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, color: achieved || current ? INK : INK_FAINT }}>{band.name}</p>
+        <p style={{ margin: "1px 0 0", fontSize: 10.5, fontWeight: 700, color: achieved ? GREEN : current ? AMBER : INK_FAINT }}>
           {achieved ? "Unlocked" : current ? "In progress" : "Locked"}
         </p>
       </div>
@@ -258,14 +217,16 @@ function LevelConnector({ status, percent }) {
   const fillPercent = status === "achieved" ? 100 : status === "current" ? percent : 0;
   const active = status === "achieved" || status === "current";
   return (
-    <div style={{ flex: 1, minWidth: 20, height: 5, borderRadius: 3, backgroundColor: "#F3F4F6", overflow: "hidden", marginTop: 27 }}>
-      <div style={{ width: `${Math.min(100, Math.max(0, fillPercent))}%`, height: "100%", borderRadius: 3, background: active ? "linear-gradient(90deg, #059669, #feb139)" : "transparent", transition: "width 0.5s ease" }} />
+    <div style={{ flex: 1, minWidth: 24, height: 6, borderRadius: 3, backgroundColor: "#EEF2F6", overflow: "hidden", marginTop: 29 }}>
+      <div style={{ width: `${Math.min(100, Math.max(0, fillPercent))}%`, height: "100%", borderRadius: 3, background: active ? `linear-gradient(90deg, ${GREEN}, ${GOLD})` : "transparent", transition: "width 0.5s ease" }} />
     </div>
   );
 }
 
-function LevelJourney({ levelJourney, currentLevel }) {
-  if (!levelJourney || levelJourney.length === 0) return null;
+function LevelSection({ levelJourney, currentLevel }) {
+  if (!levelJourney || levelJourney.length === 0) {
+    return <EmptyNote>Levels will appear here once this learner has been placed at a developmental stage in this hub.</EmptyNote>;
+  }
   const nextIndex = currentLevel?.nextLevelName ? levelJourney.findIndex((b) => b.name === currentLevel.nextLevelName) : -1;
   // The "current"/next band can sit at any index (picked by highest completion, not strictly
   // "the band right after the last achieved one" — see the learner portal's own bandJourney.js).
@@ -276,75 +237,313 @@ function LevelJourney({ levelJourney, currentLevel }) {
   // each other (an earlier node showing "Locked" while a later one is "In progress" reads as
   // broken — how are you past a level you haven't unlocked?).
   const achievedCount = levelJourney.filter((bp, i) => bp.thresholdMet || (nextIndex !== -1 && i < nextIndex)).length;
-  // Same guard as the authenticated card: a threshold of 0 means no admin has configured one
-  // yet, so a level only counts as "Unlocked" at 100% — worth explaining, otherwise a learner
-  // sitting at a high percent with no threshold set looks stalled for no visible reason.
+  // A threshold of 0 means no admin has configured one yet, so a level only counts as "Unlocked"
+  // at 100% — worth explaining, otherwise a learner sitting at a high percent with no threshold
+  // set looks stalled for no visible reason.
   const noThresholdsConfigured = levelJourney.every((bp) => !bp.advancementThreshold || bp.advancementThreshold <= 0);
   const nextThreshold = nextIndex !== -1 ? (levelJourney[nextIndex].advancementThreshold > 0 ? levelJourney[nextIndex].advancementThreshold : 100) : null;
+  const atTop = !currentLevel?.nextLevelName && !!currentLevel?.name;
+  const nextPercent = Math.round(currentLevel?.nextLevelCompletion ?? 0);
 
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-        <p style={{ margin: 0, fontSize: 13, color: INK_MUTED, lineHeight: 1.5, flex: 1, minWidth: 180 }}>
-          {currentLevel?.nextLevelName
-            ? `${currentLevel.name ? `Currently at ${currentLevel.name} — ` : ""}${currentLevel.nextLevelCompletion}% of the way to ${currentLevel.nextLevelName} (needs ${nextThreshold}%).`
-            : currentLevel?.name
-            ? `${currentLevel.name} — the highest level on this ladder.`
-            : "Working toward the first level."}
-        </p>
-        <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", backgroundColor: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap", flexShrink: 0 }}>
-          {achievedCount} of {levelJourney.length} unlocked
-        </span>
+    <>
+      <div className="df-pp-level">
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <Ring percent={atTop ? 100 : nextPercent} size={132} stroke={12} color={atTop ? GREEN : GOLD} track={atTop ? "#D1FAE5" : "#FDE9C0"}>
+            {atTop ? (
+              <FiAward size={34} color={GREEN} />
+            ) : (
+              <>
+                <span style={{ fontSize: 28, fontWeight: 900, color: INK, lineHeight: 1 }}>{nextPercent}%</span>
+                <span style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.05em" }}>to next</span>
+              </>
+            )}
+          </Ring>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 10.5, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.06em" }}>Current level</p>
+            <p style={{ margin: "3px 0 6px", fontSize: 22, fontWeight: 900, color: ACCENT, lineHeight: 1.15 }}>{currentLevel?.name || "Getting started"}</p>
+            <p style={{ margin: 0, fontSize: 12.5, color: INK_MUTED, lineHeight: 1.5 }}>
+              {currentLevel?.nextLevelName
+                ? `${nextPercent}% of the way to ${currentLevel.nextLevelName}. ${nextThreshold}% unlocks it.`
+                : atTop
+                ? "The highest level on this ladder."
+                : "Working toward the first level."}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", padding: "8px 4px 4px" }}>
+          {levelJourney.map((bp, i) => {
+            const status = bp.thresholdMet ? "achieved" : i === nextIndex ? "current" : nextIndex !== -1 && i < nextIndex ? "achieved" : "locked";
+            return (
+              <div key={bp.name} style={{ display: "flex", alignItems: "flex-start", flex: i === levelJourney.length - 1 ? "0 0 auto" : 1 }}>
+                <LevelNode band={bp} status={status} ordinal={i + 1} />
+                {i < levelJourney.length - 1 && <LevelConnector status={status} percent={bp.completion} />}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
-        {levelJourney.map((bp, i) => {
-          const status = bp.thresholdMet ? "achieved" : i === nextIndex ? "current" : nextIndex !== -1 && i < nextIndex ? "achieved" : "locked";
-          return (
-            <div key={bp.name} style={{ display: "flex", alignItems: "flex-start", flex: i === levelJourney.length - 1 ? "0 0 auto" : 1 }}>
-              <LevelNode band={bp} status={status} ordinal={i + 1} />
-              {i < levelJourney.length - 1 && <LevelConnector status={status} percent={bp.completion} />}
-            </div>
-          );
-        })}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+        <Chip label={`${achievedCount} of ${levelJourney.length} levels unlocked`} color="#B45309" bg="#FEF3C7" />
+        {noThresholdsConfigured && achievedCount === 0 && (
+          <span style={{ fontSize: 11, color: INK_FAINT, fontStyle: "italic" }}>
+            No advancement threshold is set on these levels yet, so a level only counts as unlocked once it's 100% complete.
+          </span>
+        )}
       </div>
+    </>
+  );
+}
 
-      {noThresholdsConfigured && achievedCount === 0 && (
-        <p style={{ margin: "14px 0 0", fontSize: 11, color: INK_FAINT, fontStyle: "italic" }}>
-          No advancement threshold is set on these levels yet, so a level only counts as "Unlocked" once it's 100% complete.
-        </p>
+/* ── Competencies ─────────────────────────────────────────────────────────── */
+
+// One card per competency in the curriculum — scored ones show their ring, band and where the
+// score sits against the competency's own target; unscored ones stay in the grid, greyed, so the
+// page shows the whole picture rather than only what happens to have been assessed.
+function CompetencyCard({ competency }) {
+  const scored = competency.score != null;
+  const color = !scored ? INK_FAINT : competency.onTrack ? GREEN : AMBER;
+  const status = !scored
+    ? { label: "Not assessed yet", color: INK_MUTED, bg: "#F3F4F6" }
+    : competency.onTrack
+    ? { label: "On track", color: "#047857", bg: "#ECFDF5" }
+    : { label: "Still building", color: "#B45309", bg: "#FEF3C7" };
+  return (
+    <div style={{ border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, backgroundColor: scored ? "#fff" : "#FAFBFC", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Ring percent={scored ? competency.score : 0} size={58} stroke={6} color={color}>
+          <span style={{ fontSize: scored ? 14 : 16, fontWeight: 800, color: scored ? INK : INK_FAINT }}>{scored ? `${Math.round(competency.score)}%` : "–"}</span>
+        </Ring>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: scored ? INK : INK_MUTED, lineHeight: 1.3 }}>{competency.name}</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+            {competency.band && <Chip label={competency.band} color={ACCENT} bg="#e8f5fb" />}
+            <Chip {...status} />
+          </div>
+        </div>
+      </div>
+      {scored && (
+        <div>
+          <div style={{ position: "relative", height: 8, borderRadius: 4, backgroundColor: "#EEF2F6" }}>
+            <div style={{ width: `${Math.min(100, Math.max(0, competency.score))}%`, height: "100%", borderRadius: 4, backgroundColor: color }} />
+            <div title={`Target ${competency.threshold}%`} style={{ position: "absolute", top: -3, left: `${Math.min(100, Math.max(0, competency.threshold))}%`, width: 2, height: 14, backgroundColor: INK, borderRadius: 1, transform: "translateX(-1px)" }} />
+          </div>
+          <p style={{ margin: "6px 0 0", fontSize: 10.5, color: INK_FAINT }}>Target {competency.threshold}%</p>
+        </div>
       )}
     </div>
   );
 }
 
-// One row per competency: name + band + score, with a thin fill bar underneath — same 6px
-// track/fill spec the learner portal's own CompetencyProgressGrid uses (track #F3F4F6, fill
-// green/red by the 60% pass line), so a scanned score reads at a glance rather than as bare text.
-function CompetencyRow({ name, band, score }) {
-  const good = score >= 60;
-  const color = good ? "#059669" : "#DC2626";
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
-          {band && <p style={{ margin: 0, fontSize: 11, color: ACCENT }}>{band}</p>}
-        </div>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color, whiteSpace: "nowrap" }}>{score}%</span>
+function CompetenciesSection({ competencies }) {
+  if (!competencies || competencies.length === 0) {
+    return <EmptyNote>No competencies are set up for this hub's curriculum yet.</EmptyNote>;
+  }
+  const sorted = [...competencies].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  return <div className="df-pp-grid">{sorted.map((c) => <CompetencyCard key={c.name} competency={c} />)}</div>;
+}
+
+/* ── Pathways ─────────────────────────────────────────────────────────────── */
+
+// The learner's place on one Pathway's course ladder, as filled segments (one per course) when
+// the ladder is short enough to read that way, a plain bar when it isn't.
+function PathwaySteps({ step, total }) {
+  if (!total || !step) return null;
+  if (total > 10) {
+    return (
+      <div style={{ height: 6, borderRadius: 3, backgroundColor: "#EEF2F6", overflow: "hidden" }}>
+        <div style={{ width: `${(step / total) * 100}%`, height: "100%", backgroundColor: GRAD_TO }} />
       </div>
-      <div style={{ height: 6, borderRadius: 4, backgroundColor: "#F3F4F6", overflow: "hidden" }}>
-        <div style={{ width: `${Math.min(100, Math.max(0, score))}%`, height: "100%", backgroundColor: color }} />
+    );
+  }
+  return (
+    <div style={{ display: "flex", gap: 4 }}>
+      {Array.from({ length: total }, (_, i) => (
+        <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < step - 1 ? GREEN : i === step - 1 ? GOLD : "#EEF2F6" }} />
+      ))}
+    </div>
+  );
+}
+
+function PathwayCard({ pathway }) {
+  const hasCourse = !!pathway.currentCourseName;
+  return (
+    <div style={{ border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12, backgroundColor: "#fff" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#e8f5fb", color: ACCENT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <FiMap size={15} />
+        </div>
+        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: INK, lineHeight: 1.35, flex: 1 }}>{pathway.name}</p>
+      </div>
+      <div>
+        <p style={{ margin: 0, fontSize: 10.5, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.06em" }}>Current course</p>
+        <p style={{ margin: "3px 0 0", fontSize: 14, fontWeight: 700, color: hasCourse ? ACCENT : INK_FAINT }}>{pathway.currentCourseName || "No course yet"}</p>
+      </div>
+      <PathwaySteps step={pathway.step} total={pathway.totalCourses} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: "auto" }}>
+        <span style={{ fontSize: 11.5, color: INK_MUTED }}>
+          {pathway.step && pathway.totalCourses ? `Course ${pathway.step} of ${pathway.totalCourses}` : pathway.totalCourses ? `${pathway.totalCourses} course${pathway.totalCourses === 1 ? "" : "s"}` : "No courses yet"}
+        </span>
+        {hasCourse && (pathway.placed
+          ? <Chip label="Placed" color="#047857" bg="#ECFDF5" />
+          : <Chip label="Starting point" color={INK_MUTED} bg="#F3F4F6" />)}
       </div>
     </div>
   );
 }
 
+/* ── Hub ──────────────────────────────────────────────────────────────────── */
+
+const ENROLLMENT_STATUS = {
+  active: { label: "Active", color: "#047857", bg: "#ECFDF5" },
+  inactive: { label: "Inactive", color: "#6B7280", bg: "#F3F4F6" },
+  transferred: { label: "Transferred", color: "#B45309", bg: "#FEF3C7" },
+  graduated: { label: "Graduated", color: "#1D4ED8", bg: "#EFF6FF" },
+};
+
+function formatDay(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function hubClassLabel(hub) {
+  return hub.gradeName ? formatClassName({ gradeName: hub.gradeName, streamName: hub.streamName }) : null;
+}
+
+function AttendanceSummary({ attendance }) {
+  const color = attendance.rate >= 80 ? GREEN : attendance.rate >= 60 ? AMBER : "#DC2626";
+  const counts = [
+    { label: "Present", value: attendance.present },
+    { label: "Late", value: attendance.late },
+    { label: "Absent", value: attendance.absent },
+    { label: "Excused", value: attendance.excused },
+  ];
+  const lastMarked = formatDay(attendance.lastMarked);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <Ring percent={attendance.rate} size={76} stroke={8} color={color}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: INK }}>{attendance.rate}%</span>
+        </Ring>
+        <div>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: INK }}>
+            Attended {attendance.present + attendance.late} of {attendance.total} day{attendance.total === 1 ? "" : "s"}
+          </p>
+          {lastMarked && <p style={{ margin: "3px 0 0", fontSize: 11.5, color: INK_FAINT }}>Last marked {lastMarked}</p>}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        {counts.map((c) => (
+          <div key={c.label} style={{ backgroundColor: "#FAFBFC", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "8px 6px", textAlign: "center" }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: INK }}>{c.value}</p>
+            <p style={{ margin: "1px 0 0", fontSize: 10, fontWeight: 700, color: INK_FAINT, textTransform: "uppercase", letterSpacing: "0.04em" }}>{c.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Everything the page knows about the learner at one hub. Levels, competencies and pathways all
+// come from that hub's class and its curriculum, so a learner at several hubs gets a separate,
+// independent picture for each (see buildPublicHubSection on the server).
+function HubPanel({ hub }) {
+  const status = ENROLLMENT_STATUS[hub.status] || ENROLLMENT_STATUS.active;
+  const classLabel = hubClassLabel(hub);
+  const since = formatDay(hub.since);
+  const meta = [classLabel || "Not placed in a class yet", hub.admissionNumber ? `Adm. ${hub.admissionNumber}` : null, since ? `Since ${since}` : null].filter(Boolean).join(" · ");
+  const stage = hub.developmentalStage;
+  const onTrack = hub.competenciesOnTrack;
+
+  return (
+    <>
+      <div className="df-pp-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <div style={{ width: 46, height: 46, borderRadius: 13, background: `linear-gradient(135deg, ${ACCENT}, ${GRAD_TO})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <FiHome size={20} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: INK }}>{hub.hubName || "Learning hub"}</h2>
+            <p style={{ margin: "3px 0 0", fontSize: 12.5, color: INK_MUTED }}>{meta}</p>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {stage?.name && <Chip label={[stage.name, formatAgeRange(stage.minAge, stage.maxAge)].filter(Boolean).join(" · ")} color={ACCENT} bg="#e8f5fb" />}
+          <Chip {...status} />
+        </div>
+      </div>
+
+      {!classLabel ? (
+        <div className="df-pp-card">
+          <EmptyNote>Levels, competencies, pathways, courses and attendance will appear here once this learner is placed in a class at {hub.hubName || "this hub"}.</EmptyNote>
+        </div>
+      ) : (
+        <>
+          <div className="df-pp-stats">
+            <StatTile icon={FiStar} label="Current level" value={hub.currentLevel?.name || "—"} sub={hub.currentLevel?.nextLevelName ? `Next: ${hub.currentLevel.nextLevelName}` : null} />
+            <StatTile icon={FiTarget} label="Competencies on track" value={onTrack ? `${onTrack.count}/${onTrack.total}` : "—"} tint="#ECFDF5" color={GREEN} />
+            <StatTile icon={FiCheckCircle} label="Evidence items" value={hub.evidenceItemsCollected ?? "—"} tint="#e8f5fb" color={ACCENT} />
+            <StatTile icon={FiCalendar} label="Attendance" value={hub.attendance ? `${hub.attendance.rate}%` : "—"} tint="#EFF6FF" color="#1D4ED8" />
+          </div>
+
+          <div className="df-pp-card">
+            <SectionHeading icon={FiTrendingUp} title="Level" />
+            <LevelSection levelJourney={hub.levelJourney} currentLevel={hub.currentLevel} />
+          </div>
+
+          <div className="df-pp-card">
+            <SectionHeading
+              icon={FiAward}
+              title="Competencies"
+              aside={onTrack && <span style={{ fontSize: 12.5, color: INK_MUTED }}><strong style={{ color: INK }}>{onTrack.count}</strong> of {onTrack.total} on track</span>}
+            />
+            <CompetenciesSection competencies={hub.competencies} />
+          </div>
+
+          <div className="df-pp-card">
+            <SectionHeading icon={FiCompass} title="Pathways" />
+            {hub.pathways?.length > 0
+              ? <div className="df-pp-grid">{hub.pathways.map((p) => <PathwayCard key={p.name} pathway={p} />)}</div>
+              : <EmptyNote>No pathways are set up for this hub's curriculum yet.</EmptyNote>}
+          </div>
+
+          <div className="df-pp-two">
+            <div className="df-pp-card">
+              <SectionHeading icon={FiLayers} title="Courses" />
+              {hub.courses?.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {hub.courses.map((course, i) => (
+                    <div key={course.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `1px solid #F1F4F8` }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: "#FEF3E2", color: "#B45309", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <FiBookOpen size={14} />
+                      </div>
+                      <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: INK, flex: 1, minWidth: 0 }}>{course.name}</p>
+                      <span style={{ fontSize: 12, color: INK_MUTED, whiteSpace: "nowrap" }}>{course.sessionCount} session{course.sessionCount === 1 ? "" : "s"}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <EmptyNote>No courses are assigned to this class yet.</EmptyNote>}
+            </div>
+
+            <div className="df-pp-card">
+              <SectionHeading icon={FiCalendar} title="Attendance" />
+              {hub.attendance ? <AttendanceSummary attendance={hub.attendance} /> : <EmptyNote>No attendance has been marked for this class yet.</EmptyNote>}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 // The scan destination for a learner's "Share Profile" QR code (see LearnerViewPage.jsx's
 // ShareProfileCard) — deliberately reachable with no login. Renders whatever
-// learner.service.js's getPublicProfile chose to expose — a comprehensive mirror of the
-// learner's own Profile page (identity, guardian, competencies, level journey, learning
-// journey), short of individual assessment scores/teacher feedback text, which stays private.
+// learner.service.js's getPublicProfile chose to expose: identity, the guardian's name, and one
+// section per hub with that hub's levels, competencies, pathways, courses and attendance. Never
+// guardian contact details, fees, or individual assessment scores/teacher feedback.
 //
 // A 404 is the only real signal that the token was regenerated (old QR/link retired) — see
 // usePublicLearnerProfile's retry logic. Any other failure (timeout, dropped connection, a
@@ -354,12 +553,13 @@ function CompetencyRow({ name, band, score }) {
 export default function PublicLearnerProfilePage() {
   const { token } = useParams();
   const { data: profile, isLoading, isError, error, refetch, isFetching } = usePublicLearnerProfile(token);
+  const [hubIndex, setHubIndex] = useState(null);
 
   if (isLoading) {
     return (
-      <div className="df-public-page">
+      <div className="df-pp">
         <PageStyles />
-        <div className="df-public-card" style={{ textAlign: "center", padding: "32px 28px", color: INK_FAINT, fontSize: 14 }}>Loading…</div>
+        <div className="df-pp-state"><p style={{ margin: 0, color: INK_FAINT, fontSize: 14 }}>Loading…</p></div>
       </div>
     );
   }
@@ -367,130 +567,98 @@ export default function PublicLearnerProfilePage() {
   if (isError || !profile) {
     const notFound = error?.statusCode === 404;
     return (
-      <div className="df-public-page">
+      <div className="df-pp">
         <PageStyles />
-        <div className="df-public-card" style={{ textAlign: "center", padding: "32px 28px" }}>
-          <h1 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: INK }}>
-            {notFound ? "This link is no longer valid" : "Couldn't load this profile"}
-          </h1>
-          <p style={{ margin: 0, fontSize: 13, color: INK_MUTED }}>
-            {notFound
-              ? "The QR code or link may have been regenerated. Ask the school for a current one."
-              : "Something went wrong loading this page — check your connection and try again."}
-          </p>
-          {!notFound && (
-            <button
-              type="button"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              style={{ marginTop: 16, padding: "9px 18px", borderRadius: 8, border: "none", backgroundColor: ACCENT, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isFetching ? "default" : "pointer", opacity: isFetching ? 0.6 : 1 }}
-            >
-              {isFetching ? "Retrying…" : "Try again"}
-            </button>
-          )}
+        <div className="df-pp-state">
+          <div className="df-pp-card" style={{ textAlign: "center", maxWidth: 420, padding: "32px 28px" }}>
+            <h1 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: INK }}>
+              {notFound ? "This link is no longer valid" : "Couldn't load this profile"}
+            </h1>
+            <p style={{ margin: 0, fontSize: 13, color: INK_MUTED }}>
+              {notFound
+                ? "The QR code or link may have been regenerated. Ask the school for a current one."
+                : "Something went wrong loading this page — check your connection and try again."}
+            </p>
+            {!notFound && (
+              <button
+                type="button"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                style={{ marginTop: 16, padding: "9px 18px", borderRadius: 8, border: "none", backgroundColor: ACCENT, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isFetching ? "default" : "pointer", opacity: isFetching ? 0.6 : 1 }}
+              >
+                {isFetching ? "Retrying…" : "Try again"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
-  const classLabel = profile.gradeName ? formatClassName({ gradeName: profile.gradeName, streamName: profile.streamName }) : null;
-  const metaLine = [classLabel, profile.age != null ? `Age ${profile.age}` : null].filter(Boolean).join(" · ");
+  const hubs = profile.hubs || [];
+  // Opens on the current hub unless the learner has no class there yet, in which case the first
+  // hub that does have something to show is the better landing.
+  const defaultIndex = hubs[0]?.gradeName ? 0 : Math.max(0, hubs.findIndex((h) => h.gradeName));
+  const hub = hubs[hubIndex ?? defaultIndex] || null;
+  const metaLine = [
+    profile.age != null ? `Age ${profile.age}` : null,
+    hubs.length > 0 ? `${hubs.length} learning hub${hubs.length === 1 ? "" : "s"}` : null,
+  ].filter(Boolean).join(" · ");
 
   return (
-    <div className="df-public-page">
+    <div className="df-pp">
       <PageStyles />
-      <div className="df-public-card">
-        <div className="df-public-hero">
-          <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
 
-          <div className="df-public-hero-inner">
+      <header className="df-pp-hero">
+        <div style={{ position: "absolute", top: -60, right: -40, width: 240, height: 240, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+        <div className="df-pp-wrap" style={{ position: "relative" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{BRAND_NAME} · Learner profile</p>
+          <div className="df-pp-hero-inner">
             <Avatar firstName={profile.firstName} lastName={profile.lastName} photo={profile.photo} />
-            <div className="df-public-hero-text">
-              <h1 style={{ margin: 0, fontSize: 21, fontWeight: 900, color: "#fff" }}>
-                {profile.firstName} {profile.lastName}
-              </h1>
-              {profile.hubName && <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>{profile.hubName}</span>}
-              {metaLine && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{metaLine}</span>}
-
-              {(profile.developmentalStage?.name || profile.currentLevel?.name) && (
-                <div className="df-public-hero-pills">
-                  {profile.developmentalStage?.name && (
-                    <HeroPill
-                      icon={FiCompass}
-                      label={profile.developmentalStage.name}
-                      sub={formatAgeRange(profile.developmentalStage.minAge, profile.developmentalStage.maxAge) || "Developmental stage"}
-                    />
-                  )}
-                  {profile.currentLevel?.name && (
-                    <HeroPill
-                      icon={FiStar}
-                      label={profile.currentLevel.name}
-                      sub={profile.currentLevel.nextLevelName ? `${profile.currentLevel.nextLevelCompletion}% to ${profile.currentLevel.nextLevelName}` : "Highest level reached"}
-                    />
-                  )}
-                </div>
-              )}
+            <div>
+              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1.15 }}>{profile.firstName} {profile.lastName}</h1>
+              {metaLine && <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.78)" }}>{metaLine}</p>}
             </div>
           </div>
         </div>
+      </header>
 
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div className="df-public-identity-grid">
-            <Row label="Registration Number" value={profile.registrationNumber} />
-            <Row label="Nationality" value={profile.nationality} />
-            <Row label="Languages" value={profile.languages} />
-            <Row label="Username" value={profile.username} />
-          </div>
+      <main className="df-pp-body">
+        <div className="df-pp-card df-pp-facts">
+          <Fact label="Registration number" value={profile.registrationNumber} />
+          <Fact label="Username" value={profile.username} />
+          <Fact label="Nationality" value={profile.nationality} />
+          <Fact label="Languages" value={profile.languages} />
+          <Fact label="Guardian" value={profile.guardianName} />
         </div>
 
-        {(profile.competenciesOnTrack || profile.evidenceItemsCollected != null) && (
-          <div style={sectionStyle}>
-            <SectionHeading icon={FiAward}>Portfolio Snapshot</SectionHeading>
-            {/* grid instead of flex-wrap with a fixed basis — this section only ever has 1-2
-                tiles (there's no "courses completed" figure on the public profile), and a fixed
-                basis left visible dead space to the right instead of the tile(s) filling the
-                row. auto-fit grows them evenly across however many actually render. */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-              {profile.competenciesOnTrack && <Pill icon={FiAward} label="Competencies On Track" value={profile.competenciesOnTrack} />}
-              {profile.evidenceItemsCollected != null && <Pill icon={FiCheckCircle} label="Evidence Items" value={profile.evidenceItemsCollected} />}
+        {hubs.length === 0 && (
+          <div className="df-pp-card">
+            <EmptyNote>This learner isn't enrolled at a learning hub yet. Levels, competencies and pathways will appear here once they are.</EmptyNote>
+          </div>
+        )}
+
+        {hubs.length > 1 && (
+          <div>
+            <p style={{ margin: "4px 0 10px", fontSize: 12.5, color: INK_MUTED }}>Progress is tracked separately at each learning hub. Choose one to see where this learner stands there.</p>
+            <div className="df-pp-tabs" role="tablist">
+              {hubs.map((h, i) => {
+                const selected = h === hub;
+                return (
+                  <button key={i} type="button" role="tab" aria-selected={selected} className="df-pp-tab" onClick={() => setHubIndex(i)}>
+                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 700 }}>{h.hubName || "Learning hub"}</span>
+                    <span style={{ display: "block", marginTop: 2, fontSize: 11.5, opacity: selected ? 0.8 : 1, color: selected ? "#fff" : INK_MUTED }}>{hubClassLabel(h) || "No class yet"}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {profile.levelJourney?.length > 0 && (
-          <div style={sectionStyle}>
-            <SectionHeading icon={FiTrendingUp}>Progress Arc</SectionHeading>
-            <LevelJourney levelJourney={profile.levelJourney} currentLevel={profile.currentLevel} />
-          </div>
-        )}
+        {hub && <HubPanel hub={hub} />}
 
-        {profile.competencies?.length > 0 && (
-          <div style={sectionStyle}>
-            <SectionHeading icon={FiCheckCircle}>Competencies</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {profile.competencies.map((c) => (
-                <CompetencyRow key={c.name} name={c.name} band={c.band} score={c.score} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {profile.pathway?.length > 0 && (
-          <div style={sectionStyle}>
-            <SectionHeading icon={FiBookOpen}>Pathway</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {profile.pathway.map((row) => (
-                <div key={row.pathwayName} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: INK }}>{row.pathwayName}</p>
-                  <span style={{ fontSize: 12, color: INK_MUTED, textAlign: "right" }}>{row.currentCourseName || "Not placed"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <p style={{ margin: 0, padding: "16px 24px", fontSize: 11, color: "#D1D5DB", textAlign: "center", borderTop: "1px solid #F3F4F6" }}>{BRAND_NAME} · Shared profile</p>
-      </div>
+        <p style={{ margin: "8px 0 0", fontSize: 11.5, color: INK_FAINT, textAlign: "center" }}>{BRAND_NAME} · Shared profile</p>
+      </main>
     </div>
   );
 }

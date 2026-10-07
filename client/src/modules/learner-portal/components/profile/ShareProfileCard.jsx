@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { usePublicToken, useRegeneratePublicToken } from "../../../learners/hooks/useLearners";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import ShareQrTools from "../../../learners/components/ShareQrTools";
 
 // The learner/guardian-side counterpart to LearnerViewPage.jsx's own ShareProfileCard (admin/
 // school-portal) — same token, same server endpoints, same deliberately narrow public view (see
@@ -11,7 +12,8 @@ import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 // QR without needing a staff member to do it, e.g. to show at pickup or hand to reception.
 // Deliberately compact — QR + link sit side-by-side rather than stacked, so this doesn't dominate
 // the page next to Guardian Profile/Portfolio Snapshot's own much shorter cards.
-export default function ShareProfileCard({ learnerId }) {
+export default function ShareProfileCard({ learner }) {
+  const learnerId = learner.id;
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -61,11 +63,12 @@ export default function ShareProfileCard({ learnerId }) {
 
       {!open ? (
         <p style={{ margin: 0, fontSize: 12, color: T.inkFaint, lineHeight: 1.4 }}>
-          No-login view — shows this learner's full profile (identity, guardian contact, competencies, and progress). Individual assessment scores and teacher feedback stay private.
+          No-login page — shows identity, guardian name, and for each hub the learner's levels, competencies, pathways, courses and attendance. Guardian contact, fees, individual assessment scores and teacher feedback stay private.
         </p>
       ) : loadingToken && !token ? (
         <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Loading…</p>
       ) : (
+        <>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <div style={{ padding: 6, backgroundColor: T.tintBg, borderRadius: 10, flexShrink: 0, lineHeight: 0 }}>
             <QRCodeSVG value={publicUrl} size={84} />
@@ -96,6 +99,8 @@ export default function ShareProfileCard({ learnerId }) {
             </button>
           </div>
         </div>
+        {token && <ShareQrTools learner={learner} publicUrl={publicUrl} />}
+        </>
       )}
 
       <ConfirmDialog
