@@ -191,6 +191,134 @@ async function assertUsernameAvailable(username, excludeId) {
   }
 }
 
+// One hub's slice of the public "share via QR" profile: the enrollment itself, plus — once the
+// learner is in a class there — attendance, courses, Developmental Stage, the level ladder,
+// per-competency standing and Pathway placement under THAT class's curriculum. A learner at
+// several hubs can run a different curriculum at each, so none of this is merged across hubs.
+async function buildPublicHubSection(record, link, isCurrent, issuedRows) {
+  const [hub, cls] = await Promise.all([
+    SchoolModel.findById(link.hubId),
+    link.classId ? ClassModel.findById(link.classId) : null,
+  ]);
+  const section = {
+    hubName: hub?.name || null,
+    gradeName: cls?.gradeName || null,
+    streamName: cls?.streamName || null,
+    admissionNumber: link.admissionNumber || null,
+    status: link.status || "active",
+    since: link.createdAt || null,
+    isCurrent,
+    attendance: null,
+    courses: [],
+    developmentalStage: null,
+    currentLevel: null,
+    levelJourney: [],
+    competencies: [],
+    competenciesOnTrack: null,
+    evidenceItemsCollected: null,
+    pathways: [],
+  };
+  if (!cls) return section;
+
+  // "Late" still counts as attended.
+  const attendanceRows = await AttendanceModel.findAll({ learnerId: record.id, classId: cls.id });
+  if (attendanceRows.length) {
+    const count = (status) => attendanceRows.filter((r) => r.status === status).length;
+    const present = count("present");
+    const late = count("late");
+    section.attendance = {
+      total: attendanceRows.length, present, late, absent: count("absent"), excused: count("excused"),
+      rate: Math.round(((present + late) / attendanceRows.length) * 100),
+      lastMarked: attendanceRows[0].date,
+    };
+  }
+
+  const curriculumId = cls.curriculumId;
+  if (!curriculumId) return section;
+
+  // Lazily required — competency.service.js and assessment-submission.service.js already dance
+  // around a circular-require chain with each other (see their own comments); doing the same
+  // here avoids adding this file as a third node in that cycle.
+  const CompetencyService = require("../curriculum/competency-framework/competency.service");
+  const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
+  const PerformanceBandModel = require("../curriculum/competency-framework/performance-band.model");
+
+  if (link.currentStageId) {
+    const stage = await AgeCategoryModel.findById(link.currentStageId);
+    // minAge/maxAge, not the stored `ageRange` column — that field is never collected by the
+    // Developmental Stage authoring form (AgeCategoriesPanel), so it's always null for any stage
+    // created through the app. The client derives a display range from the real numeric bounds
+    // instead (see PublicLearnerProfilePage's formatAgeRange).
+    section.developmentalStage = stage ? { name: stage.name, minAge: stage.minAge, maxAge: stage.maxAge } : null;
+  }
+
+  const [currentCourses, scoreRows, allCompetencies, bandProgress, journeyRows, pathwayDefs] = await Promise.all([
+    CurriculumVersionService.getCurrentCourses(curriculumId, cls.gradeId),
+    CompetencyService.getLearnerCompetencyScores(curriculumId, record.id),
+    CompetencyService.getCurriculumCompetencies(curriculumId),
+    CompetencyService.getLearnerBandProgress(curriculumId, record.id),
+    CompetencyService.getPathway(curriculumId, record.id),
+    PathwayModel.findByCurriculumId(curriculumId),
+  ]);
+
+  // The same list the learner's own My Courses shows. Names and sizes only — completion is
+  // tracked in the learner's browser, so there is no server-side percentage to add.
+  section.courses = currentCourses.map((course) => ({ name: course.name, sessionCount: course.sessionCount || 0 }));
+
+  // Every competency in the curriculum, not only the scored ones — an unscored one goes out with
+  // score null ("not assessed yet") rather than being dropped or shown as a misleading 0%.
+  const scoreById = new Map(scoreRows.map((s) => [s.competencyId, s]));
+  section.competencies = allCompetencies.map((c) => {
+    const scored = scoreById.get(c.id);
+    const threshold = c.minimumThreshold ?? 60;
+    return {
+      name: c.name,
+      score: scored ? scored.score : null,
+      band: scored?.band?.name || null,
+      threshold,
+      onTrack: scored ? scored.score >= threshold : false,
+    };
+  });
+  section.competenciesOnTrack = allCompetencies.length > 0
+    ? { count: section.competencies.filter((c) => c.onTrack).length, total: allCompetencies.length }
+    : null;
+  // Same classId scoping PortfolioSnapshot.jsx applies on the learner's own profile page —
+  // "evidence collected" means evidence from THIS hub's class, not every hub they've ever touched.
+  section.evidenceItemsCollected = issuedRows.filter((r) => r.issue.classId === cls.id && r.submission.status === "graded").length;
+
+  section.levelJourney = bandProgress.map((bp) => ({ name: bp.name, completion: bp.completion, thresholdMet: bp.thresholdMet, onTrack: bp.onTrack, advancementMin: bp.advancementMin, advancementThreshold: bp.advancementThreshold }));
+  // Same "highest achieved, closest-to-done next" logic as the learner portal's own
+  // deriveBandJourney (client/src/modules/learner-portal/utils/bandJourney.js) — duplicated here
+  // rather than imported since this is server code and that's a client-only pure function; kept
+  // in sync by being this small and this simple.
+  const achieved = bandProgress.filter((bp) => bp.thresholdMet);
+  const current = achieved.length ? achieved[achieved.length - 1] : null;
+  const remaining = bandProgress.filter((bp) => !bp.thresholdMet);
+  const next = remaining.length ? remaining.reduce((best, bp) => (bp.completion > best.completion ? bp : best), remaining[0]) : null;
+  section.currentLevel = { name: current?.name || null, nextLevelName: next?.name || null, nextLevelCompletion: next?.completion ?? null };
+
+  // Where the learner sits on each Pathway's own course ladder — the same authored order
+  // CompetencyService.getPathway uses for its default start (banded courses first, then the rest).
+  section.pathways = await Promise.all(journeyRows.map(async (row) => {
+    const def = pathwayDefs.find((p) => p.id === row.pathwayId);
+    const bands = await PerformanceBandModel.findByPathway(curriculumId, row.pathwayId);
+    const all = def?.courses || [];
+    const sequenced = bands.map((b) => b.courseId).filter((cid) => all.includes(cid));
+    const ordered = [...sequenced, ...all.filter((cid) => !sequenced.includes(cid))];
+    const index = row.currentCourseId ? ordered.indexOf(row.currentCourseId) : -1;
+    const course = row.currentCourseId ? await CourseModel.findById(row.currentCourseId) : null;
+    return {
+      name: row.pathwayName,
+      currentCourseName: course?.name || null,
+      step: index >= 0 ? index + 1 : null,
+      totalCourses: ordered.length,
+      placed: !row.isDefault,
+    };
+  }));
+
+  return section;
+}
+
 const LearnerService = {
   async createLearner(data) {
     await assertUsernameAvailable(data.username);
@@ -512,14 +640,12 @@ const LearnerService = {
 
   // What an unauthenticated scan of the QR sees — still a hand-built allow-list (never
   // `{...record}`, so a field added to the learner schema later can't silently start leaking
-  // through a link a school printed on a badge): full identity, Developmental Stage/Performance
-  // Band placement, the Progress Arc ladder, per-competency standing, and Pathway course
-  // placement per area. Deliberately excludes guardian contact details (name/email) — a link
-  // meant to be scanned/shared publicly (badges, posters) shouldn't hand out a parent's contact
-  // info to whoever scans it — and individual assessment scores/teacher feedback (Reports/
-  // Assessments), which can carry sensitive per-submission commentary that competency/progress
-  // summaries don't. Class/hub comes from the same "first active enrollment" fallback
-  // LearnerViewPage.jsx already uses as its "current" context.
+  // through a link a school printed on a badge): identity, the guardian's name, and one section
+  // per hub the learner is enrolled at (see buildPublicHubSection). Deliberately excludes the
+  // guardian's phone/email and anything about fees — a link meant to be scanned/shared publicly
+  // (badges, posters) shouldn't hand those to whoever scans it — and individual assessment
+  // scores/teacher feedback (Reports/Assessments), which can carry sensitive per-submission
+  // commentary that competency/progress summaries don't.
   async getPublicProfile(token) {
     const record = await LearnerModel.findByPublicToken(token);
     if (!record) {
@@ -533,82 +659,11 @@ const LearnerService = {
       throw err;
     }
     const links = await LearnerHubLinkModel.findByLearnerId(record.id);
+    // Same "first active enrollment" fallback LearnerViewPage.jsx uses as its "current" context.
     const primaryLink = links.find((l) => l.status === "active") || links[0] || null;
-    let hubName = null;
-    let gradeName = null;
-    let streamName = null;
-    let curriculumId = null;
-    if (primaryLink) {
-      const hub = await SchoolModel.findById(primaryLink.hubId);
-      hubName = hub?.name || null;
-      if (primaryLink.classId) {
-        const cls = await ClassModel.findById(primaryLink.classId);
-        gradeName = cls?.gradeName || null;
-        streamName = cls?.streamName || null;
-        curriculumId = cls?.curriculumId || null;
-      }
-    }
-
-    let developmentalStage = null;
-    let competencies = [];
-    let competenciesOnTrack = null;
-    let evidenceItemsCollected = null;
-    let levelJourney = [];
-    let currentLevel = null;
-    let learningJourney = [];
-
-    if (curriculumId) {
-      // Lazily required — competency.service.js and assessment-submission.service.js already
-      // dance around a circular-require chain with each other (see their own comments); doing
-      // the same here avoids adding this file as a third node in that cycle.
-      const CompetencyService = require("../curriculum/competency-framework/competency.service");
-
-      if (primaryLink?.currentStageId) {
-        const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
-        const stage = await AgeCategoryModel.findById(primaryLink.currentStageId);
-        // minAge/maxAge, not the stored `ageRange` column — that field is never collected by
-        // the Developmental Stage authoring form (AgeCategoriesPanel), so it's always null for
-        // any stage created through the app. The client derives a display range from the real
-        // numeric bounds instead (see PublicLearnerProfilePage's formatAgeRange).
-        developmentalStage = stage ? { name: stage.name, minAge: stage.minAge, maxAge: stage.maxAge } : null;
-      }
-
-      const [scoreRows, allCompetencies, bandProgress, journeyRows, issuedRows] = await Promise.all([
-        CompetencyService.getLearnerCompetencyScores(curriculumId, record.id),
-        CompetencyService.getCurriculumCompetencies(curriculumId),
-        CompetencyService.getLearnerBandProgress(curriculumId, record.id),
-        CompetencyService.getPathway(curriculumId, record.id),
-        AssessmentSubmissionService.getIssuedRowsForLearner(record.id),
-      ]);
-
-      competencies = scoreRows.map((s) => ({ name: s.name, score: s.score, band: s.band?.name || null }));
-      const onTrackCount = scoreRows.filter((s) => {
-        const threshold = allCompetencies.find((c) => c.id === s.competencyId)?.minimumThreshold ?? 60;
-        return s.score >= threshold;
-      }).length;
-      competenciesOnTrack = allCompetencies.length > 0 ? `${onTrackCount}/${allCompetencies.length}` : null;
-      // Same classId scoping PortfolioSnapshot.jsx applies on the learner's own profile page —
-      // "evidence collected" means evidence from THIS hub's class, not every hub they've ever
-      // touched.
-      const evidenceRows = primaryLink?.classId ? issuedRows.filter((r) => r.issue.classId === primaryLink.classId) : issuedRows;
-      evidenceItemsCollected = evidenceRows.filter((r) => r.submission.status === "graded").length;
-
-      levelJourney = bandProgress.map((bp) => ({ name: bp.name, completion: bp.completion, thresholdMet: bp.thresholdMet, onTrack: bp.onTrack, advancementMin: bp.advancementMin, advancementThreshold: bp.advancementThreshold }));
-      // Same "highest achieved, closest-to-done next" logic as the learner portal's own
-      // deriveBandJourney (client/src/modules/learner-portal/utils/bandJourney.js) — duplicated
-      // here rather than imported since this is server code and that's a client-only pure
-      // function; kept in sync by being this small and this simple.
-      const achieved = bandProgress.filter((bp) => bp.thresholdMet);
-      const current = achieved.length ? achieved[achieved.length - 1] : null;
-      const remaining = bandProgress.filter((bp) => !bp.thresholdMet);
-      const next = remaining.length ? remaining.reduce((best, bp) => (bp.completion > best.completion ? bp : best), remaining[0]) : null;
-      currentLevel = { name: current?.name || null, nextLevelName: next?.name || null, nextLevelCompletion: next?.completion ?? null };
-
-      learningJourney = await Promise.all(journeyRows.map(async (row) => {
-        const course = row.currentCourseId ? await CourseModel.findById(row.currentCourseId) : null;
-        return { pathwayName: row.pathwayName, currentCourseName: course?.name || null };
-      }));
-    }
+    const issuedRows = links.some((l) => l.classId) ? await AssessmentSubmissionService.getIssuedRowsForLearner(record.id) : [];
+    const hubs = await Promise.all(links.map((link) => buildPublicHubSection(record, link, link === primaryLink, issuedRows)));
+    hubs.sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent));
 
     return {
       firstName: record.firstName,
@@ -619,16 +674,8 @@ const LearnerService = {
       nationality: record.nationality,
       languages: record.languages,
       username: record.username,
-      hubName,
-      gradeName,
-      streamName,
-      developmentalStage,
-      currentLevel,
-      levelJourney,
-      competencies,
-      competenciesOnTrack,
-      evidenceItemsCollected,
-      learningJourney,
+      guardianName: record.guardianName || null,
+      hubs,
     };
   },
 };

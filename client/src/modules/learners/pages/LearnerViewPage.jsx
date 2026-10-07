@@ -22,6 +22,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import RecordHistory from "../../activity/components/RecordHistory";
+import ShareQrTools from "../components/ShareQrTools";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -390,9 +391,10 @@ function PathwayCard({ learnerId, hubId, currentStageId, curriculumId }) {
 
 // A QR code + copyable link that resolves — with no login at all — to a deliberately narrow
 // public view of this learner (see learner.service.js's getPublicProfile for the exact field
-// allow-list: name, photo, class, guardian contact; never DOB/username/health/academic data).
+// allow-list — guardian name only, never contact details or fees).
 // Fetched on demand rather than eagerly, since most visits to this page never open the card.
-function ShareProfileCard({ learnerId }) {
+function ShareProfileCard({ learner }) {
+  const learnerId = learner.id;
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -437,11 +439,12 @@ function ShareProfileCard({ learnerId }) {
 
       {!open ? (
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", lineHeight: 1.4 }}>
-          No-login view — shows this learner's full profile (identity, guardian contact, competencies, and progress). Individual assessment scores and teacher feedback stay private.
+          No-login page — shows identity, guardian name, and for each hub the learner's levels, competencies, pathways, courses and attendance. Guardian contact, fees, individual assessment scores and teacher feedback stay private.
         </p>
       ) : loadingToken && !token ? (
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>Loading…</p>
       ) : (
+        <>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <div style={{ padding: 6, backgroundColor: "#FAFCFF", borderRadius: 10, flexShrink: 0, lineHeight: 0 }}>
             <QRCodeSVG value={publicUrl} size={84} />
@@ -468,6 +471,8 @@ function ShareProfileCard({ learnerId }) {
             </button>
           </div>
         </div>
+        {token && <ShareQrTools learner={learner} publicUrl={publicUrl} />}
+        </>
       )}
 
       <ConfirmDialog
@@ -798,7 +803,7 @@ export default function LearnerViewPage() {
           </div>
         </div>
 
-        <ShareProfileCard learnerId={id} />
+        <ShareProfileCard learner={learner} />
 
         {(isAdmin || isSchool) && curriculumId && (
           <>
