@@ -19,6 +19,7 @@ const AssessmentIssueModel = require("../assessments/submissions/assessment-issu
 const AttendanceModel = require("../attendance/attendance.model");
 const ClassGroupService = require("../classes/groups/class-group.service");
 const CourseModel = require("../courses/course.model");
+const TeacherModel = require("../teachers/teacher.model");
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -192,7 +193,7 @@ async function assertUsernameAvailable(username, excludeId) {
 }
 
 // One hub's slice of the public "share via QR" profile: the enrollment itself, plus — once the
-// learner is in a class there — attendance, courses, Developmental Stage, the level ladder,
+// learner is in a class there — attendance, teachers, courses, Developmental Stage, the level ladder,
 // per-competency standing and Pathway placement under THAT class's curriculum. A learner at
 // several hubs can run a different curriculum at each, so none of this is merged across hubs.
 async function buildPublicHubSection(record, link, isCurrent, issuedRows) {
@@ -209,6 +210,7 @@ async function buildPublicHubSection(record, link, isCurrent, issuedRows) {
     since: link.createdAt || null,
     isCurrent,
     attendance: null,
+    teachers: [],
     courses: [],
     developmentalStage: null,
     currentLevel: null,
@@ -232,6 +234,29 @@ async function buildPublicHubSection(record, link, isCurrent, issuedRows) {
       lastMarked: attendanceRows[0].date,
     };
   }
+
+  // Who teaches this class, one entry per educator with the course(s) they take — name and photo
+  // only, never their email or phone. The educator of record for a course comes first.
+  const teacherLinks = await ClassCourseTeacherLinkModel.findByClassId(cls.id);
+  const byTeacher = new Map();
+  for (const tl of teacherLinks) {
+    const entry = byTeacher.get(tl.teacherId) || { courseIds: [], isPrimary: false };
+    entry.courseIds.push(tl.courseId);
+    entry.isPrimary = entry.isPrimary || !!tl.isPrimary;
+    byTeacher.set(tl.teacherId, entry);
+  }
+  section.teachers = (await Promise.all([...byTeacher.entries()].map(async ([teacherId, entry]) => {
+    const teacher = await TeacherModel.findById(teacherId);
+    if (!teacher || teacher.status === "inactive") return null;
+    const taught = await Promise.all(entry.courseIds.map((courseId) => CourseModel.findById(courseId)));
+    return {
+      firstName: teacher.firstName,
+      lastName: teacher.lastName,
+      photo: teacher.photo || null,
+      courses: taught.filter(Boolean).map((course) => course.name),
+      isPrimary: entry.isPrimary,
+    };
+  }))).filter(Boolean).sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
 
   const curriculumId = cls.curriculumId;
   if (!curriculumId) return section;
