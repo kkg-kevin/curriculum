@@ -21,17 +21,21 @@ const portalBase = (invoice) => (invoice.payerHubId ? "/school-portal/billing" :
 const invoiceUrl = (invoice) => appUrl(invoice.payerHubId ? `${portalBase(invoice)}/${invoice.id}` : `${portalBase(invoice)}/invoices/${invoice.id}`);
 const receiptUrl = (invoice, paymentId) => appUrl(`${portalBase(invoice)}/receipts/${invoice.id}/${paymentId}`);
 
-// A hub's invoice arrives as "Sunrise Hub via Digifunzi", with replies going to the hub.
+// A hub's invoice arrives as "Sunrise Hub via Digifunzi", with replies going to the hub — and is
+// headed by the hub's own name and logo (`look`) rather than the platform's.
 function sender(invoice) {
   const fromHub = invoice.issuerType === "learning_hub" && invoice.issuedBy?.name;
   return {
     issuerName: fromHub ? invoice.issuedBy.name : MAIL_BRAND_NAME,
     fromName: fromHub ? `${invoice.issuedBy.name} via ${MAIL_BRAND_NAME}` : undefined,
     replyTo: fromHub ? invoice.issuedBy.email || undefined : undefined,
+    look: fromHub ? { sender: { name: invoice.issuedBy.name, logo: invoice.issuedBy.logo }, supportEmail: invoice.issuedBy.email || undefined } : {},
   };
 }
 
 const learnerName = (invoice) => (invoice.learner ? `${invoice.learner.firstName} ${invoice.learner.lastName}`.trim() : null);
+// The child the document is about, shown under the heading with their photo.
+const learnerOf = (invoice) => (learnerName(invoice) ? { name: learnerName(invoice), photo: invoice.learner.photo, caption: "Learner" } : undefined);
 
 // `invoice` is the decorated document (BillingService.getInvoiceDocument) — billTo/issuedBy/
 // learner/amountDue already resolved. `manual` is a staff member pressing "Email invoice": always
@@ -42,10 +46,17 @@ async function sendInvoiceEmail(invoice, { manual = false } = {}) {
   const to = invoice.billTo?.email;
   if (!to) return null;
   if (!manual && !(await workspaceSends(invoice, "invoice_issued"))) return null;
-  const { issuerName, fromName, replyTo } = sender(invoice);
+  const { issuerName, fromName, replyTo, look } = sender(invoice);
   const due = formatDate(invoice.dueAt);
   const settled = Number(invoice.amountDue) <= 0;
   const { html, text } = renderEmail({
+    ...look,
+    tone: settled ? "success" : "info", icon: "document", eyebrow: "Invoice",
+    preview: settled ? `Paid in full — ${formatMoney(invoice.total, invoice.currency)}` : `${formatMoney(invoice.amountDue, invoice.currency)} due${due ? ` by ${due}` : ""}`,
+    person: learnerOf(invoice),
+    highlight: settled
+      ? { label: "Paid in full", value: formatMoney(invoice.total, invoice.currency), note: "Nothing further is due" }
+      : { label: "Amount due", value: formatMoney(invoice.amountDue, invoice.currency), note: due ? `Due by ${due}` : null },
     heading: `Invoice ${invoice.invoiceNumber}`,
     greeting: `Hi ${firstName(invoice.billTo.name)},`,
     paragraphs: [
@@ -55,7 +66,6 @@ async function sendInvoiceEmail(invoice, { manual = false } = {}) {
     ],
     rows: [
       ["Invoice", invoice.invoiceNumber],
-      ...(learnerName(invoice) ? [["Learner", learnerName(invoice)]] : []),
       ...(invoice.periodLabel ? [["Period", invoice.periodLabel]] : []),
       ["Total", formatMoney(invoice.total, invoice.currency)],
       ["Amount due", formatMoney(invoice.amountDue, invoice.currency)],
@@ -76,9 +86,17 @@ async function sendPaymentReceiptEmail(invoice, payment) {
   const to = invoice.billTo?.email;
   if (!to) return null;
   if (!(await workspaceSends(invoice, "payment_receipt"))) return null;
-  const { issuerName, fromName, replyTo } = sender(invoice);
+  const { issuerName, fromName, replyTo, look } = sender(invoice);
   const settled = Number(invoice.amountDue) <= 0;
   const { html, text } = renderEmail({
+    ...look,
+    tone: "success", icon: "check", eyebrow: "Receipt",
+    preview: `${formatMoney(payment.amount, invoice.currency)} received${settled ? " — invoice paid in full" : ""}`,
+    person: learnerOf(invoice),
+    highlight: {
+      label: "Amount paid", value: formatMoney(payment.amount, invoice.currency),
+      note: settled ? "Invoice paid in full" : `${formatMoney(invoice.amountDue, invoice.currency)} still outstanding`,
+    },
     heading: "Payment received",
     greeting: `Hi ${firstName(invoice.billTo.name)},`,
     paragraphs: [

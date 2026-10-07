@@ -113,11 +113,14 @@ BREVO_API_KEY=        # when set, email is sent through Brevo's HTTP API instead
 MAIL_FROM=            # e.g. Digifunzi <hello@digifunzi.com>
 MAIL_REPLY_TO=
 MAIL_BRAND_NAME=      # default "Digifunzi"
+MAIL_LOGO_URL=        # optional — the email header logo is served by this API (/email-assets) once API_PUBLIC_URL is set; this points at a different image
+MAIL_WEBSITE_URL=     # optional — footer link; default is the first https PUBLIC_SITE_URL
+MAIL_SOCIAL_LINKS=    # optional — footer links, e.g. Facebook=https://…,Instagram=https://…
 PASSWORD_RESET_MINUTES=   # default 60
 ```
 
 ### Email
 
-Account emails (password reset, invoice issued, payment receipt, emailed notifications) go through `server/src/shared/mail/mail.service.js`'s `queueMail`, never straight to `shared/utils/mailer.js`: each is written to `email_outbox`, sent in-process one at a time, and retried on failure. `npm run mail:process` (from `server/`) sends anything still due — run it from a cron job. Build bodies with `shared/mail/mail.layout.js`'s `renderEmail` (HTML + plain text from one data shape). Each module keeps its own `<feature>.emails.js`. Lead emails still call `mailer.js` directly.
+Account emails (password reset, invoice issued, payment receipt, emailed notifications) go through `server/src/shared/mail/mail.service.js`'s `queueMail`, never straight to `shared/utils/mailer.js`: each is written to `email_outbox`, sent in-process one at a time, and retried on failure. `npm run mail:process` (from `server/`) sends anything still due — run it from a cron job. Build bodies with `shared/mail/mail.layout.js`'s `renderEmail` (HTML + plain text from one data shape; `tone`/`icon`/`eyebrow` give each kind of email its look, `highlight` its key figure, `person` the learner it is about, `sender` a hub's own name and logo). Each module keeps its own `<feature>.emails.js`. Lead emails use the same layout but still call `mailer.js` directly.
 
 Who gets what is decided in two layers, both in `server/src/modules/notifications/`: the workspace (`email_settings`, Settings → Emails, owner only — a type switched off there is sent to nobody in that workspace, including automatic invoice/receipt emails) and then the person (`users.emailPreferences` — the bell, profile pages, or the no-sign-in link in every notification email's footer, `/email-preferences?token=…`). A new emailed notification type goes in `notification.emails.js`'s `EMAIL_TYPES`; pass `ownerAdminId` to `_notify` when the recipient's workspace can't be worked out from their account (educators). Password emails ignore both layers.
