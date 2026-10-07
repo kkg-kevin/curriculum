@@ -9,6 +9,7 @@
 // invoice_issued is deliberately absent: invoices have their own, fuller email (billing.emails.js).
 // assessment_submitted too — a teacher can get dozens of those in one lesson.
 const UserModel = require("../auth/user.model");
+const LearnerModel = require("../learners/learner.model");
 const { queueMail } = require("../../shared/mail/mail.service");
 const { renderEmail, appUrl } = require("../../shared/mail/mail.layout");
 const { MAIL_BRAND_NAME } = require("../../config/env");
@@ -21,42 +22,49 @@ const EDUCATOR_ROLES = ["teacher"];
 const CLAIM_REVIEWER_ROLES = ["admin", "supervisor"];
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
-// notification opens — so the email's button lands on the same page.
+// notification opens — so the email's button lands on the same page. `look` is how the email
+// tells itself apart at a glance (see mail.layout.js's tones and icons).
 const EMAIL_TYPES = {
   session_report_published: {
     label: "A new session report is published",
     roles: LEARNER_ROLES,
     default: true,
+    look: { tone: "info", icon: "pencil", eyebrow: "Session report" },
     path: (p) => (p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports"),
   },
   level_up: {
     label: "A new level is unlocked",
     roles: LEARNER_ROLES,
     default: true,
+    look: { tone: "celebrate", icon: "star", eyebrow: "Level up" },
     path: (p) => (p.learnerId ? `/learner-portal?child=${p.learnerId}` : "/learner-portal"),
   },
   assessment_graded: {
     label: "An assessment is graded",
     roles: LEARNER_ROLES,
     default: false,
+    look: { tone: "info", icon: "check", eyebrow: "Assessment" },
     path: (p) => (p.issueId ? `/learner-portal/assessments/${p.issueId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/assessments"),
   },
   account_activated: {
     label: "Your account is activated",
     roles: LEARNER_ROLES,
     default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Account" },
     path: () => "/learner-portal",
   },
   lead_submitted: {
     label: "A new enquiry arrives from the website",
     roles: ADMIN_ROLES,
     default: true,
+    look: { tone: "info", icon: "envelope", eyebrow: "New enquiry" },
     path: (p) => (p.leadId ? `/enquiries?lead=${p.leadId}` : "/enquiries"),
   },
   home_learning_signup: {
     label: "A family signs up for Home Learning",
     roles: ADMIN_ROLES,
     default: true,
+    look: { tone: "success", icon: "home", eyebrow: "Home Learning" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/home-learning"),
   },
   // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
@@ -65,30 +73,35 @@ const EMAIL_TYPES = {
     label: "An educator submits a claim for you to review",
     roles: CLAIM_REVIEWER_ROLES,
     default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Educator claim" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),
   },
   claim_awaiting_approval: {
     label: "A supervisor approves a claim, ready to pay",
     roles: ADMIN_ROLES,
     default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Educator claim" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/claims"),
   },
   claim_rejected: {
     label: "A claim of yours is declined",
     roles: EDUCATOR_ROLES,
     default: true,
+    look: { tone: "danger", icon: "cross", eyebrow: "Claim declined" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
   claim_approved: {
     label: "A claim of yours is approved",
     roles: EDUCATOR_ROLES,
     default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Claim approved" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
   claim_paid: {
     label: "A claim of yours is paid",
     roles: EDUCATOR_ROLES,
     default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Claim paid" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
 };
@@ -140,7 +153,13 @@ async function sendNotificationEmail(notification) {
     const payload = notification.payload || {};
     const ownerAdminId = notification.ownerAdminId || (await workspaceOf(user, { learnerId: payload.learnerId }));
     if (!(await workspaceAllows(ownerAdminId, notification.type))) return null;
+    // A parent with several children sees straight away which one this is about.
+    const learner = user.role === "learner" && payload.learnerId ? await LearnerModel.findById(payload.learnerId) : null;
     const { html, text } = renderEmail({
+      ...EMAIL_TYPES[notification.type].look,
+      preview: notification.message,
+      person: learner ? { name: `${learner.firstName} ${learner.lastName}`.trim(), photo: learner.photo, caption: "Learner" } : undefined,
+      highlight: notification.type === "level_up" && payload.bandName ? { label: "New level unlocked", value: payload.bandName } : undefined,
       heading: notification.title,
       greeting: `Hi ${String(user.name || "").trim().split(/\s+/)[0] || "there"},`,
       paragraphs: [notification.message],

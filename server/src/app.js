@@ -100,6 +100,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// The brand logo in every email's header — mail apps fetch it from here (see mail.layout.js).
+app.use("/email-assets", express.static(path.join(__dirname, "shared/mail/assets"), { maxAge: "30d" }));
 
 app.get("/", (req, res) => {
   res.json({ message: "API is running" });

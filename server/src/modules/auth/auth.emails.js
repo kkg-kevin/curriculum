@@ -30,6 +30,8 @@ function sendPasswordResetEmail(target, token, expiresAt) {
         `Use the button below to choose a new password. The link is valid for ${validFor()} and can be used once.`,
       ];
   const { html, text } = renderEmail({
+    tone: "info", icon: "refresh", eyebrow: "Account security",
+    preview: `Choose a new password — the link is valid for ${validFor()}.`,
     heading: "Reset your password",
     greeting: `Hi ${firstName(recipientName)},`,
     paragraphs,
@@ -46,6 +48,8 @@ function sendPasswordChangedEmail(target) {
   const { user, to, recipientName, childName } = target;
   const whose = childName ? `The password for ${childName}'s learner login (username: ${user.username})` : `The password for your ${MAIL_BRAND_NAME} account`;
   const { html, text } = renderEmail({
+    tone: "warning", icon: "alert", eyebrow: "Account security",
+    preview: "If this wasn't you, reset your password straight away.",
     heading: "Your password was changed",
     greeting: `Hi ${firstName(recipientName)},`,
     paragraphs: [

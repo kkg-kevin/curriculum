@@ -49,6 +49,13 @@ const env = {
   MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
   // The product name account emails are signed with (password resets, invoices, notifications).
   MAIL_BRAND_NAME: process.env.MAIL_BRAND_NAME || "Digifunzi",
+  // How emails look — all optional (see shared/mail/mail.layout.js). The header logo is served by
+  // this API, so it shows once API_PUBLIC_URL is set; MAIL_LOGO_URL points at a different image.
+  // The footer links to MAIL_WEBSITE_URL (default: the first https PUBLIC_SITE_URL) and to
+  // MAIL_SOCIAL_LINKS, e.g. "Facebook=https://facebook.com/…,Instagram=https://instagram.com/…".
+  MAIL_LOGO_URL: process.env.MAIL_LOGO_URL,
+  MAIL_WEBSITE_URL: process.env.MAIL_WEBSITE_URL,
+  MAIL_SOCIAL_LINKS: process.env.MAIL_SOCIAL_LINKS,
   // How long an emailed password-reset link stays valid.
   PASSWORD_RESET_MINUTES: Number(process.env.PASSWORD_RESET_MINUTES) > 0 ? Number(process.env.PASSWORD_RESET_MINUTES) : 60,
   DB_HOST: process.env.DB_HOST || "127.0.0.1",
