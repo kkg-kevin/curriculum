@@ -14,6 +14,7 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 // requiring them here can't reintroduce the circular-require chain the services already dance
 // around (report.service → assessment-submission.service → competency.service → back here).
 const ReportModel = require("../reports/report.model");
+const CertificateModel = require("../certificates/certificate.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AttendanceModel = require("../attendance/attendance.model");
@@ -458,6 +459,7 @@ const LearnerService = {
     // issues are removed: a class-issued assessment has learnerId null and belongs to the class,
     // not to any one learner, so it correctly stays put.
     await ReportModel.deleteByLearnerId(id);
+    await CertificateModel.deleteByLearnerId(id);
     const submissions = await AssessmentSubmissionModel.findAll({ learnerId: id });
     await Promise.all(submissions.map((s) => AssessmentSubmissionModel.delete(s.id)));
     const issues = await AssessmentIssueModel.findAll({ learnerId: id });
@@ -689,6 +691,9 @@ const LearnerService = {
     const issuedRows = links.some((l) => l.classId) ? await AssessmentSubmissionService.getIssuedRowsForLearner(record.id) : [];
     const hubs = await Promise.all(links.map((link) => buildPublicHubSection(record, link, link === primaryLink, issuedRows)));
     hubs.sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent));
+    // Course certificates this learner holds — what is printed on each, nothing more. Required
+    // lazily: certificate.service.js reaches notification.service.js, which leads back here.
+    const certificates = await require("../certificates/certificate.service").listPublicForLearner(record.id);
 
     return {
       firstName: record.firstName,
@@ -701,6 +706,7 @@ const LearnerService = {
       username: record.username,
       guardianName: record.guardianName || null,
       hubs,
+      certificates,
     };
   },
 };

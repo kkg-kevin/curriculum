@@ -12,6 +12,7 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
 const AttendanceModel = require("../attendance/attendance.model");
 const NotificationService = require("../notifications/notification.service");
+const CertificateService = require("../certificates/certificate.service");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 
 function notFound(message) {
@@ -382,6 +383,17 @@ const ReportService = {
     }));
   },
 
+  // How far one learner is through a course, counted the way a certificate is earned: of the
+  // sessions that have something to assess, how many already have a published report for them.
+  // (When every one does, the course is ready for its final report — isCourseReadyForLearner.)
+  async getCourseProgressForLearner(courseId, classId, learnerId) {
+    const allSessions = await SessionModel.findByCourseId(courseId);
+    const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+    const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
+    const reports = await Promise.all(sessions.map((s) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id })));
+    return { totalSessions: sessions.length, doneSessions: reports.filter((r) => r?.status === "published").length };
+  },
+
   // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,
   // replacing the per-(class × course) request fan-out the teacher's Reports page used to issue
   // (a teacher with 5 classes × 10 courses fired 50 parallel requests just to paint the page).
@@ -583,12 +595,16 @@ const ReportService = {
     if (report.status === "published") return report;
 
     const content = await buildCourseReportContent(report.learnerId, report.courseId, report.classId);
-    return ReportModel.update(id, {
+    const published = await ReportModel.update(id, {
       content,
       status: "published",
       publishedAt: new Date(),
       publishedBy,
     });
+    // Publishing the final report is the moment the learner has completed the course — it earns
+    // their certificate (and tells the family). Never fails the publish itself.
+    await CertificateService.issueForReportSafely(published, { issuedBy: publishedBy });
+    return published;
   },
 
   // Withdraws an already-published report back to draft, hiding it from the learner/guardian
@@ -601,6 +617,8 @@ const ReportService = {
     const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status !== "published") return report;
+    // The certificate the report earned is revoked with it; re-publishing reinstates the same one.
+    await CertificateService.revokeForReportSafely(report);
     return ReportModel.update(id, { status: "draft", publishedAt: null, publishedBy: null });
   },
 

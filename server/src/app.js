@@ -26,6 +26,9 @@ const timetableRoutes = require("./modules/timetable/timetable.routes");
 const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const reportRoutes = require("./modules/reports/report.routes");
+const certificateRoutes = require("./modules/certificates/certificate.routes");
+const { settingsRouter: certificateSettingsRoutes } = certificateRoutes;
+const publicCertificateRoutes = require("./modules/certificates/public-certificate.routes");
 const uploadRoutes = require("./modules/uploads/upload.routes");
 const competitionRoutes = require("./modules/competitions/competition.routes");
 const bootcampRoutes = require("./modules/bootcamps/bootcamp.routes");
@@ -134,6 +137,9 @@ app.use("/api/auth", authRoutes);
 // and scoped by learner.service.js's getPublicProfile to a hand-picked, deliberately narrow
 // field set — see that function's comment for exactly what it excludes.
 app.use("/api/public/learners", publicLearnerProfileRoutes);
+// Unauthenticated by design — checking a course certificate from the QR / link printed on it.
+// The token in the URL is the only access control; see certificate.service.js's verify.
+app.use("/api/public/certificates", publicCertificateRoutes);
 // Unauthenticated by design — the digifunzi-landing site's Enroll/Contact forms (see
 // public-lead.routes.js). Mounted at /api/public rather than /api/public/leads since it
 // serves both /api/public/leads and /api/public/contact.
@@ -190,6 +196,8 @@ app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubm
 // Course reports read off graded submissions above — same not-authoring, multi-role,
 // attachOwnRecords-scoped shape.
 app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
+// Course certificates follow final reports (issued on publish) — read-only here, same roles.
+app.use("/api/certificates", protect, attachOwnRecords, certificateRoutes);
 // Learner access is scoped to assessment-submission file uploads (documentUpload/imageUpload/
 // videoUpload/audioUpload/codeUpload items and project deliverables) — see AssessmentTaker.jsx.
 // teacher/school need this too, for their own profile-photo uploads (teacher-portal/
@@ -207,6 +215,8 @@ app.use("/api/notifications", protect, notificationRoutes);
 // Which emails the whole workspace sends (Settings → Emails). Owner-only, same guards as
 // /api/access: what a workspace emails its parents and educators is not a staff decision.
 app.use("/api/email-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, emailSettingsRoutes);
+// Who signs the workspace's certificates (Settings → Certificates) — owner only, like the above.
+app.use("/api/certificate-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, certificateSettingsRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Hub Visits — a non-school hub logging learner space-usage visits and turning them into
 // hub_usage invoices through the Billing module above (see hub-visit.service.js's header

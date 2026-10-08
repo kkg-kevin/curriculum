@@ -199,7 +199,13 @@ export default function ReportsPage() {
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Reports & Analytics</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
             Academic performance across every class at {school.name} — scores, competency attainment, attendance and report completion, drawn from published course reports and attendance records.
-          </p>
+          </p>          <button
+            type="button"
+            onClick={() => navigate("/school-portal/reports/certificates")}
+            style={{ marginTop: 14, padding: "8px 16px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          >
+            Certificates issued
+          </button>
         </div>
       </div>
 

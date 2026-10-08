@@ -28,6 +28,8 @@ import ProgressArcCard from "../components/ProgressArcCard";
 import PathwayTabContent from "../components/profile/PathwayTabContent";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
+import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
+import { useMyCertificates, useMyCertificateProgress } from "../../certificates/hooks/useCertificates";
 
 // classId-scoped components (AssessmentsOverview, SummaryRow) fall back to showing the
 // learner's ENTIRE cross-hub assessment history when classId is undefined — correct for a
@@ -75,6 +77,12 @@ export default function ProfilePage() {
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
   const progressKey = user?.email || user?.username;
   const progressSummary = useMemo(() => summarizeCoursesProgress(progressKey, courses), [progressKey, courses]);
+
+  // Every certificate this learner holds, across hubs — like the identity card above, it's part
+  // of their whole record rather than one hub's slice.
+  const { data: certificates = [], isLoading: certificatesLoading } = useMyCertificates();
+  // What they can earn next, with real progress (sessions done in a course, courses in a pathway).
+  const { data: certificateProgress } = useMyCertificateProgress();
 
   const handleSaveLearner = (formData) => {
     updateLearner({ id: learner.id, data: formData }, {
@@ -134,6 +142,10 @@ export default function ProfilePage() {
         </div>
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
+
+      {/* Certificates as achievements: what they have earned (click one to preview it here), and
+          what they can earn next. */}
+      <AchievementsShowcase certificates={certificates} progress={certificateProgress} isLoading={certificatesLoading} />
 
       <ProfileTabs active={activeTab} onChange={setActiveTab} />
 
