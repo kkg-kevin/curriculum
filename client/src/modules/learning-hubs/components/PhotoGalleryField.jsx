@@ -1,10 +1,7 @@
 import { useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { uploadApi } from "../../../services/uploadApi";
-
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+import { uploadApi, IMAGE_TYPES, IMAGE_MAX_MB } from "../../../services/uploadApi";
 
 // Multi-photo uploader: uploads each picked/dropped file immediately (reusing the same
 // /api/uploads/image endpoint ImageUploadField uses) and keeps `value` as a plain array of
@@ -22,12 +19,9 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
 
     const valid = [];
     for (const file of files) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      // Size is checked by uploadApi.uploadImage, after a large photo has been resized.
+      if (!IMAGE_TYPES.includes(file.type)) {
         toast.error(`${file.name}: only PNG, JPEG, GIF, and WEBP images are allowed`);
-        continue;
-      }
-      if (file.size > MAX_SIZE) {
-        toast.error(`${file.name}: exceeds 5MB limit`);
         continue;
       }
       valid.push(file);
@@ -40,10 +34,12 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
 
     setUploading(true);
     try {
-      const urls = await Promise.all(valid.map((file) => uploadApi.uploadImage(file)));
-      onChange([...value, ...urls]);
-    } catch (err) {
-      toast.error(err.message || "Failed to upload one or more photos");
+      // Each photo stands alone: one that is refused (too large, a failed upload) is reported
+      // by name and the rest are still added.
+      const results = await Promise.allSettled(valid.map((file) => uploadApi.uploadImage(file)));
+      const urls = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+      results.filter((r) => r.status === "rejected").forEach((r) => toast.error(r.reason?.message || "A photo could not be uploaded"));
+      if (urls.length > 0) onChange([...value, ...urls]);
     } finally {
       setUploading(false);
     }
@@ -101,7 +97,7 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
         <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#111827" }}>
           {uploading ? "Uploading…" : "Click to upload or drag and drop"}
         </p>
-        <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Maximum file size: 5MB{max != null ? ` · ${remaining} of ${max} left` : ""}</p>
+        <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>Up to {IMAGE_MAX_MB} MB each · large photos are resized for you{max != null ? ` · ${remaining} of ${max} left` : ""}</p>
       </div>}
 
       {value.length > 0 && (

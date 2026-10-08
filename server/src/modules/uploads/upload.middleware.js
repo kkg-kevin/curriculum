@@ -7,6 +7,11 @@ const UPLOAD_DIR = path.join(__dirname, "../../../uploads");
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
+// The two size limits. The client mirrors the image one (client: services/uploadApi.js) and shrinks
+// large photos before sending, so this is a ceiling people rarely meet — keep the two in step.
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const DOCUMENT_MAX_BYTES = 500 * 1024 * 1024;
+
 const ALLOWED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
 const ALLOWED_DOCUMENT_MIME_TYPES = [
@@ -71,7 +76,7 @@ function makeFileFilter(allowedMimeTypes, label, { allowedExtensions = [] } = {}
 const uploadMiddleware = multer({
   storage,
   fileFilter: makeFileFilter(ALLOWED_IMAGE_MIME_TYPES, "PNG, JPEG, GIF, and WEBP image"),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: IMAGE_MAX_BYTES },
 });
 
 const documentUploadMiddleware = multer({
@@ -79,7 +84,7 @@ const documentUploadMiddleware = multer({
   fileFilter: makeFileFilter(ALLOWED_DOCUMENT_MIME_TYPES, "document, image, audio, video, ZIP, or code", { allowedExtensions: CODE_FILE_EXTENSIONS }),
   // Videos for assessments can run 30+ minutes; 500MB comfortably covers a compressed
   // recording of that length.
-  limits: { fileSize: 500 * 1024 * 1024 },
+  limits: { fileSize: DOCUMENT_MAX_BYTES },
 });
 
-module.exports = { uploadMiddleware, documentUploadMiddleware };
+module.exports = { uploadMiddleware, documentUploadMiddleware, IMAGE_MAX_BYTES, DOCUMENT_MAX_BYTES };
