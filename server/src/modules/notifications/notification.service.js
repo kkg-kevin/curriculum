@@ -164,6 +164,19 @@ const NotificationService = {
     });
   },
 
+  // A certificate (course, pathway or bootcamp) was just issued (see certificate.service.js). dedupeKey: once per
+  // certificate, so a report withdrawn and published again doesn't announce it twice.
+  async certificateIssued(certificate) {
+    const title = certificate.snapshot?.title || certificate.snapshot?.courseName;
+    await NotificationService.notifyLearner(certificate.learnerId, {
+      type: "certificate_issued",
+      title: "Certificate earned",
+      message: `You've earned a certificate${title ? ` for completing "${title}"` : ""}.`,
+      payload: { certificateId: certificate.id, learnerId: certificate.learnerId },
+      dedupeKey: `certificate:${certificate.id}`,
+    });
+  },
+
   // Checks whether this learner just crossed into a NEW Performance Band on this curriculum —
   // "current" is the highest-order band with thresholdMet true, the identical rule
   // bandJourney.js's deriveBandJourney applies client-side, mirrored here so the two can never

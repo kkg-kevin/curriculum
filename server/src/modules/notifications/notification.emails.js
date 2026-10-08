@@ -32,6 +32,13 @@ const EMAIL_TYPES = {
     look: { tone: "info", icon: "pencil", eyebrow: "Session report" },
     path: (p) => (p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports"),
   },
+  certificate_issued: {
+    label: "A certificate is earned",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "celebrate", icon: "star", eyebrow: "Certificate" },
+    path: (p) => (p.certificateId ? `/learner-portal/certificates/${p.certificateId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/profile"),
+  },
   level_up: {
     label: "A new level is unlocked",
     roles: LEARNER_ROLES,

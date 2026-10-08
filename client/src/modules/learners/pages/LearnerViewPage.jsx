@@ -23,6 +23,9 @@ import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/p
 import { formatClassName } from "../../classes/utils/classDisplay";
 import RecordHistory from "../../activity/components/RecordHistory";
 import ShareQrTools from "../components/ShareQrTools";
+import CertificatesCard from "../../certificates/components/CertificatesCard";
+import { useLearnerCertificates } from "../../certificates/hooks/useCertificates";
+import { verifyUrl } from "../../certificates/utils/certificate";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -489,6 +492,25 @@ function ShareProfileCard({ learner }) {
   );
 }
 
+// The certificates this learner has earned from classes this member of staff can reach — one per
+// completed course, issued when its final report is published. A row opens the same public page
+// the QR on the certificate leads to; a revoked one (its report was withdrawn) is listed but
+// isn't a link.
+function LearnerCertificates({ learnerId }) {
+  const { data: certificates = [], isLoading } = useLearnerCertificates(learnerId);
+  return (
+    <CertificatesCard
+      certificates={certificates}
+      isLoading={isLoading}
+      showRevoked
+      newTab
+      hrefFor={(c) => verifyUrl(c.verifyToken)}
+      emptyText="No certificates yet. One is issued when a course's final report is published for this learner."
+      style={{ border: "none" }}
+    />
+  );
+}
+
 function DetailRow({ label, value, empty = "—" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -804,6 +826,8 @@ export default function LearnerViewPage() {
         </div>
 
         <ShareProfileCard learner={learner} />
+
+        <LearnerCertificates learnerId={id} />
 
         {(isAdmin || isSchool) && curriculumId && (
           <>

@@ -79,6 +79,9 @@ import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
 import PublicLearnerProfilePage from "../modules/learners/pages/PublicLearnerProfilePage";
+import VerifyCertificatePage from "../modules/certificates/pages/VerifyCertificatePage";
+import LearnerCertificateViewPage from "../modules/certificates/pages/CertificateViewPage";
+import CertificatesListPage from "../modules/certificates/pages/CertificatesListPage";
 import EmailPreferencesPage from "../modules/notifications/pages/EmailPreferencesPage";
 import CoursesPage from "../modules/courses/pages/CoursesPage";
 import CreateCoursePage from "../modules/courses/pages/CreateCoursePage";
@@ -128,6 +131,9 @@ export default function AppRoutes() {
           MainLayout wrapper on purpose: someone scanning a printed badge on their own phone is
           never expected to be logged in. */}
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
+      {/* Unauthenticated too — where the QR on a course certificate leads, for anyone checking
+          that it is genuine. */}
+      <Route path="/certificates/verify/:token" element={<VerifyCertificatePage />} />
       {/* Unauthenticated too — the "choose which emails you get" link in an email's footer. */}
       <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 
@@ -170,6 +176,7 @@ export default function AppRoutes() {
         </Route>
         <Route path="enquiries" element={<EnquiriesListPage />} />
         <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="reports/certificates" element={<CertificatesListPage backTo="/reports" />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/customers" element={<CustomersListPage />} />
         <Route path="billing/customers/:hubId" element={<CustomerDetailPage />} />
@@ -310,6 +317,7 @@ export default function AppRoutes() {
           <Route path="timetable" element={<SchoolTimetablePage />} />
           <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
+          <Route path="reports/certificates" element={<CertificatesListPage backTo="/school-portal/reports" />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="billing/receipts" element={<ReceiptsListPage />} />
           <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
@@ -330,6 +338,7 @@ export default function AppRoutes() {
           <Route path="assessments/:issueId" element={<LearnerAssessmentDetailPage />} />
           <Route path="reports" element={<LearnerReportsPage />} />
           <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
+          <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />

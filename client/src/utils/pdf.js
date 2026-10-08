@@ -6,7 +6,10 @@
 // Shared across modules (billing documents, learner reports, …). Mirrors the behavior of the
 // browser's own print stylesheet: anything marked .no-print is dropped, and .scroll-box regions
 // are un-clamped so a scrolled-out overflow isn't silently truncated in the capture.
-export async function downloadElementAsPdf(elementId, filename, { backgroundColor = "#F5F7FA" } = {}) {
+//
+// `orientation: "landscape"` is for a single designed sheet (a certificate) rather than a long
+// document: the capture is fitted to one A4 page.
+export async function downloadElementAsPdf(elementId, filename, { backgroundColor = "#F5F7FA", orientation = "portrait" } = {}) {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
@@ -30,7 +33,7 @@ export async function downloadElementAsPdf(elementId, filename, { backgroundColo
       ignoreElements: (el) => el.classList?.contains("no-print"),
     });
 
-    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pdf = new jsPDF({ orientation, unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pageWidth;
@@ -42,7 +45,9 @@ export async function downloadElementAsPdf(elementId, filename, { backgroundColo
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
 
-    while (heightLeft > 0) {
+    // 1pt of slack: a sheet drawn to the page's own proportions shouldn't spill a blank page
+    // over a rounding error.
+    while (heightLeft > 1) {
       position -= pageHeight;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);

@@ -10,6 +10,7 @@ const ICONS = {
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
+  certificate_issued: { Icon: FiAward, color: "#B45309" },
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
   share_request: { Icon: FiShare2, color: "#25476a" },
@@ -37,6 +38,8 @@ function resolveNotificationPath(n) {
       return p.issueId ? `/teacher-portal/assessments/${p.issueId}` : "/teacher-portal/assessments";
     case "session_report_published":
       return p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports";
+    case "certificate_issued":
+      return p.certificateId ? `/learner-portal/certificates/${p.certificateId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/profile";
     case "level_up":
       return p.learnerId ? `/learner-portal?child=${p.learnerId}` : "/learner-portal";
     case "invoice_issued":

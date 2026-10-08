@@ -7,6 +7,8 @@ import { usePublicLearnerProfile } from "../hooks/useLearners";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { formatAgeRange } from "../utils/ageRange";
 import { BRAND_NAME } from "../../../branding";
+import CertificatesCard from "../../certificates/components/CertificatesCard";
+import { verifyUrl } from "../../certificates/utils/certificate";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO = "#38aae1";
@@ -683,6 +685,17 @@ export default function PublicLearnerProfilePage() {
         )}
 
         {hub && <HubPanel hub={hub} />}
+
+        {/* Course certificates, across every hub — only shown once there is one. Each opens the
+            page that confirms it is genuine. */}
+        {(profile.certificates || []).length > 0 && (
+          <CertificatesCard
+            certificates={profile.certificates}
+            newTab
+            hrefFor={(c) => verifyUrl(c.verifyToken)}
+            style={{ borderColor: BORDER }}
+          />
+        )}
 
         <p style={{ margin: "8px 0 0", fontSize: 11.5, color: INK_FAINT, textAlign: "center" }}>{BRAND_NAME} · Shared profile</p>
       </main>
