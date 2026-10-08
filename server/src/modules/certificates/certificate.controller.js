@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const CertificateService = require("./certificate.service");
 const CertificateModel = require("./certificate.model");
+const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
@@ -71,10 +72,11 @@ const listCertificates = asyncHandler(async (req, res) => {
   }
 
   if (classId) {
-    const all = await CertificateService.listForClass(classId, courseId || null);
-    // An empty class has nothing to check ownership against, and nothing to show either.
-    const data = [];
-    for (const certificate of all) if (await canAccess(req, certificate, hubIds)) data.push(certificate);
+    // Ownership is proved on the class itself, before anything is read (or filled in) for it.
+    const cls = await ClassModel.findById(classId);
+    if (!cls) fail(404, "Class not found");
+    assertOwn(await canAccess(req, { classId: cls.id, hubId: cls.schoolId }, hubIds));
+    const data = await CertificateService.listForClass(classId, courseId || null);
     return res.json({ success: true, data, count: data.length });
   }
 

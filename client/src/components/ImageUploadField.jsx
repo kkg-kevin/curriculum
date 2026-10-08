@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { uploadApi } from "../services/uploadApi";
+import { uploadApi, IMAGE_UPLOAD_HINT } from "../services/uploadApi";
 
 // Immediate-upload image picker: uploads on file select and hands the resolved
 // URL back via onChange, so the parent form already holds a real URL by Save.
@@ -75,6 +75,9 @@ export default function ImageUploadField({ value, onChange, label, width = "220p
           {uploading ? "Uploading…" : "Upload image"}
         </button>
       )}
+
+      {/* The same rules on every image field — see uploadApi.uploadImage. */}
+      <p style={{ margin: 0, maxWidth: width, fontSize: "11px", lineHeight: 1.4, color: "#9CA3AF" }}>{IMAGE_UPLOAD_HINT}</p>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 const logger = require("../utils/logger");
 const { NODE_ENV } = require("../../config/env");
+const { IMAGE_MAX_BYTES, DOCUMENT_MAX_BYTES } = require("../../modules/uploads/upload.middleware");
 
 const errorHandler = (err, req, res, next) => {
   logger.error(err.message, err.stack);
@@ -16,9 +17,12 @@ const errorHandler = (err, req, res, next) => {
   }
 
   if (err.name === "MulterError" && err.code === "LIMIT_FILE_SIZE") {
+    // Images and other files have different limits (upload.middleware.js) — name the right one.
+    const isImage = req.originalUrl.split("?")[0].replace(/\/+$/, "").endsWith("/uploads/image");
+    const maxMb = Math.round((isImage ? IMAGE_MAX_BYTES : DOCUMENT_MAX_BYTES) / (1024 * 1024));
     return res.status(413).json({
       success: false,
-      message: "File is too large. Maximum upload size is 500MB.",
+      message: isImage ? `This image is too large. Images can be up to ${maxMb} MB.` : `This file is too large. Files can be up to ${maxMb} MB.`,
     });
   }
 

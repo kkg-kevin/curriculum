@@ -81,8 +81,11 @@ async function issueOrReinstate({ learnerId, identityKey, kind, subjectId, cours
   const existing = await CertificateModel.findByIdentity(learnerId, identityKey);
   if (existing) {
     if (existing.status === "issued") return { certificate: existing, isNew: false };
+    // Names are refreshed (a corrected spelling should show), but the signatory is left exactly
+    // as it was first issued — including "none", which goes on showing the workspace's current one.
     const certificate = await CertificateModel.update(existing.id, {
-      status: "issued", revokedAt: null, revokeReason: null, reportId, hubId, ownerAdminId, snapshot,
+      status: "issued", revokedAt: null, revokeReason: null, reportId, hubId, ownerAdminId,
+      snapshot: { ...snapshot, signatory: existing.snapshot?.signatory || null },
     });
     return { certificate, isNew: false };
   }
@@ -172,7 +175,11 @@ const CertificateService = {
     // Oldest first, so certificate numbers run in the order the courses were completed.
     reports.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0));
     for (const report of reports) {
-      if (have.has(courseKey(report.courseId, report.classId) + report.learnerId)) continue;
+      const key = courseKey(report.courseId, report.classId);
+      if (have.has(key + report.learnerId)) continue;
+      // Belt and braces: this only ever creates. A certificate that already exists — above all
+      // one a member of staff revoked by hand — is never brought back by a read.
+      if (await CertificateModel.findByIdentity(report.learnerId, key)) continue;
       await CertificateService.issueForReportSafely(report, { notify: false });
     }
   },
@@ -213,18 +220,23 @@ const CertificateService = {
         });
       }
 
+      // First, everything they already hold: a pathway or bootcamp certificate stands for as long
+      // as the course certificates it was earned on do — whichever class or curriculum it came
+      // from, not only the one that triggered this.
+      for (const held of mine.filter((c) => c.kind !== "course" && c.status === "issued")) {
+        const basis = held.kind === "bootcamp" ? standingCourses.filter((c) => c.classId === held.classId) : standingCourses;
+        const stillHeld = new Set(basis.map((c) => c.courseId));
+        if ((held.snapshot?.courseIds || []).some((courseId) => !stillHeld.has(courseId))) {
+          await CertificateModel.update(held.id, { status: "revoked", revokedAt: new Date(), revokeReason: null });
+          held.status = "revoked";
+        }
+      }
+
+      // Then, what this class's pathways and bootcamp now add up to.
       for (const programme of programmes) {
         const existing = mine.find((c) => c.identityKey === programme.identityKey) || null;
         const held = new Set(programme.basis.map((c) => c.courseId));
-
-        if (existing?.status === "issued") {
-          // Stands for as long as the certificates it was earned on do.
-          const earnedOn = existing.snapshot?.courseIds || [];
-          if (earnedOn.some((courseId) => !held.has(courseId))) {
-            await CertificateModel.update(existing.id, { status: "revoked", revokedAt: new Date(), revokeReason: null });
-          }
-          continue;
-        }
+        if (existing?.status === "issued") continue;
         // A certificate a member of staff revoked by hand stays revoked until they reinstate it.
         if (existing?.revokeReason) continue;
         if (programme.courseIds.length === 0 || !programme.courseIds.every((courseId) => held.has(courseId))) continue;
