@@ -171,11 +171,14 @@ const CSS = `
     font-size:12px; font-weight:700; color:#374151; display:block; margin-bottom:5px;
   }
 
-  .stg-tabs { display:flex; gap:6px; margin-bottom:20px; border-bottom:2px solid #F3F4F6; }
+  /* The underline is an inset shadow, not a border, so the row can scroll sideways on a phone
+     (a scrolling box clips anything drawn over its own border). */
+  .stg-tabs { display:flex; gap:6px; margin-bottom:20px; box-shadow:inset 0 -2px 0 #F3F4F6; overflow-x:auto; scrollbar-width:none; }
+  .stg-tabs::-webkit-scrollbar { display:none; }
   .stg-tab-btn {
     padding:9px 16px; background:none; border:none; border-bottom:2.5px solid transparent;
     font-size:13px; font-weight:600; font-family:Inter,sans-serif; color:#6B7280;
-    cursor:pointer; margin-bottom:-2px; transition:color 0.15s, border-color 0.15s;
+    cursor:pointer; white-space:nowrap; flex-shrink:0; transition:color 0.15s, border-color 0.15s;
   }
   .stg-tab-btn:hover { color:#25476a; }
   .stg-tab-btn.active { color:#25476a; border-bottom-color:#25476a; }

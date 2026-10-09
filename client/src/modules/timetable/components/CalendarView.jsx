@@ -362,7 +362,10 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
   }
 
   return (
-    <div style={{ ...cardStyle, overflow: "hidden" }}>
+    <div style={{ ...cardStyle, overflowX: "auto", overflowY: "hidden" }}>
+      {/* Five day columns need room for a session's name and time — on a phone the week scrolls
+          sideways rather than squeezing each day to a sliver. */}
+      <div style={{ minWidth: 600 }}>
       <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", borderBottom: `1px solid ${T.border}` }}>
         <div />
         {days.map((d) => {
@@ -462,6 +465,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
           );
         })}
       </div>
+      </div>
     </div>
   );
 }
@@ -479,7 +483,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
   }
   return (
     <div style={{ ...cardStyle, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", borderBottom: `1px solid ${T.border}` }}>
         {weeks[0].map((d) => (
           <div key={d.format("ddd")} style={{ padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>
             {d.format("ddd")}
@@ -487,7 +491,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
         ))}
       </div>
       {weeks.map((week, wi) => (
-        <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", borderBottom: wi < weeks.length - 1 ? `1px solid ${T.border}` : "none" }}>
+        <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", borderBottom: wi < weeks.length - 1 ? `1px solid ${T.border}` : "none" }}>
           {week.map((d) => {
             const dateKey = d.format("YYYY-MM-DD");
             const dayEvents = eventsByDate[dateKey] || [];

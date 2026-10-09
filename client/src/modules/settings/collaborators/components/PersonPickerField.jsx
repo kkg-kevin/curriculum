@@ -79,7 +79,7 @@ export default function PersonPickerField({ onPick }) {
           position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 1100,
           background: "#fff", border: "1px solid #E5E7EB", borderRadius: "12px",
           boxShadow: "0 10px 28px rgba(15,38,69,0.14), 0 2px 8px rgba(0,0,0,0.06)",
-          width: "320px", maxHeight: "320px", overflow: "hidden", display: "flex", flexDirection: "column",
+          width: "320px", maxWidth: "calc(100vw - 48px)", maxHeight: "320px", overflow: "hidden", display: "flex", flexDirection: "column",
         }}>
           <div style={{ position: "relative", flexShrink: 0, borderBottom: "1px solid #F0F2F5" }}>
             <FiSearch size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }} />

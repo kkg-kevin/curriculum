@@ -69,7 +69,7 @@ function StatCard({ icon, label, value, sub, accent, actionLabel, onAction, load
         flexDirection: "column",
         gap: "12px",
         boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-        flex: "1 1 0",
+        flex: "1 1 140px",
         minWidth: 0,
       }}
     >

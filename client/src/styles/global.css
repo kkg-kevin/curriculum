@@ -70,3 +70,134 @@ button {
   max-height: 420px;
   overflow-y: auto;
 }
+
+/* ── Phones ───────────────────────────────────────────────────────────────────────────────────
+   Pages are styled inline, written for a desktop width, so this is where they are taught to fit
+   a phone — once, for every page, rather than a breakpoint in each of them. The selectors match
+   on the inline style itself (React writes it out as `property: value`). A rule without
+   !important only applies where the page hasn't set that property; a page that needs something
+   different on a phone sets it inline. */
+@media (max-width: 640px) {
+  /* iOS Safari zooms the whole page in when a field with text under 16px is focused, and stays
+     zoomed afterwards — which is how every page ends up cut off at both edges after signing in. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  main,
+  body > div:not(#root) {
+    overflow-wrap: break-word;
+  }
+
+  /* A text field's built-in width (about 20 characters) must not push the button beside it off
+     the screen. */
+  input,
+  select,
+  textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* "Title … actions" rows (page heroes, card headers): the actions drop under the title
+     instead of squeezing it into a sliver or running off the screen. */
+  :is(main, body > div:not(#root)) [style*="justify-content: space-between"] {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* A group of buttons told never to shrink still has to fit: let it wrap within the screen. */
+  :is(main, body > div:not(#root)) [style*="flex-shrink: 0"] {
+    max-width: 100%;
+  }
+  :is(main, body > div:not(#root)) [style*="display: flex"][style*="flex-shrink: 0"] {
+    flex-wrap: wrap;
+  }
+
+  /* Side-by-side columns (form field pairs, content + side panel) stack. */
+  :is(main, body > div:not(#root)) :is(
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns: 1fr 2"],
+    [style*="grid-template-columns: 1fr 3"],
+    [style*="grid-template-columns: 1fr minmax"],
+    [style*="grid-template-columns: 1.4fr 1fr"],
+    [style*="grid-template-columns: 220px 1fr"],
+    [style*="grid-template-columns: 280px 1fr"],
+    [style*="grid-template-columns: 300px 1fr"],
+    [style*="grid-template-columns: repeat(2, 1fr)"],
+    [style*="grid-template-columns: repeat(3, 1fr)"]
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Rows of four or more equal tiles go two across. */
+  :is(main, body > div:not(#root)) :is(
+    [style*="grid-template-columns: repeat(4, 1fr)"],
+    [style*="grid-template-columns: repeat(5, 1fr)"],
+    [style*="grid-template-columns: repeat(6, 1fr)"]
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  :is(main, body > div:not(#root)) :is(img, video, iframe) {
+    max-width: 100%;
+  }
+
+  /* List rows laid out as "name, then figures in fixed columns" (invoices, customers, receipts,
+     enquiries): the name takes the full width and the figures line up underneath it. */
+  :is(main, body > div:not(#root)) [style*="grid-template-columns: minmax("] {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  :is(main, body > div:not(#root)) [style*="grid-template-columns: minmax("] > :first-child {
+    flex: 1 1 180px;
+  }
+  :is(main, body > div:not(#root)) [style*="grid-template-columns: minmax("]:has(> :nth-child(3)) > :first-child {
+    flex-basis: 100%;
+  }
+
+  /* A column's minimum width is a wish, not a demand, once the screen is narrower than it. */
+  :is(main, body > div:not(#root)) :is(
+    [style*="min-width: 240px"], [style*="min-width: 260px"], [style*="min-width: 280px"],
+    [style*="min-width: 300px"], [style*="min-width: 320px"], [style*="min-width: 340px"],
+    [style*="min-width: 360px"], [style*="min-width: 380px"], [style*="min-width: 420px"]
+  ):not(table) {
+    min-width: min(100%, 240px) !important;
+  }
+
+  /* Dialogs: a form taller than the screen scrolls inside the overlay rather than losing its
+     top and bottom. (Centring is by auto margins — plain centring would cut off the top.) */
+  [style*="position: fixed"][style*="inset: 0"] {
+    overflow-y: auto;
+    align-items: flex-start !important;
+  }
+  [style*="position: fixed"][style*="inset: 0"] > * {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+
+  /* Desktop-sized gutters inside heroes and cards leave too little of a phone for the content. */
+  :is(main, body > div:not(#root)) :is(
+    [style*="padding: 28px 32px;"],
+    [style*="padding: 28px 30px;"],
+    [style*="padding: 28px 28px 24px;"],
+    [style*="padding: 26px 28px;"],
+    [style*="padding: 24px 28px;"]
+  ) {
+    padding: 20px 18px !important;
+  }
+}
+
+/* Card grids ask for a minimum card width (minmax(280px, 1fr) and the like) that a narrow phone,
+   less the page and card padding, can't give — one full-width column instead. */
+@media (max-width: 480px) {
+  :is(main, body > div:not(#root)) [style*="grid-template-columns: repeat(auto-fi"]:is(
+    [style*="minmax(2"],
+    [style*="minmax(3"],
+    [style*="minmax(4"]
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

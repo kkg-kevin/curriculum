@@ -164,7 +164,7 @@ export default function HomeLearningPage() {
     <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
       <div style={{ width: 48, height: 48, borderRadius: 14, background: "#E8F5FB", color: "#25476a", display: "grid", placeItems: "center" }}><FiHome size={23} /></div>
       <div style={{ flex: 1, minWidth: 240 }}><h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Home Learning</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families, each child's curriculum, grade and educator, and monthly invoices. Every child gets their own class in the Home Learning hub, so assessments, attendance and reports work as usual. Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p></div>
-      {canBill && <form onSubmit={(e) => { e.preventDefault(); bulkInvoiceMutation.mutate({ period: bulkPeriod }); }} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {canBill && <form onSubmit={(e) => { e.preventDefault(); bulkInvoiceMutation.mutate({ period: bulkPeriod }); }} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", maxWidth: "100%" }}>
         <input aria-label="Month to invoice" type="month" required value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} style={{ ...inputStyle, width: "auto", padding: "8px 10px", fontSize: 13 }} />
         <button disabled={bulkInvoiceMutation.isPending} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkInvoiceMutation.isPending ? "Invoicing…" : "Invoice all active households"}</button>
       </form>}
