@@ -138,6 +138,26 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/reports": "Reports",
     "/settings": "Settings",
     "/activity": "Activity",
+    "/courses": "Courses",
+    "/events": "Events",
+    "/billing": "Billing",
+    "/enquiries": "Enquiries",
+    "/home-learning": "Home Learning",
+    "/teacher-portal/reports": "Reports",
+    "/teacher-portal/timetable": "Timetable",
+    "/teacher-portal/home-learning": "Home Learning",
+    "/school-portal/attendance": "Attendance",
+    "/school-portal/timetable": "Timetable",
+    "/school-portal/rooms": "Rooms",
+    "/school-portal/billing": "Billing",
+    "/learner-portal/reports": "Reports",
+    "/learner-portal/timetable": "Timetable",
+    "/learner-portal/profile": "My Profile",
+    "/learner-portal/family": "Family",
+    "/learner-portal/invoices": "Invoices",
+    "/learner-portal/receipts": "Receipts",
+    "/learner-portal/statement": "Statement",
+    "/learner-portal/certificates": "Certificate",
     "/teacher-portal": "My Dashboard",
     "/teacher-portal/course-content": "Course Content",
     "/teacher-portal/assessments": "Assessments",
@@ -186,6 +206,12 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Edit Learning Hub";
     if (pathname.startsWith("/learning-hubs/") && pathname.endsWith("/view"))
       return "Learning Hub View";
+    // A page inside a section (a learner's profile, an invoice, a form) carries its section's
+    // name — on a phone this title is the only sign of where you are.
+    const section = Object.keys(pageTitles)
+      .filter((path) => path !== "/" && pathname.startsWith(`${path}/`))
+      .sort((x, y) => y.length - x.length)[0];
+    if (section) return pageTitles[section];
     return "Dashboard";
   };
 
@@ -205,7 +231,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 12, minWidth: 0 }}>
         {isMobile ? (
           <button
             type="button"
@@ -217,6 +243,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
               justifyContent: "center",
               width: "38px",
               height: "38px",
+              flexShrink: 0,
               borderRadius: "10px",
               border: "1px solid #E5E7EB",
               background: "none",
@@ -234,6 +261,10 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
             fontSize: isMobile ? "18px" : "22px",
             fontWeight: "600",
             color: "#111827",
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {pageTitle}
@@ -245,6 +276,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
           display: "flex",
           alignItems: "center",
           gap: isMobile ? "10px" : "20px",
+          flexShrink: 0,
         }}
       >
         <NotificationBell />

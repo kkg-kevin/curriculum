@@ -102,6 +102,356 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (8 Oct 2026) — Certificates of completion; image uploads to 10 MB with resizing; website redesign, privacy and terms pages
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `06964f4`
+(curriculum, branch `modules`). The website was rebuilt from `681b86e` (digifunzi-landing, branch
+`new`) and, unlike the last few releases, **its code has changed a great deal** — see "Website"
+below. Cumulative: this carries the 7 Oct, 6 Oct and 5 Oct releases below, so if those aren't
+deployed yet their steps (database backup, environment variables, deploy backend and portal
+together) still apply. Verify on Dev first as usual.
+
+**Deploy the backend and the portal together** — the portal calls the new `/api/certificates`
+routes and the new image-upload limit; an old portal against the new backend simply doesn't show
+certificates, but a new portal against the old backend shows errors on the learner profile, the
+Reports page's certificates list and Settings → Certificates. The website can be uploaded at any
+point; it does not depend on this release.
+
+No new environment variable. No new npm package, so **Run NPM Install can be skipped** if the app
+already has its modules.
+
+### New migration (auto-applies on Restart)
+
+| Migration | What it does |
+|---|---|
+| `20261010090000_create_certificates.js` | Creates two new tables: `certificates` and `certificate_settings`. Additive — it changes no existing table |
+
+Take the usual database backup before the Restart.
+
+### What changed — portal and backend
+
+1. **Certificates of completion.** A learner earns a certificate when their **final course
+   report is published**. Nobody marks a course as finished by hand; publishing the final report
+   is the moment. Withdrawing the report revokes the certificate, and publishing it again brings
+   back the same one, with the same number and link.
+2. **Pathway and bootcamp certificates.** A pathway certificate is issued once the learner holds
+   a certificate for every course in the pathway; a bootcamp certificate once they hold one for
+   every course their bootcamp class runs. Adding a course to a pathway later does not take away
+   certificates already earned.
+3. **Each certificate has a number and a public check.** Numbers look like `DF-2026-000123`. The
+   QR code on the certificate opens `/certificates/verify/<token>` on the portal, with no
+   sign-in: it says whether the certificate is genuine or has been withdrawn, and shows only what
+   is printed on it.
+4. **Learner profile: "My achievements".** The latest certificate shown large, the rest as a
+   collection, milestones (first certificate, 3, 5, 10, 20), and what they can earn next with
+   real progress (sessions done in a course, courses done in a pathway). Clicking a certificate
+   opens a preview with **Download PDF** (one landscape A4 page) and the verification link.
+5. **Staff.** A learner's page lists their certificates. **Reports → Certificates issued**
+   (admin and school) lists every certificate with search and filters, and lets staff **Revoke**
+   one by hand (a reason is required, kept on record, never shown publicly) or **Reinstate** it.
+   Uses the Reports permission for staff roles; revoking needs Reports → Edit.
+6. **Settings → Certificates** (owner only). The signatory's name, title and signature image,
+   with a live preview. A certificate keeps the signatory it was issued with. Left empty,
+   certificates carry the QR code alone.
+7. **"Certificate earned" notification and email** to the learner and parent. It is a new entry
+   under Settings → Emails, on by default, and each person can switch it off for themselves.
+8. **Certificates on the shared public profile** (the page a learner's QR code opens).
+9. **Image uploads: 10 MB, resized before upload.** The image limit goes from 5 MB to 10 MB. A
+   photo larger than 2000 pixels on its longer side is scaled down in the browser before it is
+   sent, so a phone photo of several MB uploads as a few hundred KB. Images with transparency
+   stay PNG; GIFs are not altered. Every image field now shows the rules, and an oversized image
+   is refused with the right limit (it used to say 500MB).
+
+**What happens to existing learners.** Certificates for final reports that were **already
+published** are created the first time certificates are viewed (a learner's profile, a learner's
+page, or Reports → Certificates issued). They are dated to when the report was published and
+**nobody is notified or emailed** about them. Only certificates earned after this deploy send the
+"Certificate earned" notification and email.
+
+**Two things to know.**
+- A course whose sessions have no assessments can never have a final report, so it can never
+  produce a certificate — and neither can a pathway or bootcamp that contains it. Bootcamps
+  advertise "Certificate on completion", so each bootcamp course needs at least one assessed
+  session.
+- The 10 MB image limit is the application's. If the hosting has its own upload limit below
+  that, images near 10 MB will still be refused — worth one test upload after deploying (see
+  Verify).
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `06964f4` (`git archive` of `server/`: `src/`, `knexfile.js`, `package.json`,
+`package-lock.json`; **461 entries / 410 files**) — identical in Dev, Live and Capable. New
+`src/modules/certificates/` and the migration above.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-CUbx9Kh8.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-YcMIMvdG.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-j1lzLUJy.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 35/35 pages prerendered, 33 sitemap URLs (11 pathways, 2 projects, 1
+store item, 5 bootcamps, 3 competitions); 201 entries. Same zip in `Guide/dev/` and
+`Guide/live/`; still talks to the Dev backend (`nodeapp.digifunzi.com`). Upload the whole zip,
+including `.htaccess`, `200.html` and `404.html` — **the `.htaccess` has changed** (it now serves
+`/privacy` and `/terms`), so it must be replaced, not kept.
+
+What changed on the website:
+
+1. **Layout.** Content sits in one centred frame while backgrounds run edge to edge. The header
+   has the logo on the left, the links centred and Enroll on the right, on one line down to
+   1100px wide. Card grids show four across on large screens. Detail pages (pathway, project,
+   store item, competition) have a side panel with the price or key facts and the main button
+   that stays in view, and end with a "Keep exploring" row.
+2. **Home page.** A "Coming up" row of the next bootcamps, an FAQ, and a larger hero. The
+   mascot now shows on phones.
+3. **Trust fixes.** Bootcamps and competitions past their last day say "Ended" and sort last.
+   The placeholder phone number and the "placeholders" note are gone from Contact. The stand-in
+   testimonials and the hero's made-up "live" figures are removed.
+4. **New pages: `/privacy` and `/terms`**, linked from the footer, with a privacy link under
+   every form. **The wording is a draft and has not been reviewed by a lawyer** — read both
+   before the site goes live. It names `hello@digifunzi.com` as the contact for privacy requests
+   and says the site uses no analytics.
+5. **Enroll form** offers "A learning pathway" and "A competition"; those arrive as a general
+   enquiry with the choice written in the note.
+
+**Still to supply before this is a finished public site** (none of it blocks the upload): the
+real phone number, WhatsApp number, street address and social links in
+`digifunzi-landing/src/config/site.js` (phone and WhatsApp links appear on their own once set);
+real testimonials; and the test records the Dev backend still serves (the "Sample…" bootcamps,
+competition and project).
+
+**Building the website on this machine.** The pre-render step fetches the page list from the
+Dev API with Node. On this network Node gave up on the connection too quickly and the first
+build shipped only 7 pages. Building with a longer connection window fixes it — if a build ever
+reports "API unreachable" while the API opens fine in a browser, run it as:
+
+```bash
+NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build
+```
+
+A good build ends with `prerender done — 35/35 routes written` (the number grows with content).
+
+### Deploy order
+
+1. **Database backup.**
+2. **Backend** `backend-deploy.zip` → **Restart** (the migration applies on start).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root,
+   replacing `.htaccess` too.
+5. **Verify:**
+   - Open `<backend address>/api/public/certificates/test` in a browser: a "couldn't find a
+     certificate" message (not "route not found") means the new backend is running.
+   - As an admin, open **Reports → Certificates issued**: a certificate appears for every final
+     course report already published. Open one: the page says "This certificate is genuine".
+   - **Settings → Certificates**: enter a name and title, upload a signature, Save. The preview
+     shows them.
+   - As a teacher, publish a learner's final course report. The learner (or parent) gets a
+     "Certificate earned" notification and email; their **Profile** shows it under "My
+     achievements"; **Download PDF** gives one landscape page.
+   - Unpublish that report: the certificate shows **Revoked** in the list and its link says it
+     has been withdrawn. Publish it again: it returns with the same number.
+   - Upload a phone photo of 6–9 MB as a profile picture: it is accepted. This is the test that
+     shows whether the hosting has a lower upload limit of its own.
+   - Website: open `/privacy` and `/terms`; open Bootcamps and check that past ones say
+     "Ended"; open a pathway on a wide screen and check the side panel stays in view while
+     scrolling.
+
+---
+
+## This release (7 Oct 2026) — Shared learner profile as a full page, per hub; designed emails
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `e653116`
+(curriculum, branch `modules`). The website was rebuilt too, from the same `ca9a713`
+(digifunzi-landing, branch `new`): its code has not changed, only the pre-rendered pages were
+refreshed. Cumulative: this carries the 6 Oct and 5 Oct releases below, so if those aren't
+deployed yet their steps (database backup, migrations, deploy backend and portal together) still
+apply. Verify on Dev first as usual.
+
+**Deploy the backend and the portal together** — the shared-profile page reads a new response
+shape from `/api/public/learners/:token`; an old portal against the new backend (or the reverse)
+shows that page empty. The website can be uploaded at any point; it does not depend on this
+release.
+
+No new migration. No new npm package, so **Run NPM Install can be skipped** if the app already
+has its modules.
+
+### Environment variables
+
+| Variable | Needed? | What it does |
+|---|---|---|
+| `API_PUBLIC_URL` | **Set it on every backend** (Dev `https://nodeapp.digifunzi.com`, Live `https://dcf-api.digifunzi.com`, Capable `https://lms-api.capable.co.ke`) | Emails load the header logo, hub logos and learner photos from this address. Without it emails still send, with the brand name as text and initials in place of photos |
+| `MAIL_BRAND_NAME` | Capable only: `Capable` | Picks the Capable logo and signs emails as Capable. Default is Digifunzi |
+| `MAIL_REPLY_TO` | Check the value | Now shown in every email's footer as "Questions? … write to …" — make sure it is the address parents should see |
+| `MAIL_WEBSITE_URL` | Optional | Footer link to the website. Default: the first `https` address in `PUBLIC_SITE_URL` |
+| `MAIL_SOCIAL_LINKS` | Optional | Footer links, e.g. `Facebook=https://facebook.com/…,Instagram=https://instagram.com/…` |
+| `MAIL_LOGO_URL` | Optional | A different header logo image than the built-in one |
+
+### What changed
+
+1. **Shared learner profile is a full page.** The page a learner's QR code opens
+   (`/public/learners/<token>`) is no longer a small card. Existing QR codes and links keep
+   working.
+2. **One section per hub.** A learner enrolled at several hubs gets a tab per hub; each shows
+   that hub's class, teachers, level, competencies, pathways, courses and attendance.
+   Competency scores and levels are tracked per curriculum, so two hubs on the same curriculum
+   show the same scores.
+3. **More on the page.** Guardian's name (never phone, email or fees), teachers with their
+   photos, attendance rate, the class's courses, and every competency — those not yet assessed
+   are shown greyed instead of left out. The Pathways section, which never appeared before, now
+   shows each pathway's current course and the learner's place on it.
+4. **Download QR / Print badge.** The Share Profile card (learner portal Profile page, and a
+   learner's page for admins and schools) can save the QR as an image or print it as a badge with
+   the learner's name and registration number.
+5. **Emails have a designed layout.** Logo in the header (a hub's own logo and name on invoices
+   and receipts it sends), a colour, icon and label per kind of email, the key figure highlighted
+   (amount due, amount paid, new level), the learner's photo and name, a preview line beside the
+   subject, a fuller footer, and a button that is full-width on phones.
+6. **Website enquiry emails use the same layout** — the automatic acknowledgement and staff
+   replies from the Enquiries page — and are signed with `MAIL_BRAND_NAME`.
+
+Who receives which email, the email switches (Settings → Emails, each person's preferences) and
+the subjects of account emails are unchanged.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `e653116` (`git archive` of `server/`: `src/`, `knexfile.js`, `package.json`,
+`package-lock.json`; **452 entries / 407 files**) — identical in Dev, Live and Capable. New
+`src/shared/mail/assets/` (the two email logos, served at `/email-assets/…`).
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-DE-Ug8pb.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-tNFn6mXM.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-06GUWIgJ.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps). Same zip in
+`Guide/dev/` and `Guide/live/`; still talks to the Dev backend (`nodeapp.digifunzi.com`). No
+website code changed in this release — this is the 2 Oct website with its pages re-rendered from
+the Dev API as it is today. Upload the whole zip, including `.htaccess`, `200.html` and
+`404.html`.
+
+### Deploy order
+
+1. **Database backup** (only matters if an earlier release with migrations is still undeployed).
+2. **Environment variables** — set `API_PUBLIC_URL` (and `MAIL_BRAND_NAME=Capable` on Capable).
+3. **Backend** `backend-deploy.zip` → **Restart**.
+4. **Portal** `assets.zip` + `index.html` — straight after the backend.
+5. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+6. **Verify:**
+   - Open `<backend address>/email-assets/digifunzi-logo.png` (Capable: `capable-logo.png`) in a
+     browser: the logo shows.
+   - Open a learner → **Share Profile → Show QR** → open the link in a private window: a full
+     page with the learner's hubs; switching hub changes the teachers, level and competencies.
+     **Download QR** saves an image and **Print badge** opens the print dialog.
+   - Use "Forgot password?" for an account you own: the email arrives with the logo, an
+     "Account security" label and a working button.
+   - On an issued invoice press **Email invoice**: the email shows the hub's name and logo, the
+     amount due in a highlighted panel and the learner's photo.
+
+---
+
+## This release (6 Oct 2026, follow-on) — Email preferences (recipient + workspace); Activity tabs; shorter Request payment dialog
+
+**Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `03cf187`
+(curriculum, branch `modules`). The website was rebuilt too, from the same `ca9a713`
+(digifunzi-landing, branch `new`): its code has not changed, only the pre-rendered pages were
+refreshed. Cumulative: this carries the 6 Oct connection-pool fix and the 5 Oct release below, so
+if those aren't deployed yet their steps (database backup, deploy backend and portal together)
+still apply. Verify on Dev first as usual.
+
+**Deploy the backend and the portal together** — the portal calls new endpoints
+(`/api/email-settings`, `/api/public/email-preferences/…`, `/api/audit/counts`). The website can
+be uploaded at any point; it does not depend on this release.
+
+### New migration (auto-applies on Restart)
+
+| Migration | Does | Existing rows |
+|---|---|---|
+| `20261009090000_create_email_settings.js` | Creates `email_settings` (one row per workspace: which email types the admin has switched off) | none changed — additive only; a workspace with no row sends everything, as before |
+
+No new environment variable. No new npm package, so **Run NPM Install can be skipped** if the app
+already has its modules. The link in each email's footer is built from `CLIENT_URL`, as the
+password-reset link already is — confirm it is the portal's own address on each environment.
+
+### What changed
+
+1. **Recipients choose their emails without signing in.** Every notification email's footer now
+   has a link, "Choose which emails you get, or stop them". It opens a page in the portal
+   (`/email-preferences`) with one switch for all notification emails and one per type. The link
+   is tied to that one account, opens nothing else, and cannot be used to sign in.
+2. **The same switches on profile pages.** Educator, supervisor and learner/parent profile pages
+   show an **Email notifications** card, as well as the notifications bell's "Email settings".
+3. **Admins choose what the workspace sends.** New **Settings → Emails** tab (workspace owner
+   only; staff do not see it). Every email the workspace sends is listed by who receives it, each
+   with a switch. A type switched off there is sent to nobody in the workspace, whatever each
+   person chose; the person sees it greyed out with "switched off by your organisation".
+4. **Invoice and receipt emails can be switched off there too.** The "Email invoice" button on an
+   invoice still sends when the automatic one is off. Password emails always send. Website
+   enquiry emails are not affected.
+5. **Activity page in tabs.** All activity · Sign-ins · Added · Edited · Deleted · Refused &
+   failed, each with its count. Search, person, period (Today / Last 7 days / Last 30 days /
+   chosen dates) and area narrow whichever tab is open, and the counts follow them. Export
+   downloads the open tab. Nothing about what is recorded has changed.
+6. **Activity log entries.** Changes to Settings → Emails are logged in plain words; changes made
+   from an email's footer link are not logged (the address carries that person's link).
+7. **Shorter Request payment dialog** (educator → Claims → a course). One line of figures, the
+   two options as single rows, a compact invoice upload, the note behind a link, and the amount
+   on the button ("Request KSh 1,900"). What is submitted is unchanged.
+8. **Fix:** the notifications bell no longer throws an error when the window is resized while it
+   is open.
+
+### Backend (`backend-deploy.zip`)
+
+Rebuilt from HEAD `03cf187` (`git archive` of `server/`: `src/`, `knexfile.js`, `package.json`,
+`package-lock.json`; **449 entries / 405 files**) — identical in Dev, Live and Capable. New
+`src/modules/notifications/email-settings.model.js`, `email-settings.routes.js` and
+`email-workspace.js`.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-BvSRPD6w.js`** / CSS `index-CPRP9smp.css` (unchanged CSS).
+Live build (`npm run build:live`): **`index-DYdRdRae.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-CQEa2PW0.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 33/33 pages prerendered, 31 sitemap URLs (5 bootcamps), no failed
+requests. Same zip in `Guide/dev/` and `Guide/live/`; still talks to the Dev backend
+(`nodeapp.digifunzi.com`). No website code changed in this release — this is the 2 Oct website
+with its pages re-rendered from the Dev API as it is today. Upload the whole zip, including
+`.htaccess`, `200.html` and `404.html`.
+
+### Deploy order
+
+1. **Database backup.**
+2. **Backend** `backend-deploy.zip` → **Restart**. The app log should show the migration above
+   applied (plus any from the releases below not yet deployed).
+3. **Portal** `assets.zip` + `index.html` — straight after the backend.
+4. **Website** `africa-digifunzi-com-dist.zip` → the `africa.digifunzi.com` document root.
+5. **Verify:**
+   - **Settings → Emails** lists the workspace's emails. Switch "A new level is unlocked" off,
+     reload: it is still off.
+   - Sign in as a parent → bell → **Email settings**: that type is greyed out with "switched off
+     by your organisation". Switch it back on as the admin afterwards.
+   - Trigger a notification email (e.g. publish a session report for a learner whose parent has
+     an email) → the email's footer link opens the preferences page without signing in; switching
+     a type off there shows as off under the bell too.
+   - **Activity** shows six tabs with counts; **Sign-ins → Failed attempts** lists only failed
+     sign-ins; choosing "Today" changes every tab's count.
+   - As an educator: Claims → a course → **Request payment** opens the shorter dialog.
+
+---
+
 ## This release (6 Oct 2026) — Fix: pages failing with "max_user_connections" (database connection pool)
 
 **Backend only, rebuilt for Dev, Live and Capable.** The portal (`assets.zip` + `index.html`) and

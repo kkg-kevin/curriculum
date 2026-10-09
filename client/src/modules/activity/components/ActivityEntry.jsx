@@ -36,7 +36,7 @@ export default function ActivityEntry({ entry, compact = false, showDate = false
       </button>
 
       {open && (
-        <div style={{ margin: "0 4px 12px", marginLeft: (showDate ? 132 : 52) + 37, padding: "12px 14px", borderRadius: 10, background: "#F9FAFB", border: "1px solid #F3F4F6" }}>
+        <div style={{ margin: "0 4px 12px", marginLeft: `min(${(showDate ? 132 : 52) + 37}px, 20vw)`, padding: "12px 14px", borderRadius: 10, background: "#F9FAFB", border: "1px solid #F3F4F6" }}>
           {entry.reason && <p style={{ margin: "0 0 10px", fontSize: 12.5, color: t.color, fontWeight: 600 }}>{entry.reason}</p>}
           {changes.length > 0 && (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, marginBottom: entry.ip ? 10 : 0 }}>
