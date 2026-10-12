@@ -22,4 +22,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   ],
+  build: {
+    // Vite's default CSS target rewrites `@media (max-width: 640px)` into the newer range form
+    // `(width <= 640px)`, which iPhones on iOS older than 16.4 ignore — they would lose every
+    // phone rule in src/styles/global.css. Targeting older Safari keeps the classic form.
+    cssTarget: ["safari14", "chrome90"],
+  },
 }));
