@@ -31,11 +31,35 @@ async function bootstrap() {
   await ensureAdmin();
 }
 
+// A promise that failed with nothing waiting on it (a fire-and-forget email or log write). Node
+// would otherwise end the whole process — and every request in progress with it — over one
+// background task. Logged instead, so it can be found and fixed.
+process.on("unhandledRejection", (reason) => {
+  console.error("[ERROR] Unhandled promise rejection:", reason);
+});
+
 bootstrap()
   .then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
+    // Asked to stop (a Restart from the hosting panel, a deploy): stop taking new requests, let
+    // the ones in progress finish, close the database connections, then go. Anything still
+    // running after 10 seconds is cut off so a stuck request can't block the restart.
+    let stopping = false;
+    const shutdown = (signal) => {
+      if (stopping) return;
+      stopping = true;
+      console.log(`${signal} received — shutting down.`);
+      const force = setTimeout(() => process.exit(1), 10000);
+      force.unref();
+      server.close(() => {
+        db.destroy().finally(() => process.exit(0));
+      });
+    };
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   })
   .catch((err) => {
     console.error("Startup failed:", err);

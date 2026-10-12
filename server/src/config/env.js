@@ -1,3 +1,11 @@
+function parseTrustProxy(value) {
+  if (value === undefined || value === "") return undefined;
+  if (/^\d+$/.test(value)) return Number(value);
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}
+
 const env = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || "development",
@@ -9,6 +17,12 @@ const env = {
   // POST /api/auth/activity; background polling doesn't count) before a session is ended.
   SESSION_IDLE_MINUTES: Number(process.env.SESSION_IDLE_MINUTES) > 0 ? Number(process.env.SESSION_IDLE_MINUTES) : 30,
   COOKIE_NAME: "token",
+  // How many proxies sit between the internet and this app (cPanel's web server is one), so
+  // each request's real address is used for rate limiting instead of the proxy's. A number, or
+  // one of Express's "trust proxy" values. Unset = Express's default (trust none), as before.
+  // Check on the host first: with the wrong value every user can look like one address, or an
+  // address can be forged.
+  TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY),
   // Mirrors client/src/config/authConfig.js — flip both back to false together to
   // bypass login enforcement for local work. While false, `protect` lets every request through.
   AUTH_ENABLED: true,

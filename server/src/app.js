@@ -52,6 +52,9 @@ const { errorHandler, notFound } = require("./shared/middleware/error.middleware
 const { protect: protectBase, authorize, blockIfSuspended, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 const { auditTrail } = require("./shared/middleware/audit.middleware");
+const { apiRateLimitKey } = require("./shared/middleware/rate-limit.middleware");
+const { setUploadHeaders } = require("./modules/uploads/upload.static");
+const db = require("./config/db");
 
 // Every authenticated route already mounts `protect`; pairing it here with `blockIfSuspended`
 // means a suspended account keeps a read-only session everywhere but is refused every write in
@@ -60,6 +63,12 @@ const { auditTrail } = require("./shared/middleware/audit.middleware");
 const protect = [protectBase, blockIfSuspended];
 
 const app = express();
+
+// Behind the hosting's own web server every request arrives from that server, so without this
+// the per-address limits below see all users as one address. TRUST_PROXY says how many proxies
+// sit in front (usually 1) so the real address is read from X-Forwarded-For. Unset, nothing
+// changes. Set it only after checking on the host — see env.js.
+if (env.TRUST_PROXY !== undefined) app.set("trust proxy", env.TRUST_PROXY);
 
 app.use(
   helmet({
@@ -102,12 +111,23 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"), { setHeaders: setUploadHeaders }));
 // The brand logo in every email's header — mail apps fetch it from here (see mail.layout.js).
 app.use("/email-assets", express.static(path.join(__dirname, "shared/mail/assets"), { maxAge: "30d" }));
 
 app.get("/", (req, res) => {
   res.json({ message: "API is running" });
+});
+
+// For an uptime monitor: 200 when the API can reach its database, 503 when it can't. Outside
+// /api, so it is neither rate limited nor written to the activity log.
+app.get("/health", async (req, res) => {
+  try {
+    await db.raw("select 1").timeout(5000);
+    res.json({ status: "ok" });
+  } catch {
+    res.status(503).json({ status: "unavailable" });
+  }
 });
 
 // General abuse/runaway-loop backstop for everything under /api — login already has its own
@@ -121,6 +141,8 @@ app.get("/", (req, res) => {
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 3000,
+  // Signed-in requests are counted per account, the rest per address — see apiRateLimitKey.
+  keyGenerator: apiRateLimitKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many requests. Please try again later." },

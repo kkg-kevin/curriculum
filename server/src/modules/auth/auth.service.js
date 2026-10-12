@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
+const passwords = require("../../shared/utils/password");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
 const LearnerModel = require("../learners/learner.model");
@@ -154,7 +154,7 @@ const AuthService = {
       err.statusCode = 409;
       throw err;
     }
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const passwordHash = await passwords.hash(password, SALT_ROUNDS);
     const user = await UserModel.create({ name, email, passwordHash, role });
     return sanitize(user);
   },
@@ -179,7 +179,7 @@ const AuthService = {
         err.statusCode = 409;
         throw err;
       }
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      const passwordHash = await passwords.hash(password, SALT_ROUNDS);
       return sanitize(await UserModel.update(existing.id, { passwordHash }));
     }
     return this.createUser({ name, email, password, role });
@@ -197,10 +197,10 @@ const AuthService = {
         err.statusCode = 409;
         throw err;
       }
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      const passwordHash = await passwords.hash(password, SALT_ROUNDS);
       return sanitize(await UserModel.update(existing.id, { passwordHash }));
     }
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const passwordHash = await passwords.hash(password, SALT_ROUNDS);
     return sanitize(await UserModel.create({ name, username, passwordHash, role }));
   },
 
@@ -245,7 +245,7 @@ const AuthService = {
       err.statusCode = 401;
       throw err;
     }
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await passwords.compare(password, user.passwordHash);
     if (!valid) {
       const err = new Error("Invalid email/username or password");
       err.statusCode = 401;
@@ -282,7 +282,7 @@ const AuthService = {
       err.statusCode = 404;
       throw err;
     }
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await passwords.compare(password, user.passwordHash);
     if (!valid) {
       const err = new Error("Incorrect password");
       err.statusCode = 401;
@@ -304,13 +304,13 @@ const AuthService = {
       err.statusCode = 404;
       throw err;
     }
-    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    const valid = await passwords.compare(currentPassword, user.passwordHash);
     if (!valid) {
       const err = new Error("Current password is incorrect");
       err.statusCode = 401;
       throw err;
     }
-    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const passwordHash = await passwords.hash(newPassword, SALT_ROUNDS);
     await UserModel.update(id, { passwordHash });
     // Fire-and-forget — the change itself is done; this just tells the account's owner it happened.
     accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});
@@ -353,7 +353,7 @@ const AuthService = {
     const record = await this.findUsableResetToken(token);
     const user = await UserModel.findById(record.userId);
     if (!user) throw invalidResetLink();
-    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const passwordHash = await passwords.hash(newPassword, SALT_ROUNDS);
     await UserModel.update(user.id, { passwordHash });
     await PasswordResetTokenModel.markAllUsedForUser(user.id);
     await UserSessionModel.deleteByUserId(user.id);
