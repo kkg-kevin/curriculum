@@ -102,6 +102,192 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (12 Oct 2026) — Large uploads (videos) go up in pieces, with progress and resume
+
+**Backend and portal rebuilt for Dev, Live and Capable this pass** — from commit `38e0ffc`
+(curriculum, branch `modules`). **Upload the backend and the portal together**: the new portal
+sends large files to routes only the new backend has. The website has not changed — its zip is
+the 9 Oct one. Cumulative: this carries the 9 Oct, 8 Oct, 7 Oct, 6 Oct and 5 Oct releases below,
+so if those aren't deployed yet their steps (database backup, environment variables) still
+apply. Verify on Dev first as usual.
+
+No migration. No new environment variable. No new npm package.
+
+### What changed
+
+Uploading a video to a course or an assessment kept timing out. The whole file went up as one
+request, and that request had to finish inside every time limit between the browser and the
+server — the portal's 10 minutes, the server's own 5 minutes, and the hosting's. On an ordinary
+connection a large video cannot do that, whatever the 500 MB size limit says.
+
+1. **Large files go up in pieces.** Any file over 5 MB is sent as a series of 5 MB requests,
+   each of which takes seconds, not minutes. Files of 5 MB or less upload in one request exactly
+   as before. The size limit is still 500 MB and the accepted file types are the same.
+2. **A dropped connection no longer loses the upload.** A piece that fails is sent again
+   automatically (up to six times in a row, waiting longer each time). If the upload still
+   stops, choosing the same file again carries on from where it got to — also after the page
+   was closed, on the same browser.
+3. **Progress bar and Cancel.** The video button in the course and assessment editors, a
+   session's attached resources, and a learner's file upload in an assessment show the file
+   name, percent, MB sent, and a Cancel button.
+4. **Refused early.** The wrong kind of file, or one over 500 MB, is refused before anything is
+   sent, not after the whole file has gone up.
+5. **Learners see the real reason** an upload failed. It used to say "Upload failed — try
+   again" whatever happened.
+6. **A long upload does not sign the user out** for being idle, and the browser asks before the
+   page is closed while a file is going up.
+
+Image uploads (photos, logos, covers) and the invoice upload on an educator's payment request
+are unchanged.
+
+**Where unfinished uploads live.** In `uploads/.incoming/` on the server, next to the uploaded
+files — two files per upload, removed when the upload completes or is cancelled. An upload
+nobody has added to for 24 hours is removed the next time someone starts a large upload. The
+folder is created on Restart; it is inside `uploads/`, so the usual "leave `uploads/` alone"
+rule covers it. Nothing in it is reachable from the web.
+
+**What has and hasn't been checked.** The new routes and the portal's uploader were run against
+each other on a development machine, over a connection made to drop pieces and lose replies: a
+42 MB file arrived byte for byte, and cancel and resume worked. **It has not been tried in a
+browser or on the hosting.** The pieces are a kind of request the hosting has not carried
+before (5 MB of raw file data, sent from the portal's address to the API's), so the Dev test
+below is the real check — do it before uploading to Live.
+
+### Backend (`backend-deploy.zip`)
+
+From `38e0ffc`, identical in Dev, Live and Capable; 462 entries. New file:
+`src/modules/uploads/upload.service.js`; changed: the other three files in that folder. All
+migrations up to `20261010090000_create_certificates.js` — nothing new to apply.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-un8-cGZK.js`** / CSS `index-hXTMed0K.css` (unchanged).
+Live build (`npm run build:live`): **`index-DEzZzsZW.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-B4g_Z5zW.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them. 69 files in each `assets.zip`. Includes the 9 Oct phone layout.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+Not rebuilt — the 9 Oct file. Nothing in this release touches the website.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip`, then Restart (after a database backup if 8 Oct is not
+   deployed yet).
+2. **Portal** `assets.zip` + `index.html`, straight after.
+3. **Verify, on Dev:**
+   - Open a course session, click the video button in the editor and choose a video of 100 MB
+     or more. A bar appears and the percent climbs; when it finishes the video is in the editor
+     and plays. Save the session and reload: the video is still there.
+   - Start another large video and click **Cancel**: the bar goes away and nothing is added.
+   - Start another, turn the wifi off for ten seconds partway, turn it back on: the bar pauses
+     and then carries on.
+   - Start another, close the tab partway (the browser asks first), open the page again and
+     choose the same file: the bar starts partway along, not at 0%.
+   - Attach a PDF of under 5 MB to a session's resources: it uploads as before.
+   - As a learner, upload a video to an assessment that asks for one, and submit it; as the
+     educator, open the submission and play it.
+   - Upload a profile photo: unchanged.
+
+   **If a large upload fails straight away at 0%** while small files still work, the hosting is
+   refusing the pieces. Note the message shown and stop there — do not upload to Live. The
+   likely cause is a request-size limit below 5 MB on the hosting; the piece size is one
+   setting in the backend (`CHUNK_BYTES` in `src/modules/uploads/upload.service.js`) and can be
+   made smaller.
+
+---
+
+## This release (9 Oct 2026) — The portal fits a phone screen
+
+**Portal rebuilt for Dev, Live and Capable this pass** — from commit `db32b00` (curriculum, branch
+`modules`) plus one build setting in `client/vite.config.mjs` (see "Portal frontend" below). **The
+backend has not changed** since the 8 Oct release: `backend-deploy.zip` is the same file as
+before and does not need uploading again if 8 Oct is already deployed. The website was rebuilt
+from the same code as 8 Oct (`681b86e`, digifunzi-landing, branch `new`) to pick up current
+content. Cumulative: this carries the 8 Oct, 7 Oct, 6 Oct and 5 Oct releases below, so if those
+aren't deployed yet their steps (database backup, environment variables, deploy backend and
+portal together) still apply. Verify on Dev first as usual.
+
+No migration. No new environment variable. No new npm package.
+
+### What changed — portal
+
+On a phone, pages were cut off at the edges, page titles were squeezed into a narrow column
+beside their buttons, and stat cards and forms ran off the screen.
+
+1. **Every page fits the screen.** Page headers put their buttons under the title. Side-by-side
+   columns, form field pairs and card grids stack into one column. Invoice, customer, receipt
+   and enquiry rows put their figures under the name. Large paddings are smaller.
+2. **No more zoomed-in pages on iPhone.** Safari zooms the page in when a field with small text
+   is tapped (the sign-in form) and stays zoomed. Fields are now 16px on phones, which stops it.
+3. **Dialogs scroll** when they are taller than the screen.
+4. **Dashboard** stat cards show two across. **Settings** tabs and the **timetable** week view
+   scroll sideways instead of being cut off.
+5. **The top bar shows the section name** (Billing, Events, Courses, Enquiries, Home Learning and
+   the portal pages) where it used to say "Dashboard", and a long title is shortened with "…"
+   instead of pushing the bell and photo off the screen.
+
+Desktop layout is unchanged, apart from the Curriculum page's stat tiles, which now wrap when
+the window is narrow.
+
+**What has and hasn't been checked.** Every main page of the admin, educator, hub, learner and
+supervisor portals, plus sign-in, was opened in a phone-sized browser at 320px and 375px wide,
+with nothing running off the screen. That browser had **no records in it**, so lists, detail
+pages (a learner, a class, an invoice) and dialogs filled with real content have not been seen
+on a phone, and the iPhone zoom fix has not been tried on a real iPhone. **Check those on Dev
+before uploading to Live** — see "Verify" below.
+
+### Backend (`backend-deploy.zip`)
+
+Unchanged — the 8 Oct file (`06964f4`), identical in Dev, Live and Capable. Upload it only if
+the 8 Oct release is not deployed yet.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-DntDNDWJ.js`** / CSS **`index-hXTMed0K.css`** (new CSS).
+Live build (`npm run build:live`): **`index-Bq7_g0dk.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-D-oQ1rEH.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them. 69 files in each `assets.zip`.
+
+**Build setting.** `client/vite.config.mjs` now sets `build.cssTarget` to older Safari. Without
+it the build rewrites the phone rules into a newer form that iPhones on iOS older than 16.4
+ignore, and those phones would show the old, broken layout.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`npm run deploy:build` — 35/35 pages prerendered, 33 sitemap URLs (11 pathways, 2 projects, 1
+store item, 5 bootcamps, 3 competitions); 201 entries. Same zip in `Guide/dev/` and
+`Guide/live/`; still talks to the Dev backend (`nodeapp.digifunzi.com`). **No code change since
+8 Oct** — upload it only if the 8 Oct website is not up yet, or to refresh the pre-rendered
+pages. The phone fixes in this release are in the portal, not the website.
+
+### Deploy order
+
+1. **Portal** `assets.zip` + `index.html` (with the backend first, after a database backup, if
+   8 Oct is not deployed yet).
+2. **Website** `africa-digifunzi-com-dist.zip` — optional this time.
+3. **Verify, on a phone:**
+   - Sign in on an iPhone. After typing in the sign-in form, the dashboard is not zoomed in or
+     cut off at the edges.
+   - Dashboard: the greeting is on one or two lines with **+ New Curriculum** and **+ Add
+     School** under it; stat cards are two across.
+   - Learning Hubs, Learners, Educators, Classes: the page header reads normally and the cards
+     are one per row. Open one of each and scroll the whole page: nothing runs off the right
+     edge.
+   - Billing: open an invoice and a customer; the amounts sit under the names.
+   - Open a dialog (for example, log a hub visit or add a competency): it scrolls and its
+     buttons can be reached.
+   - Timetable, week view: it scrolls sideways.
+   - Sign in as an educator and as a parent and look at the dashboard, a class, a report and an
+     invoice.
+   - On a computer: pages look as they did before.
+
+   Anything that still runs off the screen: note the page and send a screenshot.
+
+---
+
 ## This release (8 Oct 2026) — Certificates of completion; image uploads to 10 MB with resizing; website redesign, privacy and terms pages
 
 **Rebuilt for Dev, Live and Capable this pass** — backend and portal from commit `06964f4`

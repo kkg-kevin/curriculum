@@ -62,15 +62,29 @@ const storage = multer.diskStorage({
   },
 });
 
+function isAllowedFile(mimeType, originalName, allowedMimeTypes, allowedExtensions = []) {
+  if (allowedMimeTypes.includes(mimeType)) return true;
+  return allowedExtensions.includes(path.extname(String(originalName || "")).toLowerCase());
+}
+
 function makeFileFilter(allowedMimeTypes, label, { allowedExtensions = [] } = {}) {
   return (req, file, cb) => {
-    if (allowedMimeTypes.includes(file.mimetype)) return cb(null, true);
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedExtensions.includes(ext)) return cb(null, true);
+    if (isAllowedFile(file.mimetype, file.originalname, allowedMimeTypes, allowedExtensions)) return cb(null, true);
     const err = new Error(`Only ${label} files are allowed`);
     err.statusCode = 400;
     return cb(err);
   };
+}
+
+const DOCUMENT_LABEL = "document, image, audio, video, ZIP, or code";
+
+// The same rule the document upload applies, for an upload sent in pieces (upload.sessions.js) —
+// there the file is refused before any of it is sent.
+function assertDocumentAllowed(mimeType, originalName) {
+  if (isAllowedFile(mimeType, originalName, ALLOWED_DOCUMENT_MIME_TYPES, CODE_FILE_EXTENSIONS)) return;
+  const err = new Error(`Only ${DOCUMENT_LABEL} files are allowed`);
+  err.statusCode = 400;
+  throw err;
 }
 
 const uploadMiddleware = multer({
@@ -81,10 +95,10 @@ const uploadMiddleware = multer({
 
 const documentUploadMiddleware = multer({
   storage,
-  fileFilter: makeFileFilter(ALLOWED_DOCUMENT_MIME_TYPES, "document, image, audio, video, ZIP, or code", { allowedExtensions: CODE_FILE_EXTENSIONS }),
+  fileFilter: makeFileFilter(ALLOWED_DOCUMENT_MIME_TYPES, DOCUMENT_LABEL, { allowedExtensions: CODE_FILE_EXTENSIONS }),
   // Videos for assessments can run 30+ minutes; 500MB comfortably covers a compressed
   // recording of that length.
   limits: { fileSize: DOCUMENT_MAX_BYTES },
 });
 
-module.exports = { uploadMiddleware, documentUploadMiddleware, IMAGE_MAX_BYTES, DOCUMENT_MAX_BYTES };
+module.exports = { uploadMiddleware, documentUploadMiddleware, assertDocumentAllowed, UPLOAD_DIR, IMAGE_MAX_BYTES, DOCUMENT_MAX_BYTES };

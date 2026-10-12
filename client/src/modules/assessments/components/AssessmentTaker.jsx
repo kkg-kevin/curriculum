@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FiCheck } from "react-icons/fi";
 import { normalizeLegacyItem, ITEM_KIND_LABELS } from "../schemas/assessment.schema";
-import { uploadApi } from "../../../services/uploadApi";
+import { useFileUpload } from "../../../hooks/useFileUpload";
+import UploadProgress from "../../../components/UploadProgress";
 import RichContent from "./RichContent";
 import { useKeepSessionAlive } from "../../../context/session";
 
@@ -51,28 +52,25 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Uploads through the same /api/uploads/document endpoint already used by course/curriculum
-// authoring (uploadApi.uploadDocument) — its multer filter already accepts documents, images,
-// audio, video, and zip archives, which covers every file-upload item kind and every project
-// deliverable's submissionKinds. `value` is the stored response shape: {url, filename, mimeType,
+// Uploads through the same document upload already used by course/curriculum authoring
+// (hooks/useFileUpload.js → uploadApi.uploadDocument) — it accepts documents, images, audio,
+// video, and zip archives, which covers every file-upload item kind and every project
+// deliverable's submissionKinds, and sends a large file (a video) in pieces. `value` is the stored response shape: {url, filename, mimeType,
 // size} once uploaded, undefined/null before that.
 function FileUploadField({ value, onChange, accept, hint }) {
-  const [uploading, setUploading] = useState(false);
+  const { upload, cancel, uploading, progress } = useFileUpload();
   const [error, setError] = useState("");
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setUploading(true);
     setError("");
     try {
-      const uploaded = await uploadApi.uploadDocument(file);
+      const uploaded = await upload(file);
       onChange({ url: uploaded.url, filename: uploaded.filename, mimeType: uploaded.mimeType, size: uploaded.size });
     } catch (err) {
-      setError(err?.response?.data?.message || "Upload failed — try again.");
-    } finally {
-      setUploading(false);
+      if (!err.cancelled) setError(err.message || "Upload failed — try again.");
     }
   };
 
@@ -102,6 +100,7 @@ function FileUploadField({ value, onChange, accept, hint }) {
           <input type="file" accept={accept} onChange={handleFile} disabled={uploading} style={{ display: "none" }} />
         </label>
       )}
+      <UploadProgress progress={progress} onCancel={cancel} />
       {hint && !value?.url ? <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{hint}</p> : null}
       {error ? <p style={{ margin: 0, fontSize: 11.5, color: "#DC2626" }}>{error}</p> : null}
     </div>
