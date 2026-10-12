@@ -6,6 +6,8 @@ import Image from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/uploadApi";
+import { useFileUpload } from "../../../hooks/useFileUpload";
+import UploadProgress from "../../../components/UploadProgress";
 import Video from "./VideoExtension";
 
 const VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
@@ -136,7 +138,7 @@ function LinkPopover({ editor, onClose }) {
 
 export function Editor({ value, onChange, size = "md" }) {
   const [uploading, setUploading] = useState(false);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const { upload: uploadVideo, cancel: cancelVideo, uploading: uploadingVideo, progress: videoProgress } = useFileUpload();
   const [linkOpen, setLinkOpen] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const fileInputRef = useRef(null);
@@ -211,20 +213,17 @@ export function Editor({ value, onChange, size = "md" }) {
     }
   };
 
-  // Videos go through the document upload pipeline (already accepts mp4/webm/quicktime up to
-  // 50MB — see server/src/modules/uploads/upload.middleware.js) rather than the 5MB image one.
+  // Videos go through the document upload pipeline (mp4/webm/quicktime — see
+  // server/src/modules/uploads/upload.middleware.js), which sends a large file in pieces.
   const handleVideoFilePicked = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !editor) return;
-    setUploadingVideo(true);
     try {
-      const { url } = await uploadApi.uploadDocument(file);
+      const { url } = await uploadVideo(file);
       editor.chain().focus().setVideo({ src: url }).run();
     } catch (err) {
-      toast.error(err.message || "Failed to upload video");
-    } finally {
-      setUploadingVideo(false);
+      if (!err.cancelled) toast.error(err.message || "Failed to upload video");
     }
   };
 
@@ -305,6 +304,8 @@ export function Editor({ value, onChange, size = "md" }) {
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleFilePicked} style={{ display: "none" }} />
         <input ref={videoInputRef} type="file" accept={VIDEO_MIME_TYPES.join(",")} onChange={handleVideoFilePicked} style={{ display: "none" }} />
       </div>
+
+      <UploadProgress progress={videoProgress} onCancel={cancelVideo} style={{ borderRadius: 0, border: "none", borderBottom: "1px solid #E5E7EB" }} />
 
       <EditorContent editor={editor} />
     </div>

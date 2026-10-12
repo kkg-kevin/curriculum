@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import toast from "react-hot-toast";
-import { uploadApi } from "../../../services/uploadApi";
+import { useFileUpload } from "../../../hooks/useFileUpload";
+import UploadProgress from "../../../components/UploadProgress";
 import { Field } from "./formFields";
 
 const AUDIENCE_LABELS = { teacher: "Teacher only", student: "Student only", both: "Teacher & Student" };
@@ -68,7 +69,7 @@ function AddLinkForm({ onAdd, onCancel }) {
 
 function ResourcesUploader({ value, onChange }) {
   const resources = value || [];
-  const [uploading, setUploading] = useState(false);
+  const { upload, cancel, uploading, progress } = useFileUpload();
   const [addingLink, setAddingLink] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -76,14 +77,11 @@ function ResourcesUploader({ value, onChange }) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setUploading(true);
     try {
-      const { url, filename, mimeType, size } = await uploadApi.uploadDocument(file);
+      const { url, filename, mimeType, size } = await upload(file);
       onChange([...resources, { id: crypto.randomUUID(), type: "file", url, filename, mimeType, size, audience: "both" }]);
     } catch (err) {
-      toast.error(err.message || "Failed to upload document");
-    } finally {
-      setUploading(false);
+      if (!err.cancelled) toast.error(err.message || "Failed to upload document");
     }
   };
 
@@ -137,6 +135,8 @@ function ResourcesUploader({ value, onChange }) {
           Add link
         </button>
       </div>
+
+      <UploadProgress progress={progress} onCancel={cancel} style={{ marginTop: "8px" }} />
 
       {addingLink && <AddLinkForm onAdd={addLink} onCancel={() => setAddingLink(false)} />}
 
