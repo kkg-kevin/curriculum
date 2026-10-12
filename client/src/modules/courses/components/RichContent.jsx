@@ -1,3 +1,4 @@
+import { sanitizeHtml } from "../../../utils/sanitizeHtml";
 // TipTap's "empty" state is still markup (e.g. "<p></p>"), not an empty string —
 // strip tags before deciding whether there's anything to show.
 export function isEmptyHtml(html) {
@@ -13,8 +14,8 @@ export function stripHtml(html) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// Content here was authored by the same user through RichTextEditor (internal tool,
-// no untrusted third-party input), so rendering raw HTML without a sanitizer is fine.
+// Content is authored by staff through RichTextEditor, but it is also copied between
+// workspaces (Sharing), so it is cleaned before it goes on the page — see sanitizeHtml.
 export default function RichContent({ html, emptyText }) {
   if (isEmptyHtml(html)) {
     return <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>{emptyText}</p>;
@@ -41,7 +42,7 @@ export default function RichContent({ html, emptyText }) {
         .course-rich-content th, .course-rich-content td { border: 1.5px solid #E5E7EB; padding: 6px 9px; text-align: left; vertical-align: top; }
         .course-rich-content th { background: #F9FAFB; font-weight: 700; }
       `}</style>
-      <div className="course-rich-content" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className="course-rich-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
     </>
   );
 }

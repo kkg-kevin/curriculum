@@ -32,6 +32,7 @@
     "@tiptap/starter-kit": "^3.27.0",
     "axios": "^1.18.0",
     "dayjs": "^1.11.21",
+    "dompurify": "^3.4.16",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
