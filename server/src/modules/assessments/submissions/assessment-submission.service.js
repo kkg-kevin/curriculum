@@ -155,6 +155,26 @@ async function summarizeIndicatorProgress(submissions, curriculumId = null) {
 // mechanism behind "one submission per group": every sibling row stays an identical mirror of
 // the group's shared attempt (answers on draft/submit, score+feedback+status on grade). A no-op
 // for a submission with no groupId (an ordinary individual submission).
+function alreadySubmitted() {
+  const err = new Error("This assessment has already been submitted");
+  err.statusCode = 400;
+  return err;
+}
+
+// Creates a learner's submission, or returns the one that already exists when two requests open
+// the same assessment at the same moment (two tabs, a double tap): the table allows one row per
+// issue and learner, so the second insert is refused and that row is the answer.
+async function createOrExisting(data) {
+  try {
+    return await AssessmentSubmissionModel.create(data);
+  } catch (err) {
+    if (err.code !== "ER_DUP_ENTRY") throw err;
+    const existing = await AssessmentSubmissionModel.findOne({ issueId: data.issueId, learnerId: data.learnerId });
+    if (!existing) throw err;
+    return existing;
+  }
+}
+
 async function fanOutToGroup(submission, updates) {
   if (!submission.groupId) return;
   const siblings = await AssessmentSubmissionModel.findGroupSiblings(submission.issueId, submission.groupId);
@@ -644,22 +664,22 @@ const AssessmentSubmissionService = {
       reportPublishedBy: null,
     };
 
-    if (!issue.groupMode) return AssessmentSubmissionModel.create(base);
+    if (!issue.groupMode) return createOrExisting(base);
 
     // Group mode: resolve this learner's class group. No group yet -> falls back to a normal
     // solo submission (groupId stays null) — not blocked, since locking a learner out over an
     // incomplete teacher setup would be worse; they simply show up as "ungrouped" in the roster.
     const group = await ClassGroupService.getGroupForLearner(issue.classId, learnerId);
-    if (!group) return AssessmentSubmissionModel.create(base);
+    if (!group) return createOrExisting(base);
 
     const siblings = await AssessmentSubmissionModel.findGroupSiblings(issueId, group.id);
-    if (!siblings.length) return AssessmentSubmissionModel.create({ ...base, groupId: group.id });
+    if (!siblings.length) return createOrExisting({ ...base, groupId: group.id });
 
     // A later group member opening it for the first time — clone the group's current shared
     // state instead of starting them blank, so they see whatever progress/result already exists
     // rather than an empty form that would silently diverge from their teammates'.
     const sibling = siblings[0];
-    return AssessmentSubmissionModel.create({
+    return createOrExisting({
       ...base,
       groupId: group.id,
       status: sibling.status,
@@ -699,7 +719,10 @@ const AssessmentSubmissionService = {
       err.statusCode = 409;
       throw err;
     }
-    const updated = await AssessmentSubmissionModel.update(submissionId, { answers });
+    // Only while still in progress: a draft save that arrives just after the learner's own
+    // Submit (a slow autosave, a second tab) must not replace the answers that were marked.
+    const updated = await AssessmentSubmissionModel.updateIfInProgress(submissionId, { answers });
+    if (!updated) throw alreadySubmitted();
     await fanOutToGroup(submission, { answers });
     return updated;
   },
@@ -746,21 +769,13 @@ const AssessmentSubmissionService = {
       ...(needsManual ? {} : { reportPublished: true, reportPublishedAt: now }),
     };
 
-    let updated;
-    if (submission.groupId) {
-      // Guards the race where two group members tap Submit at nearly the same instant: only the
-      // first write actually lands (the row was still "in_progress"); the loser gets null back
-      // and hits the same "already submitted" error a normal retry would.
-      updated = await AssessmentSubmissionModel.updateIfInProgress(submissionId, updates);
-      if (!updated) {
-        const err = new Error("This assessment has already been submitted");
-        err.statusCode = 400;
-        throw err;
-      }
-      await fanOutToGroup(submission, updates);
-    } else {
-      updated = await AssessmentSubmissionModel.update(submissionId, updates);
-    }
+    // Only the first Submit lands (the row was still "in_progress"); a second one — two group
+    // members tapping at once, a double tap, a retry after a dropped connection, a second tab —
+    // gets null back and the same "already submitted" answer, so marking, notifications and
+    // pathway progress below run once.
+    const updated = await AssessmentSubmissionModel.updateIfInProgress(submissionId, updates);
+    if (!updated) throw alreadySubmitted();
+    await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(updated);
     if (updated.status === "graded") {
       await maybeAdvancePathwayForCourse(updated);

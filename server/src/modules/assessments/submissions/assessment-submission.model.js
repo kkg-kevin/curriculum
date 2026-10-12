@@ -56,10 +56,9 @@ const AssessmentSubmissionModel = {
   },
 
   // Same contract as update(), but only writes if the row is still "in_progress" — returns null
-  // (no row updated) otherwise. Used by submit() for a group-mode submission's primary row, to
-  // close the race where two group members tap Submit at nearly the same instant: only the
-  // first write actually lands, and the second sees null and reports "already submitted" instead
-  // of both racing to fan out conflicting updates.
+  // (no row updated) otherwise. Used by submit() and saveDraft(): of two Submits that arrive at
+  // nearly the same instant only the first write lands, and the second sees null and reports
+  // "already submitted"; a draft save that arrives after a Submit is refused the same way.
   async updateIfInProgress(id, data) {
     const patch = stringifyJsonFields(data, JSON_FIELDS);
     delete patch.id;

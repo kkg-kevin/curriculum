@@ -38,6 +38,10 @@ module.exports = {
   // than the pool has waits its turn inside knex instead of failing. min:0 lets idle connections
   // close, so a quiet app holds none. Raise DB_POOL_MAX only on a host with a known higher cap.
   pool: { min: 0, max: Number(process.env.DB_POOL_MAX) || 8, idleTimeoutMillis: 30000 },
+  // How long a query waits for a free connection before failing. Knex's default is 60 seconds —
+  // far longer than the portal waits for an answer (15s), so under load requests piled up
+  // behind ones nobody was waiting for any more.
+  acquireConnectionTimeout: 20000,
   migrations: {
     directory: "./src/db/migrations",
     tableName: "knex_migrations",

@@ -102,6 +102,57 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (12 Oct 2026, website) — Who we are, a Schools page, real contact details and a WhatsApp button
+
+**Website only.** Rebuilt from commit `3677f8b` (curriculum-web, branch `new`). The backend and
+the portal have not changed since the 12 Oct release below — their files in `Guide/dev/`,
+`Guide/live/` and `Guide/capable/` are the ones built for it (from `38e0ffc`), so there is
+nothing new to upload for them and nothing at all for Capable, which has no website.
+
+No migration. No new environment variable. Nothing to restart.
+
+### What changed
+
+1. **Who Digifunzi is.** The home page opens with the organisation's own description (an
+   impact-driven digital literacy programme for kids aged 5–17), with the vision, mission and
+   2030 goal as three cards beside it and the two students faded behind.
+2. **New Schools page** at `/schools` — the Robotics, AI & Coding for Schools programme: key
+   features and offerings, the implementation approach, and Quarky. Linked from the header,
+   the footer and a "For schools" band on the home page, and listed in `sitemap.xml`.
+3. **Some of our clients** on Home, Schools and About — shown by name; logos can be added in
+   `src/content/organisation.js` once the files are in `public/clients/`.
+4. **About** rewritten around the same material, with the vision, mission and goal cards.
+5. **Real contact details**: `info@digifunzi.com`, +254 790 252 523, Thika Gateway Plaza
+   4th Floor, and Facebook, LinkedIn, YouTube, Instagram and TikTok icons in the footer.
+6. **WhatsApp button** fixed to the bottom-right corner of every page. It opens a chat with
+   +254 790 252 523, as do "Chat on WhatsApp" in the footer and on the Contact page and "Speak
+   to a mentor" on the diagnostic report, which were hidden until a number was set.
+7. The header menu collapses to the menu button below 1280px wide (was 1100px), to fit the
+   extra Schools link.
+
+**Still to confirm.** That +254 790 252 523 is on WhatsApp; that the office is in Thika town
+(the footer now says "Thika, KE"); and the privacy policy, which still says "based in Nairobi,
+Kenya". The home page's "6+ / 1:6 / 100%" figures are older and unverified.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes** pre-rendered, 34 URLs in
+`sitemap.xml`; 205 entries. The same file is in `Guide/dev/` and `Guide/live/`.
+
+### Deploy order
+
+1. **Website**: upload `africa-digifunzi-com-dist.zip` to the `africa.digifunzi.com` document
+   root and Extract, replacing the existing files.
+2. **Verify:**
+   - Home: the new heading, the three cards on the right, and the green WhatsApp button bottom
+     right. Click it: WhatsApp opens a chat with +254 790 252 523.
+   - `/schools` opens (also after a reload), and "Schools" is in the menu.
+   - Footer: the email, phone and address are right and the five social icons open the right
+     profiles.
+
+---
+
 ## This release (12 Oct 2026) — Large uploads (videos) go up in pieces, with progress and resume
 
 **Backend and portal rebuilt for Dev, Live and Capable this pass** — from commit `38e0ffc`

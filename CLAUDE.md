@@ -22,6 +22,12 @@ cd client && npm install
 cd server && npm install
 ```
 
+**Tests (server):**
+```bash
+cd server && npm test                                  # no database needed
+cd server && TEST_DB_NAME=digifunzi_nfr_test npm test   # also the database tests, against a throwaway database (name must end in _test)
+```
+
 **Lint / format (client):**
 ```bash
 cd client && npx eslint src
@@ -102,6 +108,8 @@ DB_USER=
 DB_PASSWORD=
 DB_NAME=digifunzi
 DB_POOL_MAX=          # default 8 — keep it under the host's max_user_connections for DB_USER
+TRUST_PROXY=          # optional — how many proxies sit in front of the app (usually 1 on cPanel), so rate limits see each real address; check on the host before setting
+PASSWORD_WORKERS=     # default 2 — threads that hash and check passwords off the main thread
 JWT_SECRET=
 CLIENT_URL=http://localhost:5173   # also the base of every link in an email
 # Outbound email — all optional. Unset, nothing is sent (locally the email is printed to the server log).
