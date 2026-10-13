@@ -56,9 +56,9 @@ const createCurriculumSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters"),
   code: z
     .string()
+    .trim()
     .min(1, "Curriculum code is required")
-    .max(20, "Max 20 characters")
-    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens"),
+    .max(20, "Max 20 characters"),
   academicYear: z.string().optional().default(""),
   // Rich text (TipTap HTML) — capped generously above the old 500-char plain-text limit.
   description: z.string().max(5000).default(""),
@@ -83,9 +83,9 @@ const updateCurriculumSchema = z.object({
   name: z.string().min(1, "Curriculum name is required").max(100, "Max 100 characters").optional(),
   code: z
     .string()
+    .trim()
     .min(1, "Curriculum code is required")
     .max(20, "Max 20 characters")
-    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens")
     .optional(),
   academicYear: z.string().optional(),
   description: z.string().max(5000).optional(),
