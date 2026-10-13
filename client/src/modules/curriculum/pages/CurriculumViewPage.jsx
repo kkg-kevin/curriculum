@@ -267,18 +267,20 @@ const CSS = `
 `;
 
 // Grade classes have no explicit order field — a System Level's own `sequence` is the only
-// real ordering signal (same resolution CurriculumLevelMappingTable.jsx uses), falling back to
-// array order for any class whose systemLevelId doesn't resolve (unmapped or level deleted).
+// real ordering signal (same resolution CurriculumLevelMappingTable.jsx uses). Grades mapped to
+// a System Level are arranged among themselves by that sequence; a grade whose systemLevelId
+// doesn't resolve (unmapped or level deleted) keeps its place in the order the grades were added
+// rather than dropping to the end. A hub's classes follow this same order — see
+// class.service.js's sortByCurriculumOrder; keep the two in step.
 function sortClassesBySystemLevel(classes, systemLevels) {
   const sequenceById = new Map((systemLevels || []).map((l) => [l.id, l.sequence]));
-  return [...(classes || [])].sort((a, b) => {
-    const sa = sequenceById.get(a.systemLevelId);
-    const sb = sequenceById.get(b.systemLevelId);
-    if (sa == null && sb == null) return 0;
-    if (sa == null) return 1;
-    if (sb == null) return -1;
-    return sa - sb;
-  });
+  const list = classes || [];
+  const mapped = list
+    .map((cls, i) => ({ cls, i, sequence: sequenceById.get(cls.systemLevelId) }))
+    .filter((entry) => entry.sequence != null)
+    .sort((a, b) => a.sequence - b.sequence || a.i - b.i);
+  let next = 0;
+  return list.map((cls) => (sequenceById.get(cls.systemLevelId) == null ? cls : mapped[next++].cls));
 }
 
 // Every (periodName, className) a course currently appears under, across the live version's
@@ -806,6 +808,16 @@ export default function CurriculumViewPage() {
                   fontSize: "11px", fontWeight: "600", letterSpacing: "0.03em",
                 }}>
                   {curriculumType}
+                </span>
+              )}
+              {curriculum.copiedFromId && (
+                <span style={{
+                  padding: "4px 13px", borderRadius: "20px",
+                  backgroundColor: "#ECFDF5", color: "#047857",
+                  border: "1px solid #A7F3D0",
+                  fontSize: "11px", fontWeight: "600", letterSpacing: "0.03em",
+                }}>
+                  Copy
                 </span>
               )}
             </div>

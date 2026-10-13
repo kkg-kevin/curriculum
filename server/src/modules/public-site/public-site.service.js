@@ -12,9 +12,14 @@ const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/
 // The designated admin's operational Pathways, across every curriculum they own.
 // `pathways` has no ownerAdminId of its own — it's tenant-scoped transitively via
 // curriculumId -> curricula.ownerAdminId (see the tenant-isolation migrations).
+//
+// Oldest curriculum first: when two curricula carry a pathway of the same name (a duplicated
+// curriculum starts out with every one of the original's), the original's is the one the
+// website keeps showing — see pickForSlug.
 async function designatedAdminPathways() {
   const ownerAdminId = requirePublicContentAdminId();
-  const curricula = await CurriculumModel.findAll({ ownerAdminId });
+  const curricula = (await CurriculumModel.findAll({ ownerAdminId }))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lists = await Promise.all(curricula.map((c) => PathwayModel.findByCurriculumId(c.id)));
   return lists.flat();
 }
@@ -106,10 +111,14 @@ async function pickForSlug(pathways, slug) {
     if (!byCurriculum.has(p.curriculumId)) byCurriculum.set(p.curriculumId, []);
     byCurriculum.get(p.curriculumId).push(p);
   }
+  // Candidates are oldest curriculum first (designatedAdminPathways). Among those with courses,
+  // one that offers a public diagnostic wins, then the oldest.
   const candidates = await Promise.all([...byCurriculum.values()].map(resolvePathway));
+  const offersDiagnostic = (c) => c.rows.some((p) => p.publicDiagnosticEnabled);
   return (
+    candidates.find((c) => c.courseCount > 0 && offersDiagnostic(c)) ||
     candidates.find((c) => c.courseCount > 0) ||
-    candidates.find((c) => c.rows.some((p) => p.publicDiagnosticEnabled)) ||
+    candidates.find(offersDiagnostic) ||
     candidates[0] ||
     null
   );

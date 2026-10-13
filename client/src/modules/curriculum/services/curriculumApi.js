@@ -11,6 +11,9 @@ export const curriculumApi = {
   getMine: () => api.get(`${ENDPOINT}/mine`).then((r) => r.data.data),
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
+  // A second, independent copy in this workspace ("… (Copy)") — same courses and assessments,
+  // its own stages, pathways, bands, versions and academic years.
+  duplicate: (id) => api.post(`${ENDPOINT}/${id}/duplicate`).then((r) => r.data.data),
 
   /* Courses — added to this curriculum from here (a course stays independent otherwise) */
   getCurriculumCourses: (id) =>

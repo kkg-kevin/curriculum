@@ -80,6 +80,12 @@ const updateCurriculum = asyncHandler(async (req, res) => {
   res.json({ success: true, data: curriculum });
 });
 
+const duplicateCurriculum = asyncHandler(async (req, res) => {
+  assertOwn(isOwnedByAdmin(req, await CurriculumService.getCurriculumById(req.params.id)));
+  const curriculum = await CurriculumService.duplicateCurriculum(req.params.id);
+  res.status(201).json({ success: true, data: curriculum });
+});
+
 const deleteCurriculum = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await CurriculumService.getCurriculumById(req.params.id)));
@@ -135,6 +141,7 @@ module.exports = {
   getMyCurriculum,
   getCurriculumById,
   updateCurriculum,
+  duplicateCurriculum,
   deleteCurriculum,
   getCurriculumCourses,
   linkCourse,

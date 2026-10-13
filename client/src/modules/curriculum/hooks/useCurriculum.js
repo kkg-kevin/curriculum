@@ -52,6 +52,20 @@ export function useCreateCurriculum() {
   });
 }
 
+export function useDuplicateCurriculum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: curriculumApi.duplicate,
+    onSuccess: (copy) => {
+      queryClient.invalidateQueries({ queryKey: CURRICULUM_KEYS.all });
+      toast.success(`Created "${copy.name}"`);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || err.message || "Failed to duplicate curriculum");
+    },
+  });
+}
+
 export function useDeleteCurriculum() {
   const queryClient = useQueryClient();
   return useMutation({

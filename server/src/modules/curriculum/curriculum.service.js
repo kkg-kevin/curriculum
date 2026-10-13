@@ -29,6 +29,9 @@ const LearnerPathwayModel = require("./competency-framework/learner-pathway.mode
 const IndicatorAchievementModel = require("./competency-framework/indicator-achievement.model");
 const { collectCourseIds } = require("./versions/content.utils");
 const { getSessionAssessmentIds, sessionHasAssessment } = require("../courses/sessionAssessment.utils");
+const { duplicateCurriculum: copyCurriculum } = require("../sharing/share-copy.service");
+
+const NAME_MAX = 100; // curricula.name — see createCurriculumSchema
 
 // Builds the same publish-status/course-count lookups the JSON-file era computed by reading
 // academic-year-groups.json/academic-year-versions.json/curriculum-versions.json directly —
@@ -46,10 +49,16 @@ async function buildCurriculumMeta(curricula) {
 
   const groupById = Object.fromEntries(ayGroups.map((g) => [g.id, g]));
   const publishedYearByCurriculumId = {};
+  // The published year's own start date — its label is free text ("Academic year sample") and
+  // needn't contain the year, so anything that needs the actual year reads it from here.
+  const publishedYearStartByCurriculumId = {};
   for (const version of ayVersions) {
     if (version.status !== "published" || !version.curriculumId) continue;
     const group = groupById[version.yearGroupId];
-    if (group) publishedYearByCurriculumId[version.curriculumId] = group.label;
+    if (group) {
+      publishedYearByCurriculumId[version.curriculumId] = group.label;
+      publishedYearStartByCurriculumId[version.curriculumId] = group.startDate || null;
+    }
   }
 
   const cvPublishedIds = new Set();
@@ -83,6 +92,7 @@ async function buildCurriculumMeta(curricula) {
       if (!curriculum?.id) {
         return {
           publishedAcademicYear: null,
+          publishedAcademicYearStart: null,
           effectiveStatus: curriculum?.status || "draft",
           coursesCount: 0,
         };
@@ -99,6 +109,7 @@ async function buildCurriculumMeta(curricula) {
 
       return {
         publishedAcademicYear: publishedYearByCurriculumId[curriculum.id] || null,
+        publishedAcademicYearStart: publishedYearStartByCurriculumId[curriculum.id] || null,
         effectiveStatus,
         coursesCount: coursesCountByCurriculumId.get(curriculum.id) || 0,
       };
@@ -206,6 +217,29 @@ const CurriculumService = {
       throw err;
     }
     return enrichCurriculum(curriculum, await buildCurriculumMeta([curriculum]));
+  },
+
+  // A second, independent copy of a curriculum in the same workspace (see share-copy.service.js's
+  // duplicateCurriculum for exactly what comes along). Keeps the name with " (Copy)" added, or " (Copy 2)" and
+  // so on when that's taken — names are unique per workspace (assertUniqueName).
+  async duplicateCurriculum(id) {
+    const source = await CurriculumModel.findById(id);
+    if (!source) {
+      const err = new Error("Curriculum not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const taken = new Set(
+      (await CurriculumModel.findAll({ ownerAdminId: source.ownerAdminId })).map((c) => (c.name || "").trim().toLowerCase())
+    );
+    let name;
+    for (let n = 1; ; n += 1) {
+      const suffix = n === 1 ? " (Copy)" : ` (Copy ${n})`;
+      name = `${source.name.trim().slice(0, NAME_MAX - suffix.length).trim()}${suffix}`;
+      if (!taken.has(name.toLowerCase())) break;
+    }
+    const newId = await copyCurriculum({ adminId: source.ownerAdminId, curriculumId: id, name });
+    return this.getCurriculumById(newId);
   },
 
   async deleteCurriculum(id) {

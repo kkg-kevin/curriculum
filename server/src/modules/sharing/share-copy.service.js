@@ -82,10 +82,15 @@ function eachString(value, visit) {
 }
 
 class CopyRun {
-  constructor({ trx, sourceAdminId, targetAdminId }) {
+  // `sameWorkspace` is a copy made inside one admin's own workspace (duplicating a curriculum):
+  // only the record and the rows that belong to it are copied. Everything it merely refers to —
+  // courses, assessments, competencies, Settings entries — already lives in this workspace, so
+  // those references are kept as they are rather than followed and copied.
+  constructor({ trx, sourceAdminId, targetAdminId, sameWorkspace = false }) {
     this.trx = trx;
     this.sourceAdminId = sourceAdminId;
     this.targetAdminId = targetAdminId;
+    this.sameWorkspace = sameWorkspace;
     this.idMap = new Map(); // source id → the id it has in the receiving workspace
     this.rows = []; // { table, row } still carrying source ids
     this.seen = new Set();
@@ -100,6 +105,10 @@ class CopyRun {
   // reference found while scanning may be followed to. Plus what the receiving admin already has.
   async prepare() {
     this.sourceIndex = new Map();
+    this.indicatorCompetency = new Map();
+    this.imported = new Map();
+    this.targetNames = {};
+    if (this.sameWorkspace) return; // nothing is followed, reused or renumbered
     for (const table of ROOT_TABLES) {
       const ids = await this.trx(table).where({ ownerAdminId: this.sourceAdminId }).pluck("id");
       for (const id of ids) this.sourceIndex.set(id, table);
@@ -191,8 +200,10 @@ class CopyRun {
       for (const level of Array.isArray(row.classes) ? row.classes : []) {
         if (isUuid(level?.id) && !this.idMap.has(level.id)) this.idMap.set(level.id, generateId());
       }
-      const assessments = await this.trx("assessments").where({ curriculumId: sourceId, ownerAdminId: this.sourceAdminId }).pluck("id");
-      for (const id of assessments) this.queue.push(["assessments", id]);
+      if (!this.sameWorkspace) {
+        const assessments = await this.trx("assessments").where({ curriculumId: sourceId, ownerAdminId: this.sourceAdminId }).pluck("id");
+        for (const id of assessments) this.queue.push(["assessments", id]);
+      }
     }
 
     for (const [childTable, column] of CHILDREN[table] || []) {
@@ -253,7 +264,10 @@ class CopyRun {
       else if (column.endsWith("Id") && isUuid(value)) {
         // A pointer at another record. One that wasn't copied (the curriculum a lone assessment
         // sat in, the person who administers a curriculum) must not carry over.
-        out[column] = this.mapId(value) || null;
+        // Inside one workspace the record it points at is still there to point at — except the
+        // person who administers the curriculum, who is assigned to the original only.
+        const keep = this.sameWorkspace && column !== "curriculumAdminId" ? value : null;
+        out[column] = this.mapId(value) || keep;
         if (!out[column] && LINK_KEYS[table]) return null;
       } else out[column] = this.rewrite(value);
     }
@@ -261,6 +275,8 @@ class CopyRun {
     // Nothing arrives already on sale or already public: that is the receiving admin's call.
     if (table === "items" || table === "assessments") out.saleStatus = "internal";
     if (table === "pathways") out.publicDiagnosticEnabled = false;
+    // A duplicate remembers its original (the "Copy" pill); one copied from another admin doesn't.
+    if (table === "curricula" && (this.sameWorkspace || "copiedFromId" in row)) out.copiedFromId = this.sameWorkspace ? row.id : null;
     if (table === "pathway_templates") {
       out.courses = (Array.isArray(row.courses) ? row.courses : []).map((id) => this.mapId(id)).filter(Boolean);
     }
@@ -291,7 +307,8 @@ class CopyRun {
       // Small batches: a session or a curriculum version can be a very large row.
       for (let i = 0; i < rows.length; i += 20) await this.trx(table).insert(rows.slice(i, i + 20));
     }
-    for (const entry of this.provenance) {
+    // "Copied from another admin" bookkeeping — not a thing within one workspace.
+    for (const entry of this.sameWorkspace ? [] : this.provenance) {
       await this.trx("shared_imports").insert({ id: generateId(), ownerAdminId: this.targetAdminId, sourceAdminId: this.sourceAdminId, createdAt: now, ...entry });
     }
   }
@@ -326,4 +343,28 @@ async function copyBetweenAdmins({ sourceAdminId, targetAdminId, table, ids, tra
   return transaction ? work(transaction) : db.transaction(work);
 }
 
-module.exports = { copyBetweenAdmins, ROOT_TABLES };
+/**
+ * Makes a second, independent copy of one of an admin's own curricula, under `name`: the
+ * curriculum record plus everything that belongs to it (CHILDREN.curricula — stages, pathways,
+ * bands, levels, assessment/evidence types, adopted competencies, versions, academic years and
+ * its course links). The courses and assessments themselves are not copied; both curricula use
+ * the same ones. Nothing learner- or hub-related comes along, the curriculum admin isn't carried
+ * over, and the copy's pathways start with their public diagnostic switched off.
+ * Returns the new curriculum's id, or null when `curriculumId` isn't this admin's.
+ * `transaction` is for tests that want to look and then roll back.
+ */
+async function duplicateCurriculum({ adminId, curriculumId, name, transaction }) {
+  const work = async (trx) => {
+    const run = new CopyRun({ trx, sourceAdminId: adminId, targetAdminId: adminId, sameWorkspace: true });
+    await run.prepare();
+    await run.add("curricula", curriculumId, { root: true });
+    const copy = run.rows.find((entry) => entry.table === "curricula");
+    if (!copy) return null;
+    copy.row = { ...copy.row, name };
+    await run.write();
+    return run.mapId(curriculumId);
+  };
+  return transaction ? work(transaction) : db.transaction(work);
+}
+
+module.exports = { copyBetweenAdmins, duplicateCurriculum, ROOT_TABLES };

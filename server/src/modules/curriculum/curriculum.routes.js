@@ -5,6 +5,7 @@ const {
   getMyCurriculum,
   getCurriculumById,
   updateCurriculum,
+  duplicateCurriculum,
   deleteCurriculum,
   getCurriculumCourses,
   linkCourse,
@@ -148,6 +149,10 @@ router.route("/").get(authorize("admin"), getAllCurricula).post(authorize("admin
 router.route("/:id")
   .put(authorize("admin", "curriculumAdmin"), ownCurriculumOnly, updateCurriculum)
   .delete(authorize("admin"), deleteCurriculum);
+
+// A second copy of the curriculum in the same workspace — adds to the roster of curricula, so
+// global-admin only, same as create.
+router.route("/:id/duplicate").post(authorize("admin"), duplicateCurriculum);
 
 // Who manages this curriculum — assigning/removing a curriculumAdmin is itself a global-admin
 // action (a curriculumAdmin can't grant themselves or anyone else more access). Only one at a

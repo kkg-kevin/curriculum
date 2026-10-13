@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { useDeleteCurriculum } from "../hooks/useCurriculum";
+import { useDeleteCurriculum, useDuplicateCurriculum } from "../hooks/useCurriculum";
 import ConfirmDialog from "./ConfirmDialog";
 import { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 
@@ -55,7 +55,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
   );
 }
 
-function KebabMenu({ curriculum, navigate, onDelete }) {
+function KebabMenu({ curriculum, navigate, onDuplicate, onDelete }) {
   const [menuOpen, setMenuOpen]   = useState(false);
   const [triggerHovered, setTriggerHovered] = useState(false);
   const [menuPos, setMenuPos]     = useState({ top: 0, right: 0 });
@@ -153,6 +153,10 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
             ))}
             <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "6px 0" }} />
             <MenuButton
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              label="Duplicate" onClick={() => { setMenuOpen(false); onDuplicate(); }}
+            />
+            <MenuButton
               icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               label="Delete" onClick={onDelete} danger
             />
@@ -167,6 +171,7 @@ function KebabMenu({ curriculum, navigate, onDelete }) {
 export default function CurriculumCard({ curriculum }) {
   const navigate = useNavigate();
   const { mutate: deleteCurriculum, isPending: isDeleting } = useDeleteCurriculum();
+  const { mutate: duplicateCurriculum, isPending: isDuplicating } = useDuplicateCurriculum();
   const [hovered, setHovered]     = useState(false);
   const [confirmOpen, setConfirm] = useState(false);
 
@@ -232,7 +237,17 @@ export default function CurriculumCard({ curriculum }) {
                 {curriculum.curriculumType}
               </span>
             )}
-            <KebabMenu curriculum={curriculum} navigate={navigate} onDelete={() => setConfirm(true)} />
+            {/* Made with "Duplicate" — see curriculum.service.js's duplicateCurriculum. */}
+            {curriculum.copiedFromId && (
+              <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", backgroundColor: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0", whiteSpace: "nowrap" }}>
+                Copy
+              </span>
+            )}
+            <KebabMenu
+              curriculum={curriculum} navigate={navigate}
+              onDuplicate={() => { if (!isDuplicating) duplicateCurriculum(curriculum.id); }}
+              onDelete={() => setConfirm(true)}
+            />
           </div>
         </div>
 
