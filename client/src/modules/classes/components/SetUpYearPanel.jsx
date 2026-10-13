@@ -6,10 +6,16 @@ import { useAuth } from "../../../context/AuthContext";
 
 const ACCENT = "#25476a";
 
-function extractYear(publishedAcademicYear) {
-  if (!publishedAcademicYear) return null;
-  const match = String(publishedAcademicYear).match(/\d{4}/);
-  return match ? match[0] : null;
+// The year the classes are created for: the 4-digit year in the published academic year's
+// name ("Academic year 2026"), else the year it starts in, else the name itself — a published
+// year whose name has no number in it is still a published year.
+function extractYear(curriculum) {
+  const label = curriculum?.publishedAcademicYear;
+  if (!label) return null;
+  const inLabel = String(label).match(/\d{4}/);
+  if (inLabel) return inLabel[0];
+  const inStart = String(curriculum.publishedAcademicYearStart || "").match(/\d{4}/);
+  return inStart ? inStart[0] : String(label).trim();
 }
 
 export default function SetUpYearPanel({ school, curriculum, existingClasses, onClose }) {
@@ -19,7 +25,7 @@ export default function SetUpYearPanel({ school, curriculum, existingClasses, on
   const { mutate: bulkCreate, isPending } = useBulkCreateClasses();
 
   const curriculumClasses = curriculum?.classes || [];
-  const academicYear = extractYear(curriculum?.publishedAcademicYear);
+  const academicYear = extractYear(curriculum);
 
   const existingKeySet = useMemo(() => {
     const s = new Set();

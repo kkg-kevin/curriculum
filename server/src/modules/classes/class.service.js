@@ -8,6 +8,7 @@ const AttendanceModel = require("../attendance/attendance.model");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const ClassGroupService = require("./groups/class-group.service");
 const CurriculumModel = require("../curriculum/curriculum.model");
+const SystemLevelModel = require("../settings/system-levels/system-level.model");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const ReportService = require("../reports/report.service");
 const TimetableService = require("../timetable/timetable.service");
@@ -79,6 +80,60 @@ async function resolveNextClass(cls) {
   return { nextGradeId: nextGrade.id, nextGradeName: nextGrade.name, nextAcademicYear, nextClass };
 }
 
+// Classes in the order their grades appear on the curriculum they run, not the order they
+// happened to be created in. "As on the curriculum" is the curriculum page's own order
+// (CurriculumViewPage.jsx's sortClassesBySystemLevel — keep the two in step): the grades in the
+// order they were added, with those mapped to a System Level arranged among themselves by that
+// level's sequence. A grade with no System Level keeps its place rather than dropping to the end
+// (a curriculum's youngest grades are often the unmapped ones). A class is matched to its grade
+// by id, or by name when the grade was since re-created. Within a grade: newest academic
+// year first, then stream name (2 before 10). A hub running more than one curriculum keeps each
+// curriculum's classes together; a class whose grade is no longer on its curriculum goes after
+// that curriculum's others, in its original order.
+async function sortByCurriculumOrder(classes) {
+  const curriculumIds = [...new Set(classes.map((c) => c.curriculumId).filter(Boolean))];
+  const curricula = (await Promise.all(curriculumIds.map((id) => CurriculumModel.findById(id)))).filter(Boolean);
+  const gradesOf = (curriculum) => (Array.isArray(curriculum.classes) ? curriculum.classes : []);
+  const levelIds = [...new Set(curricula.flatMap((c) => gradesOf(c).map((g) => g.systemLevelId)).filter(Boolean))];
+  const levels = await Promise.all(levelIds.map((id) => SystemLevelModel.findById(id)));
+  const sequenceById = new Map(levels.filter(Boolean).map((l) => [l.id, l.sequence]));
+
+  const gradeIndex = new Map(); // `${curriculumId}|${gradeId}` or `${curriculumId}|name|${name}` -> position
+  curricula.forEach((curriculum) => {
+    const grades = gradesOf(curriculum);
+    const mapped = grades
+      .map((grade, i) => ({ grade, i, sequence: sequenceById.get(grade.systemLevelId) }))
+      .filter((entry) => entry.sequence != null)
+      .sort((x, y) => x.sequence - y.sequence || x.i - y.i);
+    let next = 0;
+    const ordered = grades.map((grade) => (sequenceById.get(grade.systemLevelId) == null ? grade : mapped[next++].grade));
+    ordered.forEach((grade, position) => {
+      gradeIndex.set(`${curriculum.id}|${grade.id}`, position);
+      const name = String(grade.name || "").trim().toLowerCase();
+      if (name && !gradeIndex.has(`${curriculum.id}|name|${name}`)) gradeIndex.set(`${curriculum.id}|name|${name}`, position);
+    });
+  });
+  const curriculumRank = new Map(); // order each curriculum first shows up in
+  classes.forEach((c) => {
+    const key = c.curriculumId || "";
+    if (!curriculumRank.has(key)) curriculumRank.set(key, curriculumRank.size);
+  });
+  const gradeOf = (c) =>
+    gradeIndex.get(`${c.curriculumId}|${c.gradeId}`) ??
+    gradeIndex.get(`${c.curriculumId}|name|${String(c.gradeName || "").trim().toLowerCase()}`) ??
+    Infinity;
+  return classes
+    .map((c, i) => ({ c, i }))
+    .sort((x, y) =>
+      curriculumRank.get(x.c.curriculumId || "") - curriculumRank.get(y.c.curriculumId || "") ||
+      gradeOf(x.c) - gradeOf(y.c) ||
+      String(y.c.academicYear || "").localeCompare(String(x.c.academicYear || ""), undefined, { numeric: true }) ||
+      String(x.c.streamName || "").localeCompare(String(y.c.streamName || ""), undefined, { numeric: true }) ||
+      x.i - y.i
+    )
+    .map(({ c }) => c);
+}
+
 const ClassService = {
   async createClass(data) {
     await assertTagAvailable(data.tag, null);
@@ -95,7 +150,10 @@ const ClassService = {
       if (!l.classId) continue;
       countMap[l.classId] = (countMap[l.classId] || 0) + 1;
     }
-    return classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
+    const counted = classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
+    // A paged request keeps the model's own stable order (see ClassModel.findAll).
+    if (filters?.limit || filters?.offset) return counted;
+    return sortByCurriculumOrder(counted);
   },
 
   async getClassById(id) {
