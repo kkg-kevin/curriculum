@@ -650,7 +650,7 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
 
           <PasswordField />
 
-          <Field label="Description">
+          <Field label="Description" error={errors?.description?.message}>
             <Controller
               name="description"
               control={control}

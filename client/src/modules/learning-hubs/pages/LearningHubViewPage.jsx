@@ -8,6 +8,7 @@ import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 
 const ACCENT = "#25476a";
@@ -256,9 +257,11 @@ export default function LearningHubViewPage() {
       )}
 
       {/* Description */}
-      {hub.description && (
-        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1.5px solid #E5E7EB", padding: "18px 20px", marginBottom: 20 }}>
-          <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{hub.description}</p>
+      {/* Rich text from the hub form's editor. Hubs saved before the editor hold plain text —
+          those keep their line breaks. An editor left empty still saves "<p></p>". */}
+      {!isEmptyHtml(hub.description) && (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1.5px solid #E5E7EB", padding: "18px 20px", marginBottom: 20, whiteSpace: /<[a-z][^>]*>/i.test(hub.description) ? undefined : "pre-line" }}>
+          <RichContent html={hub.description} />
         </div>
       )}
 

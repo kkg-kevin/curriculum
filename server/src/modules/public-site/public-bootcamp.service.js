@@ -154,7 +154,8 @@ function projectHub(hub) {
   return {
     id: hub.id,
     name: hub.name,
-    description: hub.description || "",
+    // Authored as rich text (TipTap HTML); the landing site renders it as plain text.
+    description: htmlToText(hub.description),
     address: hubAddressOf(hub),
     phone: hub.phone || "",
     email: hub.email || "",
