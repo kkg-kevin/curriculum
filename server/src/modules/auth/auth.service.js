@@ -251,6 +251,14 @@ const AuthService = {
       err.statusCode = 401;
       throw err;
     }
+    // Switched off by the workspace's owner (Settings → People & sharing → Users). Checked only
+    // after the password matched, so it never tells a stranger that the account exists.
+    if (user.deactivatedAt) {
+      const err = new Error("This account has been deactivated. Please contact your administrator.");
+      err.statusCode = 403;
+      err.code = "ACCOUNT_DEACTIVATED";
+      throw err;
+    }
     if (learnerNeedingOwnLogin) {
       user = await UserModel.create({
         name: `${learnerNeedingOwnLogin.firstName} ${learnerNeedingOwnLogin.lastName}`.trim(),

@@ -66,6 +66,7 @@ const COLLECTIONS = {
     games: { table: "event_games", noun: "game" },
     roles: { table: "access_roles", noun: "role" },
     collaborators: { table: "users", noun: "staff member" },
+    users: { table: "users", noun: "user account" },
     connections: { table: "admin_connections", noun: "sharing connection" },
     packages: { table: "home_learning_packages", noun: "package" },
     batches: { table: "billing_invoice_batches", noun: "invoice batch" },

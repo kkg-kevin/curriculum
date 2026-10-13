@@ -102,6 +102,129 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (13 Oct 2026) — Pathways across developmental stages; duplicate a curriculum; Users list with deactivate; classes in curriculum order
+
+**Backend, portal and website.** Rebuilt from commit `f5ba9c7` (curriculum, branch `modules`) and
+`c2c8154` (curriculum-web, branch `new`). Upload the backend and the portal together; the website
+after them.
+
+**Two new migrations**, each adding one nullable column: `20261013090000_add_copied_from_to_curricula.js`
+(`curricula.copiedFromId`) and `20261013100000_add_deactivated_at_to_users.js`
+(`users.deactivatedAt`). Additive, applied on Restart. No environment variable. No new npm
+package, so Run NPM Install is not needed for this release on its own.
+
+None of this has been tried in a browser or on the hosting. What was run: the pathway save rules
+the curriculum copy and the Users list and deactivate switch against a local database, the public pathway and diagnostic data against
+local data, the server tests, and the website tests. Follow "Verify" on Dev first.
+
+### What changed
+
+**Pathways (Curriculum → Competencies → Pathways).** A pathway now runs across developmental
+stages. The tab has a pathway dropdown; under the chosen pathway every developmental stage of the
+curriculum is listed with its own courses, course order and advancement rules, and its own
+diagnostic. "Import Template" is gone: **+ Add Pathway** starts from scratch or from a pathway in
+Settings. A pathway set up before this release, which has no stage, appears under "No stage yet"
+with a "Move to stage…" dropdown — nothing is moved automatically. Each stage of a pathway is its
+own record and the records are tied together by the pathway's name; renaming or recolouring a
+pathway carries across its stages.
+
+Two things stay as they were and are worth knowing: a learner is still issued only **one**
+diagnostic for their stage (the first pathway set up for it), and the bootcamp pathway picker,
+course pricing and the learner profile still list each stage's record on its own line.
+
+**Website pathways and diagnostics.** A pathway page groups its courses under each developmental
+stage with the age range. "Take the diagnostic" asks only for the learner's age and gives the
+diagnostic of the stage that age falls in; an age with no diagnostic says so on the age field, and
+the questions step has a "Change age" button. The website's age field still accepts 3 to 19 only.
+
+**Duplicate a curriculum.** The card menu has **Duplicate**. It makes an independent copy in the
+same workspace named "<name> (Copy)" with its own stages, pathways, bands, levels, assessment and
+evidence types, adopted competencies, versions and academic years. The courses and assessments are
+shared, not copied — editing a course changes it in both. Classes, learners, hub links and the
+curriculum admin are not carried over, and each copied pathway's "offer on the public website"
+switch starts off. A copy shows a green **Copy** pill next to its type. The website keeps showing
+the original's pathways when a copy carries the same names.
+
+**Classes.** A hub's classes are listed in the order their grades appear on the curriculum, then
+newest academic year, then stream — not newest created first. The curriculum page uses the same
+order, and a grade with no System Level now keeps its place instead of dropping to the end. A
+class whose grade is no longer on its curriculum goes last.
+
+**Set Up Year.** It no longer says "no published academic year" when the published year's name has
+no four-digit year in it (for example "Academic year sample"); the year is then taken from the
+academic year's start date.
+
+**Hub description.** The hub page showed the description with its `<p>` tags. It now shows
+formatted text; an empty description no longer leaves an empty box; the website receives it as
+plain text; the form reports a description over 10,000 characters.
+
+**Users (Settings → People & sharing → Users).** A new, owner-only section listing every login
+in the workspace — owner, staff, supervisors, curriculum admins, hubs, educators, learners and
+parents — with the account type, the staff access role, what it is attached to, its status, last
+activity and date created. The counts at the top filter by type; there is a search, a status
+filter and Export CSV. Status is Active, Inactive (no activity for 30 days), No sign-in recorded,
+or Deactivated. **Deactivate** signs the account out at once and stops it signing in until
+**Activate** is pressed; nothing is deleted, the owner can't deactivate themself, and only accounts
+in the owner's own workspace can be changed. This is separate from suspending a hub, educator or
+learner, which still lets them sign in to a read-only portal. Last activity comes from the
+activity log, which began on 2 Oct 2026, so an account not used since then shows "No sign-in
+recorded".
+
+**Curriculum code.** Any characters are accepted (for example `DCF1.1 -2026`), up to 20.
+
+### Backend (`backend-deploy.zip`)
+
+From HEAD (`f5ba9c7`): `git archive --format=zip HEAD:server src knexfile.js package.json
+package-lock.json`. The same file is in `Guide/dev/`, `Guide/live/` and `Guide/capable/`. 114
+migrations, the newest `20261013100000_add_deactivated_at_to_users.js`. New routes:
+`POST /api/curricula/:id/duplicate` (admin only), and `GET /api/admin-tools/users` and
+`PATCH /api/admin-tools/users/:id` (workspace owner only). Sign-in answers 403 "This account has
+been deactivated" for a deactivated account, after the password has matched. `GET /api/public/pathways/:idOrSlug` gains a
+`stages` array; its `courses` and `diagnostic` fields are still there.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DBWZBDI2.js` |
+| Live | `npm run build:live` | `index-DvRbNeBh.js` |
+| Capable | `npm run build:capable` | `index-BlRbG6Sp.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged).
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes** pre-rendered, 34 URLs in
+`sitemap.xml`; 210 entries. The same file is in `Guide/dev/` and `Guide/live/`. It was
+pre-rendered against the backend as deployed today, so the pathway pages in the zip carry the
+single course list; the stage grouping appears in the browser once the new backend is up.
+
+### Deploy order
+
+1. **Database backup** (two columns are added).
+2. **Backend**: upload `backend-deploy.zip` to the app root, Extract, **Restart** (the migrations
+   run on Restart).
+3. **Portal**: upload `assets.zip` and `index.html` to the portal document root; extract
+   `assets.zip`, replacing the `assets` folder.
+4. **Website** (Dev and Live only): upload `africa-digifunzi-com-dist.zip` to the
+   `africa.digifunzi.com` document root and Extract, replacing the existing files.
+5. **Verify:**
+   - Curriculum → a curriculum → Competencies → Pathways: the dropdown lists each pathway once;
+     the stages are listed under it; add courses to a stage and assign a diagnostic.
+   - A pathway from before this release shows "No stage yet"; move it to a stage.
+   - Curriculum list → card menu → Duplicate: "<name> (Copy)" appears with a green Copy pill;
+     open it and check its stages and pathways; the original is unchanged.
+   - Sign in as a hub: Classes are in the curriculum's grade order.
+   - Set Up Year on a hub whose curriculum has a published academic year.
+   - A hub with a description shows it without tags.
+   - Settings → People & sharing → Users: the list loads with counts by type; deactivate a test
+     account, confirm it is signed out and can't sign in, then activate it again.
+   - Website: a pathway page shows its stages; "Take the diagnostic" with an age inside a stage
+     loads that stage's questions.
+
+---
+
 ## This release (12 Oct 2026, website clients) — Client logos on the website
 
 **Website only.** Rebuilt from commit `5a6fe55` (curriculum-web, branch `new`). The backend and
