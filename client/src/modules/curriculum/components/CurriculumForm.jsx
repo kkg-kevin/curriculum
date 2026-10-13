@@ -206,7 +206,7 @@ export default function CurriculumForm() {
             Auto
           </button>
         </div>
-        {!errors.code && <p style={hintStyle}>Letters, numbers, and hyphens only. Click Auto to generate from the name.</p>}
+        {!errors.code && <p style={hintStyle}>Up to 20 characters. Click Auto to generate from the name.</p>}
         <FieldError error={errors.code} />
       </div>
 

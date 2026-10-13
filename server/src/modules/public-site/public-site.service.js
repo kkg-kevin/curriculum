@@ -63,31 +63,78 @@ async function diagnosticInfoFor(pathway) {
 // curricula (e.g. "Digifunzi Competency Framework" + "sample program"), so two of their
 // pathways can collide on the same computed slug. `pickForSlug` disambiguates: prefer a
 // match that has active courses, then one with a public diagnostic, then the first.
+//
+// A pathway is one row per Developmental Stage, all sharing a name (see
+// CompetencyService.createPathway). The website shows it as ONE pathway with its stages inside,
+// so rows are first gathered per (curriculum, slug) — that's a pathway — and only then are
+// same-slug pathways from different curricula collapsed to one.
 function computedSlug(pathway) {
   return slugify(pathway.name) || "pathway";
 }
 
-async function pickForSlug(matches) {
-  if (matches.length <= 1) return matches[0] || null;
-  const withCounts = await Promise.all(
-    matches.map(async (p) => ({ p, n: (await activeOrderedCourses(p)).length })),
+// Every public pathway under `slug` resolved to { rows, stages, courseCount }: `stages` are the
+// pathway's rows that still have active courses, youngest stage first (a row in no stage last),
+// each with its stage, ordered courses and diagnostic info.
+async function resolvePathway(rows) {
+  const resolved = await Promise.all(
+    rows.map(async (row) => {
+      const stage = row.ageCategoryId ? await AgeCategoryModel.findById(row.ageCategoryId) : null;
+      let diagnostic = { available: false, minAge: null, maxAge: null };
+      try {
+        diagnostic = await diagnosticInfoFor(row);
+      } catch {
+        /* assessment lookup hiccup — leave diagnostic unavailable, the page still renders */
+      }
+      return { row, stage, courses: await activeOrderedCourses(row), diagnostic };
+    }),
   );
+  const stages = resolved
+    .filter((s) => s.courses.length > 0)
+    .sort(
+      (a, b) =>
+        Number(!a.stage) - Number(!b.stage) ||
+        (a.stage?.minAge ?? Infinity) - (b.stage?.minAge ?? Infinity) ||
+        (a.stage?.name || "").localeCompare(b.stage?.name || ""),
+    );
+  return { rows, stages, courseCount: stages.reduce((n, s) => n + s.courses.length, 0) };
+}
+
+async function pickForSlug(pathways, slug) {
+  const byCurriculum = new Map();
+  for (const p of pathways) {
+    if (computedSlug(p) !== slug) continue;
+    if (!byCurriculum.has(p.curriculumId)) byCurriculum.set(p.curriculumId, []);
+    byCurriculum.get(p.curriculumId).push(p);
+  }
+  const candidates = await Promise.all([...byCurriculum.values()].map(resolvePathway));
   return (
-    withCounts.find((x) => x.n > 0)?.p ||
-    matches.find((p) => p.publicDiagnosticEnabled) ||
-    matches[0] ||
+    candidates.find((c) => c.courseCount > 0) ||
+    candidates.find((c) => c.rows.some((p) => p.publicDiagnosticEnabled)) ||
+    candidates[0] ||
     null
   );
 }
 
-function listItem(pathway, courseCount) {
+function listItem(resolved) {
+  const pathway = resolved.stages[0]?.row || resolved.rows[0];
   return {
     id: pathway.id,
     slug: computedSlug(pathway),
     name: pathway.name,
     description: pathway.description || "",
     color: pathway.color || "#25476a",
-    courseCount,
+    courseCount: resolved.courseCount,
+  };
+}
+
+function publicCourse(c) {
+  return {
+    name: c.name,
+    description: htmlToText(c.description),
+    ageMin: c.ageMin ?? null,
+    ageMax: c.ageMax ?? null,
+    // Absolutized — this projection is public-only (getPathway is never called by admin code).
+    coverImage: toAbsoluteMediaUrl(c.coverImage),
   };
 }
 
@@ -108,20 +155,14 @@ const PublicSiteService = {
   async listPathways() {
     const pathways = await designatedAdminPathways();
 
-    // Collapse slug collisions to one representative each (the "best" per pickForSlug).
-    const bySlug = new Map();
-    for (const p of pathways) {
-      const slug = computedSlug(p);
-      if (!bySlug.has(slug)) bySlug.set(slug, []);
-      bySlug.get(slug).push(p);
-    }
-    const chosen = (await Promise.all([...bySlug.values()].map(pickForSlug))).filter(Boolean);
+    // One entry per slug: a pathway's stages together, and slug collisions across curricula
+    // collapsed to one representative (the "best" per pickForSlug).
+    const slugs = [...new Set(pathways.map(computedSlug))];
+    const chosen = (await Promise.all(slugs.map((slug) => pickForSlug(pathways, slug)))).filter(Boolean);
 
-    const counts = await Promise.all(chosen.map((p) => activeOrderedCourses(p)));
     return chosen
-      .map((p, i) => ({ p, n: counts[i].length }))
-      .filter(({ n }) => n > 0)
-      .map(({ p, n }) => listItem(p, n))
+      .filter((c) => c.courseCount > 0)
+      .map(listItem)
       .sort((a, b) => a.name.localeCompare(b.name));
   },
 
@@ -132,32 +173,35 @@ const PublicSiteService = {
   async getPathway(idOrSlug) {
     const pathways = await designatedAdminPathways();
 
-    let pathway = pathways.find((p) => p.id === idOrSlug) || null;
-    if (!pathway) {
-      pathway = await pickForSlug(pathways.filter((p) => computedSlug(p) === idOrSlug));
-    }
-    if (!pathway) return null;
+    // An id is one stage's row — it resolves to the whole pathway that row belongs to.
+    const byId = pathways.find((p) => p.id === idOrSlug);
+    const resolved = byId
+      ? await resolvePathway(
+          pathways.filter((p) => p.curriculumId === byId.curriculumId && computedSlug(p) === computedSlug(byId)),
+        )
+      : await pickForSlug(pathways, idOrSlug);
+    if (!resolved || resolved.courseCount === 0) return null;
 
-    const courses = await activeOrderedCourses(pathway);
-    if (courses.length === 0) return null;
-
-    let diagnostic = { available: false, minAge: null, maxAge: null };
-    try {
-      diagnostic = await diagnosticInfoFor(pathway);
-    } catch {
-      /* assessment lookup hiccup — leave diagnostic unavailable, the page still renders */
-    }
-
+    // `stages` is the pathway as authored: each Developmental Stage with its own courses and
+    // diagnostic. `courses` and `diagnostic` stay as the flat, whole-pathway view (every stage's
+    // courses youngest first; the diagnostic's ages spanning every stage that offers one).
+    const offered = resolved.stages.map((s) => s.diagnostic).filter((d) => d.available);
     return {
-      ...listItem(pathway, courses.length),
-      diagnostic,
-      courses: courses.map((c) => ({
-        name: c.name,
-        description: htmlToText(c.description),
-        ageMin: c.ageMin ?? null,
-        ageMax: c.ageMax ?? null,
-        // Absolutized — this projection is public-only (getPathway is never called by admin code).
-        coverImage: toAbsoluteMediaUrl(c.coverImage),
+      ...listItem(resolved),
+      diagnostic: offered.length
+        ? {
+            available: true,
+            minAge: Math.min(...offered.map((d) => d.minAge)),
+            maxAge: Math.max(...offered.map((d) => d.maxAge)),
+          }
+        : { available: false, minAge: null, maxAge: null },
+      courses: resolved.stages.flatMap((s) => s.courses.map(publicCourse)),
+      stages: resolved.stages.map((s) => ({
+        name: s.stage?.name || null,
+        minAge: s.stage?.minAge ?? null,
+        maxAge: s.stage?.maxAge ?? null,
+        diagnostic: s.diagnostic,
+        courses: s.courses.map(publicCourse),
       })),
     };
   },

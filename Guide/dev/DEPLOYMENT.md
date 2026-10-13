@@ -102,6 +102,155 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (12 Oct 2026, website clients) — Client logos on the website
+
+**Website only.** Rebuilt from commit `5a6fe55` (curriculum-web, branch `new`). The backend and
+portal files are the ones from the "12 Oct 2026, hardening" release below — nothing new to upload
+for them, and nothing for Capable, which has no website. This zip also carries the "12 Oct 2026,
+website" release further down, so if that one isn't deployed yet this upload covers it.
+
+No migration. No environment variable. Nothing to restart.
+
+### What changed
+
+"Some of our clients" on Home, Schools and About: Braeburn Schools, Rosslyn Academy, Woodcreek
+School and Arya Vedic Academy now show their own logos (taken from each school's website) on a
+white plate, with the name underneath. Nation, Parklands Sports Club, GrandStart and Foresight
+Academy show an icon until their logo files are supplied — add each file to
+`digifunzi-landing/public/clients/` and its `logo` in `src/content/organisation.js`.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes** pre-rendered, 34 URLs in
+`sitemap.xml`; 210 entries, including the four files under `clients/`. The same file is in
+`Guide/dev/` and `Guide/live/`.
+
+### Deploy order
+
+1. **Website**: upload `africa-digifunzi-com-dist.zip` to the `africa.digifunzi.com` document
+   root and Extract, replacing the existing files.
+2. **Verify:** on the home page, "Some of our clients" shows four logos and four icons, in light
+   and dark mode; the same on `/schools` and `/about`.
+
+---
+
+## This release (12 Oct 2026, hardening) — Sign-in, submissions and uploads hold up under load
+
+**Backend and portal rebuilt for Dev, Live and Capable** — from commit `edb5524` (curriculum,
+branch `modules`; the code is commits `58c3a32` and `e9d2c49`). The website zip is unchanged from
+the "12 Oct 2026, website" release below. Cumulative: this carries every release below, so if
+those aren't deployed yet their steps (database backup, environment variables) still apply.
+Verify on Dev first.
+
+No migration. No new required environment variable. **Run NPM Install is required this time** —
+package versions changed.
+
+### What changed
+
+Nothing changes in how the system is used. These are fixes for what happens when many people use
+it at once, plus security fixes.
+
+1. **A class signing in together no longer slows everyone down.** Checking a password is heavy
+   work; it used to hold up every other request while it ran. It now runs on two background
+   threads. Passwords themselves are stored exactly as before, so every existing login works.
+2. **One school no longer shares one request allowance.** The general limit (3,000 requests per
+   15 minutes) was counted per internet address, so every learner behind a school's connection
+   drew on the same allowance — about 40 learners in an assessment could use it up. A signed-in
+   request is now counted against its own account. Requests that are not signed in (the
+   website, the login form) are still counted per address.
+3. **Submitting an assessment twice does nothing the second time.** A double tap, a retry after a
+   dropped connection, or a second tab used to be marked twice and send the notifications twice.
+   Only the first Submit is accepted now; the rest get "This assessment has already been
+   submitted". A draft save that arrives after Submit can no longer replace the marked answers.
+   Opening the same assessment in two tabs at the same moment no longer shows an error.
+4. **Uploaded web pages download instead of opening.** An uploaded `.html`, `.svg` or `.xml`
+   file (a learner's code upload, for example) used to open as a live page from the API's own
+   address when its link was clicked. It now downloads. Photos, videos, PDFs, documents and
+   every other kind of file are served exactly as before.
+5. **Lesson and assessment content is cleaned before display.** Everything the editor produces
+   is kept; scripts hidden in content are removed.
+6. **`/health`** on the API answers `{"status":"ok"}` when it can reach its database and 503
+   when it cannot — the address to give an uptime monitor.
+7. **A Restart finishes requests in progress** (up to 10 seconds) before stopping.
+8. **A busy database answers sooner.** A request now waits up to 20 seconds for a free database
+   connection, not 60; the portal itself gives up after 15.
+9. **Security updates** to packages on both sides (non-breaking versions only).
+
+### Optional environment variables
+
+| Name | Value |
+|---|---|
+| `TRUST_PROXY` | **Leave unset for now.** It makes the login and password-reset limits (still counted per address) see each person's real address behind the hosting's own web server. A wrong value makes those limits wrong, so it is to be tried on Dev first — see "Still open". |
+| `PASSWORD_WORKERS` | How many background threads check passwords. Default 2. No need to set. |
+
+### What has and hasn't been checked
+
+Checked on a development machine: the backend's unit tests (7 pass); the API started and a real
+sign-in, wrong password, sign-out, image upload and document upload all worked; an `.html` file
+came back as a download and a `.txt` file did not; editor content (headings, links, images,
+video, tables, code) came through the cleaning unchanged in a browser; the three portal builds
+completed and each calls its own API.
+
+**Not checked:** the submission fixes under real simultaneous requests — that test needs a spare
+database the development machine's database user could not create; they were checked by reading
+the code. The orderly Restart. Anything on the hosting itself. The portal's screens were not
+clicked through after the package updates. So verify on Dev before Live, using the list below.
+
+### Still open (not in this release)
+
+- **Public sign-up** (the Register link) lets anyone create a school, educator or learner account
+  with any email address, unverified — to be turned off or given email verification.
+- **Enquiries** are visible to every admin account.
+- **`TRUST_PROXY`**, the session cookie setting, and `NODE_ENV` (listed as `development` in the
+  settings table below) need checking on the hosting.
+- Backups of the database and the `uploads/` folder, and a load test.
+
+### Backend (`backend-deploy.zip`)
+
+From `edb5524`, identical in Dev, Live and Capable; 466 entries. New files:
+`src/shared/utils/password.js`, `src/shared/utils/password.worker.js`,
+`src/shared/middleware/rate-limit.middleware.js`, `src/modules/uploads/upload.static.js`.
+Changed: `src/app.js`, `src/server.js`, `src/config/env.js`, `knexfile.js`,
+`src/modules/auth/auth.service.js`, the two assessment-submission files, `package.json` and
+`package-lock.json` (updated: multer 2.4.0, morgan 1.12.1, qs, proxy-addr, ip-address and
+others). All migrations up to `20261010090000_create_certificates.js` — nothing new to apply.
+
+### Portal frontend (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-fD4DkMTP.js`** / CSS `index-hXTMed0K.css` (unchanged).
+Live build (`npm run build:live`): **`index-DXQhx1dU.js`** / same CSS.
+Capable build (`npm run build:capable`): **`index-BAlmUjG5.js`** / same CSS — in `Guide/capable/`.
+Dev's from `Guide/dev/`, Live's from `Guide/live/` — different JS hash (different API), don't
+cross them. 68 entries in each `assets.zip`.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+Not rebuilt — the file from the "12 Oct 2026, website" release below.
+
+### Deploy order
+
+1. **Backend** `backend-deploy.zip` → **Run NPM Install** → **Restart** (after a database backup
+   if the 8 Oct release is not deployed yet). Leave `uploads/` alone as always.
+2. **Portal** `assets.zip` + `index.html`, straight after.
+3. **Verify, on Dev:**
+   - Open `https://nodeapp.digifunzi.com/health` — it shows `{"status":"ok"}`.
+   - Sign in as an admin, an educator and a learner (an existing password each). Sign out.
+   - As a learner, open the same assessment in two browser tabs, answer, and Submit in one. It
+     is marked once and one notification arrives. Press Submit in the other tab: it says the
+     assessment has already been submitted.
+   - Upload a photo, and a video of 100 MB or more to a course session; both show and play.
+   - Open a lesson with a video, a table and an image in it: it looks as it did before.
+   - Have several people on the same wifi use the portal at once; nobody sees "Too many
+     requests".
+4. Then the same on **Live** and **Capable**, each with its own `assets.zip` + `index.html`.
+
+**Rolling back:** upload the previous `backend-deploy.zip`, Run NPM Install, Restart, and the
+previous `assets.zip` + `index.html`. Nothing in the database changes in this release, so there
+is nothing to undo there.
+
+---
+
 ## This release (12 Oct 2026, website) — Who we are, a Schools page, real contact details and a WhatsApp button
 
 **Website only.** Rebuilt from commit `3677f8b` (curriculum-web, branch `new`). The backend and

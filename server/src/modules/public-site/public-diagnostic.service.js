@@ -47,27 +47,38 @@ function requireConfiguredAdminId() {
 // designated admin can own several curricula, so two of their pathways can collide on the same
 // computed slug. Since only a pathway with publicDiagnosticEnabled matters here, prefer a slug
 // match that has it set, then plain first-match.
-async function resolveDesignatedPathway(idOrSlug) {
+//
+// A pathway is one row per Developmental Stage, all sharing a name (see
+// CompetencyService.createPathway), so a slug normally matches several rows — one per stage, each
+// with its own diagnostic and age range. This returns every candidate; the callers below pick the
+// one whose stage fits the visitor's age.
+async function resolveDesignatedPathways(idOrSlug) {
   const ownerAdminId = requireConfiguredAdminId();
   const curricula = await CurriculumModel.findAll({ ownerAdminId });
-  const curriculumIds = new Set(curricula.map((c) => c.id));
   const allPathways = (
     await Promise.all(curricula.map((c) => PathwayModel.findByCurriculumId(c.id)))
   ).flat();
 
-  // 1. Direct hit on an operational pathway id (the diagnostic-attempt audit trail stores this).
-  let pathway = allPathways.find((p) => p.id === idOrSlug) || null;
+  // 1. Direct hit on an operational pathway id (the diagnostic-attempt audit trail stores this,
+  //    and a bootcamp's per-pathway diagnostic links by it) — exactly that one stage.
+  const direct = allPathways.find((p) => p.id === idOrSlug);
+  if (direct) return [direct];
 
-  // 2. By computed slug — prefer a match that has the public diagnostic enabled.
-  if (!pathway) {
-    const slugMatches = allPathways.filter((p) => (slugify(p.name) || "pathway") === idOrSlug);
-    pathway = slugMatches.find((p) => p.publicDiagnosticEnabled) || slugMatches[0] || null;
+  // 2. By computed slug — every stage of the pathway, public-diagnostic ones first.
+  return allPathways
+    .filter((p) => (slugify(p.name) || "pathway") === idOrSlug)
+    .sort((a, b) => Number(!!b.publicDiagnosticEnabled) - Number(!!a.publicDiagnosticEnabled));
+}
+
+// The one stage of the pathway that can serve a diagnostic to a visitor of this age, with its
+// assessment — or null.
+async function resolveOfferableForAge(idOrSlug, age) {
+  for (const pathway of await resolveDesignatedPathways(idOrSlug)) {
+    if (!(await ageInRange(pathway, age))) continue;
+    const assessment = await loadOfferableAssessment(pathway);
+    if (assessment) return { pathway, assessment };
   }
-
-  // Belt-and-suspenders — findByCurriculumId already only returns rows for ids we collected
-  // above, so this can't actually fail, but it keeps the tenant boundary explicit.
-  if (pathway && !curriculumIds.has(pathway.curriculumId)) return null;
-  return pathway;
+  return null;
 }
 
 // A pathway now belongs to exactly one Developmental Stage (ageCategoryId) instead of carrying
@@ -198,11 +209,9 @@ const PublicDiagnosticService = {
   // diagnostic configured/offerable. Distinguishing WHY isn't useful to an anonymous caller and
   // would risk leaking which pathways exist vs. which ones simply lack a public diagnostic.
   async getDiagnostic(pathwayIdOrSlug, age) {
-    const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
-    if (!pathway) return null;
-    if (!(await ageInRange(pathway, age))) return null;
-    const assessment = await loadOfferableAssessment(pathway);
-    if (!assessment) return null;
+    const match = await resolveOfferableForAge(pathwayIdOrSlug, age);
+    if (!match) return null;
+    const { pathway, assessment } = match;
     const ageRange = await resolveEffectiveAgeRange(pathway);
 
     const indicatorMeta = await buildIndicatorMeta();
@@ -228,13 +237,22 @@ const PublicDiagnosticService = {
   // Availability check for PathwayDetailPage's CTA — returns whether a diagnostic is offerable
   // AND (when it is) the age range, so the detail page can render "for ages 8–14" and the
   // website can pre-bound the age field. `null` age range only when no diagnostic is offerable.
+  //
+  // A pathway's stages each carry their own diagnostic, so the range is the span of every stage
+  // that has one on offer (youngest minimum to oldest maximum). An age inside the span but
+  // between two stages still gets "nothing for this age" from getDiagnostic.
   async diagnosticInfo(pathwayIdOrSlug) {
-    const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
-    if (!pathway) return { available: false, minAge: null, maxAge: null };
-    const assessment = await loadOfferableAssessment(pathway);
-    if (!assessment) return { available: false, minAge: null, maxAge: null };
-    const ageRange = await resolveEffectiveAgeRange(pathway);
-    return { available: true, minAge: Number(ageRange.minAge), maxAge: Number(ageRange.maxAge) };
+    const ranges = [];
+    for (const pathway of await resolveDesignatedPathways(pathwayIdOrSlug)) {
+      if (!(await loadOfferableAssessment(pathway))) continue;
+      ranges.push(await resolveEffectiveAgeRange(pathway));
+    }
+    if (ranges.length === 0) return { available: false, minAge: null, maxAge: null };
+    return {
+      available: true,
+      minAge: Math.min(...ranges.map((r) => Number(r.minAge))),
+      maxAge: Math.max(...ranges.map((r) => Number(r.maxAge))),
+    };
   },
 
   // Existence-only check — kept for the current /availability route's { diagnosticAvailable }
@@ -250,11 +268,11 @@ const PublicDiagnosticService = {
   // the lead id. `childName` stays optional context for how the report reads.
   async submitDiagnostic(pathwayIdOrSlug, body, ipHash) {
     const { answers, parentName, parentPhone, childName, childAge } = body;
-    const pathway = await resolveDesignatedPathway(pathwayIdOrSlug);
-    if (!pathway) throw notFound("Pathway not found");
-    if (!(await ageInRange(pathway, childAge))) throw notFound("No diagnostic available for this age");
-    const assessment = await loadOfferableAssessment(pathway);
-    if (!assessment) throw notFound("No public diagnostic configured for this pathway");
+    const candidates = await resolveDesignatedPathways(pathwayIdOrSlug);
+    if (candidates.length === 0) throw notFound("Pathway not found");
+    const match = await resolveOfferableForAge(pathwayIdOrSlug, childAge);
+    if (!match) throw notFound("No diagnostic available for this age");
+    const { pathway, assessment } = match;
 
     // No AssessmentSubmissionModel row, no AssessmentIssueModel row, no
     // CompetencyService.placeLearner* call — those exist only to attach a result to a real,
